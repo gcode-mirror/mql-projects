@@ -73,7 +73,7 @@ int init(){
   for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
   {
    trendDirection[frameIndex][0] =  InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
-   //Alert("trendDirection[0]=",trendDirection[frameIndex][0], " frameIndex=",frameIndex);
+   Alert("trendDirection[0]=",trendDirection[frameIndex][0], " frameIndex=",frameIndex);
   }
 
   return(0);
@@ -162,7 +162,7 @@ int start(){
            {
             Correction(); // проверим не началась ли коррекция
            }
-      //Alert("aCorrection[0]=",aCorrection[frameIndex][0], "trendDirection[0]=",trendDirection[frameIndex][0]);      
+      Alert("aCorrection[0]=",aCorrection[frameIndex][0], "trendDirection[0]=",trendDirection[frameIndex][0]);      
      } // close isNewBar
      
   //--------------------------------------
