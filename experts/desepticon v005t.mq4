@@ -73,7 +73,7 @@ int init(){
   for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
   {
    trendDirection[frameIndex][0] =  InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
-   Alert("trendDirection[0]=",trendDirection[frameIndex][0], " frameIndex=",frameIndex);
+   //Alert("trendDirection[0]=",trendDirection[frameIndex][0], " frameIndex=",frameIndex);
   }
 
   return(0);
