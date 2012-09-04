@@ -98,7 +98,7 @@ int _GetLastError = 0;
 double Lots = 3;
 double Current_fastEMA, Current_slowEMA;
 double CurrentMACD;
-double Stochastic;
+
 double RSI;
 double MACD_15M[30];
 //double minPriceForFlat[2];
