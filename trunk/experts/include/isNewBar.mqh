@@ -9,9 +9,10 @@
 //===============================================================================
 // Функция контроля нового бара
 //===============================================================================
-bool isNewBar(int timeframe)
+bool isNewBar(int timeframe, string symb = "")
  {
   int index;
+  if (symb == "") symb = Symbol();
   switch(timeframe)
   {
    case PERIOD_D1:
@@ -41,7 +42,7 @@ bool isNewBar(int timeframe)
   }
   
     static int PrevTime[7];
-    if (PrevTime[index]==iTime("EURUSD",timeframe,0)) return(false);
-    PrevTime[index]=iTime("EURUSD",timeframe,0);
+    if (PrevTime[index]==iTime(symb,timeframe,0)) return(false);
+    PrevTime[index]=iTime(symb,timeframe,0);
     return(true);
 }
