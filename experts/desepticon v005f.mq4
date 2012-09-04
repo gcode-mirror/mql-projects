@@ -15,7 +15,7 @@
 #include <InitExtremums.mqh>
 #include <CheckBeforeStart.mqh>       // Проверка входных параметров
 #include <DesepticonTrendCriteria.mqh>
-#include <Correction.mqh>
+//#include <Correction.mqh>
 #include <StochasticDivergenceProcedures.mqh>
 //#include <direction_MACD.mqh>
 #include <DesepticonBreakthrough2.mqh>
