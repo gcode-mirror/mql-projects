@@ -88,9 +88,16 @@ extern int lastprofit = -1; // принимает значения -1/1.
 extern double lotmin = 0.1; // начальное значение 
 //extern double lotmax = 0.5; // потолок
 //extern double lotstep = 0.1; // приращение лота
-extern int NumberOfTry = 3;
 
 // Глобальные переменные
+bool   gbDisabled    = False;          // Флаг блокировки советника
+color  clOpenBuy = Red;                // Цвет значка открытия покупки
+color  clOpenSell = Green;             // Цвет значка открытия продажи
+int    Slippage      = 3;              // Проскальзывание цены
+int    NumberOfTry   = 5;              // Количество торговых попыток
+bool   UseSound      = True;           // Использовать звуковой сигнал
+string NameFileSound = "expert.wav";   // Наименование звукового файла
+
 int trendDirection[3][2]; // [][0] - может быть ноль. 0 - значит флэт; [][1] - не может быть 0 - помним предыдущий тренд
 double aCorrection[3][2]; // [][0] - наличие коррекции, [][1] - значение цены
 int total;

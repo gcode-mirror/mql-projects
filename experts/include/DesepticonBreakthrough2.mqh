@@ -16,7 +16,7 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
       if (total < 1) // Ќету открытых ордеров -> ищем возможность открыти€
       {
        //if (Ask > iMA(NULL, Elder_Timeframe, eld_EMA2, 0, 1, 0, 0))
-        if (DesepticonOpening(OP_SELL, openPlace, timeframe) > 0)
+        if (DesepticonOpening(NULL, OP_SELL, openPlace, timeframe) > 0)
         {
          return (1);
         }  
@@ -33,7 +33,7 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
          OrderClose(OrderTicket(),OrderLots(),Bid,3,Violet); // закрываем позицию BUY
          Alert("DesepticonBreakthrough2: «акрыли ордер BUY" );
          //if (Ask > iMA(NULL, Elder_Timeframe, eld_EMA2, 0, 1, 0, 0))
-          if (DesepticonOpening(OP_SELL, openPlace, timeframe) > 0)
+          if (DesepticonOpening(NULL, OP_SELL, openPlace, timeframe) > 0)
           {
            return (1);
           }  
@@ -56,7 +56,7 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
       if (total < 1) // Ќету открытых ордеров -> ищем возможность открыти€
       { 
        //if (Bid < iMA(NULL, Elder_Timeframe, eld_EMA2, 0, 1, 0, 0))
-        if (DesepticonOpening(OP_BUY, openPlace, timeframe) > 0)
+        if (DesepticonOpening(NULL, OP_BUY, openPlace, timeframe) > 0)
         {
          return (1);
         }
@@ -73,7 +73,7 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
          OrderClose(OrderTicket(),OrderLots(),Ask,3,Violet); // закрываем позицию SELL
          Alert("DesepticonBreakthrough2: «акрыли ордер SELL" );
          //if (Bid < iMA(NULL, Elder_Timeframe, eld_EMA2, 0, 1, 0, 0))
-          if (DesepticonOpening(OP_BUY, openPlace, timeframe) > 0)
+          if (DesepticonOpening(NULL, OP_BUY, openPlace, timeframe) > 0)
           {
            return (1);
           }
