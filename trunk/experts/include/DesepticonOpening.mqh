@@ -41,7 +41,7 @@ int DesepticonOpening(int operation, string openPlace, int timeframe, double sl=
   //Alert(" wantToOpen[0]=",wantToOpen[frameIndex][0], "  wantToOpen[1]=",wantToOpen[frameIndex][1]);
   //Alert(" wantToOpen[0]=",wantToOpen[frameIndex+1][0], "  wantToOpen[1]=",wantToOpen[frameIndex+1][1]);
   
-  ticket = OrderSend( symbol(), operation, Lots, price, 5, sl, tp, "MACD_test", _MagicNumber+timeframe, 0, op_color);
+  ticket = OrderSend( symbmbol(), operation, Lots, price, 5, sl, tp, "MACD_test", _MagicNumber+timeframe, 0, op_color);
   if(ticket < 0 ) //если не смогли открыться
   {
    _GetLastError = GetLastError();
@@ -77,7 +77,7 @@ int OpenPosition(string symb, int operation, double Lots, double sl=0, double tp
  {
   color op_color;
   datetime ot;
-  double   pp, pAsk, pBid;
+  double   price, pAsk, pBid;
   int      dg, err, it, ticket=0;
  
   if (symb=="" || symb=="0") symb=Symbol();
@@ -117,10 +117,10 @@ int OpenPosition(string symb, int operation, double Lots, double sl=0, double tp
    dg=MarketInfo(symb, MODE_DIGITS);
    pAsk=MarketInfo(symb, MODE_ASK);
    pBid=MarketInfo(symb, MODE_BID);
-   if (operation==OP_BUY) pp=pAsk; else pp=pBid;
-   pp=NormalizeDouble(pp, dg);
+   if (operation==OP_BUY) price=pAsk; else price=pBid;
+   price=NormalizeDouble(price, dg);
    ot=TimeCurrent();
-   ticket=OrderSend(symb, operation, Lots, pp, Slippage, sl, tp, lsComm, mn, 0, clOpen);
+   ticket=OrderSend(symb, operation, Lots, price, Slippage, sl, tp, lsComm, mn, 0, clOpen);
    if (ticket>0)
    {
     if (UseSound) PlaySound(NameFileSound);
@@ -133,7 +133,7 @@ int OpenPosition(string symb, int operation, double Lots, double sl=0, double tp
     // Вывод сообщения об ошибке
     Print("Error(",err,") opening position: ",ErrorDescription(err),", try ",it);
     Print("Ask=",pAsk," Bid=",pBid," symb=",symb," Lots=",Lots," operation=",GetNameOP(operation),
-          " pp=",pp," sl=",sl," tp=",tp," mn=",mn);
+          " price=",price," sl=",sl," tp=",tp," mn=",mn);
     // Блокировка работы советника
     if (err==2 || err==64 || err==65 || err==133) {
       gbDisabled=True; break;
