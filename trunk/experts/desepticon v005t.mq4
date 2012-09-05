@@ -11,6 +11,7 @@
 #include <WinUser32.mqh>
 //--------------------------------------------------------------- 3 --
 #include <DesepticonVariables.mqh>    // Описание переменных 
+#include <AddOnFuctions.mqh> 
 //#include <InitDivergenceArray.mqh>
 //#include <InitExtremums.mqh>
 #include <CheckBeforeStart.mqh>       // Проверка входных параметров
