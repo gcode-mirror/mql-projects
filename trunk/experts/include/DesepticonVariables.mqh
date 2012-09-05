@@ -88,6 +88,7 @@ extern int lastprofit = -1; // принимает значения -1/1.
 extern double lotmin = 0.1; // начальное значение 
 //extern double lotmax = 0.5; // потолок
 //extern double lotstep = 0.1; // приращение лота
+extern int NumberOfTry = 3;
 
 // Глобальные переменные
 int trendDirection[3][2]; // [][0] - может быть ноль. 0 - значит флэт; [][1] - не может быть 0 - помним предыдущий тренд

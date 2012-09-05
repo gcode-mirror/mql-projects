@@ -162,7 +162,7 @@ int start(){
            {
             Correction(); // проверим не началась ли коррекция
            }
-      Alert("aCorrection[0]=",aCorrection[frameIndex][0], "trendDirection[0]=",trendDirection[frameIndex][0]);      
+      //Alert("aCorrection[0]=",aCorrection[frameIndex][0], "trendDirection[0]=",trendDirection[frameIndex][0]);      
      } // close isNewBar
      
   //--------------------------------------
