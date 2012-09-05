@@ -3,14 +3,12 @@
 //|                                            Copyright © 2011, GIA |
 //|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
-color clOpenBuy = Red;
-color clOpenSell = Green;
-
-int DesepticonOpening(int operation, string openPlace, int timeframe, double sl=0, double tp=0, int mn=0)
+int DesepticonOpening(string symb, int operation, string openPlace, int timeframe, double sl=0, double tp=0, int mn=0)
 {
   double price;
   color op_color;
   Lots = GetLots();
+  if (symb=="" || symb=="0") symb=Symbol();
   
   if (operation == 0)
   {
@@ -40,8 +38,7 @@ int DesepticonOpening(int operation, string openPlace, int timeframe, double sl=
   );
   //Alert(" wantToOpen[0]=",wantToOpen[frameIndex][0], "  wantToOpen[1]=",wantToOpen[frameIndex][1]);
   //Alert(" wantToOpen[0]=",wantToOpen[frameIndex+1][0], "  wantToOpen[1]=",wantToOpen[frameIndex+1][1]);
-  
-  ticket = OrderSend( symbmbol(), operation, Lots, price, 5, sl, tp, "MACD_test", _MagicNumber+timeframe, 0, op_color);
+  ticket = OrderSend(symb, operation, Lots, price, Slippage, sl, tp, "MACD_test", _MagicNumber+timeframe, 0, op_color);
   if(ticket < 0 ) //если не смогли открыться
   {
    _GetLastError = GetLastError();
@@ -73,15 +70,17 @@ int DesepticonOpening(int operation, string openPlace, int timeframe, double sl=
 //|    tp - уровень тейк                                                       |
 //|    mn - MagicNumber                                                        |
 //+----------------------------------------------------------------------------+
-int OpenPosition(string symb, int operation, double Lots, double sl=0, double tp=0, int mn=0, string lsComm="")
+int OpenPosition(string symb, int operation, string openPlace, int timeframe, double sl=0, double tp=0, int mn=0, string lsComm="")
  {
   color op_color;
   datetime ot;
   double   price, pAsk, pBid;
   int      dg, err, it, ticket=0;
- 
+  
+  Lots = GetLots();
+   
   if (symb=="" || symb=="0") symb=Symbol();
-  if (lsComm=="" || lsComm=="0") lsComm=WindowExpertName()+" "+GetNameTF(Period());
+  if (lsComm=="" || lsComm=="0") lsComm=WindowExpertName()+" "+GetNameTF(Period()) + " " + openPlace;
   
   if (operation == OP_BUY)
   {
@@ -120,10 +119,10 @@ int OpenPosition(string symb, int operation, double Lots, double sl=0, double tp
    if (operation==OP_BUY) price=pAsk; else price=pBid;
    price=NormalizeDouble(price, dg);
    ot=TimeCurrent();
-   ticket=OrderSend(symb, operation, Lots, price, Slippage, sl, tp, lsComm, mn, 0, clOpen);
+   ticket=OrderSend(symb, operation, Lots, price, Slippage, sl, tp, lsComm, mn, 0, op_color);
    if (ticket>0)
    {
-    if (UseSound) PlaySound(NameFileSound);
+    if (UseSound) PlaySound("expert.wav");
     break;
    }
    else
@@ -145,13 +144,13 @@ int OpenPosition(string symb, int operation, double Lots, double sl=0, double tp
     if (err==128 || err==142 || err==143) {
       Sleep(1000*66.666);
       if (ExistPositions(symb, operation, mn, ot)) {
-        if (UseSound) PlaySound(NameFileSound); break;
+        if (UseSound) PlaySound("expert.wav"); break;
       }
     }
     if (err==140 || err==148 || err==4110 || err==4111) break;
     if (err==141) Sleep(1000*100);
     if (err==145) Sleep(1000*17);
-    if (err==146) while (IsTradeContextBusymb()) Sleep(1000*11);
+    if (err==146) while (IsTradeContextBusy()) Sleep(1000*11);
     if (err!=135) Sleep(1000*7.7);
    }
   } // close for
