@@ -70,9 +70,7 @@ int init(){
   {
    InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
    //Alert("проинитили направление тренда");
-
   }
-  
   return(0);
  }
 //+------------------------------------------------------------------+
@@ -107,7 +105,6 @@ int start(){
      
      total=OrdersTotal();
 
-
      if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
      {
       trendDirection[frameIndex][0] = TwoTitsTrendCriteria(Elder_Timeframe, Elder_MACD_channel, eld_EMA1, eld_EMA2, eldFastMACDPeriod, eldSlowMACDPeriod);
@@ -141,7 +138,7 @@ int start(){
       }
       
       Stochastic = iStochastic(NULL, Elder_Timeframe, Kperiod, Dperiod , slowing ,MODE_SMA,0,MODE_MAIN,1);
-      if (Stochastic > 75) // Стохастик наверху, перепокупка - будем продавать
+      if (Stochastic > topStochastic) // Стохастик наверху, перепокупка - будем продавать
       {
 	    if (iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 1) < iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
            iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) > iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА сверху вниз
@@ -157,7 +154,7 @@ int start(){
 	    } // close пересечение ЕМА сверху вниз   
 	   }  // close Стохастик наверху       
 	 
-      if (Stochastic < 25) // Стохастик внизу, перепродажа - будем покупать
+      if (Stochastic < bottomStochastic) // Стохастик внизу, перепродажа - будем покупать
 	   {  			   
        if (iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 1) > iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
            iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) < iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА снизу вверх
