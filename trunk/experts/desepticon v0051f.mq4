@@ -147,7 +147,6 @@ int start(){
 	    {
 	     if (Ask > iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point)
 	     {  
-	      Alert("stochastic0=",stochastic0,"  stochastic1=",stochastic1); 
 	      openPlace = "старший ТФ флэт, стохастик наверху, на младшем пересечение ЕМА сверху вниз ";
 	      if (DesepticonBreakthrough2(-1, Jr_Timeframe) <= 0) // при определенной экстремальной цене, ищем пробой, открываемся
 	      {
