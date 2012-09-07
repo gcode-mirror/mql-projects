@@ -32,13 +32,13 @@ int DesepticonOpening(string symb, int operation, string openPlace, int timefram
    op_color = clOpenSell;
   }
   
-  Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", _MagicNumber+timeframe);
+  Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", _MagicNumber);
   Alert("buyCondition=",buyCondition," sellCondition=",sellCondition
   //, " buy_condition = ", buy_condition, " sell_condition=",sell_condition
   );
   //Alert(" wantToOpen[0]=",wantToOpen[frameIndex][0], "  wantToOpen[1]=",wantToOpen[frameIndex][1]);
   //Alert(" wantToOpen[0]=",wantToOpen[frameIndex+1][0], "  wantToOpen[1]=",wantToOpen[frameIndex+1][1]);
-  ticket = OrderSend(symb, operation, Lots, price, Slippage, sl, tp, "MACD_test", _MagicNumber+timeframe, 0, op_color);
+  ticket = OrderSend(symb, operation, Lots, price, Slippage, sl, tp, "MACD_test", _MagicNumber, 0, op_color);
   if(ticket < 0 ) //если не смогли открыться
   {
    _GetLastError = GetLastError();

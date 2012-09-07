@@ -6,6 +6,7 @@
 
 
 extern int depthSto = 10;
+int nPicks = 10;
 double aStochastic[3][10][5]; // [][0] - резерв
                            // [][1] - знач-е Stochastic
                            // [][2] - знач-е цены в экстремуме Stochastic
@@ -55,11 +56,11 @@ void InitStoDivergenceArray(int timeframe)
       return(false);
  }
  // ќбнул€ем нужный слой массива расхождений
- double tmpArray[10][4];
+ double tmpArray[10][5];
  ArrayInitialize(tmpArray, 0);
  
- for (int m = 0; m < 10; m++)
-    for (int n = 0; n < 4; n++)
+ for (int m = 0; m < nPicks; m++)
+    for (int n = 0; n < 5; n++)
        aStochastic[index][m][n] = tmpArray[m][n];
  
  // «аполн€ем нужный слой новыми значени€ми
@@ -129,7 +130,7 @@ int isStoDivergence(int timeframe)
  {
   if (stochasticExtremum > 0 && aStochastic[index][1][1] < 80) // ƒождались очередного максимума Sto меньше 80
   {
-   for (i = 2; i <= 10; i++)
+   for (i = 2; i <= nPicks; i++)
    { 
     if (aStochastic[index][i][4] > 0 && aStochastic[index][i][1] > 80) // максимум, больше 80
     {
@@ -151,7 +152,7 @@ int isStoDivergence(int timeframe)
   if (stochasticExtremum < 0 && aStochastic[index][1][1] > 20) // ƒождались очередного минимума стохастика больше 20
   {
    //Alert("");
-   for (i = 2; i <= 10; i++)
+   for (i = 2; i <= nPicks; i++)
    {
     if (aStochastic[index][i][4] < 0 && aStochastic[index][i][1] < 20) // минимум, меньше 20
     { 

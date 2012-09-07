@@ -83,10 +83,10 @@ string GetNameOP(int op)
 //|    ot - время открытия             ( 0   - любое время установки)          |
 //+----------------------------------------------------------------------------+
 bool ExistOrders(string sy="", int op=-1, int mn=-1, datetime ot=0) {
-  int i, k=OrdersTotal(), ty;
+  int i, total=OrdersTotal(), ty;
 
   if (sy=="0") sy=Symbol();
-  for (i=0; i<k; i++) {
+  for (i=0; i<total; i++) {
     if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {
       ty=OrderType();
       if (ty>1 && ty<6) {
@@ -115,10 +115,10 @@ bool ExistOrders(string sy="", int op=-1, int mn=-1, datetime ot=0) {
 //|    ot - время открытия             ( 0   - любое время открытия)           |
 //+----------------------------------------------------------------------------+
 bool ExistPositions(string sy="", int op=-1, int mn=-1, datetime ot=0) {
-  int i, k=OrdersTotal();
+  int i, total=OrdersTotal();
 
   if (sy=="0") sy=Symbol();
-  for (i=0; i<k; i++) {
+  for (i=0; i<total; i++) {
     if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {
       if (OrderSymbol()==sy || sy=="") {
         if (OrderType()==OP_BUY || OrderType()==OP_SELL) {
