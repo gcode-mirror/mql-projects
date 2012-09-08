@@ -34,13 +34,13 @@ int Opening(int operation)
   }
   
   //Alert ("TP", TP);
-  ticket = OrderSend( Symbol(), operation, Lots, price, 5, SL, TP, "MACD_test", _MagicNumber+Jr_Timeframe, 0, op_color);
+  ticket = OrderSend( Symbol(), operation, Lots, price, 5, SL, TP, "MACD_test", _MagicNumber, 0, op_color);
   if(ticket < 0 ) //если не смогли открыться
   {
    _GetLastError = GetLastError();
    Alert("?????? OrderSend ? ", _GetLastError);
    return (-1);
   } // close если не смогли открыться
-  ArrayInitialize(wantToOpen, 0);
+  wantToOpen[frameIndex] = 0;
   return (1);
 }
