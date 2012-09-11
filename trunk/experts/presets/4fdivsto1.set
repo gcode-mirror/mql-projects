@@ -52,5 +52,5 @@ barsToWait=60
 depthDiv=100
 uplot=1
 lastprofit=-1
-lotmin=1.00000000
+lotmin=2.00000000
 depthSto=10
