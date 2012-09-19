@@ -124,6 +124,13 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    if (ticket>0)
    {
     if (UseSound) PlaySound("expert.wav");
+    for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
+    {
+     wantToOpen[frameIndex][0] = 0;
+     wantToOpen[frameIndex][1] = 0;
+     barsCountToBreak[frameIndex][0] = 0;
+     barsCountToBreak[frameIndex][1] = 0;
+    }
     break;
    }
    else
