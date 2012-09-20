@@ -216,6 +216,13 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
    ot=TimeCurrent();
    //ticket=OrderSend(symb, operation, Lots, price, Slippage, sl, tp, lsComm, mn, 0, op_color);
    Alert("запрос на открытие");
+   for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
+    {
+     wantToOpen[frameIndex][0] = 0;
+     wantToOpen[frameIndex][1] = 0;
+     barsCountToBreak[frameIndex][0] = 0;
+     barsCountToBreak[frameIndex][1] = 0;
+    }
    /*
    if (ticket>0)
    {
