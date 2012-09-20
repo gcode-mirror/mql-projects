@@ -27,7 +27,7 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
    {
     if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
     {
-     if (OrderMagicNumber() - _MagicNumber == Jr_Timeframe)  
+     if (OrderMagicNumber() == _MagicNumber)  
      {
       if (OrderType()==OP_BUY)   // Открыта длинная позиция BUY
       {
@@ -66,7 +66,7 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
    {
     if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
     {
-     if (OrderMagicNumber() - _MagicNumber == Jr_Timeframe)  
+     if (OrderMagicNumber() == _MagicNumber)  
      {
       if (OrderType()==OP_SELL) // Открыта короткая позиция SELL
       {
@@ -117,7 +117,7 @@ int DesepticonBreakthroughTest(int iDirection, int timeframe)
    {
     if(OrderSelect(0,SELECT_BY_POS,MODE_TRADES))
     {
-     if (OrderMagicNumber() - _MagicNumber == Jr_Timeframe)  
+     if (OrderMagicNumber() == _MagicNumber)  
      {
       if (OrderType()==OP_BUY)   // Открыта длинная позиция BUY
       {
@@ -156,7 +156,7 @@ int DesepticonBreakthroughTest(int iDirection, int timeframe)
    {
     if(OrderSelect(0,SELECT_BY_POS,MODE_TRADES))
     {
-     if (OrderMagicNumber() - _MagicNumber == Jr_Timeframe)  
+     if (OrderMagicNumber() == _MagicNumber)  
      {
       if (OrderType()==OP_SELL) // Открыта короткая позиция SELL
       {
