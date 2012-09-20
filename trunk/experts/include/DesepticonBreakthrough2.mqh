@@ -25,7 +25,7 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
   {
    for (i=0; i<total; i++)
    {
-    if(OrderSelect(0,SELECT_BY_POS,MODE_TRADES))
+    if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
     {
      if (OrderMagicNumber() - _MagicNumber == Jr_Timeframe)  
      {
@@ -64,7 +64,7 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
   {
    for (i=0; i<total; i++)
    {
-    if(OrderSelect(0,SELECT_BY_POS,MODE_TRADES))
+    if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
     {
      if (OrderMagicNumber() - _MagicNumber == Jr_Timeframe)  
      {
