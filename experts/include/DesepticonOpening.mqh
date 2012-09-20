@@ -74,18 +74,21 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
  {
   color op_color;
   datetime ot;
-  double   price, pAsk, pBid;
+  double   price, pAsk, pBid, vol, addPrice;
   int      dg, err, it, ticket=0;
-  
+
   Lots = GetLots();
    
   if (symb=="" || symb=="0") symb=Symbol();
   if (lsComm=="" || lsComm=="0") lsComm=WindowExpertName()+" "+GetNameTF(Period()) + " " + openPlace;
+  dg=MarketInfo(symb, MODE_DIGITS);
+  vol=MathPow(10.0,dg);
+  addPrice=0.0003*vol;
   
   if (operation == OP_BUY)
   {
    price = Ask;
-   StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + 30*Point; //(мин_цена - тек.покупка + 30п.)
+   StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
    if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
    sl = Bid-StopLoss;
@@ -96,7 +99,7 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
   if (operation == OP_SELL)
   {
    price = Bid;
-   StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + 30*Point; //(макс_цена - тек.продажа + 30п.)
+   StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
    if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
    sl = Ask+StopLoss;
@@ -113,7 +116,6 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    }
    while (!IsTradeAllowed()) Sleep(5000);
    RefreshRates();
-   dg=MarketInfo(symb, MODE_DIGITS);
    pAsk=MarketInfo(symb, MODE_ASK);
    pBid=MarketInfo(symb, MODE_BID);
    if (operation==OP_BUY) price=pAsk; else price=pBid;
@@ -172,6 +174,9 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
   double   price, pAsk, pBid;
   int      dg, err, it, ticket=0;
   
+  double vol=MathPow(10.0,dg);
+  double addPrice=0.0003*vol;
+  
   Lots = GetLots();
    
   if (symb=="" || symb=="0") symb=Symbol();
@@ -180,7 +185,7 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
   if (operation == OP_BUY)
   {
    price = Ask;
-   StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + 30*Point; //(мин_цена - тек.покупка + 30п.)
+   StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
    if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
    sl = Bid-StopLoss;
@@ -191,7 +196,7 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
   if (operation == OP_SELL)
   {
    price = Bid;
-   StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + 30*Point; //(макс_цена - тек.продажа + 30п.)
+   StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
    if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
    sl = Ask+StopLoss;

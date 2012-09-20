@@ -247,7 +247,7 @@ int start(){
      }
     } // close цикл
 //----
-	if (UseTrailing) DesepticonTrailing(); 
+	if (UseTrailing) DesepticonTrailing(NULL, Jr_Timeframe); 
 	return(0);
 } // close start
 //+------------------------------------------------------------------+

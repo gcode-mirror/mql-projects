@@ -6,51 +6,29 @@
 #property copyright "Copyright © 2011, GIA"
 #property link      "http://www.saita.net"
 
-void DesepticonTrailing() 
+void DesepticonTrailing(string symb, int timeframe) 
 {
   total = OrdersTotal();
-  int currentMagic;
-  int timeframe;
+  double vol, addPrice;
+  int dg;
+  
+  if (symb=="" || symb=="0") symb=Symbol();
+  dg=MarketInfo(symb, MODE_DIGITS);
+  vol=MathPow(10.0,dg);
+  addPrice=0.0003*vol;
   
   for (int i=0; i<total; i++) {
     if (!(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))) continue;
     if (OrderSymbol() != Symbol()) continue;
-    
-    currentMagic = OrderMagicNumber();
-    switch (currentMagic){
-      case (1127):
-         //MinProfit = MinProfit_5M; 
-         //TrailingStop_min = TrailingStop_5M_min;
-         //TrailingStop_max = TrailingStop_5M_max; 
-         //TrailingStep = TrailingStep_5M;
-         timeframe = PERIOD_M5;
-         break;
-      case (1182):
-         //MinProfit = MinProfit_1H; 
-         //TrailingStop_min = TrailingStop_1H_min;
-         //TrailingStop_max = TrailingStop_1H_max; 
-         //TrailingStep = TrailingStep_1H;
-         timeframe = PERIOD_H1;      
-         break;
-      case (2562):
-         //MinProfit = MinProfit_1D; 
-         //TrailingStop_min = TrailingStop_1D_min;
-         //TrailingStop_max = TrailingStop_1D_max; 
-         //TrailingStep = TrailingStep_1D;
-         timeframe = PERIOD_D1;      
-         break;
-      default:
-         return;
-    }
+    if (OrderMagicNumber() != _MagicNumber) continue;
 
     if (OrderType() == OP_BUY) {
       if (Bid-OrderOpenPrice() > MinProfit*Point) {
-        TrailingStop = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 3, 0)) + 30*Point; //(мин_цена - тек.покупка + 30п.)
+        TrailingStop = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 3, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
         if (TrailingStop < TrailingStop_min*Point) { TrailingStop = TrailingStop_min*Point; }
         if (TrailingStop > TrailingStop_max*Point) { TrailingStop = TrailingStop_max*Point; }
         
         if (OrderStopLoss() < Bid-(TrailingStop+TrailingStep*Point-1*Point)) {
-          //Alert (TrailingStop," трейл");
           OrderModify(OrderTicket(), OrderOpenPrice(), Bid-TrailingStop, OrderTakeProfit(), 0, Blue);
         }
       }
@@ -58,12 +36,11 @@ void DesepticonTrailing()
 
     if (OrderType() == OP_SELL) {
       if (OrderOpenPrice()-Ask > MinProfit*Point) {
-        TrailingStop = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 3, 0)) - Bid + 30*Point; //(макс_цена - тек.продажа + 30п.)
+        TrailingStop = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 3, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
         if (TrailingStop < TrailingStop_min*Point) { TrailingStop = TrailingStop_min*Point; }
         if (TrailingStop > TrailingStop_max*Point) { TrailingStop = TrailingStop_max*Point; }
         
         if (OrderStopLoss() > Ask+(TrailingStop+TrailingStep*Point-1*Point) || OrderStopLoss() == 0) {
-          //Alert (TrailingStop," трейл");
           OrderModify(OrderTicket(), OrderOpenPrice(), Ask+TrailingStop, OrderTakeProfit(), 0, Blue);
         }
       }
