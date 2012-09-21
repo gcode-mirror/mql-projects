@@ -54,7 +54,7 @@ int InitTrendDirection(int timeframe, double MACD_channel)
   {
    i++;
   }
-  //Alert("i=",i);
+  Alert("i=",i);
   Current_fastEMA = iMA(NULL, timeframe, fastEMA, 0, 1, 0, i);
   Current_slowEMA = iMA(NULL, timeframe, slowEMA, 0, 1, 0, i);
   if ((Current_fastEMA < (Current_slowEMA - deltaEMAtoEMA*Point)))
