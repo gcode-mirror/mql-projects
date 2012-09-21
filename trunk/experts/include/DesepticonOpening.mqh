@@ -121,7 +121,7 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    if (operation==OP_BUY) price=pAsk; else price=pBid;
    price=NormalizeDouble(price, dg);
    ot=TimeCurrent();
-   Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn);
+   //Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn);
    ticket=OrderSend(symb, operation, Lots, price, Slippage, sl, tp, lsComm, mn, 0, op_color);
    if (ticket>0)
    {
@@ -171,16 +171,16 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
  {
   color op_color;
   datetime ot;
-  double   price, pAsk, pBid;
+  double   price, pAsk, pBid, vol, addPrice;
   int      dg, err, it, ticket=0;
-  
-  double vol=MathPow(10.0,dg);
-  double addPrice=0.0003*vol;
-  
+
   Lots = GetLots();
    
   if (symb=="" || symb=="0") symb=Symbol();
   if (lsComm=="" || lsComm=="0") lsComm=WindowExpertName()+" "+GetNameTF(Period()) + " " + openPlace;
+  dg=MarketInfo(symb, MODE_DIGITS);
+  vol=MathPow(10.0,dg);
+  addPrice=0.0003*vol;
   
   if (operation == OP_BUY)
   {
@@ -213,25 +213,26 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
    }
    while (!IsTradeAllowed()) Sleep(5000);
    RefreshRates();
-   dg=MarketInfo(symb, MODE_DIGITS);
    pAsk=MarketInfo(symb, MODE_ASK);
    pBid=MarketInfo(symb, MODE_BID);
    if (operation==OP_BUY) price=pAsk; else price=pBid;
    price=NormalizeDouble(price, dg);
    ot=TimeCurrent();
-   //ticket=OrderSend(symb, operation, Lots, price, Slippage, sl, tp, lsComm, mn, 0, op_color);
-   Alert("запрос на открытие");
-   for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
+   Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn," Point=",Point, " dg=",dg, " symb=",symb, " price=", price, " sl=",sl," tp=",tp, " StopLoss=",StopLoss," TakeProfit=", TakeProfit*Point);
+   ticket=OrderSend(symb, operation, Lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
+   if (ticket>0)
+   {
+    if (UseSound) PlaySound("expert.wav");
+    if(tp != 0 || sl != 0)
+     if(OrderSelect(ticket, SELECT_BY_TICKET))
+      ModifyOrder(tp, sl);
+    for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
     {
      wantToOpen[frameIndex][0] = 0;
      wantToOpen[frameIndex][1] = 0;
      barsCountToBreak[frameIndex][0] = 0;
      barsCountToBreak[frameIndex][1] = 0;
     }
-   /*
-   if (ticket>0)
-   {
-    if (UseSound) PlaySound("expert.wav");
     break;
    }
    else
@@ -239,8 +240,8 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
     err=GetLastError();
     if (pAsk==0 && pBid==0) Message("Проверьте в Обзоре рынка наличие символа "+symb);
     // Вывод сообщения об ошибке
-    Print("Error(",err,") opening position: ",ErrorDescription(err),", try ",it);
-    Print("Ask=",pAsk," Bid=",pBid," symb=",symb," Lots=",Lots," operation=",GetNameOP(operation),
+    Alert("Error(",err,") opening position: ",ErrorDescription(err),", try ",it);
+    Alert("Ask=",pAsk," Bid=",pBid," symb=",symb," Lots=",Lots," operation=",GetNameOP(operation),
           " price=",price," sl=",sl," tp=",tp," mn=",mn);
     // Блокировка работы советника
     if (err==2 || err==64 || err==65 || err==133) {
@@ -261,7 +262,50 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
     if (err==145) Sleep(1000*17);
     if (err==146) while (IsTradeContextBusy()) Sleep(1000*11);
     if (err!=135) Sleep(1000*7.7);
-   }*/
+   }
   } // close for
   return(ticket);
+}
+
+//+------------------------------------------------------------------+
+bool ModifyOrder( double TakeProfit, double StopLoss)
+{
+  if(OrderTakeProfit() == TakeProfit && OrderStopLoss() == StopLoss)
+    return(True);
+  while(!IsStopped())
+  {
+    if(Debug) Print("Функция ModifyOrder");
+    if(!IsTesting())
+    {
+      if(IsTradeContextBusy())
+      {
+        if(Debug) Print("Торговый поток занят!");
+        Sleep(3000);
+        continue;
+      }
+      if(Debug) Print("Торговый поток свободен");
+      if(!IsTradeAllowed())
+      {
+        if(Debug) Print("Эксперту запрещено торговать или торговый поток занят!");
+        Sleep(3000);
+        continue;
+      }
+      if(Debug) Print("Торговля разрешена, модифицируем ордер #",OrderTicket());
+    }
+    if(!OrderModify(OrderTicket(), OrderOpenPrice(), NormalizeDouble(StopLoss, Digits), NormalizeDouble(TakeProfit, Digits), 0, Yellow))
+    {
+      if(Debug) Print("Не удалось модифицировать ордер");
+      int Err = GetLastError();
+      if(Debug) Print("Ошибка(",Err,"): ",ErrorDescription(Err));
+      break;
+      //Sleep(1000);
+      //continue;
+    }
+    else
+    {
+      if(Debug) Print("Модификация ордера выполнена успешно");
+      break;
+    }
+  }
+  return(True);
 }
