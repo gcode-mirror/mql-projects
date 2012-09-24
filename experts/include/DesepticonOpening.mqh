@@ -122,10 +122,13 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    price=NormalizeDouble(price, dg);
    ot=TimeCurrent();
    //Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn);
-   ticket=OrderSend(symb, operation, Lots, price, Slippage, sl, tp, lsComm, mn, 0, op_color);
+   ticket=OrderSend(symb, operation, Lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
    if (ticket>0)
    {
     if (UseSound) PlaySound("expert.wav");
+    if(tp != 0 || sl != 0)
+     if(OrderSelect(ticket, SELECT_BY_TICKET))
+      ModifyOrder(tp, sl);
     for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
     {
      wantToOpen[frameIndex][0] = 0;
