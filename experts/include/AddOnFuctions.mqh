@@ -134,3 +134,55 @@ bool ExistPositions(string sy="", int op=-1, int mn=-1, datetime ot=0) {
   return(False);
 }
 
+
+//+----------------------------------------------------------------------------+
+//|  Автор    :                |
+//+----------------------------------------------------------------------------+
+//|  Версия   :                                                                |
+//|  Описание : Модифицирует ордер и возвращает успех или неуспех модификации  |
+//+----------------------------------------------------------------------------+
+//|  Параметры:                                                                |
+//|  TakeProfit                                                                |
+//|  StopLoss                                                                |
+//+----------------------------------------------------------------------------+
+bool ModifyOrder(double TakeProfit, double StopLoss)
+{
+  if(OrderTakeProfit() == TakeProfit && OrderStopLoss() == StopLoss)
+    return(True);
+  while(!IsStopped())
+  {
+    if(Debug) Print("Функция ModifyOrder");
+    if(!IsTesting())
+    {
+      if(IsTradeContextBusy())
+      {
+        if(Debug) Print("Торговый поток занят!");
+        Sleep(3000);
+        continue;
+      }
+      if(Debug) Print("Торговый поток свободен");
+      if(!IsTradeAllowed())
+      {
+        if(Debug) Print("Эксперту запрещено торговать или торговый поток занят!");
+        Sleep(3000);
+        continue;
+      }
+      if(Debug) Print("Торговля разрешена, модифицируем ордер #",OrderTicket());
+    }
+    if(!OrderModify(OrderTicket(), OrderOpenPrice(), NormalizeDouble(StopLoss, Digits), NormalizeDouble(TakeProfit, Digits), 0, Yellow))
+    {
+      if(Debug) Print("Не удалось модифицировать ордер");
+      int Err = GetLastError();
+      if(Debug) Print("Ошибка(",Err,"): ",ErrorDescription(Err));
+      break;
+      //Sleep(1000);
+      //continue;
+    }
+    else
+    {
+      if(Debug) Print("Модификация ордера выполнена успешно");
+      break;
+    }
+  }
+  return(True);
+}
