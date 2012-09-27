@@ -123,7 +123,7 @@ int CheckBuyCondition()
   return(50);
  }
  
- if (Stochastic < 25) // Стохастик внизу, перепродажа - будем покупать
+ if (Stochastic < bottomStochastic) // Стохастик внизу, перепродажа - будем покупать
  {  			   
   if (iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 1) > iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
       iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) < iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА снизу вверх
@@ -164,7 +164,7 @@ int CheckSellCondition()
   return(50);
  }
  
- if (Stochastic > 75) // Стохастик внизу, перепродажа - будем покупать
+ if (Stochastic > topStochastic) // Стохастик внизу, перепродажа - будем покупать
  {  			   
   if (iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 1) < iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
       iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) > iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА сверху вниз
