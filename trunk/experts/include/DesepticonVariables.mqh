@@ -97,7 +97,7 @@ int    Slippage      = 3;              // Проскальзывание цены
 int    NumberOfTry   = 5;              // Количество торговых попыток
 bool   UseSound      = True;           // Использовать звуковой сигнал
 string NameFileSound = "expert.wav";   // Наименование звукового файла
-bool Debug = true;
+bool Debug = false;
 
 int trendDirection[3][2]; // [][0] - может быть ноль. 0 - значит флэт; [][1] - не может быть 0 - помним предыдущий тренд
 double aCorrection[3][2]; // [][0] - наличие коррекции, [][1] - значение цены

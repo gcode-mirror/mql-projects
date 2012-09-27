@@ -121,7 +121,7 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    if (operation==OP_BUY) price=pAsk; else price=pBid;
    price=NormalizeDouble(price, dg);
    ot=TimeCurrent();
-   //Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn);
+   Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn);
    ticket=OrderSend(symb, operation, Lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
    if (ticket>0)
    {
@@ -221,7 +221,7 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
    if (operation==OP_BUY) price=pAsk; else price=pBid;
    price=NormalizeDouble(price, dg);
    ot=TimeCurrent();
-   Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn," Point=",Point, " dg=",dg, " symb=",symb, " price=", price, " sl=",sl," tp=",tp, " StopLoss=",StopLoss," TakeProfit=", TakeProfit*Point);
+   Print (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn," Point=",Point, " dg=",dg, " symb=",symb, " price=", price, " sl=",sl," tp=",tp, " StopLoss=",StopLoss," TakeProfit=", TakeProfit*Point);
    ticket=OrderSend(symb, operation, Lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
    if (ticket>0)
    {
