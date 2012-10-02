@@ -74,11 +74,10 @@ int init(){
   
   for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
   {
-   // инициализируем расхождение MACD
+   InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
+   //Alert("проинитили направление тренда");  
    InitDivergenceArray(aTimeframe[frameIndex, 0]);
    //Alert("проинитили массив расхождения MACD");
-   InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
-   //Alert("проинитили направление тренда");
    InitExtremums(frameIndex);
    //Alert("проинитили экстремумы MACD");
    
