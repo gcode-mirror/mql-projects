@@ -122,6 +122,7 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    price=NormalizeDouble(price, dg);
    ot=TimeCurrent();
    Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn);
+   Print (openPlace);
    ticket=OrderSend(symb, operation, Lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
    if (ticket>0)
    {

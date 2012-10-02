@@ -16,13 +16,11 @@ bool CheckBeforeStart()                           // Пользовательская функция
      return(false);  
     }
    
-   /* 
    if(StopLoss<10)
     {
      Print("Ошибка! StopLoss меньше 10");
      return(false);  
     }
-   */
    
    if(AccountFreeMargin()<(1000*Lots))
     {
@@ -30,6 +28,19 @@ bool CheckBeforeStart()                           // Пользовательская функция
      return(false);  
     }
    
+     
+   if (TrailingStop_1D_min > TrailingStop_1D_max || TrailingStop_1H_min > TrailingStop_1H_max || TrailingStop_5M_min > TrailingStop_5M_max)
+    {
+     Print("Максимальная граница трейлинг-стопа должна быть выше минимальной");
+     return(false);
+    }
+    
+   if (StopLoss_1D_min > StopLoss_1D_max || StopLoss_1H_min > StopLoss_1H_max || StopLoss_5M_min > StopLoss_5M_max)
+    {
+     Print("Максимальная граница стоп-лосса должна быть выше минимальной");
+     return(false);
+    }
+     
    /*
    if (frameIndex < 0 || frameIndex > 2)
     {

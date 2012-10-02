@@ -117,10 +117,13 @@ int start(){
      TrailingStop_max = aTimeframe[frameIndex, 7]; 
      TrailingStep = aTimeframe[frameIndex, 8];
      
-     if (!CheckBeforeStart())  return (0); // проверяем входные параметры
+     if (!CheckBeforeStart())   // проверяем входные параметры
+     {
+      PlaySound("alert2.wav");
+      return (0); 
+     }
      
      total=OrdersTotal();
-
 
      if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
      {
