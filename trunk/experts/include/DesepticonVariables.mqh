@@ -104,7 +104,7 @@ double aCorrection[3][2]; // [][0] - наличие коррекции, [][1] - значение цены
 int total;
 int ticket;
 int _GetLastError = 0;
-double Lots = 3;
+double Lots;
 double Current_fastEMA, Current_slowEMA;
 double CurrentMACD;
 double Stochastic;
@@ -152,7 +152,7 @@ int TrailingStop_min;
 int TrailingStop_max; 
 int TrailingStep;
 
-bool key = true;
+static bool _isTradeAllow = true;
 
 double aDivergence[3][60][5]; // [][0] - резерв
                            // [][1] - знач-е MACD
