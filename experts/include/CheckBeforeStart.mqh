@@ -15,13 +15,13 @@ bool CheckBeforeStart()                           // Пользовательская функция
      Print("Ошибка! TakeProfit меньше 10");
      return(false);  
     }
-   
+ /*  
    if(StopLoss<10)
     {
      Print("Ошибка! StopLoss меньше 10");
      return(false);  
     }
-   
+ */  
    if(AccountFreeMargin()<(1000*lotmin))
     {
      Print("We have no money. Free Margin = ", AccountFreeMargin(), "Lots = ", 1000*lotmin);
