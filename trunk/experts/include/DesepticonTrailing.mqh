@@ -29,7 +29,7 @@ void DesepticonTrailing(string symb, int timeframe)
         if (TrailingStop > TrailingStop_max*Point) { TrailingStop = TrailingStop_max*Point; }
         
         if (OrderStopLoss() < Bid-(TrailingStop+TrailingStep*Point-1*Point) || OrderStopLoss() == 0) {
-          ModifyOrder(-1, OrderTakeProfit(), Bid-TrailingStop);
+          ModifyOrder(-1, Bid-TrailingStop, OrderTakeProfit());
         }
       }
     }
@@ -41,7 +41,7 @@ void DesepticonTrailing(string symb, int timeframe)
         if (TrailingStop > TrailingStop_max*Point) { TrailingStop = TrailingStop_max*Point; }
         
         if (OrderStopLoss() > Ask+(TrailingStop+TrailingStep*Point-1*Point) || OrderStopLoss() == 0) {
-          ModifyOrder(-1, OrderTakeProfit(), Ask+TrailingStop);
+          ModifyOrder(-1, Ask+TrailingStop, OrderTakeProfit());
         }
       }
     }

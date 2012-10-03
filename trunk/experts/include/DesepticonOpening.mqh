@@ -129,7 +129,7 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
     if (UseSound) PlaySound("expert.wav");
     if(tp != 0 || sl != 0)
      if(OrderSelect(ticket, SELECT_BY_TICKET))
-      ModifyOrder(-1, tp, sl);
+      ModifyOrder(-1, sl, tp);
     for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
     {
      wantToOpen[frameIndex][0] = 0;
@@ -229,7 +229,7 @@ int OpenPositionTest(string symb, int operation, string openPlace, int timeframe
     if (UseSound) PlaySound("expert.wav");
     if(tp != 0 || sl != 0)
      if(OrderSelect(ticket, SELECT_BY_TICKET))
-      ModifyOrder(-1, tp, sl);
+      ModifyOrder(-1, sl, tp);
     for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
     {
      wantToOpen[frameIndex][0] = 0;
