@@ -136,53 +136,50 @@ bool ExistPositions(string sy="", int op=-1, int mn=-1, datetime ot=0) {
 
 
 //+----------------------------------------------------------------------------+
-//|  Автор    :                |
+//|  Автор    : Ким Игорь В. aka KimIV,  http://www.kimiv.ru                   |
 //+----------------------------------------------------------------------------+
-//|  Версия   :                                                                |
-//|  Описание : Модифицирует ордер и возвращает успех или неуспех модификации  |
+//|  Версия   : 28.11.2006                                                     |
+//|  Описание : Модификация одного предварительно выбранного ордера.           |
 //+----------------------------------------------------------------------------+
 //|  Параметры:                                                                |
-//|  TakeProfit                                                                |
-//|  StopLoss                                                                |
+//|    pp - цена установки ордера                                              |
+//|    sl - ценовой уровень стопа                                              |
+//|    tp - ценовой уровень тейка                                              |
+//|    cl - цвет значка модификации                                            |
 //+----------------------------------------------------------------------------+
-bool ModifyOrder(double TakeProfit, double StopLoss)
-{
-  if(OrderTakeProfit() == TakeProfit && OrderStopLoss() == StopLoss)
-    return(True);
-  while(!IsStopped())
-  {
-    if(Debug) Print("Функция ModifyOrder");
-    if(!IsTesting())
-    {
-      if(IsTradeContextBusy())
-      {
-        if(Debug) Print("Торговый поток занят!");
-        Sleep(3000);
-        continue;
+void ModifyOrder(double pp=-1, double sl=0, double tp=0, color cl=CLR_NONE) {
+  bool   fm;
+  double op, pa, pb, os, ot;
+  int    dg=MarketInfo(OrderSymbol(), MODE_DIGITS), er, it;
+ 
+  if (pp<=0) pp=OrderOpenPrice();
+  if (sl<0 ) sl=OrderStopLoss();
+  if (tp<0 ) tp=OrderTakeProfit();
+  
+  pp=NormalizeDouble(pp, dg);
+  sl=NormalizeDouble(sl, dg);
+  tp=NormalizeDouble(tp, dg);
+  op=NormalizeDouble(OrderOpenPrice() , dg);
+  os=NormalizeDouble(OrderStopLoss()  , dg);
+  ot=NormalizeDouble(OrderTakeProfit(), dg);
+ 
+  if (pp!=op || sl!=os || tp!=ot) {
+    for (it=1; it<=NumberOfTry; it++) {
+      if (!IsTesting() && (!IsExpertEnabled() || IsStopped())) break;
+      while (!IsTradeAllowed()) Sleep(5000);
+      RefreshRates();
+      fm=OrderModify(OrderTicket(), pp, sl, tp, 0, cl);
+      if (fm) {
+        if (UseSound) PlaySound(NameFileSound); break;
+      } else {
+        er=GetLastError();
+        pa=MarketInfo(OrderSymbol(), MODE_ASK);
+        pb=MarketInfo(OrderSymbol(), MODE_BID);
+        Print("Error(",er,") modifying order: ",ErrorDescription(er),", try ",it);
+        Print("Ask=",pa,"  Bid=",pb,"  sy=",OrderSymbol(),
+              "  op="+GetNameOP(OrderType()),"  pp=",pp,"  sl=",sl,"  tp=",tp);
+        Sleep(1000*10);
       }
-      if(Debug) Print("Торговый поток свободен");
-      if(!IsTradeAllowed())
-      {
-        if(Debug) Print("Эксперту запрещено торговать или торговый поток занят!");
-        Sleep(3000);
-        continue;
-      }
-      if(Debug) Print("Торговля разрешена, модифицируем ордер #",OrderTicket());
-    }
-    if(!OrderModify(OrderTicket(), OrderOpenPrice(), NormalizeDouble(StopLoss, Digits), NormalizeDouble(TakeProfit, Digits), 0, Yellow))
-    {
-      if(Debug) Print("Не удалось модифицировать ордер");
-      int Err = GetLastError();
-      if(Debug) Print("Ошибка(",Err,"): ",ErrorDescription(Err));
-      break;
-      //Sleep(1000);
-      //continue;
-    }
-    else
-    {
-      if(Debug) Print("Модификация ордера выполнена успешно");
-      break;
     }
   }
-  return(True);
 }

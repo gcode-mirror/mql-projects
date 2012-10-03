@@ -22,9 +22,9 @@ bool CheckBeforeStart()                           // Пользовательская функция
      return(false);  
     }
    
-   if(AccountFreeMargin()<(1000*Lots))
+   if(AccountFreeMargin()<(1000*lotmin))
     {
-     Print("We have no money. Free Margin = ", AccountFreeMargin());
+     Print("We have no money. Free Margin = ", AccountFreeMargin(), "Lots = ", 1000*lotmin);
      return(false);  
     }
    

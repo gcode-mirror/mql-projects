@@ -182,6 +182,8 @@ int CheckSellCondition()
 //| expert start function                                            |
 //+------------------------------------------------------------------+
 int start(){
+ if (_isTradeAllow)
+ {
 	for (frameIndex = startTF; frameIndex < finishTF; frameIndex++){
      //Alert ("Вход на новый ТФ");
      //Alert ("frameIndex", frameIndex);
@@ -202,6 +204,7 @@ int start(){
      if (!CheckBeforeStart())   // проверяем входные параметры
      {
       PlaySound("alert2.wav");
+      _isTradeAllow = false;
       return (0); 
      }
      
@@ -418,6 +421,7 @@ int start(){
 //----
 	if (UseTrailing) DesepticonTrailing(NULL, Jr_Timeframe);
 	return(0);
+ } // close isTradeAllow
 }
 //+------------------------------------------------------------------+
 

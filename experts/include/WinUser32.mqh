@@ -3,249 +3,480 @@
 //|                      Copyright © 2004, MetaQuotes Software Corp. |
 //|                                       http://www.metaquotes.net/ |
 //+------------------------------------------------------------------+
+//|  WinAPI по-русски - БОЛЬШОЙ справочник - Функции                 |
+//|  http://books.kulichki.ru/data/api/api1/index0.htm               |
+//+------------------------------------------------------------------+
 #define   copyright "Copyright © 2004, MetaQuotes Software Corp."
 #define   link      "http://www.metaquotes.net/"
-
 #import "user32.dll"
-   //---- messages
-   int      SendMessageA(int hWnd,int Msg,int wParam,int lParam);
-   int      SendNotifyMessageA(int hWnd,int Msg,int wParam,int lParam);
-   int      PostMessageA(int hWnd,int Msg,int wParam,int lParam);
-   void     keybd_event(int bVk,int bScan,int dwFlags,int dwExtraInfo);
-   void     mouse_event(int dwFlags,int dx,int dy,int dwData,int dwExtraInfo);
-   //---- windows
-   int      FindWindowA(string lpClassName ,string lpWindowName);
-   int      SetWindowTextA(int hWnd,string lpString);
-   int      GetWindowTextA(int hWnd,string lpString,int nMaxCount);
-   int      GetWindowTextLengthA(int hWnd);
-   int      GetWindow(int hWnd,int uCmd);
-
-   int      UpdateWindow(int hWnd);
-   int      EnableWindow(int hWnd,int bEnable);
-   int      DestroyWindow(int hWnd);
-   int      ShowWindow(int hWnd,int nCmdShow);
-   int      SetActiveWindow(int hWnd);
-   int      AnimateWindow(int hWnd,int dwTime,int dwFlags);
-   int      FlashWindow(int hWnd,int dwFlags /*bInvert*/);
-   int      CloseWindow(int hWnd);
-   int      MoveWindow(int hWnd,int X,int Y,int nWidth,int nHeight,int bRepaint);
-   int      SetWindowPos(int hWnd,int hWndInsertAfter ,int X,int Y,int cx,int cy,int uFlags);
-   int      IsWindowVisible(int hWnd);
-   int      IsIconic(int hWnd);
-   int      IsZoomed(int hWnd);
-   int      SetFocus(int hWnd);
-   int      GetFocus();
-   int      GetActiveWindow();
-   int      IsWindowEnabled(int hWnd);
-   //---- miscelaneouse
-   int      MessageBoxA(int hWnd ,string lpText,string lpCaption,int uType);
-   int      MessageBoxExA(int hWnd ,string lpText,string lpCaption,int uType,int wLanguageId);
-   int      MessageBeep(int uType);
-   int      GetSystemMetrics(int nIndex);
-   int      ExitWindowsEx(int uFlags,int dwReserved);
-   int      SwapMouseButton(int fSwap);
+ //---- Функции для работы с командами и сообщениями. ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ // Функция keybd_event синтезирует нажатие клавиши. Система может использовать такое синтезируемое нажатие клавиши, чтобы создать сообщение WM_KEYUP или WM_KEYDOWN.
+ // Вызывает функцию keybd_event программа обработки прерываний драйвера клавиатуры.
+ void keybd_event(int bVk,          // Определяет код виртуальной клавиши. Код должен быть значением в диапазоне от 1 до 254.
+                  int bScan,        // Этот параметр не используется (Scan = 0x45).
+                  int dwFlags,      // Определяет различные виды операций функции. Этот параметр может состоять из одного или нескольких ниже следующих  значений.
+                                    // KEYEVENTF_EXTENDEDKEY	- Если он установлен, скэн-коду предшествует префиксный байт, имеющий значение 0xE0 (224).
+                                    // KEYEVENTF_KEYUP	      - Если он установлен, клавиша была отпущена. Если не установлен, клавиша была нажата.
+                  int dwExtraInfo); // Определяет дополнительное значение, связанное с нажатием клавиши.
+                                    // Моделируем нажатие клавиши:                        keybd_event (VK_NUMLOCK, 0x45, KEYEVENTF_EXTENDEDKEY|0, 0); 
+                                    // Моделируем возврат клавиши в не нажатое состояние: keybd_event (VK_NUMLOCK, 0x45, KEYEVENTF_EXTENDEDKEY|KEYEVENTF_KEYUP, 0); 
+ void mouse_event(int dwFlags, int dx, int dy, int dwData, int dwExtraInfo);
+ // Функция определяет комбинацию "горячая" клавиша для всего пространства системы.
+ bool RegisterHotKey(int hWnd,        // Дескриптор окна, которое примет сообщения WM_HOTKEY, сгенерированные комбинацией "горячая" клавиша.
+                     int id,          // Определяет идентификатор комбинации "горячая" клавиша. 
+                     int fsModifiers, // Определяет клавиши, которые должны быть нажаты в комбинации с клавишей, заданной параметром nVirtKey, чтобы генерировать сообщение WM_HOTKEY:
+                                      // MOD_ALT	      Любая из двух клавиш ALT должна удерживаться нажатой.
+                                      // MOD_CONTROL	  Любая из двух клавиш CTRL должна удерживаться нажатой.
+                                      // MOD_SHIFT	    Любая из двух клавиш SHIFT должна удерживаться нажатой.
+                                      // MOD_WIN 	      Любая из двух клавиш WINDOWS должна удерживаться нажатой. Эти клавиши помечены логотипом Microsoft® Windows® 
+                     int vk);         // Определяет код виртуальной клавиши комбинации "горячая" клавиша.
+ // Опpеделяет уникальное оконное сообщение для всей системы.
+ int  RegisterWindowMessageA(string lpString); // Регистpиpуемая стpока (заканчивающееся пустым символом). Необходимо описать функции "PostMessageA()" или "SendMessageA()" со строковым последним параметром.
+                                               // SendMessageA(hwnd, RegisterWindowMessageA("MetaTrader4_Internal_Message"), 2, 1);                      // Эммуляция тика для эксперта.
+                                               // SendMessageA(hwnd, RegisterWindowMessageA("MetaTrader4_Internal_Message"), 13, StandartIndicatorName); // Запуск стандартных индикаторов.
+                                               // SendMessageA(hwnd, RegisterWindowMessageA("MetaTrader4_Internal_Message"), 14, EAName);                // Запуск советников.
+                                               // SendMessageA(hwnd, RegisterWindowMessageA("MetaTrader4_Internal_Message"), 15, CustomIndicatorName);   // Запускпользовательских индикаторов.
+                                               // PostMessageA(hwnd, RegisterWindowMessageA("MetaTrader4_Internal_Message"), 16, ScriptName);            // Запуск скриптов.
+                                               // SendMessageA(hwnd, RegisterWindowMessageA("MetaTrader4_Internal_Message"), 28, 0);                     // Остановка тестирования.
+                                               // SendMessageA(hwnd, RegisterWindowMessageA("MetaTrader4_Internal_Message"), 55, T);                     // Позиционирует график на FirstVisibleBar, где T время крайнего правого видимого бара.
+ // Напpавляет сообщение окну пpикладной задачи. Возвpащаемое значение: не нуль в случае успешного завеpшения, 0 - если нет.
+// int  PostMessageA(int hWnd, int Msg, int wParam, int lParam);
+// int  PostMessageA(int hWnd, int Msg, int wParam, string lParam);
+ int  PostMessageA(int  hWnd,      // Окно, котоpое будет пpинимать сообщение, или $FFFF для всех пеpекpываемых или всплывающих окон. 
+                   int  Msg,       // Тип сообщения.
+                   int  wParam,    // Дополнительная инфоpмация о сообщении.
+//                   int& lParam[]); // Дополнительная инфоpмация о сообщении.
+                   string lParam); // Дополнительная инфоpмация о сообщении.
+ //   PostMessageA(hwnd, WM_KEYDOWN, VK_ADD, 0)      - увеличение масштаба.
+ //   PostMessageA(hwnd, WM_KEYDOWN, VK_SUBTRACT, 0) - уменьшение масштаба.
+ //
+ /* Как работать с "PostMessageA(hwnd, WM_COMMAND, 33140, 0)":
+          32000 - английский язык;
+          32001 - арабский язык;
+          32002 - болгарский язык;
+          32003 - китайский (простой) язык;
+          32004 - китайский (традиционный) язык;
+          32005 - хорватский язык;
+          32006 - чешский язык;
+          32007 - датский язык;
+          32008 - голландский язык;
+          32009 - эстонский язык;
+          32010 - фарси;
+          32011 - французкий язык;
+          32012 - немецкий язык;
+          32013 - греческий язык;
+          32014 - иврит;
+          32015 - венгерский язык;
+          32016 - индонезийский язык;
+          32017 - итальянский язык;
+          32018 - японский язык;
+          32019 - корейский язык;
+          32020 - латвийский язык;
+          32021 - литовский язык;
+          32022 - польский язык;
+          32023 - португальский язык;
+          32024 - русский язык;
+          32025 - сербский язык;
+          32026 - словацкий язык;
+          32027 - испанский язык;
+          32028 - шведский язык;
+          32029 - турецкий язык;
+          32030 - вьетнамский язык;
+          33017 - снять/поставить автопрокрутку;
+          33018 - переключение на представление "бары";
+          33019 - переключение на представление "свечи";
+          33020 - переключение кнопки "Советники";
+          33021 - сетка Ctrl+G;
+          33022 - переключение на представление "линия";
+          33023 - смещение графика;
+          33024 - объемы Ctrl+L;
+          33025 - увеличить масштаб;
+          33026 - уменьшить масштаб;
+          33042 - загружает эксперт/индикатор/скрипт из текущей строки окна "Навигатор";
+          33048 - вызов свойств эксперта;
+          33050 - удаление эксперта;
+          33053 - открывает список Offline-графиков;
+          33054 - сохранить как рисунок;
+          33058 - All History;
+          33057 - Last 3 Months;
+          33063 - Last Month;
+          33134 - таймфрейм D1;
+          33135 - таймфрейм H1;
+          33136 - таймфрейм Н4;
+          33137 - таймфрейм М1;
+          33138 - таймфрейм М5;
+          33139 - таймфрейм М15;
+          33140 - таймфрейм М30;
+          33141 - таймфрейм W1;
+          33157 - окно "Свойства" текущего графика, F8;
+          33160 - открывает график из текущей строки окна "Обзор рынка";
+          33197 - шаг за шагом;
+          33220 - графики -> шаблон -> сохранить шаблон;
+          33230 - вставка-стрелка вниз;
+          33231 - вставка-стрелка вверх;
+          33232 - значки-галочка 35462;
+          33233 - перекрестие;
+          33234 - курсор;
+          33235 - вставка-цикличные линии;
+          33236 - равноудаленный канал;
+          33237 - линии Фибоначчи;
+          33238 - вставка-Фибоначчи-дуги;
+          33239 - вставка-Фибоначчи-веер;
+          33240 - вставка-каналы-Фибоначчи;
+          33241 - вставка-Ганн-сетка Ганна;
+          33242 - вставка-Ганн-линия Ганна;
+          33243 - вставка-Ганн-веер Ганна;
+          33244 - горизонтальная линия;
+          33246 - вставка вилы Эндрюса;
+          33247 - вставка-фигуры-прямоугольник;
+          33248 - вставка-каналы-линейная регрессия;
+          33251 - вставка-значки-стоп;
+          33253 - текст;
+          33254 - вставка-значки-плохо;
+          33255 - вставка-значки-хорошо;
+          33256 - вставка-Фибоначчи-временные зоны;
+          33257 - трендовая линия;
+          33258 - вставка-линии-трендовая линия по углу;
+          33259 - вставка-фигуры-треугольник;
+          33260 - вертикальная линия;
+          33261 - текстовая метка;
+          33262 - окно "Архив котировок";
+          33263 - открывает окно ME4;
+          33265 - открывает окно "Настройки";
+          33302 - открывает/закрывает окно "Окно данных";
+          33305 - полный экран/нормальный экран;
+          33309 - открывает/закрывает окно "Обзор рынка";
+          33310 - открывает/закрывает окно "Навигатор";
+          33314 - открывает/закрывает окно "Терминал";
+          33315 - открывает/закрывает окно "Тестер стратегий";
+          33324 - обновления графика (эмуляция тика для индикаторов);
+          33334 - таймфрейм MN1;
+          33335  \ 
+                  > пользовательские индикаторы в алфавитном порядке;
+          33699  /
+          33700 - индикаторы-moving average of oscillator;
+          33701 - индикаторы-accelerator oscillator;
+          33702 - индикаторы-accumulation/distribution;
+          33703 - индикаторы-alligator;
+          33704 - индикаторы-average directional movement index;
+          33705 - индикаторы-average true range;
+          33706 - индикаторы-awesome oscillator;
+          33707 - индикаторы-bears power;
+          33708 - индикаторы-bollinger bands;
+          33709 - индикаторы-bulls power;
+          33710 - индикаторы-commodity channel index;
+          33711 - индикаторы-demarker;
+          33712 - индикаторы-envelopes;
+          33713 - индикаторы-force index;
+          33714 - индикаторы-fractals;
+          33715 - индикаторы-gator oscillator;
+          33716 - индикаторы-ichimoku kinko hyo;
+          33717 - индикаторы-macd;
+          33718 - индикаторы-market facilitation index;
+          33719 - индикаторы-momentum;
+          33720 - индикаторы-money flow index;
+          33721 - индикаторы-moving averages;
+          33722 - индикаторы-on balance volume;
+          33723 - индикаторы-parabolic sar;
+          33724 - индикаторы-relative strength index;
+          33725 - индикаторы-relative vigor index;
+          33726 - индикаторы-standard deviation;
+          33727 - индикаторы-stochastic oscillator;
+          33728 - индикаторы-volumes;
+          33729 - индикаторы-william's percent range;
+          33454 - ордер buylimit;
+          33455 - ордер buystop;
+          33456 - ордер selllimit;
+          33457 - ордер sellstop;
+          33458 - новый ордер F9;
+          33464 - правая ценовая метка;
+          33511 - графики -> шаблоны -> загрузить шаблон;
+          34800  \ 
+                  > порядковый номер шаблона из выпадающего списка (отсчет с нуля, т е 1 это второй в списке);
+          34863  /
+          35000  \ 
+                  > список удалённых графиков;
+          35400  /
+          35403 - открывает окно "Глобальные переменные";
+          35419 - вызов окна "Список индикаторов";
+          35426 - удалить скрипт;
+          35429 - окно ввода Логина и Пароля;
+          35462 - снять все выделения объектов;
+          37400 - команда "пересканирование серверов";
+          57602 - закрыть текущий график;
+*/
+ // Посылает сообщение оконной функции указанного окна. Возвpат из функции осуществляется только после обpаботки сообщения. Возвращаемое функцией значение в MQL4 применить затруднительно.
+// int      SendMessageA(int hWnd, int Msg, int wParam, int lParam);
+// int      SendMessageA(int hWnd, int Msg, int wParam, string lParam);
+ int  SendMessageA(int  hWnd,      // Окно, пpинимающее сообщение или $FFFF для посылки всем всплывающим окнам в системе. 
+                   int  Msg,       // Тип сообщения.
+                   int  wParam,    // Дополнительная инфоpмация о сообщении.
+//                   int& lParam[]); // Дополнительная инфоpмация о сообщении.
+                   string lParam); // Дополнительная инфоpмация о сообщении.
+ int  SendNotifyMessageA (int hWnd, int Msg, int wParam, int lParam);
+ //---- Функции для работы с окнами. -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ int  AnimateWindow(int hWnd, int dwTime, int dwFlags);
+ int  CloseWindow(int hWnd);
+ int  DestroyWindow(int hWnd);
+ int  EnableWindow(int hWnd, int bEnable);
+ // Функция FindWindow разыскивает данные о дескрипторе окна верхнего уровня, чье имя класса и имя окна соответствуют определенным строкам. Эта функция не ищет дочерние окна.
+ // Если функция завершилась успешно, если возвращаемое значение - дескриптор окна, которое имеет определенное имя класса и имя окна. Если функция терпит неудачу, возвращаемое значение - ПУСТО (NULL).
+ int  FindWindowA(string lpClassName,   // Указатель на имя класса.
+                  string lpWindowName); // Указатель на имя окна.
+ // Функция FindWindowEx отыскивает данные о дескрипторе окна, имя класса и имя окна которого соответствуют определенным строкам. Функция поиска дочерних окон начинается с первого до последнего заданного дочернего окна.
+ // Если функция завершается успешно, если возвращаемое значение - дескриптор окна, которое имеет определенный класс и имена окон. Если функция потерпит неудачу, возвращаемое значение - ПУСТО (NULL).
+ int  FindWindowExA(int    hwndParent,	    // Дескриптор родительского окна.
+                    int    hwndChildAfter, // Дескриптор дочернего окна.
+                    string lpszClass,		    // Указатель имени класса.
+                    string lpszWindow);	   // Указатель имени окна.
+ int  FlashWindow(int hWnd, int dwFlags /*bInvert*/);
+ int  GetActiveWindow();
+ // Функция возвращает дескриптор приоритетного окна (окна, с которым пользователь в настоящее время работает).
+ int  GetForegroundWindow();
+ // Возвращает идентификатор hierarchyid, представляющий n-го предка данного элемента.
+ int  GetAncestor(int hWnd,      // Системный дескриптор окна.
+                  int gaFlags);  // Уровень окна от текущего окна (1, 2, 3...).
+ // Возвращает размеры окна в пикселях.
+ int  GetClientRect(int  hWnd,       // Системный дескриптор окна.
+                    int &lpRect[4]); // Размеры окна в пикселях. lpRect[2] - ширина окна, lpRect[3] - высота окна.
+ // Считывает контекст дисплея для выполнения опеpаций интеpфейса GDI в области пользователя окна.
+ // Возвpащаемое значение: Идентификатоp контекста устpойства; 0 - в случае ошибки.
+ int  GetDC(int hWnd); // Системный дескриптор окна. 
+ // Считывает описатель оpгана упpавления, содеpжащийся в указанном блоке диалога. Возвpащаемое значение: идентификатоp оpгана упpавления; 0 - если указанный оpган упpавления не существует.
+ int  GetDlgItem(int hDlg,        // Блок диалога, содеpжащий оpган упpавления. 
+                 int nIDDlgItem); // Идентификатоp оpгана упpавления.
+ int  GetFocus(int hWnd);
+ // Опpеделяет самое последнее активное всплытие. Возвpащаемое значение: идентификатоp всплывающего окна; WndOwner.
+ int  GetLastActivePopup(int hWndOwner); // Родительское окно владельца всплытия. 
+ // Считывает описатель pодительского окна данного окна. Возвpащаемое значение: идентификатоp pодительского окна; 0 - если pодительское окно отсутствует.
+ int  GetParent(int hWnd); // Системный дескриптор окна.
+ int  GetWindow(int hWnd, int uCmd);
+ // Считывает контекст дисплея, обычно используемый для pаскpаски в окне областей, не являющихся областями пользователя.
+ // Возвpащаемое значение: Идентификатоp контекста дисплея; 0 - если ошибка.
+ int  GetWindowDC(int hWnd); // Системный дескриптор окна.
+ // Считывает в lpRect pазмеpности огpаничивающего пpямоугольника окна (в кооpдинатах экpана).
+ bool GetWindowRect(int  hWnd,       // Системный дескриптор окна.
+                    int &lpRect[4]); // Пpинимающая стpуктуpа TRect: lpRect[2] - lpRect[0] = ширина окна;
+                                     //                              lpRect[3] - lpRect[1] = высота окна.
+ // Копиpует в "lpString" заголовок окна или текст оpгана упpавления.
+ int  GetWindowTextA(int    hWnd,       // Системный дескриптор окна.
+                     string lpString,   // Буфеp, пpинимающий стpоку.
+                     int    nMaxCount); // Размеp буфеpа "lpString".
+ // Считывает длину заголовка окна или текста оpгана упpавления.
+ int  GetWindowTextLengthA (int hWnd); // Системный дескриптор окна.
+ int  IsIconic(int hWnd);
+ int  IsZoomed(int hWnd);
+ // Функция определяет, идентифицирует ли дескриптор определяемого окна существующее окно. Если дескриптор окна идентифицирует существующее окно, возвращаемое значение не нуль.
+ // Если дескриптор окна не идентифицирует существующее окно, возвращаемое значение нулевое.
+ bool IsWindow(int hWnd); // дескриптор окна
+ int  IsWindowEnabled(int hWnd);
+ int  IsWindowVisible(int hWnd);
+ // Функция создает, показывает на экране и использует окно сообщения. Окно сообщения содержит определяемое программой сообщение и заголовок, плюс любая комбинация предопределенных значков и командных кнопок.
+ // Если окно сообщения имеет кнопку  Отменить (Cancel), то функция возвращает значение IDCANCEL, если или обрабатывается клавиша ESC, или выбрана кнопка  Отменить (Cancel). Если окно сообщения не имеет кнопки  Отменить (Cancel), нажатия  ESC не имеет никакого действия.
+ // Если функция завершается ошибкой, возвращаемое значение равняется нулю. Чтобы получить дополнительную информацию об ошибке, вызовите GetLastError.
+ // Если функция завершается успешно, возвращаемое значение - одно из ниже перечисленных значений пункта меню.Значение	Предназначение
+ //  IDABORT	    Была выбрана кнопка  Прекратить (Abort).
+ //  IDCANCEL	   Была выбрана кнопка  Отменить (Cancel).
+ //  IDCONTINUE	 Была выбрана кнопка  Продолжить (Continue).
+ //  IDIGNORE	   Была выбрана кнопка  Пропустить (Ignore).
+ //  IDNO	       Была выбрана кнопка  Нет (No).
+ //  IDOK	       Была выбрана кнопка  OK.
+ //  IDRETRY    	Была выбрана кнопка  Поторить (Retry).
+ //  IDTRYAGAIN	 Была выбрана кнопка  Попытаться снова (Try Again).
+ //  IDYES	      Была выбрана кнопка  Да (Yes).
+ int MessageBoxTimeoutA(int    hWnd,            // Дескриптор окна владельца, которое создает окно сообщения. Если этот параметр - ПУСТО (NULL), окно сообщения не имеет окна владельца.
+                        string lpText,          // Указатель на символьную строку с нулем в конце, которая содержит сообщение показываемое на экране.
+                        string lpCaption,       // Указатель на символьную строку с нулем в конце, которая содержит заголовок диалогового окна (окна сообщения). Если этот параметр - ПУСТО (NULL), используется заданный по умолчанию заголовок Error (Ошибка).
+                        int    uType,           // Устанавливает содержание и режим работы диалогового окна. Этим параметром может быть комбинация флажков из ниже перечисленных групп флажков. 
+                                                // Чтобы обозначить кнопки, показываемые на экране в окне сообщения, задайте одно из ниже перечисленных значений.
+                        int    wLanguageId,     // Идентификатор языка.
+                        int    dwMilliseconds); // Количество миллисекунд до закрытия окна.
+ // Функция изменяет позицию и габариты определяемого окна. Для окна верхнего уровня, позиция и габариты отсчитываются относительно левого верхнего угла экрана.
+ // Для дочернего окна, они - относительно левого верхнего угла рабочей области родительского окна. Если функция завершилась успешно, возвращается значение не нуль.
+ int  MoveWindow(int hWnd,      // Дескриптор окна.
+                 int X,         // Позиция по горизонтали.
+                 int Y,         // Позиция по вертикали.
+                 int nWidth,    // Ширина.
+                 int nHeight,   // Высота.
+                 int bRepaint); // Флажок перекраски.
+ // Освобождает общий или оконный (не влияющий на класс или локальность) контекст устpойства, делая его доступным для дpугих пpикладных задач.
+ // Возвpащаемое значение: 1, если устpойство освобождено; 0 - если нет.
+ int  ReleaseDC(int hWnd, // Системный дескриптор окна.
+                int hDC); // Идентификатоp контекста устpойства.
+ int  SetFocus(int hWnd);
+ // Функция для активации окна.
+ int  SetForegroundWindow(int hWnd);
+ // Функция изменяет размер, позицию и Z-последовательность дочернего, выскакивающего или верхнего уровня окна. Дочерние, выскакивающие и верхнего уровня окна размещаются по порядку согласно их появлению на экране.
+ // Самое верхнее окно принимает самый высокий ранг и становится первым окном в Z-последовательности. Если функция завершилась успешно, возвращается значение не нуль.
+ int  SetWindowPos(int hWnd,            // Дескриптор окна.
+                   int hWndInsertAfter, // Дескриптор порядка размещения.
+                   int X,               // Позиция по горизонтали.
+                   int Y,               // Позиция по вертикали.
+                   int cx,              // Ширина.
+                   int cy,              // Высота.
+                   int uFlags);         // Флажки позиционирования окна.
+ int  SetWindowTextA(int hWnd, string lpString);
+ int  SetActiveWindow(int hWnd);
+ // Функция ShowWindow устанавливает состояние показа определенного окна.
+ // Возвращаемые значения: если окно было прежде видимым, обратная величина ненулевая; если окно прежде было невидимым, обратная величина нулевая.
+ bool ShowWindow(int hWnd,      // Системный дескриптор окна.
+                 int nCmdShow); // Режим отображения окна программы.
+                                // SW_FORCEMINIMIZE   Окно 2000/XP: Минимизирует окно, даже если бы резьба, которая обладает окном не отвечает.
+                                //                    Этот флаг должен только использован при снижении окна из другой резьбы.
+                                // SW_HIDE            Скрывает окно и активизирует другое окно.
+                                // SW_MAXIMIZE        Развертывает определяемое окно.
+                                // SW_MINIMIZE        Свертывает определяемое окно и активизирует следующее окно верхнего уровня в Z-последовательности.
+                                // SW_RESTORE         Активизирует и отображает окно. Если окно свернуто или развернуто, Windows восстанавливает в его первоначальных размерах и позиции.
+                                //                    Прикладная программа должна установить этот флажок при восстановлении свернутого окна.
+                                // SW_SHOW            Активизирует окно и отображает его текущие размеры и позицию.
+                                // SW_SHOWDEFAULT     Устанавливает состояние показа, основанное на флажке SW_, определенном в структуре STARTUPINFO, переданной в функцию CreateProcess программой,
+                                //                    которая запустила прикладную программу.
+                                // SW_SHOWMAXIMIZED   Активизирует окно и отображает его как развернутое окно.
+                                // SW_SHOWMINIMIZED   Активизирует окно и отображает его как свернутое окно.
+                                // SW_SHOWMINNOACTIVE Отображает окно как свернутое окно. Активное окно остается активным. Эта величина подобная SW_SHOWMINIMIZED, за исключением того окно не активизировано.
+                                // SW_SHOWNA          Отображает окно в его текущем состоянии. Активное окно остается активным. Эта величина подобная SW_SHOW, за исключением того окно не активизировано.
+                                // SW_SHOWNOACTIVATE  Отображает окно в его самом современном размере и позиции. Активное окно остается активным. Эта величина подобная SW_SHOWNORMAL, за исключением того окно - не actived.
+                                // SW_SHOWNORMAL      Активизирует и отображает окно. Если окно свернуто или развернуто, Windows восстанавливает его в первоначальном размере и позиции. 
+                                //                    Прикладная программа должна установить этот флажок при отображении окна впервые.
+ int  UpdateWindow(int hWnd);
+ //---- Прочие функции. ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ // Функция отключения или перезагрузки системы "Windows". При успешном выполнении возвращает не нулевое значение.
+ bool ExitWindowsEx(int uFlags,    // EWX_LOGOFF        0           // Отключает все процессы работая на сеансе ввода процесса.
+                                   // EWX_POWEROFF      0x00000008  // Отключает систему и выключает мощность. 
+                                   // EWX_REBOOT        0x00000002  // Отключает систему затем перезапускает систему.
+                                   // EWX_RESTARTAPPS   0x00000040  // Отключает систему затем перезапускает это, а также любые приложения, которые зарегистрированы для перезапуска, использовавшего функцию RegisterApplicationRestart.
+                                   // EWX_SHUTDOWN      0x00000001  // Отключает систему в безопасный момент.
+                    int dwReason); // EWX_FORCE         0x00000004  // Этот флаг не имеет эффект если терминальные услуги приспособлены. В противном случае, система не посылает сообщение WM_QUERYENDSESSION.
+                                                                    // Это может заставить, чтобы терять данные. Следовательно, Вы должны использовать этот флаг только в аварийной ситуации.
+                                   // EWX_FORCEIFHUNG   0x00000010  // Процессы Сил, чтобы завершаться если они не реагируют на WM_QUERYENDSESSION или сообщение WM_ENDSESSION в течение интервала тайм-аута.
+ int  GetSystemMetrics(int nIndex);
+ int  MessageBeep(int uType);
+ int  MessageBoxA(int hWnd , string lpText, string lpCaption, int uType);
+ int  MessageBoxExA(int hWnd , string lpText, string lpCaption, int uType, int wLanguageId);
+ int  SwapMouseButton(int fSwap);
+ //---- Файловые функции. ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ bool Kill(string lpNamefile); // Kill("c:\1\*.*");
 #import
-
-//---- Window Messages
-#define WM_NULL                        0x0000
-#define WM_CREATE                      0x0001
-#define WM_DESTROY                     0x0002
-#define WM_MOVE                        0x0003
-#define WM_SIZE                        0x0005
-#define WM_ACTIVATE                    0x0006
-#define WM_SETFOCUS                    0x0007
-#define WM_KILLFOCUS                   0x0008
-#define WM_ENABLE                      0x000A
-#define WM_SETREDRAW                   0x000B
-#define WM_SETTEXT                     0x000C
-#define WM_GETTEXT                     0x000D
-#define WM_GETTEXTLENGTH               0x000E
-#define WM_PAINT                       0x000F
-#define WM_CLOSE                       0x0010
-#define WM_QUERYENDSESSION             0x0011
-#define WM_QUIT                        0x0012
-#define WM_QUERYOPEN                   0x0013
-#define WM_ERASEBKGND                  0x0014
-#define WM_SYSCOLORCHANGE              0x0015
-#define WM_ENDSESSION                  0x0016
-#define WM_SHOWWINDOW                  0x0018
-#define WM_WININICHANGE                0x001A
-#define WM_SETTINGCHANGE               0x001A // WM_WININICHANGE
-#define WM_DEVMODECHANGE               0x001B
-#define WM_ACTIVATEAPP                 0x001C
-#define WM_FONTCHANGE                  0x001D
-#define WM_TIMECHANGE                  0x001E
-#define WM_CANCELMODE                  0x001F
-#define WM_SETCURSOR                   0x0020
-#define WM_MOUSEACTIVATE               0x0021
-#define WM_CHILDACTIVATE               0x0022
-#define WM_QUEUESYNC                   0x0023
-#define WM_GETMINMAXINFO               0x0024
-#define WM_PAINTICON                   0x0026
-#define WM_ICONERASEBKGND              0x0027
-#define WM_NEXTDLGCTL                  0x0028
-#define WM_SPOOLERSTATUS               0x002A
-#define WM_DRAWITEM                    0x002B
-#define WM_MEASUREITEM                 0x002C
-#define WM_DELETEITEM                  0x002D
-#define WM_VKEYTOITEM                  0x002E
-#define WM_CHARTOITEM                  0x002F
-#define WM_SETFONT                     0x0030
-#define WM_GETFONT                     0x0031
-#define WM_SETHOTKEY                   0x0032
-#define WM_GETHOTKEY                   0x0033
-#define WM_QUERYDRAGICON               0x0037
-#define WM_COMPAREITEM                 0x0039
-#define WM_GETOBJECT                   0x003D
-#define WM_COMPACTING                  0x0041
-#define WM_WINDOWPOSCHANGING           0x0046
-#define WM_WINDOWPOSCHANGED            0x0047
-#define WM_COPYDATA                    0x004A
-#define WM_CANCELJOURNAL               0x004B
-#define WM_NOTIFY                      0x004E
-#define WM_INPUTLANGCHANGEREQUEST      0x0050
-#define WM_INPUTLANGCHANGE             0x0051
-#define WM_TCARD                       0x0052
-#define WM_HELP                        0x0053
-#define WM_USERCHANGED                 0x0054
-#define WM_NOTIFYFORMAT                0x0055
-#define WM_CONTEXTMENU                 0x007B
-#define WM_STYLECHANGING               0x007C
-#define WM_STYLECHANGED                0x007D
-#define WM_DISPLAYCHANGE               0x007E
-#define WM_GETICON                     0x007F
-#define WM_SETICON                     0x0080
-#define WM_NCCREATE                    0x0081
-#define WM_NCDESTROY                   0x0082
-#define WM_NCCALCSIZE                  0x0083
-#define WM_NCHITTEST                   0x0084
-#define WM_NCPAINT                     0x0085
-#define WM_NCACTIVATE                  0x0086
-#define WM_GETDLGCODE                  0x0087
-#define WM_SYNCPAINT                   0x0088
-#define WM_NCMOUSEMOVE                 0x00A0
-#define WM_NCLBUTTONDOWN               0x00A1
-#define WM_NCLBUTTONUP                 0x00A2
-#define WM_NCLBUTTONDBLCLK             0x00A3
-#define WM_NCRBUTTONDOWN               0x00A4
-#define WM_NCRBUTTONUP                 0x00A5
-#define WM_NCRBUTTONDBLCLK             0x00A6
-#define WM_NCMBUTTONDOWN               0x00A7
-#define WM_NCMBUTTONUP                 0x00A8
-#define WM_NCMBUTTONDBLCLK             0x00A9
-#define WM_KEYFIRST                    0x0100
-#define WM_KEYDOWN                     0x0100
-#define WM_KEYUP                       0x0101
-#define WM_CHAR                        0x0102
-#define WM_DEADCHAR                    0x0103
-#define WM_SYSKEYDOWN                  0x0104
-#define WM_SYSKEYUP                    0x0105
-#define WM_SYSCHAR                     0x0106
-#define WM_SYSDEADCHAR                 0x0107
-#define WM_KEYLAST                     0x0108
-#define WM_INITDIALOG                  0x0110
-#define WM_COMMAND                     0x0111
-#define WM_SYSCOMMAND                  0x0112
-#define WM_TIMER                       0x0113
-#define WM_HSCROLL                     0x0114
-#define WM_VSCROLL                     0x0115
-#define WM_INITMENU                    0x0116
-#define WM_INITMENUPOPUP               0x0117
-#define WM_MENUSELECT                  0x011F
-#define WM_MENUCHAR                    0x0120
-#define WM_ENTERIDLE                   0x0121
-#define WM_MENURBUTTONUP               0x0122
-#define WM_MENUDRAG                    0x0123
-#define WM_MENUGETOBJECT               0x0124
-#define WM_UNINITMENUPOPUP             0x0125
-#define WM_MENUCOMMAND                 0x0126
-#define WM_CTLCOLORMSGBOX              0x0132
-#define WM_CTLCOLOREDIT                0x0133
-#define WM_CTLCOLORLISTBOX             0x0134
-#define WM_CTLCOLORBTN                 0x0135
-#define WM_CTLCOLORDLG                 0x0136
-#define WM_CTLCOLORSCROLLBAR           0x0137
-#define WM_CTLCOLORSTATIC              0x0138
-#define WM_MOUSEFIRST                  0x0200
-#define WM_MOUSEMOVE                   0x0200
-#define WM_LBUTTONDOWN                 0x0201
-#define WM_LBUTTONUP                   0x0202
-#define WM_LBUTTONDBLCLK               0x0203
-#define WM_RBUTTONDOWN                 0x0204
-#define WM_RBUTTONUP                   0x0205
-#define WM_RBUTTONDBLCLK               0x0206
-#define WM_MBUTTONDOWN                 0x0207
-#define WM_MBUTTONUP                   0x0208
-#define WM_MBUTTONDBLCLK               0x0209
-#define WM_PARENTNOTIFY                0x0210
-#define WM_ENTERMENULOOP               0x0211
-#define WM_EXITMENULOOP                0x0212
-#define WM_NEXTMENU                    0x0213
-#define WM_SIZING                      0x0214
-#define WM_CAPTURECHANGED              0x0215
-#define WM_MOVING                      0x0216
-#define WM_DEVICECHANGE                0x0219
-#define WM_MDICREATE                   0x0220
-#define WM_MDIDESTROY                  0x0221
-#define WM_MDIACTIVATE                 0x0222
-#define WM_MDIRESTORE                  0x0223
-#define WM_MDINEXT                     0x0224
-#define WM_MDIMAXIMIZE                 0x0225
-#define WM_MDITILE                     0x0226
-#define WM_MDICASCADE                  0x0227
-#define WM_MDIICONARRANGE              0x0228
-#define WM_MDIGETACTIVE                0x0229
-#define WM_MDISETMENU                  0x0230
-#define WM_ENTERSIZEMOVE               0x0231
-#define WM_EXITSIZEMOVE                0x0232
-#define WM_DROPFILES                   0x0233
-#define WM_MDIREFRESHMENU              0x0234
-#define WM_MOUSEHOVER                  0x02A1
-#define WM_MOUSELEAVE                  0x02A3
-#define WM_CUT                         0x0300
-#define WM_COPY                        0x0301
-#define WM_PASTE                       0x0302
-#define WM_CLEAR                       0x0303
-#define WM_UNDO                        0x0304
-#define WM_RENDERFORMAT                0x0305
-#define WM_RENDERALLFORMATS            0x0306
-#define WM_DESTROYCLIPBOARD            0x0307
-#define WM_DRAWCLIPBOARD               0x0308
-#define WM_PAINTCLIPBOARD              0x0309
-#define WM_VSCROLLCLIPBOARD            0x030A
-#define WM_SIZECLIPBOARD               0x030B
-#define WM_ASKCBFORMATNAME             0x030C
-#define WM_CHANGECBCHAIN               0x030D
-#define WM_HSCROLLCLIPBOARD            0x030E
-#define WM_QUERYNEWPALETTE             0x030F
-#define WM_PALETTEISCHANGING           0x0310
-#define WM_PALETTECHANGED              0x0311
-#define WM_HOTKEY                      0x0312
-#define WM_PRINT                       0x0317
-#define WM_PRINTCLIENT                 0x0318
-#define WM_HANDHELDFIRST               0x0358
-#define WM_HANDHELDLAST                0x035F
-#define WM_AFXFIRST                    0x0360
-#define WM_AFXLAST                     0x037F
-#define WM_PENWINFIRST                 0x0380
-#define WM_PENWINLAST                  0x038F
-#define WM_APP                         0x8000
- 
-//---- keybd_event routines
-#define KEYEVENTF_EXTENDEDKEY          0x0001
-#define KEYEVENTF_KEYUP                0x0002
-//---- mouse_event routines
-#define MOUSEEVENTF_MOVE               0x0001 // mouse move
-#define MOUSEEVENTF_LEFTDOWN           0x0002 // left button down
-#define MOUSEEVENTF_LEFTUP             0x0004 // left button up
-#define MOUSEEVENTF_RIGHTDOWN          0x0008 // right button down
-#define MOUSEEVENTF_RIGHTUP            0x0010 // right button up
-#define MOUSEEVENTF_MIDDLEDOWN         0x0020 // middle button down
-#define MOUSEEVENTF_MIDDLEUP           0x0040 // middle button up
-#define MOUSEEVENTF_WHEEL              0x0800 // wheel button rolled
-#define MOUSEEVENTF_ABSOLUTE           0x8000 // absolute move
-
-//---- GetSystemMetrics() codes
+//жжжж КОНСТАНТЫ. жжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжж
+//==== AnimateWindow() Commands. =========================================================================================================================================================================================================
+#define AW_HOR_POSITIVE                0x00000001
+#define AW_HOR_NEGATIVE                0x00000002
+#define AW_VER_POSITIVE                0x00000004
+#define AW_VER_NEGATIVE                0x00000008
+#define AW_CENTER                      0x00000010
+#define AW_HIDE                        0x00010000
+#define AW_ACTIVATE                    0x00020000
+#define AW_SLIDE                       0x00040000
+#define AW_BLEND                       0x00080000
+//==== Button Control Messages. ==========================================================================================================================================================================================================
+#define BM_GETCHECK                    0x00F0
+#define BM_SETCHECK                    0x00F1
+#define BM_GETSTATE                    0x00F2
+#define BM_SETSTATE                    0x00F3
+#define BM_SETSTYLE                    0x00F4
+#define BM_CLICK                       0x00F5
+#define BM_GETIMAGE                    0x00F6
+#define BM_SETIMAGE                    0x00F7
+#define BM_SETDONTCLICK                0x00F8
+//==== Константы для функции "ExitWindowsEx()". ==========================================================================================================================================================================================
+//---- Тип выключения. Параметр "uFlags" должен иметь одну из следующеих величин. --------------------------------------------------------------------------------------------------------------------------------------------------------
+#define EWX_LOGOFF                     0x00000000  // Отключает все процессы работая на сеансе ввода процесса, который был назван функция ExitWindowsEx. Затем это регистрирует потребителя.
+                                                   // Этот флаг может использоваться только процессами, работающими на сеансе ввода диалогового потребителя.
+#define EWX_POWEROFF                   0x00000008  // Отключает систему и выключает мощность. Система должна поддержать силовую-характеристику. 
+                                                   // Вызов процесса должен иметь привилегию SE_SHUTDOWN_NAME. Более подробно, смотри секцию Замечаний следующего.
+#define EWX_REBOOT                     0x00000002  // Отключает систему затем перезапускает систему.
+                                                   // Вызов процесса должен иметь привилегию SE_SHUTDOWN_NAME. Более подробно, смотри секцию Замечаний следующего.
+#define EWX_RESTARTAPPS                0x00000040  // Отключает систему затем перезапускает это, а также любые приложения, которые зарегистрированы для перезапуска, использовавшего функцию RegisterApplicationRestart.
+                                                   // Этот прикладной приемник сообщение WM_QUERYENDSESSION с lParam было установлено в величину ENDSESSION_CLOSEAPP. Более подробно, смотри Руководящие принципы для Приложений.
+#define EWX_SHUTDOWN                   0x00000001  // Отключает систему в безопасный момент. Все файловые буферы сброшены на диск, и весь прогон процессов прекратился. Приоритет процесса должен иметь привилегию SE_SHUTDOWN_NAME.
+                                                   // Определение этого флага не выключит мощность даже если бы система поддерживает силовую-характеристику. Вы должны определить EWX_POWEROFF, чтобы делать это.
+//---- Параметр "dwReason" может дополнительно включить одну из следующих величин. -------------------------------------------------------------------------------------------------------------------------------------------------------
+#define EWX_FORCE                      0x00000004  // Этот флаг не имеет эффект если терминальные услуги приспособлены. В противном случае, система не посылает сообщение WM_QUERYENDSESSION.
+                                                   // Это может заставить, чтобы терять данные. Следовательно, Вы должны только использовать этот флаг в аварийной ситуации.
+#define EWX_FORCEIFHUNG                0x00000010  // Процессы Сил, чтобы завершаться если они не реагируют на WM_QUERYENDSESSION или сообщение WM_ENDSESSION в течение интервала тайм-аута.
+//==== GetWindow() Constants. ============================================================================================================================================================================================================
+#define GW_HWNDFIRST                   0
+#define GW_HWNDLAST                    1
+#define GW_HWNDNEXT                    2
+#define GW_HWNDPREV                    3
+#define GW_OWNER                       4
+#define GW_CHILD                       5
+//==== Dialog Box Command IDs. ===========================================================================================================================================================================================================
+#define IDOK                           1
+#define IDCANCEL                       2
+#define IDABORT                        3
+#define IDRETRY                        4
+#define IDIGNORE                       5
+#define IDYES                          6
+#define IDNO                           7
+#define IDCLOSE                        8
+#define IDHELP                         9
+//==== Keybd_event routines. =============================================================================================================================================================================================================
+#define KEYEVENTF_EXTENDEDKEY         0x0001  // Если он установлен, скэн-коду предшествует префиксный байт, имеющий значение 0xE0 (224).
+#define KEYEVENTF_KEYUP               0x0002  // Если он установлен, клавиша была отпущена. Если не установлен, клавиша была нажата.
+//========================================================================================================================================================================================================================================
+#define LVM_GETITEMCOUNT              0x1004
+//==== MessageBox() Flags. ===============================================================================================================================================================================================================
+#define MB_OK                       	 0x00000000         //	Окно сообщения содержит одну командную кнопку: OK. Это - значение по умолчанию.
+#define MB_OKCANCEL                  	0x00000001         //	Окно сообщения содержит две командных кнопки: OK и Отменить (Cancel).
+#define MB_ABORTRETRYIGNORE          	0x00000002        	// Окно сообщения содержит три командных кнопки: Прекратить (Abort), Поторить (Retry) и Пропустить (Ignore).
+#define MB_YESNOCANCEL               	0x00000003         //	Окно сообщения содержит три командных кнопки: Да (Yes), Нет (No) и Отменить (Cancel).
+#define MB_YESNO                     	0x00000004         //	Окно сообщения содержит две командных кнопки: Да (Yes) и Нет (No).
+#define MB_RETRYCANCEL               	0x00000005         //	Окно сообщения содержит две командных кнопки: Поторить (Retry) и Отменить (Cancel).
+#define MB_CANCELTRYCONTINUE          0x00000006	        // Microsoft® Windows® 2000/XP: Окно сообщения содержит три командных кнопки: Отменить (Cancel), Попытаться снова (Try Again), Продолжить (Continue).
+                                                         // Используйте этот тип окна сообщения вместо типа MB_ABORTRETRYIGNORE. 
+#define MB_ICONHAND                  	0x00000010         //	В окне сообщения появляется значок стоп-сигнала.
+#define MB_ICONQUESTION              	0x00000020         //	В окне сообщения появляется иконка знака вопроса.
+#define MB_ICONEXCLAMATION           	0x00000030         //	В окне сообщения появляется иконка знака восклицания.
+#define MB_ICONASTERISK              	0x00000040 	       // В окне сообщения появляется значок, состоящий из строчной буквы i в круге.
+#define MB_USERICON                  	0x00000080         // В окне сообщения появляется пользовательский значок.
+#define MB_ICONWARNING              	 MB_ICONEXCLAMATION //	В окне сообщения появляется иконка знака восклицания.
+#define MB_ICONERROR                 	MB_ICONHAND 	      // В окне сообщения появляется значок стоп-сигнала.
+#define MB_ICONINFORMATION           	MB_ICONASTERISK 	  // В окне сообщения появляется значок, состоящий из строчной буквы i в круге.
+#define MB_ICONSTOP                  	MB_ICONHAND        //	В окне сообщения появляется значок стоп-сигнала.
+#define MB_DEFBUTTON1                	0x00000000         //	Первая кнопка - основная (кнопка используемая по умолчанию).  MB_DEFBUTTON1 - значение по умолчанию, если MB_DEFBUTTON2, MB_DEFBUTTON3, или  MB_DEFBUTTON4 не определены.
+#define MB_DEFBUTTON2                	0x00000100         //	Вторая кнопка - основная кнопка.
+#define MB_DEFBUTTON3                	0x00000200         //	Третья кнопка - основная кнопка.
+#define MB_DEFBUTTON4                	0x00000300         //	Четвертая кнопка - основная кнопка.
+#define MB_APPLMODAL                 	0x00000000         //	Пользователь должен ответить окну сообщения перед продолжением работы в окне, идентифицированном параметром hWnd.
+                                                         // При этом, пользователь может перемещаться в окна других потоков и работать в этих окнах. 
+#define MB_SYSTEMMODAL               	0x00001000         //	То же самое, что и  MB_APPLMODAL за исключением того, что окно сообщения имеет стиль WS_EX_TOPMOST.
+                                                         // Используйте работающие в системном режиме (недоступном для пользователя) окна сообщения, чтобы уведомить пользователя о серьезных, потенциально разрушительных ошибках,
+                                                         // которые требуют немедленного внимания (например, выход за пределы объема памяти). Этот флажок не имеет никакого влияния на способность пользователя взаимодействовать
+                                                         // с другими окнами , а не только связанными с hWnd.
+#define MB_TASKMODAL                 	0x00002000         //	То же самое, что и  MB_APPLMODAL за исключением того, что все окна верхнего уровня, принадлежащие текущему потоку блокируются, если параметр  hWnd равен ПУСТО (NULL).
+                                                         // Используйте этот флажок тогда, когда вызывающая программа или библиотека не имеют доступного дескриптора окна, но тем не менее должны воспрепятствовать вводу данных
+                                                         // в другие окна в вызывающем потоке, не приостанавливая работу других потоков.
+#define MB_HELP                     	 0x00004000         // Windows 95/98/Me, Windows NT® 4.0 и выше: Добавляет в окно сообщения кнопку Справка (Help).
+                                                         // Когда пользователь щелкает по кнопке Справка (Help) или нажимает клавишу F1, система отправляет владельцу сообщение WM_HELP. 
+#define MB_NOFOCUS                  	 0x00008000
+#define MB_SETFOREGROUND            	 0x00010000         //	Окно сообщения становится высокоприоритетным окном. Внутренне, система вызывает функцию SetForegroundWindow для окна сообщения.
+#define MB_DEFAULT_DESKTOP_ONLY     	 0x00020000         //	Windows NT/2000/XP: То же самое, что и MB_SERVICE_NOTIFICATION за исключением того, что система показывает на экране окно сообщения только на заданном по умолчанию
+                                                         // рабочем столе взаимодействующей оконной станции. Дополнительную информацию, см. в статье  Оконные станции и Рабочие столы.
+#define MB_TOPMOST                  	 0x00040000         //	Окно сообщения создается со стилем окна WS_EX_TOPMOST.
+#define MB_RIGHT                    	 0x00080000         //	Текст выравнивается по правому краю.
+#define MB_RTLREADING                 0x00100000         //	Выведенный на экран текст сообщения  и заголовка, использует порядок чтения справа налево как в системах на еврейском и арабских языках.
+#define MB_SERVICE_NOTIFICATION 	     0x00200000         // Windows NT/2000/XP: Вызывающая программа - сервисный модуль, уведомляющий о событии пользователя.
+                                                         // Функция показывает на экране окно сообщения на текущем активном рабочем столе, даже если нет пользователя, начавшего работу на компьютере.
+//========================================================================================================================================================================================================================================
+#define MEM_COMMIT               		   0x1000
+#define MEM_RELEASE		                 0x8000
+//==== RegisterHotKey() codes. ===========================================================================================================================================================================================================
+#define MOD_ALT	                      0x0001 // Любая из двух клавиш ALT должна удерживаться нажатой.
+#define MOD_CONTROL	                  0x0002 // Любая из двух клавиш CTRL должна удерживаться нажатой.
+#define MOD_SHIFT	                    0x0004 // Любая из двух клавиш SHIFT должна удерживаться нажатой.
+#define MOD_WIN 	                     0x0008 // Любая из двух клавиш WINDOWS должна удерживаться нажатой. Эти клавиши помечены логотипом Microsoft® Windows® 
+//==== Mouse_event routines. =============================================================================================================================================================================================================
+#define MOUSEEVENTF_MOVE              0x0001 // mouse move
+#define MOUSEEVENTF_LEFTDOWN          0x0002 // left button down
+#define MOUSEEVENTF_LEFTUP            0x0004 // left button up
+#define MOUSEEVENTF_RIGHTDOWN         0x0008 // right button down
+#define MOUSEEVENTF_RIGHTUP           0x0010 // right button up
+#define MOUSEEVENTF_MIDDLEDOWN        0x0020 // middle button down
+#define MOUSEEVENTF_MIDDLEUP          0x0040 // middle button up
+#define MOUSEEVENTF_WHEEL             0x0800 // wheel button rolled
+#define MOUSEEVENTF_ABSOLUTE          0x8000 // absolute move
+//==== GetSystemMetrics() codes. =========================================================================================================================================================================================================
 #define SM_CXSCREEN                    0
 #define SM_CYSCREEN                    1
 #define SM_CXVSCROLL                   2
@@ -325,66 +556,427 @@
 #define SM_CYVIRTUALSCREEN             79
 #define SM_CMONITORS                   80
 #define SM_SAMEDISPLAYFORMAT           81
+//==== Команды отображения окна. =========================================================================================================================================================================================================
+#define SW_HIDE                         0
+#define SW_SHOWNORMAL                   1
+#define SW_NORMAL                       1
+#define SW_SHOWMINIMIZED                2
+#define SW_SHOWMAXIMIZED                3
+#define SW_MAXIMIZE                     3
+#define SW_SHOWNOACTIVATE               4
+#define SW_SHOW                         5
+#define SW_MINIMIZE                     6
+#define SW_SHOWMINNOACTIVE              7
+#define SW_SHOWNA                       8
+#define SW_RESTORE                      9
+#define SW_SHOWDEFAULT                 10
+#define SW_FORCEMINIMIZE               11
+#define SW_MAX                         11
+//========================================================================================================================================================================================================================================
+#define TVM_GETITEM		                 0x110C
+#define TVM_GETNEXTITEM               0x110A
+#define TVM_GETCOUNT 	                0x1105
+//==== Коды клавиш. ======================================================================================================================================================================================================================
+#define VK_LBUTTON                    0x01 // Левая кнопка мыши
+#define VK_RBUTTON	                   0x02	// Правая кнопка мыши
+#define VK_CANCEL	                    0x03	// Обработка Control-break
+#define VK_MBUTTON	                   0x04	// Средняя кнопка мыши
+#define VK_XBUTTON1	                  0x05	// Windows 2000/XP/2003/Vista/2008: кнопка мыши X1
+#define VK_XBUTTON2	                  0x06	// Windows 2000/XP/2003/Vista/2008: кнопка мыши X2
+                                   //	0x07	// Не определено
+#define VK_BACK	                      0x08	// BACKSPACE key 
+#define VK_TAB	                       0x09	// TAB key 
+                                   //	0x0A
+                                   //  0x0B	// Зарезервировано
+#define VK_CLEAR	                     0x0C	// CLEAR key 
+#define VK_RETURN	                    0x0D	// ENTER key
+#define VK_ENTER                      0x0D	// ENTER key
+                                   //	0x0E
+                                   // 0x0F	// Не определено
+#define VK_SHIFT	                     0x10	// SHIFT key 
+#define VK_CONTROL	                   0x11	// CTRL key 
+#define VK_MENU	                      0x12	// ALT key 
+#define VK_PAUSE	                     0x13	// PAUSE key 
+#define VK_CAPITAL	                   0x14	// CAPS LOCK key 
+#define VK_KANA	                      0x15	// Input Method Editor (IME) Kana mode
+#define VK_HANGUEL	                   0x15	// IME Hanguel mode (maintained for compatibility; use #define VK_HANGUL)
+#define VK_HANGUL	                    0x15	// IME Hangul mode
+                                   //	0x16	// Не определено
+#define VK_JUNJA	                     0x17	// IME Junja mode
+#define VK_FINAL	                     0x18	// IME final mode
+#define VK_HANJA	                     0x19	// IME Hanja mode
+#define VK_KANJI	                     0x19	// IME Kanji mode
+                                   //	0x1A	// Не определено
+#define VK_ESCAPE	                    0x1B	// ESC key 
+#define VK_CONVERT	                   0x1C	// IME convert (Reserved for Kanji systems)
+#define VK_NONCONVERT	                0x1D	// IME nonconvert (Reserved for Kanji systems)
+#define VK_ACCEPT	                    0x1E	// IME accept (Reserved for Kanji systems)
+#define VK_MODECHANGE	                0x1F	// IME mode change request (Reserved for Kanji systems)
+#define VK_SPACE	                     0x20	// Пробел
+#define VK_PRIOR	                     0x21	// PAGE UP key 
+#define VK_NEXT	                      0x22	// PAGE DOWN key 
+#define VK_END	                       0x23	// END key 
+#define VK_HOME	                      0x24	// HOME key 
+#define VK_LEFT	                      0x25	// LEFT ARROW key 
+#define VK_UP	                        0x26	// UP ARROW key 
+#define VK_RIGHT	                     0x27	// RIGHT ARROW key 
+#define VK_DOWN	                      0x28	// DOWN ARROW key 
+#define VK_SELECT	                    0x29	// SELECT key 
+#define VK_PRINT	                     0x2A	// PRINT key
+#define VK_EXECUTE	                   0x2B	// EXECUTE key 
+#define VK_SNAPSHOT	                  0x2C	// PRINT SCREEN key for Windows 3.0 and later 
+#define VK_INSERT	                    0x2D	// INS key 
+#define VK_DELETE	                    0x2E	// DEL key 
+#define VK_HELP	                      0x2F	// HELP key 
+#define VK_0	                         0x30	// 0 key 
+#define VK_1	                         0x31	// 1 key 
+#define VK_2	                         0x32	// 2 key 
+#define VK_3	                         0x33	// 3 key 
+#define VK_4	                         0x34	// 4 key 
+#define VK_5	                         0x35	// 5 key 
+#define VK_6	                         0x36	// 6 key 
+#define VK_7	                         0x37	// 7 key 
+#define VK_8	                         0x38	// 8 key 
+#define VK_9	                         0x39	// 9 key 
+                                   //	0x3A - 0x40	// Не определено
+#define VK_A	                         0x41	// A key 
+#define VK_B	                         0x42	// B key 
+#define VK_C	                         0x43	// C key 
+#define VK_D	                         0x44	// D key 
+#define VK_E	                         0x45	// E key 
+#define VK_F	                         0x46	// F key 
+#define VK_G	                         0x47	// G key 
+#define VK_H	                         0x48	// H key 
+#define VK_I	                         0x49	// I key 
+#define VK_J	                         0x4A	// J key 
+#define VK_K	                         0x4B	// K key 
+#define VK_L	                         0x4C	// L key 
+#define VK_M	                         0x4D	// M key 
+#define VK_N	                         0x4E	// N key 
+#define VK_O	                         0x4F	// O key 
+#define VK_P	                         0x50	// P key 
+#define VK_Q	                         0x51	// Q key 
+#define VK_R	                         0x52	// R key 
+#define VK_S	                         0x53	// S key 
+#define VK_T	                         0x54	// T key 
+#define VK_U	                         0x55	// U key 
+#define VK_V	                         0x56	// V key 
+#define VK_W	                         0x57	// W key 
+#define VK_X	                         0x58	// X key 
+#define VK_Y	                         0x59	// Y key 
+#define VK_Z	                         0x5A	// Z key 
+#define VK_LWIN	                      0x5B	// Left Windows key (Microsoft Natural Keyboard) 
+#define VK_RWIN	                      0x5C	// Right Windows key (Microsoft Natural Keyboard)
+#define VK_APPS	                      0x5D	// Applications key (Microsoft Natural Keyboard)
+                                   //	0x5E	// Зарезервировано
+#define VK_SLEEP	                     0x5F	// Computer Sleep key
+#define VK_NUMPAD0	                   0x60	// Numeric keypad 0 key 
+#define VK_NUMPAD1	                   0x61	// Numeric keypad 1 key 
+#define VK_NUMPAD2	                   0x62	// Numeric keypad 2 key 
+#define VK_NUMPAD3                  	 0x63	// Numeric keypad 3 key 
+#define VK_NUMPAD4	                   0x64	// Numeric keypad 4 key 
+#define VK_NUMPAD5	                   0x65	// Numeric keypad 5 key 
+#define VK_NUMPAD6	                   0x66	// Numeric keypad 6 key 
+#define VK_NUMPAD7	                   0x67	// Numeric keypad 7 key 
+#define VK_NUMPAD8	                   0x68	// Numeric keypad 8 key 
+#define VK_NUMPAD9	                   0x69	// Numeric keypad 9 key 
+#define VK_MULTIPLY	                  0x6A	// Multiply key (*)
+#define VK_ADD	                       0x6B	// Add key (+)
+#define VK_SEPARATOR	                 0x6C	// Separator key 
+#define VK_SUBTRACT	                  0x6D	// Subtract key (-)
+#define VK_DECIMAL	                   0x6E	// Decimal key
+#define VK_DIVIDE	                    0x6F	// Divide key (/)
+#define VK_F1	                        0x70	// F1 key 
+#define VK_F2	                        0x71	// F2 key 
+#define VK_F3	                        0x72	// F3 key 
+#define VK_F4	                        0x73	// F4 key 
+#define VK_F5	                        0x74	// F5 key 
+#define VK_F6	                        0x75	// F6 key 
+#define VK_F7	                        0x76	// F7 key 
+#define VK_F8	                        0x77	// F8 key 
+#define VK_F9	                        0x78	// F9 key 
+#define VK_F10	                       0x79	// F10 key 
+#define VK_F11	                       0x7A	// F11 key 
+#define VK_F12	                       0x7B	// F12 key 
+#define VK_F13	                       0x7C	// F13 key 
+#define VK_F14	                       0x7D	// F14 key 
+#define VK_F15	                       0x7E	// F15 key 
+#define VK_F16	                       0x7F	// F16 key 
+#define VK_F17	                       0x80 	// F17 key 
+#define VK_F18	                       0x81 	// F18 key 
+#define VK_F19	                       0x82 	// F19 key 
+#define VK_F20	                       0x83 	// F20 key 
+#define VK_F21	                       0x84 	// F21 key 
+#define VK_F22	                       0x85 	// F22 key 
+#define VK_F23	                       0x86 	// F23 key 
+#define VK_F24 	                      0x87 	// F24 key 
+                                   //	0x88 - 0x8F	// Не используются
+#define VK_NUMLOCK	                   0x90	// NUM LOCK key 
+#define VK_SCROLL	                    0x91	// SCROLL LOCK key 
+#define VK_OEM_NEC_EQUAL	             0x92	// NEC PC-9800 kbd definitions: '=' key on numpad
+#define VK_OEM_FJ_JISHO	              0x92	// Fujitsu/OASYS kbd definitions: 'Dictionary' key
+#define VK_OEM_FJ_MASSHOU	            0x93	// Fujitsu/OASYS kbd definitions: 'Unregister word' key
+#define VK_OEM_FJ_TOUROKU	            0x94	// Fujitsu/OASYS kbd definitions: 'Register word' key
+#define VK_OEM_FJ_LOYA	               0x95	// Fujitsu/OASYS kbd definitions: 'Left OYAYUBI' key
+#define VK_OEM_FJ_ROYA	               0x96	// Fujitsu/OASYS kbd definitions: 'Right OYAYUBI' key
+                                   //	0x97 - 0x9F	// Не используются
+#define VK_LSHIFT	                    0xA0	// Left SHIFT key
+#define VK_RSHIFT	                    0xA1	// Right SHIFT key
+#define VK_LCONTROL	                  0xA2	// Left CONTROL key
+#define VK_RCONTROL	                  0xA3	// Right CONTROL key
+#define VK_LMENU	                     0xA4	// Left MENU key
+#define VK_RMENU	                     0xA5	// Right MENU key
+#define VK_BROWSER_BACK	              0xA6	// Windows 2000/XP/2003/Vista/2008: Browser Back key
+#define VK_BROWSER_FORWARD	           0xA7	// Windows 2000/XP/2003/Vista/2008: Browser Forward key
+#define VK_BROWSER_REFRESH	           0xA8	// Windows 2000/XP/2003/Vista/2008: Browser Refresh key
+#define VK_BROWSER_STOP	              0xA9	// Windows 2000/XP/2003/Vista/2008: Browser Stop key
+#define VK_BROWSER_SEARCH	            0xAA	// Windows 2000/XP/2003/Vista/2008: Browser Search key
+#define VK_BROWSER_FAVORITES	         0xAB	// Windows 2000/XP/2003/Vista/2008: Browser Favorites key
+#define VK_BROWSER_HOME 	             0xAC	// Windows 2000/XP/2003/Vista/2008: Browser Start and Home key
+#define VK_VOLUME_MUTE 	              0xAD	// Windows 2000/XP/2003/Vista/2008: Volume Mute key
+#define VK_VOLUME_DOWN	               0xAE	// Windows 2000/XP/2003/Vista/2008: Volume Down key
+#define VK_VOLUME_UP	                 0xAF	// Windows 2000/XP/2003/Vista/2008: Volume Up key
+#define VK_MEDIA_NEXT_TRACK	          0xB0	// Windows 2000/XP/2003/Vista/2008: Next Track key
+#define VK_MEDIA_PREV_TRACK	          0xB1	// Windows 2000/XP/2003/Vista/2008: Previous Track key
+#define VK_MEDIA_STOP	                0xB2	// Windows 2000/XP/2003/Vista/2008: Stop Media key
+#define VK_MEDIA_PLAY_PAUSE	          0xB3	// Windows 2000/XP/2003/Vista/2008: Play/Pause Media key
+#define VK_LAUNCH_MAIL	               0xB4	// Windows 2000/XP/2003/Vista/2008: Start Mail key
+#define VK_LAUNCH_MEDIA_SELECT 	      0xB5	// Windows 2000/XP/2003/Vista/2008: Select Media key
+#define VK_LAUNCH_APP1	               0xB6	// Windows 2000/XP/2003/Vista/2008: Start Application 1 key
+#define VK_LAUNCH_APP2	               0xB7	// Windows 2000/XP/2003/Vista/2008: Start Application 2 key
+                                   //	0xB8 - 0xB9	// Зарезервировано
+#define VK_OEM_1	                     0xBA	// Windows 2000/XP/2003/Vista/2008: For the US standard keyboard, the ';:' key
+#define VK_OEM_PLUS	                  0xBB	// Windows 2000/XP/2003/Vista/2008: For any country/region, the '+' key
+#define VK_OEM_COMMA	                 0xBC	// Windows 2000/XP/2003/Vista/2008: For any country/region, the ',' key
+#define VK_OEM_MINUS	                 0xBD	// Windows 2000/XP/2003/Vista/2008: For any country/region, the '-' key
+#define VK_OEM_PERIOD	                0xBE	// Windows 2000/XP/2003/Vista/2008: For any country/region, the '.' key
+#define VK_OEM_2	                     0xBF	// Windows 2000/XP/2003/Vista/2008: For the US standard keyboard, the '/?' key
+#define VK_OEM_3	                     0xC0	// Windows 2000/XP/2003/Vista/2008: For the US standard keyboard, the '`~' key
+                                   //	0xC1 - 0xD7	// Зарезервировано
+                                   //	0xD8 - 0xDA	// Не используются
+#define VK_OEM_4	                     0xDB	// Windows 2000/XP/2003/Vista/2008: For the US standard keyboard, the '[{' key
+#define VK_OEM_5	                     0xDC	// Windows 2000/XP/2003/Vista/2008: For the US standard keyboard, the '\|' key
+#define VK_OEM_6	                     0xDD	// Windows 2000/XP/2003/Vista/2008: For the US standard keyboard, the ']}' key
+#define VK_OEM_7	                     0xDE	// Windows 2000/XP/2003/Vista/2008: For the US standard keyboard, the 'single-quote/double-quote' key
+#define VK_OEM_8	                     0xDF	// Used for miscellaneous characters; it can vary by keyboard.
+                                   //	0xE0	// Зарезервировано
+                                   //	0xE1	// OEM specific
+#define VK_OEM_102	                   0xE2	// Windows 2000/XP/2003/Vista/2008: Either the angle bracket key or the backslash key on the RT 102-key keyboard
+                                   //	0xE3 - 0xE4	// OEM specific 
+#define VK_PROCESSKEY	                0xE5	// Windows 95/98/Me, Windows 2000/XP/2003/Vista/2008: IME PROCESS key
+                                   //	0xE6	// OEM specific 
+#define VK_PACKET	                    0xE7	// Windows 2000/XP/2003/Vista/2008: Used to pass Unicode characters as if they were keystrokes.
+                                            // The VK_PACKET key is the low word of a 32-bit Virtual Key value used for non-keyboard input methods.
+                                            // For more information, see Remark in KEYBDINPUT , SendInput , WM_KEYDOWN , and WM_KEYUP.
+                                   //	0xE8	// Не используется
+#define VK_OEM_RESET	                 0xE9	// Only used by Nokia.
+#define VK_OEM_JUMP	                  0xEA	// Only used by Nokia.
+#define VK_OEM_PA1	                   0xEB	// Only used by Nokia.
+#define VK_OEM_PA2	                   0xEC	// Only used by Nokia.
+#define VK_OEM_PA3	                   0xED	// Only used by Nokia.
+#define VK_OEM_WSCTRL 	               0xEE	// Only used by Nokia.
+#define VK_OEM_CUSEL  	               0xEF	// Only used by Nokia.
+#define VK_OEM_ATTN  	                0xF0	// Only used by Nokia.
+#define VK_OEM_FINNISH 	              0xF1	// Only used by Nokia.
+#define VK_OEM_COPY 	                 0xF2	// Only used by Nokia.
+#define VK_OEM_AUTO 	                 0xF3	// Only used by Nokia.
+#define VK_OEM_ENLW 	                 0xF4	// Only used by Nokia.
+#define VK_OEM_BACKTAB 	              0xF5	// Only used by Nokia.
+#define VK_ATTN	                      0xF6	// Attn key
+#define VK_CRSEL	                     0xF7	// CrSel key
+#define VK_EXSEL	                     0xF8	// ExSel key
+#define VK_EREOF	                     0xF9	// Erase EOF key
+#define VK_PLAY	                      0xFA	// Play key
+#define VK_ZOOM	                      0xFB	// Zoom key
+#define VK_NONAME	                    0xFC	// Reserved for future use. 
+#define VK_PA1	                       0xFD	// PA1 key
+#define VK_OEM_CLEAR	                 0xFE	// Clear key
+//==== Window Messages. ==================================================================================================================================================================================================================
+#define WM_NULL                       0x0000
+#define WM_CREATE                     0x0001
+#define WM_DESTROY                    0x0002
+#define WM_MOVE                       0x0003
+#define WM_SIZE                       0x0005
+#define WM_ACTIVATE                   0x0006
+#define WM_SETFOCUS                   0x0007
+#define WM_KILLFOCUS                  0x0008
+#define WM_ENABLE                     0x000A
+#define WM_SETREDRAW                  0x000B
+#define WM_SETTEXT                    0x000C
+#define WM_GETTEXT                    0x000D
+#define WM_GETTEXTLENGTH              0x000E
+#define WM_PAINT                      0x000F
+#define WM_CLOSE                      0x0010
+#define WM_QUERYENDSESSION            0x0011
+#define WM_QUIT                       0x0012
+#define WM_QUERYOPEN                  0x0013
+#define WM_ERASEBKGND                 0x0014
+#define WM_SYSCOLORCHANGE             0x0015
+#define WM_ENDSESSION                 0x0016
+#define WM_SHOWWINDOW                 0x0018
+#define WM_WININICHANGE               0x001A
+#define WM_SETTINGCHANGE              0x001A // WM_WININICHANGE
+#define WM_DEVMODECHANGE              0x001B
+#define WM_ACTIVATEAPP                0x001C
+#define WM_FONTCHANGE                 0x001D
+#define WM_TIMECHANGE                 0x001E
+#define WM_CANCELMODE                 0x001F
+#define WM_SETCURSOR                  0x0020
+#define WM_MOUSEACTIVATE              0x0021
+#define WM_CHILDACTIVATE              0x0022
+#define WM_QUEUESYNC                  0x0023
+#define WM_GETMINMAXINFO              0x0024
+#define WM_PAINTICON                  0x0026
+#define WM_ICONERASEBKGND             0x0027
+#define WM_NEXTDLGCTL                 0x0028
+#define WM_SPOOLERSTATUS              0x002A
+#define WM_DRAWITEM                   0x002B
+#define WM_MEASUREITEM                0x002C
+#define WM_DELETEITEM                 0x002D
+#define WM_VKEYTOITEM                 0x002E
+#define WM_CHARTOITEM                 0x002F
+#define WM_SETFONT                    0x0030
+#define WM_GETFONT                    0x0031
+#define WM_SETHOTKEY                  0x0032
+#define WM_GETHOTKEY                  0x0033
+#define WM_QUERYDRAGICON              0x0037
+#define WM_COMPAREITEM                0x0039
+#define WM_GETOBJECT                  0x003D
+#define WM_COMPACTING                 0x0041
+#define WM_WINDOWPOSCHANGING          0x0046
+#define WM_WINDOWPOSCHANGED           0x0047
+#define WM_COPYDATA                   0x004A
+#define WM_CANCELJOURNAL              0x004B
+#define WM_NOTIFY                     0x004E
+#define WM_INPUTLANGCHANGEREQUEST     0x0050
+#define WM_INPUTLANGCHANGE            0x0051
+#define WM_TCARD                      0x0052
+#define WM_HELP                       0x0053
+#define WM_USERCHANGED                0x0054
+#define WM_NOTIFYFORMAT               0x0055
+#define WM_CONTEXTMENU                0x007B
+#define WM_STYLECHANGING              0x007C
+#define WM_STYLECHANGED               0x007D
+#define WM_DISPLAYCHANGE              0x007E
+#define WM_GETICON                    0x007F
+#define WM_SETICON                    0x0080
+#define WM_NCCREATE                   0x0081
+#define WM_NCDESTROY                  0x0082
+#define WM_NCCALCSIZE                 0x0083
+#define WM_NCHITTEST                  0x0084
+#define WM_NCPAINT                    0x0085
+#define WM_NCACTIVATE                 0x0086
+#define WM_GETDLGCODE                 0x0087
+#define WM_SYNCPAINT                  0x0088
+#define WM_NCMOUSEMOVE                0x00A0
+#define WM_NCLBUTTONDOWN              0x00A1
+#define WM_NCLBUTTONUP                0x00A2
+#define WM_NCLBUTTONDBLCLK            0x00A3
+#define WM_NCRBUTTONDOWN              0x00A4
+#define WM_NCRBUTTONUP                0x00A5
+#define WM_NCRBUTTONDBLCLK            0x00A6
+#define WM_NCMBUTTONDOWN              0x00A7
+#define WM_NCMBUTTONUP                0x00A8
+#define WM_NCMBUTTONDBLCLK            0x00A9
+#define WM_KEYFIRST                   0x0100
+#define WM_KEYDOWN                    0x0100
+#define WM_KEYUP                      0x0101
+#define WM_CHAR                       0x0102
+#define WM_DEADCHAR                   0x0103
+#define WM_SYSKEYDOWN                 0x0104
+#define WM_SYSKEYUP                   0x0105
+#define WM_SYSCHAR                    0x0106
+#define WM_SYSDEADCHAR                0x0107
+#define WM_KEYLAST                    0x0108
+#define WM_INITDIALOG                 0x0110
+#define WM_COMMAND                    0x0111
+#define WM_SYSCOMMAND                 0x0112
+#define WM_TIMER                      0x0113
+#define WM_HSCROLL                    0x0114
+#define WM_VSCROLL                    0x0115
+#define WM_INITMENU                   0x0116
+#define WM_INITMENUPOPUP              0x0117
+#define WM_MENUSELECT                 0x011F
+#define WM_MENUCHAR                   0x0120
+#define WM_ENTERIDLE                  0x0121
+#define WM_MENURBUTTONUP              0x0122
+#define WM_MENUDRAG                   0x0123
+#define WM_MENUGETOBJECT              0x0124
+#define WM_UNINITMENUPOPUP            0x0125
+#define WM_MENUCOMMAND                0x0126
+#define WM_CTLCOLORMSGBOX             0x0132
+#define WM_CTLCOLOREDIT               0x0133
+#define WM_CTLCOLORLISTBOX            0x0134
+#define WM_CTLCOLORBTN                0x0135
+#define WM_CTLCOLORDLG                0x0136
+#define WM_CTLCOLORSCROLLBAR          0x0137
+#define WM_CTLCOLORSTATIC             0x0138
+#define WM_MOUSEFIRST                 0x0200
+#define WM_MOUSEMOVE                  0x0200
+#define WM_LBUTTONDOWN                0x0201
+#define WM_LBUTTONUP                  0x0202
+#define WM_LBUTTONDBLCLK              0x0203
+#define WM_RBUTTONDOWN                0x0204
+#define WM_RBUTTONUP                  0x0205
+#define WM_RBUTTONDBLCLK              0x0206
+#define WM_MBUTTONDOWN                0x0207
+#define WM_MBUTTONUP                  0x0208
+#define WM_MBUTTONDBLCLK              0x0209
+#define WM_PARENTNOTIFY               0x0210
+#define WM_ENTERMENULOOP              0x0211
+#define WM_EXITMENULOOP               0x0212
+#define WM_NEXTMENU                   0x0213
+#define WM_SIZING                     0x0214
+#define WM_CAPTURECHANGED             0x0215
+#define WM_MOVING                     0x0216
+#define WM_DEVICECHANGE               0x0219
+#define WM_MDICREATE                  0x0220
+#define WM_MDIDESTROY                 0x0221
+#define WM_MDIACTIVATE                0x0222
+#define WM_MDIRESTORE                 0x0223
+#define WM_MDINEXT                    0x0224
+#define WM_MDIMAXIMIZE                0x0225
+#define WM_MDITILE                    0x0226
+#define WM_MDICASCADE                 0x0227
+#define WM_MDIICONARRANGE             0x0228
+#define WM_MDIGETACTIVE               0x0229
+#define WM_MDISETMENU                 0x0230
+#define WM_ENTERSIZEMOVE              0x0231
+#define WM_EXITSIZEMOVE               0x0232
+#define WM_DROPFILES                  0x0233
+#define WM_MDIREFRESHMENU             0x0234
+#define WM_MOUSEHOVER                 0x02A1
+#define WM_MOUSELEAVE                 0x02A3
+#define WM_CUT                        0x0300
+#define WM_COPY                       0x0301
+#define WM_PASTE                      0x0302
+#define WM_CLEAR                      0x0303
+#define WM_UNDO                       0x0304
+#define WM_RENDERFORMAT               0x0305
+#define WM_RENDERALLFORMATS           0x0306
+#define WM_DESTROYCLIPBOARD           0x0307
+#define WM_DRAWCLIPBOARD              0x0308
+#define WM_PAINTCLIPBOARD             0x0309
+#define WM_VSCROLLCLIPBOARD           0x030A
+#define WM_SIZECLIPBOARD              0x030B
+#define WM_ASKCBFORMATNAME            0x030C
+#define WM_CHANGECBCHAIN              0x030D
+#define WM_HSCROLLCLIPBOARD           0x030E
+#define WM_QUERYNEWPALETTE            0x030F
+#define WM_PALETTEISCHANGING          0x0310
+#define WM_PALETTECHANGED             0x0311
+#define WM_HOTKEY                     0x0312
+#define WM_PRINT                      0x0317
+#define WM_PRINTCLIENT                0x0318
+#define WM_HANDHELDFIRST              0x0358
+#define WM_HANDHELDLAST               0x035F
+#define WM_AFXFIRST                   0x0360
+#define WM_AFXLAST                    0x037F
+#define WM_PENWINFIRST                0x0380
+#define WM_PENWINLAST                 0x038F
+#define WM_APP                        0x8000
+#define WM_SCROLL                     0x80F9
+//жжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжж
 
-//---- GetWindow() Constants
-#define GW_HWNDFIRST                   0
-#define GW_HWNDLAST                    1
-#define GW_HWNDNEXT                    2
-#define GW_HWNDPREV                    3
-#define GW_OWNER                       4
-#define GW_CHILD                       5
 
-//---- AnimateWindow() Commands
-#define AW_HOR_POSITIVE                0x00000001
-#define AW_HOR_NEGATIVE                0x00000002
-#define AW_VER_POSITIVE                0x00000004
-#define AW_VER_NEGATIVE                0x00000008
-#define AW_CENTER                      0x00000010
-#define AW_HIDE                        0x00010000
-#define AW_ACTIVATE                    0x00020000
-#define AW_SLIDE                       0x00040000
-#define AW_BLEND                       0x00080000
 
-//---- MessageBox() Flags
-#define MB_OK                       	0x00000000
-#define MB_OKCANCEL                 	0x00000001
-#define MB_ABORTRETRYIGNORE         	0x00000002
-#define MB_YESNOCANCEL              	0x00000003
-#define MB_YESNO                    	0x00000004
-#define MB_RETRYCANCEL              	0x00000005
-#define MB_ICONHAND                 	0x00000010
-#define MB_ICONQUESTION             	0x00000020
-#define MB_ICONEXCLAMATION          	0x00000030
-#define MB_ICONASTERISK             	0x00000040
-#define MB_USERICON                 	0x00000080
-#define MB_ICONWARNING              	MB_ICONEXCLAMATION
-#define MB_ICONERROR                	MB_ICONHAND
-#define MB_ICONINFORMATION          	MB_ICONASTERISK
-#define MB_ICONSTOP                 	MB_ICONHAND
-#define MB_DEFBUTTON1               	0x00000000
-#define MB_DEFBUTTON2               	0x00000100
-#define MB_DEFBUTTON3               	0x00000200
-#define MB_DEFBUTTON4               	0x00000300
-#define MB_APPLMODAL                	0x00000000
-#define MB_SYSTEMMODAL              	0x00001000
-#define MB_TASKMODAL                	0x00002000
-#define MB_HELP                     	0x00004000 // Help Button
-#define MB_NOFOCUS                  	0x00008000
-#define MB_SETFOREGROUND            	0x00010000
-#define MB_DEFAULT_DESKTOP_ONLY     	0x00020000
-#define MB_TOPMOST                  	0x00040000
-#define MB_RIGHT                    	0x00080000
-#define MB_RTLREADING               	0x00100000
-
-//---- Dialog Box Command IDs
-#define IDOK                           1
-#define IDCANCEL                       2
-#define IDABORT                        3
-#define IDRETRY                        4
-#define IDIGNORE                       5
-#define IDYES                          6
-#define IDNO                           7
-#define IDCLOSE                        8
-#define IDHELP                         9
-
-//+------------------------------------------------------------------+
