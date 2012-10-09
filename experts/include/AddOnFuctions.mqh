@@ -153,8 +153,8 @@ void ModifyOrder(double pp=-1, double sl=0, double tp=0, color cl=CLR_NONE) {
   int    dg=MarketInfo(OrderSymbol(), MODE_DIGITS), er, it;
  
   if (pp<=0) pp=OrderOpenPrice();
-  if (sl<0 ) sl=OrderStopLoss();
-  if (tp<0 ) tp=OrderTakeProfit();
+  if (sl<=0 ) sl=OrderStopLoss();
+  if (tp<=0 ) tp=OrderTakeProfit();
   
   pp=NormalizeDouble(pp, dg);
   sl=NormalizeDouble(sl, dg);
