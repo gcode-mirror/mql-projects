@@ -10,10 +10,12 @@
 #include <stderror.mqh>
 #include <WinUser32.mqh>
 //--------------------------------------------------------------- 3 --
-#include <DesepticonVariables.mqh>    // Описание переменных 
-#include <AddOnFuctions.mqh> 
+#include <DesepticonVariables.mqh>    // Описание переменных
+#include <AddOnFuctions.mqh>  
+#include <InitExtremums.mqh>
 #include <CheckBeforeStart.mqh>       // Проверка входных параметров
 #include <DesepticonTrendCriteria.mqh>
+#include <StochasticDivergenceProcedures.mqh>
 //#include <direction_MACD.mqh>
 #include <DesepticonBreakthrough2.mqh>
 #include <searchForTits.mqh>
@@ -70,7 +72,14 @@ int init(){
   {
    InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
    //Alert("проинитили направление тренда");
+   InitExtremums(frameIndex);
+   //Alert("проинитили экстремумы MACD");
+   
+   // инициализируем расхождение Stochastic
+   InitStoDivergenceArray(aTimeframe[frameIndex, 0]);
+   //Alert("проинитили расхождение Stochastic");
   }
+  
   return(0);
  }
 //+------------------------------------------------------------------+
@@ -109,6 +118,7 @@ int start(){
      
      total=OrdersTotal();
 
+
      if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
      {
       trendDirection[frameIndex][0] = TwoTitsTrendCriteria(Elder_Timeframe, Elder_MACD_channel, eld_EMA1, eld_EMA2, eldFastMACDPeriod, eldSlowMACDPeriod);
@@ -120,6 +130,35 @@ int start(){
       {
        trendDirection[frameIndex][1] = -1;
       }
+      
+  //--------------------------
+  // проверяемм что все еще хотим открываться
+  //--------------------------     
+      if (wantToOpen[frameIndex][1] != 0) // если хотели открываться по расхождению Stochastic
+      {
+       barsCountToBreak[frameIndex][1]++;
+       if (barsCountToBreak[frameIndex][1] > breakForStochastic)
+       { 
+        barsCountToBreak[frameIndex][1] = 0; // дальше 2х баров забываем, что хотели открываться
+        wantToOpen[frameIndex][1] = 0;
+       }
+      }
+  //--------------------------
+  // проверяем, что все еще хотим открываться
+  //--------------------------     
+      
+  //--------------------------
+  // вычисляем расхождение Stochastic
+  //--------------------------    
+      InitStoDivergenceArray(Elder_Timeframe); 
+      if (wantToOpen[frameIndex][1] == 0) // если еще не хотим открываться
+      {   
+       wantToOpen[frameIndex][1] = isStoDivergence(Elder_Timeframe);  // проверяем на расхождение на этом баре    
+      }
+  //--------------------------
+  // вычисляем расхождение Stochastic
+  //-------------------------- 
+     
      } // close isNewBar(Elder_Timeframe)
 
      //-------------------------------------------------------------------------------------------
@@ -140,43 +179,41 @@ int start(){
        trendDirection[frameIndex][1] = -1;
        return(0);
       }
-      
-      Stochastic = iStochastic(NULL, Elder_Timeframe, Kperiod, Dperiod , slowing ,MODE_SMA,0,MODE_MAIN,1);
-      if (Stochastic > topStochastic) // Стохастик наверху, перепокупка - будем продавать
+
+	//--------------------------
+	// Расхождение 
+	//--------------------------
+	   if (wantToOpen[frameIndex][1] > 0) // нашли расхождение вверх (ждем рост), ждем пробой максимума, будем покупать
       {
-	    if (iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 1) < iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
-           iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) > iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА сверху вниз
-	    {
-	     if (Ask > iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point)
-	     {   
-	      openPlace = "старший ТФ флэт, стохастик наверху, на младшем пересечение ЕМА сверху вниз ";
-	      if (DesepticonBreakthrough2(-1, Jr_Timeframe) <= 0) // при определенной экстремальной цене, ищем пробой, открываемся
-	      {
-	       // вставить обработчик ошибки открытия сделки 
-	      }
+       if (Bid < iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) + deltaPriceToEMA*Point)
+       {
+        openPlace = "старший ТФ флэт, " + openPlace;
+	     if (DesepticonBreakthrough2(1, Jr_Timeframe) != 0) // при определенной экстремальной цене, ищем пробой, открываемся
+	     {
+	      // вставить обработчик ошибки открытия сделки 
 	     }
-	    } // close пересечение ЕМА сверху вниз   
-	   }  // close Стохастик наверху       
-	 
-      if (Stochastic < bottomStochastic) // Стохастик внизу, перепродажа - будем покупать
-	   {  			   
-       if (iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 1) > iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
-           iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) < iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА снизу вверх
-	    {
-	     if (Bid < iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) + deltaPriceToEMA*Point)
-	     {   
-	      openPlace = "старший ТФ флэт, стохастик внизу, на младшем пересечение ЕМА снизу вверх ";
-	      if (DesepticonBreakthrough2(1, Jr_Timeframe) != 0) // при определенной экстремальной цене, ищем пробой, открываемся
-	      {
-	       // вставить обработчик ошибки открытия сделки 
-	      }
+	    }
+      } // close нашли расхождение вверх
+    
+      if (wantToOpen[frameIndex][1] < 0) // нашли расхождение вниз (ждем падение), ждем пробой минимума, будем продавать
+      {
+       if (Ask > iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point)
+       {
+        openPlace = "старший ТФ флэт, " + openPlace;
+	     if (DesepticonBreakthrough2(-1, Jr_Timeframe) <= 0) // при определенной экстремальной цене, ищем пробой, открываемся
+	     {
+	      // вставить обработчик ошибки открытия сделки 
 	     }
-	    } // close пересечение ЕМА снизу вверх
-	   } // close Стохастик внизу
+	    }
+      } // close нашли расхождение вниз
+	//--------------------------
+	// Расхождение 
+	//--------------------------
+   
      } // close Флэт	
     } // close цикл
 //----
-	if (UseTrailing) DesepticonTrailing(NULL, Jr_Timeframe); 
+	if (UseTrailing) DesepticonTrailing(NULL, Jr_Timeframe);
 	return(0);
 } // close start
 //+------------------------------------------------------------------+
