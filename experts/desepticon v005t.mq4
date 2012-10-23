@@ -6,27 +6,29 @@
 #property copyright "Copyright © 2011, GIA"
 #property link      "http://www.saita.net"
 
+//------- Внешние параметры советника -----------------------------------------+
+
+
+
+//------- Глобальные переменные советника -------------------------------------+
+double aCorrection[3][2]; // [][0] - наличие коррекции, [][1] - значение цены
+
+//------- Подключение внешних модулей -----------------------------------------+
 #include <stdlib.mqh>
 #include <stderror.mqh>
 #include <WinUser32.mqh>
 //--------------------------------------------------------------- 3 --
 #include <DesepticonVariables.mqh>    // Описание переменных 
 #include <AddOnFuctions.mqh> 
-//#include <InitDivergenceArray.mqh>
-//#include <InitExtremums.mqh>
 #include <CheckBeforeStart.mqh>       // Проверка входных параметров
 #include <DesepticonTrendCriteria.mqh>
 #include <Correction.mqh>
-//#include <direction_MACD.mqh>
 #include <DesepticonBreakthrough2.mqh>
 #include <searchForTits.mqh>
-//#include <DesepticonDivergence.mqh>
 #include <GetLastOrderHist.mqh>
 #include <GetLots.mqh>     // На какое количество лотов открываемся
 #include <isNewBar.mqh>
-//#include <UpdateDivergenceArray.mqh>
 #include <isMACDExtremum.mqh>
-//#include <isDivergence.mqh>
 #include <DesepticonOpening.mqh>
 #include <DesepticonTrailing.mqh>
 
@@ -35,18 +37,7 @@
 //+------------------------------------------------------------------+
 int init(){
   Alert("Сработала ф-ия init() при запуске");
-  
-  aTimeframe[0,0] = PERIOD_D1; 
-  aTimeframe[0,1] = TakeProfit_1D;
-  aTimeframe[0,2] = StopLoss_1D_min;
-  aTimeframe[0,3] = StopLoss_1D_max;
-  aTimeframe[0,4] = MACD_channel_1D;
-  aTimeframe[0,5] = MinProfit_1D;
-  aTimeframe[0,6] = TrailingStop_1D_min;
-  aTimeframe[0,7] = TrailingStop_1D_max;
-  aTimeframe[0,8] = TrailingStep_1D;
-  aTimeframe[0,9] = PERIOD_H1;
-  
+
   aTimeframe[1,0] = PERIOD_H1;
   aTimeframe[1,1] = TakeProfit_1H;
   aTimeframe[1,2] = StopLoss_1H_min;
@@ -57,18 +48,7 @@ int init(){
   aTimeframe[1,7] = TrailingStop_1H_max;
   aTimeframe[1,8] = TrailingStep_1H;
   aTimeframe[1,9] = PERIOD_M5;
-  
-  aTimeframe[2,0] = PERIOD_M5;
-  aTimeframe[2,1] = TakeProfit_5M;
-  aTimeframe[2,2] = StopLoss_5M_min;
-  aTimeframe[2,3] = StopLoss_5M_max;
-  aTimeframe[2,4] = MACD_channel_5M;
-  aTimeframe[2,5] = MinProfit_5M;
-  aTimeframe[2,6] = TrailingStop_5M_min;
-  aTimeframe[2,7] = TrailingStop_5M_max;
-  aTimeframe[2,8] = TrailingStep_5M;
-  aTimeframe[2,9] = PERIOD_M5;
-  
+
   ArrayInitialize(aCorrection, 0);
   
   for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)

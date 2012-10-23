@@ -16,9 +16,9 @@ double aStochastic[3][10][5]; // [][0] - резерв
 // --- Проверяем не появились ли новые экстремумы --- 
 int isStochasticExtremum(int timeframe, int startIndex = 0)
 {
-  double Sto1 = iStochastic(NULL,timeframe, 5, 3, 3 ,MODE_SMA,0,MODE_MAIN, startIndex + 1);
-  double Sto2 = iStochastic(NULL,timeframe, 5, 3, 3 ,MODE_SMA,0,MODE_MAIN, startIndex + 2);
-  double Sto3 = iStochastic(NULL,timeframe, 5, 3, 3 ,MODE_SMA,0,MODE_MAIN, startIndex + 3);
+  double Sto1 = iStochastic(NULL,timeframe, Kperiod, Dperiod, slowing ,MODE_SMA,0,MODE_MAIN, startIndex + 1);
+  double Sto2 = iStochastic(NULL,timeframe, Kperiod, Dperiod, slowing ,MODE_SMA,0,MODE_MAIN, startIndex + 2);
+  double Sto3 = iStochastic(NULL,timeframe, Kperiod, Dperiod, slowing ,MODE_SMA,0,MODE_MAIN, startIndex + 3);
 
   if (Sto1 < Sto2 && Sto3 < Sto2) // Нашли еще один максимум
   {
@@ -73,7 +73,7 @@ void InitStoDivergenceArray(int timeframe)
   { 
    cnt++;
    
-   aStochastic[index][cnt][1] = iStochastic(NULL, timeframe, 5, 3, 3, MODE_SMA, 0, MODE_MAIN, bar_num+2); // Значение локального максимума Stochastic
+   aStochastic[index][cnt][1] = iStochastic(NULL, timeframe, Kperiod, Dperiod, slowing, MODE_SMA, 0, MODE_MAIN, bar_num+2); // Значение локального максимума Stochastic
    //aStochastic[index][cnt][2] = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 3, bar_num+2)); // максимум цены в локальном максимуме //iHighest(NULL, PERIOD_M15, MODE_HIGH, depthPrice, 0)]; 
    aStochastic[index][cnt][3] = bar_num+2; // номер бара с максимумом
    aStochastic[index][cnt][4] = 1; // это локальный максимум  
@@ -82,7 +82,7 @@ void InitStoDivergenceArray(int timeframe)
   if (stochasticExtremum < 0) // Если есть минимум на Stochastic
   {
    cnt++;
-   aStochastic[index][cnt][1] = iStochastic(NULL, timeframe, 5, 3, 3, MODE_SMA, 0, MODE_MAIN, bar_num+2); // Значение локального минимума Stochastic
+   aStochastic[index][cnt][1] = iStochastic(NULL, timeframe, Kperiod, Dperiod, slowing, MODE_SMA, 0, MODE_MAIN, bar_num+2); // Значение локального минимума Stochastic
    //aStochastic[index][cnt][2] = iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 3, bar_num+2)); // минимум цены в локальном максимуме //iHighest(NULL, PERIOD_M15, MODE_HIGH, depthPrice, 0)]; 
    aStochastic[index][cnt][3] = bar_num+2; // номер бара с минимумом
    aStochastic[index][cnt][4] = -1; // это локальный минимум  
@@ -145,13 +145,10 @@ int isStoDivergence(int timeframe)
   } // close Дождались очередного максимума Sto
  } // close цена текущего стохастика больше, чем в истории
  
- //Alert("цена текущего стохастика =", curMinPrice, " минимальная цена на 2-10 последних барах=",minPrice);
  if(curMinPrice < minPrice) // цена текущего стохастика меньше чем в истории
  {
-  //Alert("цена текущего стохастика меньше чем в истории");
   if (stochasticExtremum < 0 && aStochastic[index][1][1] > 20) // Дождались очередного минимума стохастика больше 20
   {
-   //Alert("");
    for (i = 2; i <= nPicks; i++)
    {
     if (aStochastic[index][i][4] < 0 && aStochastic[index][i][1] < 20) // минимум, меньше 20
