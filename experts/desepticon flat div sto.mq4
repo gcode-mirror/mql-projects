@@ -51,6 +51,8 @@ int init(){
   aTimeframe[1,8] = TrailingStep_1H;
   aTimeframe[1,9] = PERIOD_M5;
   
+  aTimeframe[2,0] = PERIOD_M5;
+  
   for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
   {
    InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
