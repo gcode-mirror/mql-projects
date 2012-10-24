@@ -26,14 +26,14 @@ extern int _MagicNumber = 1122;
 //extern double MACD_channel_15M = 0.001;
 
 extern double StopLoss_1H_min = 400;
-extern double StopLoss_1H_max = 150;
+extern double StopLoss_1H_max = 500;
 extern double TakeProfit_1H = 1600;
 extern double MACD_channel_1H = 0.002;
 
 //extern
  double StopLoss_1D_min = 400;
 //extern
- double StopLoss_1D_max = 150;
+ double StopLoss_1D_max = 500;
 //extern
  double TakeProfit_1D = 1600;
 //extern
