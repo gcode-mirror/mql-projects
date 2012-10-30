@@ -21,14 +21,14 @@ int isMACDExtremum(int timeframe, int fastPeriod, int slowPeriod, int startIndex
   double M4 = iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, startIndex + 4);
 
   //if (M0 < M2 && M1 < M2 && M2 > M3 && M2 > M4 && M2 > 0) // Нашли еще один максимум
-  if (M1 < M2 && M2 > M3 && M2 > M4 && M2 > 0)
+  if (M1 < M2 && M2 > M3 && M2 > M4 && M2 > differenceMACD)
   {
    //Alert("Нашли новый максимум на MACD ");
    return(1);
   }
 
   //if (M0 > M2 && M1 > M2 && M2 < M3 && M2 < M4 && M2 < 0) // Нашли еще один минимум
-  if (M1 > M2 && M2 < M3 && M2 < M4 && M2 < 0) 
+  if (M1 > M2 && M2 < M3 && M2 < M4 && M2 < -differenceMACD) 
   {
    //Alert("Нашли новый минимум на MACD ");
    return(-1);     

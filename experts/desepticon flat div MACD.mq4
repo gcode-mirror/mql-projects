@@ -11,7 +11,7 @@ extern int hairLength = 250;
 
 extern int divergenceFastMACDPeriod = 12;
 extern int divergenceSlowMACDPeriod = 26;
-extern double differenceMACD = 0.0001;
+
 extern double differencePrice = 10;
 //------- Глобальные переменные советника -------------------------------------+
 

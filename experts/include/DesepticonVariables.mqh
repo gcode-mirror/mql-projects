@@ -86,7 +86,7 @@ extern int depthPrice = 5;
 extern int barsToWait = 60;
 
 extern int depthDiv = 100;
-
+extern double differenceMACD = 0.0001;
 // --- Параметры управления капиталом ---
 extern bool uplot = true; // вкл/выкл изменение величины лота
 extern int lastprofit = -1; // принимает значения -1/1. 
