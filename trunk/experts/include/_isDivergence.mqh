@@ -133,7 +133,7 @@ int _isDivergence(int timeframe)
  double minPrice = 
       iLow(NULL, timeframe, minPriceBarNumber); // считаем минимальную цену на 15-100 последних барах
 
- if (maxPriceForDiv[index][0] > maxPrice + differencePrice) // на последних 15-ти барах цена выше максимума на 15-100
+ if (maxPriceForDiv[index][0] > maxPrice + differencePrice*Point) // на последних 15-ти барах цена выше максимума на 15-100
  {
   //Alert("на последних 15-ти барах цена выше максимума на 15-100, номер бара ", maxPriceForDiv[index][1]);
   if (ExtremumMACD > 0) // Дождались очередного максимума MACD
@@ -156,7 +156,7 @@ int _isDivergence(int timeframe)
   } // close Дождались очередного максимума MACD
  }
  
- if (minPriceForDiv[index][0] < minPrice - differencePrice) // на последних 10-ти барах цена ниже минимума на 10-100
+ if (minPriceForDiv[index][0] < minPrice - differencePrice*Point) // на последних 10-ти барах цена ниже минимума на 10-100
  {
   if (ExtremumMACD < 0) // Дождались очередного минимума MACD
   {
