@@ -9,7 +9,6 @@
 //------- Внешние параметры советника -----------------------------------------+
 extern int divergenceFastMACDPeriod = 12;
 extern int divergenceSlowMACDPeriod = 26;
-extern double differenceMACD = 0.0001;
 extern double differencePrice = 10;
 
 extern int Kperiod = 5;
