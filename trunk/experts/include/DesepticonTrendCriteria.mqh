@@ -45,16 +45,13 @@ int InitTrendDirection(int timeframe, double MACD_channel)
       break;
  }
  
- //Alert("все еще должно быть нормально, timeframe=",timeframe," fastPeriod=",fastPeriod," slowPeriod=",slowPeriod, " MACD_channel=", MACD_channel);
  while (!isTrendDefined && i < depth)
  {
-  //Alert("MACD_channel=",-MACD_channel,"  iMACD=",iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, 1));
   while((MACD_channel > iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i)
         && iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i) > -MACD_channel) && i < 200)
   {
    i++;
   }
-  //Alert("i=",i);
   Current_fastEMA = iMA(NULL, timeframe, fastEMA, 0, 1, 0, i);
   Current_slowEMA = iMA(NULL, timeframe, slowEMA, 0, 1, 0, i);
   if ((Current_fastEMA < (Current_slowEMA - deltaEMAtoEMA*Point)))
@@ -65,7 +62,6 @@ int InitTrendDirection(int timeframe, double MACD_channel)
   }
   if ((Current_fastEMA > (Current_slowEMA + deltaEMAtoEMA*Point)) )
   {
-   //Alert("i=",i,"  Current_fastEMA=",Current_fastEMA,"  Current_slowEMA=",Current_slowEMA + deltaEMAtoEMA*Point);
    trendDirection[index][1] = 1;
    isTrendDefined = true;
    return(1);
@@ -153,10 +149,8 @@ int TwoTitsTrendCriteria(int timeframe, double MACD_channel, int period_EMA1, in
   {  // Слабый MACD
    if (isMACDExtremum(timeframe, fastEMAPeriod, slowEMAPeriod) != 0)
    {
-    //Alert("isMACDExtremum = ",isMACDExtremum(timeframe, fastEMAPeriod, slowEMAPeriod));
     if (searchForTits(timeframe, MACD_channel, true))
     {
-     //Alert("нашли титьки");
      return (0);
     } // Close  searchForTits
    }
@@ -165,13 +159,11 @@ int TwoTitsTrendCriteria(int timeframe, double MACD_channel, int period_EMA1, in
   
   if ((Current_fastEMA < (Current_slowEMA - deltaEMAtoEMA*Point)))
   {
-   //Alert("Current_fastEMA=",Current_fastEMA,"  (Current_slowEMA - deltaEMAtoEMA*Point)=",(Current_slowEMA - deltaEMAtoEMA*Point));
    // медленный ЕМА выше быстрого - тренд вниз
 	return (-1);   
   }
   else if ((Current_fastEMA > (Current_slowEMA + deltaEMAtoEMA*Point)) )
        {
-       //Alert("Current_fastEMA=",Current_fastEMA,"  (Current_slowEMA - deltaEMAtoEMA*Point)=",(Current_slowEMA - deltaEMAtoEMA*Point));\
        // медленный ЕМА ниже быстрого - тренд вверх
        return (1);
        }
