@@ -48,7 +48,7 @@ int InitTrendDirection(int timeframe, double MACD_channel)
  while (!isTrendDefined && i < depth)
  {
   while((MACD_channel > iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i)
-        && iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i) > -MACD_channel) && i < 200)
+        && iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i) > -MACD_channel) && i < depth)
   {
    i++;
   }

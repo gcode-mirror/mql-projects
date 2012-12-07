@@ -10,11 +10,6 @@
 // --- Проверяем не появились ли новые экстремумы --- 
 int isMACDExtremum(int timeframe, int fastPeriod, int slowPeriod, int startIndex = 0)
 {
-  //Alert ("Ищем экстремум MACD_2");
-  //int qnt = aDivergence[frameIndex][0][0];
-  //int i; int j;
-  
-  //double M0 = iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, startIndex);
   double M1 = iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, startIndex + 1);
   double M2 = iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, startIndex + 2);
   double M3 = iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, startIndex + 3);
@@ -36,14 +31,9 @@ int isMACDExtremum(int timeframe, int fastPeriod, int slowPeriod, int startIndex
   return(0);
 }
 
-// --- Проверяем не появились ли новые ямы --- 
+// --- Проверяем не появились ли новые перегибы --- 
 int isMACDPit(int timeframe, int fastPeriod, int slowPeriod, int startIndex = 0)
 {
-  //Alert ("Ищем экстремум MACD_2");
-  //int qnt = aDivergence[frameIndex][0][0];
-  //int i; int j;
-  
-  //double M0 = iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, startIndex);
   double M1 = iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, startIndex + 1);
   double M2 = iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, startIndex + 2);
   double M3 = iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, startIndex + 3);
