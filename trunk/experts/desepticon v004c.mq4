@@ -175,240 +175,306 @@ int CheckSellCondition()
 int start(){
  if (_isTradeAllow)
  {
-	for (frameIndex = startTF; frameIndex < finishTF; frameIndex++){
-     //Alert ("Вход на новый ТФ");
-     //Alert ("frameIndex", frameIndex);
-     Jr_Timeframe = aTimeframe[frameIndex, 9];
-     Elder_Timeframe = aTimeframe[frameIndex, 0];
+  for (frameIndex = startTF; frameIndex < finishTF; frameIndex++)
+  {
+   Jr_Timeframe = aTimeframe[frameIndex, 9];
+   Elder_Timeframe = aTimeframe[frameIndex, 0];
      
-     TakeProfit = aTimeframe[frameIndex, 1];
-     StopLoss_min = aTimeframe[frameIndex, 2];
-     StopLoss_max = aTimeframe[frameIndex, 3]; 
-     Jr_MACD_channel = aTimeframe[frameIndex + 1, 4];
-     Elder_MACD_channel = aTimeframe[frameIndex, 4];
+   TakeProfit = aTimeframe[frameIndex, 1];
+   StopLoss_min = aTimeframe[frameIndex, 2];
+   StopLoss_max = aTimeframe[frameIndex, 3]; 
+   Jr_MACD_channel = aTimeframe[frameIndex + 1, 4];
+   Elder_MACD_channel = aTimeframe[frameIndex, 4];
+   
+   MinProfit = aTimeframe[frameIndex, 5]; 
+   TrailingStop_min = aTimeframe[frameIndex, 6];
+   TrailingStop_max = aTimeframe[frameIndex, 7]; 
+   TrailingStep = aTimeframe[frameIndex, 8];
      
-     MinProfit = aTimeframe[frameIndex, 5]; 
-     TrailingStop_min = aTimeframe[frameIndex, 6];
-     TrailingStop_max = aTimeframe[frameIndex, 7]; 
-     TrailingStep = aTimeframe[frameIndex, 8];
+   if (!CheckBeforeStart())   // проверяем входные параметры
+   {
+    PlaySound("alert2.wav");
+    _isTradeAllow = false;
+    return (0); 
+   }
      
-     if (!CheckBeforeStart())   // проверяем входные параметры
+   total=OrdersTotal();
+     
+   if (total > 0)
+   {
+    for (int i=0; i<total; i++)
+    {
+     if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
      {
-      PlaySound("alert2.wav");
-      _isTradeAllow = false;
-      return (0); 
-     }
-     
-     total=OrdersTotal();
-  
-     if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
-     {
-      trendDirection[frameIndex][0] = TwoTitsTrendCriteria(Elder_Timeframe, Elder_MACD_channel, eld_EMA1, eld_EMA2, eldFastMACDPeriod, eldSlowMACDPeriod);
-      
-      if (aCorrection[frameIndex][0] > 0) // коррекция вверх
+      if (OrderMagicNumber() == _MagicNumber)  
       {
-       if (trendDirection[frameIndex][0] > 0 || Bid < aCorrection[frameIndex][1]) // тренд вверх
+       if (OrderType()==OP_BUY)   // Открыта длинная позиция BUY
        {
-        ArrayInitialize(aCorrection, 0); // конец коррекции вверх
+        if (!isMinProfit && Bid-OrderOpenPrice() > MinimumLvl*Point) // достигли минимального уровня прибыли
+        {
+         isMinProfit = true;
+         Alert("мин профит на промежутке. Прекращаем отсчет. isMinProfit = ",isMinProfit);
+        }
+
+        if (Bid-OrderOpenPrice() > MinProfit*Point) // получили минимальный профит
+        {
+         if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0) 
+                > iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) + deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+         {
+          ClosePosBySelect(Bid, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль"); // закрываем позицию BUY
+          Alert("Закрыли ордер, обнуляем переменные. Bid-OrderOpenPrice()= ",Bid-OrderOpenPrice(), " MinProfit ", MinProfit*Point);
+         }
+        } // close получили минимальный профит 
+       } // Close открыта длинная позиция BUY
+        
+       if (OrderType()==OP_SELL) // Открыта короткая позиция SELL
+       {
+        if (!isMinProfit && OrderOpenPrice()-Ask > MinimumLvl*Point) // достигли минимального уровня прибыли
+        {
+         isMinProfit = true;
+         Alert("Sell, мин профит на промежутке. Прекращаем отсчет. isMinProfit = ",isMinProfit);
+        }
+
+        if (OrderOpenPrice()-Ask > MinProfit*Point)
+        {
+         isMinProfit = true;
+         if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0)
+                < iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) - deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+         {
+          ClosePosBySelect(Ask, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль");// закрываем позицию SELL
+          Alert("Закрыли ордер, обнуляем переменные. OrderOpenPrice()-Ask= ",OrderOpenPrice()-Ask, " MinProfit ", MinProfit*Point);
+         }
+        } // close получили минимальный профит
+       } // Close Открыта короткая позиция SELL
+      } // close _MagicNumber от этого Jr_Timeframe
+     } // close OrderSelect 
+    } // close for
+   } // close total > 0
+     
+   if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
+   {
+    total=OrdersTotal();
+
+    if (total > 0 && !isMinProfit)
+    {
+     barNumber++; // увеличиваем счетчик баров если есть открытые сделки недостигшие минпрофита
+     Alert("мин профит еще не был достигнут, сделки есть, увеличивали счетчик barNumber=",barNumber);
+     if (barNumber > waitForMove) // если слишком долго ждем движения в нашу сторону
+     {
+      for (i=0; i<total; i++) // идем по всем сделкам
+      {
+       if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
+       {
+        if (OrderMagicNumber() == _MagicNumber) // выбираем нашу сделку
+        {
+         //ClosePosBySelect(-1, "сделка не ушла в прибыль слишком долгое время");// закрываем позицию
+        }
        }
-      } // close коррекция вверх
-      else if (aCorrection[frameIndex][0] < 0) // коррекция вниз
-           {
-            if (trendDirection[frameIndex][0] < 0 || Ask > aCorrection[frameIndex][1]) // тренд вниз
-            {
-             ArrayInitialize(aCorrection, 0); // конец коррекции вниз
-            }
-           } // close коррекция вниз
-           else  // нет коррекции
-           {
-            Correction(); // проверим не началась ли коррекция
-           }
-           
+      } 
+     }
+    }
+
+    trendDirection[frameIndex][0] = TwoTitsTrendCriteria(Elder_Timeframe, Elder_MACD_channel, eld_EMA1, eld_EMA2, eldFastMACDPeriod, eldSlowMACDPeriod);
+    
+    if (aCorrection[frameIndex][0] > 0) // коррекция вверх
+    {
+     if (trendDirection[frameIndex][0] > 0 || Bid < aCorrection[frameIndex][1]) // тренд вверх
+     {
+      ArrayInitialize(aCorrection, 0); // конец коррекции вверх
+     }
+    } // close коррекция вверх
+    else if (aCorrection[frameIndex][0] < 0) // коррекция вниз
+         {
+          if (trendDirection[frameIndex][0] < 0 || Ask > aCorrection[frameIndex][1]) // тренд вниз
+          {
+           ArrayInitialize(aCorrection, 0); // конец коррекции вниз
+          }
+         } // close коррекция вниз
+         else  // нет коррекции
+         {
+          Correction(); // проверим не началась ли коррекция
+         }
+         
   //--------------------------
   // проверяемм что все еще хотим открываться
   //--------------------------     
-      if (wantToOpen[frameIndex][0] != 0) // если хотели открываться по расхождению MACD
-      {
-       barsCountToBreak[frameIndex][0]++;
-       if (barsCountToBreak[frameIndex][0] > breakForMACD)
-       { 
-        barsCountToBreak[frameIndex][0] = 0; // дальше 4х баров забываем, что хотели открываться
-        wantToOpen[frameIndex][0] = 0;
-       }
-      }
-      
-      if (wantToOpen[frameIndex][1] != 0) // если хотели открываться по расхождению Stochastic
-      {
-       barsCountToBreak[frameIndex][1]++;
-       if (barsCountToBreak[frameIndex][1] > breakForStochastic)
-       { 
-        barsCountToBreak[frameIndex][1] = 0; // дальше 2х баров забываем, что хотели открываться
-        wantToOpen[frameIndex][1] = 0;
-       }
-      }
-      
-  //--------------------------
-  // вычисляем расхождение MACD на старшем
-  //--------------------------     
-      UpdateDivergenceArray(Elder_Timeframe); // Обновляем массив экстремумов MACD
-      InitExtremums(frameIndex); // обновляем максимумы цены и MACD
-      if (wantToOpen[frameIndex][0] == 0) // если еще не хотим открываться
-      {   
-       wantToOpen[frameIndex][0] = _isDivergence(Elder_Timeframe);  // проверяем на расхождение на этом баре       
-      } 
-
-  //--------------------------
-  // вычисляем расхождение MACD на младшем
-  //--------------------------     
-      UpdateDivergenceArray(Jr_Timeframe); // Обновляем массив экстремумов MACD
-      InitExtremums(frameIndex + 1); // обновляем максимумы цены и MACD
-      if (wantToOpen[frameIndex + 1][0] == 0) // если еще не хотим открываться
-      {   
-       wantToOpen[frameIndex + 1][0] = _isDivergence(Jr_Timeframe);  // проверяем на расхождение на этом баре       
-      } 
-
-  //--------------------------
-  // вычисляем расхождение Stochastic на старшем
-  //--------------------------    
-      InitStoDivergenceArray(Elder_Timeframe); 
-      if (wantToOpen[frameIndex][1] == 0) // если еще не хотим открываться
-      {   
-       wantToOpen[frameIndex][1] = isStoDivergence(Elder_Timeframe);  // проверяем на расхождение на этом баре    
-      }
-
-  //--------------------------
-  // вычисляем расхождение Stochastic на младшем
-  //--------------------------    
-      InitStoDivergenceArray(Jr_Timeframe); 
-      if (wantToOpen[frameIndex + 1][1] == 0) // если еще не хотим открываться
-      {   
-       wantToOpen[frameIndex + 1][1] = isStoDivergence(Jr_Timeframe);  // проверяем на расхождение на этом баре    
-      }
-     } // close isNewBar
-     
-  //--------------------------------------
-  // временная заглушка для отказа от торговли при флэте на младшем ТФ
-  //--------------------------------------
-     if( isNewBar(Jr_Timeframe) ) // на каждом новом баре младшего ТФ вычисляем тренд на младшем
-     {
-      trendDirection[frameIndex + 1][0] = TwoTitsTrendCriteria(Jr_Timeframe, Jr_MACD_channel, jr_EMA1, jr_EMA2, jrFastMACDPeriod, jrSlowMACDPeriod);
-      
-  //--------------------------
-  // проверяемм что все еще хотим открываться
-  //--------------------------     
-      if (wantToOpen[frameIndex + 1][0] != 0) // если хотели открываться по расхождению MACD
-      {
-       barsCountToBreak[frameIndex + 1][0]++;
-       if (barsCountToBreak[frameIndex + 1][0] > breakForMACD)
-       { 
-        barsCountToBreak[frameIndex + 1][0] = 0; // дальше 4х баров забываем, что хотели открываться
-        wantToOpen[frameIndex + 1][0] = 0;
-       }
-      }
-      
-      if (wantToOpen[frameIndex + 1][1] != 0) // если хотели открываться по расхождению Stochastic
-      {
-       barsCountToBreak[frameIndex + 1][1]++;
-       if (barsCountToBreak[frameIndex + 1][1] > breakForStochastic)
-       { 
-        barsCountToBreak[frameIndex + 1][1] = 0; // дальше 2х баров забываем, что хотели открываться
-        wantToOpen[frameIndex + 1][1] = 0;
-       }
-      }
-      
-  //--------------------------
-  // запоминаем текущий тренд
-  //-------------------------- 
-      if (trendDirection[frameIndex + 1][0] > 0) // Есть тренд вверх на младшем таймфрейме
-      { 
-       trendDirection[frameIndex + 1][1] = 1;
-      } 
-      if (trendDirection[frameIndex + 1][0] < 0) // Есть тренд вверх на младшем таймфрейме
-      {
-       trendDirection[frameIndex + 1][1] = -1;
-      }
-     } // close  isNewBar(Jr_Timeframe)
-     if (trendDirection[frameIndex + 1][0] == 0) // если на младшем флэт не торгуем
-     {
-      //Alert("флэт на младшем");
-      continue; // торговать все равно не будем
+    if (wantToOpen[frameIndex][0] != 0) // если хотели открываться по расхождению MACD
+    {
+     barsCountToBreak[frameIndex][0]++;
+     if (barsCountToBreak[frameIndex][0] > breakForMACD)
+     { 
+      barsCountToBreak[frameIndex][0] = 0; // дальше 4х баров забываем, что хотели открываться
+      wantToOpen[frameIndex][0] = 0;
      }
-  //--------------------------------------
-  // временная заглушка для отказа от торговли при флэте на младшем ТФ
-  //--------------------------------------     
-     
-     Stochastic = iStochastic(NULL, Elder_Timeframe, Kperiod, Dperiod , slowing ,MODE_SMA,0,MODE_MAIN,1);
-     buyCondition = CheckBuyCondition();
-     sellCondition = CheckSellCondition();
-     
-     //-------------------------------------------------------------------------------------------
-     // Большой тренд вверх
-     //-------------------------------------------------------------------------------------------
-     if (trendDirection[frameIndex][0] > 0) // Есть тренд вверх на старшем таймфрейме
-     {
-      trendDirection[frameIndex][1] = 1;
-      //Alert("старший тренд вверх");
-      if (aCorrection[frameIndex][0] < 0) // коррекция вниз
-      {
-       if (buyCondition > sellCondition)
-       {
-        //Alert("buyCondition коррекция вниз");
-        //openPlace = "коррекция на старшем против тренда вверх, " + openPlace;
-        if (DesepticonBreakthrough2(1, Jr_Timeframe) <= 0)
-	     {
-	       // вставить обработчик ошибки открытия сделки 
-	     }
-	     openPlace = "";
-       }
-       if (sellCondition > buyCondition)
-       {
-        //Alert("sellCondition коррекция вниз");
-        //openPlace = "коррекция на старшем против тренда вверх, " + openPlace;
-        if (DesepticonBreakthrough2(-1, Jr_Timeframe) <= 0)
-	     {
-	       // вставить обработчик ошибки открытия сделки 
-	     }
-	     openPlace = "";
-       }
-      } // close коррекция вниз
+    }
+    
+    if (wantToOpen[frameIndex][1] != 0) // если хотели открываться по расхождению Stochastic
+    {
+     barsCountToBreak[frameIndex][1]++;
+     if (barsCountToBreak[frameIndex][1] > breakForStochastic)
+     { 
+      barsCountToBreak[frameIndex][1] = 0; // дальше 2х баров забываем, что хотели открываться
+      wantToOpen[frameIndex][1] = 0;
      }
+    }
+    
+//--------------------------
+// вычисляем расхождение MACD на старшем
+//--------------------------     
+    UpdateDivergenceArray(Elder_Timeframe); // Обновляем массив экстремумов MACD
+    InitExtremums(frameIndex); // обновляем максимумы цены и MACD
+    if (wantToOpen[frameIndex][0] == 0) // если еще не хотим открываться
+    {   
+     wantToOpen[frameIndex][0] = _isDivergence(Elder_Timeframe);  // проверяем на расхождение на этом баре       
+    } 
+//--------------------------
+// вычисляем расхождение MACD на младшем
+//--------------------------     
+    UpdateDivergenceArray(Jr_Timeframe); // Обновляем массив экстремумов MACD
+    InitExtremums(frameIndex + 1); // обновляем максимумы цены и MACD
+    if (wantToOpen[frameIndex + 1][0] == 0) // если еще не хотим открываться
+    {   
+     wantToOpen[frameIndex + 1][0] = _isDivergence(Jr_Timeframe);  // проверяем на расхождение на этом баре       
+    } 
+//--------------------------
+// вычисляем расхождение Stochastic на старшем
+//--------------------------    
+    InitStoDivergenceArray(Elder_Timeframe); 
+    if (wantToOpen[frameIndex][1] == 0) // если еще не хотим открываться
+    {   
+     wantToOpen[frameIndex][1] = isStoDivergence(Elder_Timeframe);  // проверяем на расхождение на этом баре    
+    }
 
-     //-------------------------------------------------------------------------------------------
-     // Большой тренд вниз
-     //-------------------------------------------------------------------------------------------     
-     if (trendDirection[frameIndex][0] < 0) // Есть тренд вниз
-     {
-      trendDirection[frameIndex][1] = -1;
-
-      if (aCorrection[frameIndex][0] > 0) // коррекция вверх
-      {
-       if (buyCondition > sellCondition)
-       {
-        //Alert("buyCondition коррекция вверх" );
-        //openPlace = "коррекция на старшем против тренда вниз, " + openPlace;
-        if (DesepticonBreakthrough2(1, Jr_Timeframe) <= 0)
-	     {
-	       // вставить обработчик ошибки открытия сделки 
-	     }
-	     openPlace = "";
-       }
-       if (sellCondition > buyCondition)
-       {
-        //Alert("sellCondition коррекция вверх");
-        //openPlace = "коррекция на старшем против тренда вниз, " + openPlace;
-        if (DesepticonBreakthrough2(-1, Jr_Timeframe) <= 0)
-	     {
-	       // вставить обработчик ошибки открытия сделки 
-	     }
-	     openPlace = "";
-       }
-      } // close коррекция вверх 
+//--------------------------
+// вычисляем расхождение Stochastic на младшем
+//--------------------------    
+    InitStoDivergenceArray(Jr_Timeframe); 
+    if (wantToOpen[frameIndex + 1][1] == 0) // если еще не хотим открываться
+    {   
+     wantToOpen[frameIndex + 1][1] = isStoDivergence(Jr_Timeframe);  // проверяем на расхождение на этом баре    
+    }
+   } // close isNewBar
+    
+//--------------------------------------
+// временная заглушка для отказа от торговли при флэте на младшем ТФ
+//--------------------------------------
+   if( isNewBar(Jr_Timeframe) ) // на каждом новом баре младшего ТФ вычисляем тренд на младшем
+   {
+    trendDirection[frameIndex + 1][0] = TwoTitsTrendCriteria(Jr_Timeframe, Jr_MACD_channel, jr_EMA1, jr_EMA2, jrFastMACDPeriod, jrSlowMACDPeriod);
+    
+//--------------------------
+// проверяемм что все еще хотим открываться
+//--------------------------     
+    if (wantToOpen[frameIndex + 1][0] != 0) // если хотели открываться по расхождению MACD
+    {
+     barsCountToBreak[frameIndex + 1][0]++;
+     if (barsCountToBreak[frameIndex + 1][0] > breakForMACD)
+     { 
+      barsCountToBreak[frameIndex + 1][0] = 0; // дальше 4х баров забываем, что хотели открываться
+      wantToOpen[frameIndex + 1][0] = 0;
      }
-    } // close цикл
+    }
+    
+    if (wantToOpen[frameIndex + 1][1] != 0) // если хотели открываться по расхождению Stochastic
+    {
+     barsCountToBreak[frameIndex + 1][1]++;
+     if (barsCountToBreak[frameIndex + 1][1] > breakForStochastic)
+     { 
+      barsCountToBreak[frameIndex + 1][1] = 0; // дальше 2х баров забываем, что хотели открываться
+      wantToOpen[frameIndex + 1][1] = 0;
+     }
+    }
+     
+//--------------------------
+// запоминаем текущий тренд
+//-------------------------- 
+    if (trendDirection[frameIndex + 1][0] > 0) // Есть тренд вверх на младшем таймфрейме
+    { 
+     trendDirection[frameIndex + 1][1] = 1;
+    } 
+    if (trendDirection[frameIndex + 1][0] < 0) // Есть тренд вниз на младшем таймфрейме
+    {
+     trendDirection[frameIndex + 1][1] = -1;
+    }
+   } // close  isNewBar(Jr_Timeframe)
+   if (trendDirection[frameIndex + 1][0] == 0) // если на младшем флэт не торгуем
+   {
+    continue; // торговать все равно не будем
+   }
+//--------------------------------------
+// временная заглушка для отказа от торговли при флэте на младшем ТФ
+//--------------------------------------     
+     
+   Stochastic = iStochastic(NULL, Elder_Timeframe, Kperiod, Dperiod , slowing ,MODE_SMA,0,MODE_MAIN,1);
+   buyCondition = CheckBuyCondition();
+   sellCondition = CheckSellCondition();
+    
+   //-------------------------------------------------------------------------------------------
+   // Большой тренд вверх
+   //-------------------------------------------------------------------------------------------
+   if (trendDirection[frameIndex][0] > 0) // Есть тренд вверх на старшем таймфрейме
+   {
+    trendDirection[frameIndex][1] = 1;
+    if (aCorrection[frameIndex][0] < 0) // коррекция вниз
+    {
+     if (buyCondition > sellCondition)
+     {
+      if (DesepticonBreakthrough2(1, Jr_Timeframe) > 0)
+      {
+       Alert("открыли сделку, начали отсчет");
+       isMinProfit = false; // сделка длится
+       barNumber = 0;
+      }
+      openPlace = "";
+     }
+     if (sellCondition > buyCondition)
+     {
+      if (DesepticonBreakthrough2(-1, Jr_Timeframe) > 0)
+      {
+       Alert("открыли сделку, начали отсчет");
+       isMinProfit = false; // сделка длится
+       barNumber = 0;
+      }
+      openPlace = "";
+     }
+    } // close коррекция вниз
+   }
+
+   //-------------------------------------------------------------------------------------------
+   // Большой тренд вниз
+   //-------------------------------------------------------------------------------------------     
+   if (trendDirection[frameIndex][0] < 0) // Есть тренд вниз
+   {
+    trendDirection[frameIndex][1] = -1;
+     if (aCorrection[frameIndex][0] > 0) // коррекция вверх
+     {
+      if (buyCondition > sellCondition)
+      {
+       if (DesepticonBreakthrough2(1, Jr_Timeframe) > 0)
+       {
+        Alert("открыли сделку, начали отсчет");
+        isMinProfit = false; // сделка длится
+        barNumber = 0;
+       }
+       openPlace = "";
+      }
+      if (sellCondition > buyCondition)
+      {
+       if (DesepticonBreakthrough2(-1, Jr_Timeframe) > 0)
+	    {
+        Alert("открыли сделку, начали отсчет");
+        isMinProfit = false; // сделка длится
+        barNumber = 0;
+       }
+       openPlace = "";
+      }
+     } // close коррекция вверх 
+    }
+   } // close цикл
 //}
 //----
-	if (UseTrailing) DesepticonTrailing(NULL, Jr_Timeframe);
-	return(0);
+  if (UseTrailing) DesepticonTrailing(NULL, Jr_Timeframe);
+  return(0);
  } // close isTradeAllow
 }
 //+------------------------------------------------------------------+

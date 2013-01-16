@@ -50,6 +50,8 @@ extern bool UseTrailing = true;
 //extern
  double TrailingStep_5M = 100; // Величина шага
 
+extern int waitForMove = 6;
+extern double MinimumLvl = 80;
 extern double MinProfit_1H = 300; // когда профит достигает указанное количество пунктов, трейлинг начинает работу
 extern double TrailingStop_1H_min = 300; // Величина трала
 extern double TrailingStop_1H_max = 300; // Величина трала
@@ -120,6 +122,8 @@ double CurrentMACD;
 double minMACD[2][2]; //[0] - значение, [1] - номер бара
 double maxMACD[2][2]; //[0] - значение, [1] - номер бара
 
+bool isMinProfit;
+int barNumber;
 int wantToOpen[3][2];
 int buyCondition;
 int sellCondition;

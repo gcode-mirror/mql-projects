@@ -74,128 +74,201 @@ int deinit(){
 //+------------------------------------------------------------------+
 //| expert start function                                            |
 //+------------------------------------------------------------------+
-int start(){
-	for (frameIndex = startTF; frameIndex < finishTF; frameIndex++){
-     //Alert ("Вход на новый ТФ");
-     //Alert ("frameIndex", frameIndex);
-     Jr_Timeframe = aTimeframe[frameIndex, 9];
-     Elder_Timeframe = aTimeframe[frameIndex, 0];
-     
-     TakeProfit = aTimeframe[frameIndex, 1];
-     StopLoss_min = aTimeframe[frameIndex, 2];
-     StopLoss_max = aTimeframe[frameIndex, 3]; 
-     Jr_MACD_channel = aTimeframe[frameIndex + 1, 4];
-     Elder_MACD_channel = aTimeframe[frameIndex, 4];
-     
-     MinProfit = aTimeframe[frameIndex, 5]; 
-     TrailingStop_min = aTimeframe[frameIndex, 6];
-     TrailingStop_max = aTimeframe[frameIndex, 7]; 
-     TrailingStep = aTimeframe[frameIndex, 8];
-     
-     if (!CheckBeforeStart())   // проверяем входные параметры
-     {
-      PlaySound("alert2.wav");
-      return (0); 
-     }
-     
-     total=OrdersTotal();
-
-
-     if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
-     {
-      trendDirection[frameIndex][0] = TwoTitsTrendCriteria(Elder_Timeframe, Elder_MACD_channel, eld_EMA1, eld_EMA2, eldFastMACDPeriod, eldSlowMACDPeriod);
-      if (trendDirection[frameIndex][0] > 0) // Есть тренд вверх на старшем таймфрейме
-      {
-       trendDirection[frameIndex][1] = 1;
-      }
-      if (trendDirection[frameIndex][0] < 0) // Есть тренд вниз
-      {
-       trendDirection[frameIndex][1] = -1;
-      }
-      
-  //--------------------------
-  // проверяемм что все еще хотим открываться
-  //--------------------------     
-      if (wantToOpen[frameIndex][1] != 0) // если хотели открываться по расхождению Stochastic
-      {
-       barsCountToBreak[frameIndex][1]++;
-       if (barsCountToBreak[frameIndex][1] > breakForStochastic)
-       { 
-        barsCountToBreak[frameIndex][1] = 0; // дальше 2х баров забываем, что хотели открываться
-        wantToOpen[frameIndex][1] = 0;
-       }
-      }
-  //--------------------------
-  // проверяем, что все еще хотим открываться
-  //--------------------------     
-      
-  //--------------------------
-  // вычисляем расхождение Stochastic
-  //--------------------------    
-      InitStoDivergenceArray(Elder_Timeframe); 
-      if (wantToOpen[frameIndex][1] == 0) // если еще не хотим открываться
-      {   
-       wantToOpen[frameIndex][1] = isStoDivergence(Elder_Timeframe);  // проверяем на расхождение на этом баре    
-      }
-  //--------------------------
-  // вычисляем расхождение Stochastic
-  //-------------------------- 
-     
-     } // close isNewBar(Elder_Timeframe)
-
-     //-------------------------------------------------------------------------------------------
-     // Флэт
-     //-------------------------------------------------------------------------------------------      
-     if (trendDirection[frameIndex][0] == 0)    // определяем флэт, потом ищем критерии входа по MACD, открываемся.
-     {
-      
-      if (Ask > iMA(NULL, Elder_Timeframe, 3, 0, 1, PRICE_HIGH, 0) + hairLength*Point)
-      {
-       trendDirection[frameIndex][0] = 1;
-       trendDirection[frameIndex][1] = 1;
-       return(0);
-      }
-      if (Bid < iMA(NULL, Elder_Timeframe, 3, 0, 1, PRICE_LOW, 0) - hairLength*Point)
-      {
-       trendDirection[frameIndex][0] = -1;
-       trendDirection[frameIndex][1] = -1;
-       return(0);
-      }
-
-	//--------------------------
-	// Расхождение 
-	//--------------------------
-	   if (wantToOpen[frameIndex][1] > 0) // нашли расхождение вверх (ждем рост), ждем пробой максимума, будем покупать
-      {
-       if (Bid < iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) + deltaPriceToEMA*Point)
-       {
-        openPlace = "старший ТФ флэт, " + openPlace;
-	     if (DesepticonBreakthrough2(1, Jr_Timeframe) != 0) // при определенной экстремальной цене, ищем пробой, открываемся
-	     {
-	      // вставить обработчик ошибки открытия сделки 
-	     }
-	    }
-      } // close нашли расхождение вверх
-    
-      if (wantToOpen[frameIndex][1] < 0) // нашли расхождение вниз (ждем падение), ждем пробой минимума, будем продавать
-      {
-       if (Ask > iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point)
-       {
-        openPlace = "старший ТФ флэт, " + openPlace;
-	     if (DesepticonBreakthrough2(-1, Jr_Timeframe) <= 0) // при определенной экстремальной цене, ищем пробой, открываемся
-	     {
-	      // вставить обработчик ошибки открытия сделки 
-	     }
-	    }
-      } // close нашли расхождение вниз
-	//--------------------------
-	// Расхождение 
-	//--------------------------
+int start()
+{
+ for (frameIndex = startTF; frameIndex < finishTF; frameIndex++)
+ {
+  Jr_Timeframe = aTimeframe[frameIndex, 9];
+  Elder_Timeframe = aTimeframe[frameIndex, 0];
    
-     } // close Флэт	
-    } // close цикл
+  TakeProfit = aTimeframe[frameIndex, 1];
+  StopLoss_min = aTimeframe[frameIndex, 2];
+  StopLoss_max = aTimeframe[frameIndex, 3]; 
+  Jr_MACD_channel = aTimeframe[frameIndex + 1, 4];
+  Elder_MACD_channel = aTimeframe[frameIndex, 4];
+  
+  MinProfit = aTimeframe[frameIndex, 5]; 
+  TrailingStop_min = aTimeframe[frameIndex, 6];
+  TrailingStop_max = aTimeframe[frameIndex, 7]; 
+  TrailingStep = aTimeframe[frameIndex, 8];
+     
+  if (!CheckBeforeStart())   // проверяем входные параметры
+  {
+   PlaySound("alert2.wav");
+   return (0); 
+  }
+     
+  total=OrdersTotal();
+     
+   if (total > 0)
+   {
+    for (int i=0; i<total; i++)
+    {
+     if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
+     {
+      if (OrderMagicNumber() == _MagicNumber)  
+      {
+       if (OrderType()==OP_BUY)   // Открыта длинная позиция BUY
+       {
+        if (!isMinProfit && Bid-OrderOpenPrice() > MinimumLvl*Point) // достигли минимального уровня прибыли
+        {
+         isMinProfit = true;
+         Alert("мин профит на промежутке. Прекращаем отсчет. isMinProfit = ",isMinProfit);
+        }
+
+        if (Bid-OrderOpenPrice() > MinProfit*Point) // получили минимальный профит
+        {
+         if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0) 
+                > iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) + deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+         {
+          ClosePosBySelect(Bid, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль"); // закрываем позицию BUY
+          Alert("Закрыли ордер, обнуляем переменные. Bid-OrderOpenPrice()= ",Bid-OrderOpenPrice(), " MinProfit ", MinProfit*Point);
+         }
+        } // close получили минимальный профит 
+       } // Close открыта длинная позиция BUY
+        
+       if (OrderType()==OP_SELL) // Открыта короткая позиция SELL
+       {
+        if (!isMinProfit && OrderOpenPrice()-Ask > MinimumLvl*Point) // достигли минимального уровня прибыли
+        {
+         isMinProfit = true;
+         Alert("Sell, мин профит на промежутке. Прекращаем отсчет. isMinProfit = ",isMinProfit);
+        }
+
+        if (OrderOpenPrice()-Ask > MinProfit*Point)
+        {
+         isMinProfit = true;
+         if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0)
+                < iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) - deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+         {
+          ClosePosBySelect(Ask, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль");// закрываем позицию SELL
+          Alert("Закрыли ордер, обнуляем переменные. OrderOpenPrice()-Ask= ",OrderOpenPrice()-Ask, " MinProfit ", MinProfit*Point);
+         }
+        } // close получили минимальный профит
+       } // Close Открыта короткая позиция SELL
+      } // close _MagicNumber от этого Jr_Timeframe
+     } // close OrderSelect 
+    } // close for
+   } // close total > 0
+
+   if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
+   {
+    total=OrdersTotal();
+
+    if (total > 0 && !isMinProfit)
+    {
+     barNumber++; // увеличиваем счетчик баров если есть открытые сделки недостигшие минпрофита
+     Alert("мин профит еще не был достигнут, сделки есть, увеличивали счетчик barNumber=",barNumber);
+     if (barNumber > waitForMove) // если слишком долго ждем движения в нашу сторону
+     {
+      for (i=0; i<total; i++) // идем по всем сделкам
+      {
+       if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
+       {
+        if (OrderMagicNumber() == _MagicNumber) // выбираем нашу сделку
+        {
+         //ClosePosBySelect(-1, "сделка не ушла в прибыль слишком долгое время");// закрываем позицию
+        }
+       }
+      } 
+     }
+    }
+
+    trendDirection[frameIndex][0] = TwoTitsTrendCriteria(Elder_Timeframe, Elder_MACD_channel, eld_EMA1, eld_EMA2, eldFastMACDPeriod, eldSlowMACDPeriod);
+    if (trendDirection[frameIndex][0] > 0) // Есть тренд вверх на старшем таймфрейме
+    {
+     trendDirection[frameIndex][1] = 1;
+    }
+    if (trendDirection[frameIndex][0] < 0) // Есть тренд вниз
+    {
+     trendDirection[frameIndex][1] = -1;
+    }
+    
+//--------------------------
+// проверяемм что все еще хотим открываться
+//--------------------------     
+    if (wantToOpen[frameIndex][1] != 0) // если хотели открываться по расхождению Stochastic
+    {
+     barsCountToBreak[frameIndex][1]++;
+     if (barsCountToBreak[frameIndex][1] > breakForStochastic)
+     { 
+      barsCountToBreak[frameIndex][1] = 0; // дальше 2х баров забываем, что хотели открываться
+      wantToOpen[frameIndex][1] = 0;
+     }
+    }
+//--------------------------
+// проверяем, что все еще хотим открываться
+//--------------------------     
+      
+//--------------------------
+// вычисляем расхождение Stochastic
+//--------------------------    
+    InitStoDivergenceArray(Elder_Timeframe); 
+    if (wantToOpen[frameIndex][1] == 0) // если еще не хотим открываться
+    {   
+     wantToOpen[frameIndex][1] = isStoDivergence(Elder_Timeframe);  // проверяем на расхождение на этом баре    
+    }
+//--------------------------
+// вычисляем расхождение Stochastic
+//-------------------------- 
+   
+   } // close isNewBar(Elder_Timeframe)
+   
+//-------------------------------------------------------------------------------------------
+// Флэт
+//-------------------------------------------------------------------------------------------      
+   if (trendDirection[frameIndex][0] == 0)    // определяем флэт, потом ищем критерии входа по MACD, открываемся.
+   {
+    if (Ask > iMA(NULL, Elder_Timeframe, 3, 0, 1, PRICE_HIGH, 0) + hairLength*Point)
+    {
+     trendDirection[frameIndex][0] = 1;
+     trendDirection[frameIndex][1] = 1;
+     return(0);
+    }
+    if (Bid < iMA(NULL, Elder_Timeframe, 3, 0, 1, PRICE_LOW, 0) - hairLength*Point)
+    {
+     trendDirection[frameIndex][0] = -1;
+     trendDirection[frameIndex][1] = -1;
+     return(0);
+    }
+//--------------------------
+// Расхождение 
+//--------------------------
+    if (wantToOpen[frameIndex][1] > 0) // нашли расхождение вверх (ждем рост), ждем пробой максимума, будем покупать
+    {
+     if (Bid < iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) + deltaPriceToEMA*Point)
+     {
+      openPlace = "старший ТФ флэт, " + openPlace;
+      if (DesepticonBreakthrough2(1, Jr_Timeframe) > 0) // при определенной экстремальной цене, ищем пробой, открываемся
+      {
+       Alert("открыли сделку, начали отсчет");
+       isMinProfit = false; // сделка длится
+       barNumber = 0;
+      }
+     }
+    } // close нашли расхождение вверх
+    
+    if (wantToOpen[frameIndex][1] < 0) // нашли расхождение вниз (ждем падение), ждем пробой минимума, будем продавать
+    {
+     if (Ask > iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point)
+     {
+      openPlace = "старший ТФ флэт, " + openPlace;
+      if (DesepticonBreakthrough2(-1, Jr_Timeframe) <= 0) // при определенной экстремальной цене, ищем пробой, открываемся
+      {
+       Alert("открыли сделку, начали отсчет");
+       isMinProfit = false; // сделка длится
+       barNumber = 0;
+      }
+     }
+    } // close нашли расхождение вниз
+//--------------------------
+// Расхождение 
+//--------------------------
+   
+   } // close Флэт	
+  } // close цикл
 //----
-	if (UseTrailing) DesepticonTrailing(NULL, Jr_Timeframe);
-	return(0);
+  if (UseTrailing) DesepticonTrailing(NULL, Jr_Timeframe);
+  return(0);
 } // close start
 //+------------------------------------------------------------------+
