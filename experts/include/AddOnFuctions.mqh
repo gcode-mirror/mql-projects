@@ -35,7 +35,7 @@ double iif( bool condition, double ifTrue, double ifFalse )
 
 //+----------------------------------------------------------------------------+
 //|  Версия   : 20.11.2012                                                     |
-//|  Описание : Вывод сообщения в журнал в случае нарушения логики             |
+//|  Описание : эквивалент оператора языка С "condition ? ifTrue : ifFalse"    |
 //+----------------------------------------------------------------------------+
 //|  Параметры:                                                                |
 //|    condition - проверяемое условие                                         |
@@ -51,7 +51,7 @@ string iifStr( bool condition, string ifTrue, string ifFalse )
 
 //+----------------------------------------------------------------------------+
 //|  Версия   : 20.11.2012                                                     |
-//|  Описание : Вывод сообщения в журнал в случае нарушения логики             |
+//|  Описание : Возвращает направление ордера                                  |
 //+----------------------------------------------------------------------------+
 //+----------------------------------------------------------------------------+ 
 int orderDirection()
@@ -253,3 +253,64 @@ void ModifyOrder(double pp=-1, double sl=0, double tp=0, color cl=CLR_NONE) {
     }
   }
 }
+
+//+----------------------------------------------------------------------------+
+//|  Автор    : GIA                                                            |
+//+----------------------------------------------------------------------------+
+//|  Версия   : 10.01.2013                                                     |
+//|  Описание : Удаение одной предварительно выбранной позиции.                |
+//+----------------------------------------------------------------------------+
+//+----------------------------------------------------------------------------+
+void ClosePosBySelect(double pp=-1, string comment = "")
+ {
+  bool   fc;
+  color  clClose;
+  double pa, pb;
+  int    err, it;
+
+  if (OrderType()==OP_BUY || OrderType()==OP_SELL)
+  {
+   for (it=1; it<=NumberOfTry; it++)
+   {
+    if (!IsTesting() && (!IsExpertEnabled() || IsStopped())) break;
+    while (!IsTradeAllowed()) Sleep(5000);
+    
+    RefreshRates();
+    
+    if (pp < 0)
+    {
+     if (OrderType()==OP_BUY)
+     {
+      pp=MarketInfo(OrderSymbol(), MODE_BID);
+      clClose=Violet;
+     }
+     else
+     {
+      pp=MarketInfo(OrderSymbol(), MODE_ASK);
+      clClose=Violet;
+     }
+    } 
+    fc=OrderClose(OrderTicket(), OrderLots(), pp, Slippage, clClose);
+    
+    if (fc)
+    {
+     if (UseSound) PlaySound(NameFileSound);
+     if (comment !="") Alert(comment);
+     break;
+    }
+    else
+    {
+     err=GetLastError();
+     if (err==146) while (IsTradeContextBusy()) Sleep(1000*11);
+     Print("Error(",err,") Close ",GetNameOP(OrderType())," ", ErrorDescription(err),", try ",it);
+     Print(OrderTicket(),"  Ask=",Ask,"  Bid=",Bid,"  pp=",pp);
+     Print("sy=",OrderSymbol(),"  ll=",OrderLots(),"  sl=",OrderStopLoss(), "  tp=",OrderTakeProfit(),"  mn=",OrderMagicNumber());
+     Sleep(1000*5);
+    }
+   }
+  }
+  else
+  {
+   Print("Некорректная торговая операция. Close ",GetNameOP(OrderType()));
+  }
+ }

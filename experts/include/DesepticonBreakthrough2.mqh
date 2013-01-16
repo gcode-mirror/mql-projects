@@ -31,9 +31,8 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
      {
       if (OrderType()==OP_BUY)   // ќткрыта длинна€ позици€ BUY
       {
-       OrderClose(OrderTicket(),OrderLots(),Bid,3,Violet); // закрываем позицию BUY
+       ClosePosBySelect(Bid); // закрываем позицию BUY
        Alert("DesepticonBreakthrough2: «акрыли ордер BUY" );
-       //if (Ask > iMA(NULL, Elder_Timeframe, eld_EMA2, 0, 1, 0, 0))
        if (OpenPosition(NULL, OP_SELL, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
        {
         return (1);
@@ -70,9 +69,8 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
      {
       if (OrderType()==OP_SELL) // ќткрыта коротка€ позици€ SELL
       {
-       OrderClose(OrderTicket(),OrderLots(),Ask,3,Violet); // закрываем позицию SELL
+       ClosePosBySelect(Ask); // закрываем позицию SELL
        Alert("DesepticonBreakthrough2: «акрыли ордер SELL" );
-       //if (Bid < iMA(NULL, Elder_Timeframe, eld_EMA2, 0, 1, 0, 0))
         if (OpenPosition(NULL, OP_BUY, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
         {
          return (1);
