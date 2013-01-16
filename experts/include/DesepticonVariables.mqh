@@ -50,6 +50,8 @@ extern bool UseTrailing = true;
 //extern
  double TrailingStep_5M = 100; // Величина шага
 
+extern bool useLowTF_EMA_Exit = true; // вкл/выкл изменение величины лота
+extern bool useTimeExit = true; // вкл/выкл изменение величины лота
 extern int waitForMove = 6;
 extern double MinimumLvl = 80;
 extern double MinProfit_1H = 300; // когда профит достигает указанное количество пунктов, трейлинг начинает работу

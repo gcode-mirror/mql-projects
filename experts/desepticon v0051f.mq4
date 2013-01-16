@@ -116,16 +116,19 @@ int start(){
 	      isMinProfit = false; // сделка длится
 	      barNumber = 0;
         }
-
-        if (Bid-OrderOpenPrice() > MinProfit*Point) // получили минимальный профит
+        
+        if (useLowTF_EMA_Exit)
         {
-         if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0) 
-                > iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) + deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+         if (Bid-OrderOpenPrice() > MinProfit*Point) // получили минимальный профит
          {
-          ClosePosBySelect(Bid, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль"); // закрываем позицию BUY
-          Alert("Закрыли ордер, обнуляем переменные. Bid-OrderOpenPrice()= ",Bid-OrderOpenPrice(), " MinProfit ", MinProfit*Point);
-         }
-        } // close получили минимальный профит 
+          if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0) 
+                 > iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) + deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+          {
+           ClosePosBySelect(Bid, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль"); // закрываем позицию BUY
+           Alert("Закрыли ордер, обнуляем переменные. Bid-OrderOpenPrice()= ",Bid-OrderOpenPrice(), " MinProfit ", MinProfit*Point);
+          }
+         } // close получили минимальный профит 
+        }
        } // Close открыта длинная позиция BUY
         
        if (OrderType()==OP_SELL) // Открыта короткая позиция SELL
@@ -143,16 +146,18 @@ int start(){
 	      barNumber = 0;
         }
         
-        if (OrderOpenPrice()-Ask > MinProfit*Point)
+        if (useLowTF_EMA_Exit)
         {
-         isMinProfit = true;
-         if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0)
-                < iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) - deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+         if (OrderOpenPrice()-Ask > MinProfit*Point)
          {
-          ClosePosBySelect(Ask, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль");// закрываем позицию SELL
-          Alert("Закрыли ордер, обнуляем переменные. OrderOpenPrice()-Ask= ",OrderOpenPrice()-Ask, " MinProfit ", MinProfit*Point);
-         }
-        } // close получили минимальный профит
+          if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0)
+                 < iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) - deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+          {
+           ClosePosBySelect(Ask, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль");// закрываем позицию SELL
+           Alert("Закрыли ордер, обнуляем переменные. OrderOpenPrice()-Ask= ",OrderOpenPrice()-Ask, " MinProfit ", MinProfit*Point);
+          }
+         } // close получили минимальный профит
+        }
        } // Close Открыта короткая позиция SELL
       } // close _MagicNumber от этого Jr_Timeframe
      } // close OrderSelect 
@@ -162,23 +167,25 @@ int start(){
    if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
    {
     total=OrdersTotal();
-
-    if (total > 0 && !isMinProfit)
+    if (useTimeExit)
     {
-     barNumber++; // увеличиваем счетчик баров если есть открытые сделки недостигшие минпрофита
-     Alert("мин профит еще не был достигнут, сделки есть, увеличивали счетчик barNumber=",barNumber);
-     if (barNumber > waitForMove) // если слишком долго ждем движения в нашу сторону
+     if (total > 0 && !isMinProfit)
      {
-      for (i=0; i<total; i++) // идем по всем сделкам
+      barNumber++; // увеличиваем счетчик баров если есть открытые сделки недостигшие минпрофита
+      Alert("мин профит еще не был достигнут, сделки есть, увеличивали счетчик barNumber=",barNumber);
+      if (barNumber > waitForMove) // если слишком долго ждем движения в нашу сторону
       {
-       if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
+       for (i=0; i<total; i++) // идем по всем сделкам
        {
-        if (OrderMagicNumber() == _MagicNumber) // выбираем нашу сделку
+        if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
         {
-         ClosePosBySelect(-1, "сделка не ушла в прибыль слишком долгое время");// закрываем позицию
+         if (OrderMagicNumber() == _MagicNumber) // выбираем нашу сделку
+         {
+          ClosePosBySelect(-1, "сделка не ушла в прибыль слишком долгое время");// закрываем позицию
+         }
         }
-       }
-      } 
+       } 
+      }
      }
     }
    
