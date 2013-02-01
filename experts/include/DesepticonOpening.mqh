@@ -171,6 +171,9 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
   return(ticket);
 }
 
+//-------------------------------------------------------------------------
+// Для тестов и тренировок
+//-------------------------------------------------------------------------
 int OpenPositionTest(string symb, int operation, string openPlace, int timeframe, double sl=0, double tp=0, int mn=0, string lsComm="")
  {
   color op_color;
