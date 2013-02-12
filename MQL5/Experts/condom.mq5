@@ -191,18 +191,14 @@ void OnTick()
      { 
       Alert("WTB, positionType =",positionType);
       order.SendOrder(ORDER_TYPE_BUY, _lot*2);
-      //order.OpenPosition(my_symbol, ORDER_TYPE_BUY, _lot, SL, TP);
-      waitForBuy = false;
-      waitForSell = false;
      }
      if (positionType == -1)
      {
       Alert("WTB, positionType =",positionType);
       order.SendOrder(ORDER_TYPE_BUY, _lot);
-      //order.OpenPosition(my_symbol, ORDER_TYPE_BUY, _lot, SL, TP);
-      waitForBuy = false;
-      waitForSell = false;     
-     }      
+     }
+     waitForBuy = false;
+     waitForSell = false;
     }
    } 
 
@@ -214,18 +210,14 @@ void OnTick()
      {
       Alert("WTS, positionType =",positionType);
       order.SendOrder(ORDER_TYPE_SELL, _lot*2);
-      //order.OpenPosition(my_symbol, ORDER_TYPE_SELL, _lot, SL*_Point, TP*_Point);
-      waitForBuy = false;
-      waitForSell = false;
      }
      if (positionType == -1)
      {
       Alert("WTS, positionType =",positionType);
       order.SendOrder(ORDER_TYPE_SELL, _lot);
-      //order.OpenPosition(my_symbol, ORDER_TYPE_SELL, _lot, SL*_Point, TP*_Point);
-      waitForBuy = false;
-      waitForSell = false;     
      } 
+     waitForBuy = false;
+     waitForSell = false;
     }
    }
    

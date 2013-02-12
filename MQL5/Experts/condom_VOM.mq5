@@ -28,6 +28,11 @@ input bool trailing = false;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
+input bool tradeOnTrend = false;
+input int fastMACDPeriod = 12;
+input int slowMACDPeriod = 26;
+input int signalPeriod = 9;
+input double levelMACD = 0.02;
 
 string my_symbol;                                       //переменная для хранения символа
 ENUM_TIMEFRAMES my_timeframe;                                    //переменная для хранения младшего таймфрейма
@@ -35,7 +40,8 @@ ENUM_TIMEFRAMES my_timeframe;                                    //переменная дл
 MqlTick tick;
 
 int total;  // количество ордеров
-double high_buf[], low_buf[], close_buf[2];
+int handleMACD;
+double MACD_buf[1], high_buf[], low_buf[], close_buf[2];
 
 double globalMax;
 double globalMin;
@@ -59,7 +65,18 @@ int OnInit()
    my_symbol=Symbol();                                             //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    my_timeframe=timeframe;                                      //сохраним текущий таймфрейм графика для дальнейшей работы советника именно на этом таймфрейме
    
+   if (tradeOnTrend)
+   {
+    handleMACD = iMACD(my_symbol, my_timeframe, fastMACDPeriod, slowMACDPeriod, signalPeriod, PRICE_CLOSE);  //подключаем индикатор и получаем его хендл
+    if(handleMACD == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
+    {
+     Print("Не удалось получить хендл MACD");               //если хендл не получен, то выводим сообщение в лог об ошибке
+     return(-1);                                                  //завершаем работу с ошибкой
+    }
+   }
+
    //устанавливаем индексацию для массивов ХХХ_buf
+   ArraySetAsSeries(MACD_buf, false);
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
    ArraySetAsSeries(close_buf, false);
@@ -78,6 +95,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    // Освобождаем динамические массивы от данных
+   ArrayFree(MACD_buf);
    ArrayFree(low_buf);
    ArrayFree(high_buf);
   }
@@ -103,6 +121,17 @@ void OnTick()
    
    if(isNewBar.isNewBar(my_symbol, my_timeframe))
    {
+    if (tradeOnTrend)
+    {
+     //копируем данные из индикаторного массива в динамический массив MACD_buf для дальнейшей работы с ними
+     errMACD=CopyBuffer(handleMACD, 0, 1, 1, MACD_buf);
+     //Print("MACD_buf[0] = ", MACD_buf[0]); 
+     if(errMACD < 0)
+     {
+      Alert("Не удалось скопировать данные из индикаторного буфера"); 
+      return; 
+     }
+    } 
     //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
     errLow=CopyLow(my_symbol, my_timeframe, 2, historyDepth, low_buf);
     errHigh=CopyHigh(my_symbol, my_timeframe, 2, historyDepth, high_buf);
@@ -133,6 +162,18 @@ void OnTick()
     }
    }
    
+   if (tradeOnTrend)
+   {
+    if (GreatDoubles(MACD_buf[0], levelMACD) || LessDoubles (MACD_buf[0], -levelMACD))
+    {
+     if (trailing)
+     {
+      VOM.DoTrailing(my_symbol);
+     }
+     return;
+    }
+   }
+   
    if(!SymbolInfoTick(Symbol(),tick))
    {
     Alert("SymbolInfoTick() failed, error = ",GetLastError());
@@ -146,14 +187,7 @@ void OnTick()
     {
      if (total <= 0)
      {
-      VOM.OrderSend(my_symbol
-                   , VIRTUAL_ORDER_TYPE_BUY
-                   , _lot
-                   , bid
-                   , deviation
-                   , bid - SL*point
-                   , ask + TP*point
-                   , 0);
+      VOM.OrderSend(my_symbol, VIRTUAL_ORDER_TYPE_BUY, _lot, ask, deviation, bid - SL*point, ask + TP*point);
      }
      else
      {
@@ -161,24 +195,19 @@ void OnTick()
       {
        if(VOM.OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
        {
-        if (VOM.MagicNumber() == _magic)  
+        if (VOM.OrderMagicNumber() == VOM.MagicNumber())  
         {
-         if (VOM.OrderType() == VIRTUAL_ORDER_TYPE_SELL)   // Открыта длинная позиция BUY
+         if (VOM.OrderType() == VIRTUAL_ORDER_TYPE_SELL)   // Открыта короткая позиция SELL
          {
-          VOM.OrderClose(VOM.OrderTicket(), deviation, clrRed); // закрываем позицию BUY
-          VOM.OrderSend(my_symbol
-                      , VIRTUAL_ORDER_TYPE_BUY
-                      , _lot
-                      , bid
-                      , deviation
-                      , bid - SL*point
-                      , ask + TP*point
-                      , 0);
+          VOM.OrderClose(VOM.OrderTicket(), deviation, clrRed); // закрываем позицию SELL
+          VOM.OrderSend(my_symbol, VIRTUAL_ORDER_TYPE_BUY, _lot, ask, deviation, bid - SL*point, ask + TP*point);
          }
         }
        }
       }
      }
+     waitForBuy = false;
+     waitForSell = false;
     }
    } 
 
@@ -188,14 +217,7 @@ void OnTick()
     {
      if (total <= 0)
      {
-      VOM.OrderSend(my_symbol
-                   , VIRTUAL_ORDER_TYPE_SELL
-                   , _lot
-                   , ask
-                   , deviation
-                   , ask + SL*point
-                   , bid - TP*point
-                   , 0);
+      VOM.OrderSend(my_symbol, VIRTUAL_ORDER_TYPE_SELL, _lot, bid, deviation, ask + SL*point, bid - TP*point);
      }
      else
      {
@@ -203,26 +225,21 @@ void OnTick()
       {
        if(VOM.OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
        {
-        if (VOM.MagicNumber() == _magic)  
+        if (VOM.OrderMagicNumber() == VOM.MagicNumber())  
         {
          if (VOM.OrderType() == VIRTUAL_ORDER_TYPE_BUY)   // Открыта длинная позиция BUY
          {
           VOM.OrderClose(VOM.OrderTicket(), deviation, clrRed); // закрываем позицию BUY
-          VOM.OrderSend(my_symbol
-                      , VIRTUAL_ORDER_TYPE_SELL
-                      , _lot
-                      , ask
-                      , deviation
-                      , ask + SL*point
-                      , bid - TP*point
-                      , 0);
+          VOM.OrderSend(my_symbol, VIRTUAL_ORDER_TYPE_SELL, _lot, bid, deviation, ask + SL*point, bid - TP*point);
          }
         }
        }
       }
      }
+     waitForBuy = false;
+     waitForSell = false;
     }
-   }
+   } 
    
    if (trailing)
    {
