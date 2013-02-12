@@ -110,8 +110,8 @@ double CTradeManager::TPtype(int type)
   {
    if(UpdateSymbolInfo())
      {
-      if(type==0)return(_bid+_TP*_point);
-      if(type==1)return(_ask-_TP*_point);
+      if(type==0)return(_ask+_TP*_point);
+      if(type==1)return(_bid-_TP*_point);
      }
    return(0);
   }
@@ -155,6 +155,7 @@ void CTradeManager::DoTrailing()
       {
        request.sl = NormalizeDouble(_bid - _trailingStop*_point, _digits);
        request.tp = PosInfo.TakeProfit();
+       Alert("Трейлим позицию бай");
        this.ModifyPosition(TRADE_ACTION_SLTP);
       }
      }
@@ -168,6 +169,7 @@ void CTradeManager::DoTrailing()
       {
        request.sl = NormalizeDouble(_ask + _trailingStop*_point, _digits);
        request.tp = PosInfo.TakeProfit();
+       Alert("Трейлим позицию селл");
        this.ModifyPosition(TRADE_ACTION_SLTP);
       }
      }

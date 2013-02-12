@@ -138,14 +138,7 @@ void OnTick()
      {
       if (total <= 0)
       {
-       VOM.OrderSend(my_symbol
-                    , VIRTUAL_ORDER_TYPE_SELL
-                    , _lot
-                    , ask
-                    , deviation
-                    , ask + SL*point
-                    , bid - TP*point
-                    , 0);
+       VOM.OrderSend(my_symbol, VIRTUAL_ORDER_TYPE_SELL, _lot, bid, deviation, ask + SL*point, bid - TP*point);
       }
       else
       {
@@ -153,19 +146,12 @@ void OnTick()
        {
         if(VOM.OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
         {
-         if (VOM.MagicNumber() == _magic)  
+         if (VOM.MagicNumber() == VOM.OrderMagicNumber())  
          {
           if (VOM.OrderType() == VIRTUAL_ORDER_TYPE_BUY)   // Открыта длинная позиция BUY
           {
            VOM.OrderClose(VOM.OrderTicket(), deviation, clrRed); // закрываем позицию BUY
-           VOM.OrderSend(my_symbol
-                       , VIRTUAL_ORDER_TYPE_SELL
-                       , _lot
-                       , ask
-                       , deviation
-                       , ask + SL*point
-                       , bid - TP*point
-                       , 0);
+           VOM.OrderSend(my_symbol, VIRTUAL_ORDER_TYPE_SELL, _lot, bid, deviation, ask + SL*point, bid - TP*point);
           }
          }
         }
@@ -177,14 +163,7 @@ void OnTick()
      {
       if (total <= 0)
       {
-       VOM.OrderSend(my_symbol
-                    , VIRTUAL_ORDER_TYPE_BUY
-                    , _lot
-                    , bid
-                    , deviation
-                    , bid - SL*point
-                    , ask + TP*point
-                    , 0);
+       VOM.OrderSend(my_symbol, VIRTUAL_ORDER_TYPE_BUY, _lot, ask, deviation, bid - SL*point, ask + TP*point);
       }
       else
       {
@@ -192,19 +171,12 @@ void OnTick()
        {
         if(VOM.OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
         {
-         if (VOM.MagicNumber() == _magic)  
+         if (VOM.MagicNumber() == VOM.OrderMagicNumber())  
          {
           if (VOM.OrderType() == VIRTUAL_ORDER_TYPE_SELL)   // Открыта длинная позиция BUY
           {
            VOM.OrderClose(VOM.OrderTicket(), deviation, clrRed); // закрываем позицию BUY
-           VOM.OrderSend(my_symbol
-                       , VIRTUAL_ORDER_TYPE_BUY
-                       , _lot
-                       , bid
-                       , deviation
-                       , bid - SL*point
-                       , ask + TP*point
-                       , 0);
+           VOM.OrderSend(my_symbol, VIRTUAL_ORDER_TYPE_BUY, _lot, ask, deviation, bid - SL*point, ask + TP*point);
           }
          }
         }
