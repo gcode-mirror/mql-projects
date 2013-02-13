@@ -147,7 +147,7 @@ void CTradeManager::DoTrailing()
    {
     double positionOpenPrice = PosInfo.PriceOpen();
     double positionSL = PosInfo.StopLoss();
-    if (PosInfo.Type() == POSITION_TYPE_BUY)
+    if (PosInfo.PositionType() == POSITION_TYPE_BUY)
     {
      if (LessDoubles(positionOpenPrice, _bid - _minProfit*_point))
      {
@@ -155,13 +155,13 @@ void CTradeManager::DoTrailing()
       {
        request.sl = NormalizeDouble(_bid - _trailingStop*_point, _digits);
        request.tp = PosInfo.TakeProfit();
-       Alert("Трейлим позицию бай");
+       Alert("Трейлим позицию бай new_sl=", request.sl);
        this.ModifyPosition(TRADE_ACTION_SLTP);
       }
      }
     }
     
-    if (PosInfo.Type() == POSITION_TYPE_SELL)
+    if (PosInfo.PositionType() == POSITION_TYPE_SELL)
     {
      if (GreatDoubles(positionOpenPrice - _ask, _minProfit*_point))
      {
@@ -169,7 +169,7 @@ void CTradeManager::DoTrailing()
       {
        request.sl = NormalizeDouble(_ask + _trailingStop*_point, _digits);
        request.tp = PosInfo.TakeProfit();
-       Alert("Трейлим позицию селл");
+       Alert("Трейлим позицию селл new_sl=", request.sl);
        this.ModifyPosition(TRADE_ACTION_SLTP);
       }
      }
