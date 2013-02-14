@@ -1042,7 +1042,7 @@ void CVirtualOrderManager::DoTrailing(string symb)
       {
        new_sl = NormalizeDouble(bid - _trailingStop*point, dg);
        new_tp = this.OrderTakeProfit();
-       Alert("Трейлим позицию бай new_sl=",new_sl);
+
        this.OrderModify(OrderTicket(), openPrice, new_sl, new_tp, 0, CLR_NONE);
       }
      }
@@ -1056,7 +1056,7 @@ void CVirtualOrderManager::DoTrailing(string symb)
       {
        new_sl = NormalizeDouble(ask + _trailingStop*point, dg);
        new_tp = this.OrderTakeProfit();
-       Alert("Трейлим позицию селл new_sl=",new_sl);
+
        this.OrderModify(OrderTicket(), openPrice, new_sl, new_tp, 0, CLR_NONE);
       }
      }
