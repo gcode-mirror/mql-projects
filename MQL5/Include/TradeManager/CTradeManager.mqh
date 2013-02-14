@@ -155,7 +155,7 @@ void CTradeManager::DoTrailing()
       {
        request.sl = NormalizeDouble(_bid - _trailingStop*_point, _digits);
        request.tp = PosInfo.TakeProfit();
-       Alert("Трейлим позицию бай new_sl=", request.sl);
+
        this.ModifyPosition(TRADE_ACTION_SLTP);
       }
      }
@@ -169,7 +169,7 @@ void CTradeManager::DoTrailing()
       {
        request.sl = NormalizeDouble(_ask + _trailingStop*_point, _digits);
        request.tp = PosInfo.TakeProfit();
-       Alert("Трейлим позицию селл new_sl=", request.sl);
+
        this.ModifyPosition(TRADE_ACTION_SLTP);
       }
      }
