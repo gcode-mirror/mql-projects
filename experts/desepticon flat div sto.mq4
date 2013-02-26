@@ -117,6 +117,8 @@ int start()
         }
         
         if (useLowTF_EMA_Exit)
+/*
+        if (Bid-OrderOpenPrice() > MinProfit*Point) // получили минимальный профит
         {
          if (Bid-OrderOpenPrice() > minProfit*Point) // получили минимальный профит
          {
@@ -128,6 +130,10 @@ int start()
           }
          } // close получили минимальный профит 
         }
+          ClosePosBySelect(Bid, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль"); // закрываем позицию BUY
+          Alert("Закрыли ордер, обнуляем переменные. Bid-OrderOpenPrice()= ",Bid-OrderOpenPrice(), " MinProfit ", MinProfit*Point);
+         }
+        } // close получили минимальный профит */
        } // Close открыта длинная позиция BUY
         
        if (OrderType()==OP_SELL) // Открыта короткая позиция SELL
@@ -150,6 +156,17 @@ int start()
           }
          } // close получили минимальный профит
         }
+/*
+        if (OrderOpenPrice()-Ask > MinProfit*Point)
+        {
+         isMinProfit = true;
+         if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0)
+                < iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) - deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+         {
+          ClosePosBySelect(Ask, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль");// закрываем позицию SELL
+          Alert("Закрыли ордер, обнуляем переменные. OrderOpenPrice()-Ask= ",OrderOpenPrice()-Ask, " MinProfit ", MinProfit*Point);
+         }
+        } // close получили минимальный профит*/
        } // Close Открыта короткая позиция SELL
       } // close _MagicNumber от этого Jr_Timeframe
      } // close OrderSelect 
@@ -176,6 +193,8 @@ int start()
          {
           //ClosePosBySelect(-1, "сделка не ушла в прибыль слишком долгое время");// закрываем позицию
          }
+        }
+         ClosePosBySelect(-1, "сделка не ушла в прибыль слишком долгое время");// закрываем позицию
         }
        } 
       }
