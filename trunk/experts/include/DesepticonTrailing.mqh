@@ -23,25 +23,25 @@ void DesepticonTrailing(string symb, int timeframe)
     if (OrderMagicNumber() != _MagicNumber) continue;
 
     if (OrderType() == OP_BUY) {
-      if (Bid-OrderOpenPrice() > MinProfit*Point) {
-        TrailingStop = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 3, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
-        if (TrailingStop < TrailingStop_min*Point) { TrailingStop = TrailingStop_min*Point; }
-        if (TrailingStop > TrailingStop_max*Point) { TrailingStop = TrailingStop_max*Point; }
+      if (Bid-OrderOpenPrice() > minProfit*Point) {
+        trailingStop = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 3, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
+        if (trailingStop < trailingStop_min*Point) { trailingStop = trailingStop_min*Point; }
+        if (trailingStop > trailingStop_max*Point) { trailingStop = trailingStop_max*Point; }
         
-        if (OrderStopLoss() < Bid-(TrailingStop+TrailingStep*Point-1*Point) || OrderStopLoss() == 0) {
-          ModifyOrder(-1, Bid-TrailingStop, OrderTakeProfit());
+        if (OrderStopLoss() < Bid-(trailingStop+trailingStep*Point-1*Point) || OrderStopLoss() == 0) {
+          ModifyOrder(-1, Bid-trailingStop, OrderTakeProfit());
         }
       }
     }
 
     if (OrderType() == OP_SELL) {
-      if (OrderOpenPrice()-Ask > MinProfit*Point) {
-        TrailingStop = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 3, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
-        if (TrailingStop < TrailingStop_min*Point) { TrailingStop = TrailingStop_min*Point; }
-        if (TrailingStop > TrailingStop_max*Point) { TrailingStop = TrailingStop_max*Point; }
+      if (OrderOpenPrice()-Ask > minProfit*Point) {
+        trailingStop = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 3, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
+        if (trailingStop < trailingStop_min*Point) { trailingStop = trailingStop_min*Point; }
+        if (trailingStop > trailingStop_max*Point) { trailingStop = trailingStop_max*Point; }
         
-        if (OrderStopLoss() > Ask+(TrailingStop+TrailingStep*Point-1*Point) || OrderStopLoss() == 0) {
-          ModifyOrder(-1, Ask+TrailingStop, OrderTakeProfit());
+        if (OrderStopLoss() > Ask+(trailingStop+trailingStep*Point-1*Point) || OrderStopLoss() == 0) {
+          ModifyOrder(-1, Ask+trailingStop, OrderTakeProfit());
         }
       }
     }

@@ -40,7 +40,7 @@ extern double MACD_channel_1H = 0.002;
  double MACD_channel_1D = 0.007;
 
 // ѕараметры трейлинга
-extern bool UseTrailing = true;
+extern bool useTrailing = true;
 //extern
  double MinProfit_5M = 300; // когда профит достигает указанное количество пунктов, трейлинг начинает работу
 //extern
@@ -50,8 +50,8 @@ extern bool UseTrailing = true;
 //extern
  double TrailingStep_5M = 100; // ¬еличина шага
 
-extern bool useLowTF_EMA_Exit = true; // вкл/выкл изменение величины лота
-extern bool useTimeExit = true; // вкл/выкл изменение величины лота
+extern bool useLowTF_EMA_Exit = true; // вкл/выкл выхода по пересечению младших EMA
+extern bool useTimeExit = true; // вкл/выкл выхода по времени без прибыли
 extern int waitForMove = 6;
 extern double MinimumLvl = 80;
 extern double MinProfit_1H = 300; // когда профит достигает указанное количество пунктов, трейлинг начинает работу
@@ -147,11 +147,11 @@ double StopLoss_max;
 double TakeProfit;
 double Jr_MACD_channel;
 double Elder_MACD_channel;
-int MinProfit;
-double TrailingStop; 
-int TrailingStop_min;
-int TrailingStop_max; 
-int TrailingStep;
+int minProfit;
+double trailingStop; 
+int trailingStop_min;
+int trailingStop_max; 
+int trailingStep;
 
 static bool _isTradeAllow = true;
 
