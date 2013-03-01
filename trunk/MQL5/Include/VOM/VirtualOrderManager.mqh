@@ -591,7 +591,7 @@ bool CVirtualOrderManager::OrderModify(long ticket,double price,int nStopLoss,in
 //+------------------------------------------------------------------+
 bool CVirtualOrderManager::OrderModify(long ticket,double price,double stoploss,double takeprofit,datetime expiration,color arrow_color=CLR_NONE)
   {
-   Alert(StringFormat("(%d,%0.5f,%0.5f,%0.5f,%s,%s)",ticket,price,stoploss,takeprofit,TimeToString(expiration)));
+
    LogFile.Log(LOG_DEBUG,__FUNCTION__,StringFormat("(%d,%0.5f,%0.5f,%0.5f,%s,%s)",ticket,price,stoploss,takeprofit,TimeToString(expiration)));
    CVirtualOrder *vo=m_OpenOrders.AtTicket(ticket);
    if(vo==NULL)
@@ -1042,7 +1042,6 @@ void CVirtualOrderManager::DoTrailing(string symb)
       {
        new_sl = NormalizeDouble(bid - _trailingStop*point, dg);
        new_tp = this.OrderTakeProfit();
-
        this.OrderModify(OrderTicket(), openPrice, new_sl, new_tp, 0, CLR_NONE);
       }
      }
@@ -1056,7 +1055,6 @@ void CVirtualOrderManager::DoTrailing(string symb)
       {
        new_sl = NormalizeDouble(ask + _trailingStop*point, dg);
        new_tp = this.OrderTakeProfit();
-
        this.OrderModify(OrderTicket(), openPrice, new_sl, new_tp, 0, CLR_NONE);
       }
      }
