@@ -1,0 +1,14 @@
+_MagicNumber=2334
+SL=82
+TP=147
+historyDepth=37
+supremacyPercent=2.90000000
+timeframe=15
+useTrailing=1
+minProfit=75
+trailingStop_min=137
+trailingStop_max=137
+trailingStep=3
+uplot=0
+lotmin=0.70000000
+lastprofit=-1
