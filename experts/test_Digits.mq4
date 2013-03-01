@@ -17,6 +17,8 @@ int init()
    double vol=MathPow(10.0,dg);
    double price=0.0003*vol;
    Alert(dg,"-значка ", "price=", price); 
+   datetime expirationTime = TimeCurrent() + PERIOD_M15;
+   Alert(" Now = ", TimeCurrent(), " expirationTime = ", expirationTime); 
 //----
    return(0);
   }

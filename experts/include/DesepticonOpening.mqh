@@ -73,7 +73,7 @@ int DesepticonOpening(string symb, int operation, string openPlace, int timefram
 int OpenPosition(string symb, int operation, string openPlace, int timeframe, double sl=0, double tp=0, int mn=0, string lsComm="")
  {
   color op_color;
-  datetime ot;
+  datetime ot, expirationTime;
   double   price, pAsk, pBid, vol, addPrice;
   int      dg, err, it, ticket=0;
 
@@ -84,28 +84,57 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
   dg=MarketInfo(symb, MODE_DIGITS);
   vol=MathPow(10.0,dg);
   addPrice=0.0003*vol;
-  
-  if (operation == OP_BUY)
+
+  switch (operation)
   {
-   price = Ask;
-   StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
-   if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
-   if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
-   sl = Bid-StopLoss;
-   tp = Ask+TakeProfit*Point;
-   op_color = clOpenBuy;
-  }
+   case OP_BUY:
+   {
+    expirationTime = 0;
+    StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
+    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
+    if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
+    sl = Bid-StopLoss;
+    tp = Ask+TakeProfit*Point;
+    op_color = clOpenBuy;
+    break;
+   }
   
-  if (operation == OP_SELL)
-  {
-   price = Bid;
-   StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
-   if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
-   if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
-   sl = Ask+StopLoss;
-   tp = Bid-TakeProfit*Point;
-   op_color = clOpenSell;
-  }
+   case OP_SELL:
+   {
+    expirationTime = 0;
+    StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
+    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
+     if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
+    sl = Ask+StopLoss;
+    tp = Bid-TakeProfit*Point;
+    op_color = clOpenSell;
+    break;
+   }
+    
+   case OP_BUYLIMIT:
+   {
+    expirationTime = TimeCurrent() + 2*timeframe*60;
+    StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
+     if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
+    if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
+    sl = Bid-StopLoss;
+    tp = Ask+TakeProfit*Point;
+    op_color = clOpenBuy;
+    break;
+   }
+   
+   case OP_SELLLIMIT:
+   {
+    expirationTime = TimeCurrent() + 2*timeframe*60;
+    StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
+    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
+    if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
+    sl = Ask+StopLoss;
+    tp = Bid-TakeProfit*Point;
+    op_color = clOpenSell;
+    break;
+   }
+  } // close switch
   
   for (it=1; it<=NumberOfTry; it++)
   {
@@ -118,14 +147,22 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    RefreshRates();
    pAsk=MarketInfo(symb, MODE_ASK);
    pBid=MarketInfo(symb, MODE_BID);
-   if (operation==OP_BUY) price=pAsk; else price=pBid;
+   switch (operation)
+   {
+    case OP_BUY: {price = pAsk; break;}
+    case OP_SELL: {price = pBid; break;}
+    case OP_BUYLIMIT: {price = pBid - priceDifference*Point; break;}
+    case OP_SELLLIMIT: {price = pAsk + priceDifference*Point; break;}
+   }
    price=NormalizeDouble(price, dg);
    ot=TimeCurrent();
-   Alert (openPlace, " открываемся на ", timeframe, "-минутном ТФ ",  " _MagicNumber ", mn);
-   Print (openPlace);
-   ticket=OrderSend(symb, operation, Lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
+   Alert (openPlace, " _MagicNumber ", mn, " price= ", price
+         , " expiration =", TimeToStr(TimeCurrent() + 60*60, TIME_DATE), ":",TimeToStr(TimeCurrent() + 60*60, TIME_MINUTES));
+   ticket=OrderSend(symb, operation, Lots, price, Slippage, 0, 0, lsComm, mn, TimeCurrent() + 60*60, op_color);
    if (ticket>0)
    {
+    OrderSelect(ticket, SELECT_BY_TICKET);
+    Alert("OrderExpiration = ", TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES)); 
     if (UseSound) PlaySound("expert.wav");
     if(tp != 0 || sl != 0)
      if(OrderSelect(ticket, SELECT_BY_TICKET))
