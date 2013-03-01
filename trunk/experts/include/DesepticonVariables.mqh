@@ -99,6 +99,8 @@ extern int lastprofit = -1; // принимает значения -1/1.
 extern double lotmin = 0.1; // начальное значение 
 //extern double lotmax = 0.5; // потолок
 //extern double lotstep = 0.1; // приращение лота
+extern bool useLimitOrders = false;
+extern int priceDifference = 20;
 
 // Глобальные переменные
 bool   gbDisabled    = False;          // Флаг блокировки советника

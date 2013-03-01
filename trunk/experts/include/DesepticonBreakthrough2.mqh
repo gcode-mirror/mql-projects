@@ -21,12 +21,24 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
   if (!ExistPositions("", -1, _MagicNumber)) // Нету открытых ордеров -> ищем возможность открытия
   {
    //if (Ask > iMA(NULL, Elder_Timeframe, eld_EMA2, 0, 1, 0, 0))
-   if (OpenPosition(NULL, OP_SELL, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
+   if (useLimitOrders)
    {
-    return (1);
-   }  
-   else // ошибка открытия
-    return(-1);
+    if (OpenPosition(NULL, OP_SELLLIMIT, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
+    {
+     return (1);
+    }
+    else // ошибка открытия
+     return(-1);
+   } // close useLimitOrders 
+   else
+   {
+    if (OpenPosition(NULL, OP_SELL, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
+    {
+     return (1);
+    }
+    else // ошибка открытия
+     return(-1);
+   } // close else useLimitOrders  
   }
   else
   {
@@ -40,12 +52,24 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
       {
        ClosePosBySelect(Bid); // закрываем позицию BUY
        Alert("DesepticonBreakthrough2: Закрыли ордер BUY" );
-       if (OpenPosition(NULL, OP_SELL, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
+       if (useLimitOrders)  
        {
-        return (1);
-       }  
-       else // ошибка открытия
-        return(-1);
+        if (OpenPosition(NULL, OP_SELLLIMIT, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
+        {
+         return (1);
+        }
+        else // ошибка открытия
+         return(-1);
+       } // close useLimitOrders 
+       else
+       {
+        if (OpenPosition(NULL, OP_SELL, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
+        {
+         return (1);
+        }
+        else // ошибка открытия
+         return(-1);
+       } // close else useLimitOrders  
       }
      }
     } 
@@ -59,12 +83,24 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
   if (!ExistPositions("", -1, _MagicNumber)) // Нету открытых ордеров -> ищем возможность открытия
   { 
    //if (Bid < iMA(NULL, Elder_Timeframe, eld_EMA2, 0, 1, 0, 0))
+   if (useLimitOrders)
+   {
+    if (OpenPosition(NULL, OP_BUYLIMIT, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
+    {
+     return (1);
+    }
+    else // ошибка открытия
+     return(-1);
+   } // close useLimitOrders 
+   else
+   {
     if (OpenPosition(NULL, OP_BUY, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
     {
      return (1);
     }
     else // ошибка открытия
      return(-1);
+   } // close else useLimitOrders  
   }
   else
   {
@@ -78,12 +114,24 @@ int DesepticonBreakthrough2(int iDirection, int timeframe)
       {
        ClosePosBySelect(Ask); // закрываем позицию SELL
        Alert("DesepticonBreakthrough2: Закрыли ордер SELL" );
+       if (useLimitOrders)  
+       {
+        if (OpenPosition(NULL, OP_BUYLIMIT, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
+        {
+         return (1);
+        }
+        else // ошибка открытия
+         return(-1);
+       } // close useLimitOrders 
+       else
+       {
         if (OpenPosition(NULL, OP_BUY, openPlace, timeframe, 0, 0, _MagicNumber) > 0)
         {
          return (1);
         }
         else // ошибка открытия
          return(-1);
+       } // close else useLimitOrders  
       }
      }
     }

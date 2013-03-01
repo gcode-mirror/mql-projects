@@ -274,7 +274,10 @@ int start(){
         {
          if (OrderMagicNumber() == _MagicNumber) // выбираем нашу сделку
          {
-          ClosePosBySelect(-1, "сделка не ушла в прибыль слишком долгое время");// закрываем позицию
+          if (OrderType()==OP_SELL || OrderType()==OP_BUY) // Открыта короткая позиция SELL
+          {
+           ClosePosBySelect(-1, "сделка не ушла в прибыль слишком долгое время");// закрываем позицию
+          }
          }
         }
        } 
@@ -427,7 +430,7 @@ int start(){
     {
      if (buyCondition > sellCondition)
      {
-      if (DesepticonBreakthrough2(1, Jr_Timeframe) > 0)
+      if (DesepticonBreakthrough2(1, Elder_Timeframe) > 0)
       {
        Alert("открыли сделку, начали отсчет");
        isMinProfit = false; // сделка длится
@@ -458,7 +461,7 @@ int start(){
      {
       if (buyCondition > sellCondition)
       {
-       if (DesepticonBreakthrough2(1, Jr_Timeframe) > 0)
+       if (DesepticonBreakthrough2(1, Elder_Timeframe) > 0)
        {
         Alert("открыли сделку, начали отсчет");
         isMinProfit = false; // сделка длится
@@ -468,7 +471,7 @@ int start(){
       }
       if (sellCondition > buyCondition)
       {
-       if (DesepticonBreakthrough2(-1, Jr_Timeframe) > 0)
+       if (DesepticonBreakthrough2(-1, Elder_Timeframe) > 0)
 	    {
         Alert("открыли сделку, начали отсчет");
         isMinProfit = false; // сделка длится
