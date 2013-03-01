@@ -56,7 +56,7 @@ public:
    /// Creates a unique magic number from the EA symbol and name.
    long MakeMagic(string strSymbol="");
    /// True for first tick of new bar.
-   bool NewBar(){return(m_bNewBar);}
+   //bool NewBar(){return(m_bNewBar);}
    /// Called from EA OnTick().
    void OnTick();
    /// returns open lots * 1000
@@ -254,7 +254,7 @@ void CVirtualOrderManager::Initialise(long lMagicNumber/*=-1*/, int minProfit = 
    m_OrderHistory.ReadFromFile();
 
    m_nLastBars=Bars(_Symbol,Period());
-   m_bNewBar=false;
+   //m_bNewBar=false;
    if(lMagicNumber==-1)
       MakeMagic();
    else

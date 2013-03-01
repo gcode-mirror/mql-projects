@@ -126,7 +126,7 @@ void OnTick()
     
     if(GreatDoubles(lastBar, avgBar*(1 + supremacyPercent)))
     {
-     Print("last bar = ", NormalizeDouble(lastBar,8), " avg Bar = ", NormalizeDouble(avgBar,8));
+     Print("last bar = ", NormalizeDouble(lastBar,8), " avg Bar = ", NormalizeDouble(avgBar,8)*(1 + supremacyPercent));
      if(!SymbolInfoTick(Symbol(),tick))
      {
       Alert("SymbolInfoTick() failed, error = ",GetLastError());
