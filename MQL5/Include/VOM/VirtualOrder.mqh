@@ -145,7 +145,7 @@ ENUM_VIRTUAL_ORDER_EVENT CVirtualOrder::CheckStopsAndLimits()
             LogFile.Log(LOG_PRINT,__FUNCTION__," order ",(string)Ticket()," takeprofit has been hit");
             return(VIRTUAL_ORDER_EVENT_TAKEPROFIT);
            }
-         if(CurrentTick.bid<=StopLoss())
+         if(CurrentTick.ask<=StopLoss())
            {
             LogFile.Log(LOG_PRINT,__FUNCTION__," order ",(string)Ticket()," stoploss has been hit");
             return(VIRTUAL_ORDER_EVENT_STOPLOSS);
@@ -158,7 +158,7 @@ ENUM_VIRTUAL_ORDER_EVENT CVirtualOrder::CheckStopsAndLimits()
             LogFile.Log(LOG_PRINT,__FUNCTION__," order ",(string)Ticket()," takeprofit has been hit");
             return(VIRTUAL_ORDER_EVENT_TAKEPROFIT);
            }
-         if(StopLoss()!=0 && CurrentTick.ask>=StopLoss())
+         if(StopLoss()!=0 && CurrentTick.bid>=StopLoss())
            {
             LogFile.Log(LOG_PRINT,__FUNCTION__," order ",(string)Ticket()," stoploss has been hit");
             return(VIRTUAL_ORDER_EVENT_STOPLOSS);
