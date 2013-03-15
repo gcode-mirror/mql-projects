@@ -31,7 +31,7 @@ double Stochastic;
 #include <DesepticonTrendCriteria.mqh>
 #include <Correction.mqh>
 #include <StochasticDivergenceProcedures.mqh>
-#include <DesepticonBreakthrough2.mqh>
+//#include <DesepticonBreakthrough2.mqh>
 #include <searchForTits.mqh>
 #include <GetLastOrderHist.mqh>
 #include <GetLots.mqh>     // На какое количество лотов открываемся
@@ -175,6 +175,8 @@ int CheckSellCondition()
 int start(){
  if (_isTradeAllow)
  {
+  int ticket = 0;
+  //LimitOrderExpirationForTester();
   for (frameIndex = startTF; frameIndex < finishTF; frameIndex++)
   {
    Jr_Timeframe = aTimeframe[frameIndex, 9];
@@ -259,6 +261,18 @@ int start(){
    if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
    {
     total=OrdersTotal();
+    
+    if (total > 0) 
+    {
+     for (i=0; i<total; i++)
+     {
+      if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
+      {
+       Alert("Выбран ордер тикет=", OrderTicket()," TimeCurrent=",TimeCurrent()," OrderExpiration=",TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
+      }
+     }
+    } 
+    
     
     if (useTimeExit)
     {
@@ -430,9 +444,12 @@ int start(){
     {
      if (buyCondition > sellCondition)
      {
-      if (DesepticonBreakthrough2(1, Elder_Timeframe) > 0)
+      ticket = DesepticonOpening(1, Elder_Timeframe);
+      if (ticket > 0)
       {
-       Alert("открыли сделку, начали отсчет");
+       OrderSelect(ticket, SELECT_BY_TICKET, MODE_TRADES); 
+       ticket = OrderTicket();
+       Alert("открыли сделку, начали отсчет. ticket=",ticket," OrderExpiration = ", TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
        isMinProfit = false; // сделка длится
        barNumber = 0;
       }
@@ -440,9 +457,12 @@ int start(){
      }
      if (sellCondition > buyCondition)
      {
-      if (DesepticonBreakthrough2(-1, Jr_Timeframe) > 0)
+      ticket = DesepticonOpening(-1, Elder_Timeframe);
+      if (ticket > 0)
       {
-       Alert("открыли сделку, начали отсчет");
+       OrderSelect(ticket, SELECT_BY_TICKET, MODE_TRADES); 
+       ticket = OrderTicket();
+       Alert("открыли сделку, начали отсчет. ticket=",ticket," OrderExpiration = ", TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
        isMinProfit = false; // сделка длится
        barNumber = 0;
       }
@@ -450,38 +470,44 @@ int start(){
      }
     } // close коррекция вниз
    }
-
+   
    //-------------------------------------------------------------------------------------------
    // Большой тренд вниз
    //-------------------------------------------------------------------------------------------     
    if (trendDirection[frameIndex][0] < 0) // Есть тренд вниз
    {
     trendDirection[frameIndex][1] = -1;
-     if (aCorrection[frameIndex][0] > 0) // коррекция вверх
+    if (aCorrection[frameIndex][0] > 0) // коррекция вверх
+    {
+     if (buyCondition > sellCondition)
      {
-      if (buyCondition > sellCondition)
+      ticket = DesepticonOpening(1, Elder_Timeframe);
+      if (ticket > 0)
       {
-       if (DesepticonBreakthrough2(1, Elder_Timeframe) > 0)
-       {
-        Alert("открыли сделку, начали отсчет");
-        isMinProfit = false; // сделка длится
-        barNumber = 0;
-       }
-       openPlace = "";
+       OrderSelect(ticket, SELECT_BY_TICKET, MODE_TRADES); 
+       ticket = OrderTicket();
+       Alert("открыли сделку, начали отсчет. ticket=",ticket," OrderExpiration = ", TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
+       isMinProfit = false; // сделка длится
+       barNumber = 0;
       }
-      if (sellCondition > buyCondition)
+      openPlace = "";
+     }
+     if (sellCondition > buyCondition)
+     {
+      ticket = DesepticonOpening(-1, Elder_Timeframe);
+      if (ticket > 0)
       {
-       if (DesepticonBreakthrough2(-1, Elder_Timeframe) > 0)
-	    {
-        Alert("открыли сделку, начали отсчет");
-        isMinProfit = false; // сделка длится
-        barNumber = 0;
-       }
-       openPlace = "";
+       OrderSelect(ticket, SELECT_BY_TICKET, MODE_TRADES); 
+       ticket = OrderTicket();
+       Alert("открыли сделку, начали отсчет. ticket=",ticket," OrderExpiration = ", TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
+       isMinProfit = false; // сделка длится
+       barNumber = 0;
       }
-     } // close коррекция вверх 
-    }
-   } // close цикл
+      openPlace = "";
+     }
+    } // close коррекция вверх 
+   }
+  } // close цикл
 //}
 //----
   if (useTrailing) DesepticonTrailing(NULL, Jr_Timeframe);

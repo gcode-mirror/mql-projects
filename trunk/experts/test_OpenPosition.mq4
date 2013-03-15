@@ -42,11 +42,11 @@ void start() {
 //  OpenPosition(NULL, OP_BUY, 0.1);
 
 //2. Продать 2 лота EURUSD
-  sy="EURUSD";
-  pa=MarketInfo("EURUSD", MODE_ASK);
-  pb=MarketInfo("EURUSD", MODE_BID);
-  po=MarketInfo("EURUSD", MODE_POINT);
-  OpenPositionTest(NULL, OP_BUY, openPlace, timeframe, 0, 0, _MagicNumber);
+//  sy="EURUSD";
+//  pa=MarketInfo("EURUSD", MODE_ASK);
+//  pb=MarketInfo("EURUSD", MODE_BID);
+//  po=MarketInfo("EURUSD", MODE_POINT);
+//  OpenPositionTest(NULL, OP_BUY, openPlace, timeframe, 0, 0, _MagicNumber);
 
 //3. Продать 0.12 лота USDCAD со стопом 20 пунктов
 //  sy="USDCAD";

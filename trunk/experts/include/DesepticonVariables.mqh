@@ -107,7 +107,8 @@ bool   gbDisabled    = False;          // Флаг блокировки советника
 color  clOpenBuy = Red;                // Цвет значка открытия покупки
 color  clOpenSell = Green;             // Цвет значка открытия продажи
 color  clCloseBuy    = Blue;           // Цвет значка закрытия покупки
-color  clCloseSell   = Blue;            // Цвет значка закрытия продажи
+color  clCloseSell   = Blue;           // Цвет значка закрытия продажи
+color  clDelete      = Black;          // Цвет значка отмены отложенного ордера
 int    Slippage      = 3;              // Проскальзывание цены
 int    NumberOfTry   = 5;              // Количество торговых попыток
 bool   UseSound      = True;           // Использовать звуковой сигнал
@@ -118,7 +119,7 @@ int trendDirection[3][2]; // [][0] - может быть ноль. 0 - значит флэт; [][1] - н
 int total;
 int ticket;
 int _GetLastError = 0;
-double Lots;
+double lots;
 double Current_fastEMA, Current_slowEMA;
 double CurrentMACD;
 

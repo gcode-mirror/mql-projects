@@ -275,6 +275,8 @@ void ModifyOrder(double pp=-1, double sl=0, double tp=0, color cl=CLR_NONE) {
 //|  Версия   : 10.01.2013                                                     |
 //|  Описание : Удаение одной предварительно выбранной позиции.                |
 //+----------------------------------------------------------------------------+
+//|  Параметры:                                                                |
+//|    pp - цена установки ордера                                              |
 //+----------------------------------------------------------------------------+
 void ClosePosBySelect(double pp=-1, string comment = "")
  {
@@ -329,3 +331,72 @@ void ClosePosBySelect(double pp=-1, string comment = "")
    Print("Некорректная торговая операция. Close ",GetNameOP(OrderType()));
   }
  }
+
+//+----------------------------------------------------------------------------+
+//+----------------------------------------------------------------------------+
+//| Версия   :                                                      |
+//| Описание : Удаление ордеров. Версия функции для тестов на истории.         |
+//+----------------------------------------------------------------------------+
+//| Параметры:                                                                 |
+//| symb - наименование инструмента   (NULL - текущий символ)                    |
+//| operation - операция                   ( -1  - любой ордер)                       |
+//| magic - MagicNumber                ( -1  - любой магик)                       |
+//+----------------------------------------------------------------------------+
+void DeleteOrders(string symb="", int operation=-1, int magic=-1) 
+{
+ int i;
+ total=OrdersTotal();
+ int orderType;
+
+ if (symb=="" || symb=="0") symb=Symbol();
+ for (i = 0; i < total; i++)
+ {
+  if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+  {
+   orderType=OrderType();
+   if (orderType==OP_BUYLIMIT || orderType==OP_BUYSTOP || orderType==OP_SELLLIMIT || orderType==OP_SELLSTOP)
+   {
+    if (OrderSymbol()==symb && (operation<0 || orderType==operation))
+    {
+     if (magic<0 || OrderMagicNumber()==magic) 
+     {
+      OrderDelete(OrderTicket(), clDelete);
+     }
+    }
+   }
+  }
+ }
+}
+//+------------------------------------------------------------------+
+//|                                LimitOrderExpirationForTester     |
+//| Описание : Удаление ордеров, ушедших за время экспирации.        |
+//+------------------------------------------------------------------+
+//| Параметры:                                                       |
+//+------------------------------------------------------------------+
+int LimitOrderExpirationForTester()
+{
+ int orderType;
+ total = OrdersTotal();
+ 
+ if (total > 0)
+ {
+  for (int i=0; i<total; i++)
+  {
+   if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
+   {
+    if (OrderMagicNumber() == _MagicNumber)  
+    {
+     orderType=OrderType();
+     if (orderType==OP_BUYLIMIT || orderType==OP_BUYSTOP || orderType==OP_SELLLIMIT || orderType==OP_SELLSTOP)
+     {
+      if (TimeCurrent() > OrderExpiration())
+      {
+       Alert("Выбран ордер тикет=", OrderTicket()," TimeCurrent=",TimeCurrent()," OrderExpiration=",TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
+       OrderDelete(OrderTicket(), clDelete);
+      }
+     }
+    }
+   }
+  }
+ }
+}
