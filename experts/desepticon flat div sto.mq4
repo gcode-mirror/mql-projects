@@ -25,7 +25,7 @@ extern int slowing = 3;
 #include <CheckBeforeStart.mqh>       // Проверка входных параметров
 #include <DesepticonTrendCriteria.mqh>
 #include <StochasticDivergenceProcedures.mqh>
-#include <DesepticonBreakthrough2.mqh>
+//#include <DesepticonBreakthrough2.mqh>
 #include <searchForTits.mqh>
 #include <GetLastOrderHist.mqh>
 #include <GetLots.mqh>     // На какое количество лотов открываемся
@@ -247,7 +247,7 @@ int start()
      if (Bid < iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) + deltaPriceToEMA*Point)
      {
       openPlace = "старший ТФ флэт, " + openPlace;
-      ticket = DesepticonBreakthrough2(1, Elder_Timeframe);
+      ticket = DesepticonOpening(1, Elder_Timeframe);
       if (ticket > 0)
       {
        Alert("открыли сделку, начали отсчет");
@@ -262,7 +262,7 @@ int start()
      if (Ask > iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point)
      {
       openPlace = "старший ТФ флэт, " + openPlace;
-      ticket = DesepticonBreakthrough2(-1, Elder_Timeframe);
+      ticket = DesepticonOpening(-1, Elder_Timeframe);
       if (ticket > 0)
       {
        Alert("открыли сделку, начали отсчет");
