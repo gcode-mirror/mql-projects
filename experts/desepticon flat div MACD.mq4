@@ -255,7 +255,8 @@ int start(){
     if (Bid < iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) + deltaPriceToEMA*Point)
     {
      openPlace = "старший ТФ флэт, " + openPlace;
-     if (DesepticonBreakthrough2(1, Jr_Timeframe) > 0) // при определенной экстремальной цене, ищем пробой, открываемся
+     ticket = DesepticonBreakthrough2(1, Elder_Timeframe);
+     if (ticket > 0)
      {
       Alert("открыли сделку, начали отсчет");
 	   isMinProfit = false; // сделка длится
@@ -269,7 +270,8 @@ int start(){
     if (Ask > iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point)
     {
      openPlace = "старший ТФ флэт, " + openPlace;
-     if (DesepticonBreakthrough2(-1, Jr_Timeframe) > 0) // при определенной экстремальной цене, ищем пробой, открываемся
+     ticket = DesepticonBreakthrough2(-1, Elder_Timeframe);
+     if (ticket > 0)
      {
       Alert("открыли сделку, начали отсчет");
 	   isMinProfit = false; // сделка длится
