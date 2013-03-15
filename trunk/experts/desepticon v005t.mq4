@@ -23,7 +23,7 @@ double aCorrection[3][2]; // [][0] - наличие коррекции, [][1] - значение цены
 #include <CheckBeforeStart.mqh>       // Проверка входных параметров
 #include <DesepticonTrendCriteria.mqh>
 #include <Correction.mqh>
-#include <DesepticonBreakthrough2.mqh>
+//#include <DesepticonBreakthrough2.mqh>
 #include <searchForTits.mqh>
 #include <GetLastOrderHist.mqh>
 #include <GetLots.mqh>     // На какое количество лотов открываемся
@@ -239,7 +239,7 @@ int start(){
            iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) < iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА снизу вверх
        {
         openPlace = "старший тренд вверх, на младшем пересечение ЕМА снизу вверх ";
-        ticket = DesepticonBreakthrough2(1, Elder_Timeframe);
+        ticket = DesepticonOpening(1, Elder_Timeframe);
         if (ticket > 0)
         {
          Alert("открыли сделку, начали отсчет");
@@ -269,7 +269,7 @@ int start(){
            iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) > iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА сверху вниз
        {
         openPlace = "старший тренд вниз, на младшем пересечение ЕМА сверху вниз Ask=" + Ask + "  EMA="+ (iMA(NULL, PERIOD_D1, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point);
-        ticket = DesepticonBreakthrough2(-1, Elder_Timeframe);
+        ticket = DesepticonOpening(-1, Elder_Timeframe);
         if (ticket > 0)
         {
          Alert("открыли сделку, начали отсчет");
