@@ -175,8 +175,6 @@ int CheckSellCondition()
 int start(){
  if (_isTradeAllow)
  {
-  int ticket = 0;
-  //LimitOrderExpirationForTester();
   for (frameIndex = startTF; frameIndex < finishTF; frameIndex++)
   {
    Jr_Timeframe = aTimeframe[frameIndex, 9];
@@ -261,18 +259,6 @@ int start(){
    if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
    {
     total=OrdersTotal();
-    
-    if (total > 0) 
-    {
-     for (i=0; i<total; i++)
-     {
-      if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
-      {
-       Alert("Выбран ордер тикет=", OrderTicket()," TimeCurrent=",TimeCurrent()," OrderExpiration=",TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
-      }
-     }
-    } 
-    
     
     if (useTimeExit)
     {
