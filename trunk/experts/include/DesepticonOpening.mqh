@@ -77,17 +77,24 @@ int DesepticonOpening(int iDirection, int timeframe)
    }
   }
  } // close Будем ПОКУПАТЬ
-
- if (useLimitOrders) ticket = SetOrder(NULL, operation, openPlace, timeframe, 0, 0, _MagicNumber);
- else  ticket = OpenPosition(NULL, operation, openPlace, timeframe, 0, 0, _MagicNumber);
- if (ticket > 0)
+ 
+ total=OrdersTotal();
+ if (total <= 0)
  {
-  OrderSelect(ticket, SELECT_BY_TICKET, MODE_TRADES); 
-  ticket = OrderTicket();
-  Alert("Выбрали ордер по тикету. ticket=",ticket," OrderExpiration = ", TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
-  return (ticket);
- }
-  else return(-1); // ошибка открытия
+  if (useLimitOrders)
+  {
+   ticket = SetOrder(NULL, operation, openPlace, timeframe, 0, 0, _MagicNumber);
+  } 
+  else  ticket = OpenPosition(NULL, operation, openPlace, timeframe, 0, 0, _MagicNumber);
+  if (ticket > 0)
+  {
+   OrderSelect(ticket, SELECT_BY_TICKET, MODE_TRADES); 
+   ticket = OrderTicket();
+   Alert("Выбрали ордер по тикету. ticket=",ticket," OrderExpiration = ", TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
+   return (ticket);
+  }
+   else return(-1); // ошибка открытия
+ } 
 }
 
 //+----------------------------------------------------------------------------+
@@ -166,9 +173,6 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    ticket=OrderSend(symb, operation, lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
    if (ticket > 0)
    {
-    OrderSelect(ticket, SELECT_BY_TICKET);
-    ticket = OrderTicket();
-    Alert("Открыли ордер тикет=", ticket, " OrderExpiration = ", TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES)); 
     if (UseSound) PlaySound("expert.wav");
     if(tp != 0 || sl != 0)
      if(OrderSelect(ticket, SELECT_BY_TICKET))
@@ -315,7 +319,6 @@ int SetOrder(string symb, int operation, string openPlace, int timeframe, double
   }
   
   price=NormalizeDouble(price, dg);
-  Alert("price=",price, " dg=",dg);
   currentTime=TimeCurrent();
   ticket=OrderSend(symb, operation, lots, price, Slippage, sl, tp, lsComm, mn, expirationTime, op_color);
   if (ticket>0)
@@ -331,6 +334,7 @@ int SetOrder(string symb, int operation, string openPlace, int timeframe, double
     barsCountToBreak[frameIndex][0] = 0;
     barsCountToBreak[frameIndex][1] = 0;
    }
+   break;
   }
   else
   {
