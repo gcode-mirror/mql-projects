@@ -50,10 +50,6 @@ extern bool useTrailing = true;
 //extern
  double TrailingStep_5M = 100; // Величина шага
 
-extern bool useLowTF_EMA_Exit = true; // вкл/выкл выхода по пересечению младших EMA
-extern bool useTimeExit = true; // вкл/выкл выхода по времени без прибыли
-extern int waitForMove = 6;
-extern double MinimumLvl = 80;
 extern double MinProfit_1H = 300; // когда профит достигает указанное количество пунктов, трейлинг начинает работу
 extern double TrailingStop_1H_min = 300; // Величина трала
 extern double TrailingStop_1H_max = 300; // Величина трала
@@ -67,6 +63,11 @@ extern double TrailingStep_1H = 100; // Величина шага
  double TrailingStop_1D_max = 300; // Величина трала
 //extern
  double TrailingStep_1D = 100; // Величина шага
+ 
+extern bool useLowTF_EMA_Exit = true; // вкл/выкл выхода по пересечению младших EMA
+extern bool useTimeExit = true; // вкл/выкл выхода по времени без прибыли
+extern int waitForMove = 6;
+extern double MinimumLvl = 80;
 // Параметры индикаторов
 // EMA
 extern int jr_EMA1 = 12;
