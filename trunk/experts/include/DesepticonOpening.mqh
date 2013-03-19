@@ -88,9 +88,11 @@ int DesepticonOpening(int iDirection, int timeframe)
   else  ticket = OpenPosition(NULL, operation, openPlace, timeframe, 0, 0, _MagicNumber);
   if (ticket > 0)
   {
+  /*
    OrderSelect(ticket, SELECT_BY_TICKET, MODE_TRADES); 
    ticket = OrderTicket();
    Alert("Выбрали ордер по тикету. ticket=",ticket," OrderExpiration = ", TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
+  */ 
    return (ticket);
   }
    else return(-1); // ошибка открытия
@@ -112,6 +114,7 @@ int DesepticonOpening(int iDirection, int timeframe)
 //+----------------------------------------------------------------------------+
 int OpenPosition(string symb, int operation, string openPlace, int timeframe, double sl=0, double tp=0, int mn=0, string lsComm="")
  {
+  Alert("Открываем позицию");
   color op_color;
   datetime currentTime, expirationTime;
   double price, pAsk, pBid, vol, addPrice;
@@ -170,6 +173,7 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    }
    price=NormalizeDouble(price, dg);
    currentTime=TimeCurrent();
+   Alert("StopLoss=", sl, " TakeProfit =",tp);
    ticket=OrderSend(symb, operation, lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
    if (ticket > 0)
    {
