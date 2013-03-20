@@ -22,7 +22,7 @@ int Correction()
   MACD_channel = Jr_MACD_channel;
   index = frameindex + 1;
  }
- else if (timeframe == Elder_Timeframe)
+ else if (timeframe == elder_Timeframe)
       {
        fastEMA = eld_EMA1;
        slowEMA = eld_EMA2;
@@ -33,7 +33,7 @@ int Correction()
       }
       else 
       {
-       Alert ("Jr_Timeframe ", Jr_Timeframe, " Elder_Timeframe ", Elder_Timeframe, " timeframe ", timeframe);
+       Alert ("Jr_Timeframe ", Jr_Timeframe, " elder_Timeframe ", elder_Timeframe, " timeframe ", timeframe);
        Alert ("Вы ошиблись с таймфреймом");
        return (false);
       }
@@ -41,19 +41,19 @@ int Correction()
         
   if (trendDirection[index][0] > 0) // Тренд вверх на заданном таймфрейме
   {  
-   if (iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 1) < iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 2)) // началась коррекция вниз
+   if (iMA(NULL, elder_Timeframe, 3, 0, 1, 0, 1) < iMA(NULL, elder_Timeframe, 3, 0, 1, 0, 2)) // началась коррекция вниз
    {
     aCorrection[index][0] = -1;
-    aCorrection[index][1] = iHigh(NULL, Elder_Timeframe, iHighest(NULL, Elder_Timeframe, MODE_HIGH, 5, 0));
+    aCorrection[index][1] = iHigh(NULL, elder_Timeframe, iHighest(NULL, elder_Timeframe, MODE_HIGH, 5, 0));
    } // Close  началась коррекция вниз
   } // close Тренд вверх
    
   if (trendDirection[index][0] < 0) // Тренд вниз на заданном таймфрейме
   { 
-   if (iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 1) > iMA(NULL, Elder_Timeframe, 3, 0, 1, 0, 2)) // началась коррекция вверх
+   if (iMA(NULL, elder_Timeframe, 3, 0, 1, 0, 1) > iMA(NULL, elder_Timeframe, 3, 0, 1, 0, 2)) // началась коррекция вверх
    {
     aCorrection[index][0] = 1;
-    aCorrection[index][1] = iLow(NULL, Elder_Timeframe, iLowest(NULL, Elder_Timeframe, MODE_HIGH, 5, 0));
+    aCorrection[index][1] = iLow(NULL, elder_Timeframe, iLowest(NULL, elder_Timeframe, MODE_HIGH, 5, 0));
    } // Close  началась коррекция вниз
   } // close Тренд вверх
   return (aCorrection[index][0]);

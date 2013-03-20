@@ -23,7 +23,8 @@ int DesepticonOpening(int iDirection, int timeframe)
  if (iDirection < 0) // Будем ПРОДАВАТЬ по Bid или открывать SELLLIMIT
  {
   if (useLimitOrders) operation = OP_SELLLIMIT;
-  else operation = OP_SELL;
+  else if (useStopOrders) operation = OP_SELLSTOP;
+       else operation = OP_SELL;
 
   if (ExistOrders("", -1, _MagicNumber) || ExistPositions("", -1, _MagicNumber)) // Если есть открытые ордера или позиции
   {
@@ -52,6 +53,7 @@ int DesepticonOpening(int iDirection, int timeframe)
  if (iDirection > 0) // Будем ПОКУПАТЬ по Ask или открывать BUYLIMIT
  {
   if (useLimitOrders) operation = OP_BUYLIMIT;
+  else if (useStopOrders) operation = OP_BUYSTOP;
   else operation = OP_BUY;
 
   if (ExistOrders("", -1, _MagicNumber) || ExistPositions("", -1, _MagicNumber)) // Если есть открытые ордера или позиции
@@ -81,7 +83,7 @@ int DesepticonOpening(int iDirection, int timeframe)
  total=OrdersTotal();
  if (total <= 0)
  {
-  if (useLimitOrders)
+  if (useLimitOrders || useStopOrders)
   {
    ticket = SetOrder(NULL, operation, openPlace, timeframe, 0, 0, _MagicNumber);
   } 
@@ -132,24 +134,26 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
   {
    case OP_BUY:
    {
-    expirationTime = 0;
-    StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
-    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
-    if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
-    sl = Bid-StopLoss;
-    tp = Ask+TakeProfit*Point;
+    /*
+    stopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
+    if (stopLoss < StopLoss_min*Point) { stopLoss = StopLoss_min*Point; }
+    if (stopLoss > StopLoss_max*Point) { stopLoss = StopLoss_max*Point; }
+    */
+    sl = Bid-stopLoss*Point;
+    tp = Ask+takeProfit*Point;
     op_color = clOpenBuy;
     break;
    }
   
    case OP_SELL:
    {
-    expirationTime = 0;
-    StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
-    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
-    if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
-    sl = Ask+StopLoss;
-    tp = Bid-TakeProfit*Point;
+   /*
+    stopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
+    if (stopLoss < StopLoss_min*Point) { stopLoss = StopLoss_min*Point; }
+    if (stopLoss > StopLoss_max*Point) { stopLoss = StopLoss_max*Point; }
+   */
+    sl = Ask+stopLoss*Point;
+    tp = Bid-takeProfit*Point;
     op_color = clOpenSell;
     break;
    }
@@ -173,7 +177,7 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
    }
    price=NormalizeDouble(price, dg);
    currentTime=TimeCurrent();
-   Alert("StopLoss=", sl, " TakeProfit =",tp);
+   Alert("stopLoss=", sl, " takeProfit =",tp);
    ticket=OrderSend(symb, operation, lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
    if (ticket > 0)
    {
@@ -181,13 +185,6 @@ int OpenPosition(string symb, int operation, string openPlace, int timeframe, do
     if(tp != 0 || sl != 0)
      if(OrderSelect(ticket, SELECT_BY_TICKET))
       ModifyOrder(-1, sl, tp);
-    for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
-    {
-     wantToOpen[frameIndex][0] = 0;
-     wantToOpen[frameIndex][1] = 0;
-     barsCountToBreak[frameIndex][0] = 0;
-     barsCountToBreak[frameIndex][1] = 0;
-    }
     break;
    }
    else
@@ -256,43 +253,30 @@ int SetOrder(string symb, int operation, string openPlace, int timeframe, double
  {
   case OP_BUYLIMIT:
    expirationTime = TimeCurrent() + 2*timeframe*60;
-   StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + addPrice*Point; //(тек.покупка - мин.цена + 30п.)
-   if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
-   if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
-   sl = (Bid - priceDifference*Point)-StopLoss;
-   tp = (Ask + priceDifference*Point)+TakeProfit*Point;
+   sl = (Bid - limitPriceDifference*Point)-stopLoss*Point;
+   tp = (Ask + limitPriceDifference*Point)+takeProfit*Point;
    op_color = clOpenBuy;
    break;
   
   case OP_SELLLIMIT:
    expirationTime = TimeCurrent() + 2*timeframe*60;
-   StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
-   if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
-   if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
-   sl = (Ask + priceDifference*Point)+StopLoss;
-   tp = (Bid - priceDifference*Point)-TakeProfit*Point;
+   sl = (Ask + limitPriceDifference*Point)+stopLoss*Point;
+   tp = (Bid - limitPriceDifference*Point)-takeProfit*Point;
    op_color = clOpenSell;
    break;
+   
   case OP_BUYSTOP:
-  /*
    expirationTime = TimeCurrent() + 2*timeframe*60;
-   StopLoss = Ask - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, 4, 0)) + addPrice*Point; //(мин_цена - тек.покупка + 30п.)
-    if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
-   if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
-   sl = Bid-StopLoss;
-   tp = Ask+TakeProfit*Point;
-   op_color = clOpenBuy;*/
+   sl = (Bid - stopPriceDifference*Point)-stopLoss*Point;
+   tp = (Ask + stopPriceDifference*Point)+takeProfit*Point;
+   op_color = clOpenBuy;
    break;
   
   case OP_SELLSTOP:
-  /*
    expirationTime = TimeCurrent() + 2*timeframe*60;
-   StopLoss = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, 4, 0)) - Bid + addPrice*Point; //(макс_цена - тек.продажа + 30п.)
-   if (StopLoss < StopLoss_min*Point) { StopLoss = StopLoss_min*Point; }
-   if (StopLoss > StopLoss_max*Point) { StopLoss = StopLoss_max*Point; }
-   sl = Ask+StopLoss;
-   tp = Bid-TakeProfit*Point;
-   op_color = clOpenSell;*/
+   sl = (Ask + stopPriceDifference*Point)+stopLoss*Point;
+   tp = (Bid - stopPriceDifference*Point)-takeProfit*Point;
+   op_color = clOpenSell;
    break;
  } // close switch
  
@@ -311,14 +295,16 @@ int SetOrder(string symb, int operation, string openPlace, int timeframe, double
   switch (operation)
   {
    case OP_BUYLIMIT:
-    price = pBid - priceDifference*Point;
+    price = pBid - limitPriceDifference*Point;
     break;
    case OP_SELLLIMIT:
-    price = pAsk + priceDifference*Point;
+    price = pAsk + limitPriceDifference*Point;
     break;
    case OP_BUYSTOP:
+    price = pAsk + stopPriceDifference*Point;
     break;
    case OP_SELLSTOP:
+    price = pBid - stopPriceDifference*Point;
     break;
   }
   
@@ -331,13 +317,6 @@ int SetOrder(string symb, int operation, string openPlace, int timeframe, double
 /*   if(tp != 0 || sl != 0)
     if(OrderSelect(ticket, SELECT_BY_TICKET))
      ModifyOrder(-1, sl, tp);*/
-   for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
-   {
-    wantToOpen[frameIndex][0] = 0;
-    wantToOpen[frameIndex][1] = 0;
-    barsCountToBreak[frameIndex][0] = 0;
-    barsCountToBreak[frameIndex][1] = 0;
-   }
    break;
   }
   else
@@ -357,7 +336,7 @@ int SetOrder(string symb, int operation, string openPlace, int timeframe, double
    pBid=MarketInfo(symb, MODE_BID);
    if (pAsk==0 && pBid==0) Message("SetOrder(): Проверьте в обзоре рынка наличие символа "+symb);
    Print("Error(",err,") set order: ",ErrorDescription(err),", try ",it);
-   Print("Ask=",pAsk,"  Bid=",pBid, " priceDifference=",priceDifference*Point, "  symb=",symb,"  lots=",lots,"  operation=",GetNameOP(operation),
+   Print("Ask=",pAsk,"  Bid=",pBid, "  symb=",symb,"  lots=",lots,"  operation=",GetNameOP(operation),
          "  price=",price,"  sl=",sl,"  tp=",tp,"  mn=",mn);
    // Неправильные стопы
    if (err==130) {

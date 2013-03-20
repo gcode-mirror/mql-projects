@@ -6,7 +6,11 @@
 #property copyright "Copyright © 2011, GIA"
 #property link      "http://www.saita.net"
 
+
+#include <BasicVariables.mqh>
+
 //------- Внешние параметры советника -----------------------------------------+
+extern string Expert_Self_Parameters = "Expert_Self_Parameters";
 extern int historyDepth = 6;
 extern bool tradeOnTrend = true;
 extern int fastMACDPeriod = 12;
@@ -14,8 +18,6 @@ extern int slowMACDPeriod = 26;
 extern double levelMACD = 0.007;
 
 //------- Глобальные переменные советника -------------------------------------+
-string _symbol = "";
-int timeframe;
 
 bool waitForSell = false;
 bool waitForBuy = false;
@@ -24,7 +26,6 @@ bool waitForBuy = false;
 #include <stderror.mqh>
 #include <WinUser32.mqh>
 //--------------------------------------------------------------- 3 --
-#include <DesepticonVariables.mqh>
 #include <AddOnFuctions.mqh> 
 #include <GetLastOrderHist.mqh>
 #include <GetLots.mqh>     // На какое количество лотов открываемся
@@ -39,13 +40,6 @@ int init()
  {
   _symbol=Symbol();
   timeframe = PERIOD_H1; 
-  TakeProfit = TakeProfit_1H;
-  StopLoss_min = StopLoss_1H_min;
-  StopLoss_max = StopLoss_1H_max; 
-  minProfit = MinProfit_1H; 
-  trailingStop_min = TrailingStop_1H_min;
-  trailingStop_max = TrailingStop_1H_max; 
-  trailingStep = TrailingStep_1H;
   return(0);
  }
 //+------------------------------------------------------------------+

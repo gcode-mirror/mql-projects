@@ -6,71 +6,13 @@
 #property copyright "Copyright © 2011, GIA"
 #property link      "http://www.saita.net"
 
+#include <BasicVariables.mqh>
 //------- Внешние параметры советника -----------------------------------------+
-extern int _MagicNumber = 1122;
-extern double StopLoss_1H_min = 400;
-extern double StopLoss_1H_max = 500;
-extern double TakeProfit_1H = 1600;
-extern double MACD_channel_1H = 0.002;
-
-extern bool useTrailing = true;
-extern double MinProfit_1H = 300; // когда профит достигает указанное количество пунктов, трейлинг начинает работу
-extern double TrailingStop_1H_min = 300; // Величина трала
-extern double TrailingStop_1H_max = 300; // Величина трала
-extern double TrailingStep_1H = 100; // Величина шага
-
+extern string Expert_Self_Parameters = "Expert_Self_Parameters";
 extern int historyDepth = 6;
-extern double supremacyPercent = 0.2;
-
-extern bool useLimitOrders = false;
-extern int priceDifference = 20;
-
-extern bool uplot = true; // вкл/выкл изменение величины лота
-extern int lastprofit = -1; // принимает значения -1/1. 
-// -1 - увеличение лота после минусовой сделки до первой плюсовой
-//  1 - увеличение лота после плюсовой сделки до первой минусовой
-extern double lotmin = 0.1; // начальное значение 
-//extern double lotmax = 0.5; // потолок
-//extern double lotstep = 0.1; // приращение лота
+extern double supremacyPercent = 0.6;
 
 //------- Глобальные переменные советника -------------------------------------+
-string _symbol = "";
-int timeframe = PERIOD_H1;
-
-bool   gbDisabled    = False;          // Флаг блокировки советника
-color  clOpenBuy = Red;                // Цвет значка открытия покупки
-color  clOpenSell = Green;             // Цвет значка открытия продажи
-color  clCloseBuy    = Blue;           // Цвет значка закрытия покупки
-color  clCloseSell   = Blue;           // Цвет значка закрытия продажи
-color  clDelete      = Black;          // Цвет значка отмены отложенного ордера
-int    Slippage      = 3;              // Проскальзывание цены
-int    NumberOfTry   = 5;              // Количество торговых попыток
-bool   UseSound      = True;           // Использовать звуковой сигнал
-string NameFileSound = "expert.wav";   // Наименование звукового файла
-bool Debug = false;
-
-int total;
-int ticket;
-int _GetLastError = 0;
-double lots;
-
-double StopLoss;
-double StopLoss_min;
-double StopLoss_max;
-double TakeProfit;
-int minProfit; 
-double trailingStop;
-int trailingStop_min;
-int trailingStop_max; 
-int trailingStep;
-
-string openPlace;
-int frameIndex;
-int startTF = 1;
-int finishTF = 2;
-
-int wantToOpen[3][2];
-int barsCountToBreak[3][2];
 
 //------- Подключение внешних модулей -----------------------------------------+
 #include <stdlib.mqh>
@@ -89,14 +31,7 @@ int barsCountToBreak[3][2];
 //+------------------------------------------------------------------+
 int init()
  {
-  _symbol=Symbol(); 
-  TakeProfit = TakeProfit_1H;
-  StopLoss_min = StopLoss_1H_min;
-  StopLoss_max = StopLoss_1H_max; 
-  minProfit = MinProfit_1H; 
-  trailingStop_min = TrailingStop_1H_min;
-  trailingStop_max = TrailingStop_1H_max; 
-  trailingStep = TrailingStep_1H;
+  _symbol=Symbol();
   return(0);
  }
 //+------------------------------------------------------------------+
