@@ -97,9 +97,9 @@ int OneTitTrendCriteria(int timeframe, double MACD_channel, int period_EMA1, int
    {
     return (0);
    } // Close  searchForTits
-   if (timeframe == Elder_Timeframe)
+   if (timeframe == elder_Timeframe)
     return (trendDirection[frameIndex][1]);
-   if (timeframe == Jr_Timeframe)
+   if (timeframe == jr_Timeframe)
     return (trendDirection[frameIndex + 1][1]); 
   }
   
@@ -124,11 +124,11 @@ int TwoTitsTrendCriteria(int timeframe, double MACD_channel, int period_EMA1, in
 {
    int index;
    
-   if (timeframe == Elder_Timeframe)
+   if (timeframe == elder_Timeframe)
    {
     index = frameIndex;
    }
-   else if (timeframe == Jr_Timeframe)
+   else if (timeframe == jr_Timeframe)
         {
          index = frameIndex + 1; 
         }
@@ -151,9 +151,11 @@ int TwoTitsTrendCriteria(int timeframe, double MACD_channel, int period_EMA1, in
    {
     if (searchForTits(timeframe, MACD_channel, true))
     {
-     return (0);
+     Alert("начался флэт");
+     return (0); // появились маленькие титьки на MACD в обе стороны - начался флэт
     } // Close  searchForTits
    }
+   Alert("MACD слабый, но флэт еще не начался");
    return (trendDirection[index][0]);
   }
   

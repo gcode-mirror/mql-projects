@@ -14,19 +14,19 @@ bool searchForTits(int timeframe, double MACD_channel, bool bothTits)
  bool isMax = false;
  bool isMin = false;
  
- if (timeframe == Jr_Timeframe)
+ if (timeframe == jr_Timeframe)
  { 
   fastPeriod = jrFastMACDPeriod;
   slowPeriod = jrSlowMACDPeriod;
  } 
- else if ( timeframe == Elder_Timeframe )
+ else if ( timeframe == elder_Timeframe )
       {
        fastPeriod = eldFastMACDPeriod;
        slowPeriod = eldSlowMACDPeriod;
       }
       else
       {
-       Alert ("Jr_Timeframe ", Jr_Timeframe, " Elder_Timeframe ",Elder_Timeframe, " timeframe ", timeframe);
+       Alert ("jr_Timeframe ", jr_Timeframe, " elder_Timeframe ",elder_Timeframe, " timeframe ", timeframe);
        Alert ("searchForTits: Âû מרטבכטסü ס עאילפנוילמל");
        return (0);
       }

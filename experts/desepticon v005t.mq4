@@ -18,7 +18,8 @@ double aCorrection[3][2]; // [][0] - наличие коррекции, [][1] - значение цены
 #include <stderror.mqh>
 #include <WinUser32.mqh>
 //--------------------------------------------------------------- 3 --
-#include <DesepticonVariables.mqh>    // Описание переменных 
+#include <BasicVariables.mqh>
+#include <DesepticonVariables.mqh>    // Описание переменных
 #include <AddOnFuctions.mqh> 
 #include <CheckBeforeStart.mqh>       // Проверка входных параметров
 #include <DesepticonTrendCriteria.mqh>
@@ -39,17 +40,10 @@ int init(){
   Alert("Сработала ф-ия init() при запуске");
 
   aTimeframe[1,0] = PERIOD_H1;
-  aTimeframe[1,1] = TakeProfit_1H;
-  aTimeframe[1,2] = StopLoss_1H_min;
-  aTimeframe[1,3] = StopLoss_1H_max;
-  aTimeframe[1,4] = MACD_channel_1H;
-  aTimeframe[1,5] = MinProfit_1H;
-  aTimeframe[1,6] = TrailingStop_1H_min;
-  aTimeframe[1,7] = TrailingStop_1H_max;
-  aTimeframe[1,8] = TrailingStep_1H;
-  aTimeframe[1,9] = PERIOD_M5;
+  aTimeframe[1,4] = MACD_channel;
   
   aTimeframe[2,0] = PERIOD_M5;
+  aTimeframe[2,4] = MACD_channel;
   
   ArrayInitialize(aCorrection, 0);
   
@@ -74,19 +68,11 @@ int deinit(){
 int start(){
   for (frameIndex = startTF; frameIndex < finishTF; frameIndex++)
   {
-   Jr_Timeframe = aTimeframe[frameIndex, 9];
-   Elder_Timeframe = aTimeframe[frameIndex, 0];
-     
-   TakeProfit = aTimeframe[frameIndex, 1];
-   StopLoss_min = aTimeframe[frameIndex, 2];
-   StopLoss_max = aTimeframe[frameIndex, 3]; 
-   Jr_MACD_channel = aTimeframe[frameIndex + 1, 4];
-   Elder_MACD_channel = aTimeframe[frameIndex, 4];
-   
-   minProfit = aTimeframe[frameIndex, 5]; 
-   trailingStop_min = aTimeframe[frameIndex, 6];
-   trailingStop_max = aTimeframe[frameIndex, 7]; 
-   trailingStep = aTimeframe[frameIndex, 8];
+  jr_Timeframe = PERIOD_M5;
+  elder_Timeframe = PERIOD_H1;
+    
+  jr_MACD_channel = aTimeframe[frameIndex + 1, 4];
+  elder_MACD_channel = aTimeframe[frameIndex, 4];
      
    if (!CheckBeforeStart())   // проверяем входные параметры
    {
@@ -106,7 +92,7 @@ int start(){
       {
        if (OrderType()==OP_BUY)   // Открыта длинная позиция BUY
        {
-        if (!isMinProfit && Bid-OrderOpenPrice() > MinimumLvl*Point) // достигли минимального уровня прибыли
+        if (!isMinProfit && Bid-OrderOpenPrice() > minimumProfitLvl*Point) // достигли минимального уровня прибыли
         {
          isMinProfit = true;
          Alert("мин профит на промежутке. Прекращаем отсчет. isMinProfit = ",isMinProfit);
@@ -116,8 +102,8 @@ int start(){
         {
          if (Bid-OrderOpenPrice() > minProfit*Point) // получили минимальный профит
          {
-          if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0) 
-                 > iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) + deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+          if (iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 0) 
+                 > iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 0) + deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
           {
            ClosePosBySelect(Bid, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль"); // закрываем позицию BUY
            Alert("Закрыли ордер, обнуляем переменные. Bid-OrderOpenPrice()= ",Bid-OrderOpenPrice(), " MinProfit ", minProfit*Point);
@@ -128,7 +114,7 @@ int start(){
         
        if (OrderType()==OP_SELL) // Открыта короткая позиция SELL
        {
-        if (!isMinProfit && OrderOpenPrice()-Ask > MinimumLvl*Point) // достигли минимального уровня прибыли
+        if (!isMinProfit && OrderOpenPrice()-Ask > minimumProfitLvl*Point) // достигли минимального уровня прибыли
         {
          isMinProfit = true;
          Alert("Sell, мин профит на промежутке. Прекращаем отсчет. isMinProfit = ",isMinProfit);
@@ -138,8 +124,8 @@ int start(){
         {
          if (OrderOpenPrice()-Ask > minProfit*Point)
          {
-          if (iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 0)
-                 < iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 0) - deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
+          if (iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 0)
+                 < iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 0) - deltaEMAtoEMA*Point) // разворот движения EMA  на младшем ТФ
           {
            ClosePosBySelect(Ask, "получена минимальная прибыль, разворот ЕМА на младщем ТФ, фиксируем прибыль");// закрываем позицию SELL
            Alert("Закрыли ордер, обнуляем переменные. OrderOpenPrice()-Ask= ",OrderOpenPrice()-Ask, " MinProfit ", minProfit*Point);
@@ -147,12 +133,12 @@ int start(){
          } // close получили минимальный профит
         } 
        } // Close Открыта короткая позиция SELL
-      } // close _MagicNumber от этого Jr_Timeframe
+      } // close _MagicNumber от этого jr_Timeframe
      } // close OrderSelect 
     } // close for
    } // close total > 0
 
-   if( isNewBar(Elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
+   if( isNewBar(elder_Timeframe) ) // на каждом новом баре старшего ТФ вычисляем тренд и коррекцию на старшем
    {
     total=OrdersTotal();
     if (useTimeExit)
@@ -177,7 +163,7 @@ int start(){
      }
     }
     
-    trendDirection[frameIndex][0] = TwoTitsTrendCriteria(Elder_Timeframe, Elder_MACD_channel, eld_EMA1, eld_EMA2, eldFastMACDPeriod, eldSlowMACDPeriod);
+    trendDirection[frameIndex][0] = TwoTitsTrendCriteria(elder_Timeframe, elder_MACD_channel, eld_EMA1, eld_EMA2, eldFastMACDPeriod, eldSlowMACDPeriod);
     if (aCorrection[frameIndex][0] > 0) // коррекция вверх
     {
      if (trendDirection[frameIndex][0] > 0 || Bid < aCorrection[frameIndex][1]) // тренд вверх
@@ -201,9 +187,9 @@ int start(){
 //--------------------------------------
 // временная заглушка для отказа от торговли при флэте на младшем ТФ
 //--------------------------------------
-   if( isNewBar(Jr_Timeframe) ) // на каждом новом баре младшего ТФ вычисляем тренд на младшем
+   if( isNewBar(jr_Timeframe) ) // на каждом новом баре младшего ТФ вычисляем тренд на младшем
    {
-    trendDirection[frameIndex + 1][0] = TwoTitsTrendCriteria(Jr_Timeframe, Jr_MACD_channel, jr_EMA1, jr_EMA2, jrFastMACDPeriod, jrSlowMACDPeriod);
+    trendDirection[frameIndex + 1][0] = TwoTitsTrendCriteria(jr_Timeframe, jr_MACD_channel, jr_EMA1, jr_EMA2, jrFastMACDPeriod, jrSlowMACDPeriod);
     if (trendDirection[frameIndex + 1][0] > 0) // Есть тренд вверх на старшем таймфрейме
     { 
      trendDirection[frameIndex + 1][1] = 1;
@@ -212,7 +198,7 @@ int start(){
     {
      trendDirection[frameIndex + 1][1] = -1;
     }
-   } // close  isNewBar(Jr_Timeframe)
+   } // close  isNewBar(jr_Timeframe)
    if (trendDirection[frameIndex + 1][0] == 0) // если на младшем флэт не торгуем
    {
     //Alert("флэт на младшем");
@@ -232,17 +218,24 @@ int start(){
     {
      if (Bid < iMA(NULL, PERIOD_D1, 3, 0, 1, 0, 0) + deltaPriceToEMA*Point) // на дневнике цена ниже или не сильно выше ЕМА3 
      {
-      if (iLow(NULL, Elder_Timeframe, 1) < iMA(NULL, Elder_Timeframe, eld_EMA1, 0, 1, 0, 1) + deltaPriceToEMA*Point ||
-          Bid < iMA(NULL, Elder_Timeframe, eld_EMA1, 0, 1, 0, 0) + deltaPriceToEMA*Point) // на последних 2-х барах есть цена ниже быстрого ЕМА       
+      if (iLow(NULL, elder_Timeframe, 1) < iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 1) + deltaPriceToEMA*Point ||
+          Bid < iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 0) + deltaPriceToEMA*Point) // на последних 2-х барах есть цена ниже быстрого ЕМА       
       {
-       if (iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 1) > iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
-           iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) < iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА снизу вверх
+       if (iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 1) > iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
+           iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 2) < iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА снизу вверх
        {
         openPlace = "старший тренд вверх, на младшем пересечение ЕМА снизу вверх ";
-        ticket = DesepticonOpening(1, Elder_Timeframe);
+        ticket = DesepticonOpening(1, elder_Timeframe);
         if (ticket > 0)
         {
          Alert("открыли сделку, начали отсчет");
+         for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
+         {
+          wantToOpen[frameIndex][0] = 0;
+          wantToOpen[frameIndex][1] = 0;
+          barsCountToBreak[frameIndex][0] = 0;
+          barsCountToBreak[frameIndex][1] = 0;
+         }
 	      isMinProfit = false; // сделка длится
 	      barNumber = 0;
 	     }
@@ -262,17 +255,24 @@ int start(){
     {
      if (Ask > iMA(NULL, PERIOD_D1, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point) // на дневнике цена выше или не сильно ниже ЕМА3
      {
-      if (iHigh(NULL, Elder_Timeframe, 1) > iMA(NULL, Elder_Timeframe, eld_EMA1, 0, 1, 0, 1) - deltaPriceToEMA*Point ||
-          Ask > iMA(NULL, Elder_Timeframe, eld_EMA1, 0, 1, 0, 0) - deltaPriceToEMA*Point) // на последних 2-х барах есть цена выше быстрого ЕМА
+      if (iHigh(NULL, elder_Timeframe, 1) > iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 1) - deltaPriceToEMA*Point ||
+          Ask > iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 0) - deltaPriceToEMA*Point) // на последних 2-х барах есть цена выше быстрого ЕМА
       {
-       if (iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 1) < iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
-           iMA(NULL, Jr_Timeframe, jr_EMA1, 0, 1, 0, 2) > iMA(NULL, Jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА сверху вниз
+       if (iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 1) < iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
+           iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 2) > iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА сверху вниз
        {
         openPlace = "старший тренд вниз, на младшем пересечение ЕМА сверху вниз Ask=" + Ask + "  EMA="+ (iMA(NULL, PERIOD_D1, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point);
-        ticket = DesepticonOpening(-1, Elder_Timeframe);
+        ticket = DesepticonOpening(-1, elder_Timeframe);
         if (ticket > 0)
         {
          Alert("открыли сделку, начали отсчет");
+         for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
+         {
+          wantToOpen[frameIndex][0] = 0;
+          wantToOpen[frameIndex][1] = 0;
+          barsCountToBreak[frameIndex][0] = 0;
+          barsCountToBreak[frameIndex][1] = 0;
+         }
 	      isMinProfit = false; // сделка длится
 	      barNumber = 0;
 	     }
@@ -283,7 +283,7 @@ int start(){
    }
   } // close цикл
 //----
-	if (useTrailing) DesepticonTrailing(NULL, Jr_Timeframe); 
+	if (useTrailing) DesepticonTrailing(NULL, jr_Timeframe); 
 	return(0);
 } // close start
 //+------------------------------------------------------------------+
