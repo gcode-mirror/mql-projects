@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                              desepticon v004.mq4 |
+//|                                              desepticon flat.mq4 |
 //|                                            Copyright © 2011, GIA |
 //|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
@@ -54,6 +54,7 @@ int init(){
    InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
    //Alert("проинитили направление тренда");
   }
+  frameIndex = startTF;
   return(0);
  }
 //+------------------------------------------------------------------+
@@ -208,7 +209,7 @@ int start(){
     
     stochastic0 = iStochastic(NULL, elder_Timeframe, Kperiod, Dperiod , slowing ,MODE_SMA,0,MODE_MAIN,1);
     stochastic1 = iStochastic(NULL, elder_Timeframe, Kperiod, Dperiod , slowing ,MODE_SMA,0,MODE_MAIN,2);
-    if (stochastic0 < topStochastic && stochastic1 > topStochastic) // Стохастик наверху, перепокупка - будем продавать
+    if (stochastic0 < topStochastic && stochastic1 > topStochastic) // Стохастик двинулся сверху вниз, была перепокупка - будем продавать
     {
      if (iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 1) < iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
          iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 2) > iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА сверху вниз

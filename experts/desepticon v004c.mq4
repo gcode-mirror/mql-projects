@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                              desepticon v004.mq4 |
+//|                                             desepticon v004c.mq4 |
 //|                                            Copyright © 2011, GIA |
 //|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
@@ -167,6 +167,8 @@ int CheckSellCondition()
 //| expert start function                                            |
 //+------------------------------------------------------------------+
 int start(){
+
+ frameIndex = 1;
  if (_isTradeAllow)
  {
   jr_Timeframe = PERIOD_M5;
@@ -322,29 +324,12 @@ int start(){
     wantToOpen[frameIndex][0] = _isDivergence(elder_Timeframe);  // проверяем на расхождение на этом баре       
    } 
  //--------------------------
- // вычисляем расхождение MACD на младшем
- //--------------------------     
-   UpdateDivergenceArray(jr_Timeframe); // Обновляем массив экстремумов MACD
-   InitExtremums(frameIndex + 1); // обновляем максимумы цены и MACD
-   if (wantToOpen[frameIndex + 1][0] == 0) // если еще не хотим открываться
-   {   
-    wantToOpen[frameIndex + 1][0] = _isDivergence(jr_Timeframe);  // проверяем на расхождение на этом баре       
-   } 
- //--------------------------
  // вычисляем расхождение Stochastic на старшем
  //--------------------------    
    InitStoDivergenceArray(elder_Timeframe); 
    if (wantToOpen[frameIndex][1] == 0) // если еще не хотим открываться
    {   
     wantToOpen[frameIndex][1] = isStoDivergence(elder_Timeframe);  // проверяем на расхождение на этом баре    
-   }
- //--------------------------
- // вычисляем расхождение Stochastic на младшем
- //--------------------------    
-   InitStoDivergenceArray(jr_Timeframe); 
-   if (wantToOpen[frameIndex + 1][1] == 0) // если еще не хотим открываться
-   {   
-    wantToOpen[frameIndex + 1][1] = isStoDivergence(jr_Timeframe);  // проверяем на расхождение на этом баре    
    }
   } // close isNewBar
     
@@ -354,9 +339,8 @@ int start(){
   if( isNewBar(jr_Timeframe) ) // на каждом новом баре младшего ТФ вычисляем тренд на младшем
   {
    trendDirection[frameIndex + 1][0] = TwoTitsTrendCriteria(jr_Timeframe, jr_MACD_channel, jr_EMA1, jr_EMA2, jrFastMACDPeriod, jrSlowMACDPeriod);
-   Alert("trendDirection=",trendDirection[frameIndex + 1][0]);
  //--------------------------
- // проверяемм что все еще хотим открываться
+ // проверяем что все еще хотим открываться
  //--------------------------     
    if (wantToOpen[frameIndex + 1][0] != 0) // если хотели открываться по расхождению MACD
    {
@@ -377,21 +361,41 @@ int start(){
      wantToOpen[frameIndex + 1][1] = 0;
     }
    }
-    
+   
+ //--------------------------
+ // вычисляем расхождение MACD на младшем
+ //--------------------------     
+   UpdateDivergenceArray(jr_Timeframe); // Обновляем массив экстремумов MACD
+   InitExtremums(frameIndex + 1); // обновляем максимумы цены и MACD
+   if (wantToOpen[frameIndex + 1][0] == 0) // если еще не хотим открываться
+   {   
+    wantToOpen[frameIndex + 1][0] = _isDivergence(jr_Timeframe);  // проверяем на расхождение на этом баре       
+   } 
+   
+ //--------------------------
+ // вычисляем расхождение Stochastic на младшем
+ //--------------------------    
+   InitStoDivergenceArray(jr_Timeframe); 
+   if (wantToOpen[frameIndex + 1][1] == 0) // если еще не хотим открываться
+   {   
+    wantToOpen[frameIndex + 1][1] = isStoDivergence(jr_Timeframe);  // проверяем на расхождение на этом баре    
+   }
+   
  //--------------------------
  // запоминаем текущий тренд
  //-------------------------- 
    if (trendDirection[frameIndex + 1][0] > 0) // Есть тренд вверх на младшем таймфрейме
    { 
-    Alert("Есть тренд вверх на младшем таймфрейме");
+    //Alert("Есть тренд вверх на младшем таймфрейме");
     trendDirection[frameIndex + 1][1] = 1;
    } 
    if (trendDirection[frameIndex + 1][0] < 0) // Есть тренд вниз на младшем таймфрейме
    {
-    Alert("Есть тренд вниз на младшем таймфрейме");
+    //Alert("Есть тренд вниз на младшем таймфрейме");
     trendDirection[frameIndex + 1][1] = -1;
    }
   } // close  isNewBar(jr_Timeframe)
+  
   if (trendDirection[frameIndex + 1][0] == 0) // если на младшем флэт не торгуем
   {
    //Alert("торговать все равно не будем");
@@ -400,7 +404,7 @@ int start(){
  //--------------------------------------
  // временная заглушка для отказа от торговли при флэте на младшем ТФ
  //--------------------------------------     
-     
+  
   Stochastic = iStochastic(NULL, elder_Timeframe, Kperiod, Dperiod , slowing ,MODE_SMA,0,MODE_MAIN,1);
   buyCondition = CheckBuyCondition();
   sellCondition = CheckSellCondition();

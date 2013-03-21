@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                              desepticon v005.mq4 |
+//|                                             desepticon trend.mq4 |
 //|                                            Copyright © 2011, GIA |
 //|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
@@ -49,10 +49,10 @@ int init(){
   
   for (frameIndex = startTF; frameIndex <= finishTF; frameIndex++)
   {
-   trendDirection[frameIndex][0] =  InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
+   trendDirection[frameIndex][0] = InitTrendDirection(aTimeframe[frameIndex, 0], aTimeframe[frameIndex,4]);
    //Alert("trendDirection[0]=",trendDirection[frameIndex][0], " frameIndex=",frameIndex);
   }
-
+  frameIndex = startTF;
   return(0);
  }
 //+------------------------------------------------------------------+
@@ -65,20 +65,23 @@ int deinit(){
 //+------------------------------------------------------------------+
 //| expert start function                                            |
 //+------------------------------------------------------------------+
-int start(){
-  for (frameIndex = startTF; frameIndex < finishTF; frameIndex++)
-  {
+int start()
+{
+ if (_isTradeAllow)
+ {
+  frameIndex = startTF;
   jr_Timeframe = PERIOD_M5;
   elder_Timeframe = PERIOD_H1;
     
   jr_MACD_channel = aTimeframe[frameIndex + 1, 4];
   elder_MACD_channel = aTimeframe[frameIndex, 4];
      
-   if (!CheckBeforeStart())   // проверяем входные параметры
-   {
-    PlaySound("alert2.wav");
-    return (0); 
-   }
+  if (!CheckBeforeStart())   // проверяем входные параметры
+  {
+   PlaySound("alert2.wav");
+   _isTradeAllow = false;
+   return (0); 
+  }
      
    total=OrdersTotal();
      
@@ -202,7 +205,7 @@ int start(){
    if (trendDirection[frameIndex + 1][0] == 0) // если на младшем флэт не торгуем
    {
     //Alert("флэт на младшем");
-    continue; // торговать все равно не будем
+    return(0); // торговать все равно не будем
    }
 //--------------------------------------
 // временная заглушка для отказа от торговли при флэте на младшем ТФ
@@ -219,7 +222,7 @@ int start(){
      if (Bid < iMA(NULL, PERIOD_D1, 3, 0, 1, 0, 0) + deltaPriceToEMA*Point) // на дневнике цена ниже или не сильно выше ЕМА3 
      {
       if (iLow(NULL, elder_Timeframe, 1) < iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 1) + deltaPriceToEMA*Point ||
-          Bid < iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 0) + deltaPriceToEMA*Point) // на последних 2-х барах есть цена ниже быстрого ЕМА       
+          iLow(NULL, elder_Timeframe, 0) < iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 0) + deltaPriceToEMA*Point) // на последних 2-х барах есть цена ниже быстрого ЕМА       
       {
        if (iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 1) > iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
            iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 2) < iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА снизу вверх
@@ -256,7 +259,7 @@ int start(){
      if (Ask > iMA(NULL, PERIOD_D1, 3, 0, 1, 0, 0) - deltaPriceToEMA*Point) // на дневнике цена выше или не сильно ниже ЕМА3
      {
       if (iHigh(NULL, elder_Timeframe, 1) > iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 1) - deltaPriceToEMA*Point ||
-          Ask > iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 0) - deltaPriceToEMA*Point) // на последних 2-х барах есть цена выше быстрого ЕМА
+          iHigh(NULL, elder_Timeframe, 0) > iMA(NULL, elder_Timeframe, eld_EMA1, 0, 1, 0, 0) - deltaPriceToEMA*Point) // на последних 2-х барах есть цена выше быстрого ЕМА
       {
        if (iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 1) < iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 1) && 
            iMA(NULL, jr_Timeframe, jr_EMA1, 0, 1, 0, 2) > iMA(NULL, jr_Timeframe, jr_EMA2, 0, 1, 0, 2)) // пересечение ЕМА сверху вниз
@@ -281,9 +284,9 @@ int start(){
      } // close на дневнике цена выше или не сильно ниже ЕМА3
     } // close else коррекция вверх 
    }
-  } // close цикл
 //----
 	if (useTrailing) DesepticonTrailing(NULL, jr_Timeframe); 
 	return(0);
+  } // close isTradeAllow
 } // close start
 //+------------------------------------------------------------------+
