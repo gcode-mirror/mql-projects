@@ -45,6 +45,7 @@ int InitTrendDirection(int timeframe, double MACD_channel)
       break;
  }
  
+ Alert("fastPeriod=",fastPeriod," slowPeriod=",slowPeriod," MACD_channel=",MACD_channel);
  while (!isTrendDefined && i < depth)
  {
   while((MACD_channel > iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i)
@@ -73,6 +74,7 @@ int InitTrendDirection(int timeframe, double MACD_channel)
  {
   Alert("ВНИМАНИЕ!!! Задан слишком широкий коридор MACD, начальное направление тренда не определено! Возможна некорректная работа эксперта!");
  }
+ Alert("Как сюда попасть? Случилась Н Е Х");
  return(0);
 }
 
@@ -151,27 +153,25 @@ int TwoTitsTrendCriteria(int timeframe, double MACD_channel, int period_EMA1, in
    {
     if (searchForTits(timeframe, MACD_channel, true))
     {
-     Alert("начался флэт");
      return (0); // появились маленькие титьки на MACD в обе стороны - начался флэт
     } // Close  searchForTits
    }
-   Alert("MACD слабый, но флэт еще не начался");
    return (trendDirection[index][0]);
   }
   
   if ((Current_fastEMA < (Current_slowEMA - deltaEMAtoEMA*Point)))
   {
-   // медленный ЕМА выше быстрого - тренд вниз
+   // медленный ЕМА выше быстрого - тренд вниз");
 	return (-1);   
   }
   else if ((Current_fastEMA > (Current_slowEMA + deltaEMAtoEMA*Point)) )
        {
-       // медленный ЕМА ниже быстрого - тренд вверх
+       // медленный ЕМА ниже быстрого - тренд вверх");
        return (1);
        }
        else
        {
-        // MACD большой, но ЕМА близко, живем по последнему тренду
+        // MACD большой, но ЕМА близко, живем по последнему тренду");
         return (trendDirection[index][1]);
        }
   

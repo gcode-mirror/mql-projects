@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                              desepticon v004.mq4 |
+//|                               desepticon flat div Stochastic.mq4 |
 //|                                            Copyright © 2011, GIA |
 //|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
@@ -56,7 +56,7 @@ int init(){
    InitStoDivergenceArray(aTimeframe[frameIndex, 0]);
    //Alert("проинитили расхождение Stochastic");
   }
-  
+  frameIndex = startTF;
   return(0);
  }
 //+------------------------------------------------------------------+

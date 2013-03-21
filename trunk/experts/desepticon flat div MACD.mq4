@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                              desepticon v004.mq4 |
+//|                                     desepticon flat div MACD.mq4 |
 //|                                            Copyright © 2011, GIA |
 //|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
@@ -61,7 +61,7 @@ int init(){
    InitExtremums(frameIndex);
    //Alert("проинитили экстремумы MACD");
   }
-  
+  frameIndex = startTF;
   return(0);
  }
 //+------------------------------------------------------------------+
@@ -165,7 +165,7 @@ int start()
        if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
        {
         if (OrderMagicNumber() == _MagicNumber) // выбираем нашу сделку
-         {
+        {
          ClosePosBySelect(-1, "сделка не ушла в прибыль слишком долгое время");// закрываем позицию
         }
        }
