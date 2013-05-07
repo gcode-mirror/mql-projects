@@ -81,7 +81,7 @@ string ErrorDescription(int nError)
       case ERR_CHART_NO_EXPERT: return("No Expert Advisor in the chart that could handle the event");
       case ERR_CHART_CANNOT_OPEN: return("Chart opening error");
       case ERR_CHART_CANNOT_CHANGE: return("Failed to change chart symbol and period");
-      case ERR_CHART_WRONG_TIMER_PARAMETER: return("Wrong parameter for timer");
+      case ERR_CHART_WRONG_PARAMETER: return("Wrong parameter for timer");
       case ERR_CHART_CANNOT_CREATE_TIMER: return("Failed to create timer");
       case ERR_CHART_WRONG_PROPERTY: return("Wrong chart property ID");
       case ERR_CHART_SCREENSHOT_FAILED: return("Error creating screenshots");

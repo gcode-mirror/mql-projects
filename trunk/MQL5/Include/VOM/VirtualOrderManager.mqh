@@ -384,7 +384,7 @@ void CVirtualOrderManager::OnTick()
      }
 
 // check for sl,tp,or pending order trigger
-   for(int i=m_OpenOrders.Total()-1;i>=0;i--)
+   for(int i=m_OpenOrders.Total()-1; i>=0; i--)
      {
       CVirtualOrder *vo=m_OpenOrders.VirtualOrder(i);
       LogFile.Log(LOG_DEBUG,__FUNCTION__," looking at order ",(string)vo.Ticket()," with magic ",(string)vo.MagicNumber()," for ",vo.Symbol());
@@ -397,7 +397,7 @@ void CVirtualOrderManager::OnTick()
                   break;
 
                case VIRTUAL_ORDER_EVENT_BUY_TRIGGER:
-                  if(PositionChangeSizeAtServer(vo.Symbol(),vo.Lots(),ORDER_TYPE_BUY,vo.StopLoss()))
+                  if(PositionChangeSizeAtServer(vo.Symbol(),vo.Lots(), ORDER_TYPE_BUY, vo.StopLoss()))
                     {
                      vo.PendingOrderTrigger();
                      m_OpenOrders.WriteToFile();
@@ -407,7 +407,7 @@ void CVirtualOrderManager::OnTick()
                   break;
 
                case VIRTUAL_ORDER_EVENT_SELL_TRIGGER:
-                  if(PositionChangeSizeAtServer(vo.Symbol(),vo.Lots(),ORDER_TYPE_SELL,vo.StopLoss()))
+                  if(PositionChangeSizeAtServer(vo.Symbol(),vo.Lots(), ORDER_TYPE_SELL, vo.StopLoss()))
                     {
                      vo.PendingOrderTrigger();
                      m_OpenOrders.WriteToFile();
@@ -419,7 +419,7 @@ void CVirtualOrderManager::OnTick()
                case VIRTUAL_ORDER_EVENT_STOPLOSS:
                case VIRTUAL_ORDER_EVENT_TAKEPROFIT:
                case VIRTUAL_ORDER_EVENT_TIMESTOP:
-                  OrderClose(vo.Ticket(),Config.Deviation);
+                  OrderClose(vo.Ticket(), Config.Deviation);
                   break;
 
                default:

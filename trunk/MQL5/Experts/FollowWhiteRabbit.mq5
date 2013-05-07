@@ -38,7 +38,7 @@ input double levelMACD = 0.02;
 string my_symbol;                                       //переменная для хранения символа
 ENUM_TIMEFRAMES my_timeframe;                                    //переменная для хранения младшего таймфрейма
 
-CTradeManager order(Symbol(), _magic, SL, TP, minProfit, trailingStop, trailingStep);
+CTradeManager order(_magic, Symbol(), timeframe, SL, TP, minProfit, trailingStop, trailingStep);
 MqlTick tick;
 
 int handleMACD;
@@ -50,7 +50,6 @@ double MACD_buf[1], high_buf[], low_buf[], close_buf[1], open_buf[1];
 int OnInit()
   {
    my_symbol=Symbol();                                             //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
-   my_timeframe=timeframe;                                      //сохраним текущий таймфрейм графика для дальнейшей работы советника именно на этом таймфрейме
    
    if (tradeOnTrend)
    {
