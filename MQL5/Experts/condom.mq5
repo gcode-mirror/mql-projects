@@ -13,8 +13,7 @@
 #include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
 #include <CompareDoubles.mqh>
 #include <CIsNewBar.mqh>
-#include <TradeManager\CTradeManager.mqh>
-#include <tm__2.mqh>
+#include <TradeManager\TradeManager.mqh>
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -34,10 +33,11 @@ input int slowMACDPeriod = 26;
 input int signalPeriod = 9;
 input double levelMACD = 0.02;
 
-string my_symbol;                                       //переменная для хранения символа
-ENUM_TIMEFRAMES my_timeframe;                                    //переменная для хранения младшего таймфрейма
+string my_symbol;                               //переменная для хранения символа
+ENUM_TIMEFRAMES my_timeframe;                   //переменная для хранения таймфрейма
+datetime history_start;
 
-CTradeManager order(Symbol(), _magic, SL, TP, minProfit, trailingStop, trailingStep);
+CTradeManager order(_magic, timeframe, minProfit, trailingStop, trailingStep);
 //CTradingManager order();
 MqlTick tick;
 
@@ -54,15 +54,9 @@ long positionType;
 //+------------------------------------------------------------------+
 int OnInit()
   {
-  /*
-   if(!CheckBeforeStart())
-   {
-    return(-1);
-   }
-   */
-   my_symbol=Symbol();                                             //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
-   my_timeframe=timeframe;                                      //сохраним текущий таймфрейм графика для дальнейшей работы советника именно на этом таймфрейме
-   
+   my_symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
+   history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
+      
    if (tradeOnTrend)
    {
     handleMACD = iMACD(my_symbol, my_timeframe, fastMACDPeriod, slowMACDPeriod, signalPeriod, PRICE_CLOSE);  //подключаем индикатор и получаем его хендл
@@ -93,7 +87,6 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    // Освобождаем динамические массивы от данных
-   ArrayFree(MACD_buf);
    ArrayFree(low_buf);
    ArrayFree(high_buf);
   }
@@ -142,14 +135,14 @@ void OnTick()
     {
      waitForSell = false;
      waitForBuy = true;
-     //Alert("WTB");
+     Alert("WTB. close_buf=",close_buf[1]," < globalMin=",globalMin);
     }
     
     if(close_buf[1] > globalMax)
     {
      waitForBuy = false;
      waitForSell = true;
-     //Alert("WTS");
+     Alert("WTS. close_buf=",close_buf[1]," > globalMax=",globalMax);
     }
    }
    
@@ -187,16 +180,7 @@ void OnTick()
    { 
     if (tick.ask > close_buf[0] && tick.ask > close_buf[1])
     {
-     if (positionType == POSITION_TYPE_SELL)
-     { 
-      Alert("WTB, positionType =",positionType);
-      order.SendOrder(ORDER_TYPE_BUY, _lot*2);
-     }
-     if (positionType == -1)
-     {
-      Alert("WTB, positionType =",positionType);
-      order.SendOrder(ORDER_TYPE_BUY, _lot);
-     }
+     order.OpenPosition(my_symbol, POSITION_TYPE_BUY, _lot, SL, TP, minProfit, trailingStop, trailingStep);
      waitForBuy = false;
      waitForSell = false;
     }
@@ -206,16 +190,7 @@ void OnTick()
    { 
     if (tick.bid < close_buf[0] && tick.bid < close_buf[1])
     {
-     if (positionType == POSITION_TYPE_BUY)
-     {
-      Alert("WTS, positionType =",positionType);
-      order.SendOrder(ORDER_TYPE_SELL, _lot*2);
-     }
-     if (positionType == -1)
-     {
-      Alert("WTS, positionType =",positionType);
-      order.SendOrder(ORDER_TYPE_SELL, _lot);
-     } 
+     order.OpenPosition(my_symbol, POSITION_TYPE_SELL, _lot, SL, TP, minProfit, trailingStop, trailingStep);
      waitForBuy = false;
      waitForSell = false;
     }
@@ -228,4 +203,9 @@ void OnTick()
    return;   
   }
 //+------------------------------------------------------------------+
+
+void OnTrade()
+  {
+   order.OnTrade(history_start);
+  }
 

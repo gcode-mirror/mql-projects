@@ -43,7 +43,7 @@ private:
 
 public:
    /// Constructor initialising order.
-                     CVirtualOrder();
+   CVirtualOrder();
    /// Decides if an action needs to be performed on order.
    ENUM_VIRTUAL_ORDER_EVENT CheckStopsAndLimits();
    /// Close an order.
@@ -91,9 +91,9 @@ public:
    int TimeStopBars() {return(m_nTimeStopBars);}
    int TimeStopBars(int nTimeStopBars) {return(m_nTimeStopBars=nTimeStopBars);}
    /// Returns string line of all order details.
-   string            Trace();
+   string Trace();
    /// Writes order as a line to an open file handle.
-   void              WriteToFile(int handle,bool bHeader=false);
+   void WriteToFile(int handle,bool bHeader=false);
   };
 //+------------------------------------------------------------------+
 /// Constructor initialising order.

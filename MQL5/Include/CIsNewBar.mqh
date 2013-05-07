@@ -29,7 +29,7 @@ public:
      };
 
    //---- конструктор класса    
-                     CIsNewBar(){m_TOld=-1;};
+   CIsNewBar(){m_TOld=-1;};
 
 protected: datetime m_TOld;
    //----
