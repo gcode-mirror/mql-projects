@@ -13,8 +13,7 @@
 #include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
 #include <CompareDoubles.mqh>
 #include <CIsNewBar.mqh>
-#include <TradeManager\CTradeManager.mqh>
-
+#include <TradeManager\TradeManager.mqh>
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -37,8 +36,9 @@ input double levelMACD = 0.02;
 
 string my_symbol;                                       //переменная для хранения символа
 ENUM_TIMEFRAMES my_timeframe;                                    //переменная для хранения младшего таймфрейма
+datetime history_start;
 
-CTradeManager order(_magic, Symbol(), timeframe, SL, TP, minProfit, trailingStop, trailingStep);
+CTradeManager order(_magic, timeframe, minProfit, trailingStop, trailingStep);
 MqlTick tick;
 
 int handleMACD;
@@ -49,7 +49,8 @@ double MACD_buf[1], high_buf[], low_buf[], close_buf[1], open_buf[1];
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   my_symbol=Symbol();                                             //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
+   my_symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
+   history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    
    if (tradeOnTrend)
    {
@@ -134,47 +135,14 @@ void OnTick()
     
     if(GreatDoubles(lastBar, avgBar*(1 + supremacyPercent)))
     {
-     Print("last bar = ", NormalizeDouble(lastBar,8), " avg Bar = ", NormalizeDouble(avgBar,8));
-     if(!SymbolInfoTick(Symbol(),tick))
-     {
-      Alert("SymbolInfoTick() failed, error = ",GetLastError());
-     }
-   
-     if(PositionSelect(my_symbol))
-     {
-      positionType = PositionGetInteger(POSITION_TYPE);
-     }
-     else
-     {
-      positionType = -1;
-     }
-     
+     Print("last bar = ", NormalizeDouble(lastBar,8), " avg Bar = ", NormalizeDouble(avgBar,8));        
      if(close_buf[0] < open_buf[0])
      {
-      if (positionType == POSITION_TYPE_BUY)
-      {
-       Alert("WTS, positionType =",positionType);
-       order.SendOrder(ORDER_TYPE_SELL, _lot*2);
-      }
-      if (positionType == -1)
-      {
-       Alert("WTS, positionType =",positionType);
-       order.SendOrder(ORDER_TYPE_SELL, _lot);
-      } 
+      order.OpenPosition(my_symbol, POSITION_TYPE_BUY, _lot, SL, TP, minProfit, trailingStop, trailingStep);
      }
-     
      if(close_buf[0] > open_buf[0])
      {
-      if (positionType == POSITION_TYPE_SELL)
-      { 
-       Alert("WTB, positionType =",positionType);
-       order.SendOrder(ORDER_TYPE_BUY, _lot*2);
-      }
-      if (positionType == -1)
-      {
-       Alert("WTB, positionType =",positionType);
-       order.SendOrder(ORDER_TYPE_BUY, _lot);
-      }      
+      order.OpenPosition(my_symbol, POSITION_TYPE_SELL, _lot, SL, TP, minProfit, trailingStop, trailingStep);
      }
     }
    }
@@ -186,3 +154,8 @@ void OnTick()
    return;   
   }
 //+------------------------------------------------------------------+
+
+void OnTrade()
+  {
+   order.OnTrade(history_start);
+  }
