@@ -165,7 +165,7 @@ void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
 void CTradeManager::OnTrade(datetime history_start)
   {
 //--- статические члены для хранения состояния торгового счета
-   static int prev_positions=0,prev_orders=0,prev_deals=0,prev_history_orders=0;
+   static int prev_volume = 0, prev_positions = 0, prev_orders = 0, prev_deals = 0, prev_history_orders = 0;
    int index;
 //--- запросим торговую историю
    bool update=HistorySelect(history_start,TimeCurrent());
@@ -174,10 +174,11 @@ void CTradeManager::OnTrade(datetime history_start)
 //--- заголовок по имени функции-обработчика торгового события 
 //   Print("=> ",__FUNCTION__," at ",TimeToString(TimeCurrent(),TIME_SECONDS));
 //--- выведем имя обработчика и количество ордеров на момент обработки
-   int curr_positions=PositionsTotal();
-   int curr_orders=OrdersTotal();
-   int curr_deals=HistoryOrdersTotal();
-   int curr_history_orders=HistoryDealsTotal();/*
+   double curr_volume = PositionGetDouble(POSITION_VOLUME);
+   int curr_positions = PositionsTotal();
+   int curr_orders = OrdersTotal();
+   int curr_deals = HistoryOrdersTotal();
+   int curr_history_orders = HistoryDealsTotal();/*
 //--- выводим количество ордеров, позиций, сделок, а также изменение в скобках 
    PrintFormat("PositionsTotal() = %d (%+d)",
                curr_positions,(curr_positions-prev_positions));
@@ -189,7 +190,7 @@ void CTradeManager::OnTrade(datetime history_start)
                curr_history_orders,curr_history_orders-prev_history_orders);
 //--- вставка разрыва строк для удобного чтения Журнала
    Print("");*/
-   if ((curr_positions-prev_positions) < 0) // если изменилось количество позиций
+   if ((curr_positions-prev_positions) != 0 || (curr_volume - prev_volume) != 0) // если изменилось количество или объем позиций
    {
     for(int i = _openPositions.Total()-1; i>=0; i--) // по массиву НАШИХ позиций
     {
@@ -216,10 +217,11 @@ void CTradeManager::OnTrade(datetime history_start)
     }
    }
 //--- запомним состояние счета
-   prev_positions=curr_positions;
-   prev_orders=curr_orders;
-   prev_deals=curr_deals;
-   prev_history_orders=curr_history_orders;
+   prev_volume = curr_volume;
+   prev_positions = curr_positions;
+   prev_orders = curr_orders;
+   prev_deals = curr_deals;
+   prev_history_orders = curr_history_orders;
   }
 
 //+------------------------------------------------------------------+

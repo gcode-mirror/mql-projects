@@ -38,7 +38,6 @@ ENUM_TIMEFRAMES my_timeframe;                   //переменная для хранения таймфр
 datetime history_start;
 
 CTradeManager order(_magic, timeframe, minProfit, trailingStop, trailingStep);
-//CTradingManager order();
 MqlTick tick;
 
 int handleMACD;
