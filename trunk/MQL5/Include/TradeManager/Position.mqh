@@ -8,7 +8,7 @@
 
 #include "ChartObjectsTradeLines.mqh"
 #include "TradeManagerConfig.mqh"
-#include <Trade\Trade.mqh> //подключаем библиотеку дл€ совершени€ торговых операций
+#include "CTMTradeFunctions.mqh" //подключаем библиотеку дл€ совершени€ торговых операций
 #include <CompareDoubles.mqh>
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -17,7 +17,7 @@ class CPosition : public CObject
   {
 private:
    CSymbolInfo SymbInfo;
-   CTrade *trade;
+   CTMTradeFunctions *trade;
    CConfig config;
    ulong _magic;
    ulong _posTicket;
@@ -39,10 +39,7 @@ private:
    //CGlobalVirtualStopList m_GlobalVirtualStopList;
 public:
   void CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double volume
-                ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0)
-             : _magic(magic), _symbol(symbol), _type(type), _lots(volume)
-             , _sl(sl), _tp(tp), _minProfit(minProfit), _trailingStop(trailingStop), _trailingStep(trailingStep){};
-             
+                ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0);
    ulong getMagic() {return (_magic);};
    void setMagic(ulong magic) {_magic = magic;};
    ulong getPositionTicket() {return(_posTicket);};
@@ -50,8 +47,8 @@ public:
    double getPositionPrice() {return(_posPrice);};
    string getSymbol() {return (_symbol);};
    void setSymbol(string symbol) {_symbol = symbol;};
-   double getLots() {return (_lots);};
-   void setLots(double lots) {_lots = lots;};
+   double getVolume() {return (_lots);};
+   void setVolume(double lots) {_lots = lots;};
    ulong getStopLossTicket() {return (_slTicket);};
    void setStopLossTicket(ulong ticket) {_slTicket = ticket;};
    double getStopLossPrice() {return(_slPrice);};
@@ -74,6 +71,18 @@ public:
    bool ReadFromFile (int handle);
    void WriteToFile (int handle,bool bHeader/*=false*/);
  };
+
+//+------------------------------------------------------------------+
+//| Constructor                                                      |
+//+------------------------------------------------------------------+
+CPosition::CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double volume
+                    ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0)
+                    : _magic(magic), _symbol(symbol), _type(type), _lots(volume)
+                    , _sl(sl), _tp(tp), _minProfit(minProfit), _trailingStop(trailingStop), _trailingStep(trailingStep)
+  {
+//--- initialize trade functions class
+   trade = new CTMTradeFunctions();
+  }
  
 //+------------------------------------------------------------------+
 //|ѕолучение актуальной информации по торговому инструменту          |
@@ -123,8 +132,6 @@ double CPosition::TPtype(int type)
 //+------------------------------------------------------------------+
 void CPosition::OpenPosition()
 {
-  Print("=> ",__FUNCTION__," at ",TimeToString(TimeCurrent(),TIME_SECONDS));
- trade = new CTrade();
  if (_type == POSITION_TYPE_BUY)
  {
   trade.Buy(_lots, _symbol, pricetype((int)_type));
@@ -155,6 +162,7 @@ void CPosition::OpenPosition()
 //+------------------------------------------------------------------+
 void CPosition::ClosePosition()
 {
+ int i = 0;
  trade.PositionClose(_symbol, config.Deviation);
  trade.OrderDelete(_slTicket);
  trade.OrderDelete(_tpTicket);

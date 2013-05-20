@@ -80,9 +80,9 @@ int CPositionArray::OpenLots(string strSymbol)
          switch(pos.getType())
            {
             case POSITION_TYPE_BUY:
-               dblTotalPosition+=pos.getLots(); break;
+               dblTotalPosition+=pos.getVolume(); break;
             case POSITION_TYPE_SELL:
-               dblTotalPosition-=pos.getLots();
+               dblTotalPosition-=pos.getVolume();
            }
      }
    int nTotalPosition=(int)MathRound(dblTotalPosition*1000.0);

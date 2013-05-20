@@ -222,19 +222,19 @@ string CLog::MakeLogFilename(datetime dt)
 //+------------------------------------------------------------------+
 void CLog::CleanUpOldLogs()
   {
-   datetime dtNow=TimeLocal();
-   datetime dtExpiry=dtNow-24*3600*MaxLogAgeDays();
-   string strFilenameWildcard=MakeLogFilenameBase()+"*";
-   string strFoundFile="";
+   datetime dtNow = TimeLocal();
+   datetime dtExpiry = dtNow - 24*3600*MaxLogAgeDays();
+   string strFilenameWildcard = MakeLogFilenameBase() + "*";
+   string strFoundFile = "";
 
-   long hFind=FileFindFirst(strFilenameWildcard,strFoundFile);
-   if(hFind!=INVALID_HANDLE)
+   long hFind = FileFindFirst(strFilenameWildcard,strFoundFile);
+   if(hFind != INVALID_HANDLE)
      {
       do
         {
-         strFoundFile="EAlogs\\"+MQL5InfoString(MQL5_PROGRAM_NAME)+"\\"+strFoundFile;
-         datetime dt=LogFileDate(strFoundFile);
-         if(dt!=-1 && dt<dtExpiry)
+         strFoundFile = "EAlogs\\" + MQL5InfoString(MQL5_PROGRAM_NAME) + "\\" + strFoundFile;
+         datetime dt = LogFileDate(strFoundFile);
+         if(dt != -1 && dt < dtExpiry)
            {
             ResetLastError();
             FileDelete(strFoundFile);
