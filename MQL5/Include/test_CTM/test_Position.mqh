@@ -6,20 +6,15 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 
-#include "ChartObjectsTradeLines.mqh"
-#include "TradeManagerConfig.mqh"
-#include "CTMTradeFunctions.mqh" //подключаем библиотеку для совершения торговых операций
-#include "StringUtilities.mqh"
-#include <CompareDoubles.mqh>
+#include "test_CTMTradeFunctions.mqh" //подключаем библиотеку для совершения торговых операций
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-class CPosition : public CObject
+class test_CPosition : public CObject
   {
 private:
    CSymbolInfo SymbInfo;
-   CTMTradeFunctions *trade;
-   CConfig config;
+   test_CTMTradeFunctions *trade;
    ulong _magic;
    ulong _posTicket;
    double _posPrice;
@@ -32,17 +27,12 @@ private:
    int _sl, _tp;
    int _minProfit, _trailingStop, _trailingStep;
    ENUM_POSITION_TYPE _type;
-   ENUM_POSITION_STATUS _status;
    
-   CEntryPriceLine   _entryPriceLine;
-   CStopLossLine     _stopLossLine;
-   CTakeProfitLine   _takeProfitLine;
-
    bool pos_opened, sl_placed, tp_placed;
    bool pos_closed, sl_removed, tp_removed;
    
 public:
-  void CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double volume
+  void test_CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double volume
                 ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0);
    ulong getMagic() {return (_magic);};
    void setMagic(ulong magic) {_magic = magic;};
@@ -73,27 +63,24 @@ public:
    ENUM_ORDER_TYPE TPOrderType(int type);
    bool OpenPosition();
    bool ClosePosition();
-   void DoTrailing();
-   bool ReadFromFile (int handle);
-   void WriteToFile (int handle,bool bHeader/*=false*/);
  };
 
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-CPosition::CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double volume
+test_CPosition::test_CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double volume
                     ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0)
                     : _magic(magic), _symbol(symbol), _type(type), _lots(volume)
                     , _sl(sl), _tp(tp), _minProfit(minProfit), _trailingStop(trailingStop), _trailingStep(trailingStep)
   {
 //--- initialize trade functions class
-   trade = new CTMTradeFunctions();
+   trade = new test_CTMTradeFunctions();
   }
  
 //+------------------------------------------------------------------+
 //|Получение актуальной информации по торговому инструменту          |
 //+------------------------------------------------------------------+
-bool CPosition::UpdateSymbolInfo()
+bool test_CPosition::UpdateSymbolInfo()
   {
    SymbInfo.Name(_symbol);
    if(SymbInfo.Select() && SymbInfo.RefreshRates())
@@ -106,7 +93,7 @@ bool CPosition::UpdateSymbolInfo()
 //+------------------------------------------------------------------+
 //| Вычисляет уровень открытия в зависимости от типа                 |
 //+------------------------------------------------------------------+
-double CPosition::pricetype(int type)
+double test_CPosition::pricetype(int type)
 {
  UpdateSymbolInfo();
  if(type == 0)return(SymbInfo.Ask());
@@ -116,7 +103,7 @@ double CPosition::pricetype(int type)
 //+------------------------------------------------------------------+
 //| Вычисляет уровень стоплосса в зависимости от типа                |
 //+------------------------------------------------------------------+
-double CPosition::SLtype(int type)
+double test_CPosition::SLtype(int type)
 {
  UpdateSymbolInfo();
  if(type==0)return(SymbInfo.Bid()-_sl*SymbInfo.Point()); // Buy
@@ -126,7 +113,7 @@ double CPosition::SLtype(int type)
 //+------------------------------------------------------------------+
 //| Вычисляет уровень тейкпрофита в зависимости от типа              |
 //+------------------------------------------------------------------+
-double CPosition::TPtype(int type)
+double test_CPosition::TPtype(int type)
 {
  UpdateSymbolInfo();
  if(type==0)return(SymbInfo.Ask()+_tp*SymbInfo.Point()); // Buy 
@@ -134,7 +121,7 @@ double CPosition::TPtype(int type)
  return(0);
 }
 
-ENUM_ORDER_TYPE CPosition::SLOrderType(int type)
+ENUM_ORDER_TYPE test_CPosition::SLOrderType(int type)
 {
  ENUM_ORDER_TYPE res;
  if(type==0) res = ORDER_TYPE_SELL_STOP; // Buy
@@ -142,7 +129,7 @@ ENUM_ORDER_TYPE CPosition::SLOrderType(int type)
  return(res);
 }
 
-ENUM_ORDER_TYPE CPosition::TPOrderType(int type)
+ENUM_ORDER_TYPE test_CPosition::TPOrderType(int type)
 {
  ENUM_ORDER_TYPE res;
  if(type==0) res = ORDER_TYPE_SELL_LIMIT; // Buy
@@ -152,7 +139,7 @@ ENUM_ORDER_TYPE CPosition::TPOrderType(int type)
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-bool CPosition::OpenPosition()
+bool test_CPosition::OpenPosition()
 {
  if (_type != POSITION_TYPE_BUY && _type != POSITION_TYPE_SELL)
  {
@@ -216,17 +203,16 @@ bool CPosition::OpenPosition()
  }
  return(false);
 }
-
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-bool CPosition::ClosePosition()
+bool test_CPosition::ClosePosition()
 {
  int i = 0;
  pos_closed = false;
  sl_removed = false;
  tp_removed = false;
  
- if (trade.PositionClose(_symbol, _type, _lots, config.Deviation))
+ if (trade.PositionClose(_symbol, _type, _lots, 50))
  {
   pos_closed = true;
  }
@@ -262,135 +248,3 @@ bool CPosition::ClosePosition()
  return(pos_closed && sl_removed && tp_removed);
 }
 
-//+------------------------------------------------------------------+
-//+------------------------------------------------------------------+
-void CPosition::DoTrailing(void)
-{
- UpdateSymbolInfo();
- double ask = SymbInfo.Ask();
- double bid = SymbInfo.Bid();
- double point = SymbInfo.Point();
- int digits = SymbInfo.Digits();
- double newSL = 0;
- 
- if (getType() == POSITION_TYPE_BUY)
- {
-  if (LessDoubles(_posPrice, bid - _minProfit*point))
-  {
-   if (LessDoubles(_slPrice, bid - (_trailingStop+_trailingStep-1)*point) || _slPrice == 0)
-   {
-    newSL = NormalizeDouble(bid - _trailingStop*point, digits);
-    if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
-    {
-     _slPrice = newSL;
-    } 
-   }
-  }
- }
- 
- if (getType() == POSITION_TYPE_SELL)
- {
-  if (GreatDoubles(_posPrice - ask, _minProfit*point))
-  {
-   if (GreatDoubles(_slPrice, ask+(_trailingStop+_trailingStep-1)*point) || _slPrice == 0) 
-   {
-    newSL = NormalizeDouble(ask + _trailingStop*point, digits);
-    if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
-    {
-     _slPrice = newSL;
-    }
-   }
-  }
- }
-}
-
-//+------------------------------------------------------------------+
-/// Reads order line from an open file handle.
-/// File should be FILE_CSV format
-/// \param [in] handle					Handle of the CSV file
-/// \param [in] bCreateLineObjects  if true, creates open, sl & tp lines on chart 
-/// \return 				True if successful, false otherwise
-//+------------------------------------------------------------------+
-bool CPosition::ReadFromFile(int handle)
-{
- if(handle<=0)
- {
-  //LogFile.Log(LOG_PRINT,__FUNCTION__," error: file handle is not valid, returning false");
-  return(false);
- }
- _status=StringToPositionStatus(FileReadString(handle));
- if(FileIsEnding(handle)) return(false);
- _symbol=FileReadString(handle);
- _type=StringToPositionType(FileReadString(handle));
- _lots=FileReadNumber(handle);
- /*
- m_dblOpenPrice=FileReadNumber(handle);
- m_dtOpenTime=StringToTime(FileReadString(handle));
- m_dblStopLoss=FileReadNumber(handle);
- m_dblTakeProfit=FileReadNumber(handle);
- m_nTimeStopBars=(int)FileReadNumber(handle);
- m_strComment=FileReadString(handle);
- m_lMagic=StringToInteger(FileReadString(handle));
- m_dblClosePrice=FileReadNumber(handle);
- m_dtCloseTime=StringToTime(FileReadString(handle));
- m_dtExpiration=StringToTime(FileReadString(handle));
- */
- _posTicket=StringToInteger(FileReadString(handle));
-/*
- if(!SelfCheck())
- {
-  LogFile.Log(LOG_PRINT,__FUNCTION__," error - virtual order read from file is not valid, returning false");
-  return(false);
- }
-*/
- return(true);
-}
-
-//+------------------------------------------------------------------+
-/// Writes order as a line to an open file handle.
-/// File should be FILE_CSV format
-/// \param [in] handle	handle of the CSV file
-/// \param [in] bHeader 
-//+------------------------------------------------------------------+
-void CPosition::WriteToFile(int handle,bool bHeader/*=false*/)
-  {/*
-   if(bHeader)
-      FileWrite(handle,
-                "Status",
-                "Symbol",
-                "Type",
-                "Lots",
-                "OpenPrice",
-                "OpenTime",
-                "StopLoss",
-                "TakeProfit",
-                "TimeStopBars"
-                "Comment",
-                "MagicNumber",
-                "ClosePrice",
-                "CloseTime",
-                "Expiration",
-                "Ticket"
-                );
-   else
-     {
-      //LogFile.Log(LOG_VERBOSE,__FUNCTION__," ",TableRow());
-      FileWrite(handle,
-                ::PositionStatusToStr(Status()),
-                Symbol(),
-                ::PositionTypeToStr(OrderType()),
-                _lots(),
-                OpenPrice(),
-                TimeToString(OpenTime(),TIME_DATE|TIME_SECONDS),
-                StopLoss(),
-                TakeProfit(),
-                TimeStopBars(),
-                Comment(),
-                MagicNumber(),
-                ClosePrice(),
-                TimeToString(CloseTime(),TIME_DATE|TIME_SECONDS),
-                TimeToString(Expiration(),TIME_DATE|TIME_SECONDS),
-                Ticket()
-                );
-     }*/
-  }

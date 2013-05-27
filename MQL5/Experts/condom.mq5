@@ -35,7 +35,7 @@ string my_symbol;                               //переменная для хранения символ
 ENUM_TIMEFRAMES my_timeframe;                   //переменная для хранения таймфрейма
 datetime history_start;
 
-CTradeManager order(_magic, timeframe, minProfit, trailingStop, trailingStep);
+CTradeManager order(_magic);
 MqlTick tick;
 
 int handleMACD;
@@ -162,9 +162,11 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     order.OpenPosition(my_symbol, POSITION_TYPE_BUY, _lot, SL, TP, minProfit, trailingStop, trailingStep);
-     waitForBuy = false;
-     waitForSell = false;
+     if (order.OpenPosition(my_symbol, POSITION_TYPE_BUY, _lot, SL, TP, minProfit, trailingStop, trailingStep))
+     {
+      waitForBuy = false;
+      waitForSell = false;
+     }
     }
    } 
 
@@ -172,9 +174,11 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     order.OpenPosition(my_symbol, POSITION_TYPE_SELL, _lot, SL, TP, minProfit, trailingStop, trailingStep);
-     waitForBuy = false;
-     waitForSell = false;
+     if (order.OpenPosition(my_symbol, POSITION_TYPE_SELL, _lot, SL, TP, minProfit, trailingStop, trailingStep))
+     {
+      waitForBuy = false;
+      waitForSell = false;
+     }
     }
    }
    
