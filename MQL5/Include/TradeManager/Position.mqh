@@ -38,8 +38,8 @@ private:
    CStopLossLine     _stopLossLine;
    CTakeProfitLine   _takeProfitLine;
 
-   bool pos_opened, sl_placed, tp_placed;
-   bool pos_closed, sl_removed, tp_removed;
+   ENUM_STOPLEVEL_STATUS sl_status, tp_status;
+   ENUM_POSITION_STATUS pos_status;
    
 public:
   void CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double volume
@@ -88,6 +88,9 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double
   {
 //--- initialize trade functions class
    trade = new CTMTradeFunctions();
+   pos_status = POSITION_STATUS_NOT_INITIALISED;
+   sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
+   tp_status = STOPLEVEL_STATUS_NOT_DEFINED;
   }
  
 //+------------------------------------------------------------------+
@@ -165,14 +168,11 @@ bool CPosition::OpenPosition()
  double ask = SymbInfo.Ask();
  double bid = SymbInfo.Bid();
  _posPrice = pricetype((int)_type);
- pos_opened = false;
- sl_placed = true;
- tp_placed = true;
  
  if (trade.PositionOpen(_symbol, _type, _lots, _posPrice))
  {
   _posTicket = trade.ResultDeal();
-  pos_opened = true;
+  pos_status = POSITION_STATUS_OPEN;
   PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
  }
  
@@ -184,15 +184,22 @@ bool CPosition::OpenPosition()
   if (trade.OrderOpen(_symbol, order_type, _lots, _tpPrice))  //, tp + stopLevel, tp - stopLevel);
   {
    _tpTicket = trade.ResultOrder();
+   tp_status = STOPLEVEL_STATUS_PLACED;
    PrintFormat("%s Выставлен тейкпрофит %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket);
   }
   else
   {
-   tp_placed = false;
+   tp_status = STOPLEVEL_STATUS_NOT_PLACED;
    PrintFormat("%s Ошибка при установке тейкпрофита", MakeFunctionPrefix(__FUNCTION__));
   }
  }
- 
+ /*
+ else
+ {
+  tp_status = STOPLEVEL_STATUS_NOT_DEFINED;
+  PrintFormat("Тейкпрофит не задан", MakeFunctionPrefix(__FUNCTION__));
+ }
+ */
  // Если задан стоплосс - устанавливаем
  if (_sl > 0)
  {
@@ -201,16 +208,17 @@ bool CPosition::OpenPosition()
   if (trade.OrderOpen(_symbol, order_type, _lots, _slPrice)) //, sl + stopLevel, sl - stopLevel);
   {
    _slTicket = trade.ResultOrder();
+   sl_status = STOPLEVEL_STATUS_PLACED;
    PrintFormat("%s Выставлен стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket);     
   }
   else
   {
-   sl_placed = false;
+   sl_status = STOPLEVEL_STATUS_NOT_PLACED;
    PrintFormat("%s Ошибка при установке стоплосса", MakeFunctionPrefix(__FUNCTION__));
   }
  }
       
- if (pos_opened && sl_placed && tp_placed)
+ if (pos_status != POSITION_STATUS_NOT_INITIALISED && sl_status != STOPLEVEL_STATUS_NOT_PLACED && tp_status != STOPLEVEL_STATUS_NOT_PLACED)
  {
   return(true);
  }
@@ -222,44 +230,37 @@ bool CPosition::OpenPosition()
 bool CPosition::ClosePosition()
 {
  int i = 0;
- pos_closed = false;
- sl_removed = false;
- tp_removed = false;
  
  if (trade.PositionClose(_symbol, _type, _lots, config.Deviation))
  {
-  pos_closed = true;
+  pos_status = POSITION_STATUS_DELETED;
  }
  
- if (sl_placed)
+ if (sl_status == STOPLEVEL_STATUS_PLACED)
  {
   if (trade.OrderDelete(_slTicket))
   {
-   sl_removed = true;
-   sl_placed = false;
+   sl_status = STOPLEVEL_STATUS_DELETED;
+  }
+  else
+  {
+   sl_status = STOPLEVEL_STATUS_NOT_DELETED;
   }
  }
- else
- {
-  sl_removed = true;
-  sl_placed = false;
- }
   
- if (tp_placed)
+ if (tp_status == STOPLEVEL_STATUS_PLACED)
  {
   if (trade.OrderDelete(_tpTicket))
   {
-   tp_removed = true;
-   tp_placed = false;
+   tp_status = STOPLEVEL_STATUS_DELETED;
+  }
+  else
+  {
+   tp_status = STOPLEVEL_STATUS_NOT_DELETED;
   }
  }
- else
- {
-  tp_removed = true;
-  tp_placed = false;
- }
   
- return(pos_closed && sl_removed && tp_removed);
+ return(pos_status == POSITION_STATUS_DELETED && sl_status == STOPLEVEL_STATUS_DELETED && tp_status == STOPLEVEL_STATUS_DELETED);
 }
 
 //+------------------------------------------------------------------+

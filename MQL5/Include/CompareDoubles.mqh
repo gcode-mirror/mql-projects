@@ -9,49 +9,44 @@
 //+------------------------------------------------------------------+
 //| EqualDoubles                                                   |
 //+------------------------------------------------------------------+
-bool EqualDoubles(double number1,double number2)
+bool EqualDoubles(double number1,double number2, int precision = 8)
  {
-  if(NormalizeDouble(number1-number2,8)==0) return(true);
-  else return(false);
+  return(NormalizeDouble(number1-number2, precision) == 0);
  }
 //+------------------------------------------------------------------+
 
 //+------------------------------------------------------------------+
 //| GreatDoubles                                                   |
 //+------------------------------------------------------------------+
-bool GreatDoubles(double number1,double number2)
+bool GreatDoubles(double number1,double number2, int precision = 8)
  {
-  if(NormalizeDouble(number1-number2,8)>0) return(true);
-  else return(false);
+  return(NormalizeDouble(number1-number2,precision)>0);
  }
 //+------------------------------------------------------------------+
 
 //+------------------------------------------------------------------+
 //| LessDoubles                                                   |
 //+------------------------------------------------------------------+
-bool LessDoubles(double number1,double number2)
+bool LessDoubles(double number1,double number2, int precision = 8)
  {
-  if(NormalizeDouble(number1-number2,8)<0) return(true);
-  else return(false);
+  return(NormalizeDouble(number1-number2,precision) < 0);
  }
 //+------------------------------------------------------------------+
 
 //+------------------------------------------------------------------+
 //| GreatOrEqualDoubles                                                   |
 //+------------------------------------------------------------------+
-bool GreatOrEqualDoubles(double number1,double number2)
+bool GreatOrEqualDoubles(double number1,double number2, int precision = 8)
  {
-  if(NormalizeDouble(number1-number2,8)==0 || NormalizeDouble(number1-number2,8)>0) return(true);
-  else return(false);
+  return(NormalizeDouble(number1-number2,precision)>=0);
  }
 //+------------------------------------------------------------------+
 
 //+------------------------------------------------------------------+
 //| LessOrEqualDoubles                                                   |
 //+------------------------------------------------------------------+
-bool LessOrEqualDoubles(double number1,double number2)
+bool LessOrEqualDoubles(double number1,double number2, int precision = 8)
  {
-  if(NormalizeDouble(number1-number2,8)==0 || NormalizeDouble(number1-number2,8)>0) return(true);
-  else return(false);
+  return(NormalizeDouble(number1-number2,precision)<=0);
  }
 //+------------------------------------------------------------------+

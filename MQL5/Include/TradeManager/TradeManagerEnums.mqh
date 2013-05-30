@@ -99,3 +99,15 @@ ENUM_POSITION_TYPE StringToPositionType(string posType)
    if(posType == "virtual sell") return(POSITION_TYPE_SELL);
    return("Error: unknown position type " + posType);
   }
+
+//+------------------------------------------------------------------+
+/// Status of 
+//+------------------------------------------------------------------+
+enum ENUM_STOPLEVEL_STATUS
+  {
+   STOPLEVEL_STATUS_NOT_DEFINED,
+   STOPLEVEL_STATUS_PLACED,
+   STOPLEVEL_STATUS_NOT_PLACED,
+   STOPLEVEL_STATUS_DELETED,
+   STOPLEVEL_STATUS_NOT_DELETED
+  };

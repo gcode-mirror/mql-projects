@@ -35,7 +35,7 @@ string my_symbol;                               //переменная для хранения символ
 ENUM_TIMEFRAMES my_timeframe;                   //переменная для хранения таймфрейма
 datetime history_start;
 
-CTradeManager order(_magic);
+CTradeManager ctm(_magic);
 MqlTick tick;
 
 int handleMACD;
@@ -52,7 +52,7 @@ int OnInit()
   {
    my_symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
-      
+   
    if (tradeOnTrend)
    {
     handleMACD = iMACD(my_symbol, my_timeframe, fastMACDPeriod, slowMACDPeriod, signalPeriod, PRICE_CLOSE);  //подключаем индикатор и получаем его хендл
@@ -143,7 +143,7 @@ void OnTick()
     {
      if (trailing)
      {
-      order.DoTrailing();
+      ctm.DoTrailing();
      }
      return;
     }
@@ -162,7 +162,7 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     if (order.OpenPosition(my_symbol, POSITION_TYPE_BUY, _lot, SL, TP, minProfit, trailingStop, trailingStep))
+     if (ctm.OpenPosition(my_symbol, POSITION_TYPE_BUY, _lot, SL, TP, minProfit, trailingStop, trailingStep))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -174,7 +174,7 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (order.OpenPosition(my_symbol, POSITION_TYPE_SELL, _lot, SL, TP, minProfit, trailingStop, trailingStep))
+     if (ctm.OpenPosition(my_symbol, POSITION_TYPE_SELL, _lot, SL, TP, minProfit, trailingStop, trailingStep))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -184,7 +184,7 @@ void OnTick()
    
    if (trailing)
    {
-    order.DoTrailing();
+    ctm.DoTrailing();
    }
    return;   
   }
@@ -192,6 +192,6 @@ void OnTick()
 
 void OnTrade()
   {
-   order.OnTrade(history_start);
+   ctm.OnTrade(history_start);
   }
 
