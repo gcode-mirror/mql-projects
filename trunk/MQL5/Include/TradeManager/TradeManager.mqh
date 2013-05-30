@@ -32,8 +32,6 @@ protected:
   
 public:
   void CTradeManager(ulong magic): _magic(magic), _useSound(true), _nameFileSound("expert.wav"){};
-             
-               // возвращает спред текущего инструмента
   
   bool OpenPosition(string symbol, ENUM_POSITION_TYPE type,double volume
                    ,int sl, int tp, int minProfit, int trailingStop, int trailingStep);
@@ -42,10 +40,6 @@ public:
   void DoTrailing();
   void OnTick();
   void OnTrade(datetime history_start);
-  bool CloseAllOrdersByTypeOnSymbol(string strSymbol="",int type = -1);
-  bool CloseAllOrdersOnSymbol(string strSymbol);
-  bool CloseAllOrdersByType(ENUM_ORDER_TYPE Type);
-  bool CloseAllOrders();
 };
 
 //+------------------------------------------------------------------+
@@ -72,11 +66,15 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_POSITION_TYPE type, double 
      {
       if (pos.getType() == POSITION_TYPE_SELL)
       {
-       Print("Есть позиция селл");
+       //Print("Есть позиция селл");
        if (pos.ClosePosition())
        {
         _openPositions.Delete(i);
         Print("Удалили позицию селл");
+       }
+       else
+       {
+        Print("Ошибка при удалении позиции селл");
        }
       }
      }
@@ -94,11 +92,15 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_POSITION_TYPE type, double 
      {
       if (pos.getType() == POSITION_TYPE_BUY)
       {
-       Print("Есть позиция бай");
+       //Print("Есть позиция бай");
        if (pos.ClosePosition())
        {
         _openPositions.Delete(i);
         Print("Удалили позицию бай");
+       }
+       else
+       {
+        Print("Ошибка при удалении позиции бай");
        }
       }
      }
@@ -282,41 +284,3 @@ bool CTradeManager::ClosePosition(long ticket,int slippage,color Color=CLR_NONE)
  }
  return(false);
 }
-
-//+------------------------------------------------------------------+
-/// Close all orders for symbol and type
-/// \param [in] strSymbol
-/// \param [in] Type			Order type
-/// \return						True if successful, false otherwise
-//+------------------------------------------------------------------+
-bool CTradeManager::CloseAllOrdersByTypeOnSymbol(string strSymbol="",int type = -1)
-{
- //LogFile.Log(LOG_DEBUG,__FUNCTION__,_Symbol,",",VirtualOrderTypeToStr(Type));
- ulong ticket = 0;
- int ot;
- for(int i = OrdersTotal()-1; i>=0 ;i--)
- {
-  if((ticket = OrderGetTicket(i)) > 0)
-  {
-   if (OrderSelect(ticket))
-   {
-    if (OrderGetInteger(ORDER_MAGIC) == _magic)
-    {
-     ot = OrderGetInteger(ORDER_TYPE);
-     if (ot>1 && ot<6)
-     {
-      if((type < 0 || ot == type) && (strSymbol=="" || position.getSymbol() == strSymbol))
-      {
-       if(!trade.OrderDelete(ticket))
-       {
-        return(false); 
-       }
-      }
-     }
-    }
-   }
-  }
- }   
- return(true);
-}
-
