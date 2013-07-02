@@ -1,13 +1,15 @@
 //+------------------------------------------------------------------+
-//|                                                CTradeManager.mqh |
-//|                        Copyright 2012, MetaQuotes Software Corp. |
-//|                                              http://www.mql5.com |
+//|                                                CTradeManager.mq5 |
+//|                                              Copyright 2013, GIA |
+//|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2012, MetaQuotes Software Corp."
-#property link      "http://www.mql5.com"
+#property copyright "Copyright 2013, GIA"
+#property link      "http://www.saita.net"
+#property version   "1.00"
 
 #include "TradeManagerEnums.mqh"
-#include "Position.mqh"
+//#include "Position.mqh"
+#include "PositionOnPendingOrders.mqh"
 #include "PositionArray.mqh"
 #include "CTMTradeFunctions.mqh"
 #include "StringUtilities.mqh"
@@ -27,16 +29,18 @@ protected:
   bool _useSound;
   string _nameFileSound;   // Наименование звукового файла
   
+  CPositionArray _positionsToReProcessing;
   CPositionArray _openPositions; ///< Array of open virtual orders for this VOM instance, also persisted as a file
   CPositionArray _positionsHistory; ///< Array of closed virtual orders, also persisted as a file
   
 public:
   void CTradeManager(ulong magic): _magic(magic), _useSound(true), _nameFileSound("expert.wav"){};
   
-  bool OpenPosition(string symbol, ENUM_POSITION_TYPE type,double volume
-                   ,int sl, int tp, int minProfit, int trailingStop, int trailingStep);
+  bool OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume
+                   ,int sl, int tp, int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
   void ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action);
-  bool ClosePosition(long ticket,int slippage,color Color=CLR_NONE); 
+  bool ClosePosition(long ticket, color Color=CLR_NONE); // Закртыие позиции по тикету
+  bool ClosePosition(int i,color Color=CLR_NONE);  // Закрытие позиции по индексу в массиве позиций 
   void DoTrailing();
   void OnTick();
   void OnTrade(datetime history_start);
@@ -45,16 +49,16 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool CTradeManager::OpenPosition(string symbol, ENUM_POSITION_TYPE type, double volume
-                                ,int sl, int tp, int minProfit, int trailingStop, int trailingStep)
+bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume
+                                ,int sl, int tp, int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
 {
  //Print("=> ",__FUNCTION__," at ",TimeToString(TimeCurrent(),TIME_SECONDS));
  int i = 0;
  int total = _openPositions.Total();
- PrintFormat("Открываем позицию %s. Открытых позиций %d",PositionTypeToString(type), total);
+ PrintFormat("Открываем позицию %s. Открытых позиций %d",GetNameOP(type), total);
  switch(type)
  {
-  case POSITION_TYPE_BUY:
+  case OP_BUY:
    if (total > 0)
    {
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на продажу
@@ -64,12 +68,11 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_POSITION_TYPE type, double 
      //PrintFormat("Выбрали %d-ю позицию символ=%s, магик=%d", i, pos.getSymbol(), pos.getMagic());
      if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic))
      {
-      if (pos.getType() == POSITION_TYPE_SELL)
+      if (pos.getType() == OP_SELL || pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
       {
        //Print("Есть позиция селл");
-       if (pos.ClosePosition())
+       if (ClosePosition(i))
        {
-        _openPositions.Delete(i);
         Print("Удалили позицию селл");
        }
        else
@@ -81,7 +84,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_POSITION_TYPE type, double 
     }
    }
    break;
-  case POSITION_TYPE_SELL:
+  case OP_SELL:
    if (total > 0)
    {
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на покупку
@@ -90,12 +93,11 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_POSITION_TYPE type, double 
      CPosition *pos = _openPositions.At(i);
      if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic))
      {
-      if (pos.getType() == POSITION_TYPE_BUY)
+      if (pos.getType() == OP_BUY || pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
       {
        //Print("Есть позиция бай");
-       if (pos.ClosePosition())
+       if (ClosePosition(i))
        {
-        _openPositions.Delete(i);
         Print("Удалили позицию бай");
        }
        else
@@ -115,10 +117,12 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_POSITION_TYPE type, double 
  total = _openPositions.Total();
  if (total <= 0)
  {
-  position = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep);
-  if (position.OpenPosition())
+  //Print("Открытых позиций нет - открываем новую");
+  position = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
+  ENUM_POSITION_STATUS openingResult = position.OpenPosition();
+  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
   {
-   PrintFormat("%s, magic=%d, symb=%s, type=%s, vol=%.02f, sl=%.06f, tp=%.06f", MakeFunctionPrefix(__FUNCTION__),position.getMagic(), position.getSymbol(), PositionTypeToStr(position.getType()), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice());
+   PrintFormat("%s, magic=%d, symb=%s, type=%s, vol=%.02f, sl=%.06f, tp=%.06f", MakeFunctionPrefix(__FUNCTION__),position.getMagic(), position.getSymbol(), GetNameOP(position.getType()), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice());
    _openPositions.Add(position);
    return(true); // Если удачно открыли позицию
   }
@@ -141,7 +145,7 @@ void CTradeManager::DoTrailing()
  double newSL = 0;
 
 //--- пройдем в цикле по всем ордерам
- for(uint i = 0; i < total; i++)
+ for(int i = 0; i < total; i++)
  {
   CPosition *pos = _openPositions.At(i);
   pos.DoTrailing();
@@ -166,54 +170,55 @@ void CTradeManager::OnTrade(datetime history_start)
    static double prev_volume = 0;
    int index = 0;
 //--- запросим торговую историю
-   bool update=HistorySelect(history_start,TimeCurrent());
+   bool update=HistorySelect(history_start, TimeCurrent());
 
    double curr_volume = PositionGetDouble(POSITION_VOLUME);
    int curr_positions = PositionsTotal();
    int curr_orders = OrdersTotal();
    int curr_deals = HistoryOrdersTotal();
    int curr_history_orders = HistoryDealsTotal();
-//--- выводим количество и объем позиций, а также изменение в скобках 
-/*  PrintFormat("PositionsTotal() = %d (%+d)",
-               curr_positions,(curr_positions-prev_positions));
-   PrintFormat("Position Volume() = %.02f (%.02f)",
-               curr_volume,(curr_volume-prev_volume));
-              
-   PrintFormat("OrdersTotal() = %d (%+d)",
-               curr_orders,curr_orders-prev_orders);
-   PrintFormat("HistoryOrdersTotal() = %d (%+d)",
-               curr_deals,curr_deals-prev_deals);
-   PrintFormat("HistoryDealsTotal() = %d (%+d)",
-               curr_history_orders,curr_history_orders-prev_history_orders);
-*/
-
-//--- вставка разрыва строк для удобного чтения Журнала
-   
+   Print("Событие OnTrade");
 //--- сравним текущее состояние с предыдущим   
    if ((curr_positions-prev_positions) != 0 || (curr_volume - prev_volume) != 0) // если изменилось количество или объем позиций
    {
+    Print("Событие OnTrade, изменилось количество или объем позиций позиций");
     for(int i = _openPositions.Total()-1; i>=0; i--) // по массиву НАШИХ позиций
     {
-     position = _openPositions.At(i);
-     if (!OrderSelect(position.getStopLossTicket()))
+     position = _openPositions.At(i); // выберем позицию по ее индексу
+     if (!OrderSelect(position.getStopLossTicket())) // Если мы не можем выбрать стоп по его тикету, значит он сработал
      {
       PrintFormat("%s Нет ордера-стоплосса, закрываем тейкпрофит TakeProfitTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID)));
-      if (trade.OrderDelete(position.getTakeProfitTicket()))
+      if (trade.OrderDelete(position.getTakeProfitTicket()))  // сработал стоплосс, надо удалить ордер-тейкпрофит...
       {
        index = _openPositions.TicketToIndex(position.getPositionTicket());
-       _openPositions.Delete(index);
+       _openPositions.Delete(index);                         // ... и удалить позицию из массива позиций 
       }
-      break;
+      break;                                                // завершаем шаг цикла
      }
-     if (!OrderSelect(position.getTakeProfitTicket()))
+     if (!OrderSelect(position.getTakeProfitTicket())) // Если мы не можем выбрать тейк по его тикету, значит он сработал
      {
       PrintFormat("%s Нет ордера-тейкпрофита, закрываем стоплосс StopLossTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID)));
-      if (trade.OrderDelete(position.getStopLossTicket()))
+      if (trade.OrderDelete(position.getStopLossTicket()))  // сработал тейкпрофит, надо удалить ордер-стоплосс...
       {
        index = _openPositions.TicketToIndex(position.getPositionTicket());
-       _openPositions.Delete(index);
+       _openPositions.Delete(index);                        // ... и удалить позицию из массива позиций 
       }
-      break;
+      break;                                                // завершаем шаг цикла
+     }
+     
+     if (position.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
+     { 
+      if (!OrderSelect(position.getPositionTicket())) // ... и мы не можем ее выбрать по ее тикету, значит она сработала
+      {
+       if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
+          || position.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
+       {
+        _positionsToReProcessing.Add(position);                    
+        position.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
+        break;
+       }
+       position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
+      }
      }
     }
    }
@@ -223,9 +228,6 @@ void CTradeManager::OnTrade(datetime history_start)
    prev_orders = curr_orders;
    prev_deals = curr_deals;
    prev_history_orders = curr_history_orders;
-   //PrintFormat("curr_positions= %d, prev_positions= %d, curr-prev= %d; curr_volume= %.02f, prev_volume= %.02f, curr-prev=%.02f, "
-   //           , curr_positions, prev_positions, (curr_positions-prev_positions), curr_volume, prev_volume, (curr_volume-prev_volume));
-   //Print("");
   }
 
 //+------------------------------------------------------------------+
@@ -244,43 +246,75 @@ void CTradeManager::OnTrade(datetime history_start)
 /// \endcode
 //+------------------------------------------------------------------+
 void CTradeManager::OnTick()
-{/*
- for(int i = _openPositions.Total()-1; i>=0; i--) // по массиву НАШИХ позиций
+{
+ for(int i = _positionsToReProcessing.Total()-1; i>=0; i--) // по массиву позиций на доработку
  {
-  int index = 0;
-  position = _openPositions.At(i);
-  if (!OrderSelect(position.getStopLossTicket()))
+  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее тикету
+  if (pos.getPositionStatus() == POSITION_STATUS_NOT_DELETED)
   {
-   PrintFormat("%s Нет ордера-стоплосса, закрываем тейкпрофит TakeProfitTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID)));
-   trade.OrderDelete(position.getTakeProfitTicket());
-   index = _openPositions.TicketToIndex(position.getPositionTicket());
-   _openPositions.Delete(index);
-   break;
+   if (pos.RemovePendingPosition() == POSITION_STATUS_DELETED)
+   {
+    _positionsToReProcessing.Delete(i);
+   }
   }
-  if (!OrderSelect(position.getTakeProfitTicket()))
+  
+  if (pos.getTakeProfitStatus() == STOPLEVEL_STATUS_NOT_DELETED)
   {
-   PrintFormat("%s Нет ордера-тейкпрофита, закрываем стоплосс StopLossTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID)));
-   trade.OrderDelete(position.getStopLossTicket());
-   index = _openPositions.TicketToIndex(position.getPositionTicket());
-   _openPositions.Delete(index);
-   break;
+   pos.RemoveTakeProfit();
   }
- }*/
+  if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+  {
+   pos.RemoveStopLoss();
+  }
+  
+  if (pos.getPositionStatus() == POSITION_STATUS_NOT_COMPLETE)
+  {
+   if (pos.setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && pos.setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+   {
+    pos.setPositionStatus(POSITION_STATUS_OPEN);
+    _positionsToReProcessing.Delete(i);
+   }
+  }
+ }
 }  
 //+------------------------------------------------------------------+
 /// Close a virtual order.
 /// \param [in] ticket			Open virtual order ticket
-/// \param [in] slippage		also known as deviation.  Typical value is 50
 /// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
 /// \return							true if successful, false if not
 //+------------------------------------------------------------------+
-bool CTradeManager::ClosePosition(long ticket,int slippage,color Color=CLR_NONE)
+bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 {
  CPosition *pos = _openPositions.AtTicket(ticket);  // получаем из массива указатель на позицию по ее тикету
  if (pos.ClosePosition())
  {
   _openPositions.Delete(_openPositions.TicketToIndex(ticket));  // по тикету получаем индекс позиции в массиве, удаляем позицию
   return(true);
+ }
+ else
+ {
+  
+ }
+ return(false);
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual order.
+/// \param [in] i			      position index in array of positions
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
+{
+ CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
+ if (pos.ClosePosition())
+ {
+  _openPositions.Delete(i);  // удаляем позицию по индексу
+  return(true);
+ }
+ else
+ {
+  
  }
  return(false);
 }

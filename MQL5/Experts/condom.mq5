@@ -1,10 +1,10 @@
 //+------------------------------------------------------------------+
 //|                                                       condom.mq5 |
-//|                        Copyright 2012, MetaQuotes Software Corp. |
-//|                                              http://www.mql5.com |
+//|                                              Copyright 2013, GIA |
+//|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2012, MetaQuotes Software Corp."
-#property link      "http://www.mql5.com"
+#property copyright "Copyright 2013, GIA"
+#property link      "http://www.saita.net"
 #property version   "1.00"
 //+------------------------------------------------------------------+
 //| Expert includes                                                  |
@@ -31,6 +31,11 @@ input int slowMACDPeriod = 26;
 input int signalPeriod = 9;
 input double levelMACD = 0.02;
 
+input bool useLimitOrders = false;
+input int limitPriceDifference = 20;
+input bool useStopOrders = false;
+input int stopPriceDifference = 20;
+
 string my_symbol;                               //переменная для хранения символа
 ENUM_TIMEFRAMES my_timeframe;                   //переменная для хранения таймфрейма
 datetime history_start;
@@ -40,6 +45,8 @@ MqlTick tick;
 
 int handleMACD;
 double MACD_buf[1], high_buf[], low_buf[], close_buf[2];
+ENUM_TM_POSITION_TYPE opBuy, opSell;
+int priceDifference;
 
 double globalMax;
 double globalMin;
@@ -52,6 +59,25 @@ int OnInit()
   {
    my_symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
+   
+   if (useLimitOrders)
+   {
+    opBuy = OP_BUYLIMIT;
+    opSell = OP_SELLLIMIT;
+    priceDifference = limitPriceDifference;
+   }
+   else if (useStopOrders)
+        {
+         opBuy = OP_BUYSTOP;
+         opSell = OP_SELLSTOP;
+         priceDifference = stopPriceDifference;
+        }
+        else
+        {
+         opBuy = OP_BUY;
+         opSell = OP_SELL;
+         priceDifference = 0;
+        }
    
    if (tradeOnTrend)
    {
@@ -162,7 +188,7 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     if (ctm.OpenPosition(my_symbol, POSITION_TYPE_BUY, _lot, SL, TP, minProfit, trailingStop, trailingStep))
+     if (ctm.OpenPosition(my_symbol, opBuy, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -174,7 +200,7 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (ctm.OpenPosition(my_symbol, POSITION_TYPE_SELL, _lot, SL, TP, minProfit, trailingStop, trailingStep))
+     if (ctm.OpenPosition(my_symbol, opSell, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
