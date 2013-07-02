@@ -8,7 +8,7 @@
 //+------------------------------------------------------------------+
 /// Similar enum to ENUM_ORDER_TYPE.
 //+------------------------------------------------------------------+
-enum ENUM_TM_ORDER_TYPE
+enum ENUM_TM_POSITION_TYPE
   {
    OP_BUY,           //Покупка 
    OP_SELL,          //Продажа 
@@ -21,7 +21,7 @@ enum ENUM_TM_ORDER_TYPE
 //+------------------------------------------------------------------+ 
 // Функция плучения названия операции по ее номеру
 //+------------------------------------------------------------------+
-string GetNameOP(ENUM_TM_ORDER_TYPE op)
+string GetNameOP(ENUM_TM_POSITION_TYPE op)
 {
  switch (op)
  {
@@ -36,6 +36,22 @@ string GetNameOP(ENUM_TM_ORDER_TYPE op)
 };
 
 //+------------------------------------------------------------------+
+/// Converts Virtual Order string name to enum
+/// \param [in]   strVirtualOrderType
+/// \return ENUM_VIRTUAL_ORDER_TYPE      
+//+------------------------------------------------------------------+
+ENUM_TM_POSITION_TYPE StringToPositionType(string posType)
+  {
+   if(posType == "Buy") return(OP_BUY);
+   if(posType == "Sell") return(OP_SELL);
+   if(posType == "Buy Limit") return(OP_BUYLIMIT);
+   if(posType == "Sell Limit") return(OP_SELLLIMIT);
+   if(posType == "Buy Stop") return(OP_BUYSTOP);
+   if(posType == "Sell Stop") return(OP_SELLSTOP);
+   return("Error: unknown position type " + posType);
+  }
+
+//+------------------------------------------------------------------+
 /// Tracks status of virtual orders.
 //+------------------------------------------------------------------+
 enum ENUM_POSITION_STATUS
@@ -44,7 +60,9 @@ enum ENUM_POSITION_STATUS
    POSITION_STATUS_PENDING,
    POSITION_STATUS_CLOSED,
    POSITION_STATUS_DELETED,
-   POSITION_STATUS_NOT_INITIALISED
+   POSITION_STATUS_NOT_DELETED,
+   POSITION_STATUS_NOT_INITIALISED,
+   POSITION_STATUS_NOT_COMPLETE,
   };
 //+------------------------------------------------------------------+
 /// Returns string description of ENUM_POSITION_STATUS.                                                                 
@@ -87,21 +105,9 @@ string PositionTypeToStr(ENUM_POSITION_TYPE enumPositionType)
       default: return("Error: unknown position type "+(string)enumPositionType);
      }
   }
-  
-//+------------------------------------------------------------------+
-/// Converts Virtual Order string name to enum
-/// \param [in]   strVirtualOrderType
-/// \return ENUM_VIRTUAL_ORDER_TYPE      
-//+------------------------------------------------------------------+
-ENUM_POSITION_TYPE StringToPositionType(string posType)
-  {
-   if(posType == "virtual buy") return(POSITION_TYPE_BUY);
-   if(posType == "virtual sell") return(POSITION_TYPE_SELL);
-   return("Error: unknown position type " + posType);
-  }
 
 //+------------------------------------------------------------------+
-/// Status of 
+/// Status of stoplevels
 //+------------------------------------------------------------------+
 enum ENUM_STOPLEVEL_STATUS
   {

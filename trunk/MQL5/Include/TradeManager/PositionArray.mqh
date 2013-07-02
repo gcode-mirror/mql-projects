@@ -9,7 +9,8 @@
 #include "TradeManagerConfig.mqh"
 //#include "Log.mqh"
 #include "TradeManagerEnums.mqh"
-#include "Position.mqh"
+//#include "Position.mqh"
+#include "PositionOnPendingOrders.mqh"
 #include <Arrays/ArrayObj.mqh>
 #include "StringUtilities.mqh"
 //+------------------------------------------------------------------+
@@ -26,7 +27,7 @@ public:
    int               OpenLots(string strSymbol);
    /// Count of orders.
    int               OrderCount(string strSymbol,long lMagic);
-   int               OrderCount(string strSymbol,ENUM_POSITION_TYPE eOrderType,long lMagic);
+   int               OrderCount(string strSymbol,ENUM_TM_POSITION_TYPE eOrderType,long lMagic);
    string            PersistFilename(){return(m_strPersistFilename);}
    string            PersistFilename(string strFilename);
    int               TicketToIndex(long lTicket);
@@ -79,9 +80,9 @@ int CPositionArray::OpenLots(string strSymbol)
       if(pos.getSymbol()==strSymbol)
          switch(pos.getType())
            {
-            case POSITION_TYPE_BUY:
+            case OP_BUY:
                dblTotalPosition+=pos.getVolume(); break;
-            case POSITION_TYPE_SELL:
+            case OP_SELL:
                dblTotalPosition-=pos.getVolume();
            }
      }
@@ -113,7 +114,7 @@ int CPositionArray::OrderCount(string strSymbol,long lMagic)
 /// \param [in] nMagic
 /// \return	Count of orders matching input criteria
 //+------------------------------------------------------------------+
-int CPositionArray::OrderCount(string strSymbol, ENUM_POSITION_TYPE eOrderType,long lMagic)
+int CPositionArray::OrderCount(string strSymbol, ENUM_TM_POSITION_TYPE eOrderType,long lMagic)
   {
    int nOrdersTotal=0;
    for(int i=Total()-1;i>=0;i--)

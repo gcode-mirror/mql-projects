@@ -20,13 +20,13 @@ color TakeProfitLineColor=Brown;
 class CEntryPriceLine : public CChartObjectHLine
   {
 public:
-   bool Create(long lTicket,double price,ENUM_TM_ORDER_TYPE type);
+   bool Create(long lTicket,double price,ENUM_TM_POSITION_TYPE type);
    double Value(){return GetDouble(OBJPROP_PRICE);}
   };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool CEntryPriceLine::Create(long lTicket,double price,ENUM_TM_ORDER_TYPE type)
+bool CEntryPriceLine::Create(long lTicket,double price,ENUM_TM_POSITION_TYPE type)
   {
    string strName=::GetNameOP(type)+(string)lTicket;
    if(CChartObjectHLine::Create(0,strName,0,price))
