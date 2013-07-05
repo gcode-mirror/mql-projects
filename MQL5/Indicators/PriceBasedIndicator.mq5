@@ -135,6 +135,8 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
     ArrayInitialize(ExtHighBuffer, 0.0);
     ArrayInitialize(ExtLowBuffer, 0.0);
     ArrayInitialize(ExtCloseBuffer, 0.0);
+    ArrayInitialize(ExtUpArrowBuffer, 0.0);
+    ArrayInitialize(ExtDownArrowBuffer, 0.0);
     
     //--- копируем цены в буферы
     for(int bar = rates_total - bars - historyDepth; bar < rates_total - 1  && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
@@ -150,21 +152,24 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
    //--- зададим цвет свечи
      ExtColorsBuffer[bar] = trend.GetMoveType(buffer_index); 
    //--- зададим код символа из шрифта Wingdings для отрисовки в PLOT_ARROW
-     if (trend.GetExtremumDirection(buffer_index) > 0)
+     if (buffer_index > 0)
      {
-      ExtUpArrowBuffer[bar] = trend.GetExtremum(buffer_index);
-     }
-     else
-     {
-      ExtUpArrowBuffer[bar] = 0;
-     }
-     if (trend.GetExtremumDirection(buffer_index) < 0)
-     {
-      ExtDownArrowBuffer[bar] = trend.GetExtremum(buffer_index);
-     }
-     else
-     {
-      ExtDownArrowBuffer[bar] = 0;
+      if (trend.GetExtremumDirection(buffer_index) > 0)
+      {
+       ExtUpArrowBuffer[bar] = trend.GetExtremum(buffer_index);
+      }
+      else
+      {
+       ExtUpArrowBuffer[bar] = 0;
+      }
+      if (trend.GetExtremumDirection(buffer_index) < 0)
+      {
+       ExtDownArrowBuffer[bar] = trend.GetExtremum(buffer_index);
+      }
+      else
+      {
+       ExtDownArrowBuffer[bar] = 0;
+      }
      }
     }
    }
