@@ -325,57 +325,54 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
 {
- ENUM_STOPLEVEL_STATUS status = sl_status;
- if (status == STOPLEVEL_STATUS_PLACED || status == STOPLEVEL_STATUS_NOT_DELETED) // Если ордер был установлен или его не удалось удалить в прошлом
+ if (sl_status == STOPLEVEL_STATUS_PLACED || sl_status == STOPLEVEL_STATUS_NOT_DELETED) // Если ордер был установлен или его не удалось удалить в прошлом
  {
   if (trade.OrderDelete(_slTicket))  
   {
-   status = STOPLEVEL_STATUS_DELETED; // Ордер удалился
+   sl_status = STOPLEVEL_STATUS_DELETED; // Ордер удалился
   }
   else
   {
-   status = STOPLEVEL_STATUS_NOT_DELETED; // Попытка удаления не прошла
+   sl_status = STOPLEVEL_STATUS_NOT_DELETED; // Попытка удаления не прошла
   }
  }
- return (status);
+ return (sl_status);
 }
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::RemoveTakeProfit()
 {
- ENUM_STOPLEVEL_STATUS status = tp_status;
- if (status == STOPLEVEL_STATUS_PLACED || status == STOPLEVEL_STATUS_NOT_DELETED)
+ if (tp_status == STOPLEVEL_STATUS_PLACED || tp_status == STOPLEVEL_STATUS_NOT_DELETED)
  {
   if (trade.OrderDelete(_tpTicket))
   {
-   status = STOPLEVEL_STATUS_DELETED;
+   tp_status = STOPLEVEL_STATUS_DELETED;
   }
   else
   {
-   status = STOPLEVEL_STATUS_NOT_DELETED;
+   tp_status = STOPLEVEL_STATUS_NOT_DELETED;
   }
  }
- return (status);
+ return (tp_status);
 }
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
 ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
 {
- ENUM_POSITION_STATUS status = pos_status;
- if (status == POSITION_STATUS_PENDING || status == POSITION_STATUS_NOT_DELETED)
+ if (pos_status == POSITION_STATUS_PENDING || pos_status == POSITION_STATUS_NOT_DELETED)
  {
   if (trade.OrderDelete(_posTicket))
   {
-   status = POSITION_STATUS_DELETED;
+   pos_status = POSITION_STATUS_DELETED;
   }
   else
   {
-   status = POSITION_STATUS_NOT_DELETED;
+   pos_status = POSITION_STATUS_NOT_DELETED;
   }
  }
- return(status);
+ return(pos_status);
 }
 
 //+------------------------------------------------------------------+
