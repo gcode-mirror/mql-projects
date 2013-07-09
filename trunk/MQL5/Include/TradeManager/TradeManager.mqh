@@ -74,6 +74,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
        if (ClosePosition(i))
        {
         Print("Удалили позицию селл");
+        
        }
        else
        {
@@ -188,20 +189,26 @@ void CTradeManager::OnTrade(datetime history_start)
      if (!OrderSelect(position.getStopLossTicket())) // Если мы не можем выбрать стоп по его тикету, значит он сработал
      {
       PrintFormat("%s Нет ордера-стоплосса, закрываем тейкпрофит TakeProfitTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID)));
-      if (trade.OrderDelete(position.getTakeProfitTicket()))  // сработал стоплосс, надо удалить ордер-тейкпрофит...
+      if (position.RemoveTakeProfit() == STOPLEVEL_STATUS_DELETED)  // сработал стоплосс, надо удалить ордер-тейкпрофит...
       {
-       index = _openPositions.TicketToIndex(position.getPositionTicket());
-       _openPositions.Delete(index);                         // ... и удалить позицию из массива позиций 
+       _openPositions.Delete(i);                         // ... и удалить позицию из массива позиций 
+      }
+      else
+      {
+       _positionsToReProcessing.Add(_openPositions.Detach(i));
       }
       break;                                                // завершаем шаг цикла
      }
      if (!OrderSelect(position.getTakeProfitTicket())) // Если мы не можем выбрать тейк по его тикету, значит он сработал
      {
       PrintFormat("%s Нет ордера-тейкпрофита, закрываем стоплосс StopLossTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID)));
-      if (trade.OrderDelete(position.getStopLossTicket()))  // сработал тейкпрофит, надо удалить ордер-стоплосс...
+      if (position.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)  // сработал тейкпрофит, надо удалить ордер-стоплосс...
       {
-       index = _openPositions.TicketToIndex(position.getPositionTicket());
-       _openPositions.Delete(index);                        // ... и удалить позицию из массива позиций 
+       _openPositions.Delete(i);                        // ... и удалить позицию из массива позиций 
+      }
+      else
+      {
+       _positionsToReProcessing.Add(_openPositions.Detach(i));
       }
       break;                                                // завершаем шаг цикла
      }
@@ -211,13 +218,14 @@ void CTradeManager::OnTrade(datetime history_start)
       if (!OrderSelect(position.getPositionTicket())) // ... и мы не можем ее выбрать по ее тикету, значит она сработала
       {
        if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
-          || position.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
-       {
-        _positionsToReProcessing.Add(position);                    
+        || position.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
+       {                  
         position.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
+        _positionsToReProcessing.Add(position); 
         break;
        }
        position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
+       _openPositions.Add(position);
       }
      }
     }
@@ -249,22 +257,23 @@ void CTradeManager::OnTick()
 {
  for(int i = _positionsToReProcessing.Total()-1; i>=0; i--) // по массиву позиций на доработку
  {
-  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее тикету
+  CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее тикету
   if (pos.getPositionStatus() == POSITION_STATUS_NOT_DELETED)
   {
    if (pos.RemovePendingPosition() == POSITION_STATUS_DELETED)
    {
     _positionsToReProcessing.Delete(i);
+    break;
    }
   }
   
-  if (pos.getTakeProfitStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+  if (pos.getTakeProfitStatus() == STOPLEVEL_STATUS_NOT_DELETED || pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
   {
-   pos.RemoveTakeProfit();
-  }
-  if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
-  {
-   pos.RemoveStopLoss();
+   if (pos.RemoveTakeProfit() == STOPLEVEL_STATUS_DELETED && pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
+   {
+    _positionsToReProcessing.Delete(i);
+    break;
+   }
   }
   
   if (pos.getPositionStatus() == POSITION_STATUS_NOT_COMPLETE)
@@ -272,7 +281,7 @@ void CTradeManager::OnTick()
    if (pos.setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && pos.setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
    {
     pos.setPositionStatus(POSITION_STATUS_OPEN);
-    _positionsToReProcessing.Delete(i);
+    _openPositions.Add(_positionsToReProcessing.Detach(i));
    }
   }
  }
@@ -285,17 +294,8 @@ void CTradeManager::OnTick()
 //+------------------------------------------------------------------+
 bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 {
- CPosition *pos = _openPositions.AtTicket(ticket);  // получаем из массива указатель на позицию по ее тикету
- if (pos.ClosePosition())
- {
-  _openPositions.Delete(_openPositions.TicketToIndex(ticket));  // по тикету получаем индекс позиции в массиве, удаляем позицию
-  return(true);
- }
- else
- {
-  
- }
- return(false);
+ int index = _openPositions.TicketToIndex(ticket);
+ return ClosePosition(index);
 }
 
 //+------------------------------------------------------------------+
@@ -314,7 +314,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  }
  else
  {
-  
+  _positionsToReProcessing.Add(_openPositions.Detach(i));
  }
  return(false);
 }
