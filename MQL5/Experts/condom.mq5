@@ -10,7 +10,7 @@
 //| Expert includes                                                  |
 //+------------------------------------------------------------------+
 #include <CompareDoubles.mqh>
-#include <CIsNewBar.mqh>
+#include <Lib CisNewBar.mqh>
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
@@ -36,8 +36,7 @@ input int limitPriceDifference = 20;
 input bool useStopOrders = false;
 input int stopPriceDifference = 20;
 
-string my_symbol;                               //переменная для хранения символа
-ENUM_TIMEFRAMES my_timeframe;                   //переменная для хранения таймфрейма
+string symbol;                               //переменная для хранения символа
 datetime history_start;
 
 CTradeManager ctm(_magic);
@@ -57,7 +56,7 @@ bool waitForBuy;
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   my_symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
+   symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    
    if (useLimitOrders)
@@ -81,7 +80,7 @@ int OnInit()
    
    if (tradeOnTrend)
    {
-    handleMACD = iMACD(my_symbol, my_timeframe, fastMACDPeriod, slowMACDPeriod, signalPeriod, PRICE_CLOSE);  //подключаем индикатор и получаем его хендл
+    handleMACD = iMACD(symbol, timeframe, fastMACDPeriod, slowMACDPeriod, signalPeriod, PRICE_CLOSE);  //подключаем индикатор и получаем его хендл
     if(handleMACD == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
     {
      Print("Не удалось получить хендл MACD");               //если хендл не получен, то выводим сообщение в лог об ошибке
@@ -122,9 +121,9 @@ void OnTick()
    int errClose = 0;
    int errMACD = 0;
    
-   static CIsNewBar isNewBar;
+   static CisNewBar isNewBar(symbol, timeframe);
    
-   if(isNewBar.isNewBar(my_symbol, my_timeframe))
+   if(isNewBar.isNewBar() > 0)
    {
     if (tradeOnTrend)
     {
@@ -137,9 +136,9 @@ void OnTick()
      }
     } 
     //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
-    errLow=CopyLow(my_symbol, my_timeframe, 2, historyDepth, low_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
-    errHigh=CopyHigh(my_symbol, my_timeframe, 2, historyDepth, high_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
-    errClose=CopyClose(my_symbol, my_timeframe, 1, 2, close_buf); // (0 - тек. бар, копируем 2 сформ. бара)
+    errLow=CopyLow(symbol, timeframe, 2, historyDepth, low_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
+    errHigh=CopyHigh(symbol, timeframe, 2, historyDepth, high_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
+    errClose=CopyClose(symbol, timeframe, 1, 2, close_buf); // (0 - тек. бар, копируем 2 сформ. бара)
              
     if(errLow < 0 || errHigh < 0 || errClose < 0)                         //если есть ошибки
     {
@@ -188,7 +187,7 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     if (ctm.OpenPosition(my_symbol, opBuy, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenPosition(symbol, opBuy, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -200,7 +199,7 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (ctm.OpenPosition(my_symbol, opSell, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenPosition(symbol, opSell, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
