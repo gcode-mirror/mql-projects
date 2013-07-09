@@ -206,8 +206,6 @@ void CTradeManager::OnTrade(datetime history_start)
       {
        _openPositions.Delete(i);                        // ... и удалить позицию из массива позиций 
       }
-      else
-      {
        _positionsToReProcessing.Add(_openPositions.Detach(i));
       }
       break;                                                // завершаем шаг цикла
