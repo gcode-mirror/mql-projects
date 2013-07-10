@@ -24,7 +24,7 @@ class test_CTradeManager
 {
 protected:
   test_CPosition *position;
-  //test_CTMTradeFunctions trade;
+  test_CTMTradeFunctions trade;
   ulong _magic;
   bool _useSound;
   string _nameFileSound;   // Наименование звукового файла
@@ -187,7 +187,6 @@ void test_CTradeManager::OnTrade(datetime history_start)
    int curr_orders = OrdersTotal();
    int curr_deals = HistoryOrdersTotal();
    int curr_history_orders = HistoryDealsTotal();
-   //Print("Событие OnTrade");
 //--- сравним текущее состояние с предыдущим   
    if ((curr_positions-prev_positions) != 0 || (curr_volume - prev_volume) != 0) // если изменилось количество или объем позиций
    {
@@ -204,6 +203,7 @@ void test_CTradeManager::OnTrade(datetime history_start)
       CloseReProcessingPosition(i);
      }
     }
+    
     for(int i = _openPositions.Total()-1; i>=0; i--) // по массиву НАШИХ позиций
     {
      position = _openPositions.At(i); // выберем позицию по ее индексу
@@ -320,7 +320,7 @@ bool test_CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 }
 
 //+------------------------------------------------------------------+
-/// Close a virtual order.
+/// Close a virtual position.
 /// \param [in] i			      position index in array of positions
 /// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
 /// \return							true if successful, false if not
@@ -340,13 +340,35 @@ bool test_CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  return(false);
 }
 
+//+------------------------------------------------------------------+
+/// Delete a virtual position from "not_deleted".
+/// \param [in] i			      position index in array of positions
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
 bool test_CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
 {
  test_CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее индексу
- if (pos.ClosePosition())
+ switch(pos.getType())
  {
-  _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
-  return(true);
+  case OP_BUY:
+  case OP_BUYLIMIT:
+  case OP_BUYSTOP:
+   if (trade.PositionOpen(pos.getSymbol(), POSITION_TYPE_BUY, pos.getVolume(), pos.pricetype(POSITION_TYPE_BUY)))
+   {
+    _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
+    return(true);
+   }
+   break;
+  case OP_SELL:
+  case OP_SELLLIMIT:
+  case OP_SELLSTOP:
+   if(trade.PositionOpen(pos.getSymbol(), POSITION_TYPE_SELL, pos.getVolume(), pos.pricetype(POSITION_TYPE_SELL)))
+   {
+    _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
+    return(true);
+   }
+   break;
  }
  return(false);
 }
