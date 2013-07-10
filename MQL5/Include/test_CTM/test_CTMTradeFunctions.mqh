@@ -20,8 +20,8 @@ class test_CTMTradeFunctions : public CTrade
   test_CTMTradeFunctions(void){};
   ~test_CTMTradeFunctions(void){};
   
-  bool OrderOpen(const string symbol, const ENUM_ORDER_TYPE type, const double volume, const double price,
-                                  const ENUM_ORDER_TYPE_TIME type_time=ORDER_TIME_GTC,const datetime expiration=0,const string comment="");                    
+  bool OrderOpen(const string symbol,const ENUM_ORDER_TYPE type, const double volume, const double price,
+                 const ENUM_ORDER_TYPE_TIME type_time=ORDER_TIME_GTC,const datetime expiration=0,const string comment="");
   bool OrderDelete(const ulong ticket);
   bool PositionOpen(const string symbol,const ENUM_POSITION_TYPE type,const double volume,
                     const double price,const double sl = 0.0,const double tp = 0.0,const string comment = "");
@@ -34,7 +34,6 @@ class test_CTMTradeFunctions : public CTrade
 bool test_CTMTradeFunctions::OrderOpen(const string symbol, const ENUM_ORDER_TYPE type, const double volume, const double price,
                                   const ENUM_ORDER_TYPE_TIME type_time=ORDER_TIME_GTC,const datetime expiration=0,const string comment="")
 {
- bool res = false;
  double sl = 0.0, tp = 0.0;
  if(volume<=0.0)
  {
@@ -44,15 +43,10 @@ bool test_CTMTradeFunctions::OrderOpen(const string symbol, const ENUM_ORDER_TYP
  
  if (OrderOpen(symbol,type,volume,0.0,price,sl,tp,type_time,expiration,comment))
  {
-  res = true;
+  return(true);
  }
- else
- {
-  res = false;
- }
- return(res);
+ return(false);
 }
-
 //+------------------------------------------------------------------+
 //| Удаление отложника                                               |
 //+------------------------------------------------------------------+
@@ -60,8 +54,7 @@ bool test_CTMTradeFunctions::OrderDelete(ulong ticket)
 {
   int i = 0;
   int tryNumber = 5;
-  bool res;
-  string retcode; //error_list, 
+  bool res = false;
   uint result_code;
   
   ZeroMemory(m_request);
@@ -105,35 +98,14 @@ bool test_CTMTradeFunctions::OrderDelete(ulong ticket)
     result_code = m_check_result.retcode;
    }
    
-   //StringAdd(retcode, IntegerToString(result_code));
    if (res) break;
-   //if ((!res)&&(StringFind(error_list, retcode, 0) == -1))
    else
    {
-     //StringAdd(error_list, retcode);
      Print("при удалении ордера ", ticket, " возникла ошибка: ", result_code, "; GetLastError() = ", GetLastError(), "; Bid = ", m_result.bid, "; Ask = ", m_result.ask, "; Price = ", m_result.price);
    }
    i++;
   }
   
-  if (!res) // Если ордер не удалился, попробуем отодвинуть его подальше от цены
-  {
-   Print("!!!!!!!!!!!!!!!!!!!!!1Не удалось удалить ордер, попробуем модифицировать!!!!!!!!!!!!!!!!!!!!");
-   OrderSelect(ticket);
-   string symb = OrderGetString(ORDER_SYMBOL);
-   double point = SymbolInfoDouble(symb, SYMBOL_POINT);
-   double price = SymbolInfoDouble(symb, SYMBOL_BID);
-   ENUM_ORDER_TYPE type = OrderGetInteger(ORDER_TYPE);
-   if (type == ORDER_TYPE_BUY_LIMIT || type == ORDER_TYPE_SELL_STOP)
-   {
-    price = price - 100*point;
-   }
-   if (type == ORDER_TYPE_BUY_STOP || type == ORDER_TYPE_SELL_LIMIT)
-   {
-    price = price + 100*point;
-   }
-   if (OrderModify(ticket, price, 0, 0, ORDER_TIME_GTC, 0)) OrderDelete(ticket);
-  }  
   return(res);
 }
 
@@ -141,7 +113,7 @@ bool test_CTMTradeFunctions::OrderDelete(ulong ticket)
 //| Открытие CTM-позиции                                                    |
 //+-------------------------------------------------------------------------+
 bool test_CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYPE type,const double volume,
-                                          const double price,const double sl = 0.0,const double tp = 0.0,const string comment = "")
+                                     const double price,const double sl = 0.0,const double tp = 0.0,const string comment = "")
 {
  ENUM_ORDER_TYPE order_type;
  if(volume <= 0.0)
@@ -149,7 +121,6 @@ bool test_CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITIO
   m_result.retcode=TRADE_RETCODE_INVALID_VOLUME;
   return(false);
  }
- 
  switch(type)
  {
   case POSITION_TYPE_BUY:
@@ -163,7 +134,7 @@ bool test_CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITIO
    return(false);
  }
  return(PositionOpen(symbol, order_type, volume, price, sl, tp, comment));
-}
+}                                     
 
 //+-------------------------------------------------------------------------+
 //| Удаление CTM-позиции (выставляем противоположный ордер равного объема)  |
@@ -212,4 +183,4 @@ bool test_CTMTradeFunctions::PositionClose(const string symbol, const ENUM_POSIT
  }
 
  return(false);
-} 
+}
