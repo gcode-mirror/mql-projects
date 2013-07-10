@@ -24,7 +24,7 @@ class test_CTradeManager
 {
 protected:
   test_CPosition *position;
-  test_CTMTradeFunctions trade;
+  //test_CTMTradeFunctions trade;
   ulong _magic;
   bool _useSound;
   string _nameFileSound;   // Наименование звукового файла
@@ -40,7 +40,8 @@ public:
                    ,int sl, int tp, int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
   void ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action);
   bool ClosePosition(long ticket, color Color=CLR_NONE); // Закртыие позиции по тикету
-  bool ClosePosition(int i,color Color=CLR_NONE);  // Закрытие позиции по индексу в массиве позиций 
+  bool ClosePosition(int i,color Color=CLR_NONE);  // Закрытие позиции по индексу в массиве позиций
+  bool CloseReProcessingPosition(int i,color Color=CLR_NONE); 
   void DoTrailing();
   void OnTick();
   void OnTrade(datetime history_start);
@@ -53,6 +54,15 @@ bool test_CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,
                                 ,int sl, int tp, int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
 {
  //Print("=> ",__FUNCTION__," at ",TimeToString(TimeCurrent(),TIME_SECONDS));
+ if (_positionsToReProcessing.Total() > 0) 
+ {
+  //PrintFormat ("Невозможно открыть позицию так как не все предыдущие ордера удалены.");
+  return false;
+ }
+ else
+ {
+  //PrintFormat("positionsToReProcessing пуст, может открывать позицию");
+ }
  int i = 0;
  int total = _openPositions.Total();
  PrintFormat("Открываем позицию %s. Открытых позиций %d",GetNameOP(type), total);
@@ -114,10 +124,10 @@ bool test_CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,
    break;
  }
  
- total = _openPositions.Total();
+ total = _openPositions.Total() + _positionsToReProcessing.Total();
  if (total <= 0)
  {
-  //Print("Открытых позиций нет - открываем новую");
+  Print("Открытых позиций нет - открываем новую");
   position = new test_CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
   ENUM_POSITION_STATUS openingResult = position.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
@@ -177,11 +187,23 @@ void test_CTradeManager::OnTrade(datetime history_start)
    int curr_orders = OrdersTotal();
    int curr_deals = HistoryOrdersTotal();
    int curr_history_orders = HistoryDealsTotal();
-   Print("Событие OnTrade");
+   //Print("Событие OnTrade");
 //--- сравним текущее состояние с предыдущим   
    if ((curr_positions-prev_positions) != 0 || (curr_volume - prev_volume) != 0) // если изменилось количество или объем позиций
    {
     Print("Событие OnTrade, изменилось количество или объем позиций позиций");
+    for(int i = _positionsToReProcessing.Total()-1; i>=0; i--)
+    {
+     position = _positionsToReProcessing.At(i);
+     if(!OrderSelect(position.getTakeProfitTicket()) && position.getTakeProfitStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+     {
+      CloseReProcessingPosition(i);
+     }
+     if(!OrderSelect(position.getStopLossTicket()) && position.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+     {
+      CloseReProcessingPosition(i);
+     }
+    }
     for(int i = _openPositions.Total()-1; i>=0; i--) // по массиву НАШИХ позиций
     {
      position = _openPositions.At(i); // выберем позицию по ее индексу
@@ -314,6 +336,17 @@ bool test_CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  else
  {
   _positionsToReProcessing.Add(_openPositions.Detach(i));
+ }
+ return(false);
+}
+
+bool test_CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
+{
+ test_CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее индексу
+ if (pos.ClosePosition())
+ {
+  _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
+  return(true);
  }
  return(false);
 }
