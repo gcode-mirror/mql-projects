@@ -31,8 +31,12 @@ input int slowMACDPeriod = 26;
 input int signalPeriod = 9;
 input double levelMACD = 0.02;
 
-string my_symbol;                               //переменная для хранения символа
-ENUM_TIMEFRAMES my_timeframe;                   //переменная для хранения таймфрейма
+input bool useLimitOrders = false;
+input int limitPriceDifference = 20;
+input bool useStopOrders = false;
+input int stopPriceDifference = 20;
+
+string symbol;                               //переменная для хранения символа
 datetime history_start;
 
 test_CTradeManager order(_magic);
@@ -40,6 +44,8 @@ MqlTick tick;
 
 int handleMACD;
 double MACD_buf[1], high_buf[], low_buf[], close_buf[2];
+ENUM_TM_POSITION_TYPE opBuy, opSell;
+int priceDifference;
 
 double globalMax;
 double globalMin;
@@ -50,12 +56,31 @@ bool waitForBuy;
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   my_symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
+   symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
-      
+   
+   if (useLimitOrders)
+   {
+    opBuy = OP_BUYLIMIT;
+    opSell = OP_SELLLIMIT;
+    priceDifference = limitPriceDifference;
+   }
+   else if (useStopOrders)
+        {
+         opBuy = OP_BUYSTOP;
+         opSell = OP_SELLSTOP;
+         priceDifference = stopPriceDifference;
+        }
+        else
+        {
+         opBuy = OP_BUY;
+         opSell = OP_SELL;
+         priceDifference = 0;
+        }
+
    if (tradeOnTrend)
    {
-    handleMACD = iMACD(my_symbol, my_timeframe, fastMACDPeriod, slowMACDPeriod, signalPeriod, PRICE_CLOSE);  //подключаем индикатор и получаем его хендл
+    handleMACD = iMACD(symbol, timeframe, fastMACDPeriod, slowMACDPeriod, signalPeriod, PRICE_CLOSE);  //подключаем индикатор и получаем его хендл
     if(handleMACD == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
     {
      Print("Не удалось получить хендл MACD");               //если хендл не получен, то выводим сообщение в лог об ошибке
@@ -98,7 +123,7 @@ void OnTick()
    
    static CIsNewBar isNewBar;
    
-   if(isNewBar.isNewBar(my_symbol, my_timeframe))
+   if(isNewBar.isNewBar(symbol, timeframe))
    {
     if (tradeOnTrend)
     {
@@ -111,9 +136,9 @@ void OnTick()
      }
     } 
     //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
-    errLow=CopyLow(my_symbol, my_timeframe, 2, historyDepth, low_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
-    errHigh=CopyHigh(my_symbol, my_timeframe, 2, historyDepth, high_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
-    errClose=CopyClose(my_symbol, my_timeframe, 1, 2, close_buf); // (0 - тек. бар, копируем 2 сформ. бара)
+    errLow=CopyLow(symbol, timeframe, 2, historyDepth, low_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
+    errHigh=CopyHigh(symbol, timeframe, 2, historyDepth, high_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
+    errClose=CopyClose(symbol, timeframe, 1, 2, close_buf); // (0 - тек. бар, копируем 2 сформ. бара)
              
     if(errLow < 0 || errHigh < 0 || errClose < 0)                         //если есть ошибки
     {
@@ -148,7 +173,7 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     if (order.OpenPosition(my_symbol, POSITION_TYPE_BUY, _lot, SL, TP, minProfit, trailingStop, trailingStep))
+     if (order.OpenPosition(symbol, opBuy, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -160,7 +185,7 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (order.OpenPosition(my_symbol, POSITION_TYPE_SELL, _lot, SL, TP, minProfit, trailingStop, trailingStep))
+     if (order.OpenPosition(symbol, opSell, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
