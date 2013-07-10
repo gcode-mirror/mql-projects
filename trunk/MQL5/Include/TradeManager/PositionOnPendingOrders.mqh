@@ -41,9 +41,6 @@ private:
    ENUM_STOPLEVEL_STATUS sl_status, tp_status;
    ENUM_POSITION_STATUS pos_status;
    
-   double pricetype(int type);     // вычисляет уровень открытия в зависимости от типа 
-   double SLtype(int type);        // вычисляет уровень стоп-лосса в зависимости от типа
-   double TPtype(int type);        // вычисляет уровень тейк-профита в зависимости от типа
    ENUM_ORDER_TYPE SLOrderType(int type);
    ENUM_ORDER_TYPE TPOrderType(int type);
    ENUM_ORDER_TYPE PositionOrderType(int type);
@@ -92,6 +89,10 @@ public:
    void setExpiration(datetime expiration) {_expiration = expiration;};
    
    bool UpdateSymbolInfo();        // Получение актуальной информации по торговому инструменту 
+   double pricetype(int type);     // вычисляет уровень открытия в зависимости от типа 
+   double SLtype(int type);        // вычисляет уровень стоп-лосса в зависимости от типа
+   double TPtype(int type);        // вычисляет уровень тейк-профита в зависимости от типа
+
    ENUM_POSITION_STATUS OpenPosition();
    ENUM_STOPLEVEL_STATUS setStopLoss();
    ENUM_STOPLEVEL_STATUS setTakeProfit();
@@ -139,8 +140,8 @@ bool CPosition::UpdateSymbolInfo()
 double CPosition::pricetype(int type)
 {
  UpdateSymbolInfo();
- if(type == 0)return(SymbInfo.Ask());
- if(type == 1)return(SymbInfo.Bid());
+ if(type == 0 || type == 2 || type == 4) return(SymbInfo.Ask());
+ if(type == 1 || type == 3 || type == 5) return(SymbInfo.Bid());
  return(-1);
 }
 //+------------------------------------------------------------------+
@@ -149,8 +150,8 @@ double CPosition::pricetype(int type)
 double CPosition::SLtype(int type)
 {
  UpdateSymbolInfo();
- if(type==0)return(SymbInfo.Bid()-_sl*SymbInfo.Point()); // Buy
- if(type==1)return(SymbInfo.Ask()+_sl*SymbInfo.Point()); // Sell
+ if(type == 0 || type == 2 || type == 4) return(SymbInfo.Bid()-_sl*SymbInfo.Point()); // Buy
+ if(type == 1 || type == 3 || type == 5) return(SymbInfo.Ask()+_sl*SymbInfo.Point()); // Sell
  return(0);
 }
 //+------------------------------------------------------------------+
@@ -159,24 +160,24 @@ double CPosition::SLtype(int type)
 double CPosition::TPtype(int type)
 {
  UpdateSymbolInfo();
- if(type==0)return(SymbInfo.Ask()+_tp*SymbInfo.Point()); // Buy 
- if(type==1)return(SymbInfo.Bid()-_tp*SymbInfo.Point()); // Sell
+ if(type == 0 || type == 2 || type == 4) return(SymbInfo.Ask()+_tp*SymbInfo.Point()); // Buy 
+ if(type == 1 || type == 3 || type == 5) return(SymbInfo.Bid()-_tp*SymbInfo.Point()); // Sell
  return(0);
 }
 
 ENUM_ORDER_TYPE CPosition::SLOrderType(int type)
 {
  ENUM_ORDER_TYPE res;
- if(type==0) res = ORDER_TYPE_SELL_STOP; // Buy
- if(type==1) res = ORDER_TYPE_BUY_STOP; // Sell
+ if(type == 0 || type == 2 || type == 4) res = ORDER_TYPE_SELL_STOP; // Buy
+ if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_STOP; // Sell
  return(res);
 }
 
 ENUM_ORDER_TYPE CPosition::TPOrderType(int type)
 {
  ENUM_ORDER_TYPE res;
- if(type==0) res = ORDER_TYPE_SELL_LIMIT; // Buy
- if(type==1) res = ORDER_TYPE_BUY_LIMIT; // Sell
+ if(type == 0 || type == 2 || type == 4) res = ORDER_TYPE_SELL_LIMIT; // Buy
+ if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_LIMIT; // Sell
  return(res);
 }
 

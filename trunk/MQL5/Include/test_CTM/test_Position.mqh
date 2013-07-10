@@ -133,8 +133,8 @@ bool test_CPosition::UpdateSymbolInfo()
 double test_CPosition::pricetype(int type)
 {
  UpdateSymbolInfo();
- if(type == 0)return(SymbInfo.Ask());
- if(type == 1)return(SymbInfo.Bid());
+ if(type == 0 || type == 2 || type == 4) return(SymbInfo.Ask());
+ if(type == 1 || type == 3 || type == 5) return(SymbInfo.Bid());
  return(-1);
 }
 //+------------------------------------------------------------------+
@@ -143,8 +143,8 @@ double test_CPosition::pricetype(int type)
 double test_CPosition::SLtype(int type)
 {
  UpdateSymbolInfo();
- if(type==0)return(SymbInfo.Bid()-_sl*SymbInfo.Point()); // Buy
- if(type==1)return(SymbInfo.Ask()+_sl*SymbInfo.Point()); // Sell
+ if(type == 0 || type == 2 || type == 4) return(SymbInfo.Bid()-_sl*SymbInfo.Point()); // Buy
+ if(type == 1 || type == 3 || type == 5) return(SymbInfo.Ask()+_sl*SymbInfo.Point()); // Sell
  return(0);
 }
 //+------------------------------------------------------------------+
@@ -153,24 +153,24 @@ double test_CPosition::SLtype(int type)
 double test_CPosition::TPtype(int type)
 {
  UpdateSymbolInfo();
- if(type==0)return(SymbInfo.Ask()+_tp*SymbInfo.Point()); // Buy 
- if(type==1)return(SymbInfo.Bid()-_tp*SymbInfo.Point()); // Sell
+ if(type == 0 || type == 2 || type == 4) return(SymbInfo.Ask()+_tp*SymbInfo.Point()); // Buy 
+ if(type == 1 || type == 3 || type == 5) return(SymbInfo.Bid()-_tp*SymbInfo.Point()); // Sell
  return(0);
 }
 
 ENUM_ORDER_TYPE test_CPosition::SLOrderType(int type)
 {
  ENUM_ORDER_TYPE res;
- if(type==0) res = ORDER_TYPE_SELL_STOP; // Buy
- if(type==1) res = ORDER_TYPE_BUY_STOP; // Sell
+ if(type == 0 || type == 2 || type == 4) res = ORDER_TYPE_SELL_STOP; // Buy
+ if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_STOP; // Sell
  return(res);
 }
 
 ENUM_ORDER_TYPE test_CPosition::TPOrderType(int type)
 {
  ENUM_ORDER_TYPE res;
- if(type==0) res = ORDER_TYPE_SELL_LIMIT; // Buy
- if(type==1) res = ORDER_TYPE_BUY_LIMIT; // Sell
+ if(type == 0 || type == 2 || type == 4) res = ORDER_TYPE_SELL_LIMIT; // Buy
+ if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_LIMIT; // Sell
  return(res);
 }
 

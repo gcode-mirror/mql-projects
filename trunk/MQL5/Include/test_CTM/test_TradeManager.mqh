@@ -194,11 +194,8 @@ void test_CTradeManager::OnTrade(datetime history_start)
     for(int i = _positionsToReProcessing.Total()-1; i>=0; i--)
     {
      position = _positionsToReProcessing.At(i);
-     if(!OrderSelect(position.getTakeProfitTicket()) && position.getTakeProfitStatus() == STOPLEVEL_STATUS_NOT_DELETED)
-     {
-      CloseReProcessingPosition(i);
-     }
-     if(!OrderSelect(position.getStopLossTicket()) && position.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+     if((!OrderSelect(position.getTakeProfitTicket()) && position.getTakeProfitStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+      ||(!OrderSelect(position.getStopLossTicket()) && position.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED))
      {
       CloseReProcessingPosition(i);
      }

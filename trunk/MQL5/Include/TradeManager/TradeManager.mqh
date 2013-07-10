@@ -41,6 +41,7 @@ public:
   void ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action);
   bool ClosePosition(long ticket, color Color=CLR_NONE); // Закртыие позиции по тикету
   bool ClosePosition(int i,color Color=CLR_NONE);  // Закрытие позиции по индексу в массиве позиций 
+  bool CloseReProcessingPosition(int i,color Color=CLR_NONE);
   void DoTrailing();
   void OnTick();
   void OnTrade(datetime history_start);
@@ -53,6 +54,12 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
                                  int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
 {
  //Print("=> ",__FUNCTION__," at ",TimeToString(TimeCurrent(),TIME_SECONDS));
+ if (_positionsToReProcessing.Total() > 0) 
+ {
+  //PrintFormat ("Невозможно открыть позицию так как не все предыдущие ордера удалены.");
+  return false;
+ }
+
  int i = 0;
  int total = _openPositions.Total();
  PrintFormat("Открываем позицию %s. Открытых позиций %d",GetNameOP(type), total);
@@ -63,7 +70,6 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    {
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на продажу
     {
-     //PrintFormat("Выбрали %d-ю позицию", i);
      CPosition *pos = _openPositions.At(i);
      //PrintFormat("Выбрали %d-ю позицию символ=%s, магик=%d", i, pos.getSymbol(), pos.getMagic());
      if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic))
@@ -89,7 +95,6 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    {
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на покупку
     {
-     //PrintFormat("Выбрали %d-ю позицию", i);
      CPosition *pos = _openPositions.At(i);
      if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic))
      {
@@ -114,7 +119,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    break;
  }
  
- total = _openPositions.Total();
+ total = _openPositions.Total() + _positionsToReProcessing.Total();
  if (total <= 0)
  {
   //Print("Открытых позиций нет - открываем новую");
@@ -177,11 +182,20 @@ void CTradeManager::OnTrade(datetime history_start)
    int curr_orders = OrdersTotal();
    int curr_deals = HistoryOrdersTotal();
    int curr_history_orders = HistoryDealsTotal();
-   Print("Событие OnTrade");
 //--- сравним текущее состояние с предыдущим   
    if ((curr_positions-prev_positions) != 0 || (curr_volume - prev_volume) != 0) // если изменилось количество или объем позиций
    {
     Print("Событие OnTrade, изменилось количество или объем позиций позиций");
+    for(int i = _positionsToReProcessing.Total()-1; i>=0; i--)
+    {
+     position = _positionsToReProcessing.At(i);
+     if((!OrderSelect(position.getTakeProfitTicket()) && position.getTakeProfitStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+      ||(!OrderSelect(position.getStopLossTicket()) && position.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED))
+     {
+      CloseReProcessingPosition(i);
+     }
+    }
+    
     for(int i = _openPositions.Total()-1; i>=0; i--) // по массиву НАШИХ позиций
     {
      position = _openPositions.At(i); // выберем позицию по ее индексу
@@ -314,6 +328,39 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  else
  {
   _positionsToReProcessing.Add(_openPositions.Detach(i));
+ }
+ return(false);
+}
+
+//+------------------------------------------------------------------+
+/// Delete a virtual position from "not_deleted".
+/// \param [in] i			      position index in array of positions
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
+{
+ CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее индексу
+ switch(pos.getType())
+ {
+  case OP_BUY:
+  case OP_BUYLIMIT:
+  case OP_BUYSTOP:
+   if (trade.PositionOpen(pos.getSymbol(), POSITION_TYPE_BUY, pos.getVolume(), pos.pricetype(POSITION_TYPE_BUY)))
+   {
+    _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
+    return(true);
+   }
+   break;
+  case OP_SELL:
+  case OP_SELLLIMIT:
+  case OP_SELLSTOP:
+   if(trade.PositionOpen(pos.getSymbol(), POSITION_TYPE_SELL, pos.getVolume(), pos.pricetype(POSITION_TYPE_SELL)))
+   {
+    _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
+    return(true);
+   }
+   break;
  }
  return(false);
 }
