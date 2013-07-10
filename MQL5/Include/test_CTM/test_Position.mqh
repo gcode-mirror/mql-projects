@@ -7,6 +7,8 @@
 #property link      "http://www.mql5.com"
 
 #include "test_CTMTradeFunctions.mqh" //подключаем библиотеку для совершения торговых операций
+#include <TradeManager\TradeManagerEnums.mqh>
+#include <CompareDoubles.mqh>
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -26,55 +28,89 @@ private:
    double _tpPrice;
    int _sl, _tp;
    int _minProfit, _trailingStop, _trailingStep;
-   ENUM_POSITION_TYPE _type;
+   ENUM_TM_POSITION_TYPE _type;
+   datetime _expiration;
    
-   bool pos_opened, sl_placed, tp_placed;
-   bool pos_closed, sl_removed, tp_removed;
+   ENUM_STOPLEVEL_STATUS sl_status, tp_status;
+   ENUM_POSITION_STATUS pos_status;
    
-public:
-  void test_CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double volume
-                ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0);
-   ulong getMagic() {return (_magic);};
-   void setMagic(ulong magic) {_magic = magic;};
-   ulong getPositionTicket() {return(_posTicket);};
-   void setPositionTicket(ulong ticket) {_posTicket = ticket;};
-   double getPositionPrice() {return(_posPrice);};
-   string getSymbol() {return (_symbol);};
-   void setSymbol(string symbol) {_symbol = symbol;};
-   double getVolume() {return (_lots);};
-   void setVolume(double lots) {_lots = lots;};
-   ulong getStopLossTicket() {return (_slTicket);};
-   void setStopLossTicket(ulong ticket) {_slTicket = ticket;};
-   double getStopLossPrice() {return(_slPrice);};
-   ulong getTakeProfitTicket() {return (_tpTicket);};
-   void setTakeProfitTicket(ulong ticket) {_tpTicket = ticket;};
-   double getTakeProfitPrice() {return(_tpPrice);};
-   double getMinProfit() {return(_minProfit);};
-   double getTrailingStop() {return(_trailingStop);};
-   double getTrailingStep() {return(_trailingStep);};
-   ENUM_POSITION_TYPE getType() {return (_type);};
-   void setType(ENUM_POSITION_TYPE type) {_type = type;};
-   
-   bool UpdateSymbolInfo();        // Получение актуальной информации по торговому инструменту 
    double pricetype(int type);     // вычисляет уровень открытия в зависимости от типа 
    double SLtype(int type);        // вычисляет уровень стоп-лосса в зависимости от типа
    double TPtype(int type);        // вычисляет уровень тейк-профита в зависимости от типа
    ENUM_ORDER_TYPE SLOrderType(int type);
    ENUM_ORDER_TYPE TPOrderType(int type);
-   bool OpenPosition();
+   ENUM_ORDER_TYPE PositionOrderType(int type);
+   
+public:
+   void test_CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
+                ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
+                
+   ulong getMagic() {return (_magic);};
+   void setMagic(ulong magic) {_magic = magic;};
+   
+   ulong getPositionTicket() {return(_posTicket);};
+   void setPositionTicket(ulong ticket) {_posTicket = ticket;};
+   
+   string getSymbol() {return (_symbol);};
+   void setSymbol(string symbol) {_symbol = symbol;};
+   
+   double getVolume() {return (_lots);};
+   void setVolume(double lots) {_lots = lots;};
+   
+   ulong getStopLossTicket() {return (_slTicket);};
+   void setStopLossTicket(ulong ticket) {_slTicket = ticket;};
+   
+   ulong getTakeProfitTicket() {return (_tpTicket);};
+   void setTakeProfitTicket(ulong ticket) {_tpTicket = ticket;};
+   
+   double getPositionPrice() {return(_posPrice);};
+   double getStopLossPrice() {return(_slPrice);};
+   double getTakeProfitPrice() {return(_tpPrice);};
+   double getMinProfit() {return(_minProfit);};
+   double getTrailingStop() {return(_trailingStop);};
+   double getTrailingStep() {return(_trailingStep);};
+   
+   ENUM_TM_POSITION_TYPE getType() {return (_type);};
+   void setType(ENUM_TM_POSITION_TYPE type) {_type = type;};
+   
+   ENUM_POSITION_STATUS getPositionStatus() {return (pos_status);};
+   void setPositionStatus(ENUM_POSITION_STATUS status) {pos_status = status;};
+   
+   ENUM_STOPLEVEL_STATUS getTakeProfitStatus() {return (tp_status);};
+   void setTakeProfitStatus(ENUM_STOPLEVEL_STATUS status) {tp_status = status;};
+   ENUM_STOPLEVEL_STATUS getStopLossStatus() {return (sl_status);};
+   void setStopLossStatus(ENUM_STOPLEVEL_STATUS status) {sl_status = status;};
+   
+   datetime getExpiration() {return (_expiration);};
+   void setExpiration(datetime expiration) {_expiration = expiration;};
+   
+   bool UpdateSymbolInfo();        // Получение актуальной информации по торговому инструменту 
+   ENUM_POSITION_STATUS OpenPosition();
+   ENUM_STOPLEVEL_STATUS setStopLoss();
+   ENUM_STOPLEVEL_STATUS setTakeProfit();
+   bool ModifyPosition();
+   ENUM_STOPLEVEL_STATUS RemoveStopLoss();
+   ENUM_STOPLEVEL_STATUS RemoveTakeProfit();
+   ENUM_POSITION_STATUS RemovePendingPosition();
    bool ClosePosition();
+   void DoTrailing();
+   bool ReadFromFile (int handle);
+   void WriteToFile (int handle,bool bHeader/*=false*/);
  };
 
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-test_CPosition::test_CPosition(ulong magic, string symbol, ENUM_POSITION_TYPE type, double volume
-                    ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0)
+test_CPosition::test_CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
+                    ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0)
                     : _magic(magic), _symbol(symbol), _type(type), _lots(volume)
                     , _sl(sl), _tp(tp), _minProfit(minProfit), _trailingStop(trailingStop), _trailingStep(trailingStep)
   {
 //--- initialize trade functions class
    trade = new test_CTMTradeFunctions();
+   pos_status = POSITION_STATUS_NOT_INITIALISED;
+   sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
+   tp_status = STOPLEVEL_STATUS_NOT_DEFINED;
   }
  
 //+------------------------------------------------------------------+
@@ -137,114 +173,377 @@ ENUM_ORDER_TYPE test_CPosition::TPOrderType(int type)
  return(res);
 }
 
+
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-bool test_CPosition::OpenPosition()
+ENUM_POSITION_STATUS test_CPosition::OpenPosition()
 {
- if (_type != POSITION_TYPE_BUY && _type != POSITION_TYPE_SELL)
- {
-  Print(" Неправильный тип позиции");
-  return(false);
- }
  UpdateSymbolInfo();
- ENUM_ORDER_TYPE order_type;
  double stopLevel = _Point*SymbolInfoInteger(Symbol(),SYMBOL_TRADE_STOPS_LEVEL);
  double ask = SymbInfo.Ask();
  double bid = SymbInfo.Bid();
  _posPrice = pricetype((int)_type);
- pos_opened = false;
- sl_placed = true;
- tp_placed = true;
- 
- if (trade.PositionOpen(_symbol, _type, _lots, _posPrice))
+
+ switch(_type)
  {
-  _posTicket = trade.ResultDeal();
-  pos_opened = true;
-  PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+  case OP_BUY:
+   if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _lots, _posPrice))
+   {
+    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+    {
+     _posTicket = 0;
+     pos_status = POSITION_STATUS_OPEN;
+    }
+    else
+    {
+     _posTicket = 0;
+     pos_status = POSITION_STATUS_NOT_COMPLETE;
+    }
+   }
+   break;
+  case OP_SELL:
+   if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _lots, _posPrice))
+   {
+    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+    {
+     _posTicket = 0;
+     pos_status = POSITION_STATUS_OPEN;
+    }
+    else
+    {
+     _posTicket = 0;
+     pos_status = POSITION_STATUS_NOT_COMPLETE;
+    }
+   }
+   break;
+  case OP_BUYLIMIT:
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posPrice))
+   {
+    _posTicket = trade.ResultDeal();
+    pos_status = POSITION_STATUS_PENDING;
+    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+   }
+   break;
+  case OP_SELLLIMIT:
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posPrice))
+   {
+    _posTicket = trade.ResultDeal();
+    pos_status = POSITION_STATUS_PENDING;
+    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+   }
+   break;
+  case OP_BUYSTOP:
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posPrice))
+   {
+    _posTicket = trade.ResultDeal();
+    pos_status = POSITION_STATUS_PENDING;
+    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+   }
+   break;
+  case OP_SELLSTOP:
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posPrice))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posPrice))
+   {
+    _posTicket = trade.ResultDeal();
+    pos_status = POSITION_STATUS_PENDING;
+    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+   }
+   break;
+  default:
+   Print("Задан неверный тип позиции");
+   break;
  }
- 
- // Если задан тейкпрофит - устанавливаем
- if (_tp > 0)
- {
-  _tpPrice = TPtype((int)_type);
-  order_type = TPOrderType((int)_type);
-  if (trade.OrderOpen(_symbol, order_type, _lots, _tpPrice))  //, tp + stopLevel, tp - stopLevel);
-  {
-   _tpTicket = trade.ResultOrder();
-   PrintFormat("%s Выставлен тейкпрофит %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket);
-  }
-  else
-  {
-   tp_placed = false;
-   PrintFormat("%s Ошибка при установке тейкпрофита", MakeFunctionPrefix(__FUNCTION__));
-  }
- }
- 
- // Если задан стоплосс - устанавливаем
- if (_sl > 0)
+
+ return(pos_status);
+}
+
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+bool test_CPosition::ModifyPosition()
+{
+ return(false);
+}
+
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+ENUM_STOPLEVEL_STATUS test_CPosition::setStopLoss()
+{
+ ENUM_ORDER_TYPE order_type;
+ if (_sl > 0 && sl_status != STOPLEVEL_STATUS_PLACED)
  {
   _slPrice = SLtype((int)_type);
   order_type = SLOrderType((int)_type);
   if (trade.OrderOpen(_symbol, order_type, _lots, _slPrice)) //, sl + stopLevel, sl - stopLevel);
   {
    _slTicket = trade.ResultOrder();
+   sl_status = STOPLEVEL_STATUS_PLACED;
    PrintFormat("%s Выставлен стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket);     
   }
   else
   {
-   sl_placed = false;
+   sl_status = STOPLEVEL_STATUS_NOT_PLACED;
    PrintFormat("%s Ошибка при установке стоплосса", MakeFunctionPrefix(__FUNCTION__));
   }
  }
-      
- if (pos_opened && sl_placed && tp_placed)
- {
-  return(true);
- }
- return(false);
+ return(sl_status);
 }
+
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+ENUM_STOPLEVEL_STATUS test_CPosition::setTakeProfit()
+{
+ ENUM_ORDER_TYPE order_type;
+ if (_tp > 0 && tp_status != STOPLEVEL_STATUS_PLACED)
+ {
+  _tpPrice = TPtype((int)_type);
+  order_type = TPOrderType((int)_type);
+  if (trade.OrderOpen(_symbol, order_type, _lots, _tpPrice))  //, tp + stopLevel, tp - stopLevel);
+  {
+   _tpTicket = trade.ResultOrder();
+   tp_status = STOPLEVEL_STATUS_PLACED;
+   PrintFormat("%s Выставлен тейкпрофит %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket);
+  }
+  else
+  {
+   tp_status = STOPLEVEL_STATUS_NOT_PLACED;
+   PrintFormat("%s Ошибка при установке тейкпрофита", MakeFunctionPrefix(__FUNCTION__));
+  }
+ }
+ return(tp_status);
+}
+
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+ENUM_STOPLEVEL_STATUS test_CPosition::RemoveStopLoss()
+{
+ if (sl_status == STOPLEVEL_STATUS_PLACED || sl_status == STOPLEVEL_STATUS_NOT_DELETED) // Если ордер был установлен или его не удалось удалить в прошлом
+ {
+  if (trade.OrderDelete(_slTicket))  
+  {
+   sl_status = STOPLEVEL_STATUS_DELETED; // Ордер удалился
+  }
+  else
+  {
+   sl_status = STOPLEVEL_STATUS_NOT_DELETED; // Попытка удаления не прошла
+  }
+ }
+ return (sl_status);
+}
+
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+ENUM_STOPLEVEL_STATUS test_CPosition::RemoveTakeProfit()
+{
+ if (tp_status == STOPLEVEL_STATUS_PLACED || tp_status == STOPLEVEL_STATUS_NOT_DELETED)
+ {
+  if (trade.OrderDelete(_tpTicket))
+  {
+   tp_status = STOPLEVEL_STATUS_DELETED;
+  }
+  else
+  {
+   tp_status = STOPLEVEL_STATUS_NOT_DELETED;
+  }
+ }
+ return (tp_status);
+}
+
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+ENUM_POSITION_STATUS test_CPosition::RemovePendingPosition()
+{
+ if (pos_status == POSITION_STATUS_PENDING || pos_status == POSITION_STATUS_NOT_DELETED)
+ {
+  if (trade.OrderDelete(_posTicket))
+  {
+   pos_status = POSITION_STATUS_DELETED;
+  }
+  else
+  {
+   pos_status = POSITION_STATUS_NOT_DELETED;
+  }
+ }
+ return(pos_status);
+}
+
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
 bool test_CPosition::ClosePosition()
 {
  int i = 0;
- pos_closed = false;
- sl_removed = false;
- tp_removed = false;
  
- if (trade.PositionClose(_symbol, _type, _lots, 50))
+ if (pos_status == POSITION_STATUS_OPEN)
  {
-  pos_closed = true;
- }
- 
- if (sl_placed)
- {
-  if (trade.OrderDelete(_slTicket))
+  switch(_type)
   {
-   sl_removed = true;
-   sl_placed = false;
+   case OP_BUY:
+    if(trade.PositionClose(_symbol, POSITION_TYPE_BUY, _lots, 100))
+    {
+     PrintFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    }
+    break;
+   case OP_SELL:
+    if(trade.PositionClose(_symbol, POSITION_TYPE_SELL, _lots, 100))
+    {
+     PrintFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    }
+    break;
+   default:
+    break;
+  }
+  
+  if (sl_status == STOPLEVEL_STATUS_PLACED)
+  {
+   sl_status = RemoveStopLoss();
+  }
+  
+  if (tp_status == STOPLEVEL_STATUS_PLACED)
+  {
+   tp_status = RemoveTakeProfit();
   }
  }
- else
+ 
+ if (pos_status == POSITION_STATUS_PENDING)
  {
-  sl_removed = true;
-  sl_placed = false;
+  pos_status = RemovePendingPosition();
  }
   
- if (tp_placed)
- {
-  if (trade.OrderDelete(_tpTicket))
-  {
-   tp_removed = true;
-   tp_placed = false;
-  }
- }
- else
- {
-  tp_removed = true;
-  tp_placed = false;
- }
-  
- return(pos_closed && sl_removed && tp_removed);
+ return(pos_status != POSITION_STATUS_NOT_DELETED
+      && sl_status != STOPLEVEL_STATUS_NOT_DELETED
+      && tp_status != STOPLEVEL_STATUS_NOT_DELETED);
 }
 
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+void test_CPosition::DoTrailing(void)
+{
+ UpdateSymbolInfo();
+ double ask = SymbInfo.Ask();
+ double bid = SymbInfo.Bid();
+ double point = SymbInfo.Point();
+ int digits = SymbInfo.Digits();
+ double newSL = 0;
+ 
+ if (getType() == OP_BUY)
+ {
+  if (LessDoubles(_posPrice, bid - _minProfit*point))
+  {
+   if (LessDoubles(_slPrice, bid - (_trailingStop+_trailingStep-1)*point) || _slPrice == 0)
+   {
+    newSL = NormalizeDouble(bid - _trailingStop*point, digits);
+    if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
+    {
+     _slPrice = newSL;
+    } 
+   }
+  }
+ }
+ 
+ if (getType() == OP_SELL)
+ {
+  if (GreatDoubles(_posPrice - ask, _minProfit*point))
+  {
+   if (GreatDoubles(_slPrice, ask+(_trailingStop+_trailingStep-1)*point) || _slPrice == 0) 
+   {
+    newSL = NormalizeDouble(ask + _trailingStop*point, digits);
+    if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
+    {
+     _slPrice = newSL;
+    }
+   }
+  }
+ }
+}
+
+//+------------------------------------------------------------------+
+/// Reads order line from an open file handle.
+/// File should be FILE_CSV format
+/// \param [in] handle					Handle of the CSV file
+/// \param [in] bCreateLineObjects  if true, creates open, sl & tp lines on chart 
+/// \return 				True if successful, false otherwise
+//+------------------------------------------------------------------+
+bool test_CPosition::ReadFromFile(int handle)
+{
+ if(handle<=0)
+ {
+  //LogFile.Log(LOG_PRINT,__FUNCTION__," error: file handle is not valid, returning false");
+  return(false);
+ }
+ pos_status=StringToPositionStatus(FileReadString(handle));
+ if(FileIsEnding(handle)) return(false);
+ _symbol=FileReadString(handle);
+ _type=StringToPositionType(FileReadString(handle));
+ _lots=FileReadNumber(handle);
+ /*
+ m_dblOpenPrice=FileReadNumber(handle);
+ m_dtOpenTime=StringToTime(FileReadString(handle));
+ m_dblStopLoss=FileReadNumber(handle);
+ m_dblTakeProfit=FileReadNumber(handle);
+ m_nTimeStopBars=(int)FileReadNumber(handle);
+ m_strComment=FileReadString(handle);
+ m_lMagic=StringToInteger(FileReadString(handle));
+ m_dblClosePrice=FileReadNumber(handle);
+ m_dtCloseTime=StringToTime(FileReadString(handle));
+ m_dtExpiration=StringToTime(FileReadString(handle));
+ */
+ _posTicket=StringToInteger(FileReadString(handle));
+/*
+ if(!SelfCheck())
+ {
+  LogFile.Log(LOG_PRINT,__FUNCTION__," error - virtual order read from file is not valid, returning false");
+  return(false);
+ }
+*/
+ return(true);
+}
+
+//+------------------------------------------------------------------+
+/// Writes order as a line to an open file handle.
+/// File should be FILE_CSV format
+/// \param [in] handle	handle of the CSV file
+/// \param [in] bHeader 
+//+------------------------------------------------------------------+
+void test_CPosition::WriteToFile(int handle,bool bHeader/*=false*/)
+  {/*
+   if(bHeader)
+      FileWrite(handle,
+                "Status",
+                "Symbol",
+                "Type",
+                "Lots",
+                "OpenPrice",
+                "OpenTime",
+                "StopLoss",
+                "TakeProfit",
+                "TimeStopBars"
+                "Comment",
+                "MagicNumber",
+                "ClosePrice",
+                "CloseTime",
+                "Expiration",
+                "Ticket"
+                );
+   else
+     {
+      //LogFile.Log(LOG_VERBOSE,__FUNCTION__," ",TableRow());
+      FileWrite(handle,
+                ::PositionStatusToStr(Status()),
+                Symbol(),
+                ::PositionTypeToStr(OrderType()),
+                _lots(),
+                OpenPrice(),
+                TimeToString(OpenTime(),TIME_DATE|TIME_SECONDS),
+                StopLoss(),
+                TakeProfit(),
+                TimeStopBars(),
+                Comment(),
+                MagicNumber(),
+                ClosePrice(),
+                TimeToString(CloseTime(),TIME_DATE|TIME_SECONDS),
+                TimeToString(Expiration(),TIME_DATE|TIME_SECONDS),
+                Ticket()
+                );
+     }*/
+  }
