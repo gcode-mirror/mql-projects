@@ -31,13 +31,13 @@ protected:
   
   CPositionArray _positionsToReProcessing;
   CPositionArray _openPositions; ///< Array of open virtual orders for this VOM instance, also persisted as a file
-  CPositionArray _positionsHistory; ///< Array of closed virtual orders, also persisted as a file
+  //CPositionArray _positionsHistory; ///< Array of closed virtual orders, also persisted as a file
   
 public:
   void CTradeManager(ulong magic): _magic(magic), _useSound(true), _nameFileSound("expert.wav"){};
   
-  bool OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume
-                   ,int sl, int tp, int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
+  bool OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
+                    int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
   void ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action);
   bool ClosePosition(long ticket, color Color=CLR_NONE); // Закртыие позиции по тикету
   bool ClosePosition(int i,color Color=CLR_NONE);  // Закрытие позиции по индексу в массиве позиций 
@@ -49,8 +49,8 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume
-                                ,int sl, int tp, int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
+bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
+                                 int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
 {
  //Print("=> ",__FUNCTION__," at ",TimeToString(TimeCurrent(),TIME_SECONDS));
  int i = 0;
@@ -73,10 +73,9 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
        //Print("Есть позиция селл");
        if (ClosePosition(i))
        {
-        Print("Удалили позицию селл");
-        
+        Print("Удалили позицию селл");        
        }
-       else
+       else //добавить в positiionsToReProcessing?
        {
         Print("Ошибка при удалении позиции селл");
        }
@@ -101,7 +100,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
        {
         Print("Удалили позицию бай");
        }
-       else
+       else //добавить в positiionsToReProcessing?
        {
         Print("Ошибка при удалении позиции бай");
        }
