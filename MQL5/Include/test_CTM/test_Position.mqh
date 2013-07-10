@@ -34,9 +34,6 @@ private:
    ENUM_STOPLEVEL_STATUS sl_status, tp_status;
    ENUM_POSITION_STATUS pos_status;
    
-   double pricetype(int type);     // вычисляет уровень открытия в зависимости от типа 
-   double SLtype(int type);        // вычисляет уровень стоп-лосса в зависимости от типа
-   double TPtype(int type);        // вычисляет уровень тейк-профита в зависимости от типа
    ENUM_ORDER_TYPE SLOrderType(int type);
    ENUM_ORDER_TYPE TPOrderType(int type);
    ENUM_ORDER_TYPE PositionOrderType(int type);
@@ -85,6 +82,10 @@ public:
    void setExpiration(datetime expiration) {_expiration = expiration;};
    
    bool UpdateSymbolInfo();        // Получение актуальной информации по торговому инструменту 
+   double pricetype(int type);     // вычисляет уровень открытия в зависимости от типа 
+   double SLtype(int type);        // вычисляет уровень стоп-лосса в зависимости от типа
+   double TPtype(int type);        // вычисляет уровень тейк-профита в зависимости от типа
+   
    ENUM_POSITION_STATUS OpenPosition();
    ENUM_STOPLEVEL_STATUS setStopLoss();
    ENUM_STOPLEVEL_STATUS setTakeProfit();
