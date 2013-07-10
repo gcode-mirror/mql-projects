@@ -71,11 +71,11 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
       if (pos.getType() == OP_SELL || pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
       {
        //Print("Есть позиция селл");
-       if (ClosePosition(i))
-       {
+       if (ClosePosition(i)) 
+       {//удаление из openPositions и в случае неудачи добавление в positionsToReProcessing происходит в ClosePosition
         Print("Удалили позицию селл");        
        }
-       else //добавить в positiionsToReProcessing?
+       else 
        {
         Print("Ошибка при удалении позиции селл");
        }
@@ -97,10 +97,10 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
       {
        //Print("Есть позиция бай");
        if (ClosePosition(i))
-       {
+       {//удаление из openPositions и в случае неудачи добавление в positionsToReProcessing происходит в ClosePosition
         Print("Удалили позицию бай");
        }
-       else //добавить в positiionsToReProcessing?
+       else 
        {
         Print("Ошибка при удалении позиции бай");
        }
