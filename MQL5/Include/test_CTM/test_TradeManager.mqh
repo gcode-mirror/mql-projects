@@ -74,7 +74,6 @@ bool test_CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,
        if (ClosePosition(i))
        {
         Print("Удалили позицию селл");
-        
        }
        else
        {
