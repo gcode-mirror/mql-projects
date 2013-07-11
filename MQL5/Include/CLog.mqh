@@ -8,24 +8,24 @@
 #property version   "1.00"
 
 #include <config_CLog.mqh>
-#include <ErrorDescription.mqh> 
-#define DAY 60*60*24
-//#include <ErrorDescription.mqh>  can't open
+//#include <ErrorDescription.mqh> 
+#define DAY  86400        //60*60*24
+#define MgB  1048576      //1024*1024
 //-----------------Global-variables----------------------------------+
 enum ENUM_OUTPUT
 {
  OUT_FILE = 0,        // Создает log-файл
  OUT_ALERT = 1,       // Выводит log алертами
- OUT_COMMENT = 2,     // Выводит log комментариями
+ OUT_COMMENT = 2     // Выводит log комментариями
 };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 enum ENUM_LOGLEVEL     //уровень логирования
 {
- LOG_NONE = 0,        //вся информация о действиях робота
- LOG_DEBUG = 1,       //информация для дебага
- LOG_MAIN = 2,        //никакой информации
+ LOG_NONE = 0,        //никакой информации
+ LOG_MAIN = 1,        //ключевая информация
+ LOG_DEBUG = 2       //информация для дебага
 };
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -38,10 +38,13 @@ class CLog
   int _limit_size;               // предельный размер log-файла в Mb
   string _catalog_name;          // имя каталога для хранения логов
   int _expiration_time;          // время жизни лога в днях
+  string _current_filename;
 
  public:
   CLog();
  ~CLog();
+  bool Check();
+  void Write(ENUM_LOGLEVEL level, string str);
   string CreateNameBase();
   string MakeLogFilenameBase();
   string CreateNameDate();
@@ -62,6 +65,8 @@ CLog::CLog()
  _limit_size = CONF_LIMIT_SIZE;          
  _catalog_name = CONF_CATALOG_NAME;   
  _expiration_time = CONF_EXPIRATION_TIME;
+ _current_filename = MakeLogFilename(TimeCurrent());
+ CreateLogFile(TimeCurrent());
 }
 //+------------------------------------------------------------------+
 CLog::~CLog()
@@ -77,12 +82,59 @@ string CLog::CreateNameBase()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-string CLog::CreateNameDate()
+bool CLog::Check()
 {
- string result;
- StringConcatenate(result,CreateNameBase(), "_", (string)TimeLocal());
- return(result);
+ static int n = 1;
+ if(LogFileDate(_current_filename) != TimeCurrent())
+ {
+  _current_filename = MakeLogFilename(TimeCurrent());
+  n = 1;
+  return true;
+ }
+ else
+ {
+  int fhandle = FileOpen(_current_filename, FILE_WRITE|FILE_TXT);
+  if(FileSize(fhandle) > CONF_LIMIT_SIZE*MgB)
+  {
+   StringConcatenate(_current_filename, "_", n);  // заменить когда n> 1  не добавлять а заменять номер n
+   n++; 
+   FileClose(fhandle);
+   return true;
+  }
+ }
+ return false;
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void CLog::Write(ENUM_LOGLEVEL level, string str)
+{
+ Check();
+ if(level < _level)
+ {
+  switch(_output_type)
+  {
+   case OUT_FILE:
+   {
+    int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_TXT);
+ 
+    if(filehandle != INVALID_HANDLE)
+    {
+     FileWrite(filehandle, (TimeToString(TimeCurrent(), TIME_SECONDS) + " " + str));
+     FileClose(filehandle);
+    }
+    break;
+   }
+   case OUT_COMMENT:
+    Comment(__FUNCTION__, str);
+    break;
+   case OUT_ALERT:
+    Alert(__FUNCTION__, str);
+    break;
+  }
+ }
+}
+
 //+------------------------------------------------------------------+
 bool CLog::CreateLogFile(datetime dt)
 {
@@ -93,7 +145,7 @@ bool CLog::CreateLogFile(datetime dt)
  if(filehandle==INVALID_HANDLE)
  {
   error=GetLastError();
-  Print("Не удалось создать log-файл с именем : ",name," Ошибка ",error, " = ", ErrorDescription(error), ".");
+  Print("Не удалось создать log-файл с именем : ",name," Ошибка ",error, ".");
   return(false);
  }
  
@@ -121,7 +173,7 @@ void CLog::DeleteLogFile()
     ResetLastError();
     search_file = _catalog_name+ "\\" + MQL5InfoString(MQL5_PROGRAM_NAME) + "\\" + search_file;
     FileDelete(search_file); 
-    PrintFormat("Файл %s удален! Истек период ожидания.Error = %s",__DATETIME__ , search_file, ErrorDescription(GetLastError()));
+    PrintFormat("Файл %s удален! Истек период ожидания.Error = %d",__DATETIME__ , search_file, GetLastError());
    }
   }
   while(FileFindNext(search_handle,search_file));

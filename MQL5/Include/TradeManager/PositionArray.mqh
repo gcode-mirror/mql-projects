@@ -37,6 +37,7 @@ public:
    string            SummaryList();
    void              Clear(const long nMagic);
    void              Clear(const string strSymbol);
+   string            PrintToString();
    CPosition    *Position(int nIndex){return((CPosition*)CArrayObj::At(nIndex));}
 
   };
@@ -297,3 +298,17 @@ void CPositionArray::Clear(const string strSymbol)
      }
   }
 //+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+string CPositionArray::PrintToString()
+{
+ int total = Total();
+ string result;
+ CPosition *pos;
+ for (int i = total-1; i >= 0; i--)
+ {
+  pos = Position(i);
+  StringConcatenate(result, "[", i, "] = {", pos.getMagic(), ", ", pos.getPositionPrice(), ", ", PositionStatusToStr(pos.getPositionStatus()), ", ", GetNameOP(pos.getType()), "}" );
+ }
+ return result;
+}

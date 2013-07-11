@@ -273,6 +273,7 @@ void test_CTradeManager::OnTrade(datetime history_start)
 //+------------------------------------------------------------------+
 void test_CTradeManager::OnTick()
 {
+ //PrintFormat("выполняется OnTick");
  for(int i = _positionsToReProcessing.Total()-1; i>=0; i--) // по массиву позиций на доработку
  {
   test_CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее тикету
