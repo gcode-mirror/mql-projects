@@ -16,6 +16,7 @@
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
+#include <CLog.mqh>
 
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
@@ -28,13 +29,14 @@ protected:
   ulong _magic;
   bool _useSound;
   string _nameFileSound;   // Наименование звукового файла
+  CLog _log;
   
   CPositionArray _positionsToReProcessing;
   CPositionArray _openPositions; ///< Array of open virtual orders for this VOM instance, also persisted as a file
   //CPositionArray _positionsHistory; ///< Array of closed virtual orders, also persisted as a file
   
 public:
-  void CTradeManager(ulong magic): _magic(magic), _useSound(true), _nameFileSound("expert.wav"){};
+  void CTradeManager(ulong magic): _magic(magic), _useSound(true), _nameFileSound("expert.wav") { _log.Write(LOG_DEBUG, "Создание объекта CTradeManager"); };
   
   bool OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
                     int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
@@ -53,16 +55,17 @@ public:
 bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
                                  int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
 {
- //Print("=> ",__FUNCTION__," at ",TimeToString(TimeCurrent(),TIME_SECONDS));
+ _log.Write(LOG_DEBUG, ("BEGIN " + __FUNCTION__));
  if (_positionsToReProcessing.Total() > 0) 
  {
-  //PrintFormat ("Невозможно открыть позицию так как не все предыдущие ордера удалены.");
+  _log.Write(LOG_DEBUG, "Невозможно открыть позицию так как не все предыдущие ордера удалены.");
   return false;
  }
 
  int i = 0;
  int total = _openPositions.Total();
- PrintFormat("Открываем позицию %s. Открытых позиций %d",GetNameOP(type), total);
+ _log.Write(LOG_DEBUG, ("Открываем позицию " + GetNameOP(type) + ". Открытых позиций на данный момент: " + total));
+ _log.Write(LOG_DEBUG, _openPositions.PrintToString());
  switch(type)
  {
   case OP_BUY:
@@ -76,14 +79,13 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
      {
       if (pos.getType() == OP_SELL || pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
       {
-       //Print("Есть позиция селл");
        if (ClosePosition(i)) 
        {//удаление из openPositions и в случае неудачи добавление в positionsToReProcessing происходит в ClosePosition
-        Print("Удалили позицию селл");        
+        _log.Write(LOG_DEBUG, "Удалили позицию sell.");        
        }
        else 
        {
-        Print("Ошибка при удалении позиции селл");
+        _log.Write(LOG_DEBUG, "Ошибка при удалении позиции sell. Позиция добавлена в positionsToReProcessing");
        }
       }
      }
@@ -100,14 +102,13 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
      {
       if (pos.getType() == OP_BUY || pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
       {
-       //Print("Есть позиция бай");
        if (ClosePosition(i))
        {//удаление из openPositions и в случае неудачи добавление в positionsToReProcessing происходит в ClosePosition
-        Print("Удалили позицию бай");
+        _log.Write(LOG_DEBUG, "Удалили позицию buy");
        }
        else 
        {
-        Print("Ошибка при удалении позиции бай");
+        _log.Write(LOG_DEBUG, "Error: при удалении позиции buy. Позиция добавлена в positionsToReProcessing");
        }
       }
      }
@@ -115,19 +116,19 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    }
    break;
   default:
-   //LogFile.Log(LOG_PRINT,__FUNCTION__," error: Invalid ENUM_VIRTUAL_ORDER_TYPE");
+   _log.Write(LOG_DEBUG, "Error: Invalid ENUM_VIRTUAL_ORDER_TYPE");
    break;
  }
  
  total = _openPositions.Total() + _positionsToReProcessing.Total();
  if (total <= 0)
  {
-  //Print("Открытых позиций нет - открываем новую");
+  _log.Write(LOG_DEBUG, "openPositions и positionsToReProcessing пусты - открываем новую позицию");
   position = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
   ENUM_POSITION_STATUS openingResult = position.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
   {
-   PrintFormat("%s, magic=%d, symb=%s, type=%s, vol=%.02f, sl=%.06f, tp=%.06f", MakeFunctionPrefix(__FUNCTION__),position.getMagic(), position.getSymbol(), GetNameOP(position.getType()), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice());
+   _log.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, vol=%.02f, sl=%.06f, tp=%.06f", MakeFunctionPrefix(__FUNCTION__),position.getMagic(), position.getSymbol(), GetNameOP(position.getType()), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice()));
    _openPositions.Add(position);
    return(true); // Если удачно открыли позицию
   }
@@ -136,7 +137,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    return(false); // Если открыть позицию не удалось
   }
  }
- PrintFormat("Осталось открытых позиций %d", total);
+ _log.Write(LOG_DEBUG, StringFormat("Осталось открытых позиций %d", total));
  return(true); // Если остались открытые позиции, значит не надо открываться 
 }
 //+------------------------------------------------------------------+ 
@@ -364,3 +365,4 @@ bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
  }
  return(false);
 }
+

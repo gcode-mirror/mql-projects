@@ -11,7 +11,7 @@
 //+------------------------------------------------------------------+
 #include <CompareDoubles.mqh>
 #include <CIsNewBar.mqh>
-#include <test_CTM\test_TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
+#include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -39,7 +39,7 @@ input int stopPriceDifference = 20;
 string symbol;                               //переменная для хранения символа
 datetime history_start;
 
-test_CTradeManager order(_magic);
+CTradeManager order(_magic);
 MqlTick tick;
 
 int handleMACD;
@@ -89,10 +89,10 @@ int OnInit()
    }
 
    //устанавливаем индексацию для массивов ХХХ_buf
-   ArraySetAsSeries(MACD_buf, false);
+   /*ArraySetAsSeries(MACD_buf, false);
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
-   ArraySetAsSeries(close_buf, false);
+   ArraySetAsSeries(close_buf, false);*/
 
    globalMax = 0;
    globalMin = 0;
