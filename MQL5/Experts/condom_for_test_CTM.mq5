@@ -89,10 +89,8 @@ int OnInit()
    }
 
    //устанавливаем индексацию для массивов ХХХ_buf
-   /*ArraySetAsSeries(MACD_buf, false);
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
-   ArraySetAsSeries(close_buf, false);*/
 
    globalMax = 0;
    globalMin = 0;

@@ -8,11 +8,9 @@
 #property version   "1.00"
 
 #include <TradeManager\TradeManagerEnums.mqh>
-//#include "Position.mqh"
 #include "test_Position.mqh"
 #include "test_PositionArray.mqh"
 #include "test_CTMTradeFunctions.mqh"
-//#include "StringUtilities.mqh"
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>

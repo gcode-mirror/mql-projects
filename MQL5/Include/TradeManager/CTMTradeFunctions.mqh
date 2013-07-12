@@ -6,7 +6,7 @@
 #property copyright "Copyright 2012, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 
-#include "StringUtilities.mqh"
+#include <StringUtilities.mqh>
 #include <Trade\Trade.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>

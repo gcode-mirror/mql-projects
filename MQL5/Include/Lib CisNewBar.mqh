@@ -117,16 +117,16 @@ bool CisNewBar::isNewBar(datetime newbar_time)
   {
    //--- Инициализация защищенных переменных
    m_new_bars = 0;      // Количество новых баров
-   m_retcode  = 0;      // Код результата определения нового бара: 0 - ошибки нет
-   m_comment  =__FUNCTION__+" Проверка появления нового бара завершилась успешно";
+   m_retcode = 0;      // Код результата определения нового бара: 0 - ошибки нет
+   m_comment = __FUNCTION__+" Проверка появления нового бара завершилась успешно";
    //---
    
    //--- На всякий случай проверим: не оказалось ли время предположительно нового бара m_newbar_time меньше старого бара m_lastbar_time? 
    if(m_lastbar_time>newbar_time)
      { // Если новый бар старее старого бара, то выдаем сообщение об ошибке
-      m_comment=__FUNCTION__+" Ошибка синхронизации: время предыдущего бара "+TimeToString(m_lastbar_time)+
+      m_comment = __FUNCTION__+" Ошибка синхронизации: время предыдущего бара "+TimeToString(m_lastbar_time)+
                                                   ", время запроса нового бара "+TimeToString(newbar_time);
-      m_retcode=-1;     // Код результата определения нового бара: возвращаем -1 - ошибка синхронизации
+      m_retcode = -1;     // Код результата определения нового бара: возвращаем -1 - ошибка синхронизации
       return(false);
      }
    //---
@@ -134,7 +134,7 @@ bool CisNewBar::isNewBar(datetime newbar_time)
    //--- если это первый вызов 
    if(m_lastbar_time==0)
      {  
-      m_lastbar_time=newbar_time; //--- установим время последнего бара и выйдем
+      m_lastbar_time = newbar_time; //--- установим время последнего бара и выйдем
       m_comment   =__FUNCTION__+" Инициализация lastbar_time="+TimeToString(m_lastbar_time);
       return(false);
      }   
@@ -144,7 +144,7 @@ bool CisNewBar::isNewBar(datetime newbar_time)
    if(m_lastbar_time<newbar_time)       
      { 
       m_new_bars=1;               // Количество новых баров
-      m_lastbar_time=newbar_time; // запоминаем время последнего бара
+      m_lastbar_time = newbar_time; // запоминаем время последнего бара
       return(true);
      }
    //---
@@ -162,14 +162,14 @@ bool CisNewBar::isNewBar(datetime newbar_time)
 int CisNewBar::isNewBar()
   {
    datetime newbar_time;
-   datetime lastbar_time=m_lastbar_time;
+   datetime lastbar_time = m_lastbar_time;
       
    //--- Запрашиваем время открытия последнего бара:
    ResetLastError(); // Устанавливает значение предопределенной переменной _LastError в ноль.
    if(!SeriesInfoInteger(m_symbol,m_period,SERIES_LASTBAR_DATE,newbar_time))
      { // Если запрос был неудачным, то выдаем сообщение об ошибке:
-      m_retcode=GetLastError();  // Код результата определения нового бара: записываем значение переменной _LastError
-      m_comment=__FUNCTION__+" Ошибка при получении времени открытия последнего бара: "+IntegerToString(m_retcode);
+      m_retcode = GetLastError();  // Код результата определения нового бара: записываем значение переменной _LastError
+      m_comment = __FUNCTION__+" Ошибка при получении времени открытия последнего бара: "+IntegerToString(m_retcode);
       return(0);
      }
    //---
@@ -178,7 +178,7 @@ int CisNewBar::isNewBar()
    if(!isNewBar(newbar_time)) return(0);
    
    //---Уточним количество новых баров:
-   m_new_bars=Bars(m_symbol,m_period,lastbar_time,newbar_time)-1;
+   m_new_bars=Bars(m_symbol, m_period, lastbar_time, newbar_time) - 1;
 
    //--- дошли до этого места - значит появился новый бар(ы), вернем их количество:
    return(m_new_bars);

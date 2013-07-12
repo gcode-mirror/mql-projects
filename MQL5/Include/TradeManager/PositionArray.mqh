@@ -12,7 +12,7 @@
 //#include "Position.mqh"
 #include "PositionOnPendingOrders.mqh"
 #include <Arrays/ArrayObj.mqh>
-#include "StringUtilities.mqh"
+#include <StringUtilities.mqh>
 //+------------------------------------------------------------------+
 /// Stores an array of virtual orders.
 //+------------------------------------------------------------------+
