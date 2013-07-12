@@ -110,16 +110,17 @@ bool CLog::Check()
 void CLog::Write(ENUM_LOGLEVEL level, string str)
 {
  Check();
- if(level < _level)
+ if(level <= _level)
  {
   switch(_output_type)
   {
    case OUT_FILE:
    {
-    int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_TXT);
+    int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_READ|FILE_TXT);
  
     if(filehandle != INVALID_HANDLE)
     {
+     FileSeek(filehandle, 0, SEEK_END);
      FileWrite(filehandle, (TimeToString(TimeCurrent(), TIME_SECONDS) + " " + str));
      FileClose(filehandle);
     }
@@ -140,7 +141,7 @@ bool CLog::CreateLogFile(datetime dt)
 {
  int error=0;
  string name = MakeLogFilename(dt);
- int filehandle=FileOpen(name,FILE_WRITE|FILE_TXT);
+ int filehandle=FileOpen(name,FILE_WRITE|FILE_READ|FILE_TXT);
  
  if(filehandle==INVALID_HANDLE)
  {
@@ -149,7 +150,6 @@ bool CLog::CreateLogFile(datetime dt)
   return(false);
  }
  
- FileWrite(filehandle, "HELLO WORLD!!!");
  Print("Удалось создать log-файл с именем : ",name);
  FileClose(filehandle);
  return(true);
