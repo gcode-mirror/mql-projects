@@ -60,12 +60,11 @@ class CLog
 //+------------------------------------------------------------------+
 CLog::CLog()
 {
- _output_type=OUT_FILE;
+ _output_type=OUT_ALERT;
  _level = CONF_LOG_LEVEL;         
  _limit_size = CONF_LIMIT_SIZE;          
  _catalog_name = CONF_CATALOG_NAME;   
  _expiration_time = CONF_EXPIRATION_TIME;
- _current_filename = MakeLogFilename(TimeCurrent());
  CreateLogFile(TimeCurrent());
 }
 //+------------------------------------------------------------------+
@@ -116,7 +115,7 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
   {
    case OUT_FILE:
    {
-    int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_READ|FILE_TXT);
+    int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_READ|FILE_TXT|FILE_COMMON);
  
     if(filehandle != INVALID_HANDLE)
     {
@@ -124,6 +123,8 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
      FileWrite(filehandle, (TimeToString(TimeCurrent(), TIME_SECONDS) + " " + str));
      FileClose(filehandle);
     }
+    else
+     Alert("Bad filehandle.Name file:", _current_filename);
     break;
    }
    case OUT_COMMENT:
@@ -140,17 +141,17 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
 bool CLog::CreateLogFile(datetime dt)
 {
  int error=0;
- string name = MakeLogFilename(dt);
- int filehandle=FileOpen(name,FILE_WRITE|FILE_READ|FILE_TXT);
+ _current_filename = MakeLogFilename(dt);
+ int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_READ|FILE_TXT|FILE_COMMON);
  
  if(filehandle==INVALID_HANDLE)
  {
   error=GetLastError();
-  Print("Не удалось создать log-файл с именем : ",name," Ошибка ",error, ".");
+  Print("Не удалось создать log-файл с именем : ", _current_filename," Ошибка ",error, ".");
   return(false);
  }
  
- Print("Удалось создать log-файл с именем : ",name);
+ Print("Удалось создать log-файл с именем : ", _current_filename);
  FileClose(filehandle);
  return(true);
 }
@@ -269,3 +270,6 @@ string CLog::PeriodString()
       default: return("error: Unknown period "+(string)_Period);
      }
   }
+  //+------------------------------------------------------------------+
+  
+  CLog log_file;

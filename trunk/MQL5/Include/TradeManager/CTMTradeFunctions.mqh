@@ -10,6 +10,7 @@
 #include <Trade\Trade.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
+#include <CLog.mqh>
 
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
@@ -66,18 +67,18 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
   
   while (!IsStopped() && i <= tryNumber)
   {
-   Print("Current action:", m_request.action);
+   log_file.Write(LOG_DEBUG, StringFormat("Current action:", m_request.action));
    res = false;
    if(OrderCheck(m_request,m_check_result)==true)
    {
     ResetLastError();
-    PrintFormat("%s Проверка пройдена, пытаемся удалить ордер, попытка №%d", MakeFunctionPrefix(__FUNCTION__), i+1);
+    log_file.Write(LOG_DEBUG, StringFormat("%s Проверка пройдена, пытаемся удалить ордер, попытка №%d", MakeFunctionPrefix(__FUNCTION__), i+1));
     OrderSend(m_request,m_result);
     switch (m_result.retcode)
     {
      case TRADE_RETCODE_DONE:
       res = true;
-      PrintFormat("%s Ордер успешно удален", MakeFunctionPrefix(__FUNCTION__));
+      log_file.Write(LOG_DEBUG, StringFormat("%s Ордер успешно удален", MakeFunctionPrefix(__FUNCTION__)));
       break;
      case TRADE_RETCODE_REQUOTE:
      case TRADE_RETCODE_INVALID_STOPS:
@@ -88,7 +89,7 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
      case TRADE_RETCODE_INVALID:
      default:
       res = false;
-      PrintFormat("%s Ордер не удален. Ошибка: %s", MakeFunctionPrefix(__FUNCTION__), ReturnCodeDescription(m_result.retcode));
+      log_file.Write(LOG_DEBUG, StringFormat("%s Ордер не удален. Ошибка: %s", MakeFunctionPrefix(__FUNCTION__), ReturnCodeDescription(m_result.retcode)));
       break;
     }
     result_code = m_result.retcode;
@@ -101,7 +102,7 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
    if (res) break;
    else
    {
-     Print("при удалении ордера ", ticket, " возникла ошибка: ", result_code, "; GetLastError() = ", GetLastError(), "; Bid = ", m_result.bid, "; Ask = ", m_result.ask, "; Price = ", m_result.price);
+     log_file.Write(LOG_DEBUG, ("при удалении ордера "+ ticket + " возникла ошибка: " + result_code + "; GetLastError() = " + GetLastError() + "; Bid = " + m_result.bid + "; Ask = " + m_result.ask + "; Price = " + m_result.price));
    }
    i++;
   }
@@ -130,7 +131,7 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
    order_type = ORDER_TYPE_SELL;
    break;
   default:
-   Print("Неправильный тип позиции");
+   log_file.Write(LOG_DEBUG, "Неправильный тип позиции");
    return(false);
  }
  return(PositionOpen(symbol, order_type, volume, price, sl, tp, comment));

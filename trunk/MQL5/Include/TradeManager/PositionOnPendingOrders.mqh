@@ -11,6 +11,7 @@
 #include "CTMTradeFunctions.mqh" //подключаем библиотеку для совершения торговых операций
 #include <StringUtilities.mqh>
 #include <CompareDoubles.mqh>
+#include <CLog.mqh>
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -197,7 +198,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_BUY:
    if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _lots, _posPrice))
    {
-    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
      _posTicket = 0;
@@ -213,7 +214,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_SELL:
    if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _lots, _posPrice))
    {
-    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
      _posTicket = 0;
@@ -231,7 +232,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _posTicket = trade.ResultDeal();
     pos_status = POSITION_STATUS_PENDING;
-    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
    }
    break;
   case OP_SELLLIMIT:
@@ -239,7 +240,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _posTicket = trade.ResultDeal();
     pos_status = POSITION_STATUS_PENDING;
-    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
    }
    break;
   case OP_BUYSTOP:
@@ -247,7 +248,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _posTicket = trade.ResultDeal();
     pos_status = POSITION_STATUS_PENDING;
-    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
    }
    break;
   case OP_SELLSTOP:
@@ -255,7 +256,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _posTicket = trade.ResultDeal();
     pos_status = POSITION_STATUS_PENDING;
-    PrintFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
    }
    break;
   default:
@@ -286,12 +287,12 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
   {
    _slTicket = trade.ResultOrder();
    sl_status = STOPLEVEL_STATUS_PLACED;
-   PrintFormat("%s Выставлен стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket);     
+   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket));     
   }
   else
   {
    sl_status = STOPLEVEL_STATUS_NOT_PLACED;
-   PrintFormat("%s Ошибка при установке стоплосса", MakeFunctionPrefix(__FUNCTION__));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при установке стоплосса", MakeFunctionPrefix(__FUNCTION__)));
   }
  }
  return(sl_status);
@@ -310,12 +311,12 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
   {
    _tpTicket = trade.ResultOrder();
    tp_status = STOPLEVEL_STATUS_PLACED;
-   PrintFormat("%s Выставлен тейкпрофит %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket);
+   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен тейкпрофит %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket));
   }
   else
   {
    tp_status = STOPLEVEL_STATUS_NOT_PLACED;
-   PrintFormat("%s Ошибка при установке тейкпрофита", MakeFunctionPrefix(__FUNCTION__));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при установке тейкпрофита", MakeFunctionPrefix(__FUNCTION__)));
   }
  }
  return(tp_status);
@@ -388,13 +389,13 @@ bool CPosition::ClosePosition()
    case OP_BUY:
     if(trade.PositionClose(_symbol, POSITION_TYPE_BUY, _lots, config.Deviation))
     {
-     PrintFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+     log_file.Write(LOG_DEBUG, StringFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     }
     break;
    case OP_SELL:
     if(trade.PositionClose(_symbol, POSITION_TYPE_SELL, _lots, config.Deviation))
     {
-     PrintFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket);
+     log_file.Write(LOG_DEBUG, StringFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     }
     break;
    default:
