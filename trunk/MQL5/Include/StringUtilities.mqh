@@ -552,7 +552,7 @@ string TimeToExcelString(const datetime dt)
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-string MonthTo3String(int nMonth)
+string MonthToString(int nMonth)
   {
    switch(nMonth)
      {
