@@ -252,7 +252,6 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    break;
   case OP_SELLSTOP:
    if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posPrice))
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posPrice))
    {
     _posTicket = trade.ResultDeal();
     pos_status = POSITION_STATUS_PENDING;
