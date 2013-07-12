@@ -11,7 +11,7 @@
 #include <TradeManager\TradeManagerEnums.mqh>
 #include "test_Position.mqh"
 #include <Arrays/ArrayObj.mqh>
-#include <TradeManager\StringUtilities.mqh>
+#include <StringUtilities.mqh>
 //+------------------------------------------------------------------+
 /// Stores an array of virtual orders.
 //+------------------------------------------------------------------+

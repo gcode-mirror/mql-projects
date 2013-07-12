@@ -12,7 +12,7 @@
 #include "PositionOnPendingOrders.mqh"
 #include "PositionArray.mqh"
 #include "CTMTradeFunctions.mqh"
-#include "StringUtilities.mqh"
+//#include <StringUtilities.mqh>
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
