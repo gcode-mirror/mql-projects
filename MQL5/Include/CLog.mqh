@@ -60,12 +60,13 @@ class CLog
 //+------------------------------------------------------------------+
 CLog::CLog()
 {
- _output_type = OUT_ALERT;
+ _output_type = OUT_FILE;
  _level = CONF_LOG_LEVEL;         
  _limit_size = CONF_LIMIT_SIZE;          
  _catalog_name = CONF_CATALOG_NAME;   
  _expiration_time = CONF_EXPIRATION_TIME;
  CreateLogFile(TimeCurrent());
+ Alert("ALERT CLOG");
 }
 //+------------------------------------------------------------------+
 CLog::~CLog()
@@ -115,10 +116,12 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
   {
    case OUT_FILE:
    {
+    Alert("FILE");
     int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_READ|FILE_TXT|FILE_COMMON);
  
     if(filehandle != INVALID_HANDLE)
     {
+     Alert("WRITE  ", _current_filename);
      FileSeek(filehandle, 0, SEEK_END);
      FileWrite(filehandle, (TimeToString(TimeCurrent(), TIME_SECONDS) + " " + str));
      FileClose(filehandle);
@@ -147,11 +150,11 @@ bool CLog::CreateLogFile(datetime dt)
  if(filehandle==INVALID_HANDLE)
  {
   error=GetLastError();
-  Print("Не удалось создать log-файл с именем : ", _current_filename," Ошибка ",error, ".");
+  Alert("Не удалось создать log-файл с именем : ", _current_filename," Ошибка ",error, ".");
   return(false);
  }
  
- Print("Удалось создать log-файл с именем : ", _current_filename);
+ Alert("Удалось создать log-файл с именем : ", _current_filename);
  FileClose(filehandle);
  return(true);
 }

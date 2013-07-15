@@ -24,7 +24,6 @@ class CTradeManager
 {
 protected:
   CPosition *position;
-  CTMTradeFunctions trade;
   ulong _magic;
   bool _useSound;
   string _nameFileSound;   // Наименование звукового файла
@@ -53,7 +52,6 @@ public:
 bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
                                  int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
 {
- //log_file.Write(LOG_DEBUG, StringFormat("BEGIN %s",__FUNCTION__));
  if (_positionsToReProcessing.Total() > 0) 
  {
   log_file.Write(LOG_DEBUG, "Невозможно открыть позицию так как еще есть позиции в positionsToReProcessing.");
@@ -116,19 +114,16 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, vol=%.02f, sl=%.06f, tp=%.06f", MakeFunctionPrefix(__FUNCTION__),position.getMagic(), position.getSymbol(), GetNameOP(position.getType()), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice()));
    _openPositions.Add(position);
-   //log_file.Write(LOG_DEBUG, StringFormat("END %s", MakeFunctionPrefix(__FUNCTION__)));
    return(true); // Если удачно открыли позицию
   }
   else
   {
    error = GetLastError();
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось открыть позицию.Error{%d} = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error)));
-   //log_file.Write(LOG_DEBUG, StringFormat("END %s",__FUNCTION__));
    return(false); // Если открыть позицию не удалось
   }
  }
  log_file.Write(LOG_DEBUG, StringFormat("%s Осталось открытых позиций %d", MakeFunctionPrefix(__FUNCTION__), total));
- //log_file.Write(LOG_DEBUG, StringFormat("END %s",__FUNCTION__));
  return(true); // Если остались открытые позиции, значит не надо открываться 
 }
 //+------------------------------------------------------------------+ 
@@ -246,7 +241,6 @@ void CTradeManager::OnTrade(datetime history_start)
      }
     }
    }
-   //log_file.Write(LOG_DEBUG, "");
 //--- запомним состояние счета
    prev_volume = curr_volume;
    prev_type = curr_type;

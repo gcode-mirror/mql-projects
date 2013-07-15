@@ -12,6 +12,7 @@
 #include <CompareDoubles.mqh>
 #include <CIsNewBar.mqh>
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
+#include <CLog.mqh>
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
