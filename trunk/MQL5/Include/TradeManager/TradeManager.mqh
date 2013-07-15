@@ -8,11 +8,9 @@
 #property version   "1.00"
 
 #include "TradeManagerEnums.mqh"
-//#include "Position.mqh"
 #include "PositionOnPendingOrders.mqh"
 #include "PositionArray.mqh"
 #include "CTMTradeFunctions.mqh"
-//#include <StringUtilities.mqh>
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
@@ -55,7 +53,7 @@ public:
 bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
                                  int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
 {
- log_file.Write(LOG_DEBUG, StringFormat("BEGIN %s",__FUNCTION__));
+ //log_file.Write(LOG_DEBUG, StringFormat("BEGIN %s",__FUNCTION__));
  if (_positionsToReProcessing.Total() > 0) 
  {
   log_file.Write(LOG_DEBUG, "Невозможно открыть позицию так как еще есть позиции в positionsToReProcessing.");
@@ -64,7 +62,9 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
 
  int i = 0;
  int total = _openPositions.Total();
- log_file.Write(LOG_DEBUG, StringFormat("Открываем позицию %s. Открытых позиций на данный момент: %d", GetNameOP(type), total));
+ log_file.Write(LOG_DEBUG
+               ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
+                            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
  log_file.Write(LOG_DEBUG, _openPositions.PrintToString());
  switch(type)
  {
@@ -102,33 +102,33 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    }
    break;
   default:
-   log_file.Write(LOG_DEBUG, "Error: Invalid ENUM_VIRTUAL_ORDER_TYPE");
+   log_file.Write(LOG_DEBUG, StringFormat("%s Error: Invalid ENUM_VIRTUAL_ORDER_TYPE", MakeFunctionPrefix(__FUNCTION__)));
    break;
  }
  
  total = _openPositions.Total() + _positionsToReProcessing.Total();
  if (total <= 0)
  {
-  log_file.Write(LOG_DEBUG, "openPositions и positionsToReProcessing пусты - открываем новую позицию");
+  log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
   position = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
   ENUM_POSITION_STATUS openingResult = position.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, vol=%.02f, sl=%.06f, tp=%.06f", MakeFunctionPrefix(__FUNCTION__),position.getMagic(), position.getSymbol(), GetNameOP(position.getType()), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice()));
    _openPositions.Add(position);
-   log_file.Write(LOG_DEBUG, StringFormat("END %s",__FUNCTION__));
+   //log_file.Write(LOG_DEBUG, StringFormat("END %s", MakeFunctionPrefix(__FUNCTION__)));
    return(true); // Если удачно открыли позицию
   }
   else
   {
    error = GetLastError();
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось открыть позицию.Error{%d} = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error)));
-   log_file.Write(LOG_DEBUG, StringFormat("END %s",__FUNCTION__));
+   //log_file.Write(LOG_DEBUG, StringFormat("END %s",__FUNCTION__));
    return(false); // Если открыть позицию не удалось
   }
  }
- log_file.Write(LOG_DEBUG, StringFormat("Осталось открытых позиций %d", total));
- log_file.Write(LOG_DEBUG, StringFormat("END %s",__FUNCTION__));
+ log_file.Write(LOG_DEBUG, StringFormat("%s Осталось открытых позиций %d", MakeFunctionPrefix(__FUNCTION__), total));
+ //log_file.Write(LOG_DEBUG, StringFormat("END %s",__FUNCTION__));
  return(true); // Если остались открытые позиции, значит не надо открываться 
 }
 //+------------------------------------------------------------------+ 
@@ -163,32 +163,35 @@ void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
 void CTradeManager::OnTrade(datetime history_start)
   {
 //--- статические члены для хранения состояния торгового счета
-   static int prev_positions = 0, prev_orders = 0, prev_deals = 0, prev_history_orders = 0;
+   static int prev_positions = 0, prev_orders = 0, prev_deals = 0, prev_history_orders = 0, prev_type = -1;
    static double prev_volume = 0;
    int index = 0;
 //--- запросим торговую историю
    bool update=HistorySelect(history_start, TimeCurrent());
 
    double curr_volume = PositionGetDouble(POSITION_VOLUME);
+   int curr_type = PositionGetInteger(POSITION_TYPE);
    int curr_positions = PositionsTotal();
    int curr_orders = OrdersTotal();
    int curr_deals = HistoryOrdersTotal();
    int curr_history_orders = HistoryDealsTotal();
 //--- сравним текущее состояние с предыдущим   
-   if ((curr_positions-prev_positions) != 0 || (curr_volume - prev_volume) != 0) // если изменилось количество или объем позиций
+   if ((curr_positions-prev_positions) != 0 || (curr_volume - prev_volume) != 0 || (curr_type - prev_type) != 0) // если изменилось количество или объем позиций
    {
-    log_file.Write(LOG_DEBUG, "Событие OnTrade, изменилось количество или объем позиций.");
+    log_file.Write(LOG_DEBUG, StringFormat("%s Событие OnTrade, изменилось количество (%d/%d), объем(%.02f/%.02f) или тип позиции(%s/%s). (было/стало)"
+                                          , MakeFunctionPrefix(__FUNCTION__), prev_positions, curr_positions, prev_volume, curr_volume, PositionTypeToStr((ENUM_POSITION_TYPE)prev_type), PositionTypeToStr((ENUM_POSITION_TYPE)curr_type)));
+    /*
     for(int i = _positionsToReProcessing.Total()-1; i>=0; i--)
     {
      position = _positionsToReProcessing.At(i);
      if((!OrderSelect(position.getTakeProfitTicket()) && position.getTakeProfitStatus() == STOPLEVEL_STATUS_NOT_DELETED)
       ||(!OrderSelect(position.getStopLossTicket()) && position.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED))
      {
-      log_file.Write(LOG_DEBUG, "Сработал один из отложенных ордеров который не успел удалиться.Закрываем позицию.");
+      log_file.Write(LOG_DEBUG, StringFormat("%s Сработал один из отложенных ордеров который не успел удалиться. Закрываем позицию.", MakeFunctionPrefix(__FUNCTION__)));
       CloseReProcessingPosition(i);
      }
     }
-    
+    */
     for(int i = _openPositions.Total()-1; i>=0; i--) // по массиву НАШИХ позиций
     {
      position = _openPositions.At(i); // выберем позицию по ее индексу
@@ -197,12 +200,12 @@ void CTradeManager::OnTrade(datetime history_start)
       log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, закрываем TakeProfit : TakeProfitTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID))));
       if (position.RemoveTakeProfit() == STOPLEVEL_STATUS_DELETED)  // сработал стоплосс, надо удалить ордер-тейкпрофит...
       {
-       log_file.Write(LOG_DEBUG, StringFormat("Получилось закрыть TakeProfit, удаляем позицию [%d]", i));
+       log_file.Write(LOG_DEBUG, StringFormat("%s, закрыли TakeProfit, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
        _openPositions.Delete(i);                         // ... и удалить позицию из массива позиций 
       }
       else
       {
-       log_file.Write(LOG_DEBUG, StringFormat("Не получилось закрыть TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", i));
+       log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось закрыть TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
        _positionsToReProcessing.Add(_openPositions.Detach(i));
       }
       break;                                                // завершаем шаг цикла
@@ -212,12 +215,12 @@ void CTradeManager::OnTrade(datetime history_start)
       log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-TakeProfit, закрываем StopLoss StopLossTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID))));
       if (position.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)  // сработал тейкпрофит, надо удалить ордер-стоплосс...
       {
-       log_file.Write(LOG_DEBUG, StringFormat("Получилось закрыть StopLoss, удаляем позицию [%d]", i));
+       log_file.Write(LOG_DEBUG, StringFormat("%s Получилось закрыть StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
        _openPositions.Delete(i);                        // ... и удалить позицию из массива позиций 
       }
       else
       {
-       log_file.Write(LOG_DEBUG, StringFormat("Не получилось закрыть StopLoss. Перемещаем позицию [%d] в positionsToReProcessing.", i));
+       log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось закрыть StopLoss. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
        _positionsToReProcessing.Add(_openPositions.Detach(i));
       }
       break;                                                // завершаем шаг цикла
@@ -227,16 +230,16 @@ void CTradeManager::OnTrade(datetime history_start)
      { 
       if (!OrderSelect(position.getPositionTicket())) // ... и мы не можем ее выбрать по ее тикету, значит она сработала
       {
-       log_file.Write(LOG_DEBUG, "Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.");
+       log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
        if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
         || position.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
        {
-        log_file.Write(LOG_DEBUG, "Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.");                  
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
         position.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
         _positionsToReProcessing.Add(position); 
         break;
        }
-       log_file.Write(LOG_DEBUG, "Получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в openPositions.");
+       log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
        position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
        _openPositions.Add(position);
       }
@@ -246,6 +249,7 @@ void CTradeManager::OnTrade(datetime history_start)
    //log_file.Write(LOG_DEBUG, "");
 //--- запомним состояние счета
    prev_volume = curr_volume;
+   prev_type = curr_type;
    prev_positions = curr_positions;
    prev_orders = curr_orders;
    prev_deals = curr_deals;
@@ -276,7 +280,7 @@ void CTradeManager::OnTick()
   {
    if (pos.RemovePendingPosition() == POSITION_STATUS_DELETED)
    {
-    log_file.Write(LOG_DEBUG, StringFormat("Получилось удалить позицию [%d].Удаляем её из positionsToReProcessing.", i));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Получилось удалить позицию [%d].Удаляем её из positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
     _positionsToReProcessing.Delete(i);
     break;
    }
@@ -284,19 +288,16 @@ void CTradeManager::OnTick()
   
   if (pos.getTakeProfitStatus() == STOPLEVEL_STATUS_NOT_DELETED || pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
   {
-   if (pos.RemoveTakeProfit() == STOPLEVEL_STATUS_DELETED && pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("Получилось удалить StopLoss и TakeProfit у позиции [%d].Удаляем её из positionsToReProcessing.", i));    
-    _positionsToReProcessing.Delete(i);
-    break;
-   }
+   log_file.Write(LOG_DEBUG, StringFormat("%s Удаляем StopLoss и TakeProfit", MakeFunctionPrefix(__FUNCTION__)));    
+   CloseReProcessingPosition(i);
+   break;
   }
   
   if (pos.getPositionStatus() == POSITION_STATUS_NOT_COMPLETE)
   {
    if (pos.setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && pos.setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
    {
-    log_file.Write(LOG_DEBUG, StringFormat("Получилось установить StopLoss и TakeProfit у позиции [%d].Перемещаем её из positionsToReProcessing в openPositions.", i));    
+    log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и TakeProfit у позиции [%d].Перемещаем её из positionsToReProcessing в openPositions.", MakeFunctionPrefix(__FUNCTION__), i));    
     pos.setPositionStatus(POSITION_STATUS_OPEN);
     _openPositions.Add(_positionsToReProcessing.Detach(i));
    }
@@ -327,14 +328,15 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  if (pos.ClosePosition())
  {
   _openPositions.Delete(i);  // удаляем позицию по индексу
-  log_file.Write(LOG_DEBUG, StringFormat("Удалена позиция [%d]", i));
+  log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
   return(true);
  }
  else
  {
   error = GetLastError();
   _positionsToReProcessing.Add(_openPositions.Detach(i));
-  log_file.Write(LOG_DEBUG, StringFormat("Не удалось удалить позицию [%d]. Позиция перемещена в массив positionsToReProcessing.Error{%d} = %s", i, error, ErrorDescription(error)));
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось удалить позицию [%d]. Позиция перемещена в массив positionsToReProcessing.Error{%d} = %s"
+                                        , MakeFunctionPrefix(__FUNCTION__), i, error, ErrorDescription(error)));
  }
  return(false);
 }
@@ -348,26 +350,11 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
 bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
 {
  CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее индексу
- switch(pos.getType())
+ if (pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED && pos.RemoveTakeProfit() == STOPLEVEL_STATUS_DELETED)
  {
-  case OP_BUY:
-  case OP_BUYLIMIT:
-  case OP_BUYSTOP:
-   if (trade.PositionOpen(pos.getSymbol(), POSITION_TYPE_BUY, pos.getVolume(), pos.pricetype(POSITION_TYPE_BUY)))
-   {
-    _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
-    return(true);
-   }
-   break;
-  case OP_SELL:
-  case OP_SELLLIMIT:
-  case OP_SELLSTOP:
-   if(trade.PositionOpen(pos.getSymbol(), POSITION_TYPE_SELL, pos.getVolume(), pos.pricetype(POSITION_TYPE_SELL)))
-   {
-    _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
-    return(true);
-   }
-   break;
+  log_file.Write(LOG_DEBUG, StringFormat("%s Удалили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
+  _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
+  return(true);
  }
  return(false);
 }

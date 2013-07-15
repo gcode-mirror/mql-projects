@@ -7,9 +7,7 @@
 #property link      "http://paulsfxrandomwalk.blogspot.com"
 
 #include "TradeManagerConfig.mqh"
-//#include "Log.mqh"
 #include "TradeManagerEnums.mqh"
-//#include "Position.mqh"
 #include "PositionOnPendingOrders.mqh"
 #include <Arrays/ArrayObj.mqh>
 #include <StringUtilities.mqh>
@@ -303,7 +301,7 @@ void CPositionArray::Clear(const string strSymbol)
 string CPositionArray::PrintToString()
 {
  int total = Total();
- string result = StringFormat("Array(size=%d): ", total);
+ string result = StringFormat("%s Array(size=%d): ", MakeFunctionPrefix(__FUNCTION__), total);
  CPosition *pos;
  for (int i = total-1; i >= 0; i--)
  {

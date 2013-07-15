@@ -326,15 +326,50 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
 {
+ if (sl_status == STOPLEVEL_STATUS_NOT_PLACED)
+ {
+  sl_status = STOPLEVEL_STATUS_DELETED;
+ }
+ 
  if (sl_status == STOPLEVEL_STATUS_PLACED || sl_status == STOPLEVEL_STATUS_NOT_DELETED) // Если ордер был установлен или его не удалось удалить в прошлом
  {
-  if (trade.OrderDelete(_slTicket))  
+  if (OrderSelect(_slTicket))
   {
-   sl_status = STOPLEVEL_STATUS_DELETED; // Ордер удалился
+   if (trade.OrderDelete(_slTicket))
+   {
+    sl_status = STOPLEVEL_STATUS_DELETED;
+    log_file.Write(LOG_DEBUG, StringFormat("%s Удален стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket));
+   }
+   else
+   {
+    sl_status = STOPLEVEL_STATUS_NOT_DELETED;
+    log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении стоплосса", MakeFunctionPrefix(__FUNCTION__)));
+   }
   }
   else
   {
-   sl_status = STOPLEVEL_STATUS_NOT_DELETED; // Попытка удаления не прошла
+   switch(_type)
+   {
+    case OP_BUY:
+    case OP_BUYLIMIT:
+    case OP_BUYSTOP:
+     if (trade.PositionClose(_symbol, POSITION_TYPE_SELL, _lots)) // тип позиции бай, мы закрываем стоп ордер - селл
+     {
+      sl_status = STOPLEVEL_STATUS_DELETED;
+      log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket));
+      break;
+     }
+     
+    case OP_SELL:
+    case OP_SELLLIMIT:
+    case OP_SELLSTOP:
+     if (trade.PositionClose(_symbol, POSITION_TYPE_BUY, _lots)) // тип позиции селл, мы закрываем стоп ордер - бай
+     {
+      sl_status = STOPLEVEL_STATUS_DELETED;
+      log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket));
+      break;
+     }
+   }
   }
  }
  return (sl_status);
@@ -344,15 +379,50 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::RemoveTakeProfit()
 {
+ if (tp_status == STOPLEVEL_STATUS_NOT_PLACED)
+ {
+  tp_status = STOPLEVEL_STATUS_DELETED;
+ }
+
  if (tp_status == STOPLEVEL_STATUS_PLACED || tp_status == STOPLEVEL_STATUS_NOT_DELETED)
  {
-  if (trade.OrderDelete(_tpTicket))
+  if (OrderSelect(_tpTicket))
   {
-   tp_status = STOPLEVEL_STATUS_DELETED;
+   if (trade.OrderDelete(_tpTicket))
+   {
+    tp_status = STOPLEVEL_STATUS_DELETED;
+    log_file.Write(LOG_DEBUG, StringFormat("%s Удален тейкпрофит %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket));
+   }
+   else
+   {
+    tp_status = STOPLEVEL_STATUS_NOT_DELETED;
+    log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении тейкпрофита", MakeFunctionPrefix(__FUNCTION__)));
+   }
   }
   else
   {
-   tp_status = STOPLEVEL_STATUS_NOT_DELETED;
+   switch(_type)
+   {
+    case OP_BUY:
+    case OP_BUYLIMIT:
+    case OP_BUYSTOP:
+     if (trade.PositionClose(_symbol, POSITION_TYPE_SELL, _lots)) // тип позиции бай, мы закрываем стоп ордер - селл
+     {
+      tp_status = STOPLEVEL_STATUS_DELETED;
+      log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший тейкпрофит %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket));
+      break;
+     }
+     
+    case OP_SELL:
+    case OP_SELLLIMIT:
+    case OP_SELLSTOP:
+     if (trade.PositionClose(_symbol, POSITION_TYPE_BUY, _lots)) // тип позиции селл, мы закрываем стоп ордер - бай
+     {
+      tp_status = STOPLEVEL_STATUS_DELETED;
+      log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший тейкпрофит %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket));
+      break;
+     }
+   }  
   }
  }
  return (tp_status);
