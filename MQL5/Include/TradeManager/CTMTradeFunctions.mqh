@@ -67,18 +67,18 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
   
   while (!IsStopped() && i <= tryNumber)
   {
-   log_file.Write(LOG_DEBUG, StringFormat("Current action:", m_request.action));
+   //log_file.Write(LOG_DEBUG, StringFormat("%s Current action:", MakeFunctionPrefix(__FUNCTION__), m_request.action));
    res = false;
    if(OrderCheck(m_request,m_check_result)==true)
    {
     ResetLastError();
-    log_file.Write(LOG_DEBUG, StringFormat("%s Проверка пройдена, пытаемся удалить ордер, попытка №%d", MakeFunctionPrefix(__FUNCTION__), i+1));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Проверка пройдена, пытаемся удалить ордер %d, попытка №%d", MakeFunctionPrefix(__FUNCTION__), ticket, i+1));
     OrderSend(m_request,m_result);
     switch (m_result.retcode)
     {
      case TRADE_RETCODE_DONE:
       res = true;
-      log_file.Write(LOG_DEBUG, StringFormat("%s Ордер успешно удален", MakeFunctionPrefix(__FUNCTION__)));
+      log_file.Write(LOG_DEBUG, StringFormat("%s Ордер %d успешно удален", MakeFunctionPrefix(__FUNCTION__), ticket));
       break;
      case TRADE_RETCODE_REQUOTE:
      case TRADE_RETCODE_INVALID_STOPS:
@@ -102,11 +102,12 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
    if (res) break;
    else
    {
-     log_file.Write(LOG_DEBUG, ("при удалении ордера "+ ticket + " возникла ошибка: " + result_code + "; GetLastError() = " + GetLastError() + "; Bid = " + m_result.bid + "; Ask = " + m_result.ask + "; Price = " + m_result.price));
+     log_file.Write(LOG_DEBUG, StringFormat("%s при удалении ордера %d,  возникла ошибка: %s (%d); GetLastError() = %s (%d); Bid = %.06f; Ask = %.06f; Price = %.06f", MakeFunctionPrefix(__FUNCTION__), ticket, ReturnCodeDescription(result_code), result_code, ErrorDescription(GetLastError()), GetLastError(), m_result.bid, m_result.ask, m_result.price));
    }
    i++;
   }
   
+  //log_file.Write(LOG_DEBUG, StringFormat("%s ticket = %d  %s ", MakeFunctionPrefix(__FUNCTION__), ticket, BoolToString(res)));
   return(res);
 }
 
@@ -131,7 +132,7 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
    order_type = ORDER_TYPE_SELL;
    break;
   default:
-   log_file.Write(LOG_DEBUG, "Неправильный тип позиции");
+   log_file.Write(LOG_DEBUG, StringFormat("%s Неправильный тип позиции", MakeFunctionPrefix(__FUNCTION__)));
    return(false);
  }
  return(PositionOpen(symbol, order_type, volume, price, sl, tp, comment));

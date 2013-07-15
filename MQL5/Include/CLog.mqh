@@ -60,7 +60,7 @@ class CLog
 //+------------------------------------------------------------------+
 CLog::CLog()
 {
- _output_type=OUT_ALERT;
+ _output_type = OUT_ALERT;
  _level = CONF_LOG_LEVEL;         
  _limit_size = CONF_LIMIT_SIZE;          
  _catalog_name = CONF_CATALOG_NAME;   
@@ -128,10 +128,10 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
     break;
    }
    case OUT_COMMENT:
-    Comment(__FUNCTION__, str);
+    Comment(str);
     break;
    case OUT_ALERT:
-    Alert(__FUNCTION__, str);
+    Alert(str);
     break;
   }
  }
