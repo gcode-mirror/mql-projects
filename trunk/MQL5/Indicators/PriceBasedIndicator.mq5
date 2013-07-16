@@ -73,7 +73,7 @@ int OnInit()
 //---- превращение динамических массивов в индикаторные буферы
    SetIndexBuffer(0, ExtOpenBuffer, INDICATOR_DATA);
    SetIndexBuffer(1, ExtHighBuffer, INDICATOR_DATA);
-   SetIndexBuffer(2, ExtLowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(2, ExtLowBuffer,  INDICATOR_DATA);
    SetIndexBuffer(3, ExtCloseBuffer, INDICATOR_DATA);
    
    bool AsSeries = false;

@@ -170,8 +170,8 @@ void CTradeManager::OnTrade(datetime history_start)
    int curr_orders = OrdersTotal();
    int curr_deals = HistoryOrdersTotal();
    int curr_history_orders = HistoryDealsTotal();
-//--- сравним текущее состояние с предыдущим   
-   if ((curr_positions-prev_positions) != 0 || (curr_volume - prev_volume) != 0 || (curr_type - prev_type) != 0) // если изменилось количество или объем позиций
+//--- сравним текущее состояние с предыдущим
+   if ((curr_positions-prev_positions) != 0 || (curr_volume - prev_volume) != 0 || (curr_type - prev_type) != 0 || (curr_orders - prev_orders) != 0) // если изменилось количество или объем позиций
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Событие OnTrade, изменилось количество (%d/%d), объем(%.02f/%.02f) или тип позиции(%s/%s). (было/стало)"
                                           , MakeFunctionPrefix(__FUNCTION__), prev_positions, curr_positions, prev_volume, curr_volume, PositionTypeToStr((ENUM_POSITION_TYPE)prev_type), PositionTypeToStr((ENUM_POSITION_TYPE)curr_type)));
@@ -192,7 +192,7 @@ void CTradeManager::OnTrade(datetime history_start)
      position = _openPositions.At(i); // выберем позицию по ее индексу
      if (!OrderSelect(position.getStopLossTicket())) // Если мы не можем выбрать стоп по его тикету, значит он сработал
      {
-      log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, закрываем TakeProfit : TakeProfitTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID))));
+      log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, закрываем TakeProfit : TakeProfitTicket=%d", MakeFunctionPrefix(__FUNCTION__), position.getTakeProfitTicket()));
       if (position.RemoveTakeProfit() == STOPLEVEL_STATUS_DELETED)  // сработал стоплосс, надо удалить ордер-тейкпрофит...
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s, закрыли TakeProfit, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
@@ -207,7 +207,7 @@ void CTradeManager::OnTrade(datetime history_start)
      }
      if (!OrderSelect(position.getTakeProfitTicket())) // Если мы не можем выбрать тейк по его тикету, значит он сработал
      {
-      log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-TakeProfit, закрываем StopLoss StopLossTicket=%d", MakeFunctionPrefix(__FUNCTION__), OrderGetTicket(OrderGetInteger(ORDER_POSITION_ID))));
+      log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-TakeProfit, закрываем StopLoss StopLossTicket=%d", MakeFunctionPrefix(__FUNCTION__), position.getStopLossTicket()));
       if (position.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)  // сработал тейкпрофит, надо удалить ордер-стоплосс...
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s Получилось закрыть StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));

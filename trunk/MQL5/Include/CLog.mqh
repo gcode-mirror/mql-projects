@@ -60,13 +60,12 @@ class CLog
 //+------------------------------------------------------------------+
 CLog::CLog()
 {
- _output_type = OUT_FILE;
+ _output_type = CONF_OUT_TYPE;
  _level = CONF_LOG_LEVEL;         
  _limit_size = CONF_LIMIT_SIZE;          
  _catalog_name = CONF_CATALOG_NAME;   
  _expiration_time = CONF_EXPIRATION_TIME;
  CreateLogFile(TimeCurrent());
- Alert("ALERT CLOG");
 }
 //+------------------------------------------------------------------+
 CLog::~CLog()
@@ -116,12 +115,10 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
   {
    case OUT_FILE:
    {
-    Alert("FILE");
     int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_READ|FILE_TXT|FILE_COMMON);
  
     if(filehandle != INVALID_HANDLE)
     {
-     Alert("WRITE  ", _current_filename);
      FileSeek(filehandle, 0, SEEK_END);
      FileWrite(filehandle, (TimeToString(TimeCurrent(), TIME_SECONDS) + " " + str));
      FileClose(filehandle);
@@ -131,7 +128,7 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
     break;
    }
    case OUT_COMMENT:
-    Comment(str);
+    Print(str);
     break;
    case OUT_ALERT:
     Alert(str);
@@ -145,16 +142,16 @@ bool CLog::CreateLogFile(datetime dt)
 {
  int error=0;
  _current_filename = MakeLogFilename(dt);
- int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_READ|FILE_TXT|FILE_COMMON);
+ int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_TXT|FILE_COMMON);
  
  if(filehandle==INVALID_HANDLE)
  {
   error=GetLastError();
-  Alert("Не удалось создать log-файл с именем : ", _current_filename," Ошибка ",error, ".");
+  Print(__FUNCTION__, " Не удалось создать log-файл с именем : ", _current_filename," Ошибка ",error, ".");
   return(false);
  }
  
- Alert("Удалось создать log-файл с именем : ", _current_filename);
+ Print(__FUNCTION__, " Удалось создать log-файл с именем : ", _current_filename);
  FileClose(filehandle);
  return(true);
 }
