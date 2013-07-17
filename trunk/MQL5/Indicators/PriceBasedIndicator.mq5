@@ -57,7 +57,7 @@ input bool messages=false;   // вывод сообщений в лог "Ёксперты"
 //+----------------------------------------------+
 static CIsNewBar isNewBar;
 
-CColoredTrend trend(Symbol(), bars, historyDepth);
+CColoredTrend trend(Symbol(), Period(), bars, historyDepth);
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int digits;
