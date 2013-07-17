@@ -120,6 +120,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   else
   {
    error = GetLastError();
+   _positionsToReProcessing.Add(position);
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось открыть позицию.Error{%d} = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error)));
    return(false); // Если открыть позицию не удалось
   }
