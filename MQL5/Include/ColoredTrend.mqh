@@ -60,7 +60,7 @@ string MoveTypeToColor(ENUM_MOVE_TYPE enumMoveType)
 struct SExtremum
 {
  int direction;
- double volume;
+ double price;
 };
 
 //+------------------------------------------------------------------+
@@ -70,7 +70,7 @@ class CColoredTrend
 {
 protected:
   string _symbol;
-  //ENUM_TIMEFRAMES _period;
+  ENUM_TIMEFRAMES _period;
   int _depth;
   ENUM_MOVE_TYPE enumMoveType[];
   SExtremum aExtremums[];
@@ -82,7 +82,7 @@ protected:
   double difToTrend;
   
 public:
-  void CColoredTrend(string symbol, int count, int shift = 3);
+  void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count, int shift = 3);
   SExtremum isExtremum(double vol1, double vol2, double vol3, int bar = 0);
   void CountMoveType(int count, int shift = 1);
   ENUM_MOVE_TYPE GetMoveType(int i);
@@ -94,11 +94,12 @@ public:
 //+-----------------------------------------+
 //| Конструктор                             |
 //+-----------------------------------------+
-void CColoredTrend::CColoredTrend(string symbol,int count,int shift = 3)
+void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count, int shift = 3)
 {
  ArraySetAsSeries(enumMoveType, true);
  if (shift < 3) shift = 3;
  _symbol = symbol;
+ _period = period;
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  difToNewExtremum = 70;
  difToTrend = 2;
@@ -147,23 +148,23 @@ void CColoredTrend::CountMoveType(int count, int shift = 1)
   
   /*
   PrintFormat("bar = %d, экстремумы num0=%.05f, num1=%.05f, num2=%.05f, num0 - num1 =%.05f, num0 - close=%.05f"
-             , bar, aExtremums[num0].volume, aExtremums[num1].volume, aExtremums[num2].volume
-             , MathAbs(aExtremums[num0].volume - aExtremums[num1].volume)*difToTrend, MathAbs(aExtremums[num0].volume - rates[bar].close));
+             , bar, aExtremums[num0].price, aExtremums[num1].price, aExtremums[num2].price
+             , MathAbs(aExtremums[num0].price - aExtremums[num1].price)*difToTrend, MathAbs(aExtremums[num0].price - rates[bar].close));
   */ 
             
-  if (LessDoubles(MathAbs(aExtremums[num0].volume - aExtremums[num1].volume)*difToTrend
-                 ,MathAbs(aExtremums[num0].volume - rates[bar].close), digits))
+  if (LessDoubles(MathAbs(aExtremums[num0].price - aExtremums[num1].price)*difToTrend
+                 ,MathAbs(aExtremums[num0].price - rates[bar].close), digits))
   {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения 
    PrintFormat("bar = %d, движение больше последней разницы экстремумов", bar);
-   if (LessDoubles(rates[bar].close, aExtremums[num0].volume, digits)) // если текущее закрытие ниже последнего экстремума 
+   if (LessDoubles(rates[bar].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
    {
-    //PrintFormat("bar = %d, начался тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].volume);
+    //PrintFormat("bar = %d, начался тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].price);
     enumMoveType[bar] = MOVE_TYPE_TREND_DOWN;
     //continue;
    }
-   if (GreatDoubles(rates[bar].close, aExtremums[num0].volume, digits)) // если текущее закрытие выше последнего экстремума 
+   if (GreatDoubles(rates[bar].close, aExtremums[num0].price, digits)) // если текущее закрытие выше последнего экстремума 
    {
-    //PrintFormat("bar = %d, начался тренд вверх, текущее закрытие=%.05f больше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].volume);
+    //PrintFormat("bar = %d, начался тренд вверх, текущее закрытие=%.05f больше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].price);
     enumMoveType[bar] = MOVE_TYPE_TREND_UP;
     //continue;
    }
@@ -180,12 +181,12 @@ void CColoredTrend::CountMoveType(int count, int shift = 1)
    lastOnTrend = num0;
   }
   
-  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && LessDoubles(rates[bar].close, aExtremums[lastOnTrend].volume, digits))
+  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && LessDoubles(rates[bar].close, aExtremums[lastOnTrend].price, digits))
   {
    enumMoveType[bar] = MOVE_TYPE_TREND_DOWN;
   }
   
-  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_DOWN) && GreatDoubles(rates[bar].close, aExtremums[lastOnTrend].volume, digits))
+  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_DOWN) && GreatDoubles(rates[bar].close, aExtremums[lastOnTrend].price, digits))
   {
    enumMoveType[bar] = MOVE_TYPE_TREND_UP;
   }
@@ -205,24 +206,24 @@ void CColoredTrend::CountMoveType(int count, int shift = 1)
     num0 = bar;
    }
    
-   //PrintFormat("bar = %d, экстремумы num0 =%.05f, num1=%.05f, num2=%.05f", bar, aExtremums[num0].volume, aExtremums[num1].volume, aExtremums[num2].volume);
+   //PrintFormat("bar = %d, экстремумы num0 =%.05f, num1=%.05f, num2=%.05f", bar, aExtremums[num0].price, aExtremums[num1].price, aExtremums[num2].price);
    if ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP) && (aExtremums[bar].direction > 0) &&
-       (LessDoubles(aExtremums[bar].volume, aExtremums[num2].volume, digits) // если новый максимум меньше предыдущего
-        || GreatDoubles(MathAbs(aExtremums[num2].volume - aExtremums[num1].volume) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
-                       ,MathAbs(aExtremums[num2].volume - aExtremums[bar].volume) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
+       (LessDoubles(aExtremums[bar].price, aExtremums[num2].price, digits) // если новый максимум меньше предыдущего
+        || GreatDoubles(MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
+                       ,MathAbs(aExtremums[num2].price - aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
                        ,digits)))   
    {
-    //PrintFormat("bar = %d, начался флэт, новый максимум меньше предыдущего num0 =%.05f < num2=%.05f", bar, aExtremums[num0].volume, aExtremums[num2].volume);
+    //PrintFormat("bar = %d, начался флэт, новый максимум меньше предыдущего num0 =%.05f < num2=%.05f", bar, aExtremums[num0].price, aExtremums[num2].price);
     enumMoveType[bar] = MOVE_TYPE_FLAT;
    }
    
    if ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_DOWN) && (aExtremums[bar].direction < 0) &&
-        (GreatDoubles(aExtremums[bar].volume, aExtremums[num2].volume, digits)
-         || GreatDoubles(MathAbs(aExtremums[num2].volume - aExtremums[num1].volume) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
-                        ,MathAbs(aExtremums[num2].volume - aExtremums[bar].volume) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
+        (GreatDoubles(aExtremums[bar].price, aExtremums[num2].price, digits)
+         || GreatDoubles(MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
+                        ,MathAbs(aExtremums[num2].price - aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
                         ,digits)))  // или новый минимум - больше
    { 
-    //PrintFormat("bar = %d, начался флэт, новый минимум больше предыдущего num0 =%.05f < num2=%.05f", bar, aExtremums[num0].volume, aExtremums[num2].volume);
+    //PrintFormat("bar = %d, начался флэт, новый минимум больше предыдущего num0 =%.05f < num2=%.05f", bar, aExtremums[num0].price, aExtremums[num2].price);
     enumMoveType[bar] = MOVE_TYPE_FLAT;
    }
   }
@@ -249,11 +250,11 @@ double CColoredTrend::GetExtremum(int i)
 {
  if (aExtremums[i].direction > 0)
  {
-  return (aExtremums[i].volume + 50*Point());
+  return (aExtremums[i].price + 50*Point());
  }
  if (aExtremums[i].direction < 0)
  {
-  return (aExtremums[i].volume - 50*Point());
+  return (aExtremums[i].price - 50*Point());
  }
  return (0.0);
 }
@@ -273,17 +274,17 @@ SExtremum CColoredTrend::isExtremum(double vol1, double vol2, double vol3, int l
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  SExtremum res;
  res.direction = 0;
- res.volume = vol2;
+ res.price = vol2;
  if (GreatDoubles(vol1, vol2, digits)
   && LessDoubles (vol2, vol3, digits)
-  && GreatDoubles(aExtremums[last].volume, vol2 + difToNewExtremum*Point(), 5))
+  && GreatDoubles(aExtremums[last].price, vol2 + difToNewExtremum*Point(), 5))
  {
   res.direction = -1;// минимум в точке vol2
  }
  
  if (LessDoubles(vol1, vol2, digits)
   && GreatDoubles(vol2, vol3, digits)
-  && LessDoubles(aExtremums[last].volume, vol2 - difToNewExtremum*Point(), 5))
+  && LessDoubles(aExtremums[last].price, vol2 - difToNewExtremum*Point(), 5))
  {
   res.direction = 1;// максимум в точке vol2
  } 
@@ -300,7 +301,7 @@ int CColoredTrend::FillTimeSeries(MqlRates &_rates[], int count, int start_pos =
 //--- сколько скопировано
    int copied = 0;
 //--- делаем 25 попыток получить таймсерию по нужному символу
- while(attempts < 25 && (copied = CopyRates(_symbol, _Period, start_pos, count, _rates))<0) // справа налево от 0 до count, всего count элементов
+ while(attempts < 25 && (copied = CopyRates(_symbol, _period, start_pos, count, _rates))<0) // справа налево от 0 до count, всего count элементов
  {
   Sleep(100);
   attempts++;
