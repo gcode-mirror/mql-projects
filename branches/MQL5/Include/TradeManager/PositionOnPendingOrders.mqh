@@ -28,7 +28,7 @@ private:
    double _lots;
    ulong _slTicket;
    double _slPrice;
-   ulong _tpTicket;
+   //ulong _tpTicket;
    double _tpPrice;
    int _sl, _tp;
    int _minProfit, _trailingStop, _trailingStep;
@@ -39,7 +39,7 @@ private:
    CStopLossLine     _stopLossLine;
    CTakeProfitLine   _takeProfitLine;
 
-   ENUM_STOPLEVEL_STATUS sl_status, tp_status;
+   ENUM_STOPLEVEL_STATUS sl_status;//, tp_status;
    ENUM_POSITION_STATUS pos_status;
    
    ENUM_ORDER_TYPE SLOrderType(int type);
@@ -65,8 +65,8 @@ public:
    ulong getStopLossTicket() {return (_slTicket);};
    void setStopLossTicket(ulong ticket) {_slTicket = ticket;};
    
-   ulong getTakeProfitTicket() {return (_tpTicket);};
-   void setTakeProfitTicket(ulong ticket) {_tpTicket = ticket;};
+   //ulong getTakeProfitTicket() {return (_tpTicket);};
+   //void setTakeProfitTicket(ulong ticket) {_tpTicket = ticket;};
    
    double getPositionPrice() {return(_posPrice);};
    double getStopLossPrice() {return(_slPrice);};
@@ -81,8 +81,8 @@ public:
    ENUM_POSITION_STATUS getPositionStatus() {return (pos_status);};
    void setPositionStatus(ENUM_POSITION_STATUS status) {pos_status = status;};
    
-   ENUM_STOPLEVEL_STATUS getTakeProfitStatus() {return (tp_status);};
-   void setTakeProfitStatus(ENUM_STOPLEVEL_STATUS status) {tp_status = status;};
+   //ENUM_STOPLEVEL_STATUS getTakeProfitStatus() {return (tp_status);};
+   //void setTakeProfitStatus(ENUM_STOPLEVEL_STATUS status) {tp_status = status;};
    ENUM_STOPLEVEL_STATUS getStopLossStatus() {return (sl_status);};
    void setStopLossStatus(ENUM_STOPLEVEL_STATUS status) {sl_status = status;};
    
@@ -99,7 +99,7 @@ public:
    ENUM_STOPLEVEL_STATUS setTakeProfit();
    bool ModifyPosition();
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();
-   ENUM_STOPLEVEL_STATUS RemoveTakeProfit();
+   //ENUM_STOPLEVEL_STATUS RemoveTakeProfit();
    ENUM_POSITION_STATUS RemovePendingPosition();
    bool ClosePosition();
    void DoTrailing();
@@ -119,7 +119,7 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, dou
    trade = new CTMTradeFunctions();
    pos_status = POSITION_STATUS_NOT_INITIALISED;
    sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
-   tp_status = STOPLEVEL_STATUS_NOT_DEFINED;
+   //tp_status = STOPLEVEL_STATUS_NOT_DEFINED;
   }
  
 //+------------------------------------------------------------------+
@@ -302,7 +302,8 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
 {
- ENUM_ORDER_TYPE order_type;
+ _tpPrice = TPtype((int)_type);
+ /*ENUM_ORDER_TYPE order_type;
  if (_tp > 0 && tp_status != STOPLEVEL_STATUS_PLACED)
  {
   _tpPrice = TPtype((int)_type);
@@ -318,8 +319,8 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
    tp_status = STOPLEVEL_STATUS_NOT_PLACED;
    log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при установке тейкпрофита", MakeFunctionPrefix(__FUNCTION__)));
   }
- }
- return(tp_status);
+ }*/
+ return(STOPLEVEL_STATUS_PLACED);
 }
 
 //+------------------------------------------------------------------+
@@ -356,7 +357,7 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
      if (trade.PositionClose(_symbol, POSITION_TYPE_SELL, _lots)) // тип позиции бай, мы закрываем стоп ордер - селл
      {
       sl_status = STOPLEVEL_STATUS_DELETED;
-      log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket));
+      log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket));
       break;
      }
      
@@ -366,7 +367,7 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
      if (trade.PositionClose(_symbol, POSITION_TYPE_BUY, _lots)) // тип позиции селл, мы закрываем стоп ордер - бай
      {
       sl_status = STOPLEVEL_STATUS_DELETED;
-      log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _tpTicket));
+      log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket));
       break;
      }
    }
@@ -377,7 +378,7 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-ENUM_STOPLEVEL_STATUS CPosition::RemoveTakeProfit()
+/*ENUM_STOPLEVEL_STATUS CPosition::RemoveTakeProfit()
 {
  if (tp_status == STOPLEVEL_STATUS_NOT_PLACED)
  {
@@ -426,7 +427,7 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveTakeProfit()
   }
  }
  return (tp_status);
-}
+}*/
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
@@ -477,10 +478,10 @@ bool CPosition::ClosePosition()
    sl_status = RemoveStopLoss();
   }
   
-  if (tp_status == STOPLEVEL_STATUS_PLACED)
+  /*if (tp_status == STOPLEVEL_STATUS_PLACED)
   {
    tp_status = RemoveTakeProfit();
-  }
+  }*/
  }
  
  if (pos_status == POSITION_STATUS_PENDING)
@@ -489,8 +490,8 @@ bool CPosition::ClosePosition()
  }
   
  return(pos_status != POSITION_STATUS_NOT_DELETED
-      && sl_status != STOPLEVEL_STATUS_NOT_DELETED
-      && tp_status != STOPLEVEL_STATUS_NOT_DELETED);
+      && sl_status != STOPLEVEL_STATUS_NOT_DELETED);
+      //&& tp_status != STOPLEVEL_STATUS_NOT_DELETED);
 }
 
 //+------------------------------------------------------------------+

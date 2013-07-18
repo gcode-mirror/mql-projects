@@ -9,7 +9,7 @@
 #include "ChartObjectsTradeLines.mqh"
 #include "TradeManagerConfig.mqh"
 #include "CTMTradeFunctions.mqh" //подключаем библиотеку для совершения торговых операций
-#include "StringUtilities.mqh"
+//#include "StringUtilities.mqh"// не подключается
 #include <CompareDoubles.mqh>
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -27,7 +27,7 @@ private:
    double _lots;
    ulong _slTicket;
    double _slPrice;
-   ulong _tpTicket;
+   //ulong _tpTicket;
    double _tpPrice;
    int _sl, _tp;
    int _minProfit, _trailingStop, _trailingStep;
@@ -56,8 +56,8 @@ public:
    ulong getStopLossTicket() {return (_slTicket);};
    void setStopLossTicket(ulong ticket) {_slTicket = ticket;};
    double getStopLossPrice() {return(_slPrice);};
-   ulong getTakeProfitTicket() {return (_tpTicket);};
-   void setTakeProfitTicket(ulong ticket) {_tpTicket = ticket;};
+   //ulong getTakeProfitTicket() {return (_tpTicket);};
+   //void setTakeProfitTicket(ulong ticket) {_tpTicket = ticket;};
    double getTakeProfitPrice() {return(_tpPrice);};
    double getMinProfit() {return(_minProfit);};
    double getTrailingStop() {return(_trailingStop);};
@@ -177,7 +177,7 @@ bool CPosition::OpenPosition()
  }
  
  // Если задан тейкпрофит - устанавливаем
- if (_tp > 0)
+ /*if (_tp > 0)
  {
   _tpPrice = TPtype((int)_type);
   order_type = TPOrderType((int)_type);
@@ -192,7 +192,7 @@ bool CPosition::OpenPosition()
    tp_status = STOPLEVEL_STATUS_NOT_PLACED;
    PrintFormat("%s Ошибка при установке тейкпрофита", MakeFunctionPrefix(__FUNCTION__));
   }
- }
+ }*/
  /*
  else
  {
@@ -248,7 +248,7 @@ bool CPosition::ClosePosition()
   }
  }
   
- if (tp_status == STOPLEVEL_STATUS_PLACED)
+ /*if (tp_status == STOPLEVEL_STATUS_PLACED)
  {
   if (trade.OrderDelete(_tpTicket))
   {
@@ -258,9 +258,9 @@ bool CPosition::ClosePosition()
   {
    tp_status = STOPLEVEL_STATUS_NOT_DELETED;
   }
- }
+ }*/
   
- return(pos_status == POSITION_STATUS_DELETED && sl_status == STOPLEVEL_STATUS_DELETED && tp_status == STOPLEVEL_STATUS_DELETED);
+ return(pos_status == POSITION_STATUS_DELETED && sl_status == STOPLEVEL_STATUS_DELETED /*&& tp_status == STOPLEVEL_STATUS_DELETED*/);
 }
 
 //+------------------------------------------------------------------+
@@ -322,7 +322,7 @@ bool CPosition::ReadFromFile(int handle)
  _status=StringToPositionStatus(FileReadString(handle));
  if(FileIsEnding(handle)) return(false);
  _symbol=FileReadString(handle);
- _type=StringToPositionType(FileReadString(handle));
+ _type=(ENUM_POSITION_TYPE)StringToPositionType(FileReadString(handle));  ///!!!!!!!!!!!!!!!!!!!!!!!!!
  _lots=FileReadNumber(handle);
  /*
  m_dblOpenPrice=FileReadNumber(handle);
