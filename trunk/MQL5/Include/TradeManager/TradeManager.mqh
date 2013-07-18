@@ -10,7 +10,6 @@
 #include "TradeManagerEnums.mqh"
 #include "PositionOnPendingOrders.mqh"
 #include "PositionArray.mqh"
-#include "CTMTradeFunctions.mqh"
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
@@ -47,8 +46,8 @@ public:
   bool CloseReProcessingPosition(int i,color Color=CLR_NONE);
   long MakeMagic(string strSymbol = "");
   void DoTrailing();
-  int OnInit();
-  void OnDeinit();
+  //int OnInit();
+  //void OnDeinit();
   void OnTick();
   void OnTrade(datetime history_start);
 };
@@ -287,18 +286,7 @@ void CTradeManager::OnTick()
   log_file.Write(LOG_DEBUG, StringFormat("%s end %s", MakeFunctionPrefix(__FUNCTION__), _positionsToReProcessing.PrintToString()));
  }
 }
-//+------------------------------------------------------------------+
-//+------------------------------------------------------------------+
-int OnInit()
-{
- 
- return(1);
-}
-//+------------------------------------------------------------------+
-//+------------------------------------------------------------------+
-void OnDeinit()
-{
-}  
+
 //+------------------------------------------------------------------+
 /// Close a virtual order.
 /// \param [in] ticket			Open virtual order ticket
