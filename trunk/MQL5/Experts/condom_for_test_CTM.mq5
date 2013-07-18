@@ -16,7 +16,6 @@
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
-input ulong _magic = 1122;
 input int SL = 150;
 input int TP = 500;
 input double _lot = 1;
@@ -40,7 +39,7 @@ input int stopPriceDifference = 20;
 string symbol;                               //переменная для хранения символа
 datetime history_start;
 
-CTradeManager order(_magic);
+CTradeManager order();
 MqlTick tick;
 
 int handleMACD;
