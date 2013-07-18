@@ -10,7 +10,6 @@
 #include "TradeManagerEnums.mqh"
 #include "PositionOnPendingOrders.mqh"
 #include "PositionArray.mqh"
-#include "CTMTradeFunctions.mqh"
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
