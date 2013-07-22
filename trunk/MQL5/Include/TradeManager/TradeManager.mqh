@@ -46,6 +46,8 @@ public:
   bool CloseReProcessingPosition(int i,color Color=CLR_NONE);
   long MakeMagic(string strSymbol = "");
   void DoTrailing();
+  void Initialization();
+  void Deinitialization();
   void OnTick();
   void OnTrade(datetime history_start);
 };
@@ -174,7 +176,8 @@ void CTradeManager::OnTick()
  SymbolInfoTick(Symbol(), tick);
  double price;
  ENUM_TM_POSITION_TYPE type;
- for(int i = _openPositions.Total()-1; i>=0; i--) // по массиву НАШИХ позиций
+ int size = _openPositions.Total();
+ for(int i = size - 1; i>=0; i--) // по массиву НАШИХ позиций
  {
   position = _openPositions.At(i); // выберем позицию по ее индексу
   type = position.getType();
@@ -185,12 +188,10 @@ void CTradeManager::OnTick()
    log_file.Write(LOG_DEBUG, StringFormat("%s, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
     _openPositions.Delete(i);
     break;                         // ... и удалить позицию из массива позиций 
-   }
-                                                   // завершаем шаг цикла
+  }
      
-<<<<<<< .mine  if ((type == OP_SELL && position.getTakeProfitPrice() >= tick.ask) || (type == OP_BUY && position.getTakeProfitPrice() <= tick.bid)) // цена дошла до уровня TP
-=======  if ((type == OP_BUY && tick.bid >= position.getTakeProfitPrice()) || (type == OP_SELL && tick.ask <= position.getTakeProfitPrice())) 
->>>>>>> .theirs  {
+  if ((type == OP_SELL && position.getTakeProfitPrice() >= tick.ask) || (type == OP_BUY && position.getTakeProfitPrice() <= tick.bid)) // цена дошла до уровня TP
+  {
    log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, ask = %f, bif = %f, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), tick.ask, tick.bid, position.getTakeProfitPrice()));
    if (position.ClosePosition())  // сработал тейкпрофит, надо удалить ордер-стоплосс...
    {
@@ -224,8 +225,8 @@ void CTradeManager::OnTick()
    }
   }
  }
- 
- for(int i = _positionsToReProcessing.Total()-1; i>=0; i--) // по массиву позиций на доработку
+ size = _positionsToReProcessing.Total();
+ for(int i = size - 1; i>=0; i--) // по массиву позиций на доработку
  {
   CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее тикету
   if (pos.getPositionStatus() == POSITION_STATUS_NOT_DELETED)
@@ -247,13 +248,54 @@ void CTradeManager::OnTick()
   
   if (pos.getPositionStatus() == POSITION_STATUS_NOT_COMPLETE)
   {
-   if (pos.setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED)
+   if (pos.setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && pos.setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и TakeProfit у позиции [%d].Перемещаем её из positionsToReProcessing в openPositions.", MakeFunctionPrefix(__FUNCTION__), i));    
     pos.setPositionStatus(POSITION_STATUS_OPEN);
     _openPositions.Add(_positionsToReProcessing.Detach(i));
    }
   }
+ }
+}
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+void CTradeManager::Initialization()
+{
+ log_file.Write(LOG_DEBUG, StringFormat("%s Запущен процесс инициализации.", MakeFunctionPrefix(__FUNCTION__)));
+ /*int size = _openPositions.Total();
+ for(int i = size - 1; i>=0; i--) // по массиву НАШИХ позиций
+ {
+  position = _openPositions.At(i);
+  if(!OrderSelect(position.getStopLossTicket()))
+  {
+   _openPositions.Delete(i);
+   break;
+  }
+ }*/
+}
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+void CTradeManager::Deinitialization()
+{
+ log_file.Write(LOG_DEBUG, StringFormat("%s Запущен процесс деинициализации.", MakeFunctionPrefix(__FUNCTION__)));
+ int size = _openPositions.Total();
+ int attempts = 0;
+ while (size != 0 && attempts < 25)
+ {
+  for(int i = size - 1; i>=0; i--) // по массиву НАШИХ позиций
+  {
+   position = _openPositions.At(i);
+   if(position.ClosePosition())
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Удалили позицию[%d].Попытка № %d", MakeFunctionPrefix(__FUNCTION__), i, attempts));
+   }
+   else
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось удалить позицию[%d].Попытка № %d", MakeFunctionPrefix(__FUNCTION__), i, attempts));
+   }
+  }
+  size = _openPositions.Total();
+  attempts++;
  }
 }
 //+------------------------------------------------------------------+

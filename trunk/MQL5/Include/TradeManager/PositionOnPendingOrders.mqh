@@ -298,6 +298,10 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
  {
   _tpPrice = TPtype((int)_type);
  }
+ else
+ {
+  _tpPrice = 0;
+ }
  return(STOPLEVEL_STATUS_PLACED);
 }
 
@@ -305,6 +309,7 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
 {
+ ResetLastError();
  if (sl_status == STOPLEVEL_STATUS_NOT_PLACED)
  {
   sl_status = STOPLEVEL_STATUS_DELETED;
@@ -322,7 +327,7 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
    else
    {
     sl_status = STOPLEVEL_STATUS_NOT_DELETED;
-    log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении стоплосса", MakeFunctionPrefix(__FUNCTION__)));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении стоплосса.Error(%d) = %s", MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
    }
   }
   else
@@ -406,11 +411,6 @@ bool CPosition::ClosePosition()
   if (sl_status == STOPLEVEL_STATUS_PLACED)
   {
    sl_status = RemoveStopLoss();
-  }
-  
-  if (tp_status == STOPLEVEL_STATUS_PLACED)
-  {
-   tp_status = RemoveTakeProfit();
   }
  }
  

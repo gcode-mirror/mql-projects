@@ -104,6 +104,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+   order.Deinitialization();
    // ќсвобождаем динамические массивы от данных
    ArrayFree(low_buf);
    ArrayFree(high_buf);
