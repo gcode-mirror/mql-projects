@@ -29,9 +29,9 @@ public:
    string            PersistFilename(){return(m_strPersistFilename);}
    string            PersistFilename(string strFilename);
    int               TicketToIndex(long lTicket);
-   bool              ReadFromFile(bool bCreateLineObjects=true);
    void              ReadAllVomOpenOrders(string strFolder);
-   bool              WriteToFile();
+   bool              ReadFromFile(int handle);
+   bool              WriteToFile(int handle);
    string            SummaryList();
    void              Clear(const long nMagic);
    void              Clear(const string strSymbol);
@@ -233,7 +233,7 @@ int CPositionArray::TicketToIndex(long lTicket)
 //+------------------------------------------------------------------+
 /// Saves array contents to PersistFilename()
 //+------------------------------------------------------------------+
-bool CPositionArray::WriteToFile()
+/*bool CPositionArray::WriteToFile()
   {
    int handle=-1;
    int nRepeatCount=Config.FileAccessRetries;
@@ -259,7 +259,7 @@ bool CPositionArray::WriteToFile()
    FileClose(handle);
    //LogFile.Log(LOG_DEBUG,__FUNCTION__," successful writing to "+PersistFilename());
    return(true);
-  }
+  }*/
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -301,12 +301,51 @@ void CPositionArray::Clear(const string strSymbol)
 string CPositionArray::PrintToString()
 {
  int total = Total();
- string result = StringFormat("%s Array(size=%d): ", MakeFunctionPrefix(__FUNCTION__), total);
+ string result = StringFormat("Array(size=%d): ", total);
  CPosition *pos;
  for (int i = total-1; i >= 0; i--)
  {
   pos = Position(i);
-  StringConcatenate(result, "[", i, "] = {", pos.getMagic(), ", ", pos.getPositionPrice(), ", ", PositionStatusToStr(pos.getPositionStatus()), ", ", GetNameOP(pos.getType()), "}" );
+  StringConcatenate(result, result, "[", i, "] = {", pos.getMagic(), ", ", pos.getPositionPrice(), ", ", PositionStatusToStr(pos.getPositionStatus()), ", ", GetNameOP(pos.getType()), "}" );
  }
  return result;
+}
+
+bool CPositionArray::ReadFromFile(int handle)
+{
+ if(handle != INVALID_HANDLE)
+ {
+  CPosition *pos;// = new CPosition();
+  int count = 0;
+  while(!FileIsEnding(handle))
+  {
+   pos = new CPosition();
+   if (pos.ReadFromFile(handle))
+   {
+    Add(pos);
+    count++;
+   }
+   else
+    delete pos;
+  }
+  Print("Read count: ", count);
+  return true;
+ }
+ return false;
+}
+
+bool CPositionArray::WriteToFile(int handle)
+{
+ if(handle != INVALID_HANDLE)
+ {
+  int size = Total();
+  CPosition *pos;
+  for(int i = size-1; i >= 0; i--)
+  {
+   pos = Position(i);
+   pos.WriteToFile (handle);
+  }
+  return true;
+ }
+ return false;
 }

@@ -46,6 +46,7 @@ private:
    ENUM_ORDER_TYPE PositionOrderType(int type);
    
 public:
+   void CPosition() {}; // конструктор по умолчанию
    void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                 ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
                 
@@ -97,7 +98,7 @@ public:
    bool ClosePosition();
    void DoTrailing();
    bool ReadFromFile (int handle);
-   void WriteToFile (int handle,bool bHeader/*=false*/);
+   void WriteToFile (int handle);
  };
 
 //+------------------------------------------------------------------+
@@ -327,7 +328,7 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
    else
    {
     sl_status = STOPLEVEL_STATUS_NOT_DELETED;
-    log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении стоплосса.Error(%d) = %s", MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
+      log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении стоплосса.Error(%d) = %s.Result retcode %d = %s", MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError()), trade.ResultRetcode(), trade.ResultRetcodeDescription()));
    }
   }
   else
@@ -344,6 +345,10 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
       log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket));
       break;
      }
+     else
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении стоплосса.Error(%d) = %s.Result retcode %d = %s", MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError()), trade.ResultRetcode(), trade.ResultRetcodeDescription()));
+     }
      
     case OP_SELL:
     case OP_SELLLIMIT:
@@ -354,6 +359,10 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
 
       log_file.Write(LOG_DEBUG, StringFormat("%s Удален сработавший стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket));
       break;
+     }
+     else
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении стоплосса.Error(%d) = %s.Result retcode %d = %s", MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError()), trade.ResultRetcode(), trade.ResultRetcodeDescription()));
      }
    }
   }
@@ -387,7 +396,7 @@ ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
 bool CPosition::ClosePosition()
 {
  int i = 0;
- 
+ ResetLastError();
  if (pos_status == POSITION_STATUS_OPEN)
  {
   switch(_type)
@@ -397,11 +406,19 @@ bool CPosition::ClosePosition()
     {
      log_file.Write(LOG_DEBUG, StringFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     }
+    else
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении позиции BUY.Error(%d) = %s.Result retcode %d = %s", MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError()), trade.ResultRetcode(), trade.ResultRetcodeDescription()));
+    }
     break;
    case OP_SELL:
     if(trade.PositionClose(_symbol, POSITION_TYPE_SELL, _lots, config.Deviation))
     {
      log_file.Write(LOG_DEBUG, StringFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
+    }
+    else
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении позиции SELL.Error(%d) = %s.Result retcode %d = %s", MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError()), trade.ResultRetcode(), trade.ResultRetcodeDescription()));    
     }
     break;
    default:
@@ -475,37 +492,44 @@ void CPosition::DoTrailing(void)
 //+------------------------------------------------------------------+
 bool CPosition::ReadFromFile(int handle)
 {
- if(handle<=0)
+ if(handle != INVALID_HANDLE)
  {
-  //LogFile.Log(LOG_PRINT,__FUNCTION__," error: file handle is not valid, returning false");
-  return(false);
+  if(FileIsEnding(handle)) return false;
+  Print("Read Position");
+  _magic = FileReadNumber(handle);
+  Print("__", _magic, "__");
+  _symbol = FileReadString(handle);
+  Print("__", _symbol, "__");
+  _type = StringToPositionType(FileReadString(handle));
+  Print("__", _type, "__");
+  _lots = FileReadNumber(handle);
+  Print("__", _lots, "__");
+  _posTicket = FileReadNumber(handle);
+  Print("__", _posTicket, "__");
+  _posPrice = FileReadNumber(handle);
+  Print("__", _posPrice, "__");
+  _slTicket = FileReadNumber(handle);
+  Print("__", _slTicket, "__");
+  _slPrice = FileReadNumber(handle);
+  Print("__", _slPrice, "__");
+  _sl = FileReadNumber(handle);
+  Print("__", _sl, "__");
+  _tpPrice = FileReadNumber(handle);
+  Print("__", _tpPrice, "__");
+  _tp = FileReadNumber(handle);
+  Print("__", _tp, "__");
+  _minProfit = FileReadNumber(handle);
+  Print("__", _minProfit, "__");
+  _trailingStop = FileReadNumber(handle);
+  Print("__", _trailingStop, "__");
+  _trailingStep = FileReadNumber(handle);
+  Print("__", _trailingStep, "__");
+  _expiration = FileReadDatetime(handle);
+  Print("__", _expiration, "__");
+  //log_file.Write(LOG_DEBUG, StringFormat("%s Файл успешно прочитан", MakeFunctionPrefix(__FUNCTION__)));
+  return true;
  }
- pos_status=StringToPositionStatus(FileReadString(handle));
- if(FileIsEnding(handle)) return(false);
- _symbol=FileReadString(handle);
- _type=StringToPositionType(FileReadString(handle));
- _lots=FileReadNumber(handle);
- /*
- m_dblOpenPrice=FileReadNumber(handle);
- m_dtOpenTime=StringToTime(FileReadString(handle));
- m_dblStopLoss=FileReadNumber(handle);
- m_dblTakeProfit=FileReadNumber(handle);
- m_nTimeStopBars=(int)FileReadNumber(handle);
- m_strComment=FileReadString(handle);
- m_lMagic=StringToInteger(FileReadString(handle));
- m_dblClosePrice=FileReadNumber(handle);
- m_dtCloseTime=StringToTime(FileReadString(handle));
- m_dtExpiration=StringToTime(FileReadString(handle));
- */
- _posTicket=StringToInteger(FileReadString(handle));
-/*
- if(!SelfCheck())
- {
-  LogFile.Log(LOG_PRINT,__FUNCTION__," error - virtual order read from file is not valid, returning false");
-  return(false);
- }
-*/
- return(true);
+ return false;
 }
 
 //+------------------------------------------------------------------+
@@ -514,45 +538,26 @@ bool CPosition::ReadFromFile(int handle)
 /// \param [in] handle	handle of the CSV file
 /// \param [in] bHeader 
 //+------------------------------------------------------------------+
-void CPosition::WriteToFile(int handle,bool bHeader/*=false*/)
-  {/*
-   if(bHeader)
-      FileWrite(handle,
-                "Status",
-                "Symbol",
-                "Type",
-                "Lots",
-                "OpenPrice",
-                "OpenTime",
-                "StopLoss",
-                "TakeProfit",
-                "TimeStopBars"
-                "Comment",
-                "MagicNumber",
-                "ClosePrice",
-                "CloseTime",
-                "Expiration",
-                "Ticket"
-                );
-   else
-     {
-      //LogFile.Log(LOG_VERBOSE,__FUNCTION__," ",TableRow());
-      FileWrite(handle,
-                ::PositionStatusToStr(Status()),
-                Symbol(),
-                ::PositionTypeToStr(OrderType()),
-                _lots(),
-                OpenPrice(),
-                TimeToString(OpenTime(),TIME_DATE|TIME_SECONDS),
-                StopLoss(),
-                TakeProfit(),
-                TimeStopBars(),
-                Comment(),
-                MagicNumber(),
-                ClosePrice(),
-                TimeToString(CloseTime(),TIME_DATE|TIME_SECONDS),
-                TimeToString(Expiration(),TIME_DATE|TIME_SECONDS),
-                Ticket()
-                );
-     }*/
-  }
+void CPosition::WriteToFile(int handle)
+{
+ if(handle != INVALID_HANDLE)
+ {
+  FileWrite(handle,      
+            _magic,           
+            Symbol(),         
+            GetNameOP(_type), 
+            _lots,            
+            _posTicket,       
+            _posPrice,        
+            _slTicket,        
+            _slPrice,         
+            _sl,              
+            _tpPrice,         
+            _tp,              
+            _minProfit,       
+            _trailingStop,   
+            _trailingStep,    
+            TimeToString(_expiration)
+            );
+ }
+}

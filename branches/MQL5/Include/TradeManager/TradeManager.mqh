@@ -50,6 +50,7 @@ public:
   void Deinitialization();
   void OnTick();
   void OnTrade(datetime history_start);
+  void SaveSituationToFile(bool debug = false);
 };
 
 //+------------------------------------------------------------------+
@@ -120,6 +121,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.06f, tp=%.06f", MakeFunctionPrefix(__FUNCTION__),position.getMagic(), position.getSymbol(), GetNameOP(position.getType()), position.getPositionPrice(), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice()));
    _openPositions.Add(position);
+   SaveSituationToFile();
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
    return(true); // Если удачно открыли позицию
   }
@@ -174,7 +176,6 @@ void CTradeManager::OnTick()
 {
  MqlTick tick;
  SymbolInfoTick(Symbol(), tick);
- double price;
  ENUM_TM_POSITION_TYPE type;
  int size = _openPositions.Total();
  for(int i = size - 1; i>=0; i--) // по массиву НАШИХ позиций
@@ -187,23 +188,15 @@ void CTradeManager::OnTick()
    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss", MakeFunctionPrefix(__FUNCTION__)));
    log_file.Write(LOG_DEBUG, StringFormat("%s, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
     _openPositions.Delete(i);
+    SaveSituationToFile();
     break;                         // ... и удалить позицию из массива позиций 
   }
      
   if ((type == OP_SELL && position.getTakeProfitPrice() >= tick.ask) || (type == OP_BUY && position.getTakeProfitPrice() <= tick.bid)) // цена дошла до уровня TP
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, ask = %f, bif = %f, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), tick.ask, tick.bid, position.getTakeProfitPrice()));
-   if (position.ClosePosition())  // сработал тейкпрофит, надо удалить ордер-стоплосс...
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Позиция закрыта, удаляем её [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-    _openPositions.Delete(i);                        // ... и удалить позицию из массива позиций 
-   }
-   else
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось закрыть позицию. Перемещаем её [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
-    _positionsToReProcessing.Add(_openPositions.Detach(i));
-   }
-   break;                                                // завершаем шаг цикла
+   ClosePosition(i);
+   break;             // завершаем шаг цикла
   }
      
   if (position.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
@@ -222,6 +215,7 @@ void CTradeManager::OnTick()
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
     position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
     _openPositions.Add(position);
+    SaveSituationToFile();
    }
   }
  }
@@ -253,6 +247,7 @@ void CTradeManager::OnTick()
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и TakeProfit у позиции [%d].Перемещаем её из positionsToReProcessing в openPositions.", MakeFunctionPrefix(__FUNCTION__), i));    
     pos.setPositionStatus(POSITION_STATUS_OPEN);
     _openPositions.Add(_positionsToReProcessing.Detach(i));
+    SaveSituationToFile();
    }
   }
  }
@@ -262,16 +257,18 @@ void CTradeManager::OnTick()
 void CTradeManager::Initialization()
 {
  log_file.Write(LOG_DEBUG, StringFormat("%s Запущен процесс инициализации.", MakeFunctionPrefix(__FUNCTION__)));
- /*int size = _openPositions.Total();
- for(int i = size - 1; i>=0; i--) // по массиву НАШИХ позиций
+ int file_handle = FileOpen(CreateRDFilename(), FILE_READ|FILE_CSV|FILE_COMMON, ";");
+ if (file_handle != INVALID_HANDLE)
  {
-  position = _openPositions.At(i);
-  if(!OrderSelect(position.getStopLossTicket()))
-  {
-   _openPositions.Delete(i);
-   break;
-  }
- }*/
+  log_file.Write(LOG_DEBUG, StringFormat("%s Существует файл состояния. Считываем данные из него.", MakeFunctionPrefix(__FUNCTION__)));
+  _openPositions.ReadFromFile(file_handle);
+  FileClose(CreateRDFilename());
+  log_file.Write(LOG_DEBUG, StringFormat("%s Скопировали данные из файла состояния.", MakeFunctionPrefix(__FUNCTION__)));
+  SaveSituationToFile(true);
+  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+ }
+ else
+  log_file.Write(LOG_DEBUG, StringFormat("%s Файл состояния отсутствует.Предыдущее завершенее программы было запланированным.", MakeFunctionPrefix(__FUNCTION__)));
 }
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
@@ -280,23 +277,19 @@ void CTradeManager::Deinitialization()
  log_file.Write(LOG_DEBUG, StringFormat("%s Запущен процесс деинициализации.", MakeFunctionPrefix(__FUNCTION__)));
  int size = _openPositions.Total();
  int attempts = 0;
- while (size != 0 && attempts < 25)
+ while (attempts < 25)
  {
   for(int i = size - 1; i>=0; i--) // по массиву НАШИХ позиций
   {
    position = _openPositions.At(i);
-   if(position.ClosePosition())
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Удалили позицию[%d].Попытка № %d", MakeFunctionPrefix(__FUNCTION__), i, attempts));
-   }
-   else
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось удалить позицию[%d].Попытка № %d", MakeFunctionPrefix(__FUNCTION__), i, attempts));
-   }
+   ClosePosition(i);
   }
   size = _openPositions.Total();
+  if(size == 0) break;
   attempts++;
  }
+ 
+ FileDelete(CreateRDFilename(), FILE_COMMON);
 }
 //+------------------------------------------------------------------+
 /// Close a virtual order.
@@ -322,6 +315,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  if (pos.ClosePosition())
  {
   _openPositions.Delete(i);  // удаляем позицию по индексу
+  SaveSituationToFile();
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
   return(true);
  }
@@ -367,4 +361,25 @@ long CTradeManager::MakeMagic(string strSymbol = "")
   ulHash = ((ulHash<<5) + ulHash) + StringGetCharacter(s,i);
  }
  return MathAbs((long)ulHash);
+}
+
+string CreateRDFilename (bool debug = false)
+{
+ string result;
+ if (debug) result = StringFormat("%s\\RescueData\\%s_%s_%s_debug.csv", MQL5InfoString(MQL5_PROGRAM_NAME), MQL5InfoString(MQL5_PROGRAM_NAME), StringSubstr(Symbol(),0,6), PeriodToString(Period()));
+ else result = StringFormat("%s\\RescueData\\%s_%s_%s_rd.csv", MQL5InfoString(MQL5_PROGRAM_NAME), MQL5InfoString(MQL5_PROGRAM_NAME), StringSubstr(Symbol(),0,6), PeriodToString(Period()));
+ return(result);
+}
+
+void CTradeManager::SaveSituationToFile(bool debug = false)
+{
+ string file_name = CreateRDFilename(debug);
+ int file_handle = FileOpen(file_name, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
+ if(file_handle == INVALID_HANDLE)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), file_name));
+  return;
+ }
+ _openPositions.WriteToFile(file_handle);
+ FileClose(file_handle);
 }
