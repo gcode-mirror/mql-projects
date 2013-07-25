@@ -17,13 +17,18 @@
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
 input ulong _magic = 4577;
+input int volume = 10;
+input double factor = 0.01;
+input int slowDelta = 30;
+input int fastDelta = 50;
+input int dayStep = 40;
+input int monthStep = 400;
 
 string symbol;
 ENUM_TIMEFRAMES period;
 datetime startTime;
 double openPrice;
 double currentVolume;
-
 
 CDynamo dyn;
 //+------------------------------------------------------------------+
@@ -37,6 +42,7 @@ int OnInit()
    startTime = TimeCurrent();
    
    currentVolume = 0;
+   dyn.InitDayTrade();
    dyn.InitMonthTrade();
    
 //---
@@ -54,22 +60,25 @@ void OnDeinit(const int reason)
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
+ {
+  dyn.InitDayTrade();
+  dyn.InitMonthTrade();
+  if (dyn.isInit())
   {
-//---
-   dyn.InitDayTrade();
-   dyn.InitMonthTrade();
    dyn.RecountDelta();
    
    double vol = dyn.RecountVolume();
+   //PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
+   
    if (currentVolume != vol)
    {
+    PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
     if (dyn.CorrectOrder(vol - currentVolume))
     {
      currentVolume = vol;
     }
    }
-   
-//---
-  }
+  } 
+ }
 //+------------------------------------------------------------------+
 
