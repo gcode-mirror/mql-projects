@@ -12,10 +12,11 @@
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBar.mqh>
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
+#include <CLog.mqh>
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
-input ulong _magic = 1122;
+//input ulong _magic = 1122;
 input int SL = 150;
 input int TP = 500;
 input double _lot = 1;
@@ -39,7 +40,7 @@ input int stopPriceDifference = 20;
 string symbol;                               //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm(_magic);
+CTradeManager ctm();
 MqlTick tick;
 
 int handleMACD;
@@ -106,6 +107,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+   ctm.Deinitialization();
    // Освобождаем динамические массивы от данных
    ArrayFree(low_buf);
    ArrayFree(high_buf);
@@ -115,6 +117,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   ctm.OnTick();
    //переменные для хранения результатов работы с ценовым графиком
    int errLow = 0;                                                   
    int errHigh = 0;                                                   
