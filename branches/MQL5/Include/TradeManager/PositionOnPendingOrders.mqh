@@ -498,6 +498,7 @@ bool CPosition::ReadFromFile(int handle)
   Print("Read Position");
   _magic = FileReadNumber(handle);
   Print("__", _magic, "__");
+  if(FileIsEnding(handle)) return false;
   _symbol = FileReadString(handle);
   Print("__", _symbol, "__");
   _type = StringToPositionType(FileReadString(handle));
