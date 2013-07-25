@@ -33,6 +33,7 @@ private:
    int _minProfit, _trailingStop, _trailingStep;
    ENUM_TM_POSITION_TYPE _type;
    datetime _expiration;
+   int _priceDifference;
    
    CEntryPriceLine   _entryPriceLine;
    CStopLossLine     _stopLossLine;
@@ -105,10 +106,11 @@ public:
 //+------------------------------------------------------------------+
 CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                     ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0)
-                    : _magic(magic), _symbol(symbol), _type(type), _lots(volume)
-                    , _sl(sl), _tp(tp), _minProfit(minProfit), _trailingStop(trailingStop), _trailingStep(trailingStep)
+                    : _magic(magic), _symbol(symbol), _type(type), _lots(volume), _sl(sl), _tp(tp), _minProfit(minProfit), 
+                      _trailingStop(trailingStop), _trailingStep(trailingStep), _priceDifference(priceDifference)
   {
 //--- initialize trade functions class
+   _expiration = TimeCurrent()+2*PeriodSeconds(Period());
    trade = new CTMTradeFunctions();
    pos_status = POSITION_STATUS_NOT_INITIALISED;
    sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
@@ -133,8 +135,13 @@ bool CPosition::UpdateSymbolInfo()
 double CPosition::pricetype(int type)
 {
  UpdateSymbolInfo();
- if(type == 0 || type == 2 || type == 4) return(SymbInfo.Ask());
- if(type == 1 || type == 3 || type == 5) return(SymbInfo.Bid());
+ double ask = SymbInfo.Ask();
+ double bid = SymbInfo.Bid();
+ double point = SymbInfo.Point();
+ if(type == 0) return(ask);
+ if(type == 1) return(bid);
+ if(type == 2 || type == 5) return(bid - _priceDifference*point);
+ if(type == 3 || type == 4) return(ask + _priceDifference*point);
  return(-1);
 }
 //+------------------------------------------------------------------+
@@ -180,9 +187,9 @@ ENUM_ORDER_TYPE CPosition::TPOrderType(int type)
 ENUM_POSITION_STATUS CPosition::OpenPosition()
 {
  UpdateSymbolInfo();
- double stopLevel = _Point*SymbolInfoInteger(Symbol(),SYMBOL_TRADE_STOPS_LEVEL);
- double ask = SymbInfo.Ask();
- double bid = SymbInfo.Bid();
+ //double stopLevel = _Point*SymbolInfoInteger(Symbol(),SYMBOL_TRADE_STOPS_LEVEL);
+ //double ask = SymbInfo.Ask();
+ //double bid = SymbInfo.Bid();
  _posPrice = pricetype((int)_type);
 
  switch(_type)
@@ -222,7 +229,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_BUYLIMIT:
    if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posPrice))
    {
-    _posTicket = trade.ResultDeal();
+    _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
    }
@@ -230,7 +237,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_SELLLIMIT:
    if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posPrice))
    {
-    _posTicket = trade.ResultDeal();
+    _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
    }
@@ -238,7 +245,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_BUYSTOP:
    if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posPrice))
    {
-    _posTicket = trade.ResultDeal();
+    _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
    }
@@ -246,7 +253,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_SELLSTOP:
    if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posPrice))
    {
-    _posTicket = trade.ResultDeal();
+    _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
    }
@@ -388,6 +395,11 @@ bool CPosition::ClosePosition()
 {
  int i = 0;
  
+ if (pos_status == POSITION_STATUS_PENDING)
+ {
+  pos_status = RemovePendingPosition();
+ }
+ 
  if (pos_status == POSITION_STATUS_OPEN)
  {
   switch(_type)
@@ -412,11 +424,6 @@ bool CPosition::ClosePosition()
   {
    sl_status = RemoveStopLoss();
   }
- }
- 
- if (pos_status == POSITION_STATUS_PENDING)
- {
-  pos_status = RemovePendingPosition();
  }
   
  return(pos_status != POSITION_STATUS_NOT_DELETED

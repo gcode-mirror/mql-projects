@@ -106,7 +106,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    }
    break;
   default:
-   log_file.Write(LOG_DEBUG, StringFormat("%s Error: Invalid ENUM_VIRTUAL_ORDER_TYPE", MakeFunctionPrefix(__FUNCTION__)));
+   //log_file.Write(LOG_DEBUG, StringFormat("%s Error: Invalid ENUM_VIRTUAL_ORDER_TYPE", MakeFunctionPrefix(__FUNCTION__)));
    break;
  }
  
@@ -126,8 +126,9 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   else
   {
    error = GetLastError();
-   _positionsToReProcessing.Add(position);
-   log_file.Write(LOG_DEBUG, StringFormat("%s Ќе удалось открыть позицию.Error{%d} = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error)));
+   if(position.getType() != OP_BUYLIMIT  && position.getType() != OP_BUYSTOP &&
+      position.getType() != OP_SELLLIMIT && position.getType() != OP_SELLSTOP) _positionsToReProcessing.Add(position);//?
+   log_file.Write(LOG_DEBUG, StringFormat("%s Ќе удалось открыть позицию.Error{%d} = %s.Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(position.getPositionStatus())));
    return(false); // ≈сли открыть позицию не удалось
   }
  }
@@ -182,7 +183,7 @@ void CTradeManager::OnTick()
   position = _openPositions.At(i); // выберем позицию по ее индексу
   type = position.getType();
     
-  if (!OrderSelect(position.getStopLossTicket())) // ≈сли мы не можем выбрать стоп по его тикету, значит он сработал
+  if (!OrderSelect(position.getStopLossTicket()) && position.getPositionStatus() != POSITION_STATUS_PENDING) // ≈сли мы не можем выбрать стоп по его тикету, значит он сработал
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Ќет ордера-StopLoss", MakeFunctionPrefix(__FUNCTION__)));
    log_file.Write(LOG_DEBUG, StringFormat("%s, удал€ем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
@@ -190,7 +191,8 @@ void CTradeManager::OnTick()
     break;                         // ... и удалить позицию из массива позиций 
   }
      
-  if ((type == OP_SELL && position.getTakeProfitPrice() >= tick.ask) || (type == OP_BUY && position.getTakeProfitPrice() <= tick.bid)) // цена дошла до уровн€ TP
+  if ((type == OP_SELL && position.getTakeProfitPrice() >= tick.ask) || 
+      (type == OP_BUY  && position.getTakeProfitPrice() <= tick.bid) )             // цена дошла до уровн€ TP
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s ÷ена дошла до уровн€ TP, закрываем позицию type = %s, ask = %f, bif = %f, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), tick.ask, tick.bid, position.getTakeProfitPrice()));
    if (position.ClosePosition())  // сработал тейкпрофит, надо удалить ордер-стоплосс...
@@ -216,12 +218,16 @@ void CTradeManager::OnTick()
     {
      log_file.Write(LOG_DEBUG, StringFormat("%s Ќе получилось установить StopLoss и/или TakeProfit. ѕеремещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
      position.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
-     _positionsToReProcessing.Add(position); 
+     _positionsToReProcessing.Add(_openPositions.Detach(i)); 
      break;
     }
     log_file.Write(LOG_DEBUG, StringFormat("%s ѕолучилось установить StopLoss и/или TakeProfit. ѕеремещаем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
     position.setPositionStatus(POSITION_STATUS_OPEN); // позици€ открылась, стоп и тейк установлены
-    _openPositions.Add(position);
+   }
+   if(TimeCurrent() > position.getExpiration())
+   {
+    position.ClosePosition();
+    _openPositions.Delete(i);
    }
   }
  }
@@ -287,6 +293,7 @@ void CTradeManager::Deinitialization()
    position = _openPositions.At(i);
    if(position.ClosePosition())
    {
+    _openPositions.Delete(i);
     log_file.Write(LOG_DEBUG, StringFormat("%s ”далили позицию[%d].ѕопытка є %d", MakeFunctionPrefix(__FUNCTION__), i, attempts));
    }
    else
