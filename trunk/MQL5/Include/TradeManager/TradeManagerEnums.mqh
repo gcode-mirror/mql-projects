@@ -15,7 +15,8 @@ enum ENUM_TM_POSITION_TYPE
    OP_BUYLIMIT,      //Отложенный ордер BUY LIMIT 
    OP_SELLLIMIT,     //Отложенный ордер SELL LIMIT 
    OP_BUYSTOP,       //Отложенный ордер BUY STOP 
-   OP_SELLSTOP       //Отложенный ордер SELL STOP 
+   OP_SELLSTOP,      //Отложенный ордер SELL STOP
+   OP_UNKNOWN        //Для инициализации или ошибка
   };
 
 //+------------------------------------------------------------------+ 
@@ -74,6 +75,7 @@ string PositionStatusToStr(ENUM_POSITION_STATUS enumPositionStatus)
    switch(enumPositionStatus)
      {
       case POSITION_STATUS_OPEN: return("open");
+      case POSITION_STATUS_PENDING: return("pending");
       case POSITION_STATUS_CLOSED: return("closed");
       case POSITION_STATUS_DELETED: return("deleted");
       case POSITION_STATUS_NOT_INITIALISED: return("not initialised");

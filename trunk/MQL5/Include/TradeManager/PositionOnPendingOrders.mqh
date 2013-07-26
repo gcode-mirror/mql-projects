@@ -85,9 +85,9 @@ public:
    void setExpiration(datetime expiration) {_expiration = expiration;};
    
    bool UpdateSymbolInfo();        // Получение актуальной информации по торговому инструменту 
-   double pricetype(int type);     // вычисляет уровень открытия в зависимости от типа 
-   double SLtype(int type);        // вычисляет уровень стоп-лосса в зависимости от типа
-   double TPtype(int type);        // вычисляет уровень тейк-профита в зависимости от типа
+   double pricetype(ENUM_TM_POSITION_TYPE type);     // вычисляет уровень открытия в зависимости от типа 
+   double SLtype(ENUM_TM_POSITION_TYPE type);        // вычисляет уровень стоп-лосса в зависимости от типа
+   double TPtype(ENUM_TM_POSITION_TYPE type);        // вычисляет уровень тейк-профита в зависимости от типа
 
    ENUM_POSITION_STATUS OpenPosition();
    ENUM_STOPLEVEL_STATUS setStopLoss();
@@ -96,7 +96,7 @@ public:
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();
    ENUM_POSITION_STATUS RemovePendingPosition();
    bool ClosePosition();
-   void DoTrailing();
+   bool DoTrailing();
    bool ReadFromFile (int handle);
    void WriteToFile (int handle,bool bHeader/*=false*/);
  };
@@ -132,22 +132,22 @@ bool CPosition::UpdateSymbolInfo()
 //+------------------------------------------------------------------+
 //| Вычисляет уровень открытия в зависимости от типа                 |
 //+------------------------------------------------------------------+
-double CPosition::pricetype(int type)
+double CPosition::pricetype(ENUM_TM_POSITION_TYPE type)
 {
  UpdateSymbolInfo();
  double ask = SymbInfo.Ask();
  double bid = SymbInfo.Bid();
  double point = SymbInfo.Point();
- if(type == 0) return(ask);
- if(type == 1) return(bid);
- if(type == 2 || type == 5) return(bid - _priceDifference*point);
- if(type == 3 || type == 4) return(ask + _priceDifference*point);
+ if(type == OP_BUY) return(ask);
+ if(type == OP_SELL) return(bid);
+ if(type == OP_BUYLIMIT  || type == OP_SELLSTOP) return(bid - _priceDifference*point);
+ if(type == OP_SELLLIMIT || type == OP_BUYSTOP) return(ask + _priceDifference*point);
  return(-1);
 }
 //+------------------------------------------------------------------+
 //| Вычисляет уровень стоплосса в зависимости от типа                |
 //+------------------------------------------------------------------+
-double CPosition::SLtype(int type)
+double CPosition::SLtype(ENUM_TM_POSITION_TYPE type)
 {
  UpdateSymbolInfo();
  if(type == 0 || type == 2 || type == 4) return(SymbInfo.Bid()-_sl*SymbInfo.Point()); // Buy
@@ -157,7 +157,7 @@ double CPosition::SLtype(int type)
 //+------------------------------------------------------------------+
 //| Вычисляет уровень тейкпрофита в зависимости от типа              |
 //+------------------------------------------------------------------+
-double CPosition::TPtype(int type)
+double CPosition::TPtype(ENUM_TM_POSITION_TYPE type)
 {
  UpdateSymbolInfo();
  if(type == 0 || type == 2 || type == 4) return(SymbInfo.Ask()+_tp*SymbInfo.Point()); // Buy 
@@ -190,7 +190,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
  //double stopLevel = _Point*SymbolInfoInteger(Symbol(),SYMBOL_TRADE_STOPS_LEVEL);
  //double ask = SymbInfo.Ask();
  //double bid = SymbInfo.Bid();
- _posPrice = pricetype((int)_type);
+ _posPrice = pricetype(_type);
 
  switch(_type)
  {
@@ -280,13 +280,13 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
  ENUM_ORDER_TYPE order_type;
  if (_sl > 0 && sl_status != STOPLEVEL_STATUS_PLACED)
  {
-  _slPrice = SLtype((int)_type);
+  _slPrice = SLtype(_type);
   order_type = SLOrderType((int)_type);
   if (trade.OrderOpen(_symbol, order_type, _lots, _slPrice)) //, sl + stopLevel, sl - stopLevel);
   {
    _slTicket = trade.ResultOrder();
    sl_status = STOPLEVEL_STATUS_PLACED;
-   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d", MakeFunctionPrefix(__FUNCTION__), _slTicket));     
+   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d c с ценой %0.6f", MakeFunctionPrefix(__FUNCTION__), _slTicket, _slPrice));     
   }
   else
   {
@@ -303,7 +303,8 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
 {
  if (_tp > 0)
  {
-  _tpPrice = TPtype((int)_type);
+  _tpPrice = TPtype(_type);
+  log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен виртуальный тейкпрофит с ценой %0.6f", MakeFunctionPrefix(__FUNCTION__), _tpPrice));     
  }
  else
  {
@@ -433,7 +434,7 @@ bool CPosition::ClosePosition()
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-void CPosition::DoTrailing(void)
+bool CPosition::DoTrailing(void)
 {
  UpdateSymbolInfo();
  double ask = SymbInfo.Ask();
@@ -452,6 +453,7 @@ void CPosition::DoTrailing(void)
     if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
     {
      _slPrice = newSL;
+     return true;
     } 
    }
   }
@@ -467,10 +469,12 @@ void CPosition::DoTrailing(void)
     if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
     {
      _slPrice = newSL;
+     return true;
     }
    }
   }
  }
+ return false;
 }
 
 //+------------------------------------------------------------------+

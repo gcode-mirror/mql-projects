@@ -126,8 +126,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   else
   {
    error = GetLastError();
-   if(position.getType() != OP_BUYLIMIT  && position.getType() != OP_BUYSTOP &&
-      position.getType() != OP_SELLLIMIT && position.getType() != OP_SELLSTOP) _positionsToReProcessing.Add(position);//?
+   if(position.getType() == OP_SELL || position.getType() == OP_BUY) _positionsToReProcessing.Add(position);//?
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось открыть позицию.Error{%d} = %s.Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(position.getPositionStatus())));
    return(false); // Если открыть позицию не удалось
   }
@@ -149,7 +148,11 @@ void CTradeManager::DoTrailing()  //TO DO LIST : добавить логгирование
  for(int i = 0; i < total; i++)
  {
   CPosition *pos = _openPositions.At(i);
-  pos.DoTrailing();
+  if(pos.DoTrailing())
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Изменилась цена SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+  }
  } 
 };
 //+------------------------------------------------------------------+ 
@@ -221,11 +224,15 @@ void CTradeManager::OnTick()
      _positionsToReProcessing.Add(_openPositions.Detach(i)); 
      break;
     }
-    log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Изменяем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
     position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
+    if(position.getType() == OP_BUYLIMIT || position.getType() == OP_BUYSTOP) position.setType(OP_BUY);
+    if (position.getType() == OP_SELLLIMIT || position.getType() == OP_SELLSTOP) position.setType(OP_SELL);
+    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
    }
    if(TimeCurrent() > position.getExpiration())
    {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Прошло время ожидания у ордера %d", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket()));
     position.ClosePosition();
     _openPositions.Delete(i);
    }
@@ -304,6 +311,7 @@ void CTradeManager::Deinitialization()
   size = _openPositions.Total();
   attempts++;
  }
+ log_file.Write(LOG_DEBUG, StringFormat("%s Процесс деинициализации завершен.", MakeFunctionPrefix(__FUNCTION__)));
 }
 //+------------------------------------------------------------------+
 /// Close a virtual order.

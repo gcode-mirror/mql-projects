@@ -306,7 +306,7 @@ string CPositionArray::PrintToString()
  for (int i = total-1; i >= 0; i--)
  {
   pos = Position(i);
-  StringConcatenate(result, "[", i, "] = {", pos.getMagic(), ", ", pos.getPositionPrice(), ", ", PositionStatusToStr(pos.getPositionStatus()), ", ", GetNameOP(pos.getType()), "}" );
+  StringConcatenate(result, "[", i, "] = {", pos.getMagic(), ", ", pos.getPositionPrice(), ", ", PositionStatusToStr(pos.getPositionStatus()), ", ", GetNameOP(pos.getType()), ",", pos.getStopLossPrice(), ",", pos.getTakeProfitPrice(), ",", pos.getStopLossTicket(), ",", pos.getStopLossStatus(), "}" );
  }
  return result;
 }
