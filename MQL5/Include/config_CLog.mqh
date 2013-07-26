@@ -12,5 +12,5 @@
 #define CONF_LIMIT_SIZE 50                   // предельный размер log-файла в Mb
 #define CONF_LOG_LEVEL LOG_DEBUG             // уровень логирования
 #define CONF_CATALOG_NAME "CTMLog"           // имя каталога для хранения логов
-#define CONF_OUT_TYPE OUT_COMMENT
+#define CONF_OUT_TYPE OUT_FILE
 
