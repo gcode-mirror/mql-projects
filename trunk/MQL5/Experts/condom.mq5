@@ -90,10 +90,8 @@ int OnInit()
    }
 
    //устанавливаем индексацию для массивов ХХХ_buf
-   ArraySetAsSeries(MACD_buf, false);
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
-   ArraySetAsSeries(close_buf, false);
 
    globalMax = 0;
    globalMin = 0;
@@ -152,13 +150,13 @@ void OnTick()
     globalMax = high_buf[ArrayMaximum(high_buf)];
     globalMin = low_buf[ArrayMinimum(low_buf)];
     
-    if(LessDoubles(close_buf[1], globalMin)) // Последний Close(0 - старше, 1 - моложе) ниже глобального минимума
+    if(LessDoubles(close_buf[1], globalMin)) // Последний Close(0 - старше, 1 - моложе, т.е НЕ как в таймсерии) ниже глобального минимума
     {
      waitForSell = false;
      waitForBuy = true;
     }
     
-    if(GreatDoubles(close_buf[1], globalMax)) // Последний Close(0 - старше, 1 - моложе) выше глобального максимума
+    if(GreatDoubles(close_buf[1], globalMax)) // Последний Close(0 - старше, 1 - моложе, т.е НЕ как в таймсерии) выше глобального максимума
     {
      waitForBuy = false;
      waitForSell = true;
@@ -180,10 +178,7 @@ void OnTick()
    if(!SymbolInfoTick(Symbol(),tick))
    {
     Alert("SymbolInfoTick() failed, error = ",GetLastError());
-   }
-   else
-   {
-    //Alert(tick.time,": Bid = ",tick.bid," Ask = ",tick.ask,"  Volume = ",tick.volume);
+    return;
    }
       
    if (waitForBuy)
