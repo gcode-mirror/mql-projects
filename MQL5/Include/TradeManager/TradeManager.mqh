@@ -212,29 +212,36 @@ void CTradeManager::OnTick()
   }
      
   if (position.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
-  { 
-   if (HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_FILLED) // Ордер уже выполнен
+  {
+   if (!OrderSelect(position.getPositionTicket()))
    {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
-    if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
-     || position.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
+    HistorySelect((TimeCurrent()-3*PeriodSeconds(Period())), TimeCurrent());
+    if (HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_FILLED) // Ордер уже выполнен
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
-     position.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
-     _positionsToReProcessing.Add(_openPositions.Detach(i)); 
+     log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
+     if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
+      || position.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
+      position.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
+      _positionsToReProcessing.Add(_openPositions.Detach(i)); 
+      break;
+     }
+     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Изменяем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
+     position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
+     if(position.getType() == OP_BUYLIMIT || position.getType() == OP_BUYSTOP) position.setType(OP_BUY);
+     if (position.getType() == OP_SELLLIMIT || position.getType() == OP_SELLSTOP) position.setType(OP_SELL);
+     log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+     SaveSituationToFile();
      break;
     }
-    log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Изменяем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
-    position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
-    if(position.getType() == OP_BUYLIMIT || position.getType() == OP_BUYSTOP) position.setType(OP_BUY);
-    if (position.getType() == OP_SELLLIMIT || position.getType() == OP_SELLSTOP) position.setType(OP_SELL);
-    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-    SaveSituationToFile();
-   }
-   if(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_EXPIRED)
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Прошло время ожидания у ордера %d", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket()));
-    ClosePosition(i);
+    else //if(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_EXPIRED)
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s Прошло время ожидания у ордера %d", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket()));
+     _openPositions.Delete(i);
+     break;
+    }
+    //log_file.Write(LOG_DEBUG, StringFormat("%s ticket = %d; status = %s", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), OSTS(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE))));
    }
   }
  }
@@ -401,4 +408,33 @@ void CTradeManager::SaveSituationToFile(bool debug = false)
  }
  _openPositions.WriteToFile(file_handle);
  FileClose(file_handle);
+}
+
+
+string OSTS(long state)
+{
+ switch(state)
+ {
+  case ORDER_STATE_CANCELED:
+   return("ORDER_STATE_CANCELED");
+  case ORDER_STATE_EXPIRED:
+   return("ORDER_STATE_EXPIRED");
+  case ORDER_STATE_FILLED:
+   return("ORDER_STATE_FILLED");
+  case ORDER_STATE_PARTIAL:
+   return("ORDER_STATE_FILLED");
+  case ORDER_STATE_PLACED:
+   return("ORDER_STATE_PLACED");
+  case ORDER_STATE_REJECTED:
+   return("ORDER_STATE_REJECTED");
+  case ORDER_STATE_REQUEST_ADD:
+   return("ORDER_STATE_REQUEST_ADD");
+  case ORDER_STATE_REQUEST_CANCEL:
+   return("ORDER_STATE_REQUEST_CANCEL");
+  case ORDER_STATE_REQUEST_MODIFY:
+   return("ORDER_STATE_REQUEST_MODIFY");
+  case ORDER_STATE_STARTED:
+   return("ORDER_STATE_STARTED");
+ }
+ return("bad state");  
 }
