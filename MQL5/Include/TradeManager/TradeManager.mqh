@@ -175,8 +175,8 @@ void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
 /// Include the folowing in each EA that uses TradeManager
 //+------------------------------------------------------------------+
 void CTradeManager::OnTrade(datetime history_start)
-  {
-  }
+{
+}
 
 //+------------------------------------------------------------------+
 /// Called from EA OnTick().
@@ -196,10 +196,12 @@ void CTradeManager::OnTick()
     
   if (!OrderSelect(position.getStopLossTicket()) && position.getPositionStatus() != POSITION_STATUS_PENDING) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-    _openPositions.Delete(i);
-    SaveSituationToFile();
-    break;                         // ... и удалить позицию из массива позиций 
+
+   log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+
+   _openPositions.Delete(i);
+   SaveSituationToFile();
+   break;                         // ... и удалить позицию из массива позиций 
   }
      
   if ((type == OP_SELL && position.getTakeProfitPrice() >= tick.ask) || 
