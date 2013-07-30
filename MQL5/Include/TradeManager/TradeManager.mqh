@@ -196,9 +196,7 @@ void CTradeManager::OnTick()
     
   if (!OrderSelect(position.getStopLossTicket()) && position.getPositionStatus() != POSITION_STATUS_PENDING) // ≈сли мы не можем выбрать стоп по его тикету, значит он сработал
   {
-<<<<<<< .mine   log_file.Write(LOG_DEBUG, StringFormat("%s Ќет ордера-StopLoss", MakeFunctionPrefix(__FUNCTION__)));
-=======   log_file.Write(LOG_DEBUG, StringFormat("%s Ќет ордера-StopLoss, удал€ем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
->>>>>>> .theirs   log_file.Write(LOG_DEBUG, StringFormat("%s, удал€ем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Ќет ордера-StopLoss, удал€ем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
     _openPositions.Delete(i);
     SaveSituationToFile();
     break;                         // ... и удалить позицию из массива позиций 
