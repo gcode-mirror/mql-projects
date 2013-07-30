@@ -142,7 +142,7 @@ double CPosition::pricetype(ENUM_TM_POSITION_TYPE type)
  if(type == OP_BUY) return(ask);
  if(type == OP_SELL) return(bid);
  if(type == OP_BUYLIMIT  || type == OP_SELLSTOP) return(bid - _priceDifference*point);
- if(type == OP_SELLLIMIT || type == OP_BUYSTOP) return(ask + _priceDifference*point);
+ if(type == OP_SELLLIMIT || type == OP_BUYSTOP)  return(ask + _priceDifference*point);
  return(-1);
 }
 //+------------------------------------------------------------------+
@@ -407,6 +407,7 @@ bool CPosition::ClosePosition()
  ResetLastError();
  if (pos_status == POSITION_STATUS_PENDING)
  {
+  log_file.Write(LOG_DEBUG, StringFormat("%s RemovePendingPosition", MakeFunctionPrefix(__FUNCTION__)));
   pos_status = RemovePendingPosition();
  }
  
