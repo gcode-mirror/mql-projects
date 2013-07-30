@@ -13,16 +13,32 @@
 #include <Dinya\CDynamo.mqh>
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 
+enum DELTA_STEP
+{
+ ONE = 1,
+ TWO = 2,
+ FOUR = 4,
+ FIVE = 5,
+ TEN = 10,
+ TWENTY = 20,
+ TWENTY_FIVE = 25,
+ FIFTY = 50,
+ HUNDRED = 100
+};
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
 input ulong _magic = 4577;
-input int volume = 10;
-input double factor = 0.01;
-input int slowDelta = 30;
-input int fastDelta = 50;
-input int dayStep = 40;
-input int monthStep = 400;
+input int volume = 10;  // Полный объем торгов
+input double factor = 0.01; // множитель для вычисления текущего объема торгов от дельты
+input int percentage = 70;  // сколько процентов объем дневной торговли может перекрывать от месячно
+input int slowPeriod = 30;  // Период обновления старшей дельта 
+input int slowDelta = 30;   // Старшая дельта
+input int fastDelta = 50;   // Младшая дельта
+input DELTA_STEP deltaStep = TEN;  // Величина шага изменения дельты
+input int dayStep = 40;     // шаг границы цены в пунктах для дневной торговли
+input int monthStep = 400;  // шаг границы цены в пунктах для месячной торговл 
+
 
 string symbol;
 ENUM_TIMEFRAMES period;
@@ -30,13 +46,24 @@ datetime startTime;
 double openPrice;
 double currentVolume;
 
-CDynamo dyn;
+CDynamo dyn(fastDelta, slowDelta, deltaStep, dayStep, monthStep, volume, factor, percentage, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
 //---
+   if (fastDelta % deltaStep != 0)
+   {
+    PrintFormat("%s Младшая дельта должна делиться на шаг");
+    return(INIT_FAILED);
+   }
+   if (slowDelta % deltaStep != 0)
+   {
+    PrintFormat("%s Старшая дельта должна делиться на шаг");
+    return(INIT_FAILED);
+   }
+   
    symbol = Symbol();
    period = Period();
    startTime = TimeCurrent();
@@ -66,10 +93,7 @@ void OnTick()
   if (dyn.isInit())
   {
    dyn.RecountDelta();
-   
    double vol = dyn.RecountVolume();
-   //PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
-   
    if (currentVolume != vol)
    {
     PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
