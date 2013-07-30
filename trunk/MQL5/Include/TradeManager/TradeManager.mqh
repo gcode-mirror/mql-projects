@@ -69,7 +69,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
  log_file.Write(LOG_DEBUG
                ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
                             , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
- log_file.Write(LOG_DEBUG, _openPositions.PrintToString());
+ log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
  switch(type)
  {
   case OP_BUY:
@@ -81,7 +81,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
     {
      CPosition *pos = _openPositions.At(i);
      //PrintFormat("Выбрали %d-ю позицию символ=%s, магик=%d", i, pos.getSymbol(), pos.getMagic());
-     if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic))
+     if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic)) // ToDo remove Magic
      {
       if (pos.getType() == OP_SELL || pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
       {
@@ -99,7 +99,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на покупку
     {
      CPosition *pos = _openPositions.At(i);
-     if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic))
+     if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic)) // ToDo remove Magic
      {
       if (pos.getType() == OP_BUY || pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
       {
@@ -114,7 +114,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    break;
  }
  
- total = _openPositions.Total() + _positionsToReProcessing.Total();
+ total = _openPositions.Total() + _positionsToReProcessing.Total(); // ToDo TotalOnSymbol
  if (total <= 0)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
@@ -122,15 +122,16 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   ENUM_POSITION_STATUS openingResult = position.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
   {
-   log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.06f, tp=%.06f", MakeFunctionPrefix(__FUNCTION__),position.getMagic(), position.getSymbol(), GetNameOP(position.getType()), position.getPositionPrice(), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice()));
-   _openPositions.Add(position);
+   log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.06f, tp=%.06f"
+                                          , MakeFunctionPrefix(__FUNCTION__), position.getMagic(), position.getSymbol(), GetNameOP(position.getType()), position.getPositionPrice(), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice()));
+   _openPositions.Add(position);  // добавляем открутую позицию в массив открытых позиций
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
    return(true); // Если удачно открыли позицию
   }
   else
   {
    error = GetLastError();
-   if(position.getType() == OP_SELL || position.getType() == OP_BUY) _positionsToReProcessing.Add(position);//?
+   if(position.getType() == OP_SELL || position.getType() == OP_BUY) _positionsToReProcessing.Add(position);  // ToDo для отложенных позиций
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось открыть позицию.Error{%d} = %s.Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(position.getPositionStatus())));
    return(false); // Если открыть позицию не удалось
   }
@@ -141,7 +142,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
 //+------------------------------------------------------------------+ 
 // Функция вычисления параметров трейлинга
 //+------------------------------------------------------------------+
-void CTradeManager::DoTrailing()  //TO DO LIST : добавить логгирование
+void CTradeManager::DoTrailing()
 {
  int total = _openPositions.Total();
  ulong ticket = 0, slTicket = 0;
@@ -154,7 +155,7 @@ void CTradeManager::DoTrailing()  //TO DO LIST : добавить логгирование
   CPosition *pos = _openPositions.At(i);
   if(pos.DoTrailing())
   {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Изменилась цена SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Изменился SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
   }
  } 
@@ -164,12 +165,11 @@ void CTradeManager::DoTrailing()  //TO DO LIST : добавить логгирование
 //+------------------------------------------------------------------+
 void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
 {
+ 
 };
 
 //+------------------------------------------------------------------+
 /// Called from EA OnTrade().
-/// Actions virtual stoplosses, takeprofits \n
-
 /// Include the folowing in each EA that uses TradeManager
 //+------------------------------------------------------------------+
 void CTradeManager::OnTrade(datetime history_start)
@@ -177,32 +177,34 @@ void CTradeManager::OnTrade(datetime history_start)
   }
 
 //+------------------------------------------------------------------+
+/// Called from EA OnTick().
+/// Actions virtual positions 
+/// Include the folowing in each EA that uses TradeManage
 //+------------------------------------------------------------------+
 void CTradeManager::OnTick()
 {
  MqlTick tick;
- SymbolInfoTick(Symbol(), tick);
  double price;
  ENUM_TM_POSITION_TYPE type;
- int size = _openPositions.Total();
- for(int i = size - 1; i>=0; i--) // по массиву НАШИХ позиций
+ int total = _openPositions.Total();
+ for(int i = total - 1; i >= 0; i--) // по массиву НАШИХ позиций
  {
+  SymbolInfoTick(Symbol(), tick);
   position = _openPositions.At(i); // выберем позицию по ее индексу
   type = position.getType();
     
   if (!OrderSelect(position.getStopLossTicket()) && position.getPositionStatus() != POSITION_STATUS_PENDING) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss", MakeFunctionPrefix(__FUNCTION__)));
-   log_file.Write(LOG_DEBUG, StringFormat("%s, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-    _openPositions.Delete(i);
-    break;                         // ... и удалить позицию из массива позиций 
+   log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+   _openPositions.Delete(i);       // удаляем позицию из массива позиций
+   break;                          
   }
      
   if ((type == OP_SELL && position.getTakeProfitPrice() >= tick.ask) || 
       (type == OP_BUY  && position.getTakeProfitPrice() <= tick.bid) )             // цена дошла до уровня TP
   {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, ask = %f, bif = %f, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), tick.ask, tick.bid, position.getTakeProfitPrice()));
-   if (position.ClosePosition())  // сработал тейкпрофит, надо удалить ордер-стоплосс...
+   log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, ask = %f, bid = %f, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), tick.ask, tick.bid, position.getTakeProfitPrice()));
+   if (position.ClosePosition())  // сработал тейкпрофит, надо удалить позицию со стоплоссом - ToDo сделать через метод TradeManager'a
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Позиция закрыта, удаляем её [%d]", MakeFunctionPrefix(__FUNCTION__), i));
     _openPositions.Delete(i);                        // ... и удалить позицию из массива позиций 
@@ -242,8 +244,8 @@ void CTradeManager::OnTick()
    }*/
   }
  }
- size = _positionsToReProcessing.Total();
- for(int i = size - 1; i>=0; i--) // по массиву позиций на доработку
+ total = _positionsToReProcessing.Total();
+ for(int i = total - 1; i>=0; i--) // по массиву позиций на доработку
  {
   CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее тикету
   if (pos.getPositionStatus() == POSITION_STATUS_NOT_DELETED)
@@ -381,7 +383,7 @@ long CTradeManager::MakeMagic(string strSymbol = "")
  if(strSymbol == "") strSymbol = Symbol();
  string s = strSymbol + PeriodToString(Period()) + MQL5InfoString(MQL5_PROGRAM_NAME);
  ulong ulHash = 5381;
- for(int i = StringLen(s)-1; i >=0;i--)
+ for(int i = StringLen(s) - 1; i >= 0; i--)
  {
   ulHash = ((ulHash<<5) + ulHash) + StringGetCharacter(s,i);
  }
