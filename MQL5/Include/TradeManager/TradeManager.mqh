@@ -81,8 +81,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на продажу
     {
      CPosition *pos = _openPositions.At(i);
-     //PrintFormat("Выбрали %d-ю позицию символ=%s, магик=%d", i, pos.getSymbol(), pos.getMagic());
-     if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic)) // ToDo remove Magic
+     if (pos.getSymbol() == symbol)
      {
       if (pos.getType() == OP_SELL || pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
       {
@@ -100,7 +99,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на покупку
     {
      CPosition *pos = _openPositions.At(i);
-     if ((pos.getSymbol() == symbol) && (pos.getMagic() == _magic)) // ToDo remove Magic
+     if (pos.getSymbol() == symbol)
      {
       if (pos.getType() == OP_BUY || pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
       {
@@ -115,7 +114,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    break;
  }
  
- total = _openPositions.Total() + _positionsToReProcessing.Total(); // ToDo TotalOnSymbol
+ total = _openPositions.OrderCount(symbol, _magic) + _positionsToReProcessing.OrderCount(symbol, _magic);
  if (total <= 0)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
@@ -133,7 +132,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   else
   {
    error = GetLastError();
-   if(position.getType() == OP_SELL || position.getType() == OP_BUY) _positionsToReProcessing.Add(position);  // ToDo для отложенных позиций
+   if(position.getType() == OP_SELL || position.getType() == OP_BUY) _positionsToReProcessing.Add(position);
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось открыть позицию.Error{%d} = %s.Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(position.getPositionStatus())));
    return(false); // Если открыть позицию не удалось
   }
@@ -214,7 +213,7 @@ void CTradeManager::OnTick()
      
   if (position.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
   { 
-   if (!OrderSelect(position.getPositionTicket())) // ... и мы не можем ее выбрать по ее тикету, значит она сработала
+   if (HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_FILLED) // Ордер уже выполнен
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
     if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
@@ -232,14 +231,14 @@ void CTradeManager::OnTick()
     log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
     SaveSituationToFile();
    }
-   /*if(TimeCurrent() > position.getExpiration())
+   if(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_EXPIRED)
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Прошло время ожидания у ордера %d", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket()));
-    position.ClosePosition();
-    _openPositions.Delete(i);
-   }*/
+    ClosePosition(i);
+   }
   }
  }
+ 
  total = _positionsToReProcessing.Total();
  for(int i = total - 1; i>=0; i--) // по массиву позиций на доработку
  {
@@ -285,7 +284,7 @@ void CTradeManager::Initialization()
   _openPositions.ReadFromFile(file_handle);
   FileClose(CreateRDFilename());
   log_file.Write(LOG_DEBUG, StringFormat("%s Скопировали данные из файла состояния.", MakeFunctionPrefix(__FUNCTION__)));
-  SaveSituationToFile(true);
+  //SaveSituationToFile(true);
   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
  }
  else
@@ -302,7 +301,6 @@ void CTradeManager::Deinitialization()
  {
   for(int i = size - 1; i>=0; i--) // по массиву НАШИХ позиций
   {
-   position = _openPositions.At(i);
    ClosePosition(i);
   }
   size = _openPositions.Total();
