@@ -73,6 +73,8 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
  switch(type)
  {
   case OP_BUY:
+  case OP_BUYLIMIT:
+  case OP_BUYSTOP:
    if (total > 0)
    {
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на продажу
@@ -90,6 +92,8 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    }
    break;
   case OP_SELL:
+  case OP_SELLLIMIT:
+  case OP_SELLSTOP:
    if (total > 0)
    {
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на покупку
@@ -230,12 +234,12 @@ void CTradeManager::OnTick()
     if (position.getType() == OP_SELLLIMIT || position.getType() == OP_SELLSTOP) position.setType(OP_SELL);
     log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
    }
-   if(TimeCurrent() > position.getExpiration())
+   /*if(TimeCurrent() > position.getExpiration())
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Прошло время ожидания у ордера %d", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket()));
     position.ClosePosition();
     _openPositions.Delete(i);
-   }
+   }*/
   }
  }
  size = _positionsToReProcessing.Total();

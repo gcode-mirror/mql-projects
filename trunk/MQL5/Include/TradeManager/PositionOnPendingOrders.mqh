@@ -227,7 +227,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_BUYLIMIT:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posPrice))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
@@ -235,7 +235,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_SELLLIMIT:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posPrice))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
@@ -243,7 +243,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_BUYSTOP:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posPrice))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
@@ -251,7 +251,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_SELLSTOP:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posPrice))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
