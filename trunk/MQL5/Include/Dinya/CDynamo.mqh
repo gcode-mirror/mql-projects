@@ -11,72 +11,73 @@
 #include <StringUtilities.mqh>
 #include <CLog.mqh>
 
+enum ENUM_PERIOD
+{
+ Day,
+ Month
+};
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
 //+------------------------------------------------------------------+
 class CDynamo
 {
 protected:
- MqlDateTime m_day_time;          // Время
- MqlDateTime m_last_day_number;   // Номер последнего определенного дня
- MqlDateTime m_last_month_number; // Номер последнего определенного месяца
+ datetime m_last_day_number;   // Номер последнего определенного дня
+ datetime m_last_month_number; // Номер последнего определенного месяца
  
- string m_symbol;                 // Имя инструмента
- ENUM_TIMEFRAMES m_period;        // Период графика
+ string _symbol;                 // Имя инструмента
+ ENUM_TIMEFRAMES _period;        // Период графика
       
  uint m_retcode;          // Код результата определения нового дня 
- int m_new_day_number;    // Номер нового дня (0-6)
- int m_new_month_number;  // Номер нового дня (0-6)
  string m_comment;        // Комментарий выполнения
  
- int deltaFast;   // дельта для расчета объема "дневной" торговли
- int deltaSlow;   // дельта для расчета объема "месячной" торговли
- double fastVol;  // объем для дневной торговли
- double slowVol;  // объем для месячной торговли
+ const int _volume;      // Полный объем торгов   
+ const double _factor;   // множитель для вычисления текущего объема торгов от дельты
+ const int _percentage;  // сколько процентов объем дневной торговли может перекрывать от месячной
+ const int _slowPeriod;  // Период инициализации старшей дельта
+ const int _deltaStep;   // Величина шага изменения дельты
  
- int currentLevelDay;   // текущий уровень цены дня
- int currentLevelMonth; // текущий уровень цены месяца
+ int _deltaFast;     // дельта для расчета объема "дневной" торговли
+ int _deltaFastBase; // начальное значение "дневной" дельта
+ int _deltaSlow;     // дельта для расчета объема "месячной" торговли
+ int _deltaSlowBase; // начальное значение "месячной" дельта
+ double fastVol;   // объем для дневной торговли
+ double slowVol;   // объем для месячной торговли
  
- // массив вычисленных дневных граничных цен от цены старта торгов дня
- double currentDaily[21];
- // массив вычисленных месячных граничных цен от цены старта торгов месяца
- double currentMonth[21];
-
- bool newMonth; // ключ нового месяца
+ const int _dayStep;          // шаг границы цены в пунктах для дневной торговли
+ const int _monthStep;        // шаг границы цены в пунктах для месячной торговли
+ double prevDayPrice;   // текущий уровень цены дня
+ double prevMonthPrice; // текущий уровень цены месяца
+ 
  bool isMonthInit; // ключ инициализации массива цен месяца
- bool isDayInit;  // ключ инициализации массива цен дня
+ bool isDayInit;   // ключ инициализации массива цен дня
 public:
 //--- Конструкторы
- void CDynamo();      // Конструктор CDynamo
- void CDynamo(string symbol);      // Конструктор CDynamo с параметрами
- void CDynamo(ENUM_TIMEFRAMES period);      // Конструктор CDynamo с параметрами
- void CDynamo(string symbol, ENUM_TIMEFRAMES period);      // Конструктор CDynamo с параметрами
+ void CDynamo(int deltaFast, int deltaSlow, int deltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int slowPeriod);      // Конструктор CDynamo
  
 //--- Методы доступа к защищенным данным:
  uint GetRetCode() const {return(m_retcode);}    // Код результата определения нового бара 
- MqlDateTime GetLastTime() const {return(m_day_time);}
- MqlDateTime GetLastDay() const {return(m_last_day_number);}  // Номер последнего определенного дня
- int GetNewDay() const {return(m_new_day_number);}    // Номер нового дня
- MqlDateTime GetLastMonth() const {return(m_last_month_number);}  // Номер последнего определенного дня
- int GetNewMonth() const {return(m_new_month_number);}    // Номер нового дня
+ datetime GetLastDay() const {return(m_last_day_number);}   // 18:00 последнего дня
+ datetime GetLastMonth() const {return(m_last_month_number);}  // Дата и время определния последнего месяца
  string GetComment() const {return(m_comment);}    // Комментарий выполнения
- string GetSymbol() const {return(m_symbol);}     // Имя инструмента
- ENUM_TIMEFRAMES GetPeriod() const {return(m_period);}     // Период графика
+ string GetSymbol() const {return(_symbol);}     // Имя инструмента
+ ENUM_TIMEFRAMES GetPeriod() const {return(_period);}     // Период графика
  bool isInit() const {return(isMonthInit && isDayInit);}  // Инициализация завершна
 //--- Методы инициализации защищенных данных:  
- void SetSymbol(string symbol) {m_symbol = (symbol==NULL || symbol=="") ? Symbol() : symbol; }
- void SetPeriod(ENUM_TIMEFRAMES period) {m_period = (period==PERIOD_CURRENT) ? Period() : period; }
+ void SetSymbol(string symbol) {_symbol = (symbol==NULL || symbol=="") ? Symbol() : symbol; }
+ void SetPeriod(ENUM_TIMEFRAMES period) {_period = (period==PERIOD_CURRENT) ? Period() : period; }
 
 //--- Рабочие методы класса
- bool isNewDay();
  bool isNewMonth();
- int MonWenFriEighteen();
+ int isNewDay();
  void InitDayTrade();
  void InitMonthTrade();
- void FillArrayWithPrices(double &dstArray[], int start);
+ void FillArrayWithPrices(ENUM_PERIOD period);
  double RecountVolume();
  void RecountDelta();
  bool CorrectOrder(double volume);
+ int GetHours(datetime date);
+ int GetDayOfWeek(datetime date);
 };
 
 //+------------------------------------------------------------------+
@@ -85,112 +86,19 @@ public:
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDynamo::CDynamo()
+void CDynamo::CDynamo(int deltaFast, int deltaSlow, int deltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int slowPeriod):
+                      _deltaFastBase(deltaFast), _deltaSlowBase(deltaSlow),
+                      _deltaStep(deltaStep), _dayStep(dayStep), _monthStep(monthStep),
+                      _volume(volume), _factor(factor), _percentage(percentage), _slowPeriod(slowPeriod)
   {
    m_retcode = 0;         // Код результата определения нового бара 
-   ZeroMemory(m_last_day_number);    // Время открытия последнего бара
-   m_new_day_number = 0;        // Количество новых баров
-   ZeroMemory(m_last_month_number);    // Время открытия последнего бара
-   m_new_month_number = 0;        // Количество новых баров
+   m_last_day_number = TimeCurrent();       // Инициализируем день текущим днем
+   m_last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
    m_comment = "";        // Комментарий выполнения
    isDayInit = false;
    isMonthInit = false;
-   m_symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
-   m_period = Period();   // Период графика, по умолчанию период текущего графика
-  }
-  
-//+------------------------------------------------------------------+
-//| Конструктор CDynamo с параметрами                                |
-//| INPUT:  no.                                                      |
-//| OUTPUT: no.                                                      |
-//| REMARK: no.                                                      |
-//+------------------------------------------------------------------+
-void CDynamo::CDynamo(string symbol)
-  {
-   m_retcode = 0;         // Код результата определения нового бара 
-   ZeroMemory(m_last_day_number);    // Время открытия последнего бара
-   m_new_day_number = 0;        // Количество новых баров
-   ZeroMemory(m_last_month_number);    // Время открытия последнего бара
-   m_new_month_number = 0;        // Количество новых баров
-   m_comment = "";        // Комментарий выполнения
-   isDayInit = false;
-   isMonthInit = false;
-   m_symbol=symbol;   // Имя инструмента, по умолчанию символ текущего графика
-   m_period=Period();   // Период графика, по умолчанию период текущего графика    
-  }
-//+------------------------------------------------------------------+
-//| Конструктор CDynamo с параметрами                                |
-//| INPUT:  no.                                                      |
-//| OUTPUT: no.                                                      |
-//| REMARK: no.                                                      |
-//+------------------------------------------------------------------+
-void CDynamo::CDynamo(ENUM_TIMEFRAMES period)
-  {
-   m_retcode = 0;         // Код результата определения нового бара 
-   ZeroMemory(m_last_day_number);    // Время открытия последнего бара
-   m_new_day_number = 0;        // Количество новых баров
-   ZeroMemory(m_last_month_number);    // Время открытия последнего бара
-   m_new_month_number = 0;        // Количество новых баров
-   m_comment = "";        // Комментарий выполнения
-   isDayInit = false;
-   isMonthInit = false;
-   m_symbol=Symbol();   // Имя инструмента, по умолчанию символ текущего графика
-   m_period=period;   // Период графика, по умолчанию период текущего графика    
-  }
-
-//+------------------------------------------------------------------+
-//| Конструктор CDynamo с параметрами                                |
-//| INPUT:  no.                                                      |
-//| OUTPUT: no.                                                      |
-//| REMARK: no.                                                      |
-//+------------------------------------------------------------------+
-void CDynamo::CDynamo(string symbol, ENUM_TIMEFRAMES period)
-  {
-   m_retcode = 0;         // Код результата определения нового бара 
-   ZeroMemory(m_last_day_number);    // Время открытия последнего бара
-   m_new_day_number = 0;        // Количество новых баров
-   ZeroMemory(m_last_month_number);    // Время открытия последнего бара
-   m_new_month_number = 0;        // Количество новых баров
-   m_comment = "";        // Комментарий выполнения
-   isDayInit = false;
-   isMonthInit = false;
-   m_symbol=symbol;   // Имя инструмента, по умолчанию символ текущего графика
-   m_period=period;   // Период графика, по умолчанию период текущего графика    
-  }
-
-//+------------------------------------------------------------------+
-//| Запрос на появление нового дня.                                  |
-//| INPUT:  no.                                                      |
-//| OUTPUT: true   - если новый день                                 |
-//|         false  - если не новый день или получили ошибку          |
-//| REMARK: no.                                                      |
-//+------------------------------------------------------------------+
-bool CDynamo::isNewDay()
-  {
-   MqlDateTime current_time;
-   TimeToStruct(TimeCurrent(), current_time);
-      
-   //--- если это первый вызов 
-   if(m_last_day_number.year == 0)
-     {  
-      log_file.Write(LOG_DEBUG, MakeFunctionPrefix(__FUNCTION__) + "Первый вызов");
-      m_last_day_number = current_time; //--- запомним текущий день и выйдем
-      log_file.Write(LOG_DEBUG, StringFormat("%s Инициализация m_last_day_number=%s"
-                                            , MakeFunctionPrefix(__FUNCTION__)
-                                            , TimeToString(StructToTime(m_last_day_number))));
-      return(false);
-     }  
-     
-   //--- Проверяем появление нового дня: 
-   if(m_last_day_number.year < current_time.year || (m_last_day_number.year == current_time.year && m_last_day_number.day_of_year < current_time.day_of_year))
-     { 
-      m_last_day_number = current_time; // запоминаем текущий день
-      //log_file.Write(LOG_DEBUG, StringFormat("%s Проверка появления нового дня завершилась успешно", MakeFunctionPrefix(__FUNCTION__)));
-      return(true);
-     }
-  
-   //--- дошли до этого места - значит день не новый
-   return(false);
+   _symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
+   _period = Period();   // Период графика, по умолчанию период текущего графика
   }
 
 //+------------------------------------------------------------------+
@@ -200,31 +108,20 @@ bool CDynamo::isNewDay()
 //|         false  - если время не пришло или получили ошибку        |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-int CDynamo::MonWenFriEighteen()
+int CDynamo::isNewDay()
 {
- MqlDateTime current_time;
- TimeToStruct(TimeCurrent(), current_time);
+ datetime current_time = TimeCurrent();
  
-   //--- если это первый вызов 
- if(m_day_time.year == 0)
- {  
-  log_file.Write(LOG_DEBUG, MakeFunctionPrefix(__FUNCTION__) + "Первый вызов");
-  m_day_time = current_time; //--- запомним последний месяц и выйдем
-  log_file.Write(LOG_DEBUG, StringFormat("%s Инициализация m_day_time=%s"
-                                        , MakeFunctionPrefix(__FUNCTION__)
-                                        , TimeToString(StructToTime(m_day_time))));
-  return(-1);
- }  
- 
- if (current_time.hour < 18)
+ if(GetHours(current_time) < 18)
  {
-  m_day_time = current_time;
+  m_last_day_number = current_time;
   return(-1);
  }
- if (m_day_time.hour < 18 && current_time.hour >= 18) 
+  
+ if (GetHours(m_last_day_number) < 18 && GetHours(current_time) >= 18) 
  {
-  m_day_time = current_time;
-  return(m_day_time.day_of_week);
+  m_last_day_number = current_time;
+  return(GetDayOfWeek(m_last_day_number));
  }
 
  //--- дошли до этого места - значит день не новый
@@ -239,46 +136,21 @@ int CDynamo::MonWenFriEighteen()
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
 bool CDynamo::isNewMonth()
-  {
-   MqlDateTime current_time;
-   TimeToStruct(TimeCurrent(), current_time);
+{
+ datetime current_time = TimeCurrent();
 
-   //--- если это первый вызов 
-   if(m_last_month_number.year == 0)
-     {  
-      log_file.Write(LOG_DEBUG, MakeFunctionPrefix(__FUNCTION__) + "Первый вызов");
-      m_last_month_number = current_time; //--- запомним текущий месяц
-      m_last_month_number.mon--;          //--- Это нужно чтобы работа началась в ближайшие 18.00
-      newMonth = false;
-      log_file.Write(LOG_DEBUG, StringFormat("%s Инициализация m_last_month_number=%s"
-                                            , MakeFunctionPrefix(__FUNCTION__)
-                                            , TimeToString(StructToTime(m_last_month_number))));
-      return(false);
-     }  
-     
-   //--- Проверяем появление нового месяца: 
-   if (( m_last_month_number.year < current_time.year   // С последней проверки изменился год,
-      && m_last_month_number.day == current_time.day)   // день месяца совпадает
-       
-    ||(  m_last_month_number.year == current_time.year  // или год остался прежний
-      && m_last_month_number.mon < current_time.mon     // изменился месяц
-      && m_last_month_number.day == current_time.day))  // день совпадает
-   {
-    newMonth = true; // Начался первый день нового месяца
-    m_last_month_number = current_time; // запоминаем текущий день
-   }
-   
-   if (newMonth && (m_last_month_number.hour < 18 && current_time.hour >= 18)) // Новый месяц начинается в 18 часов
-   { 
-    newMonth = false; // Начался первый день нового месяца
-    m_last_month_number = current_time; // запоминаем текущий день
-    //log_file.Write(LOG_DEBUG, StringFormat("%s Проверка появления нового месяца завершилась успешно", MakeFunctionPrefix(__FUNCTION__)));
-    return(true);
-   }
-  
-   //--- дошли до этого места - значит месяц не новый
-   return(false);
+ //--- Проверяем появление нового месяца: 
+ if (m_last_month_number < current_time - _slowPeriod*24*60*60)  // прошло 30 дней
+ {
+  if (GetHours(current_time) >= 18) // Новый месяц начинается в 18 часов
+  { 
+   m_last_month_number = current_time; // запоминаем текущий день
+   return(true);
   }
+ }
+ //--- дошли до этого места - значит месяц не новый
+ return(false);
+}
 
 //+------------------------------------------------------------------+
 //| Инициализация параметров для торговли с первого дня              |
@@ -288,32 +160,14 @@ bool CDynamo::isNewMonth()
 //+------------------------------------------------------------------+
 void CDynamo::InitDayTrade()
 {
- if (MonWenFriEighteen() > 0)
+ if (isNewDay() > 0) // Если случился новый день
  {
-  if (m_day_time.day_of_week == 1 || m_day_time.day_of_week == 3 || m_day_time.day_of_week == 5)
-  {/*
-   deltaFast = FAST_DELTA;
-   currentLevelDay = FAST_DELTA / 5;
-   slowVol = NormalizeDouble(VOLUME * FACTOR * deltaSlow, 2);
-   fastVol = NormalizeDouble(slowVol * deltaFast * FACTOR, 2);
-   FillArrayWithPrices(currentDaily, currentLevelDay);
-   isDayInit = true;*/
-  }
-  
-  if (m_day_time.day_of_week == 0 || m_day_time.day_of_week == 2 || m_day_time.day_of_week == 4 || m_day_time.day_of_week == 6)
-  {
-   FillArrayWithPrices(currentDaily, currentLevelDay);
-  }
-  
-  log_file.Write(LOG_DEBUG, StringFormat("%s %s : %02d:%02d ; fast_vol= %f, slow_vol= %f, fastDelta= %d, slowDelta= %d"
-                                        , MakeFunctionPrefix(__FUNCTION__)
-                                        , DayOfWeekToString(m_day_time.day_of_week)
-                                        , GetLastTime().hour
-                                        , GetLastTime().min
-                                        , fastVol
-                                        , slowVol
-                                        , deltaFast
-                                        , deltaSlow));
+  //PrintFormat("%s Новый день %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_day_number));
+  _deltaFast = _deltaFastBase;
+  prevDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+  slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
+  fastVol = NormalizeDouble(slowVol * _deltaFast * _factor * _percentage * _factor, 2);
+  isDayInit = true;
  }
 }
 
@@ -326,51 +180,13 @@ void CDynamo::InitDayTrade()
 void CDynamo::InitMonthTrade()
 {
  if(isNewMonth())
- {/*
-  deltaSlow = SLOW_DELTA;
-  currentLevelMonth = SLOW_DELTA / 5;
-  slowVol = NormalizeDouble(VOLUME * deltaSlow * FACTOR, 2);
-  FillArrayWithPrices(currentMonth, currentLevelMonth);
+ {
+  //PrintFormat("%s Новый месяц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_month_number));
+  _deltaSlow = _deltaSlowBase;
+  prevMonthPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+  slowVol = NormalizeDouble(_volume * _deltaSlow * _factor, 2);
   isMonthInit = true;
-  log_file.Write(LOG_DEBUG, StringFormat("%s %02d.%02d : %02d:%02d ; fast_vol= %f, slow_vol= %f, monthLvl=%d"
-                                        , MakeFunctionPrefix(__FUNCTION__)
-                                        , GetLastTime().mon
-                                        , GetLastTime().day
-                                        , GetLastTime().hour
-                                        , GetLastTime().min
-                                        , fastVol
-                                        , slowVol
-                                        , currentLevelMonth));*/
  }
-}
-
-//+------------------------------------------------------------------+
-//| Заполнение массива граничных цен от текущей цены                 |
-//| INPUT:  dstArray - массив для значений цен                       |
-//|         srcArray - массив со значениями границ в пунктах         |
-//| OUTPUT: no.
-//| REMARK: no.                                                      |
-//+------------------------------------------------------------------+
-void CDynamo::FillArrayWithPrices(double &dstArray[], int start)
-{
- int i;
- int step;
- dstArray[start] = SymbolInfoDouble(m_symbol, SYMBOL_LAST);
- for (i = start - 1; i >= 0 ; --i)
- {
-  //dstArray[i] = dstArray[i + 1] - srcArray[i + 1]*Point();
- }
- 
- for (i = start + 1; i < 21; ++i)
- {
-  //dstArray[i] = dstArray[i - 1] + srcArray[i - 1]*Point();
- }
- /*
- PrintFormat("%s DayLevel = %d, MonthLevel = %d, CurrentPrice=%.06f", MakeFunctionPrefix(__FUNCTION__), currentLevelDay, currentLevelMonth, SymbolInfoDouble(m_symbol, SYMBOL_LAST));
- for (i = 0; i < 21; ++i)
- {
-  PrintFormat("%s Price[%d]=%f", MakeFunctionPrefix(__FUNCTION__), i, dstArray[i]);
- }*/
 }
 
 //+------------------------------------------------------------------+
@@ -381,38 +197,40 @@ void CDynamo::FillArrayWithPrices(double &dstArray[], int start)
 //+------------------------------------------------------------------+
 void CDynamo::RecountDelta()
 {
- double currentPrice = SymbolInfoDouble(m_symbol, SYMBOL_LAST);
- if (currentLevelDay < 20)
-  if (currentPrice > currentDaily[currentLevelDay + 1])
+ double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+ if (_deltaFast < 100 && GreatDoubles(currentPrice, prevDayPrice + _dayStep*Point()))
+ {
+  prevDayPrice = currentPrice;
+  _deltaFast = _deltaFast + _deltaStep;
+  //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
+ }
+ if (_deltaFast > 0 && LessDoubles(currentPrice, prevDayPrice - _dayStep*Point()))
+ {
+  prevDayPrice = currentPrice;
+  _deltaFast = _deltaFast - _deltaStep;
+  //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
+ }
+ 
+ if (_deltaSlow < 100 && GreatDoubles(currentPrice, prevMonthPrice + _monthStep*Point()))
+ {
+  _deltaSlow = _deltaSlow + _deltaStep;
+  prevMonthPrice = currentPrice;
+  //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
+ }
+ if (_deltaSlow > 0 && LessDoubles(currentPrice, prevMonthPrice - _monthStep*Point()))
+ {
+  prevMonthPrice = currentPrice;
+  
+  if (_deltaSlow > _deltaSlowBase)
   {
-   deltaFast = deltaFast + 5;
-   currentLevelDay++;
+   _deltaSlow = _deltaSlowBase;
   }
- if (currentLevelDay > 0)
-  if (currentPrice < currentDaily[currentLevelDay - 1])
+  else
   {
-   deltaFast = deltaFast - 5;
-   currentLevelDay--;
+   _deltaSlow = _deltaSlow - _deltaStep;
+   //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
   }
- if (currentLevelMonth < 20) 
-  if (currentPrice > currentMonth[currentLevelMonth + 1])
-  {
-   deltaSlow = deltaSlow + 5;
-   currentLevelMonth++;
-  }
- if (currentLevelMonth > 0)
-  if (currentPrice < currentMonth[currentLevelMonth - 1])
-  {
-   deltaSlow = deltaSlow - 5;
-   currentLevelMonth--;
-  }
-  /*
-  log_file.Write(LOG_DEBUG, StringFormat("%s fast_vol= %f, slow_vol= %f, fastDelta= %d, slowDelta= %d"
-                                        , MakeFunctionPrefix(__FUNCTION__)
-                                        , fastVol
-                                        , slowVol
-                                        , deltaFast
-                                        , deltaSlow));*/
+ }
 }
 
 //+------------------------------------------------------------------+
@@ -422,14 +240,11 @@ void CDynamo::RecountDelta()
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
 double CDynamo::RecountVolume()
-{/*
- slowVol = NormalizeDouble(VOLUME * FACTOR * deltaSlow, 2);
- fastVol = NormalizeDouble(slowVol * deltaFast * FACTOR, 2);/*
- log_file.Write(LOG_DEBUG, StringFormat("%s fast_vol= %f, slow_vol= %f, slow-fast = %f"
-                                       , MakeFunctionPrefix(__FUNCTION__)
-                                       , fastVol
-                                       , slowVol
-                                       , slowVol - fastVol));*/
+{
+ slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
+ fastVol = NormalizeDouble(slowVol * _deltaFast * _factor, 2);
+ //PrintFormat("%s большой объем %.02f, _deltaSlow=%d", MakeFunctionPrefix(__FUNCTION__),  slowVol, _deltaSlow);
+ //PrintFormat("%s малый объем %.02f, _deltaFast=%d", MakeFunctionPrefix(__FUNCTION__), fastVol, _deltaFast);
  return (slowVol - fastVol); 
 }
 
@@ -452,22 +267,36 @@ bool CDynamo::CorrectOrder(double volume)
  if (volume > 0)
  {
   type = ORDER_TYPE_BUY;
-  price = SymbolInfoDouble(m_symbol, SYMBOL_ASK);
+  price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
  }
  else
  {
   type = ORDER_TYPE_SELL;
-  price = SymbolInfoDouble(m_symbol, SYMBOL_BID);
+  price = SymbolInfoDouble(_symbol, SYMBOL_BID);
  }
  
  request.action = TRADE_ACTION_DEAL;
- request.symbol = m_symbol;
+ request.symbol = _symbol;
  request.volume = MathAbs(volume);
  request.price = price;
  request.sl = 0;
  request.tp = 0;
- request.deviation = SymbolInfoInteger(m_symbol, SYMBOL_SPREAD); 
+ request.deviation = SymbolInfoInteger(_symbol, SYMBOL_SPREAD); 
  request.type = type;
  request.type_filling = ORDER_FILLING_FOK;
  return (OrderSend(request, result));
+}
+
+int CDynamo::GetHours(datetime date)
+{
+ MqlDateTime _date;
+ TimeToStruct(date, _date);
+ return (_date.hour);
+}
+
+int CDynamo::GetDayOfWeek(datetime date)
+{
+ MqlDateTime _date;
+ TimeToStruct(date, _date);
+ return (_date.day_of_week);
 }
