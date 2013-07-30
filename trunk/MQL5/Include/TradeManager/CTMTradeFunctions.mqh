@@ -18,8 +18,8 @@
 class CTMTradeFunctions : public CTrade
 {
  public:
-  CTMTradeFunctions(void){};
-  ~CTMTradeFunctions(void){};
+  void CTMTradeFunctions(void){};
+  void ~CTMTradeFunctions(void){};
   
   bool OrderOpen(const string symbol,const ENUM_ORDER_TYPE type, const double volume, const double price,
                  const ENUM_ORDER_TYPE_TIME type_time=ORDER_TIME_GTC,const datetime expiration=0,const string comment="");
@@ -65,7 +65,7 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
   m_request.order = ticket;
   //error_list = "";
   
-  while (!IsStopped() && i <= tryNumber)
+  while (i <= tryNumber)
   {
    //log_file.Write(LOG_DEBUG, StringFormat("%s Current action:", MakeFunctionPrefix(__FUNCTION__), m_request.action));
    res = false;
@@ -149,7 +149,7 @@ bool CTMTradeFunctions::PositionClose(const string symbol, const ENUM_POSITION_T
  ZeroMemory(m_result);
  ZeroMemory(m_check_result);
  
- while (!IsStopped() && 0 <= tryNumber)
+ while (0 <= tryNumber)
  {
   if(type == POSITION_TYPE_BUY)
   {
@@ -183,6 +183,6 @@ bool CTMTradeFunctions::PositionClose(const string symbol, const ENUM_POSITION_T
    --tryNumber;
   }
  }
-
+ 
  return(false);
 }
