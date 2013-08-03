@@ -35,7 +35,8 @@ input int percentage = 70;  // сколько процентов объем дневной торговли может пе
 input int slowPeriod = 30;  // Период обновления старшей дельта 
 input int slowDelta = 30;   // Старшая дельта
 input int fastDelta = 50;   // Младшая дельта
-input DELTA_STEP deltaStep = TEN;  // Величина шага изменения дельты
+input DELTA_STEP fastDeltaStep = TEN;  // Величина шага изменения дельты
+input DELTA_STEP slowDeltaStep = TEN;  // Величина шага изменения дельты
 input int dayStep = 40;     // шаг границы цены в пунктах для дневной торговли
 input int monthStep = 400;  // шаг границы цены в пунктах для месячной торговл 
 
@@ -46,19 +47,19 @@ datetime startTime;
 double openPrice;
 double currentVolume;
 
-CDynamo dyn(fastDelta, slowDelta, deltaStep, dayStep, monthStep, volume, factor, percentage, slowPeriod);
+CDynamo dyn(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, volume, factor, percentage, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
 //---
-   if (fastDelta % deltaStep != 0)
+   if (fastDelta % fastDeltaStep != 0)
    {
     PrintFormat("%s Младшая дельта должна делиться на шаг");
     return(INIT_FAILED);
    }
-   if (slowDelta % deltaStep != 0)
+   if (slowDelta % slowDeltaStep != 0)
    {
     PrintFormat("%s Старшая дельта должна делиться на шаг");
     return(INIT_FAILED);

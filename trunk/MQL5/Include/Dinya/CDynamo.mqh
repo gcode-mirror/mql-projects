@@ -35,7 +35,8 @@ protected:
  const double _factor;   // множитель для вычисления текущего объема торгов от дельты
  const int _percentage;  // сколько процентов объем дневной торговли может перекрывать от месячной
  const int _slowPeriod;  // Период инициализации старшей дельта
- const int _deltaStep;   // Величина шага изменения дельты
+ const int _fastDeltaStep;   // Величина шага изменения дельты
+ const int _slowDeltaStep;   // Величина шага изменения дельты
  
  int _deltaFast;     // дельта для расчета объема "дневной" торговли
  int _deltaFastBase; // начальное значение "дневной" дельта
@@ -53,7 +54,7 @@ protected:
  bool isDayInit;   // ключ инициализации массива цен дня
 public:
 //--- Конструкторы
- void CDynamo(int deltaFast, int deltaSlow, int deltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int slowPeriod);      // Конструктор CDynamo
+ void CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int slowPeriod);      // Конструктор CDynamo
  
 //--- Методы доступа к защищенным данным:
  uint GetRetCode() const {return(m_retcode);}    // Код результата определения нового бара 
@@ -86,9 +87,9 @@ public:
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDynamo::CDynamo(int deltaFast, int deltaSlow, int deltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int slowPeriod):
+void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int slowPeriod):
                       _deltaFastBase(deltaFast), _deltaSlowBase(deltaSlow),
-                      _deltaStep(deltaStep), _dayStep(dayStep), _monthStep(monthStep),
+                      _fastDeltaStep(fastDeltaStep), _slowDeltaStep(slowDeltaStep), _dayStep(dayStep), _monthStep(monthStep),
                       _volume(volume), _factor(factor), _percentage(percentage), _slowPeriod(slowPeriod)
   {
    m_retcode = 0;         // Код результата определения нового бара 
@@ -201,19 +202,19 @@ void CDynamo::RecountDelta()
  if (_deltaFast < 100 && GreatDoubles(currentPrice, prevDayPrice + _dayStep*Point()))
  {
   prevDayPrice = currentPrice;
-  _deltaFast = _deltaFast + _deltaStep;
+  _deltaFast = _deltaFast + _fastDeltaStep;
   //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
  }
  if (_deltaFast > 0 && LessDoubles(currentPrice, prevDayPrice - _dayStep*Point()))
  {
   prevDayPrice = currentPrice;
-  _deltaFast = _deltaFast - _deltaStep;
+  _deltaFast = _deltaFast - _fastDeltaStep;
   //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
  }
  
  if (_deltaSlow < 100 && GreatDoubles(currentPrice, prevMonthPrice + _monthStep*Point()))
  {
-  _deltaSlow = _deltaSlow + _deltaStep;
+  _deltaSlow = _deltaSlow + _slowDeltaStep;
   prevMonthPrice = currentPrice;
   //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
  }
@@ -227,7 +228,7 @@ void CDynamo::RecountDelta()
   }
   else
   {
-   _deltaSlow = _deltaSlow - _deltaStep;
+   _deltaSlow = _deltaSlow - _slowDeltaStep;
    //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
   }
  }
@@ -242,7 +243,7 @@ void CDynamo::RecountDelta()
 double CDynamo::RecountVolume()
 {
  slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
- fastVol = NormalizeDouble(slowVol * _deltaFast * _factor, 2);
+ fastVol = NormalizeDouble(slowVol * _deltaFast * _factor * _percentage * _factor, 2);
  //PrintFormat("%s большой объем %.02f, _deltaSlow=%d", MakeFunctionPrefix(__FUNCTION__),  slowVol, _deltaSlow);
  //PrintFormat("%s малый объем %.02f, _deltaFast=%d", MakeFunctionPrefix(__FUNCTION__), fastVol, _deltaFast);
  return (slowVol - fastVol); 
