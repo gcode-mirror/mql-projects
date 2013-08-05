@@ -232,7 +232,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыт ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
    }
    break;
   case OP_SELLLIMIT:
@@ -240,7 +240,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыт ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
    }
    break;
   case OP_BUYSTOP:
@@ -248,7 +248,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыт ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
    }
    break;
   case OP_SELLSTOP:
@@ -256,7 +256,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _posTicket = trade.ResultOrder();
     pos_status = POSITION_STATUS_PENDING;
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыт ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
    }
    break;
   default:

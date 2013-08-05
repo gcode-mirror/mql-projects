@@ -59,138 +59,148 @@ CisNewBar eldNewBar(eldTF);
 CTradeManager tradeManager;
 
 int OnInit()
-  {
-   trendHandle = iCustom(NULL, 0, "PriceBasedIndicator", historyDepth, bars);
-   divStoHandle = iCustom(NULL, 0, "div", methodMASto, kPeriod, dPeriod, slow, deep, delta, highLine, lowLine, firstBarsCount);
-   emaHandle = iMA(NULL, 0, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
+{
+ trendHandle = iCustom(NULL, 0, "PriceBasedIndicator", historyDepth, bars);
+ divStoHandle = iCustom(NULL, 0, "div", methodMASto, kPeriod, dPeriod, slow, deep, delta, highLine, lowLine, firstBarsCount);
+ emaHandle = iMA(NULL, 0, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
    
-   if (trendHandle == INVALID_HANDLE || divStoHandle == INVALID_HANDLE || emaHandle == INVALID_HANDLE)
-   {
-    Print("Error: Хэндл (указатель) не инициализирован!", GetLastError());
-    return(INIT_FAILED);
-   }
-   
-   ArraySetAsSeries(divStoBuffer, true);
-   ArraySetAsSeries(trendBuffer, true);
-   ArraySetAsSeries(emaBuffer, true);
-   ArrayResize(divStoBuffer, waitAfterDiv, waitAfterDiv*3);
-   ArrayResize(trendBuffer, 1, 3);
-   ArrayResize(emaBuffer, 2, 6);
-   
-   history_start = TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
-   
-   return(INIT_SUCCEEDED);
-  }
+ if (trendHandle == INVALID_HANDLE || divStoHandle == INVALID_HANDLE || emaHandle == INVALID_HANDLE)
+ {
+  Print("Error: INVALID_HANDLE (trendHandle || divStoHandle || emaHandle)", GetLastError());
+  return(INIT_FAILED);
+ }
+  
+ ArraySetAsSeries(divStoBuffer, true);
+ ArraySetAsSeries(trendBuffer, true);
+ ArraySetAsSeries(emaBuffer, true);
+ ArrayResize(divStoBuffer, waitAfterDiv, waitAfterDiv*3);
+ ArrayResize(trendBuffer, 1, 3);
+ ArrayResize(emaBuffer, 2, 6);
+  
+ history_start = TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
+ 
+ return(INIT_SUCCEEDED);
+}
 
 void OnDeinit(const int reason)
-  {
-   IndicatorRelease(trendHandle); 
-   IndicatorRelease(divStoHandle);
-   IndicatorRelease(emaHandle);
-   ArrayFree(divStoBuffer);
-   ArrayFree(trendBuffer);
-   ArrayFree(emaBuffer);
-   Print("Хэндлы (указатели) и массивы очищены");
-  }
+{
+ IndicatorRelease(trendHandle); 
+ IndicatorRelease(divStoHandle);
+ IndicatorRelease(emaHandle);
+ ArrayFree(divStoBuffer);
+ ArrayFree(trendBuffer);
+ ArrayFree(emaBuffer);
+ Print("Хэндлы (указатели) и массивы очищены");
+}
 
 void OnTick()
+{
+ int totalPositions = PositionsTotal();
+ int positionType = -1;
+ double point = Point();
+ double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+ double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+ 
+ for (int i = 0; i < totalPositions; i++)
+ {
+  if (PositionGetSymbol(i) == _Symbol)
   {
-   int totalPositions = PositionsTotal();
-   int positionType = -1;
-   double point = Point();
-   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   
-   for (int i = 0; i < totalPositions; i++)
+   positionType = (int)PositionGetInteger(POSITION_TYPE);
+   if (positionType == POSITION_TYPE_BUY)
    {
-    if (PositionGetSymbol(i) == _Symbol)
+    if (!isProfit && ask - PositionGetDouble(POSITION_PRICE_OPEN) >= minProfit*point)
     {
-     positionType = (int)PositionGetInteger(POSITION_TYPE);
-     if (positionType == POSITION_TYPE_BUY)
+     isProfit = true;
+    }
+    if (useJrEMAExit)
+    {
+     // выход по младшему ЕМА
+    }
+   }
+   if (positionType == POSITION_TYPE_SELL)
+   {
+    if (!isProfit && PositionGetDouble(POSITION_PRICE_OPEN) - bid >= minProfit*point)
+    {
+     isProfit = true;
+    }
+    if (useJrEMAExit)
+    {
+     // выход по младшему ЕМА
+    }
+   }
+  }
+ }
+   
+ if (eldNewBar.isNewBar() > 0)
+ {
+  if (!isProfit)
+  {
+   if ((positionType > -1) && (TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF)))
+   {
+    //close position
+   }
+  }
+  
+  if ((CopyBuffer(divStoHandle, 1, 1, waitAfterDiv, divStoBuffer) < 0))
+  {
+   log_file.Write(LOG_DEBUG, "Ошибка заполнения массива divStoBuffer");
+   return;
+  }
+  if (CopyBuffer(trendHandle, 4, 1, 1, trendBuffer) < 0)
+  {
+   log_file.Write(LOG_DEBUG, "Ошибка заполнения массива trendHandle");
+   return;
+  }
+  if (CopyBuffer(emaHandle, 0, 0, 2, emaBuffer) < 0)
+  {
+   log_file.Write(LOG_DEBUG, "Ошибка заполнения массива emaHandle");
+   return;
+  }
+   
+  if (trendBuffer[0] == 7)
+  {   
+   for (int i = 0; i < waitAfterDiv; i++)
+   {
+    if (divStoBuffer[i] == 1)
+    {
+     if (ask < (emaBuffer[0] - deltaPriceToEMA*point))
      {
-      if (!isProfit && ask - PositionGetDouble(POSITION_PRICE_OPEN) >= minProfit*point)
+      log_file.Write(LOG_DEBUG, "Вошли в покупку");
+      if (tradeManager.OpenPosition(_Symbol, OP_BUY, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, prDifference))
       {
-       isProfit = true;
+       isProfit = false;
       }
-      if (useJrEMAExit)
+      else
       {
-       // выход по младшему ЕМА
+       log_file.Write(LOG_DEBUG, "Открыть позицию не удалось");
       }
      }
-     if (positionType == POSITION_TYPE_SELL)
+    }     
+    if (divStoBuffer[i] == 0)
+    {
+     if (bid > (emaBuffer[0] + deltaPriceToEMA*point))
      {
-      if (!isProfit && PositionGetDouble(POSITION_PRICE_OPEN) - bid >= minProfit*point)
+      log_file.Write(LOG_DEBUG, "Вошли в продажу");
+      if (tradeManager.OpenPosition(_Symbol, OP_SELL, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, prDifference))
       {
-       isProfit = true;
+       isProfit = false;
       }
-      if (useJrEMAExit)
+      else
       {
-       // выход по младшему ЕМА
+       log_file.Write(LOG_DEBUG, "Открыть позицию не удалось");
       }
      }
     }
    }
-   
-   if (eldNewBar.isNewBar() > 0)
-   {
-    if (!isProfit)
-    {
-     if ((positionType > -1) && (TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF)))
-     {
-      //close position
-     }
-    }
-    
-    if ((CopyBuffer(divStoHandle, 1, 1, waitAfterDiv, divStoBuffer) < 0) || (CopyBuffer(trendHandle, 4, 1, 1, trendBuffer) < 0) || (CopyBuffer(emaHandle, 0, 0, 2, emaBuffer) < 0))
-    {
-     Print("Ошибка заполнения массива divStoBuffer");
-     return;
-    }
-    
-    if (trendBuffer[0] == 7)
-    {   
-     for (int i = 0; i < waitAfterDiv; i++)
-     {
-      if (divStoBuffer[i] == 1)
-      {
-       if (ask < (emaBuffer[0] - deltaPriceToEMA*point))
-       {
-        Print("Вошли в покупку");
-        if (tradeManager.OpenPosition(_Symbol, OP_BUY, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, prDifference))
-        {
-         isProfit = false;
-        }
-        else
-        {
-         Print("Открыть позицию не удалось");
-        }
-       }
-      }     
-      if (divStoBuffer[i] == 0)
-      {
-       if (bid > (emaBuffer[0] + deltaPriceToEMA*point))
-       {
-        Print("Вошли в продажу");
-        if (tradeManager.OpenPosition(_Symbol, OP_SELL, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, prDifference))
-        {
-        isProfit = false;
-        }
-        else
-        {
-         Print("Открыть позицию не удалось");
-        }
-       }
-      }
-     }
-    } // close trendBuffer[0] == 7
-   } // close newBar
-   if (useTrailing)
-   {
-    // включаем трейлинг
-   }
-  } // close OnTick
+  } // close trendBuffer[0] == 7
+ } // close newBar
+ if (useTrailing)
+ {
+  tradeManager.DoTrailing();
+ }
+} // close OnTick
 
 void OnTrade()
-  {
-   tradeManager.OnTrade(history_start);
-  }
+{
+ tradeManager.OnTrade(history_start);
+}

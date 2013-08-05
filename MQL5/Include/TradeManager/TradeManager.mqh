@@ -26,6 +26,7 @@ protected:
   ulong _magic;
   bool _useSound;
   string _nameFileSound;   // Наименование звукового файла
+  datetime _historyStart;
   
   CPositionArray _positionsToReProcessing;
   CPositionArray _openPositions; ///< Array of open virtual orders for this VOM instance, also persisted as a file
@@ -34,8 +35,10 @@ protected:
 public:
   void CTradeManager():  _useSound(true), _nameFileSound("expert.wav") 
   {
-   _magic = MakeMagic(); 
-   log_file.Write(LOG_DEBUG, "Создание объекта CTradeManager"); 
+   _magic = MakeMagic();
+   _historyStart = TimeCurrent(); 
+   log_file.Write(LOG_DEBUG, StringFormat("%s Создание объекта CTradeManager", MakeFunctionPrefix(__FUNCTION__)));
+   log_file.Write(LOG_DEBUG, StringFormat("%s History start: %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_historyStart))); 
   };
   
   bool OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
@@ -85,7 +88,10 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
      {
       if (pos.getType() == OP_SELL || pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
       {
-       ClosePosition(i);
+       if(OrderSelect(position.getPositionTicket()))
+       {
+        ClosePosition(i);
+       }
       }
      }
     }
@@ -103,7 +109,10 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
      {
       if (pos.getType() == OP_BUY || pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
       {
-       ClosePosition(i);
+       if(OrderSelect(position.getPositionTicket()))
+       {
+        ClosePosition(i);
+       }
       }
      }
     }
@@ -187,11 +196,29 @@ void CTradeManager::OnTick()
  MqlTick tick;
  ENUM_TM_POSITION_TYPE type;
  int total = _openPositions.Total();
+ HistorySelect(_historyStart, TimeCurrent());
+ static ENUM_ORDER_STATE prev_state = -1;
+ static ENUM_ORDER_STATE curr_state = -1;
  for(int i = total - 1; i >= 0; i--) // по массиву НАШИХ позиций
  {
   SymbolInfoTick(Symbol(), tick);
   position = _openPositions.At(i); // выберем позицию по ее индексу
   type = position.getType();
+  
+  if(OrderSelect(position.getPositionTicket()))
+  {
+   curr_state = OrderGetInteger(ORDER_STATE);
+   if(prev_state != curr_state)
+    log_file.Write(LOG_DEBUG, StringFormat("%s ticket = %d, state = %s OrderSelect", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)curr_state)));
+   prev_state = curr_state;
+  }
+  else
+  {
+   curr_state = HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE);
+   if(prev_state != curr_state)
+    log_file.Write(LOG_DEBUG, StringFormat("%s ticket = %d, state = %s HistorySelect", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)curr_state)));
+   prev_state = curr_state;
+  }
     
   if (!OrderSelect(position.getStopLossTicket()) && position.getPositionStatus() != POSITION_STATUS_PENDING) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
@@ -215,8 +242,7 @@ void CTradeManager::OnTick()
   {
    if (!OrderSelect(position.getPositionTicket()))
    {
-    HistorySelect((TimeCurrent()-3*PeriodSeconds(Period())), TimeCurrent());
-    if (HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_FILLED) // Ордер уже выполнен
+    if (HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_FILLED)
     {
      log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
      if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
@@ -235,9 +261,9 @@ void CTradeManager::OnTick()
      SaveSituationToFile();
      break;
     }
-    else //if(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_EXPIRED)
+    if(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_EXPIRED)
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s Прошло время ожидания у ордера %d", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket()));
+     log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), OSTS(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE))));
      _openPositions.Delete(i);
      break;
     }

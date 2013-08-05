@@ -307,6 +307,13 @@ string CPositionArray::PrintToString()
  {
   pos = Position(i);
   StringConcatenate(result, "[", i, "] = {", pos.getMagic(), ", ", pos.getPositionPrice(), ", ", PositionStatusToStr(pos.getPositionStatus()), ", ", GetNameOP(pos.getType()), ",", pos.getStopLossPrice(), ",", pos.getTakeProfitPrice(), ",", pos.getStopLossTicket(), ",", pos.getStopLossStatus(), "}" );
+  if(pos.getType() != OP_BUY && pos.getType() != OP_SELL) 
+  {
+   if(OrderSelect(pos.getPositionTicket()))
+    StringConcatenate(result, result, EnumToString((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE)));
+   else
+    StringConcatenate(result, result, EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE)));
+  }
  }
  return result;
 }
