@@ -15,7 +15,7 @@
 enum ENUM_MOVE_TYPE      // Тип движения
   {
    MOVE_TYPE_UNKNOWN = 0,
-   MOVE_TYPE_TREND_UP,        // Тренд вверх - синий
+   MOVE_TYPE_TREND_UP,            // Тренд вверх - синий
    MOVE_TYPE_TREND_UP_FORBIDEN,   // Тренд вверх, запрещенный верхним ТФ - фиолетовый
    MOVE_TYPE_TREND_DOWN,          // Тренд вниз - красный
    MOVE_TYPE_TREND_DOWN_FORBIDEN, // Тренд вниз, запрещенный верхним ТФ - коричневый
