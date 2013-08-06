@@ -28,13 +28,14 @@ protected:
  string _symbol;                 // Имя инструмента
  ENUM_TIMEFRAMES _period;        // Период графика
       
- uint m_retcode;          // Код результата определения нового дня 
  string m_comment;        // Комментарий выполнения
  
+ int _startHour;   // час начала торговли
  const int _volume;      // Полный объем торгов   
  const double _factor;   // множитель для вычисления текущего объема торгов от дельты
  const int _percentage;  // сколько процентов объем дневной торговли может перекрывать от месячной
- const int _slowPeriod;  // Период инициализации старшей дельта
+ const int _fastPeriod;  // Период инициализации младшей дельта в часах
+ const int _slowPeriod;  // Период инициализации старшей дельта в днях
  const int _fastDeltaStep;   // Величина шага изменения дельты
  const int _slowDeltaStep;   // Величина шага изменения дельты
  
@@ -54,21 +55,25 @@ protected:
  bool isDayInit;   // ключ инициализации массива цен дня
 public:
 //--- Конструкторы
- void CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int slowPeriod);      // Конструктор CDynamo
+ void CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
+             ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CDynamo
  
 //--- Методы доступа к защищенным данным:
- uint GetRetCode() const {return(m_retcode);}    // Код результата определения нового бара 
- datetime GetLastDay() const {return(m_last_day_number);}   // 18:00 последнего дня
+ datetime GetLastDay() const {return(m_last_day_number);}      // 18:00 последнего дня
  datetime GetLastMonth() const {return(m_last_month_number);}  // Дата и время определния последнего месяца
- string GetComment() const {return(m_comment);}    // Комментарий выполнения
- string GetSymbol() const {return(_symbol);}     // Имя инструмента
- ENUM_TIMEFRAMES GetPeriod() const {return(_period);}     // Период графика
- bool isInit() const {return(isMonthInit && isDayInit);}  // Инициализация завершна
+ string GetComment() const {return(m_comment);}      // Комментарий выполнения
+ string GetSymbol() const {return(_symbol);}         // Имя инструмента
+ ENUM_TIMEFRAMES GetPeriod() const {return(_period);}          // Период графика
+ 
 //--- Методы инициализации защищенных данных:  
  void SetSymbol(string symbol) {_symbol = (symbol==NULL || symbol=="") ? Symbol() : symbol; }
  void SetPeriod(ENUM_TIMEFRAMES period) {_period = (period==PERIOD_CURRENT) ? Period() : period; }
-
+ void SetStartHour(int startHour) {_startHour = startHour;}
+ void SetStartHour(datetime startHour) {_startHour = GetHours(startHour) + 1;}
+ 
 //--- Рабочие методы класса
+ bool isInit() {return(isMonthInit && isDayInit);}  // Инициализация завершна
+ bool timeToUpdateFastDelta();
  bool isNewMonth();
  int isNewDay();
  void InitDayTrade();
@@ -87,12 +92,11 @@ public:
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int slowPeriod):
+void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int fastPeriod, int slowPeriod):
                       _deltaFastBase(deltaFast), _deltaSlowBase(deltaSlow),
                       _fastDeltaStep(fastDeltaStep), _slowDeltaStep(slowDeltaStep), _dayStep(dayStep), _monthStep(monthStep),
-                      _volume(volume), _factor(factor), _percentage(percentage), _slowPeriod(slowPeriod)
+                      _volume(volume), _factor(factor), _percentage(percentage), _fastPeriod(fastPeriod), _slowPeriod(slowPeriod)
   {
-   m_retcode = 0;         // Код результата определения нового бара 
    m_last_day_number = TimeCurrent();       // Инициализируем день текущим днем
    m_last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
    m_comment = "";        // Комментарий выполнения
@@ -101,6 +105,31 @@ void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowD
    _symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
    _period = Period();   // Период графика, по умолчанию период текущего графика
   }
+
+//+------------------------------------------------------------------+
+//| Проверка на время обновления младщей дельта                      |
+//| INPUT:  no.                                                      |
+//| OUTPUT: true   - если пришло время                               |
+//|         false  - если время не пришло или получили ошибку        |
+//| REMARK: no.                                                      |
+//+------------------------------------------------------------------+
+bool CDynamo::timeToUpdateFastDelta()
+{
+ datetime current_time = TimeCurrent();
+ 
+ //--- Проверяем появление нового месяца: 
+ if (m_last_day_number < current_time - _fastPeriod*60*60)  // прошло _fastPeriod часов
+ {
+  if (GetHours(current_time) >= _startHour) // Новый месяц начинается в 18 часов
+  { 
+   m_last_month_number = current_time; // запоминаем текущий день
+   return(true);
+  }
+ }
+
+ //--- дошли до этого места - значит день не новый
+ return(false);
+}
 
 //+------------------------------------------------------------------+
 //| Запрос на 18:00 каждого дня.                                     |
@@ -113,13 +142,13 @@ int CDynamo::isNewDay()
 {
  datetime current_time = TimeCurrent();
  
- if(GetHours(current_time) < 18)
+ if(GetHours(current_time) < _startHour)
  {
   m_last_day_number = current_time;
   return(-1);
  }
   
- if (GetHours(m_last_day_number) < 18 && GetHours(current_time) >= 18) 
+ if (GetHours(m_last_day_number) < _startHour && GetHours(current_time) >= _startHour) 
  {
   m_last_day_number = current_time;
   return(GetDayOfWeek(m_last_day_number));
@@ -141,7 +170,7 @@ bool CDynamo::isNewMonth()
  datetime current_time = TimeCurrent();
 
  //--- Проверяем появление нового месяца: 
- if (m_last_month_number < current_time - _slowPeriod*24*60*60)  // прошло 30 дней
+ if (m_last_month_number < current_time - _slowPeriod*24*60*60)  // прошло _slowPeriod дней
  {
   if (GetHours(current_time) >= 18) // Новый месяц начинается в 18 часов
   { 
