@@ -94,6 +94,7 @@ public:
    ENUM_STOPLEVEL_STATUS setStopLoss();
    ENUM_STOPLEVEL_STATUS setTakeProfit();
    bool ModifyPosition();
+   bool CheckTakeProfit();
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();
    ENUM_POSITION_STATUS RemovePendingPosition();
    bool ClosePosition();
@@ -312,6 +313,15 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
   _tpPrice = 0;
  }
  return(STOPLEVEL_STATUS_PLACED);
+}
+
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+bool CPosition::CheckTakeProfit(void)
+{
+ UpdateSymbolInfo();
+ return ((_type == OP_SELL && _tpPrice >= SymbInfo.Ask()) || 
+         (_type == OP_BUY  && _tpPrice <= SymbInfo.Bid()) );
 }
 
 //+------------------------------------------------------------------+

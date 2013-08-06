@@ -22,7 +22,6 @@ int error = 0;
 class CTradeManager
 {
 protected:
-  CPosition *position;
   ulong _magic;
   bool _useSound;
   string _nameFileSound;   // Наименование звукового файла
@@ -70,6 +69,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
 
  int i = 0;
  int total = _openPositions.Total();
+ CPosition *pos;
  log_file.Write(LOG_DEBUG
                ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
                             , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
@@ -83,12 +83,12 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    {
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на продажу
     {
-     CPosition *pos = _openPositions.At(i);
+     pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
       if (pos.getType() == OP_SELL || pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
       {
-       if(OrderSelect(position.getPositionTicket()))
+       if(OrderSelect(pos.getPositionTicket()))
        {
         ClosePosition(i);
        }
@@ -104,12 +104,12 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
    {
     for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на покупку
     {
-     CPosition *pos = _openPositions.At(i);
+     pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
       if (pos.getType() == OP_BUY || pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
       {
-       if(OrderSelect(position.getPositionTicket()))
+       if(OrderSelect(pos.getPositionTicket()))
        {
         ClosePosition(i);
        }
@@ -127,13 +127,13 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
  if (total <= 0)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
-  position = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
-  ENUM_POSITION_STATUS openingResult = position.OpenPosition();
+  pos = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
+  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.06f, tp=%.06f"
-                                          , MakeFunctionPrefix(__FUNCTION__), position.getMagic(), position.getSymbol(), GetNameOP(position.getType()), position.getPositionPrice(), position.getVolume(), position.getStopLossPrice(), position.getTakeProfitPrice()));
-   _openPositions.Add(position);  // добавляем открутую позицию в массив открытых позиций
+                                          , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
+   _openPositions.Add(pos);  // добавляем открутую позицию в массив открытых позиций
    SaveSituationToFile();
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
    return(true); // Если удачно открыли позицию
@@ -141,8 +141,8 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   else
   {
    error = GetLastError();
-   if(position.getType() == OP_SELL || position.getType() == OP_BUY) _positionsToReProcessing.Add(position);
-   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось открыть позицию.Error{%d} = %s.Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(position.getPositionStatus())));
+   if(pos.getType() == OP_SELL || pos.getType() == OP_BUY) _positionsToReProcessing.Add(pos);
+   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось открыть позицию.Error{%d} = %s.Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(pos.getPositionStatus())));
    return(false); // Если открыть позицию не удалось
   }
  }
@@ -155,10 +155,6 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
 void CTradeManager::DoTrailing()
 {
  int total = _openPositions.Total();
- ulong ticket = 0, slTicket = 0;
- long type = -1;
- double newSL = 0;
-
 //--- пройдем в цикле по всем ордерам
  for(int i = 0; i < total; i++)
  {
@@ -193,113 +189,10 @@ void CTradeManager::OnTrade(datetime history_start)
 //+------------------------------------------------------------------+
 void CTradeManager::OnTick()
 {
- MqlTick tick;
+ int total;
  ENUM_TM_POSITION_TYPE type;
- int total = _openPositions.Total();
- if(!HistorySelect(_historyStart, TimeCurrent()))
- {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать историю с %s по %s", MakeFunctionPrefix(__FUNCTION__), _historyStart, TimeCurrent())); 
-  return;
- }
- static ENUM_ORDER_STATE prev_state = -1;
- static ENUM_ORDER_STATE curr_state = -1;
- for(int i = total - 1; i >= 0; i--) // по массиву НАШИХ позиций
- {
-  SymbolInfoTick(Symbol(), tick);
-  position = _openPositions.At(i); // выберем позицию по ее индексу
-  type = position.getType();
-  
-  if(OrderSelect(position.getPositionTicket()))
-  {
-   curr_state = OrderGetInteger(ORDER_STATE);
-   if(prev_state != curr_state)
-    log_file.Write(LOG_DEBUG, StringFormat("%s ticket = %d, state = %s OrderSelect", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)curr_state)));
-   prev_state = curr_state;
-  }
-  else
-  {
-   curr_state = HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE);
-   if(prev_state != curr_state)
-    log_file.Write(LOG_DEBUG, StringFormat("%s ticket = %d, state = %s HistorySelect", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)curr_state)));
-   prev_state = curr_state;
-  }
-    
-  if (!OrderSelect(position.getStopLossTicket()) && position.getPositionStatus() != POSITION_STATUS_PENDING) // Если мы не можем выбрать стоп по его тикету, значит он сработал
-  {
-
-   log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-
-   _openPositions.Delete(i);
-   SaveSituationToFile();
-   break;                         // ... и удалить позицию из массива позиций 
-  }
-     
-  if ((type == OP_SELL && position.getTakeProfitPrice() >= tick.ask) || 
-      (type == OP_BUY  && position.getTakeProfitPrice() <= tick.bid) )             // цена дошла до уровня TP
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, ask = %f, bif = %f, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), tick.ask, tick.bid, position.getTakeProfitPrice()));
-   ClosePosition(i);
-   break;             // завершаем шаг цикла
-  }
-     
-  if (position.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
-  {
-   if (!OrderSelect(position.getPositionTicket()))
-   {
-    long ticket = position.getPositionTicket();
-    if(!FindHistoryTicket(ticket))
-    {
-     log_file.Write(LOG_DEBUG, StringFormat("%s В массиве историй не найден ордер с тикетом %d", MakeFunctionPrefix(__FUNCTION__), ticket));
-     return;
-    }
-    long state;
-    if (HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE, state))
-    {
-     if(state == ORDER_STATE_FILLED)
-     {
-      log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
-      if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
-       || position.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
-      {
-       log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
-       position.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
-       _positionsToReProcessing.Add(_openPositions.Detach(i)); 
-       break;
-      }
-      log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Изменяем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
-      position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
-      if(position.getType() == OP_BUYLIMIT || position.getType() == OP_BUYSTOP) position.setType(OP_BUY);
-      if (position.getType() == OP_SELLLIMIT || position.getType() == OP_SELLSTOP) position.setType(OP_SELL);
-      log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-      SaveSituationToFile();
-      break;
-     }
-     else if(state == ORDER_STATE_EXPIRED)
-     {
-      log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE))));
-      _openPositions.Delete(i);
-      break;
-     }
-     else
-      log_file.Write(LOG_DEBUG, StringFormat("%s статус ордера: %s", MakeFunctionPrefix(__FUNCTION__), EnumToString((ENUM_ORDER_STATE)state)));
-    }
-    else
-    {
-     log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать ордер по тикету %d из истории", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket()));
-     log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(GetLastError())));
-     string str;
-     int total = HistoryOrdersTotal();
-     for(int i = total-1; i >= 0; i--)
-     {
-      str += HistoryOrderGetTicket(i) + " ";
-     }
-     log_file.Write(LOG_DEBUG, StringFormat("%s Тикеты ордеров из истории: %s", MakeFunctionPrefix(__FUNCTION__), str));
-    } 
-    //log_file.Write(LOG_DEBUG, StringFormat("%s ticket = %d; status = %s", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), OSTS(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE))));
-   }
-  }
- }
  
+//--- Сначала обработаем незавершенные позиции
  total = _positionsToReProcessing.Total();
  for(int i = total - 1; i>=0; i--) // по массиву позиций на доработку
  {
@@ -329,6 +222,105 @@ void CTradeManager::OnTick()
     pos.setPositionStatus(POSITION_STATUS_OPEN);
     _openPositions.Add(_positionsToReProcessing.Detach(i));
     SaveSituationToFile();
+   }
+  }
+ } 
+ 
+//--- Подгружаем историю
+ if(!HistorySelect(_historyStart, TimeCurrent()))
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать историю с %s по %s", MakeFunctionPrefix(__FUNCTION__), _historyStart, TimeCurrent())); 
+  return;
+ }
+
+//--- Если история подгрузилась, работаем с текущими позициями  
+ total = _openPositions.Total();
+ CPosition *pos;
+//--- по массиву НАШИХ позиций
+ for(int i = total - 1; i >= 0; i--) 
+ {
+  pos = _openPositions.At(i);   // выберем позицию по ее индексу
+  type = pos.getType();
+  
+  if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING) // Если мы не можем выбрать стоп по его тикету, значит он сработал
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+   _openPositions.Delete(i);
+   SaveSituationToFile();
+   break;                         // ... и удалить позицию из массива позиций 
+  }
+  
+  if (pos.CheckTakeProfit())    
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()));
+   ClosePosition(i);
+   break;             // завершаем шаг цикла
+  }
+     
+  if (pos.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
+  {
+   if (!OrderSelect(pos.getPositionTicket())) // Если мы не можем выбрать ее по тикету
+   {
+    long ticket = pos.getPositionTicket();
+    if(!FindHistoryTicket(ticket))            // Попробуем найти этот тикет в истории
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s В массиве историй не найден ордер с тикетом %d", MakeFunctionPrefix(__FUNCTION__), ticket));
+     return;
+    }
+    
+    long state;
+    if (HistoryOrderGetInteger(ticket, ORDER_STATE, state)) // Получим статус ордера из истории
+    {
+     switch (state)
+     {
+      case ORDER_STATE_FILLED:
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
+       
+       if (pos.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
+        || pos.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
+       {
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
+        pos.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
+        _positionsToReProcessing.Add(_openPositions.Detach(i)); 
+        break;
+       }
+       
+       log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Изменяем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
+       pos.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
+       if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP) pos.setType(OP_BUY);
+       if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP) pos.setType(OP_SELL);
+       log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+       SaveSituationToFile();
+       break;
+      }
+      
+      case ORDER_STATE_EXPIRED:
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
+       _openPositions.Delete(i);
+       break;
+      }
+      
+      default:
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s статус ордера: %s", MakeFunctionPrefix(__FUNCTION__), EnumToString((ENUM_ORDER_STATE)state)));
+       break;
+      }
+     }
+    }
+    else
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать ордер по тикету %d из истории", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()));
+     log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(GetLastError())));
+     string str;
+     int total = HistoryOrdersTotal();
+     for(int i = total-1; i >= 0; i--)
+     {
+      str += HistoryOrderGetTicket(i) + " ";
+     }
+     log_file.Write(LOG_DEBUG, StringFormat("%s Тикеты ордеров из истории: %s", MakeFunctionPrefix(__FUNCTION__), str));
+    } 
    }
   }
  }
@@ -385,7 +377,7 @@ bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 
 //+------------------------------------------------------------------+
 /// Close a virtual order.
-/// \param [in] i			      position index in array of positions
+/// \param [in] i			      pos index in array of positions
 /// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
 /// \return							true if successful, false if not
 //+------------------------------------------------------------------+
@@ -410,8 +402,8 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
 }
 
 //+------------------------------------------------------------------+
-/// Delete a virtual position from "not_deleted".
-/// \param [in] i			      position index in array of positions
+/// Delete a virtual pos from "not_deleted".
+/// \param [in] i			      pos index in array of positions
 /// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
 /// \return							true if successful, false if not
 //+------------------------------------------------------------------+
