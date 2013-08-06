@@ -32,7 +32,8 @@ input ulong _magic = 4577;
 input int volume = 10;  // Полный объем торгов
 input double factor = 0.01; // множитель для вычисления текущего объема торгов от дельты
 input int percentage = 70;  // сколько процентов объем дневной торговли может перекрывать от месячно
-input int slowPeriod = 30;  // Период обновления старшей дельта 
+input int slowPeriod = 30;  // Период обновления старшей дельта в днях
+input int fastPeriod = 24;  // Период обновления младшей дельта в часах
 input int slowDelta = 30;   // Старшая дельта
 input int fastDelta = 50;   // Младшая дельта
 input DELTA_STEP fastDeltaStep = TEN;  // Величина шага изменения дельты
@@ -47,7 +48,7 @@ datetime startTime;
 double openPrice;
 double currentVolume;
 
-CDynamo dyn(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, volume, factor, percentage, slowPeriod);
+CDynamo dyn(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, volume, factor, percentage, fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -68,6 +69,8 @@ int OnInit()
    symbol = Symbol();
    period = Period();
    startTime = TimeCurrent();
+   
+   dyn.SetStartHour(startTime);
    
    currentVolume = 0;
    dyn.InitDayTrade();
