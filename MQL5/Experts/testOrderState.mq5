@@ -18,18 +18,22 @@
 MqlTradeRequest request;
 MqlTradeResult result;
 CisNewBar bar;
-datetime startHistory;
+datetime start_history;
 int ticket1 = -1;
 int ticket2 = -1;
 int ticket3 = -1;
+int count = 0;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
-{  
+{
+ log_file.Write(LOG_DEBUG, "Hello");  
  CreateRequest();
- startHistory = TimeCurrent();
+ start_history = TimeCurrent();
  OrderSend(request, result);
+ count++;
+ PrintHistoryState();
  ticket1 = result.order;
  bar.isNewBar();
  return(INIT_SUCCEEDED);
@@ -46,7 +50,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-  HistorySelect(startHistory, TimeCurrent());
+  HistorySelect(start_history, TimeCurrent());
  if(bar.isNewBar() > 0)
  {
   if(OrderSelect(ticket1))
@@ -67,19 +71,28 @@ void OnTick()
   {
    PrintFormat("%d %s", ticket3, EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(ticket3, ORDER_STATE)));
   }
+  PrintHistoryState();
   
   if(!OrderSelect(ticket1) && ticket2 < 0 && ticket3 < 0)
   {
    CreateRequest();
    OrderSend(request, result);
+   count++;
+   PrintHistoryState();
+   log_file.Write(LOG_DEBUG, "Open order#2");  
    ticket2 = result.order;
    Sleep(2000);
    CreateRequest(true);
    OrderSend(request, result);
+   PrintHistoryState();
+   log_file.Write(LOG_DEBUG, "Close oreder#2");  
    
    CreateRequest();
    OrderSend(request, result);
    ticket3 = result.order;
+   count++;
+   PrintHistoryState();
+   log_file.Write(LOG_DEBUG, "Open order#3");  
   } 
  } 
 }
@@ -109,4 +122,65 @@ void CreateRequest(bool remove = false)
  request.type_filling = ORDER_FILLING_FOK;
  request.type_time    = ORDER_TIME_SPECIFIED;
  request.expiration   = TimeCurrent() + 2*PeriodSeconds(Period());
+}
+
+void PrintHistoryState()
+{
+ HistorySelect(start_history, TimeCurrent());
+ int total = HistoryOrdersTotal();
+ 
+ int canceled = 0;
+ int expired = 0;
+ int filled = 0;
+ int partial = 0;
+ int placed = 0; 
+ int rejected = 0;
+ int request_add = 0;
+ int request_cancel = 0;
+ int request_modify = 0;
+ int started = 0;
+ string str = "";
+ if (total != 0)
+ {
+ for(int i = total-1; i >= 0; i--)
+ {
+  str += HistoryOrderGetTicket(i) + "_";
+  switch(HistoryOrderGetInteger(HistoryOrderGetTicket(i), ORDER_STATE))
+  {
+   case ORDER_STATE_CANCELED:
+   canceled++;
+   break;
+   case ORDER_STATE_EXPIRED:
+   expired++;
+   break;
+   case ORDER_STATE_FILLED:
+   filled++;
+   break;
+   case ORDER_STATE_PARTIAL:
+   partial++;
+   break;
+   case ORDER_STATE_PLACED:
+   placed++;
+   break;  
+   case ORDER_STATE_REJECTED:
+   rejected++;
+   break;
+   case ORDER_STATE_REQUEST_ADD:
+   request_add++;
+   break;
+   case ORDER_STATE_REQUEST_CANCEL:
+   request_cancel++;
+   break;
+   case ORDER_STATE_REQUEST_MODIFY:
+   request_modify++;
+   break;
+   case ORDER_STATE_STARTED:
+   log_file.Write(LOG_DEBUG, StringFormat("STARTED i = %d, ticket = %d, openprice = %f", i, HistoryOrderGetTicket(i), HistoryOrderGetDouble(HistoryOrderGetTicket(i), ORDER_PRICE_OPEN)));
+   started++;
+   break;
+  }
+ }
+ }
+ log_file.Write(LOG_DEBUG, StringFormat("%d canceled=%d; expired=%d; filled=%d; started=%d; partial=%d; rejected=%d; request_a=%d; request_c=%d; request_m=%d; placed=%d;"
+            , count, canceled, expired, filled, started, partial, rejected, request_add, request_cancel, request_modify, placed));
 }
