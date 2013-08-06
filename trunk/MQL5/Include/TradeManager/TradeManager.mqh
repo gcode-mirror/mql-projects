@@ -196,7 +196,11 @@ void CTradeManager::OnTick()
  MqlTick tick;
  ENUM_TM_POSITION_TYPE type;
  int total = _openPositions.Total();
- HistorySelect(_historyStart, TimeCurrent());
+ if(!HistorySelect(_historyStart, TimeCurrent()))
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать историю с %s по %s", MakeFunctionPrefix(__FUNCTION__), _historyStart, TimeCurrent())); 
+  return;
+ }
  static ENUM_ORDER_STATE prev_state = -1;
  static ENUM_ORDER_STATE curr_state = -1;
  for(int i = total - 1; i >= 0; i--) // по массиву НАШИХ позиций
@@ -242,31 +246,55 @@ void CTradeManager::OnTick()
   {
    if (!OrderSelect(position.getPositionTicket()))
    {
-    if (HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_FILLED)
+    long ticket = position.getPositionTicket();
+    if(!FindHistoryTicket(ticket))
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
-     if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
-      || position.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
+     log_file.Write(LOG_DEBUG, StringFormat("%s В массиве историй не найден ордер с тикетом %d", MakeFunctionPrefix(__FUNCTION__), ticket));
+     return;
+    }
+    long state;
+    if (HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE, state))
+    {
+     if(state == ORDER_STATE_FILLED)
      {
-      log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
-      position.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
-      _positionsToReProcessing.Add(_openPositions.Detach(i)); 
+      log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
+      if (position.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
+       || position.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
+       position.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
+       _positionsToReProcessing.Add(_openPositions.Detach(i)); 
+       break;
+      }
+      log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Изменяем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
+      position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
+      if(position.getType() == OP_BUYLIMIT || position.getType() == OP_BUYSTOP) position.setType(OP_BUY);
+      if (position.getType() == OP_SELLLIMIT || position.getType() == OP_SELLSTOP) position.setType(OP_SELL);
+      log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+      SaveSituationToFile();
       break;
      }
-     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Изменяем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
-     position.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
-     if(position.getType() == OP_BUYLIMIT || position.getType() == OP_BUYSTOP) position.setType(OP_BUY);
-     if (position.getType() == OP_SELLLIMIT || position.getType() == OP_SELLSTOP) position.setType(OP_SELL);
-     log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-     SaveSituationToFile();
-     break;
+     else if(state == ORDER_STATE_EXPIRED)
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE))));
+      _openPositions.Delete(i);
+      break;
+     }
+     else
+      log_file.Write(LOG_DEBUG, StringFormat("%s статус ордера: %s", MakeFunctionPrefix(__FUNCTION__), EnumToString((ENUM_ORDER_STATE)state)));
     }
-    if(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE) == ORDER_STATE_EXPIRED)
+    else
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), OSTS(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE))));
-     _openPositions.Delete(i);
-     break;
-    }
+     log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать ордер по тикету %d из истории", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket()));
+     log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(GetLastError())));
+     string str;
+     int total = HistoryOrdersTotal();
+     for(int i = total-1; i >= 0; i--)
+     {
+      str += HistoryOrderGetTicket(i) + " ";
+     }
+     log_file.Write(LOG_DEBUG, StringFormat("%s Тикеты ордеров из истории: %s", MakeFunctionPrefix(__FUNCTION__), str));
+    } 
     //log_file.Write(LOG_DEBUG, StringFormat("%s ticket = %d; status = %s", MakeFunctionPrefix(__FUNCTION__), position.getPositionTicket(), OSTS(HistoryOrderGetInteger(position.getPositionTicket(), ORDER_STATE))));
    }
   }
@@ -436,31 +464,12 @@ void CTradeManager::SaveSituationToFile(bool debug = false)
  FileClose(file_handle);
 }
 
-
-string OSTS(long state)
+bool FindHistoryTicket(long ticket)
 {
- switch(state)
+ int total = HistoryOrdersTotal();
+ for(int i = 0; i < total; i++)
  {
-  case ORDER_STATE_CANCELED:
-   return("ORDER_STATE_CANCELED");
-  case ORDER_STATE_EXPIRED:
-   return("ORDER_STATE_EXPIRED");
-  case ORDER_STATE_FILLED:
-   return("ORDER_STATE_FILLED");
-  case ORDER_STATE_PARTIAL:
-   return("ORDER_STATE_FILLED");
-  case ORDER_STATE_PLACED:
-   return("ORDER_STATE_PLACED");
-  case ORDER_STATE_REJECTED:
-   return("ORDER_STATE_REJECTED");
-  case ORDER_STATE_REQUEST_ADD:
-   return("ORDER_STATE_REQUEST_ADD");
-  case ORDER_STATE_REQUEST_CANCEL:
-   return("ORDER_STATE_REQUEST_CANCEL");
-  case ORDER_STATE_REQUEST_MODIFY:
-   return("ORDER_STATE_REQUEST_MODIFY");
-  case ORDER_STATE_STARTED:
-   return("ORDER_STATE_STARTED");
+  if(ticket == HistoryOrderGetTicket(i)) return true;  
  }
- return("bad state");  
+ return false;
 }

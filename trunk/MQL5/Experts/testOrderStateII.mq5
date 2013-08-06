@@ -15,6 +15,7 @@ MqlTradeResult t_result;
 datetime start_history;
 static CisNewBar bar4H(PERIOD_H4);
 static CisNewBar bar1H(PERIOD_H1);
+int count = 0;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -41,11 +42,13 @@ void OnTick()
  {
   CreateRequest();
   OrderSend(t_request, t_result);
+  count++;
  }
  
  if(bar1H.isNewBar() > 0)
  {
   PrintHistoryState();
+  PrintHistoryInfo();
  }
 }
 //+------------------------------------------------------------------+
@@ -64,7 +67,7 @@ void CreateRequest()
  t_request.magic        = 1122;
  t_request.symbol       = Symbol();
  t_request.volume       = 1.0;
- t_request.price        = SymbolInfoDouble(Symbol(), SYMBOL_ASK) + 1024*Point();
+ t_request.price        = SymbolInfoDouble(Symbol(), SYMBOL_ASK) + 1000*Point();
  t_request.type         = ORDER_TYPE_SELL_LIMIT;
  t_request.type_filling = ORDER_FILLING_FOK;
  t_request.type_time    = ORDER_TIME_SPECIFIED;
@@ -87,8 +90,9 @@ void PrintHistoryState()
  int request_modify = 0;
  int started = 0;
  string str = "";
- 
- for(int i = total; i >= 0; i--)
+ if (total != 0)
+ {
+ for(int i = total-1; i >= 0; i--)
  {
   str += HistoryOrderGetTicket(i) + "_";
   switch(HistoryOrderGetInteger(HistoryOrderGetTicket(i), ORDER_STATE))
@@ -121,10 +125,29 @@ void PrintHistoryState()
    request_modify++;
    break;
    case ORDER_STATE_STARTED:
+   log_file.Write(LOG_DEBUG, StringFormat("STARTED i = %d, ticket = %d, openprice = %f", i, HistoryOrderGetTicket(i), HistoryOrderGetDouble(HistoryOrderGetTicket(i), ORDER_PRICE_OPEN)));
    started++;
    break;
   }
  }
- log_file.Write(LOG_DEBUG, StringFormat("%s canceled=%d; expired=%d; filled=%d; started=%d; partial=%d; rejected=%d; request_a=%d; request_c=%d; request_m=%d; placed=%d;"
-            , str, canceled, expired, filled, started, partial, rejected, request_add, request_cancel, request_modify, placed));
+ }
+ log_file.Write(LOG_DEBUG, StringFormat("%d canceled=%d; expired=%d; filled=%d; started=%d; partial=%d; rejected=%d; request_a=%d; request_c=%d; request_m=%d; placed=%d;"
+            , count, canceled, expired, filled, started, partial, rejected, request_add, request_cancel, request_modify, placed));
+}
+
+void PrintHistoryInfo()
+{
+ HistorySelect(start_history, TimeCurrent());
+ int total = HistoryOrdersTotal();
+ if(total > 10)
+ {
+  long state;
+  for(int i = total-1; i >= 0; i--)
+  {
+   if(HistoryOrderGetInteger(HistoryOrderGetTicket(i), ORDER_STATE, state))
+    log_file.Write(LOG_DEBUG, StringFormat("%d %d", i, HistoryOrderGetTicket(i)));
+   else
+    log_file.Write(LOG_DEBUG, "BAD");
+  }
+ }
 }
