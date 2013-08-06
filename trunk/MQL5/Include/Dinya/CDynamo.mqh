@@ -120,9 +120,9 @@ bool CDynamo::timeToUpdateFastDelta()
  //--- Проверяем появление нового месяца: 
  if (m_last_day_number < current_time - _fastPeriod*60*60)  // прошло _fastPeriod часов
  {
-  if (GetHours(current_time) >= _startHour) // Новый месяц начинается в 18 часов
+  if (GetHours(current_time) >= _startHour) // Новый день начинается в _startHour часов
   { 
-   m_last_month_number = current_time; // запоминаем текущий день
+   m_last_day_number = current_time; // запоминаем текущий день
    return(true);
   }
  }
@@ -190,7 +190,7 @@ bool CDynamo::isNewMonth()
 //+------------------------------------------------------------------+
 void CDynamo::InitDayTrade()
 {
- if (isNewDay() > 0) // Если случился новый день
+ if (timeToUpdateFastDelta() > 0) // Если случился новый день
  {
   //PrintFormat("%s Новый день %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_day_number));
   _deltaFast = _deltaFastBase;
