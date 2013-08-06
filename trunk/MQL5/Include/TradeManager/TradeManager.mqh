@@ -189,11 +189,8 @@ void CTradeManager::OnTrade(datetime history_start)
 //+------------------------------------------------------------------+
 void CTradeManager::OnTick()
 {
- int total;
- ENUM_TM_POSITION_TYPE type;
- 
 //--- Сначала обработаем незавершенные позиции
- total = _positionsToReProcessing.Total();
+ int total = _positionsToReProcessing.Total();
  for(int i = total - 1; i>=0; i--) // по массиву позиций на доработку
  {
   CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее тикету
@@ -240,14 +237,14 @@ void CTradeManager::OnTick()
  for(int i = total - 1; i >= 0; i--) 
  {
   pos = _openPositions.At(i);   // выберем позицию по ее индексу
-  type = pos.getType();
+  ENUM_TM_POSITION_TYPE type = pos.getType();
   
   if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-   _openPositions.Delete(i);
-   SaveSituationToFile();
-   break;                         // ... и удалить позицию из массива позиций 
+   _openPositions.Delete(i);            // удалить позицию из массива позиций
+   SaveSituationToFile();               // Переписать файл состояния
+   break;                          
   }
   
   if (pos.CheckTakeProfit())    
@@ -341,7 +338,7 @@ void CTradeManager::Initialization()
   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
  }
  else
-  log_file.Write(LOG_DEBUG, StringFormat("%s Файл состояния отсутствует.Предыдущее завершенее программы было запланированным.", MakeFunctionPrefix(__FUNCTION__)));
+  log_file.Write(LOG_DEBUG, StringFormat("%s Файл состояния отсутствует.Предыдущее завершенее программы было корректным.", MakeFunctionPrefix(__FUNCTION__)));
 }
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
@@ -419,7 +416,7 @@ bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
  return(false);
 }
 //+------------------------------------------------------------------+
-/// Create magic numbar
+/// Create magic number
 /// \param [string] str       symbol
 /// \return							generated magic number
 //+------------------------------------------------------------------+
@@ -435,6 +432,11 @@ long CTradeManager::MakeMagic(string strSymbol = "")
  return MathAbs((long)ulHash);
 }
 
+//+------------------------------------------------------------------+
+/// Create file name
+/// \param [bool] debug       if want to debug
+/// \return							generated string
+//+------------------------------------------------------------------+
 string CreateRDFilename (bool debug = false)
 {
  string result;
@@ -443,6 +445,10 @@ string CreateRDFilename (bool debug = false)
  return(result);
 }
 
+//+------------------------------------------------------------------+
+/// Save position array to file
+/// \param [bool] debug       if want to debug
+//+------------------------------------------------------------------+
 void CTradeManager::SaveSituationToFile(bool debug = false)
 {
  string file_name = CreateRDFilename(debug);
@@ -456,6 +462,11 @@ void CTradeManager::SaveSituationToFile(bool debug = false)
  FileClose(file_handle);
 }
 
+//+------------------------------------------------------------------+
+/// Search for ticket in History
+/// \param [long] ticket       number of ticket to search
+/// \return                    true if successful, false if not
+//+------------------------------------------------------------------+
 bool FindHistoryTicket(long ticket)
 {
  int total = HistoryOrdersTotal();
