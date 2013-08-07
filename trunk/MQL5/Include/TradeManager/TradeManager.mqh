@@ -247,11 +247,11 @@ void CTradeManager::OnTick()
    break;                          
   }
   
-  if (pos.CheckTakeProfit())    
+  if (pos.CheckTakeProfit())    //проверяем условие выполнения TP
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()));
    ClosePosition(i);
-   break;             // завершаем шаг цикла
+   break;             
   }
      
   if (pos.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
