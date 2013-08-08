@@ -63,7 +63,7 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
 {
  if (_positionsToReProcessing.Total() > 0) 
  {
-  log_file.Write(LOG_DEBUG, "Невозможно открыть позицию так как еще есть позиции в positionsToReProcessing.");
+  log_file.Write(LOG_DEBUG, StringFormat("%s Невозможно открыть позицию так как еще есть позиции в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));
   return false;
  }
 
@@ -301,7 +301,7 @@ void CTradeManager::OnTick()
       
       default:
       {
-       log_file.Write(LOG_DEBUG, StringFormat("%s статус ордера: %s", MakeFunctionPrefix(__FUNCTION__), EnumToString((ENUM_ORDER_STATE)state)));
+       log_file.Write(LOG_DEBUG, StringFormat("%s Плохой статус завершения: %s; тикет ордера: %d", MakeFunctionPrefix(__FUNCTION__), EnumToString((ENUM_ORDER_STATE)state), ticket));
        break;
       }
      }
