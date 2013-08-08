@@ -291,7 +291,12 @@ void CTradeManager::OnTick()
        SaveSituationToFile();
        break;
       }
-      
+      case ORDER_STATE_CANCELED:
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s ордер отменен %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
+       _openPositions.Delete(i);
+       break;
+      }
       case ORDER_STATE_EXPIRED:
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
