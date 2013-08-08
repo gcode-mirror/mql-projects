@@ -301,7 +301,7 @@ void CTradeManager::OnTick()
       
       default:
       {
-       log_file.Write(LOG_DEBUG, StringFormat("%s ѕлохой статус завершени€: %s; тикет ордера: %d", MakeFunctionPrefix(__FUNCTION__), EnumToString((ENUM_ORDER_STATE)state), ticket));
+       log_file.Write(LOG_DEBUG, StringFormat("%s ѕлохой статус оредера при перемещении в историю: %s; тикет ордера: %d", MakeFunctionPrefix(__FUNCTION__), EnumToString((ENUM_ORDER_STATE)state), ticket));
        break;
       }
      }
