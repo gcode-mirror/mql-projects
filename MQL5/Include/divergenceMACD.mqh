@@ -120,11 +120,11 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
    
    if(LessDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_max]))  //на MACD: экстремум в текущий момент меньше глобального
    {
-    Alert("BEGIN: ", date_buf[0]);
+    /*Alert("BEGIN: ", date_buf[0]);
     Alert(__FUNCTION__, ": Ќайдено расхождение");
     Alert("index_global_MACD = ", index_MACD_global_max);
     Alert("index_highest_price = ", index_Price_global_max, "; highest_price = ", iHigh_buf[index_Price_global_max]);
-    Alert("END: ", date_buf[DEPTH_MACD-1]);  
+    Alert("END: ", date_buf[DEPTH_MACD-1]);*/  
     return(1);
    }
   }
@@ -162,11 +162,11 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  
    if(GreatDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_min]))  //на MACD: экстремум в текущий момент меньше глобального
    {
-    Alert("BEGIN: ", date_buf[0]);
+    /*Alert("BEGIN: ", date_buf[0]);
     Alert(__FUNCTION__, ": Ќайдено схождение");
     Alert("index_global_MACD = ", index_MACD_global_min);
     Alert("index_lowest_price = ", index_Price_global_min, "; lowest_price = ", iLow_buf[index_Price_global_min]);
-    Alert("END: ", date_buf[DEPTH_MACD-1]);  
+    Alert("END: ", date_buf[DEPTH_MACD-1]);*/
     return(-1);
    }
   }
