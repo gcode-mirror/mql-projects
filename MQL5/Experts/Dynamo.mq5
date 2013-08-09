@@ -29,6 +29,7 @@ enum DELTA_STEP
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
 input ulong _magic = 4577;
+input ENUM_ORDER_TYPE type = ORDER_TYPE_BUY; // Основное направление торговли
 input int volume = 10;  // Полный объем торгов
 input double factor = 0.01; // множитель для вычисления текущего объема торгов от дельты
 input int percentage = 70;  // сколько процентов объем дневной торговли может перекрывать от месячно
@@ -41,20 +42,24 @@ input DELTA_STEP slowDeltaStep = TEN;  // Величина шага изменения дельты
 input int dayStep = 40;     // шаг границы цены в пунктах для дневной торговли
 input int monthStep = 400;  // шаг границы цены в пунктах для месячной торговл 
 
-
 string symbol;
 ENUM_TIMEFRAMES period;
 datetime startTime;
 double openPrice;
 double currentVolume;
 
-CDynamo dyn(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, volume, factor, percentage, fastPeriod, slowPeriod);
+CDynamo dyn(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, type, volume, factor, percentage, fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
 //---
+   if (type != ORDER_TYPE_BUY && type != ORDER_TYPE_SELL)
+   {
+    PrintFormat("%s Основное направлени торговли должно быть ORDER_TYPE_BUY или ORDER_TYPE_SELL");
+    return(INIT_FAILED);
+   }
    if (fastDelta % fastDeltaStep != 0)
    {
     PrintFormat("%s Младшая дельта должна делиться на шаг");
