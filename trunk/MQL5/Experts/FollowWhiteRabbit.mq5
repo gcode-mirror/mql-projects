@@ -30,16 +30,22 @@ input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
 
+input bool useLimitOrders = false;
+input int limitPriceDifference = 20;
+input bool useStopOrders = false;
+input int stopPriceDifference = 20;
+
 string my_symbol;                                       //переменная для хранения символа
 ENUM_TIMEFRAMES my_timeframe;                                    //переменная для хранения младшего таймфрейма
 datetime history_start;
 
-CTradeManager ctm(_magic);
+CTradeManager ctm();
 MqlTick tick;
 
 double takeProfit, stopLoss;
 double high_buf[], low_buf[], close_buf[1], open_buf[1];
-ENUM_POSITION_TYPE pos_type;
+ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
+int priceDifference;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -48,6 +54,25 @@ int OnInit()
    my_symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    
+   if (useLimitOrders)
+   {
+    opBuy = OP_BUYLIMIT;
+    opSell = OP_SELLLIMIT;
+    priceDifference = limitPriceDifference;
+   }
+   else if (useStopOrders)
+        {
+         opBuy = OP_BUYSTOP;
+         opSell = OP_SELLSTOP;
+         priceDifference = stopPriceDifference;
+        }
+        else
+        {
+         opBuy = OP_BUY;
+         opSell = OP_SELL;
+         priceDifference = 0;
+        }
+        
    //устанавливаем индексацию для массивов ХХХ_buf
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
@@ -116,11 +141,11 @@ void OnTick()
      double vol=MathPow(10.0, digits); 
      if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
      {
-      pos_type = POSITION_TYPE_SELL;
+      pos_type = opSell;
      }
      if(GreatDoubles(close_buf[0], open_buf[0]))
      {
-      pos_type = POSITION_TYPE_BUY;
+      pos_type = opBuy;
      }
      takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
      //PrintFormat("(open-close) = %.05f, vol = %.05f, (1+profitpercent) = %.02f, takeprofit = %.01f"
