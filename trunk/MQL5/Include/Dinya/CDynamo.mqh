@@ -30,10 +30,11 @@ protected:
       
  string m_comment;        // Комментарий выполнения
  
- int _startHour;   // час начала торговли
+ const ENUM_ORDER_TYPE _type; // Основное направление торговли
  const int _volume;      // Полный объем торгов   
  const double _factor;   // множитель для вычисления текущего объема торгов от дельты
  const int _percentage;  // сколько процентов объем дневной торговли может перекрывать от месячной
+ int _startHour;   // час начала торговли
  const int _fastPeriod;  // Период инициализации младшей дельта в часах
  const int _slowPeriod;  // Период инициализации старшей дельта в днях
  const int _fastDeltaStep;   // Величина шага изменения дельты
@@ -56,7 +57,7 @@ protected:
 public:
 //--- Конструкторы
  void CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
-             ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CDynamo
+             , ENUM_ORDER_TYPE type ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CDynamo
  
 //--- Методы доступа к защищенным данным:
  datetime GetLastDay() const {return(m_last_day_number);}      // 18:00 последнего дня
@@ -92,10 +93,10 @@ public:
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int fastPeriod, int slowPeriod):
-                      _deltaFastBase(deltaFast), _deltaSlowBase(deltaSlow),
-                      _fastDeltaStep(fastDeltaStep), _slowDeltaStep(slowDeltaStep), _dayStep(dayStep), _monthStep(monthStep),
-                      _volume(volume), _factor(factor), _percentage(percentage), _fastPeriod(fastPeriod), _slowPeriod(slowPeriod)
+void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, ENUM_ORDER_TYPE type, int volume, double factor, int percentage, int fastPeriod, int slowPeriod):
+                      _deltaFastBase(deltaFast), _deltaSlowBase(deltaSlow), _fastDeltaStep(fastDeltaStep), _slowDeltaStep(slowDeltaStep),
+                       _dayStep(dayStep), _monthStep(monthStep), _fastPeriod(fastPeriod), _slowPeriod(slowPeriod),
+                      _type(type), _volume(volume), _factor(factor), _percentage(percentage)
   {
    m_last_day_number = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
    m_last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
@@ -296,12 +297,12 @@ bool CDynamo::CorrectOrder(double volume)
  
  if (volume > 0)
  {
-  type = ORDER_TYPE_BUY;
+  type = _type;
   price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
  }
  else
  {
-  type = ORDER_TYPE_SELL;
+  type = (ENUM_ORDER_TYPE)(_type + MathPow(-1, _type)); // Если _type= 0, то type =1, если  _type= 1, то type =0
   price = SymbolInfoDouble(_symbol, SYMBOL_BID);
  }
  
