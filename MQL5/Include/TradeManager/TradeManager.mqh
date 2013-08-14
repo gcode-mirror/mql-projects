@@ -50,6 +50,7 @@ public:
   void DoTrailing();
   void Initialization();
   void Deinitialization();
+  bool isMinProfit(string symbol);
   void OnTick();
   void OnTrade(datetime history_start);
   void SaveSituationToFile(bool debug = false);
@@ -364,6 +365,22 @@ void CTradeManager::Deinitialization()
  }
  log_file.Write(LOG_DEBUG, StringFormat("%s Процесс деинициализации завершен.", MakeFunctionPrefix(__FUNCTION__)));
  FileDelete(CreateRDFilename(), FILE_COMMON);
+}
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+bool CTradeManager::isMinProfit(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(pos.isMinProfit());
+  }
+ }
+ return false;
 }
 //+------------------------------------------------------------------+
 /// Close a virtual order.

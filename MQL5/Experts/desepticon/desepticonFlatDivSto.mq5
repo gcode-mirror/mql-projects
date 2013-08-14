@@ -8,47 +8,50 @@
 #property version   "1.00"
  
 #include <Lib CisNewBar.mqh>
+#include <divergenceStochastic.mqh>
 #include <TradeManager/TradeManager.mqh>
 
 input ENUM_TIMEFRAMES eldTF = PERIOD_H1;
 input ENUM_TIMEFRAMES jrTF = PERIOD_M5;
 
-input ENUM_MA_METHOD methodMASto = MODE_SMA; // Метод сглаживания
+//параметры divSto indicator 
+input int    kPeriod = 5;          // К-период стохастика
+input int    dPeriod = 3;          // D-период стохастика
+input int    slow  = 3;            // Сглаживание стохастика. Возможные значения от 1 до 3.
+input int    top_level = 80;       // Top-level стохастка
+input int    bottom_level = 20;    // Bottom-level стохастика
 
-//параметры divSto indicator
-input int    kPeriod = 5;          // К-период
-input int    dPeriod = 3;          // D-период
-input int    slow  = 3;            // Сглаживание графика. Возможные значения от 1 до 3.
-input int    deep = 12;            // обрабатываемый период, количество баров.
-input int    delta = 2;            // разнца в барах между правыми экстремумами цены и стохастика
-input double highLine = 80;        // верхняя значимая граница стохастика
-input double lowLine = 20;         // нижняя значимая граница стохастика
-input int    firstBarsCount = 3;   // количество первых баров на которых должен находиться максимум или минимум цены
-//параметры сделок
-input double orderVolume = 0.1;    // Объём сделки
-input double slOrder = 100;        // Stop Loss
-input double tpOrder = 100;        // Take Profit
-input int    trStop = 100;         // Trailing Stop
-input int    trStep = 100;         // Trailing Step
-input int    prDifference = 10;    // Price Difference
+//параметры сделок  
+input double orderVolume = 0.1;         // Объём сделки
+input int    slOrder = 100;             // Stop Loss
+input int    tpOrder = 100;             // Take Profit
+input int    trStop = 100;              // Trailing Stop
+input int    trStep = 100;              // Trailing Step
+input int    minProfit = 250;           // Minimal Profit 
+input bool   useLimitOrders = false;    // Использовать Limit ордера
+input int    limitPriceDifference = 50; // Разнциа для Limit ордеров
+input bool   useStopOrders = false;     // Использовать Stop ордера
+input int    stopPriceDifference = 50;  // Разнциа для Stop ордеров
 
-input bool   useTrailing = false;
+input bool   useTrailing = false;  // Использовать трейлинг
 input bool   useJrEMAExit = false; // будем ли выходить по ЕМА
-input int    minProfit = 100;      // минимальная прибыль
 input int    posLifeTime = 10;     // время ожидания сделки в барах
 input int    deltaPriceToEMA = 7;  // разница между ценой и EMA
 input int    periodEMA = 3;        // период усреднения EMA
-input int    waitAfterDiv = 2;     // ожидание сделки после расхождения (в барах)
+input int    waitAfterDiv = 4;     // ожидание сделки после расхождения (в барах)
 //параметры PriceBased indicator
 input int    historyDepth = 40;    // глубина истории для расчета
 input int    bars=30;              // сколько свечей показывать
 
 int    handleTrend;
 int    handleEMA;
+int    handleSTO;
 double bufferTrend[];
 double bufferEMA[];
 
 datetime history_start;
+ENUM_TM_POSITION_TYPE opBuy, opSell;
+int priceDifference = 10;    // Price Difference
 
 CisNewBar eldNewBar(eldTF);
 CTradeManager tradeManager;
@@ -58,6 +61,7 @@ int OnInit()
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  history_start = TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
  handleTrend =  iCustom(NULL, 0, "PriceBasedIndicator", historyDepth, bars);
+ handleSTO = iStochastic(NULL, eldTF, kPeriod, dPeriod, slow, MODE_SMA, STO_CLOSECLOSE); 
  handleEMA = iMA(NULL, 0, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
    
  if (handleTrend == INVALID_HANDLE || handleEMA == INVALID_HANDLE)
@@ -66,6 +70,25 @@ int OnInit()
                                         , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
   return(INIT_FAILED);
  }
+ 
+ if (useLimitOrders)
+ {
+  opBuy = OP_BUYLIMIT;
+  opSell = OP_SELLLIMIT;
+  priceDifference = limitPriceDifference;
+ }
+ else if (useStopOrders)
+      {
+       opBuy = OP_BUYSTOP;
+       opSell = OP_SELLSTOP;
+       priceDifference = stopPriceDifference;
+      }
+      else
+      {
+       opBuy = OP_BUY;
+       opSell = OP_SELL;
+       priceDifference = 0;
+      }
   
  ArraySetAsSeries(bufferTrend, true);
  ArraySetAsSeries(bufferEMA, true);;
@@ -77,7 +100,8 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
- IndicatorRelease(handleTrend); 
+ IndicatorRelease(handleTrend);
+ IndicatorRelease(handleSTO); 
  IndicatorRelease(handleEMA);
  ArrayFree(bufferTrend);
  ArrayFree(bufferEMA);
@@ -90,44 +114,13 @@ void OnTick()
  int positionType = -1;
  static bool isProfit = false;
  static int  wait = 0;
+ int order_direction = 0;
  double point = Point();
  double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
  double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
  
- for (int i = 0; i < totalPositions; i++)    //цикл по всем позициям
- {
-  if (PositionGetSymbol(i) == _Symbol)       //если есть позиция на текущем символе
-  {
-   positionType = (int)PositionGetInteger(POSITION_TYPE);
-   switch (positionType)         //проверяем на достижимость minProfit и выходим по младшим EMA
-   {
-    case POSITION_TYPE_BUY:
-    {
-     if (!isProfit && ask - PositionGetDouble(POSITION_PRICE_OPEN) >= minProfit*point)
-     {
-      isProfit = true;
-     }
-     if (useJrEMAExit)
-     {
-      // выход по младшему ЕМА
-     }
-     break;
-    }
-    case POSITION_TYPE_SELL:
-    {
-     if (!isProfit && PositionGetDouble(POSITION_PRICE_OPEN) - bid >= minProfit*point)
-     {
-      isProfit = true;
-     }
-     if (useJrEMAExit)
-     {
-      // выход по младшему ЕМА
-     }
-     break;
-    }    
-   }
-  }
- }
+ isProfit = tradeManager.isMinProfit(_Symbol);
+ //TO DO: выход по EMA
    
  if (eldNewBar.isNewBar() > 0)   //на каждом новом баре старшего TF
  {
@@ -143,21 +136,41 @@ void OnTick()
                                           , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
    return;
   }
-   
-  if (bufferTrend[0] == 7)               //Если направление тренда FLAT  
-  {   
-   for (int i = 0; i < waitAfterDiv; i++)
+  
+  wait++; 
+  if (order_direction != 0)
+  {
+   if (wait > waitAfterDiv)
    {
-    if (1) //проверка на рассхождение
+    wait = 0;
+    order_direction = 0;
+   }
+  }
+  
+  order_direction = divergenceSTOC(handleSTO, Symbol(), eldTF, top_level, bottom_level);
+  
+  if (bufferTrend[0] == 7)               //Если направление тренда FLAT  
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s ФЛЭТ", MakeFunctionPrefix(__FUNCTION__)));   
+   if (order_direction == 1)
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD 1", MakeFunctionPrefix(__FUNCTION__)));
+    if(bid < bufferEMA[0] + deltaPriceToEMA*point)
     {
-
-    }     
-    if (1) //проверка на схождение
-    {
-
+     tradeManager.OpenPosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+     wait = 0;
     }
    }
-  } // close bufferTrend[0] == 7
+   if (order_direction == -1)
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD -1", MakeFunctionPrefix(__FUNCTION__)));
+    if(ask > bufferEMA[0] - deltaPriceToEMA*point)
+    {
+     tradeManager.OpenPosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+     wait = 0;
+    }
+   }
+  } // close trend == FLAT
  } // close newBar
  if (useTrailing)
  {
@@ -169,32 +182,3 @@ void OnTrade()
 {
  tradeManager.OnTrade(history_start);
 }
-
-/*
-     if (ask < (bufferEMA[0] - deltaPriceToEMA*point))
-     {
-      log_file.Write(LOG_DEBUG, "Вошли в покупку");
-      if (tradeManager.OpenPosition(_Symbol, OP_BUY, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, prDifference))
-      {
-       isProfit = false;
-      }
-      else
-      {
-       log_file.Write(LOG_DEBUG, "Открыть позицию не удалось");
-      }
-     }
-     
-          if (bid > (bufferEMA[0] + deltaPriceToEMA*point))
-     {
-      log_file.Write(LOG_DEBUG, "Вошли в продажу");
-      if (tradeManager.OpenPosition(_Symbol, OP_SELL, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, prDifference))
-      {
-       isProfit = false;
-      }
-      else
-      {
-       log_file.Write(LOG_DEBUG, "Открыть позицию не удалось");
-      }
-     }
-
-*/

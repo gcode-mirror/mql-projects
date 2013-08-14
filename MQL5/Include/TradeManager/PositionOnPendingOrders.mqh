@@ -70,6 +70,7 @@ public:
    double getStopLossPrice() {return(_slPrice);};
    double getTakeProfitPrice() {return(_tpPrice);};
    double getMinProfit() {return(_minProfit);};
+   bool   isMinProfit();
    double getTrailingStop() {return(_trailingStop);};
    double getTrailingStep() {return(_trailingStep);};
    
@@ -117,7 +118,31 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, dou
    pos_status = POSITION_STATUS_NOT_INITIALISED;
    sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
   }
- 
+
+//+------------------------------------------------------------------+
+//|Получение информации о достижении минимального профита            |
+//+------------------------------------------------------------------+
+bool CPosition::isMinProfit(void)
+{
+ UpdateSymbolInfo();
+ if(pos_status == POSITION_STATUS_OPEN)
+ {
+  switch(_type)
+  {
+   case OP_BUY:
+   case OP_BUYLIMIT:
+   case OP_BUYSTOP:
+    if (SymbInfo.Ask() - _minProfit*SymbInfo.Point() >= _posPrice ) return true;
+    break;
+   case OP_SELL:
+   case OP_SELLLIMIT:
+   case OP_SELLSTOP:
+    if (SymbInfo.Bid() + _minProfit*SymbInfo.Point() <= _posPrice ) return true;
+    break;
+  }
+ }
+ return false;
+} 
 //+------------------------------------------------------------------+
 //|Получение актуальной информации по торговому инструменту          |
 //+------------------------------------------------------------------+
