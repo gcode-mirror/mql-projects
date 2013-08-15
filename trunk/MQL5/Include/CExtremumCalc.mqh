@@ -26,12 +26,12 @@ class CExtremumCalc
 {
  private:
  CExtremum _extr_array[];
- double _e;
+ int _e;
  int _depth;
  
  public:
  CExtremumCalc();
- CExtremumCalc(double e, int depth);
+ CExtremumCalc(int e, int depth);
 ~CExtremumCalc();
  CExtremum getExtr(int index);
  DIRECTION isExtremum(double a, double b, double c);
@@ -46,7 +46,7 @@ CExtremumCalc::CExtremumCalc():
                 ArraySetAsSeries(_extr_array, true);
                }
 
-CExtremumCalc::CExtremumCalc(double e,int depth):
+CExtremumCalc::CExtremumCalc(int e,int depth):
                _e (e),
                _depth (depth)
                {
@@ -73,7 +73,8 @@ DIRECTION CExtremumCalc::isExtremum(double a, double b, double c)
 
 void CExtremumCalc::FillExtremumsArray(const double &price[])
 {
- ArraySetAsSeries(price, true);
+ if(ArrayGetAsSeries(price)) ArraySetAsSeries(price, true);
+ if(ArrayGetAsSeries(_extr_array)) ArraySetAsSeries(_extr_array, true);
  CExtremum temp = {ZERO, 0};
  _extr_array[0] = temp;
  _extr_array[1] = temp;
@@ -84,6 +85,10 @@ void CExtremumCalc::FillExtremumsArray(const double &price[])
   if(temp.direction == MAX || temp.direction == MIN)
   {
    temp.price = price[i];
+  }
+  else
+  {
+   temp.price = 0;
   }
   _extr_array[i] = temp;
  }
@@ -104,9 +109,41 @@ void CExtremumCalc::Sort()
    }
    else
    {
-    if(MathAbs(_extr_array[i].price - _extr_array[prev_extr].price)/point < _e)
+    if(_extr_array[i].direction != _extr_array[prev_extr].direction)
     {
-     
+     prev_extr = i;
+     continue;
+    }
+    else
+    {
+     if(_extr_array[i].direction == MAX)
+     {
+      if(_extr_array[i].price > _extr_array[prev_extr].price)
+      {
+       _extr_array[prev_extr].direction = ZERO;
+       _extr_array[prev_extr].price = 0;       
+       prev_extr = i;
+      }
+      else
+      {
+       _extr_array[i].direction = ZERO;
+       _extr_array[i].price = 0;
+      }
+     }
+     if(_extr_array[i].direction == MIN)
+     {
+      if(_extr_array[i].price < _extr_array[prev_extr].price)
+      {
+       _extr_array[prev_extr].direction = ZERO;
+       _extr_array[prev_extr].price = 0;
+       prev_extr = i;
+      }
+      else
+      {
+       _extr_array[i].direction = ZERO;
+       _extr_array[i].price = 0;
+      }
+     }
     }
    }
   }
