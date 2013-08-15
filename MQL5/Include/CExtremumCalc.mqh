@@ -10,7 +10,7 @@
 
 enum DIRECTION
 {
- UNKNOWN, 
+ ZERO, 
  MAX, 
  MIN
 };
@@ -30,49 +30,64 @@ class CExtremumCalc
  int _depth;
  
  public:
+ CExtremumCalc();
  CExtremumCalc(double e, int depth);
 ~CExtremumCalc();
- int isExtremum(double a, double b, double c);
+ DIRECTION isExtremum(double a, double b, double c);
  void FillExtremumsArray(const double& price[]); 
- 
+ void SortExtremumsArray();
 };
+CExtremumCalc::CExtremumCalc():
+               _e (50),
+               _depth (128)
+               {
+                ArrayResize(_extr_array, _depth);
+                ArraySetAsSeries(_extr_array, true);
+               }
 
 CExtremumCalc::CExtremumCalc(double e,int depth):
                _e (e),
                _depth (depth)
                {
-                ArrayResize(_extr_array, depth);
+                ArrayResize(_extr_array, _depth);
                 ArraySetAsSeries(_extr_array, true);
                }
+CExtremumCalc::~CExtremumCalc()
+                {
+                 ArrayFree(_extr_array);
+                }             
 
-int CExtremumCalc::isExtremum(double a, double b, double c)
+DIRECTION CExtremumCalc::isExtremum(double a, double b, double c)
 {
  if(GreatDoubles(b, a) && GreatDoubles(b, c))
  {
-  return(1);
+  return(MAX);
  }
  else if(LessDoubles(b, a) && LessDoubles(b, c))
       {
-       return(-1);
+       return(MIN);
       }
- return(0);
+ return(ZERO);
 }
 
 void CExtremumCalc::FillExtremumsArray(const double &price[])
 {
  ArraySetAsSeries(price, true);
- CExtremum temp = {UNKNOWN, 0};
+ CExtremum temp = {ZERO, 0};
+ _extr_array[0] = temp;
+ _extr_array[1] = temp;
+ _extr_array[_depth-1] = temp;
  for(int i = 2; i < _depth-1; i++)
  {
-   if(isExtremum(price[i-1], price[i], price[i+1]) == 1)
-   {
-    temp.direction = MAX;
-    temp.price = price[i];
-   }
-   if(isExtremum(price[i-1], price[i], price[i+1]) == -1)
-   {
-    temp.direction = MIN;
-    temp.price = price[i];
-   } 
+  temp.direction = isExtremum(price[i-1], price[i], price[i+1]);
+  if(temp.direction == MAX || temp.direction == MIN)
+  {
+   temp.price = price[i];
+  }
+  _extr_array[i] = temp;
  }
+}
+
+void CExtremumCalc::SortExtremumsArray()
+{
 }
