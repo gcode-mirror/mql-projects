@@ -28,27 +28,38 @@ int OnInit()
   {
 //--- indicator buffers mapping
    SetIndexBuffer(0, Buffer, INDICATOR_DATA);
-   PlotIndexSetInteger(0, PLOT_ARROW, 234);
 //---
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
-int OnCalculate(const int rates_total,
-                const int prev_calculated,
-                const int begin,
-                const double &price[])
+int OnCalculate (const int rates_total,      // размер входных таймсерий
+                 const int prev_calculated,  // обработано баров на предыдущем вызове
+                 const datetime& time[],     // Time
+                 const double& open[],       // Open
+                 const double& high[],       // High
+                 const double& low[],        // Low
+                 const double& close[],      // Close
+                 const long& tick_volume[],  // Tick Volume
+                 const long& volume[],       // Real Volume
+                 const int& spread[]         // Spread
+               )
   {
 //---
-   ArraySetAsSeries(price, true);
+   ArraySetAsSeries(close, true);
+   ArraySetAsSeries(high, true);
+   ArraySetAsSeries(low, true);
    ArraySetAsSeries(Buffer, true);
    for(int i=2; i < depth-1; i++)
    {
-    if(isExtremum(price[i-1], price[i], price[i+1]) == 1)
+    if(isExtremum(close[i-1], close[i], close[i+1]) == 1)
     {
-     Buffer[i] = price[i];
-     Print(i);
+     Buffer[i] = high[i];
+    }
+    if(isExtremum(close[i-1], close[i], close[i+1]) == -1)
+    {
+     Buffer[i] = low[i];
     } 
    }
 //--- return value of prev_calculated for next call
