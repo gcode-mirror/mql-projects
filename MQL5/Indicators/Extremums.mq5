@@ -17,9 +17,14 @@
 #property indicator_width1  1
 
 #include <CompareDoubles.mqh>
+#include <CExtremumCalc.mqh>
+#include <Lib CisNewBar.mqh>
 //--- input parameters
 input int      depth=20;
 input int      epsilon = 35;
+
+CExtremumCalc extrcalc(epsilon, depth);
+CisNewBar bar;
 //--- indicator buffers
 double         Buffer[];
 //+------------------------------------------------------------------+
@@ -48,46 +53,18 @@ int OnCalculate (const int rates_total,      // размер входных таймсерий
                )
   {
 //---
-   ArraySetAsSeries(close, true);
-   ArraySetAsSeries(high, true);
-   ArraySetAsSeries(low, true);
    ArraySetAsSeries(Buffer, true);
-   
-   for(int i=2; i < depth-1; i++)
-   {
-    if(isExtremum(close[i-1], close[i], close[i+1]) == 1)
+   ArraySetAsSeries(close, true);   
+   extrcalc.FillExtremumsArray(close);
+   extrcalc.Sort();
+    
+    for(int i = 0; i < depth; i++)
     {
-     Buffer[i] = high[i];
+     Buffer[i] = extrcalc.getExtr(i).price;
+     Print(i, "_", Buffer[i]);
     }
-    else if(isExtremum(close[i-1], close[i], close[i+1]) == -1)
-    {
-     Buffer[i] = low[i];
-    }
-    else
-     Buffer[i] = 0; 
-   }
-   
-   int prev_extr = depth-1;
-   double point = SymbolInfoDouble(Symbol(), SYMBOL_POINT);
-   for(int j = depth - 1; j >= 0; j--)
-   {
-    if(Buffer[j] != 0)
-    {
-    }
-   }
+     
 //--- return value of prev_calculated for next call
    return(rates_total);
   }
 //+------------------------------------------------------------------+
-int isExtremum(double a, double b, double c)
-{
- if(GreatDoubles(b, a) && GreatDoubles(b, c))
- {
-  return(1);
- }
- else if(LessDoubles(b, a) && LessDoubles(b, c))
-      {
-       return(-1);
-      }
- return(0);
-}
