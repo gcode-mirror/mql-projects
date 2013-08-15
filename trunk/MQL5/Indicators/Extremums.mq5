@@ -19,6 +19,7 @@
 #include <CompareDoubles.mqh>
 //--- input parameters
 input int      depth=20;
+input int      epsilon = 35;
 //--- indicator buffers
 double         Buffer[];
 //+------------------------------------------------------------------+
@@ -51,16 +52,28 @@ int OnCalculate (const int rates_total,      // размер входных таймсерий
    ArraySetAsSeries(high, true);
    ArraySetAsSeries(low, true);
    ArraySetAsSeries(Buffer, true);
+   
    for(int i=2; i < depth-1; i++)
    {
     if(isExtremum(close[i-1], close[i], close[i+1]) == 1)
     {
      Buffer[i] = high[i];
     }
-    if(isExtremum(close[i-1], close[i], close[i+1]) == -1)
+    else if(isExtremum(close[i-1], close[i], close[i+1]) == -1)
     {
      Buffer[i] = low[i];
-    } 
+    }
+    else
+     Buffer[i] = 0; 
+   }
+   
+   int prev_extr = depth-1;
+   double point = SymbolInfoDouble(Symbol(), SYMBOL_POINT);
+   for(int j = depth - 1; j >= 0; j--)
+   {
+    if(Buffer[j] != 0)
+    {
+    }
    }
 //--- return value of prev_calculated for next call
    return(rates_total);

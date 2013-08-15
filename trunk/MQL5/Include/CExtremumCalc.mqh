@@ -33,9 +33,10 @@ class CExtremumCalc
  CExtremumCalc();
  CExtremumCalc(double e, int depth);
 ~CExtremumCalc();
+ CExtremum getExtr(int index);
  DIRECTION isExtremum(double a, double b, double c);
- void FillExtremumsArray(const double& price[]); 
- void SortExtremumsArray();
+ void FillExtremumsArray(const double& price[]);
+ void Sort();
 };
 CExtremumCalc::CExtremumCalc():
                _e (50),
@@ -88,6 +89,38 @@ void CExtremumCalc::FillExtremumsArray(const double &price[])
  }
 }
 
-void CExtremumCalc::SortExtremumsArray()
+void CExtremumCalc::Sort()
 {
+ int prev_extr = -1;
+ double point = SymbolInfoDouble(Symbol(), SYMBOL_POINT);
+ for(int i = _depth - 1; i >= 0; i--)
+ {
+  if(_extr_array[i].price != 0)
+  {
+   if(prev_extr == -1)
+   {
+    prev_extr = i;
+    continue;
+   }
+   else
+   {
+    if(MathAbs(_extr_array[i].price - _extr_array[prev_extr].price)/point < _e)
+    {
+     
+    }
+   }
+  }
+ }
+}
+
+CExtremum CExtremumCalc::getExtr(int index)
+{
+ if(0 <= index && index < _depth)
+  return _extr_array[index];
+ else
+ {
+  Alert(__FUNCTION__, " bad index = ", index);
+  CExtremum error = {ZERO, -1};
+  return error;
+ }
 }
