@@ -12,6 +12,7 @@
 #include <CompareDoubles.mqh>
 #include <Dinya\CDynamo.mqh>
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
+#include <CLog.mqh>
 
 enum DELTA_STEP
 {
@@ -37,13 +38,12 @@ input int slowPeriod = 30;  // Период обновления старшей дельта в днях
 input int fastPeriod = 24;  // Период обновления младшей дельта в часах
 input int slowDelta = 30;   // Старшая дельта
 input int fastDelta = 50;   // Младшая дельта
-input DELTA_STEP fastDeltaStep = TEN;  // Величина шага изменения дельты
-input DELTA_STEP slowDeltaStep = TEN;  // Величина шага изменения дельты
+input DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
+input DELTA_STEP fastDeltaStep = TEN;  // Шаг изменения МЛАДШЕЙ дельты
 input int dayStep = 40;     // шаг границы цены в пунктах для дневной торговли
 input int monthStep = 400;  // шаг границы цены в пунктах для месячной торговл 
 
 string symbol;
-ENUM_TIMEFRAMES period;
 datetime startTime;
 double openPrice;
 double currentVolume;
@@ -72,7 +72,6 @@ int OnInit()
    }
    
    symbol = Symbol();
-   period = Period();
    startTime = TimeCurrent();
    
    dyn.SetStartHour(startTime);
@@ -106,6 +105,7 @@ void OnTick()
    if (currentVolume != vol)
    {
     PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
+    log_file.Write(LOG_DEBUG, StringFormat("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol));
     if (dyn.CorrectOrder(vol - currentVolume))
     {
      currentVolume = vol;

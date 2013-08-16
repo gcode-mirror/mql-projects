@@ -25,7 +25,7 @@ public:
    int               OpenLots(string strSymbol);
    /// Count of orders.
    int               OrderCount(string strSymbol,long lMagic);
-   int               OrderCount(string strSymbol,ENUM_TM_POSITION_TYPE eOrderType,long lMagic);
+   int               OrderCount(string strSymbol,long lMagic,ENUM_TM_POSITION_TYPE eOrderType);
    string            PersistFilename(){return(m_strPersistFilename);}
    string            PersistFilename(string strFilename);
    int               TicketToIndex(long lTicket);
@@ -111,9 +111,10 @@ int CPositionArray::OrderCount(string strSymbol,long lMagic)
 /// Count of orders of a certain type.
 /// \param [in] strSymbol
 /// \param [in] nMagic
+/// \param [in] eOrderType
 /// \return	Count of orders matching input criteria
 //+------------------------------------------------------------------+
-int CPositionArray::OrderCount(string strSymbol, ENUM_TM_POSITION_TYPE eOrderType,long lMagic)
+int CPositionArray::OrderCount(string strSymbol, long lMagic, ENUM_TM_POSITION_TYPE eOrderType)
   {
    int nOrdersTotal=0;
    for(int i=Total()-1;i>=0;i--)
