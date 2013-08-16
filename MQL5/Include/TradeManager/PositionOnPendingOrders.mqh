@@ -344,9 +344,13 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
 //+------------------------------------------------------------------+
 bool CPosition::CheckTakeProfit(void)
 {
- UpdateSymbolInfo();
- return ((_type == OP_SELL && _tpPrice >= SymbInfo.Ask()) || 
-         (_type == OP_BUY  && _tpPrice <= SymbInfo.Bid()) );
+ if (_tpPrice > 0)
+ {
+  UpdateSymbolInfo();
+  return ((_type == OP_SELL && _tpPrice >= SymbInfo.Ask()) || 
+          (_type == OP_BUY  && _tpPrice <= SymbInfo.Bid()) );
+ }
+ return (false);
 }
 
 //+------------------------------------------------------------------+
