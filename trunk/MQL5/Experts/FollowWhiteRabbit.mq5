@@ -136,7 +136,7 @@ void OnTick()
     
     if(GreatDoubles(lastBar, avgBar*(1 + supremacyPercent)))
     {
-     PrintFormat("last bar = %.08f avg Bar = %.08f", NormalizeDouble(lastBar,8), NormalizeDouble(avgBar,8));
+     //PrintFormat("last bar = %.08f avg Bar = %.08f", NormalizeDouble(lastBar,8), NormalizeDouble(avgBar,8));
      double point = SymbolInfoDouble(my_symbol, SYMBOL_POINT);
      int digits = SymbolInfoInteger(my_symbol, SYMBOL_DIGITS);
      double vol=MathPow(10.0, digits); 
@@ -151,7 +151,7 @@ void OnTick()
      takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
      //PrintFormat("(open-close) = %.05f, vol = %.05f, (1+profitpercent) = %.02f, takeprofit = %.01f"
      //           , MathAbs(open_buf[0] - close_buf[0]), vol, (1+profitPercent), takeProfit);
-     ctm.OpenPosition(my_symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep);
+     ctm.OpenPosition(my_symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep, priceDifference);
     }
    }
    
