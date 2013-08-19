@@ -17,13 +17,11 @@
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
-input ulong _magic = 1122;
 input int SL = 150;
-input int TP = 500;
 input double _lot = 1;
 input int historyDepth = 40;
 input double supremacyPercent = 0.2;
-input double profitPercent = 0.5;
+input double profitPercent = 0.5; 
 input ENUM_TIMEFRAMES timeframe = PERIOD_M1;
 input bool trailing = false;
 input int minProfit = 250;
@@ -36,7 +34,6 @@ input bool useStopOrders = false;
 input int stopPriceDifference = 20;
 
 string my_symbol;                                       //переменная для хранения символа
-ENUM_TIMEFRAMES my_timeframe;                                    //переменная для хранения младшего таймфрейма
 datetime history_start;
 
 CTradeManager ctm();
@@ -111,13 +108,13 @@ void OnTick()
 
    static CIsNewBar isNewBar;
    
-   if(isNewBar.isNewBar(my_symbol, my_timeframe))
+   if(isNewBar.isNewBar(my_symbol, timeframe))
    {
     //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
-    errLow = CopyLow(my_symbol, my_timeframe, 1, historyDepth, low_buf);
-    errHigh = CopyHigh(my_symbol, my_timeframe, 1, historyDepth, high_buf);
-    errClose = CopyClose(my_symbol, my_timeframe, 1, 1, close_buf);          
-    errOpen = CopyOpen(my_symbol, my_timeframe, 1, 1, open_buf);
+    errLow = CopyLow(my_symbol, timeframe, 1, historyDepth, low_buf);
+    errHigh = CopyHigh(my_symbol, timeframe, 1, historyDepth, high_buf);
+    errClose = CopyClose(my_symbol, timeframe, 1, 1, close_buf);          
+    errOpen = CopyOpen(my_symbol, timeframe, 1, 1, open_buf);
     
     if(errLow < 0 || errHigh < 0 || errClose < 0 || errOpen < 0)         //если есть ошибки
     {
