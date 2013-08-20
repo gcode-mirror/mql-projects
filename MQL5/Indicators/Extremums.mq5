@@ -50,13 +50,14 @@ int OnCalculate (const int rates_total,      // размер входных таймсерий
                  const long& tick_volume[],  // Tick Volume
                  const long& volume[],       // Real Volume
                  const int& spread[]         // Spread
-               )
+                )
   {
 //---
    ArraySetAsSeries(Buffer, true);
    ArraySetAsSeries(close, true);   
    extrcalc.FillExtremumsArray(close);
-   extrcalc.Sort();
+   extrcalc.SortByValue();
+   extrcalc.SortByDirection();
     
     for(int i = 0; i < depth; i++)
     {
