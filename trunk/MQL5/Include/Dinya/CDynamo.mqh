@@ -50,6 +50,7 @@ protected:
  
  const int _dayStep;          // шаг границы цены в пунктах для дневной торговли
  const int _monthStep;        // шаг границы цены в пунктах для месячной торговли
+ double _startDayPrice;   // цена начала торгов текущего дня
  double _prevDayPrice;   // текущий уровень цены дня
  double _prevMonthPrice; // текущий уровень цены месяца
  
@@ -106,6 +107,7 @@ void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowD
    _isMonthInit = false;
    _symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
    _period = Period();   // Период графика, по умолчанию период текущего графика
+  _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   }
 
 //+------------------------------------------------------------------+
@@ -195,11 +197,21 @@ void CDynamo::InitDayTrade()
  if (timeToUpdateFastDelta()) // Если случился новый день
  {
   PrintFormat("%s Новый день %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_day_number));
-  _deltaFast = _deltaFastBase;
+  if (_startDayPrice > SymbolInfoDouble(_symbol, SYMBOL_LAST))
+  {
+   _deltaFast = 0;
+   _isDayInit = false;
+  }
+  else
+  {
+   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+   _deltaFast = _deltaFastBase;
+   _isDayInit = true;
+  } 
+  
   _prevDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
   _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
-  _isDayInit = true;
  }
 }
 
