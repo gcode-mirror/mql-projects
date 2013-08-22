@@ -12,7 +12,7 @@
 //--- plot Label1
 #property indicator_label1  "Label1"
 #property indicator_type1   DRAW_ARROW
-#property indicator_color1  clrRed
+#property indicator_color1  clrBlue
 #property indicator_style1  STYLE_SOLID
 #property indicator_width1  1
 
@@ -20,8 +20,8 @@
 #include <CExtremumCalc.mqh>
 #include <Lib CisNewBar.mqh>
 //--- input parameters
-input int      depth=20;
-input int      epsilon = 35;
+input int depth = 10;
+input int epsilon = 25;
 
 CExtremumCalc extrcalc(epsilon, depth);
 CisNewBar bar;
@@ -34,6 +34,7 @@ int OnInit()
   {
 //--- indicator buffers mapping
    SetIndexBuffer(0, Buffer, INDICATOR_DATA);
+   PrintFormat("depth = %d", depth);
 //---
    return(INIT_SUCCEEDED);
   }
@@ -54,18 +55,17 @@ int OnCalculate (const int rates_total,      // размер входных таймсерий
   {
 //---
    ArraySetAsSeries(Buffer, true);
-   ArraySetAsSeries(close, true);   
-   extrcalc.FillExtremumsArray(close);
-   extrcalc.SortByValue();
-   extrcalc.SortByDirection();
+   ArraySetAsSeries(close, true);
+   //if(bar.isNewBar() > 0)
+   //{  
+    extrcalc.FillExtremumsArray(Symbol(), Period());
     
-    for(int i = 0; i < depth; i++)
+    for(int i = depth-1; i > 0; i--)
     {
+     Alert("EXTR : ", i, " ", extrcalc.getExtr(i).price);
      Buffer[i] = extrcalc.getExtr(i).price;
-     Print(i, "_", Buffer[i]);
     }
-     
-//--- return value of prev_calculated for next call
+   //}  
    return(rates_total);
   }
 //+------------------------------------------------------------------+

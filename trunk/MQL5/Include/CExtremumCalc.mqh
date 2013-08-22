@@ -15,9 +15,8 @@ enum DIRECTION
  MIN
 };
 
-struct CExtremum
+struct SExtremum
 {
- public:
  DIRECTION direction;
  double price;
 };
@@ -25,77 +24,131 @@ struct CExtremum
 class CExtremumCalc
 {
  private:
- CExtremum _extr_array[];
- int _e;
+ SExtremum _extr_array[];
+ int _last;
+ int _epsilon;
  int _depth;
  
  public:
  CExtremumCalc();
  CExtremumCalc(int e, int depth);
 ~CExtremumCalc();
- CExtremum getExtr(int index);
+ SExtremum getExtr(int index);
  DIRECTION isExtremum(double a, double b, double c);
- void FillExtremumsArray(const double& price[]);
+ void FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf);
  void SortByDirection();
  void SortByValue();
 };
 CExtremumCalc::CExtremumCalc():
-               _e (50),
-               _depth (128)
+               _epsilon (50),
+               _depth (128),
+               _last (-1)
                {
                 ArrayResize(_extr_array, _depth);
-                ArraySetAsSeries(_extr_array, true);
+                SExtremum zero = {ZERO, 0};
+                for(int i = _depth-1; i > 0; i--)
+                {
+                 _extr_array[i] = zero;
+                }
                }
 
 CExtremumCalc::CExtremumCalc(int e,int depth):
-               _e (e),
-               _depth (depth)
+               _epsilon (e),
+               _depth (depth),
+               _last (-1)
                {
                 ArrayResize(_extr_array, _depth);
-                ArraySetAsSeries(_extr_array, true);
+                SExtremum zero = {ZERO, 0};
+                for(int i = _depth-1; i > 0; i--)
+                {
+                 _extr_array[i] = zero;
+                }
                }
 CExtremumCalc::~CExtremumCalc()
                 {
                  ArrayFree(_extr_array);
                 }             
 
-DIRECTION CExtremumCalc::isExtremum(double a, double b, double c)
+DIRECTION CExtremumCalc::isExtremum(double a,double b,double c)
 {
- if(GreatDoubles(b, a) && GreatDoubles(b, c))
+ if(_last == -1 || GreatDoubles(MathAbs(b - _extr_array[_last].price), _epsilon*SymbolInfoDouble(Symbol(), SYMBOL_POINT)))
  {
-  return(MAX);
+  if(GreatDoubles(b, a) && GreatDoubles(b, c))
+  {
+   return(MAX);
+  }
+  else if(LessDoubles(b, a) && LessDoubles(b, c))
+       {
+        return(MIN);
+       }
  }
- else if(LessDoubles(b, a) && LessDoubles(b, c))
-      {
-       return(MIN);
-      }
  return(ZERO);
 }
 
-void CExtremumCalc::FillExtremumsArray(const double &price[])
+
+void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
 {
- if(ArrayGetAsSeries(price)) ArraySetAsSeries(price, true);
- if(ArrayGetAsSeries(_extr_array)) ArraySetAsSeries(_extr_array, true);
- CExtremum temp = {ZERO, 0};
- _extr_array[0] = temp;
- _extr_array[1] = temp;
- _extr_array[_depth-1] = temp;
- for(int i = 2; i < _depth-1; i++)
- {
-  temp.direction = isExtremum(price[i-1], price[i], price[i+1]);
-  if(temp.direction == MAX || temp.direction == MIN)
+ double price [];
+ datetime time [];
+ if (CopyClose(symbol, tf, 0, _depth + 1, price) != _depth + 1) {Alert ("Не удалось скопировать фубер цен");return;}
+ CopyTime(symbol, tf, 0, _depth+1, time);
+ if(!ArrayGetAsSeries(price)) ArraySetAsSeries(price, true);
+ if(!ArrayGetAsSeries(_extr_array)) ArraySetAsSeries(_extr_array, true);
+ if(!ArrayGetAsSeries(time)) ArraySetAsSeries(time, true);
+ SExtremum zero = {ZERO, 0};
+ _last = -1;
+ for(int i = _depth; i > 1; i--)
+ {  
+  _extr_array[i].direction = isExtremum(price[i-1], price[i], price[i+1]);
+  //Print(StringFormat("i = %d; price[i-1] = %f, price[i] = %f, price[i+1] = %f, dir = %s", i,  price[i-1], price[i], price[i+1], EnumToString((DIRECTION)_extr_array[i].direction)));
+  if(_extr_array[i].direction != ZERO)
   {
-   temp.price = price[i];
+   Alert( i, " ", _last, " ", time[i], " ", EnumToString((DIRECTION)_extr_array[i].direction));
+   if(_last == -1)
+   {
+    _extr_array[i].price = price[i];
+    _last = i;
+    continue;
+   }
+   //if(_extr_array[_last].direction != _extr_array[i].direction)
+   //{
+    _extr_array[i].price = price[i];
+    _last = i;
+   //}
+   /*else
+   {
+    if(_extr_array[i].direction == MAX)
+    {
+     if(_extr_array[i].price > _extr_array[_last].price)
+     {
+      _extr_array[_last] = zero;
+      _last = i;
+     }
+     else
+     {
+      _extr_array[i] = zero;
+     }
+    }
+    if(_extr_array[i].direction == MIN)
+    {
+     if(_extr_array[i].price < _extr_array[_last].price)
+     {
+      _extr_array[_last] = zero;
+      _last = i;
+     }
+     else
+     {
+      _extr_array[i] = zero;
+     }
+    }   
+   }*/  
   }
-  else
-  {
-   temp.price = 0;
-  }
-  _extr_array[i] = temp;
  }
+ ArrayFree(price);
+ ArrayFree(time);
 }
 
-void CExtremumCalc::SortByDirection()
+/*void CExtremumCalc::SortByDirection()
 {
  int prev_extr = -1;
  double point = SymbolInfoDouble(Symbol(), SYMBOL_POINT);
@@ -166,7 +219,7 @@ void CExtremumCalc::SortByValue(void)
    }
    else
    {
-    if(MathAbs(_extr_array[i].price - _extr_array[prev_extr].price) <= _e*point)
+    if(MathAbs(_extr_array[i].price - _extr_array[prev_extr].price) <= _epsilon*point)
     {
      _extr_array[i].direction = ZERO;
      _extr_array[i].price = 0;
@@ -176,16 +229,16 @@ void CExtremumCalc::SortByValue(void)
    }
   }
  } 
-}
+}*/
 
-CExtremum CExtremumCalc::getExtr(int index)
+SExtremum CExtremumCalc::getExtr(int index)
 {
  if(0 <= index && index < _depth)
   return _extr_array[index];
  else
  {
   Alert(__FUNCTION__, " bad index = ", index);
-  CExtremum error = {ZERO, -1};
+  SExtremum error = {ZERO, -1};
   return error;
  }
 }
