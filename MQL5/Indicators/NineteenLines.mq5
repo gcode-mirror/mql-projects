@@ -10,29 +10,33 @@
 
 #include <CExtremumCalc.mqh>
 #include <Lib CisNewBar.mqh>
+
+input int epsilon = 50;
+input int depth = 100;
+
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 struct ThreeExtr
 {
- CExtremum one;
- CExtremum two;
- CExtremum three;
+ SExtremum one;
+ SExtremum two;
+ SExtremum three;
 };
 
 struct FourPrice
 {
- CExtremum open;
- CExtremum close;
- CExtremum high;
- CExtremum low;
+ SExtremum open;
+ SExtremum close;
+ SExtremum high;
+ SExtremum low;
 };
 
-CExtremumCalc calcMN;
-CExtremumCalc calcW1;
-CExtremumCalc calcD1;
-CExtremumCalc calcH4;
-CExtremumCalc calcH1;
+CExtremumCalc calcMN(epsilon, depth);
+CExtremumCalc calcW1(epsilon, depth);
+CExtremumCalc calcD1(epsilon, depth);
+CExtremumCalc calcH4(epsilon, depth);
+CExtremumCalc calcH1(epsilon, depth);
 
 ThreeExtr estructMN;
 ThreeExtr estructW1;
@@ -49,19 +53,19 @@ CisNewBar barH1(Symbol(), PERIOD_H1);
 int OnInit()
 {
 //--- indicator buffers mapping
- estructMN = FillThreeExtr(Symbol(), PERIOD_MN1);
- estructW1 = FillThreeExtr(Symbol(), PERIOD_W1);
- estructD1 = FillThreeExtr(Symbol(), PERIOD_D1);
- estructH4 = FillThreeExtr(Symbol(), PERIOD_H4);
- estructH1 = FillThreeExtr(Symbol(), PERIOD_H1);
+ estructMN = FillThreeExtr(Symbol(), PERIOD_MN1, calcMN);
+ estructW1 = FillThreeExtr(Symbol(), PERIOD_W1,  calcW1);
+ estructD1 = FillThreeExtr(Symbol(), PERIOD_D1,  calcD1);
+ estructH4 = FillThreeExtr(Symbol(), PERIOD_H4,  calcH4);
+ estructH1 = FillThreeExtr(Symbol(), PERIOD_H1,  calcH1);
  pstructH1 = FillFourPrice(Symbol(), PERIOD_H1);
  
  CreateExtrLines(estructMN, PERIOD_MN1, clrAntiqueWhite);
- CreateExtrLines(estructW1,  PERIOD_W1, clrDarkSalmon);
- CreateExtrLines(estructD1,  PERIOD_D1, clrOrange);
- CreateExtrLines(estructH4,  PERIOD_H4, clrYellow);
- CreateExtrLines(estructH1,  PERIOD_H1, clrLime);
- CreatePriceLines(pstructH1, PERIOD_H1, clrAqua);  
+ //CreateExtrLines(estructW1,  PERIOD_W1, clrDarkSalmon);
+ //CreateExtrLines(estructD1,  PERIOD_D1, clrOrange);
+ //CreateExtrLines(estructH4,  PERIOD_H4, clrYellow);
+ //CreateExtrLines(estructH1,  PERIOD_H1, clrRosyBrown);
+ //CreatePriceLines(pstructH1, PERIOD_H1, clrAqua);  
 //---
  return(INIT_SUCCEEDED);
 }
@@ -69,11 +73,11 @@ int OnInit()
 void OnDeinit(const int reason)
 {
  DeleteExtrLines(PERIOD_MN1);
- DeleteExtrLines(PERIOD_W1);
- DeleteExtrLines(PERIOD_D1);
- DeleteExtrLines(PERIOD_H4);
- DeleteExtrLines(PERIOD_H1);
- DeletePriceLines(PERIOD_H1);
+ //DeleteExtrLines(PERIOD_W1);
+ //DeleteExtrLines(PERIOD_D1);
+ //DeleteExtrLines(PERIOD_H4);
+ //DeleteExtrLines(PERIOD_H1);
+ //DeletePriceLines(PERIOD_H1);
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -90,34 +94,34 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
 //---
-   if(barMN.isNewBar() > 0)
+/*   if(barMN.isNewBar() > 0)
    {
-    estructMN = FillThreeExtr(Symbol(), PERIOD_MN1);
+    estructMN = FillThreeExtr(Symbol(), calcMN);
     MoveExtrLines(estructMN, PERIOD_MN1);
    }
    if(barW1.isNewBar() > 0)
    {
-    estructW1 = FillThreeExtr(Symbol(), PERIOD_W1);
+    estructW1 = FillThreeExtr(Symbol(), calcW1);
     MoveExtrLines(estructW1, PERIOD_W1);
    }
    if(barD1.isNewBar() > 0)
    {
-    estructD1 = FillThreeExtr(Symbol(), PERIOD_D1);
+    estructD1 = FillThreeExtr(Symbol(), calcD1);
     MoveExtrLines(estructD1, PERIOD_D1);
    }
    if(barH4.isNewBar() > 0)
    {
-    estructH4 = FillThreeExtr(Symbol(), PERIOD_H4);
+    estructH4 = FillThreeExtr(Symbol(), calcH4);
     MoveExtrLines(estructH4, PERIOD_H4);
    }
    if(barH1.isNewBar() > 0)
    {
-    estructH1 = FillThreeExtr(Symbol(), PERIOD_H1);
+    estructH1 = FillThreeExtr(Symbol(), calcH1);
     MoveExtrLines(estructH1, PERIOD_H1);
     
     pstructH1 = FillFourPrice(Symbol(), PERIOD_H1);
     MovePriceLines(pstructH1, PERIOD_H1);
-   }
+   }*/
 //--- return value of prev_calculated for next call
    return(rates_total);
   }
@@ -236,11 +240,24 @@ void DeletePriceLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"low");
 }
 
-ThreeExtr FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf)
+ThreeExtr FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc& extrcalc)
 {
+ extrcalc.FillExtremumsArray(symbol, tf);
+ //extrcalc.SortByValue();
+ //extrcalc.SortByDirection();
  ThreeExtr result = {{ZERO, 0}, {ZERO, 0}, {ZERO, 0}};
- 
- //TO DO: Fill three extr
+ int count = 0;
+ for(int i = 0; i < depth && count < 3; i++)
+ {
+  if(extrcalc.getExtr(i).price > 0)
+  {
+//   PrintFormat("%s ; %f", EnumToString((DIRECTION)extrcalc.getExtr(i).direction), extrcalc.getExtr(i).price);
+   if(count == 0) result.one = extrcalc.getExtr(i);
+   if(count == 1) result.two = extrcalc.getExtr(i);
+   if(count == 2) result.three = extrcalc.getExtr(i);
+   count++;
+  }
+ }
  return result;
 }
 
