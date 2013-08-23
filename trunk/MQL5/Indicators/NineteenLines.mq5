@@ -102,34 +102,51 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
 //---
-/*   if(barMN.isNewBar() > 0)
+   if(barMN.isNewBar() > 0)
    {
-    estructMN = FillThreeExtr(Symbol(), calcMN);
-    MoveExtrLines(estructMN, PERIOD_MN1);
+    if(show_Extr_MN)
+    {
+     estructMN = FillThreeExtr(Symbol(), PERIOD_MN1, calcMN);
+     MoveExtrLines(estructMN, PERIOD_MN1);
+    }
    }
    if(barW1.isNewBar() > 0)
    {
-    estructW1 = FillThreeExtr(Symbol(), calcW1);
-    MoveExtrLines(estructW1, PERIOD_W1);
+    if(show_Extr_W1)
+    {
+     estructW1 = FillThreeExtr(Symbol(), PERIOD_W1, calcW1);
+     MoveExtrLines(estructW1, PERIOD_W1);
+    }
    }
    if(barD1.isNewBar() > 0)
    {
-    estructD1 = FillThreeExtr(Symbol(), calcD1);
-    MoveExtrLines(estructD1, PERIOD_D1);
+    if(show_Extr_D1)
+    {
+     estructD1 = FillThreeExtr(Symbol(), PERIOD_D1, calcD1);
+     MoveExtrLines(estructD1, PERIOD_D1);
+    }
    }
    if(barH4.isNewBar() > 0)
    {
-    estructH4 = FillThreeExtr(Symbol(), calcH4);
-    MoveExtrLines(estructH4, PERIOD_H4);
+    if(show_Extr_H4)
+    {
+     estructH4 = FillThreeExtr(Symbol(), PERIOD_H4, calcH4);
+     MoveExtrLines(estructH4, PERIOD_H4);
+    }
    }
    if(barH1.isNewBar() > 0)
    {
-    estructH1 = FillThreeExtr(Symbol(), calcH1);
-    MoveExtrLines(estructH1, PERIOD_H1);
-    
-    pstructH1 = FillFourPrice(Symbol(), PERIOD_H1);
-    MovePriceLines(pstructH1, PERIOD_H1);
-   }*/
+    if(show_Extr_H1)
+    {
+     estructH1 = FillThreeExtr(Symbol(), PERIOD_H1, calcH1);
+     MoveExtrLines(estructH1, PERIOD_H1);
+    }
+    if(show_Price_H1)
+    {
+     pstructH1 = FillFourPrice(Symbol(), PERIOD_H1);
+     MovePriceLines(pstructH1, PERIOD_H1);
+    }
+   }
 //--- return value of prev_calculated for next call
    return(rates_total);
   }
@@ -255,7 +272,7 @@ ThreeExtr FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc& extrc
  if (extrcalc.NumberOfExtr() < 3)
  {
   Alert(__FUNCTION__, "Не удалось рассчитать три экстремума на таймфрейме ", EnumToString((ENUM_TIMEFRAMES)tf));
-  return(result);
+  //return(result);
  }
  
  int count = 0;
