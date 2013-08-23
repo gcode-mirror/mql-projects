@@ -89,6 +89,8 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
  if (copiedPrice!= _depth + 1) 
  {
   Alert(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", GetLastError());
+  if(GetLastError() == 4401) 
+   Alert(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
   return;
  }
  //datetime time [];
