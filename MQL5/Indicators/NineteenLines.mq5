@@ -11,8 +11,15 @@
 #include <CExtremumCalc.mqh>
 #include <Lib CisNewBar.mqh>
 
-input int epsilon = 50;
-input int depth = 100;
+input int epsilon = 25;
+input int depth = 50;
+
+input bool show_Extr_MN = false;
+input bool show_Extr_W1 = false;
+input bool show_Extr_D1 = false;
+input bool show_Extr_H4 = false;
+input bool show_Extr_H1 = false;
+input bool show_Price_H1 = false;
 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -52,32 +59,33 @@ CisNewBar barH4(Symbol(), PERIOD_H4);
 CisNewBar barH1(Symbol(), PERIOD_H1);
 int OnInit()
 {
+ if(depth < 10) return(INIT_PARAMETERS_INCORRECT);
 //--- indicator buffers mapping
- estructMN = FillThreeExtr(Symbol(), PERIOD_MN1, calcMN);
- estructW1 = FillThreeExtr(Symbol(), PERIOD_W1,  calcW1);
- estructD1 = FillThreeExtr(Symbol(), PERIOD_D1,  calcD1);
- estructH4 = FillThreeExtr(Symbol(), PERIOD_H4,  calcH4);
- estructH1 = FillThreeExtr(Symbol(), PERIOD_H1,  calcH1);
- pstructH1 = FillFourPrice(Symbol(), PERIOD_H1);
+ if(show_Extr_MN)  estructMN = FillThreeExtr(Symbol(), PERIOD_MN1, calcMN);
+ if(show_Extr_W1)  estructW1 = FillThreeExtr(Symbol(), PERIOD_W1,  calcW1);
+ if(show_Extr_D1)  estructD1 = FillThreeExtr(Symbol(), PERIOD_D1,  calcD1);
+ if(show_Extr_H4)  estructH4 = FillThreeExtr(Symbol(), PERIOD_H4,  calcH4);
+ if(show_Extr_H1)  estructH1 = FillThreeExtr(Symbol(), PERIOD_H1,  calcH1);
+ if(show_Price_H1) pstructH1 = FillFourPrice(Symbol(), PERIOD_H1);
  
- CreateExtrLines(estructMN, PERIOD_MN1, clrAntiqueWhite);
- //CreateExtrLines(estructW1,  PERIOD_W1, clrDarkSalmon);
- //CreateExtrLines(estructD1,  PERIOD_D1, clrOrange);
- //CreateExtrLines(estructH4,  PERIOD_H4, clrYellow);
- //CreateExtrLines(estructH1,  PERIOD_H1, clrRosyBrown);
- //CreatePriceLines(pstructH1, PERIOD_H1, clrAqua);  
+ if(show_Extr_MN)  CreateExtrLines(estructMN, PERIOD_MN1, clrAntiqueWhite);
+ if(show_Extr_W1)  CreateExtrLines(estructW1,  PERIOD_W1, clrDarkSalmon);
+ if(show_Extr_D1)  CreateExtrLines(estructD1,  PERIOD_D1, clrOrange);
+ if(show_Extr_H4)  CreateExtrLines(estructH4,  PERIOD_H4, clrYellow);
+ if(show_Extr_H1)  CreateExtrLines(estructH1,  PERIOD_H1, clrRosyBrown);
+ if(show_Price_H1) CreatePriceLines(pstructH1, PERIOD_H1, clrAqua);  
 //---
  return(INIT_SUCCEEDED);
 }
 
 void OnDeinit(const int reason)
 {
- DeleteExtrLines(PERIOD_MN1);
- //DeleteExtrLines(PERIOD_W1);
- //DeleteExtrLines(PERIOD_D1);
- //DeleteExtrLines(PERIOD_H4);
- //DeleteExtrLines(PERIOD_H1);
- //DeletePriceLines(PERIOD_H1);
+ if(show_Extr_MN)  DeleteExtrLines(PERIOD_MN1);
+ if(show_Extr_W1)  DeleteExtrLines(PERIOD_W1);
+ if(show_Extr_D1)  DeleteExtrLines(PERIOD_D1);
+ if(show_Extr_H4)  DeleteExtrLines(PERIOD_H4);
+ if(show_Extr_H1)  DeleteExtrLines(PERIOD_H1);
+ if(show_Price_H1) DeletePriceLines(PERIOD_H1);
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -243,9 +251,13 @@ void DeletePriceLines(ENUM_TIMEFRAMES tf)
 ThreeExtr FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc& extrcalc)
 {
  extrcalc.FillExtremumsArray(symbol, tf);
- //extrcalc.SortByValue();
- //extrcalc.SortByDirection();
  ThreeExtr result = {{ZERO, 0}, {ZERO, 0}, {ZERO, 0}};
+ if (extrcalc.NumberOfExtr() < 3)
+ {
+  Alert(__FUNCTION__, "Не удалось рассчитать три экстремума на таймфрейме ", EnumToString((ENUM_TIMEFRAMES)tf));
+  return(result);
+ }
+ 
  int count = 0;
  for(int i = 0; i < depth && count < 3; i++)
  {
@@ -258,6 +270,7 @@ ThreeExtr FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc& extrc
    count++;
   }
  }
+ 
  return result;
 }
 
@@ -280,7 +293,7 @@ void MoveExtrLines(const ThreeExtr& te, ENUM_TIMEFRAMES tf)
 void DeleteExtrLines(ENUM_TIMEFRAMES tf)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- HLineMove(0, name+"one");
- HLineMove(0, name+"two");
- HLineMove(0, name+"three");
+ HLineDelete(0, name+"one");
+ HLineDelete(0, name+"two");
+ HLineDelete(0, name+"three");
 }
