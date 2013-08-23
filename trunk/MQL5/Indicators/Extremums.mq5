@@ -34,7 +34,7 @@ int OnInit()
   {
 //--- indicator buffers mapping
    SetIndexBuffer(0, Buffer, INDICATOR_DATA);
-   PrintFormat("depth = %d", depth);
+   //PrintFormat("depth = %d", depth);
 //---
    return(INIT_SUCCEEDED);
   }
@@ -62,7 +62,7 @@ int OnCalculate (const int rates_total,      // размер входных таймсерий
     
     for(int i = depth-1; i > 0; i--)
     {
-     Alert("EXTR : ", i, " ", extrcalc.getExtr(i).price);
+     //Alert("EXTR : ", i, " ", extrcalc.getExtr(i).price);
      Buffer[i] = extrcalc.getExtr(i).price;
     }
    //}  
