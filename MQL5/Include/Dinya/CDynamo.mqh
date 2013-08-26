@@ -178,6 +178,7 @@ bool CDynamo::isNewMonth()
  {
   if (GetHours(current_time) >= _startHour) // Новый месяц начинается в _startHour часов
   { 
+   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
    m_last_month_number = current_time; // запоминаем текущий день
    return(true);
   }

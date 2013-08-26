@@ -57,7 +57,7 @@ input bool messages=false;   // вывод сообщений в лог "Эксперты"
 //+----------------------------------------------+
 static CIsNewBar isNewBar;
 
-CColoredTrend trend(Symbol(), Period(), bars, historyDepth);
+CColoredTrend *trend;
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int digits;
@@ -70,6 +70,8 @@ int OnInit()
   symbol = Symbol();
   current_timeframe = Period();
   digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+  trend = new CColoredTrend(symbol, current_timeframe, bars, historyDepth);
+  
 //---- превращение динамических массивов в индикаторные буферы
    SetIndexBuffer(0, ExtOpenBuffer, INDICATOR_DATA);
    SetIndexBuffer(1, ExtHighBuffer, INDICATOR_DATA);

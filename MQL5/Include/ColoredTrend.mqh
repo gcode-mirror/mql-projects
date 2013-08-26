@@ -79,7 +79,9 @@ protected:
   int lastOnTrend;       // последний экстремум текущего тренда
   int FillTimeSeries(MqlRates &_rates[], int count, int start_pos);
   int difToNewExtremum;
-  double difToTrend;
+  double difToTrend; // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
+  int ATR_handle;
+  double ATR_buf[];
   
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count, int shift = 3);
@@ -101,9 +103,23 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int cou
  _symbol = symbol;
  _period = period;
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
- difToNewExtremum = 70;
- difToTrend = 2;
-  
+ //difToNewExtremum = 70;
+ difToTrend = 2;  // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
+ 
+ //подключаем индикатор и получаем его хендл 
+ ATR_handle = iATR(_symbol, _period, 100);
+ if(ATR_handle == INVALID_HANDLE)                      //проверяем наличие хендла индикатора
+ {
+  Print("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
+  //return(-1);                                          //завершаем работу с ошибкой
+ }
+ //копируем данные из индикаторного массива в динамический массив MACD_buf для дальнейшей работы с ними
+ if(CopyBuffer(ATR_handle, 0, 1, 1, ATR_buf) < 0)
+ {
+  Alert("Не удалось скопировать данные из индикаторного буфера"); 
+  //return; 
+ }
+ 
  ArrayResize(aExtremums, shift);
  // Заполним массив с информацией о таймсериях
  MqlRates rates[];
