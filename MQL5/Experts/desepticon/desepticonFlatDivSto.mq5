@@ -62,7 +62,7 @@ int OnInit()
  history_start = TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
  handleTrend =  iCustom(NULL, 0, "PriceBasedIndicator", historyDepth, bars);
  handleSTO = iStochastic(NULL, eldTF, kPeriod, dPeriod, slow, MODE_SMA, STO_CLOSECLOSE); 
- handleEMA = iMA(NULL, 0, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
+ handleEMA = iMA(NULL, eldTF, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
    
  if (handleTrend == INVALID_HANDLE || handleEMA == INVALID_HANDLE)
  {

@@ -59,7 +59,7 @@ int OnInit()
  history_start = TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
  handleTrend =  iCustom(NULL, 0, "PriceBasedIndicator", historyDepth, bars);
  handleMACD = iMACD(NULL, eldTF, fast_EMA_period, slow_EMA_period, signal_period, PRICE_CLOSE);
- handleEMA = iMA(NULL, 0, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
+ handleEMA = iMA(NULL, eldTF, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
    
  if (handleTrend == INVALID_HANDLE || handleEMA == INVALID_HANDLE)
  {
@@ -88,7 +88,7 @@ int OnInit()
       }
   
  ArraySetAsSeries(bufferTrend, true);
- ArraySetAsSeries(bufferEMA, true);;
+ ArraySetAsSeries(bufferEMA, true);
  ArrayResize(bufferTrend, 1, 3);
  ArrayResize(bufferEMA, 2, 6);
    
