@@ -33,8 +33,8 @@ input int    stopPriceDifference = 50;  // –азнциа дл€ Stop ордеров
 input bool   useTrailing = false;  // »спользовать трейлинг
 input bool   useJrEMAExit = false; // будем ли выходить по ≈ћј
 input int    posLifeTime = 10;     // врем€ ожидани€ сделки в барах
-input int    deltaPriceToEMA = 7;  // разница между ценой и EMA
-input int    periodEMA = 3;        // период усреднени€ EMA
+input int    deltaPriceToEMA = 7;  // допустима€ разница между ценой и EMA дл€ пересечени€
+input int    periodEMA = 3;        // период EMA
 input int    waitAfterDiv = 4;     // ожидание сделки после расхождени€ (в барах)
 //параметры PriceBased indicator
 input int    historyDepth = 40;    // глубина истории дл€ расчета
@@ -47,28 +47,29 @@ double bufferTrend[];
 double bufferEMA[];
 
 datetime history_start;
-ENUM_TM_POSITION_TYPE opBuy, opSell;
-int priceDifference = 10;    // Price Difference
+ENUM_TM_POSITION_TYPE opBuy,       // переменные дл€ определени€ типа сделки Order / Limit / Stop
+                      opSell;      // переменные дл€ определени€ типа сделки Order / Limit / Stop
+int priceDifference = 10;          // разница цен дл€ Limit / Stop ордеров
 
-CisNewBar eldNewBar(eldTF);
-CTradeManager tradeManager;
+CisNewBar eldNewBar(eldTF);        // переменна€ дл€ определени€ нового бара на eldTF
+CTradeManager tradeManager;        // ћэнеджер ордеров
 
 int OnInit()
 {
  log_file.Write(LOG_DEBUG, StringFormat("%s »ниализаци€.", MakeFunctionPrefix(__FUNCTION__)));
- history_start = TimeCurrent();        //--- запомним врем€ запуска эксперта дл€ получени€ торговой истории
- handleTrend =  iCustom(NULL, 0, "PriceBasedIndicator", historyDepth, bars);
- handleMACD = iMACD(NULL, eldTF, fast_EMA_period, slow_EMA_period, signal_period, PRICE_CLOSE);
- handleEMA = iMA(NULL, eldTF, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
+ history_start = TimeCurrent();        // запомним врем€ запуска эксперта дл€ получени€ торговой истории
+ handleTrend =  iCustom(Symbol(), eldTF, "PriceBasedIndicator", historyDepth, bars);
+ handleMACD = iMACD(Symbol(), eldTF, fast_EMA_period, slow_EMA_period, signal_period, PRICE_CLOSE);
+ handleEMA = iMA(Symbol(), eldTF, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
    
  if (handleTrend == INVALID_HANDLE || handleEMA == INVALID_HANDLE)
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s INVALID_HANDLE (handleTrend || handleEMA). Error(%d) = %s" 
+  log_file.Write(LOG_DEBUG, StringFormat("%s INVALID_HANDLE. Error(%d) = %s" 
                                         , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
   return(INIT_FAILED);
  }
  
- if (useLimitOrders)
+ if (useLimitOrders)                   // выбор типа сделок Order / Limit / Stop
  {
   opBuy = OP_BUYLIMIT;
   opSell = OP_SELLLIMIT;
@@ -107,39 +108,45 @@ void OnDeinit(const int reason)
 
 void OnTick()
 {
- int totalPositions = PositionsTotal();
- int positionType = -1;
  static bool isProfit = false;
  static int  wait = 0;
  int order_direction = 0;
  double point = Point();
- double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
- double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+ double ask = SymbolInfoDouble(Symbol(), SYMBOL_ASK);
+ double bid = SymbolInfoDouble(Symbol(), SYMBOL_BID);
  
- isProfit = tradeManager.isMinProfit(_Symbol);
+ int copiedTrend = -1;
+ int copiedEMA   = -1;
+ 
  //TO DO: выход по EMA
    
- if (eldNewBar.isNewBar() > 0)   //на каждом новом баре старшего TF
+ if (eldNewBar.isNewBar() > 0)                       //на каждом новом баре старшего TF
  {
-  if (!isProfit && positionType > -1 && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
-  { //если не достигли minProfit за данное врем€
+   isProfit = tradeManager.isMinProfit(Symbol());     // провер€ем не достигла ли позици€ на данном символе минимального профита
+  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
+  { //если не достигли minProfit за определенное врем€
      //close position 
   }
   
-  if ((CopyBuffer( handleTrend, 4, 1, 1,  bufferTrend) < 0) ||
-      (CopyBuffer(   handleEMA, 0, 0, 2,    bufferEMA) < 0) )   // опируем данные индикаторов
+  for (int attempts = 0; attempts < 25 && copiedTrend < 0
+                                       && copiedEMA   < 0; attempts++) // опируем данные индикаторов
   {
-   log_file.Write(LOG_DEBUG, StringFormat("%s ќшибка заполнени€ буфера. (divStoBuffer || bufferTrend || bufferEMA).Error(%d) = %s" 
+   copiedTrend = CopyBuffer( handleTrend, 4, 1, 1,  bufferTrend) < 0;
+   copiedEMA   = CopyBuffer(   handleEMA, 0, 0, 2,    bufferEMA) < 0;
+  }
+  if (copiedTrend != 1 || copiedEMA != 2)   
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s ќшибка заполнени€ буфера.Error(%d) = %s" 
                                           , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
    return;
   }
   
   wait++; 
-  if (order_direction != 0)
+  if (order_direction != 0)   // если есть сигнал о направлении ордера 
   {
-   if (wait > waitAfterDiv)
+   if (wait > waitAfterDiv)   // провер€ем на допустимое врем€ ожидани€ после расхождени€
    {
-    wait = 0;
+    wait = 0;                 // если не дождались обнул€ем счетчик ожидани€ и направлени€ сделки
     order_direction = 0;
    }
   }
@@ -169,6 +176,7 @@ void OnTick()
    }
   } // close trend == FLAT
  } // close newBar
+ 
  if (useTrailing)
  {
   tradeManager.DoTrailing();
