@@ -82,11 +82,11 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
 {
  double price [];
  int copiedPrice = -1;
- for(int attemps = 0; attemps < 25 && copiedPrice < 0; attemps++)
+ for(int attempts = 0; attempts < 25 && copiedPrice < 0; attempts++)
  {
   copiedPrice = CopyClose(symbol, tf, 0, _depth + 1, price);
  }
- if (copiedPrice!= _depth + 1) 
+ if (copiedPrice != _depth + 1) 
  {
   Alert(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", GetLastError());
   if(GetLastError() == 4401) 
