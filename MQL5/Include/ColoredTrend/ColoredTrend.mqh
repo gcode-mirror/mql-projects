@@ -8,53 +8,9 @@
 #property version   "1.00"
 
 #include <CompareDoubles.mqh>
+#include "ColoredTrendUtilities.mqh"
 
-//+-----------------------------------+
-//|  объявление перечислений          |
-//+-----------------------------------+
-enum ENUM_MOVE_TYPE      // Тип движения
-  {
-   MOVE_TYPE_UNKNOWN = 0,
-   MOVE_TYPE_TREND_UP,            // Тренд вверх - синий
-   MOVE_TYPE_TREND_UP_FORBIDEN,   // Тренд вверх, запрещенный верхним ТФ - фиолетовый
-   MOVE_TYPE_TREND_DOWN,          // Тренд вниз - красный
-   MOVE_TYPE_TREND_DOWN_FORBIDEN, // Тренд вниз, запрещенный верхним ТФ - коричневый
-   MOVE_TYPE_CORRECTION_UP,       // Коррекция вверх, корректируется тренд вниз - розовый
-   MOVE_TYPE_CORRECTION_DOWN,     // Коррекция вниз, корректируется тренд вверх - голубой
-   MOVE_TYPE_FLAT,                // Флэт - желтый
-  };
-  
-string MoveTypeToString(ENUM_MOVE_TYPE enumMoveType)
-  {
-   switch(enumMoveType)
-     {
-      case MOVE_TYPE_UNKNOWN: return("движение не определено");
-      case MOVE_TYPE_TREND_UP: return("тренд вверх");
-      case MOVE_TYPE_TREND_UP_FORBIDEN: return("тренд вверх запрещен со старшего ТФ");
-      case MOVE_TYPE_TREND_DOWN: return("тренд вниз");
-      case MOVE_TYPE_TREND_DOWN_FORBIDEN: return("тренд вниз запрещен со старшего ТФ");
-      case MOVE_TYPE_CORRECTION_UP: return("коррекция вверх");
-      case MOVE_TYPE_CORRECTION_DOWN: return("коррекция вниз");
-      case MOVE_TYPE_FLAT: return("флэт");
-      default: return("Error: unknown move type"+(string)enumMoveType);
-     }
-  }
-  
-string MoveTypeToColor(ENUM_MOVE_TYPE enumMoveType)
-  {
-   switch(enumMoveType)
-     {
-      case MOVE_TYPE_UNKNOWN: return("цвет не определен");
-      case MOVE_TYPE_TREND_UP: return("синий");
-      case MOVE_TYPE_TREND_UP_FORBIDEN: return("фиолетовый");
-      case MOVE_TYPE_TREND_DOWN: return("красный");
-      case MOVE_TYPE_TREND_DOWN_FORBIDEN: return("коричневый");
-      case MOVE_TYPE_CORRECTION_UP: return("розовый");
-      case MOVE_TYPE_CORRECTION_DOWN: return("голубой");
-      case MOVE_TYPE_FLAT: return("желтый");
-      default: return("Error: unknown move type"+(string)enumMoveType);
-     }
-  }//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
 //| Структура для хранения информации об экстремуме                  |
 //+------------------------------------------------------------------+
 struct SExtremum
@@ -77,11 +33,13 @@ protected:
   int digits;
   int num0, num1, num2;  // номера последних экстремумов
   int lastOnTrend;       // последний экстремум текущего тренда
-  int FillTimeSeries(MqlRates &_rates[], int count, int start_pos);
-  int difToNewExtremum;
-  double difToTrend; // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
+  double difToNewExtremum;
+  double difToTrend;     // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
   int ATR_handle;
   double ATR_buf[];
+  
+  int FillTimeSeries(MqlRates &_rates[], int count, int start_pos);
+  int FillATRBuf(int count, int start_pos);
   
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count, int shift = 3);
@@ -99,6 +57,7 @@ public:
 void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count, int shift = 3)
 {
  ArraySetAsSeries(enumMoveType, true);
+ ArraySetAsSeries(ATR_buf, true);
  if (shift < 3) shift = 3;
  _symbol = symbol;
  _period = period;
@@ -113,12 +72,8 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int cou
   Print("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
   //return(-1);                                          //завершаем работу с ошибкой
  }
- //копируем данные из индикаторного массива в динамический массив MACD_buf для дальнейшей работы с ними
- if(CopyBuffer(ATR_handle, 0, 1, 1, ATR_buf) < 0)
- {
-  Alert("Не удалось скопировать данные из индикаторного буфера"); 
-  //return; 
- }
+ // Получаем данные буфера в массив
+ FillATRBuf(shift, count - 1);
  
  ArrayResize(aExtremums, shift);
  // Заполним массив с информацией о таймсериях
@@ -128,6 +83,8 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int cou
  
  for(int bar = 1; bar < shift - 1 && !IsStopped(); bar++) // вычисляем экстремумы со сдвигом в историю
  { 
+  difToNewExtremum = ATR_buf[bar] / 2;
+  Print("Constructor: ATR/2 = ", difToNewExtremum);
   aExtremums[bar] =  isExtremum(rates[bar - 1].close, rates[bar].close, rates[bar + 1].close);
   if (aExtremums[bar].direction != 0)
   {
@@ -154,6 +111,7 @@ void CColoredTrend::CountMoveType(int count, int shift = 1)
  // Заполним массив с информацией о таймсериях
  MqlRates rates[];
  int rates_total = FillTimeSeries(rates, count + shift); // получим размер заполненного массива
+ FillATRBuf(count + shift);                              // заполним массив данными индикатора ATR
  // Выделим память под массивы цветов и экстремумов
  ArrayResize(enumMoveType, rates_total);
  ArrayResize(aExtremums, rates_total);
@@ -161,7 +119,8 @@ void CColoredTrend::CountMoveType(int count, int shift = 1)
  for(int bar = shift; bar < count + shift - 1 && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
  {
   enumMoveType[bar] = enumMoveType[bar - 1];
-  
+  difToNewExtremum = ATR_buf[bar] / 2;
+  Print("ATR/2 = ", difToNewExtremum);
   /*
   PrintFormat("bar = %d, экстремумы num0=%.05f, num1=%.05f, num2=%.05f, num0 - num1 =%.05f, num0 - close=%.05f"
              , bar, aExtremums[num0].price, aExtremums[num1].price, aExtremums[num2].price
@@ -297,7 +256,7 @@ SExtremum CColoredTrend::isExtremum(double vol1, double vol2, double vol3, int l
  res.price = vol2;
  if (GreatDoubles(vol1, vol2, digits)
   && LessDoubles (vol2, vol3, digits)
-  && GreatDoubles(aExtremums[last].price, vol2 + difToNewExtremum*Point(), 5))
+  && GreatDoubles(aExtremums[last].price, vol2 + difToNewExtremum, 5))
  {
   res.direction = -1;// минимум в точке vol2
  }
@@ -325,12 +284,10 @@ int CColoredTrend::FillTimeSeries(MqlRates &_rates[], int count, int start_pos =
  {
   Sleep(100);
   attempts++;
-  //if(messages) PrintFormat("%s CopyRates(%s) attempts=%d", __FUNCTION__, name, attempts);
  }
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
- //--- сформируем строку сообщения
   string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных",
                              _symbol,
                              copied,
@@ -338,8 +295,35 @@ int CColoredTrend::FillTimeSeries(MqlRates &_rates[], int count, int start_pos =
                             );
   //--- выведем сообщение в комментарий на главное окно графика
   Comment(comm);
-  //--- выводим сообщения
-  //if(messages) Print(comm);
+ }
+ return(copied);
+}
+
+//+-------------------------------------------------+
+//| Функция заполняет массив экстремумов из истории |
+//+-------------------------------------------------+
+int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
+{
+ //--- счетчик попыток
+   int attempts = 0;
+//--- сколько скопировано
+   int copied = 0;
+//--- делаем 25 попыток получить таймсерию по нужному символу
+ while(attempts < 25 && (copied = CopyBuffer(ATR_handle, 0, start_pos, count, ATR_buf)) < 0) // справа налево от 0 до count, всего count элементов
+ {
+  Sleep(100);
+  attempts++;
+ }
+//--- если не удалось скопировать достаточное количество баров
+ if(copied != count)
+ {
+  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных",
+                             _symbol,
+                             copied,
+                             count
+                            );
+  //--- выведем сообщение в комментарий на главное окно графика
+  Comment(comm);
  }
  return(copied);
 }
