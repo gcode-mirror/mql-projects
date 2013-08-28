@@ -42,7 +42,7 @@ input int    limitPriceDifference = 50; // Разнциа для Limit ордеров
 input bool   useStopOrders = false;     // Использовать Stop ордера
 input int    stopPriceDifference = 50;  // Разнциа для Stop ордеров
 input bool   useTrailing = false;       // Использовать трейлинг
-input int    posLifeTime = 10;        // время ожидания сделки в барах
+input int    posLifeTime = 10;          // время ожидания сделки в барах
 //параметры PriceBased indicator
 input int    historyDepth = 40;    // глубина истории для расчета
 input int    bars=30;              // сколько свечей показывать
@@ -108,8 +108,14 @@ int OnInit()
        priceDifference = 0;
       }
   
- ArraySetAsSeries(bufferTrend, true);
- ArrayResize(bufferTrend, 1, 3);
+ ArraySetAsSeries(    bufferTrend, true);
+ ArraySetAsSeries(  bufferSTOCEld, true);
+ ArraySetAsSeries(bufferEMAfastJr, true);
+ ArraySetAsSeries(bufferEMAslowJr, true);
+ ArrayResize(    bufferTrend, 1);
+ ArrayResize(  bufferSTOCEld, 1);
+ ArrayResize(bufferEMAfastJr, 2);
+ ArrayResize(bufferEMAslowJr, 2);
  
  return(INIT_SUCCEEDED);
 }
@@ -138,7 +144,6 @@ void OnTick()
 {
  static bool isProfit = false;
  static int  wait = 0;
- int order_direction = 0;
  double point = Point();
  double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
  double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
@@ -148,12 +153,6 @@ void OnTick()
  //TO DO: выход по EMA
  if (eldNewBar.isNewBar() > 0)                          //на каждом новом баре старшего TF
  {
-  isProfit = tradeManager.isMinProfit(_Symbol);         // проверяем не достигла ли позиция на данном символе минимального профита
-  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
-  { //если не достигли minProfit за данное время
-     //close position 
-  }
-  
   for (int attempts = 0; attempts < 25 && copiedTrend < 0; attempts++) //Копируем данные индикаторов
   {
    copiedTrend = CopyBuffer(handleTrend, 4, 1, 1, bufferTrend);
@@ -166,6 +165,12 @@ void OnTick()
    return;
   }
   
+  isProfit = tradeManager.isMinProfit(_Symbol);         // проверяем не достигла ли позиция на данном символе минимального профита
+  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
+  { //если не достигли minProfit за данное время
+     //close position 
+  }
+    
   if (bufferTrend[0] == 5 || bufferTrend[0] == 6)   // направление тренда CORRECTION_UP или CORRECTION_DOWN
   {
    if (ConditionForBuy() > ConditionForSell())

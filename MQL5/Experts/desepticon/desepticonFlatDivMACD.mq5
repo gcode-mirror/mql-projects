@@ -122,12 +122,6 @@ void OnTick()
    
  if (eldNewBar.isNewBar() > 0)                       //на каждом новом баре старшего TF
  {
-   isProfit = tradeManager.isMinProfit(Symbol());     // проверяем не достигла ли позиция на данном символе минимального профита
-  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
-  { //если не достигли minProfit за определенное время
-     //close position 
-  }
-  
   for (int attempts = 0; attempts < 25 && copiedTrend < 0
                                        && copiedEMA   < 0; attempts++) //Копируем данные индикаторов
   {
@@ -140,7 +134,13 @@ void OnTick()
                                           , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
    return;
   }
-  
+ 
+  isProfit = tradeManager.isMinProfit(Symbol());     // проверяем не достигла ли позиция на данном символе минимального профита
+  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
+  { //если не достигли minProfit за определенное время
+     //close position 
+  }
+ 
   wait++; 
   if (order_direction != 0)   // если есть сигнал о направлении ордера 
   {
