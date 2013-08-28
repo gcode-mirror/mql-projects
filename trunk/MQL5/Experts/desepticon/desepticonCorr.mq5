@@ -42,6 +42,7 @@ input int    limitPriceDifference = 50; // Разнциа для Limit ордеров
 input bool   useStopOrders = false;     // Использовать Stop ордера
 input int    stopPriceDifference = 50;  // Разнциа для Stop ордеров
 input bool   useTrailing = false;       // Использовать трейлинг
+input bool   useJrEMAExit = false;      // будем ли выходить по ЕМА
 input int    posLifeTime = 10;          // время ожидания сделки в барах
 //параметры PriceBased indicator
 input int    historyDepth = 40;    // глубина истории для расчета
@@ -71,6 +72,7 @@ CTradeManager tradeManager;        // Мэнеджер ордеров
 //+------------------------------------------------------------------+
 int OnInit()
 {
+ tradeManager.Initialization();
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  handleTrend = iCustom(Symbol(), Period(), "PriceBasedIndicator", historyDepth, bars);
  handleMACDEld = iMACD(Symbol(), eldTF, fast_EMA_period, slow_EMA_period, signal_period, PRICE_CLOSE);
@@ -124,6 +126,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
+ tradeManager.Deinitialization();
  IndicatorRelease(handleTrend);
  IndicatorRelease(handleMACDEld);
  IndicatorRelease(handleMACDJr);
@@ -166,9 +169,10 @@ void OnTick()
   }
   
   isProfit = tradeManager.isMinProfit(_Symbol);         // проверяем не достигла ли позиция на данном символе минимального профита
-  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
+  if (isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
   { //если не достигли minProfit за данное время
-     //close position 
+   log_file.Write(LOG_DEBUG, StringFormat("%s Истекло время ожидания минпрофита.Закрываем позицию.", MakeFunctionPrefix(__FUNCTION__))); 
+   //close position 
   }
     
   if (bufferTrend[0] == 5 || bufferTrend[0] == 6)   // направление тренда CORRECTION_UP или CORRECTION_DOWN
@@ -176,10 +180,12 @@ void OnTick()
    if (ConditionForBuy() > ConditionForSell())
    {
     tradeManager.OpenPosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
    }
    else
    {
     tradeManager.OpenPosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
    }
   }
  }//end isNewBar
