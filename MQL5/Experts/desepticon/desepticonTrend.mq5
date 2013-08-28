@@ -31,6 +31,7 @@ input int    limitPriceDifference = 50; // Разнциа для Limit ордеров
 input bool   useStopOrders = false;     // Использовать Stop ордера
 input int    stopPriceDifference = 50;  // Разнциа для Stop ордеров
 input bool   useTrailing = false;       // Использовать трейлинг
+input bool   useJrEMAExit = false;      // будем ли выходить по ЕМА
 input int    posLifeTime = 10;          // время ожидания сделки в барах
 input int    waitAfterBreakdown = 4;    // ожидание сделки после пробоя (в барах)
 input int    deltaPriceToEMA = 7;       // допустимая разница между ценой и EMA для пересечения
@@ -64,6 +65,7 @@ CTradeManager tradeManager;        // Мэнеджер ордеров
 //+------------------------------------------------------------------+
 int OnInit()
 {
+ tradeManager.Initialization();
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  handleTrend = iCustom(Symbol(), Period(), "PriceBasedIndicator", historyDepth, bars);
  handleEMA3 = iMA(Symbol(), PERIOD_D1, 3, 0, MODE_EMA, PRICE_CLOSE);
@@ -121,6 +123,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
+ tradeManager.Deinitialization();
  IndicatorRelease(handleTrend);
  IndicatorRelease(handleEMAfastEld);
  IndicatorRelease(handleEMAfastJr);
@@ -185,9 +188,10 @@ void OnTick()
   }
   
   isProfit = tradeManager.isMinProfit(_Symbol);         // проверяем не достигла ли позиция на данном символе минимального профита
-  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
+  if (isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
   { //если не достигли minProfit за данное время
-     //close position 
+   log_file.Write(LOG_DEBUG, StringFormat("%s Истекло время ожидания минпрофита.Закрываем позицию.", MakeFunctionPrefix(__FUNCTION__))); 
+   //close position 
   }
     
   wait++; 
@@ -204,12 +208,14 @@ void OnTick()
   {
    if (GreatOrEqualDoubles(bufferEMA3[0] + deltaPriceToEMA*point, bufferDayPrice[0]))
    {
-    if (GreatDoubles(bufferEMAfastEld[0], bufferEldTFPrice[0]) || GreatDoubles(bufferEMAfastEld[1], bufferEldTFPrice[1]))
+    if (GreatDoubles(bufferEMAfastEld[0], bufferEldTFPrice[0] + deltaPriceToEMA*point) || 
+        GreatDoubles(bufferEMAfastEld[1], bufferEldTFPrice[1] + deltaPriceToEMA*point))
     {
-     if(GreatDoubles(bufferEMAslowJr[1], bufferEMAfastJr[1]) && LessDoubles(bufferEMAslowJr[0], bufferEMAfastJr[0]))
+     if (GreatDoubles(bufferEMAslowJr[1], bufferEMAfastJr[1]) && LessDoubles(bufferEMAslowJr[0], bufferEMAfastJr[0]))
      {
       //OpenPosition
-       order_direction = 1;
+      order_direction = 1;
+      log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
      }
     }
    }
@@ -219,12 +225,14 @@ void OnTick()
   {
    if (GreatOrEqualDoubles(bufferDayPrice[0], bufferEMA3[0] + deltaPriceToEMA*point))
    {
-    if (GreatDoubles(bufferEldTFPrice[0], bufferEMAfastEld[0]) || GreatDoubles(bufferEldTFPrice[1], bufferEMAfastEld[1]))
+    if (GreatDoubles(bufferEldTFPrice[0], bufferEMAfastEld[0] + deltaPriceToEMA*point) || 
+        GreatDoubles(bufferEldTFPrice[1], bufferEMAfastEld[1] + deltaPriceToEMA*point))
     {
-     if(GreatDoubles(bufferEMAfastJr[1], bufferEMAslowJr[1]) && LessDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0]))
+     if (GreatDoubles(bufferEMAfastJr[1], bufferEMAslowJr[1]) && LessDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0]))
      {
       //OpenPosition
       order_direction = -1;
+      log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
      }
     }
    }

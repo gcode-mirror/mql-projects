@@ -34,6 +34,7 @@ input bool   useTrailing = false;  // Использовать трейлинг
 input bool   useJrEMAExit = false; // будем ли выходить по ЕМА
 input int    posLifeTime = 10;     // время ожидания сделки в барах
 input int    deltaPriceToEMA = 7;  // допустимая разница между ценой и EMA для пересечения
+input int    deltaEMAToEMA = 5;    // необходимая разница между EMA для пересечения
 input int    periodEMA = 3;        // период EMA
 input int    waitAfterDiv = 4;     // ожидание сделки после расхождения (в барах)
 //параметры PriceBased indicator
@@ -56,9 +57,10 @@ CTradeManager tradeManager;        // Мэнеджер ордеров
 
 int OnInit()
 {
+ tradeManager.Initialization();
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  history_start = TimeCurrent();        // запомним время запуска эксперта для получения торговой истории
- handleTrend =  iCustom(Symbol(), eldTF, "PriceBasedIndicator", historyDepth, bars);
+ handleTrend = iCustom(Symbol(), eldTF, "PriceBasedIndicator", historyDepth, bars);
  handleMACD = iMACD(Symbol(), eldTF, fast_EMA_period, slow_EMA_period, signal_period, PRICE_CLOSE);
  handleEMA = iMA(Symbol(), eldTF, periodEMA, 0, MODE_EMA, PRICE_CLOSE); 
    
@@ -90,14 +92,15 @@ int OnInit()
   
  ArraySetAsSeries(bufferTrend, true);
  ArraySetAsSeries(bufferEMA, true);
- ArrayResize(bufferTrend, 1, 3);
- ArrayResize(bufferEMA, 2, 6);
+ ArrayResize(bufferTrend, 1);
+ ArrayResize(bufferEMA, 2);
    
  return(INIT_SUCCEEDED);
 }
 
 void OnDeinit(const int reason)
 {
+ tradeManager.Deinitialization();
  IndicatorRelease(handleTrend);
  IndicatorRelease(handleMACD); 
  IndicatorRelease(handleEMA);
@@ -136,9 +139,10 @@ void OnTick()
   }
  
   isProfit = tradeManager.isMinProfit(Symbol());     // проверяем не достигла ли позиция на данном символе минимального профита
-  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
+  if (isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
   { //если не достигли minProfit за определенное время
-     //close position 
+   log_file.Write(LOG_DEBUG, StringFormat("%s Истекло время ожидания минпрофита.Закрываем позицию.", MakeFunctionPrefix(__FUNCTION__))); 
+   //close position 
   }
  
   wait++; 
@@ -159,18 +163,20 @@ void OnTick()
    if (order_direction == 1)
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD 1", MakeFunctionPrefix(__FUNCTION__)));
-    if(bid < bufferEMA[0] + deltaPriceToEMA*point)
+    if(LessDoubles(bid, bufferEMA[0] + deltaPriceToEMA*point))
     {
      tradeManager.OpenPosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
      wait = 0;
     }
    }
    if (order_direction == -1)
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD -1", MakeFunctionPrefix(__FUNCTION__)));
-    if(ask > bufferEMA[0] - deltaPriceToEMA*point)
+    if(GreatDoubles(ask, bufferEMA[0] - deltaPriceToEMA*point))
     {
      tradeManager.OpenPosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
      wait = 0;
     }
    }
