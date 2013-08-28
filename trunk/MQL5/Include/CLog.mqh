@@ -92,7 +92,7 @@ bool CLog::Check()
  }
  else
  {
-  int fhandle = FileOpen(_current_filename, FILE_WRITE|FILE_TXT);
+  int fhandle = FileOpen(_current_filename, FILE_WRITE|FILE_READ|FILE_TXT);
   if(FileSize(fhandle) > CONF_LIMIT_SIZE*MgB)
   {
    StringConcatenate(_current_filename, "_", n);  // заменить когда n> 1  не добавлять а заменять номер n

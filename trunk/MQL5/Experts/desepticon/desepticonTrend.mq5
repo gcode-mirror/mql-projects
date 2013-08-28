@@ -99,8 +99,20 @@ int OnInit()
        priceDifference = 0;
       }
   
- ArraySetAsSeries(bufferTrend, true);
- ArrayResize(bufferTrend, 1, 3);
+ ArraySetAsSeries(     bufferTrend, true);
+ ArraySetAsSeries(  bufferDayPrice, true);
+ ArraySetAsSeries(bufferEldTFPrice, true);
+ ArraySetAsSeries(bufferEMAfastEld, true);
+ ArraySetAsSeries( bufferEMAfastJr, true);
+ ArraySetAsSeries( bufferEMAslowJr, true);
+ ArraySetAsSeries(      bufferEMA3, true);
+ ArrayResize(     bufferTrend, 1);
+ ArrayResize(  bufferDayPrice, 1);
+ ArrayResize(bufferEldTFPrice, 2);
+ ArrayResize(bufferEMAfastEld, 2);
+ ArrayResize( bufferEMAfastJr, 2);
+ ArrayResize( bufferEMAslowJr, 2);
+ ArrayResize(      bufferEMA3, 1);
  
  return(INIT_SUCCEEDED);
 }
@@ -147,12 +159,6 @@ void OnTick()
  
  if (eldNewBar.isNewBar() > 0)                          //на каждом новом баре старшего TF
  {
-  isProfit = tradeManager.isMinProfit(_Symbol);         // проверяем не достигла ли позиция на данном символе минимального профита
-  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
-  { //если не достигли minProfit за данное время
-     //close position 
-  }
-  
   for (int attempts = 0; attempts < 25 && copiedTrend      < 0
                                        && copiedEMA3       < 0
                                        && copiedEMAfastEld < 0
@@ -178,6 +184,12 @@ void OnTick()
    return;
   }
   
+  isProfit = tradeManager.isMinProfit(_Symbol);         // проверяем не достигла ли позиция на данном символе минимального профита
+  if (!isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
+  { //если не достигли minProfit за данное время
+     //close position 
+  }
+    
   wait++; 
   if (order_direction != 0)       // если есть сигнал о направлении ордера 
   {
