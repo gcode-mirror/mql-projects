@@ -207,6 +207,7 @@ void OnTick()
      if(GreatDoubles(bufferEldPrice[0], bufferEMA3Eld[0] + deltaPriceToEMA*point))
      {
       //покупка
+      tradeManager.OpenPosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
       log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
      }
     }
@@ -218,6 +219,7 @@ void OnTick()
      if(LessDoubles(bufferEldPrice[0], bufferEMA3Eld[0] + deltaPriceToEMA*point))
      {
       //продажа
+      tradeManager.OpenPosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
       log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
      }
     }
