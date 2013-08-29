@@ -31,7 +31,7 @@ protected:
  string m_comment;        // Комментарий выполнения
  
  const ENUM_ORDER_TYPE _type; // Основное направление торговли
- const int _direction;         // Принимает значения 1 или -1 в зависмости от _type
+ int _direction;         // Принимает значения 1 или -1 в зависмости от _type
  const int _volume;      // Полный объем торгов   
  const double _factor;   // множитель для вычисления текущего объема торгов от дельты
  const int _percentage;  // сколько процентов объем дневной торговли может перекрывать от месячной
@@ -96,8 +96,9 @@ public:
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
 void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, ENUM_ORDER_TYPE type, int volume, double factor, int percentage, int fastPeriod, int slowPeriod):
-                      _deltaFastBase(deltaFast), _deltaSlowBase(deltaSlow), _fastDeltaStep(fastDeltaStep), _slowDeltaStep(slowDeltaStep),
-                       _dayStep(dayStep), _monthStep(monthStep), _fastPeriod(fastPeriod), _slowPeriod(slowPeriod),
+                      _deltaFastBase(deltaFast), _deltaSlowBase(deltaSlow),
+                      _fastDeltaStep(fastDeltaStep), _slowDeltaStep(slowDeltaStep),
+                      _dayStep(dayStep), _monthStep(monthStep), _fastPeriod(fastPeriod), _slowPeriod(slowPeriod),
                       _type(type), _volume(volume), _factor(factor), _percentage(percentage)
   {
    m_last_day_number = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
@@ -108,6 +109,7 @@ void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowD
    _symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
    _period = Period();   // Период графика, по умолчанию период текущего графика
   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+  _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
   }
 
 //+------------------------------------------------------------------+
@@ -228,6 +230,7 @@ void CDynamo::InitMonthTrade()
  {
   PrintFormat("%s Новый месяц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_month_number));
   _deltaSlow = _deltaSlowBase;
+   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _prevMonthPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _slowVol = NormalizeDouble(_volume * _deltaSlow * _factor, 2);
   _isMonthInit = true;
