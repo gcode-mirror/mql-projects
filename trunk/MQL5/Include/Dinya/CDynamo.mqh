@@ -180,7 +180,6 @@ bool CDynamo::isNewMonth()
  {
   if (GetHours(current_time) >= _startHour) // Новый месяц начинается в _startHour часов
   { 
-   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
    m_last_month_number = current_time; // запоминаем текущий день
    return(true);
   }
@@ -230,7 +229,7 @@ void CDynamo::InitMonthTrade()
  {
   PrintFormat("%s Новый месяц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_month_number));
   _deltaSlow = _deltaSlowBase;
-   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+  _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _prevMonthPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _slowVol = NormalizeDouble(_volume * _deltaSlow * _factor, 2);
   _isMonthInit = true;
