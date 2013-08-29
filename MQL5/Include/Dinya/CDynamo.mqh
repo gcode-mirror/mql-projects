@@ -199,7 +199,7 @@ void CDynamo::InitDayTrade()
  if (timeToUpdateFastDelta()) // Если случился новый день
  {
   PrintFormat("%s Новый день %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_day_number));
-  if (_startDayPrice > SymbolInfoDouble(_symbol, SYMBOL_LAST))
+  if (_direction * _startDayPrice > _direction * SymbolInfoDouble(_symbol, SYMBOL_LAST))
   {
    _deltaFast = 0;
    _isDayInit = false;
@@ -245,36 +245,44 @@ void CDynamo::InitMonthTrade()
 void CDynamo::RecountDelta()
 {
  double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
- if (_deltaFast < 100 && GreatDoubles(currentPrice, _prevDayPrice + _dayStep*Point()))
+ if (_direction*(_deltaFast - 50) < 50 && GreatDoubles(currentPrice, _prevDayPrice + _dayStep*Point())) // _dir = 1 : delta < 100; _dir = -1 : delta > 0
  {
   _prevDayPrice = currentPrice;
-  _deltaFast = _deltaFast + _fastDeltaStep;
+  _deltaFast = _deltaFast + _direction*_fastDeltaStep;
   //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
  }
- if (_deltaFast > 0 && LessDoubles(currentPrice, _prevDayPrice - _dayStep*Point()))
+ if ((_direction*_deltaFast + 50) > (_direction*50) && LessDoubles(currentPrice, _prevDayPrice - _dayStep*Point())) // _dir = 1 : delta > 0; _dir = -1 : delta < 100
  {
   _prevDayPrice = currentPrice;
-  _deltaFast = _deltaFast - _fastDeltaStep;
+  _deltaFast = _deltaFast - _direction*_fastDeltaStep;
   //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
  }
  
- if (_deltaSlow < 100 && GreatDoubles(currentPrice, _prevMonthPrice + _monthStep*Point()))
+ if (_direction*(_deltaSlow - 50) < 50 && GreatDoubles(currentPrice, _prevMonthPrice + _monthStep*Point()))
  {
-  _deltaSlow = _deltaSlow + _slowDeltaStep;
-  _prevMonthPrice = currentPrice;
-  //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
- }
- if (_deltaSlow > 0 && LessDoubles(currentPrice, _prevMonthPrice - _monthStep*Point()))
- {
-  _prevMonthPrice = currentPrice;
-  
-  if (_deltaSlow > _deltaSlowBase)
+   _prevMonthPrice = currentPrice;
+
+  if (_direction < 0 && _deltaSlow < _deltaSlowBase)
   {
    _deltaSlow = _deltaSlowBase;
   }
   else
   {
-   _deltaSlow = _deltaSlow - _slowDeltaStep;
+   _deltaSlow = _deltaSlow + _direction*_slowDeltaStep;
+  }
+  //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
+ }
+ if ((_direction*_deltaSlow + 50) > (_direction*50) && LessDoubles(currentPrice, _prevMonthPrice - _monthStep*Point()))
+ {
+  _prevMonthPrice = currentPrice;
+  
+  if (_direction > 0 && _deltaSlow > _deltaSlowBase)
+  {
+   _deltaSlow = _deltaSlowBase;
+  }
+  else
+  {
+   _deltaSlow = _deltaSlow - _direction*_slowDeltaStep;
    //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
   }
  }
