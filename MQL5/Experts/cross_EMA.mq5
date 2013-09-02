@@ -25,17 +25,16 @@ int ma_fast_handle;  //хэндл быстрого индикатора
 int ma_ema3_handle;  //хэндл EMA(3) индикатора  
 int takeProfit;
 int stopLoss;
+uint fast_per;
+uint slow_per;
 string sym = _Symbol;
 ENUM_TIMEFRAMES timeFrame = _Period; 
 CisNewBar newCisBar; 
 CTradeManager new_trade; //класс продажи
-uint fast_per;
-uint slow_per;
- 
+
 int OnInit() //функция инициализации
  {
  new_trade.Initialization(); //инициализация 
- 
  if (SlowPer<=FastPer || FastPer<=3)
   {
    fast_per=9;
@@ -77,7 +76,7 @@ void OnDeinit(const int reason)
   }
   
 void OnTick()
-  { 
+ { 
   new_trade.OnTick();
   if ( newCisBar.isNewBar() > 0 )
    {
@@ -100,5 +99,5 @@ void OnTick()
       new_trade.OpenPosition(sym,OP_SELL,orderVolume,stopLoss,takeProfit,0,0,0);
             Print("Продажа Дата сделки: ",date_buffer[0]);
      }
-  }
+   }
  }
