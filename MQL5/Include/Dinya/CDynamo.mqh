@@ -30,12 +30,10 @@ protected:
       
  string m_comment;        // Комментарий выполнения
  
- const ENUM_ORDER_TYPE _type; // Основное направление торговли
- int _direction;         // Принимает значения 1 или -1 в зависмости от _type
+ int _startHour;   // час начала торговли
  const int _volume;      // Полный объем торгов   
  const double _factor;   // множитель для вычисления текущего объема торгов от дельты
  const int _percentage;  // сколько процентов объем дневной торговли может перекрывать от месячной
- int _startHour;   // час начала торговли
  const int _fastPeriod;  // Период инициализации младшей дельта в часах
  const int _slowPeriod;  // Период инициализации старшей дельта в днях
  const int _fastDeltaStep;   // Величина шага изменения дельты
@@ -45,21 +43,20 @@ protected:
  int _deltaFastBase; // начальное значение "дневной" дельта
  int _deltaSlow;     // дельта для расчета объема "месячной" торговли
  int _deltaSlowBase; // начальное значение "месячной" дельта
- double _fastVol;   // объем для дневной торговли
- double _slowVol;   // объем для месячной торговли
+ double fastVol;   // объем для дневной торговли
+ double slowVol;   // объем для месячной торговли
  
  const int _dayStep;          // шаг границы цены в пунктах для дневной торговли
  const int _monthStep;        // шаг границы цены в пунктах для месячной торговли
- double _startDayPrice;   // цена начала торгов текущего дня
  double _prevDayPrice;   // текущий уровень цены дня
  double _prevMonthPrice; // текущий уровень цены месяца
  
- bool _isMonthInit; // ключ инициализации массива цен месяца
- bool _isDayInit;   // ключ инициализации массива цен дня
+ bool isMonthInit; // ключ инициализации массива цен месяца
+ bool isDayInit;   // ключ инициализации массива цен дня
 public:
 //--- Конструкторы
  void CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
-             , ENUM_ORDER_TYPE type ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CDynamo
+             ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CDynamo
  
 //--- Методы доступа к защищенным данным:
  datetime GetLastDay() const {return(m_last_day_number);}      // 18:00 последнего дня
@@ -75,7 +72,7 @@ public:
  void SetStartHour(datetime startHour) {_startHour = (GetHours(startHour) + 1) % 24; Print("_startHour=",_startHour);}
  
 //--- Рабочие методы класса
- bool isInit() {return(_isMonthInit && _isDayInit);}  // Инициализация завершна
+ bool isInit() {return(isMonthInit && isDayInit);}  // Инициализация завершна
  bool timeToUpdateFastDelta();
  bool isNewMonth();
  int isNewDay();
@@ -95,21 +92,18 @@ public:
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, ENUM_ORDER_TYPE type, int volume, double factor, int percentage, int fastPeriod, int slowPeriod):
+void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, int volume, double factor, int percentage, int fastPeriod, int slowPeriod):
                       _deltaFastBase(deltaFast), _deltaSlowBase(deltaSlow),
-                      _fastDeltaStep(fastDeltaStep), _slowDeltaStep(slowDeltaStep),
-                      _dayStep(dayStep), _monthStep(monthStep), _fastPeriod(fastPeriod), _slowPeriod(slowPeriod),
-                      _type(type), _volume(volume), _factor(factor), _percentage(percentage)
+                      _fastDeltaStep(fastDeltaStep), _slowDeltaStep(slowDeltaStep), _dayStep(dayStep), _monthStep(monthStep),
+                      _volume(volume), _factor(factor), _percentage(percentage), _fastPeriod(fastPeriod), _slowPeriod(slowPeriod)
   {
    m_last_day_number = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
    m_last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
    m_comment = "";        // Комментарий выполнения
-   _isDayInit = false;
-   _isMonthInit = false;
+   isDayInit = false;
+   isMonthInit = false;
    _symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
    _period = Period();   // Период графика, по умолчанию период текущего графика
-  _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
-  _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
   }
 
 //+------------------------------------------------------------------+
@@ -126,7 +120,7 @@ bool CDynamo::timeToUpdateFastDelta()
  //--- Проверяем появление нового месяца: 
  if (m_last_day_number < current_time - _fastPeriod*60*60)  // прошло _fastPeriod часов
  {
-  if (GetHours(current_time) >= _startHour) // Новый месяц начинается в 18 часов
+  if (GetHours(current_time) >= _startHour) // Новый день начинается в _startHour часов
   { 
    m_last_day_number = current_time; // запоминаем текущий день
    return(true);
@@ -199,21 +193,11 @@ void CDynamo::InitDayTrade()
  if (timeToUpdateFastDelta()) // Если случился новый день
  {
   PrintFormat("%s Новый день %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_day_number));
-  if (_direction * _startDayPrice > _direction * SymbolInfoDouble(_symbol, SYMBOL_LAST))
-  {
-   _deltaFast = 0;
-   _isDayInit = false;
-  }
-  else
-  {
-   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
-   _deltaFast = _deltaFastBase;
-   _isDayInit = true;
-  } 
-  
+  _deltaFast = _deltaFastBase;
   _prevDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
-  _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
-  _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
+  slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
+  fastVol = NormalizeDouble(slowVol * _deltaFast * _factor * _percentage * _factor, 2);
+  isDayInit = true;
  }
 }
 
@@ -229,10 +213,9 @@ void CDynamo::InitMonthTrade()
  {
   PrintFormat("%s Новый месяц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_month_number));
   _deltaSlow = _deltaSlowBase;
-  _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _prevMonthPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
-  _slowVol = NormalizeDouble(_volume * _deltaSlow * _factor, 2);
-  _isMonthInit = true;
+  slowVol = NormalizeDouble(_volume * _deltaSlow * _factor, 2);
+  isMonthInit = true;
  }
 }
 
@@ -245,44 +228,36 @@ void CDynamo::InitMonthTrade()
 void CDynamo::RecountDelta()
 {
  double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
- if (_direction*(_deltaFast - 50) < 50 && GreatDoubles(currentPrice, _prevDayPrice + _dayStep*Point())) // _dir = 1 : delta < 100; _dir = -1 : delta > 0
+ if (_deltaFast < 100 && GreatDoubles(currentPrice, _prevDayPrice + _dayStep*Point()))
  {
   _prevDayPrice = currentPrice;
-  _deltaFast = _deltaFast + _direction*_fastDeltaStep;
+  _deltaFast = _deltaFast + _fastDeltaStep;
   //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
  }
- if ((_direction*_deltaFast + 50) > (_direction*50) && LessDoubles(currentPrice, _prevDayPrice - _dayStep*Point())) // _dir = 1 : delta > 0; _dir = -1 : delta < 100
+ if (_deltaFast > 0 && LessDoubles(currentPrice, _prevDayPrice - _dayStep*Point()))
  {
   _prevDayPrice = currentPrice;
-  _deltaFast = _deltaFast - _direction*_fastDeltaStep;
+  _deltaFast = _deltaFast - _fastDeltaStep;
   //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
  }
  
- if (_direction*(_deltaSlow - 50) < 50 && GreatDoubles(currentPrice, _prevMonthPrice + _monthStep*Point()))
+ if (_deltaSlow < 100 && GreatDoubles(currentPrice, _prevMonthPrice + _monthStep*Point()))
  {
-   _prevMonthPrice = currentPrice;
-
-  if (_direction < 0 && _deltaSlow < _deltaSlowBase)
-  {
-   _deltaSlow = _deltaSlowBase;
-  }
-  else
-  {
-   _deltaSlow = _deltaSlow + _direction*_slowDeltaStep;
-  }
+  _deltaSlow = _deltaSlow + _slowDeltaStep;
+  _prevMonthPrice = currentPrice;
   //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
  }
- if ((_direction*_deltaSlow + 50) > (_direction*50) && LessDoubles(currentPrice, _prevMonthPrice - _monthStep*Point()))
+ if (_deltaSlow > 0 && LessDoubles(currentPrice, _prevMonthPrice - _monthStep*Point()))
  {
   _prevMonthPrice = currentPrice;
   
-  if (_direction > 0 && _deltaSlow > _deltaSlowBase)
+  if (_deltaSlow > _deltaSlowBase)
   {
    _deltaSlow = _deltaSlowBase;
   }
   else
   {
-   _deltaSlow = _deltaSlow - _direction*_slowDeltaStep;
+   _deltaSlow = _deltaSlow - _slowDeltaStep;
    //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
   }
  }
@@ -296,11 +271,11 @@ void CDynamo::RecountDelta()
 //+------------------------------------------------------------------+
 double CDynamo::RecountVolume()
 {
- _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
- _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
- //PrintFormat("%s большой объем %.02f, _deltaSlow=%d", MakeFunctionPrefix(__FUNCTION__),  _slowVol, _deltaSlow);
- //PrintFormat("%s малый объем %.02f, _deltaFast=%d", MakeFunctionPrefix(__FUNCTION__), _fastVol, _deltaFast);
- return (_slowVol - _fastVol); 
+ slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
+ fastVol = NormalizeDouble(slowVol * _deltaFast * _factor * _percentage * _factor, 2);
+ PrintFormat("%s большой объем %.02f, _deltaSlow=%d", MakeFunctionPrefix(__FUNCTION__),  slowVol, _deltaSlow);
+ PrintFormat("%s малый объем %.02f, _deltaFast=%d", MakeFunctionPrefix(__FUNCTION__), fastVol, _deltaFast);
+ return (slowVol - fastVol); 
 }
 
 //+------------------------------------------------------------------+
@@ -321,19 +296,18 @@ bool CDynamo::CorrectOrder(double volume)
  
  if (volume > 0)
  {
-  type = _type;
+  type = ORDER_TYPE_BUY;
   price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
  }
  else
  {
-  type = (ENUM_ORDER_TYPE)(_type + MathPow(-1, _type)); // Если _type= 0, то type =1, если  _type= 1, то type =0
+  type = ORDER_TYPE_SELL;
   price = SymbolInfoDouble(_symbol, SYMBOL_BID);
  }
  
  request.action = TRADE_ACTION_DEAL;
  request.symbol = _symbol;
  request.volume = MathAbs(volume);
- log_file.Write(LOG_DEBUG, StringFormat("%s operation=%s, volume=%f", MakeFunctionPrefix(__FUNCTION__), EnumToString(type), MathAbs(volume)));
  request.price = price;
  request.sl = 0;
  request.tp = 0;
