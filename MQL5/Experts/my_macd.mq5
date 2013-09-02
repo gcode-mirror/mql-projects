@@ -32,12 +32,13 @@ datetime date_buffer[];          //буфер времени
 int imacd;
 /*классы для работы с программой*/
 CisNewBar newCisBar;             //класс для проверки баров 
-CTrade newTrade;                 //класс для работы с позициями
+CTradeManager new_trade; //класс продажи
 /*системные переменные*/
 int takeProfit;                  //стоп лосс
 int stopLoss;                    //тейк профит
 int tN;                          //действительный N
 int tn;                          //действительный n
+int mode;
 double point = _Point;           //размер пункта
 string sym = _Symbol;            //текущий символ
 ENUM_TIMEFRAMES timeFrame=_Period;   //таймфрейм
@@ -50,23 +51,14 @@ uint index_minMACD_1; //минимальное MACD в n промежутке
 uint index;     //счетчик 
 uint minus_zone; //изменение знака для high
 uint plus_zone; //изменение знака для low
-int mode;
-CTradeManager new_trade; //класс продажи
-
 uint slowper; //медленный период
 uint fastper; //быстрый период
 uint elem[2]={0,0};
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-/*unum*/
 
 enum SCAN_EXTR_TYPE {
 MAX_EXTR=0,
 MIN_EXTR
 };
-
-/*дополнительные функции*/
 
 void PrintDeal(SCAN_EXTR_TYPE mytype) //выводит все основные показатели при совершении сделки
   {
@@ -124,8 +116,6 @@ bool WhatIsLarger (SCAN_EXTR_TYPE mytype,double val1,double val2)
   return true;
  }
  
-
-
 uint  GetDiscrepancy (SCAN_EXTR_TYPE scanType,uint top_index) //проверка на схождение
  {
   bool sign=false;        //знак промежуточной области
@@ -154,52 +144,42 @@ uint  GetDiscrepancy (SCAN_EXTR_TYPE scanType,uint top_index) //проверка на схож
   return 0;
 }  
 
-/*функция открытия позиции */
-
-  
-//+------------------------------------------------------------------+
-//|/*функция инициализации*/                                         |
-//+------------------------------------------------------------------+
 int OnInit()
   {
-/*проверка начальных параметров на действительность*/
- new_trade.Initialization(); //инициализация 
- 
+  /*проверка начальных параметров на действительность*/
+  new_trade.Initialization(); //инициализация 
   if ( MACDSlowPeriod <= MACDFastPeriod || MACDFastPeriod < 3 )
    {
-      Alert("Некорректно введены периоды! Выставлены по умолчанию 26 и 12 ");   
-      slowper = 26;
-      fastper = 12;
+    Alert("Некорректно введены периоды! Выставлены по умолчанию 26 и 12 ");   
+    slowper = 26;
+    fastper = 12;
    }
   else 
    {
-      slowper = MACDSlowPeriod;
-      fastper = MACDFastPeriod;   
+    slowper = MACDSlowPeriod;
+    fastper = MACDFastPeriod;   
    } 
-
-   if(n>=N || N<6) //если малый промежуток больше или равен всему промежутку
-     {
-      tn=5;
-      tN=20;
-      Alert("Некорректно введены N и n! N должна быть больше n. N=20 и n=5 по умолчанию");
-     }
-   else
-     {
-      tn=n;
-      tN=N;
-     }
+  if(n>=N || N<6) //если малый промежуток больше или равен всему промежутку
+   {
+    tn=5;
+    tN=20;
+    Alert("Некорректно введены N и n! N должна быть больше n. N=20 и n=5 по умолчанию");
+   }
+  else
+   {
+    tn=n;
+    tN=N;
+   }
 /*инициализации индикатора MACD*/
    imacd=iMACD(sym,timeFrame,fastper,slowper,9,PRICE_CLOSE);
    if(imacd<0)
-      return INIT_FAILED;
-
+     return INIT_FAILED;
 /*переворачивание массивов*/
    ArraySetAsSeries(_macd,true);       //переворачивается массив iMA(26) 
    ArraySetAsSeries(high, true);         //переворачивается массив high
    ArraySetAsSeries(low, true);          //переворачивается массив low
    ArraySetAsSeries(date_buffer,true);
 /*объявления системных переменных*/
-
    stopLoss=StopLoss;
    takeProfit=TakeProfit;
    return(INIT_SUCCEEDED);
@@ -214,13 +194,9 @@ void OnDeinit(const int reason)
    ArrayFree(high);
    ArrayFree(low);
    ArrayFree(date_buffer);
-     new_trade.Deinitialization();
+   new_trade.Deinitialization();
   }
-
-
-//+------------------------------------------------------------------+
-//|/*функция,вызываемая при изменении котировки*/                    |
-//+------------------------------------------------------------------+
+  
 void OnTick()
   {
  uint tmp_val;
@@ -247,10 +223,10 @@ void OnTick()
       return;
      }                  
 /*начальные присвоения*/
-  index_maxhigh=0; //максимальное высокое в n промежутке
-  index_minlow=0;  //минимальное низкое в n промежутке
-  index_maxMACD_1=0; //максимальное MACD в n промежутке
-  index_minMACD_1=0; //минимальное MACD в n промежутке 
+   index_maxhigh=0; //максимальное высокое в n промежутке
+   index_minlow=0;  //минимальное низкое в n промежутке
+   index_maxMACD_1=0; //максимальное MACD в n промежутке
+   index_minMACD_1=0; //минимальное MACD в n промежутке 
       // Цикл вычисляет максимальные значения цены
   for(index=1;index<tN;index++) //поиск индексов максимума и минимума
    {
@@ -275,6 +251,6 @@ void OnTick()
       {
        new_trade.OpenPosition(sym,OP_SELL,orderVolume,stopLoss,takeProfit,0,0,0);
       } 
-     }
+    }
   }
 //+------------------------------------------------------------------+
