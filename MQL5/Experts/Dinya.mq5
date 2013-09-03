@@ -10,7 +10,7 @@
 //| Expert includes                                                  |
 //+------------------------------------------------------------------+
 #include <CompareDoubles.mqh>
-#include <Dinya\CDynamo.mqh>
+#include <Brothers\CDynamo.mqh>
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 #include <CLog.mqh>
 
