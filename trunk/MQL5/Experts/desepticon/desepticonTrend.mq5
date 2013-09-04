@@ -15,9 +15,9 @@
 input ENUM_TIMEFRAMES eldTF = PERIOD_H1;
 input ENUM_TIMEFRAMES jrTF = PERIOD_M5;
 
-input int periodEMAfastEld = 15;        // период EMA fast старшего таймфрейма
-input int periodEMAfastJr  = 15;        // период EMA fast младшего таймфрейма
-input int periodEMAslowJr  = 9;         // период EMA slow младшего таймфрейма
+input int periodEMAfastEld = 26;        // период EMA fast старшего таймфрейма
+input int periodEMAfastJr  = 26;        // период EMA fast младшего таймфрейма
+input int periodEMAslowJr  = 12;         // период EMA slow младшего таймфрейма
 
 //параметры сделок  
 input double orderVolume = 0.1;         // Объём сделки
@@ -35,20 +35,21 @@ input bool   useJrEMAExit = false;      // будем ли выходить по ЕМА
 input int    posLifeTime = 10;          // время ожидания сделки в барах
 input int    waitAfterBreakdown = 4;    // ожидание сделки после пробоя (в барах)
 input int    deltaPriceToEMA = 7;       // допустимая разница между ценой и EMA для пересечения
+input int    deltaEMAtoEMA = 5;         // необходимая разница для разворота EMA
 //параметры PriceBased indicator
 input int    historyDepth = 40;    // глубина истории для расчета
 input int    bars=30;              // сколько свечей показывать
 
 //------------------GLOBAL--------------------------------------
 int handleTrend;            // хэндл PriceBased indicator
-int handleEMA3;             // хэндл EMA 3 дневного TF
+int handleEMA3Day;          // хэндл EMA 3 дневного TF
 int handleEMAfastEld;       // хэндл EMA fast старшего таймфрейма
 int handleEMAfastJr;        // хэндл EMA fast младшего таймфрейма
 int handleEMAslowJr;        // хэндл EMA slow младшего таймфрейма
 double bufferTrend[];       // буфер для PriceBased indicator  
-double bufferDayPrice[];    // буфер для цены на дневнике
-double bufferEldTFPrice[];  // буфер для цены на старшем таймфрейме
-double bufferEMA3[];        // буфер для EMA 3
+double bufferHighEld[];     // буфер для цены high на старшем таймфрейме
+double bufferLowEld[];      // буфер для цены low на старшем таймфрейме
+double bufferEMA3Day[];     // буфер для EMA 3
 double bufferEMAfastEld[];  // буфер для EMA fast старшего таймфрейма 
 double bufferEMAfastJr[];   // буфер для EMA fast младшего таймфрейма
 double bufferEMAslowJr[];   // буфер для EMA slow младшего таймфрейма
@@ -68,12 +69,12 @@ int OnInit()
  tradeManager.Initialization();
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  handleTrend = iCustom(Symbol(), Period(), "PriceBasedIndicator", historyDepth, bars);
- handleEMA3 = iMA(Symbol(), PERIOD_D1, 3, 0, MODE_EMA, PRICE_CLOSE);
+ handleEMA3Day = iMA(Symbol(), PERIOD_D1, 3, 0, MODE_EMA, PRICE_CLOSE);
  handleEMAfastEld = iMA(Symbol(), eldTF, periodEMAfastEld, 0, MODE_EMA, PRICE_CLOSE);
  handleEMAfastJr  = iMA(Symbol(),  jrTF,  periodEMAfastJr, 0, MODE_EMA, PRICE_CLOSE);
  handleEMAslowJr  = iMA(Symbol(),  jrTF,  periodEMAslowJr, 0, MODE_EMA, PRICE_CLOSE);
  
- if (     handleTrend == INVALID_HANDLE ||      handleEMA3 == INVALID_HANDLE || 
+ if (     handleTrend == INVALID_HANDLE ||   handleEMA3Day == INVALID_HANDLE || 
       handleEMAfastJr == INVALID_HANDLE || handleEMAslowJr == INVALID_HANDLE ||
      handleEMAfastEld == INVALID_HANDLE )
  {
@@ -102,19 +103,19 @@ int OnInit()
       }
   
  ArraySetAsSeries(     bufferTrend, true);
- ArraySetAsSeries(  bufferDayPrice, true);
- ArraySetAsSeries(bufferEldTFPrice, true);
+ ArraySetAsSeries(   bufferHighEld, true);
+ ArraySetAsSeries(    bufferLowEld, true);
  ArraySetAsSeries(bufferEMAfastEld, true);
  ArraySetAsSeries( bufferEMAfastJr, true);
  ArraySetAsSeries( bufferEMAslowJr, true);
- ArraySetAsSeries(      bufferEMA3, true);
+ ArraySetAsSeries(   bufferEMA3Day, true);
  ArrayResize(     bufferTrend, 1);
- ArrayResize(  bufferDayPrice, 1);
- ArrayResize(bufferEldTFPrice, 2);
+ ArrayResize(   bufferHighEld, 2);
+ ArrayResize(    bufferLowEld, 2); 
  ArrayResize(bufferEMAfastEld, 2);
  ArrayResize( bufferEMAfastJr, 2);
  ArrayResize( bufferEMAslowJr, 2);
- ArrayResize(      bufferEMA3, 1);
+ ArrayResize(   bufferEMA3Day, 1);
  
  return(INIT_SUCCEEDED);
 }
@@ -128,14 +129,14 @@ void OnDeinit(const int reason)
  IndicatorRelease(handleEMAfastEld);
  IndicatorRelease(handleEMAfastJr);
  IndicatorRelease(handleEMAslowJr);
- IndicatorRelease(handleEMA3);
+ IndicatorRelease(handleEMA3Day);
  ArrayFree(bufferTrend);
- ArrayFree(bufferDayPrice);
- ArrayFree(bufferEldTFPrice);
+ ArrayFree(bufferHighEld);
+ ArrayFree(bufferLowEld);
  ArrayFree(bufferEMAfastEld);
  ArrayFree(bufferEMAfastJr);
  ArrayFree(bufferEMAslowJr);
- ArrayFree(bufferEMA3); 
+ ArrayFree(bufferEMA3Day); 
  log_file.Write(LOG_DEBUG, StringFormat("%s Деиниализация.", MakeFunctionPrefix(__FUNCTION__)));
 }
 //+------------------------------------------------------------------+
@@ -155,44 +156,73 @@ void OnTick()
  int copiedEMAfastEld = -1;
  int copiedEMAfastJr  = -1;
  int copiedEMAslowJr  = -1;
- int copiedDayPrice   = -1;
- int copiedEldPrice   = -1;
+ int copiedHighEld    = -1;
+ int copiedLowEld     = -1;
  
- //TO DO: выход по EMA
+ for (int attempts = 0; attempts < 25 && copiedTrend      < 0
+                                      && copiedEMA3       < 0
+                                      && copiedEMAfastEld < 0
+                                      && copiedEMAfastJr  < 0
+                                      && copiedEMAslowJr  < 0
+                                      && copiedHighEld    < 0
+                                      && copiedLowEld     < 0; attempts++) //Копируем данные индикаторов
+ {
+  copiedTrend      = CopyBuffer(     handleTrend, 4, 1, 1,      bufferTrend);
+  copiedEMAfastEld = CopyBuffer(handleEMAfastEld, 0, 1, 2, bufferEMAfastEld);
+  copiedEMAfastJr  = CopyBuffer( handleEMAfastJr, 0, 1, 2,  bufferEMAfastJr);
+  copiedEMAslowJr  = CopyBuffer( handleEMAslowJr, 0, 1, 2,  bufferEMAslowJr);
+  copiedEMA3       = CopyBuffer(   handleEMA3Day, 0, 0, 1,    bufferEMA3Day);
+  copiedHighEld = CopyHigh(Symbol(), eldTF, 1, 2, bufferHighEld);
+  copiedLowEld  =  CopyLow(Symbol(), eldTF, 1, 2,  bufferLowEld);   
+ }
+ 
+ if (copiedTrend != 1 || copiedEMAfastEld != 2 || copiedEMAfastJr != 2 || copiedEMAslowJr != 2 ||
+      copiedEMA3 != 1 ||    copiedHighEld != 2 ||    copiedLowEld != 2)    //Проверяем скопированные данные индикаторов
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка заполнения буфера.Error(%d) = %s" 
+                                         , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
+  return;
+ } 
  
  if (eldNewBar.isNewBar() > 0)                          //на каждом новом баре старшего TF
  {
-  for (int attempts = 0; attempts < 25 && copiedTrend      < 0
-                                       && copiedEMA3       < 0
-                                       && copiedEMAfastEld < 0
-                                       && copiedEMAfastJr  < 0
-                                       && copiedEMAslowJr  < 0
-                                       && copiedDayPrice   < 0
-                                       && copiedEldPrice   < 0; attempts++) //Копируем данные индикаторов
-  {
-   copiedTrend      = CopyBuffer(     handleTrend, 4, 1, 1,      bufferTrend);
-   copiedEMAfastEld = CopyBuffer(handleEMAfastEld, 0, 1, 2, bufferEMAfastEld);
-   copiedEMAfastJr  = CopyBuffer( handleEMAfastJr, 0, 1, 2,  bufferEMAfastJr);
-   copiedEMAslowJr  = CopyBuffer( handleEMAslowJr, 0, 1, 2,  bufferEMAslowJr);
-   copiedEMA3       = CopyBuffer(      handleEMA3, 0, 1, 1,       bufferEMA3);
-   copiedDayPrice = CopyClose(Symbol(), PERIOD_D1, 0, 1,   bufferDayPrice);
-   copiedEldPrice = CopyClose(Symbol(),     eldTF, 1, 2, bufferEldTFPrice);
-  }
-  
-  if (copiedTrend != 1 || copiedEMAfastEld != 2 || copiedEMAfastJr != 2 || copiedEMAslowJr != 2 ||
-       copiedEMA3 != 1 ||   copiedDayPrice != 1 ||  copiedEldPrice != 2 )   //Копируем данные индикаторов
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка заполнения буфера.Error(%d) = %s" 
-                                          , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
-   return;
-  }
-  
   isProfit = tradeManager.isMinProfit(_Symbol);         // проверяем не достигла ли позиция на данном символе минимального профита
   if (isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
   { //если не достигли minProfit за данное время
    log_file.Write(LOG_DEBUG, StringFormat("%s Истекло время ожидания минпрофита.Закрываем позицию.", MakeFunctionPrefix(__FUNCTION__))); 
-   //close position 
+   tradeManager.ClosePosition(Symbol());
   }
+  
+  if (useJrEMAExit && isProfit) //выход по младшим EMA при достижении MinProfit
+  {
+   switch(tradeManager.GetPositionType(Symbol()))
+   {
+    case OP_BUY:
+    case OP_BUYLIMIT:
+    case OP_BUYSTOP:
+    {
+     if (GreatDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0] + deltaEMAtoEMA*point))
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s Позиция достигла минимального профита. Выход по младшим EMA.", MakeFunctionPrefix(__FUNCTION__)));
+      tradeManager.ClosePosition(Symbol());
+     }
+     break;
+    }
+    case OP_SELL:
+    case OP_SELLLIMIT:
+    case OP_SELLSTOP:
+    {
+     if (LessDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0] - deltaEMAtoEMA*point))
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s Позиция достигла минимального профита. Выход по младшим EMA.", MakeFunctionPrefix(__FUNCTION__)));
+      tradeManager.ClosePosition(Symbol());
+     }
+     break;
+    }
+    case OP_UNKNOWN:
+    break;
+   }
+  } //end useJrEMAExit
     
   wait++; 
   if (order_direction != 0)       // если есть сигнал о направлении ордера 
@@ -203,41 +233,48 @@ void OnTick()
     order_direction = 0;
    }
   }
+ } //end isNewBar  
   
-  if (bufferTrend[0] == 1)               //Если направление тренда TREND_UP  
+ if (bufferTrend[0] == 1)               //Если направление тренда TREND_UP  
+ {
+  //log_file.Write(LOG_DEBUG, StringFormat("%s TREND UP.", MakeFunctionPrefix(__FUNCTION__)));
+  if (GreatOrEqualDoubles(bufferEMA3Day[0] + deltaPriceToEMA*point, bid))
   {
-   if (GreatOrEqualDoubles(bufferEMA3[0] + deltaPriceToEMA*point, bufferDayPrice[0]))
+   //log_file.Write(LOG_DEBUG, StringFormat("%s Дневная цена меньше EMA3.", MakeFunctionPrefix(__FUNCTION__)));
+   if (GreatDoubles(bufferEMAfastEld[0] + deltaPriceToEMA*point, bufferLowEld[0]) || 
+       GreatDoubles(bufferEMAfastEld[1] + deltaPriceToEMA*point, bufferLowEld[1]))
    {
-    if (GreatDoubles(bufferEMAfastEld[0], bufferEldTFPrice[0] + deltaPriceToEMA*point) || 
-        GreatDoubles(bufferEMAfastEld[1], bufferEldTFPrice[1] + deltaPriceToEMA*point))
+    //log_file.Write(LOG_DEBUG, StringFormat("%s EMAfast выше на одном из последних 2х барах.", MakeFunctionPrefix(__FUNCTION__)));
+    if (GreatDoubles(bufferEMAslowJr[1], bufferEMAfastJr[1]) && LessDoubles(bufferEMAslowJr[0], bufferEMAfastJr[0]))
     {
-     if (GreatDoubles(bufferEMAslowJr[1], bufferEMAfastJr[1]) && LessDoubles(bufferEMAslowJr[0], bufferEMAfastJr[0]))
-     {
-      //OpenPosition
-      order_direction = 1;
-      log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
-     }
+     //log_file.Write(LOG_DEBUG, StringFormat("%s Пересечение EMA на младшем TF.", MakeFunctionPrefix(__FUNCTION__)));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
+     tradeManager.OpenPosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+     order_direction = 1;
     }
    }
   }
-  
-  if (bufferTrend[0] == 3)               //Если направление тренда TREND_DOWN  
+ } //end TREND_UP
+ else if (bufferTrend[0] == 3)               //Если направление тренда TREND_DOWN  
+ {
+  //log_file.Write(LOG_DEBUG, StringFormat("%s TREND DOWN.", MakeFunctionPrefix(__FUNCTION__)));
+  if (GreatOrEqualDoubles(ask, bufferEMA3Day[0] - deltaPriceToEMA*point))
   {
-   if (GreatOrEqualDoubles(bufferDayPrice[0], bufferEMA3[0] + deltaPriceToEMA*point))
+   //log_file.Write(LOG_DEBUG, StringFormat("%s Дневная цена больше EMA3.", MakeFunctionPrefix(__FUNCTION__)));
+   if (GreatDoubles(bufferHighEld[0], bufferEMAfastEld[0] - deltaPriceToEMA*point) || 
+       GreatDoubles(bufferHighEld[1], bufferEMAfastEld[1] - deltaPriceToEMA*point))
    {
-    if (GreatDoubles(bufferEldTFPrice[0], bufferEMAfastEld[0] + deltaPriceToEMA*point) || 
-        GreatDoubles(bufferEldTFPrice[1], bufferEMAfastEld[1] + deltaPriceToEMA*point))
+    //log_file.Write(LOG_DEBUG, StringFormat("%s EMAfast выше на одном из последних 2х барах.", MakeFunctionPrefix(__FUNCTION__)));
+    if (GreatDoubles(bufferEMAfastJr[1], bufferEMAslowJr[1]) && LessDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0]))
     {
-     if (GreatDoubles(bufferEMAfastJr[1], bufferEMAslowJr[1]) && LessDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0]))
-     {
-      //OpenPosition
-      order_direction = -1;
-      log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
-     }
+     //log_file.Write(LOG_DEBUG, StringFormat("%s Пересечение EMA на младшем TF.", MakeFunctionPrefix(__FUNCTION__)));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
+     tradeManager.OpenPosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+     order_direction = -1;
     }
    }
   }
- }
+ } //end TREND_DOWN
  
  if (useTrailing)
  {

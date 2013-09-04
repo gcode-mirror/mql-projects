@@ -43,8 +43,9 @@ public:
   bool OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
                     int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
   void ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action);
-  bool ClosePosition(long ticket, color Color=CLR_NONE); // Закртыие позиции по тикету
-  bool ClosePosition(int i,color Color=CLR_NONE);  // Закрытие позиции по индексу в массиве позиций 
+  bool ClosePosition(long ticket, color Color=CLR_NONE);     // Закртыие позиции по тикету
+  bool ClosePosition(int i,color Color=CLR_NONE);            // Закрытие позиции по индексу в массиве позиций
+  bool ClosePosition(string symbol, color Color=CLR_NONE);   // Закрытие позиции по символу 
   bool CloseReProcessingPosition(int i,color Color=CLR_NONE);
   long MakeMagic(string strSymbol = "");
   void DoTrailing();
@@ -54,6 +55,7 @@ public:
   void OnTick();
   void OnTrade(datetime history_start);
   void SaveSituationToFile(bool debug = false);
+  ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
 };
 
 //+------------------------------------------------------------------+
@@ -396,6 +398,27 @@ bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 
 //+------------------------------------------------------------------+
 /// Close a virtual order.
+/// \param [in] symbol			current symbol
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(ClosePosition(i));
+  }
+ }
+ return false;
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual order.
 /// \param [in] i			      pos index in array of positions
 /// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
 /// \return							true if successful, false if not
@@ -497,4 +520,23 @@ bool FindHistoryTicket(long ticket)
   if(ticket == HistoryOrderGetTicket(i)) return true;  
  }
  return false;
+}
+//+------------------------------------------------------------------+
+/// Return current position type
+/// \param [long] ticket       number of ticket to search
+/// \return                    true if successful, false if not
+//+------------------------------------------------------------------+
+ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
+{
+  int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(pos.getType());
+  }
+ }
+ return OP_UNKNOWN;
 }
