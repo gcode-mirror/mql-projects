@@ -44,6 +44,7 @@ input int    stopPriceDifference = 50;  // Разнциа для Stop ордеров
 input bool   useTrailing = false;       // Использовать трейлинг
 input bool   useJrEMAExit = false;      // будем ли выходить по ЕМА
 input int    posLifeTime = 10;          // время ожидания сделки в барах
+input int    deltaEMAtoEMA = 5;         // необходимая разница для разворота EMA
 //параметры PriceBased indicator
 input int    historyDepth = 40;    // глубина истории для расчета
 input int    bars=30;              // сколько свечей показывать
@@ -153,7 +154,6 @@ void OnTick()
  
  int copiedTrend = -1;
  
- //TO DO: выход по EMA
  if (eldNewBar.isNewBar() > 0)                          //на каждом новом баре старшего TF
  {
   for (int attempts = 0; attempts < 25 && copiedTrend < 0; attempts++) //Копируем данные индикаторов
@@ -172,23 +172,54 @@ void OnTick()
   if (isProfit && TimeCurrent() - PositionGetInteger(POSITION_TIME) > posLifeTime*PeriodSeconds(eldTF))
   { //если не достигли minProfit за данное время
    log_file.Write(LOG_DEBUG, StringFormat("%s Истекло время ожидания минпрофита.Закрываем позицию.", MakeFunctionPrefix(__FUNCTION__))); 
-   //close position 
+   tradeManager.ClosePosition(Symbol()); 
   }
-    
-  if (bufferTrend[0] == 5 || bufferTrend[0] == 6)   // направление тренда CORRECTION_UP или CORRECTION_DOWN
+  
+  if (useJrEMAExit && isProfit)  //выход по младшим EMA при достижении MinProfit
   {
-   if (ConditionForBuy() > ConditionForSell())
+   switch(tradeManager.GetPositionType(Symbol()))
    {
-    tradeManager.OpenPosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
+    case OP_BUY:
+    case OP_BUYLIMIT:
+    case OP_BUYSTOP:
+    {
+     if (GreatDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0] + deltaEMAtoEMA*point))
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s Позиция достигла минимального профита. Выход по младшим EMA.", MakeFunctionPrefix(__FUNCTION__)));
+      tradeManager.ClosePosition(Symbol());
+     }
+     break;
+    }
+    case OP_SELL:
+    case OP_SELLLIMIT:
+    case OP_SELLSTOP:
+    {
+     if (LessDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0] - deltaEMAtoEMA*point))
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s Позиция достигла минимального профита. Выход по младшим EMA.", MakeFunctionPrefix(__FUNCTION__)));
+      tradeManager.ClosePosition(Symbol());
+     }
+     break;
+    }
+    case OP_UNKNOWN:
+    break;
    }
-   else
-   {
-    tradeManager.OpenPosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
-   }
+  } //end useJrEMAExit 
+ } //end isNewBar  
+ 
+ if (bufferTrend[0] == 5 || bufferTrend[0] == 6)   // направление тренда CORRECTION_UP или CORRECTION_DOWN
+ {
+  if (ConditionForBuy() > ConditionForSell())
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
+   tradeManager.OpenPosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
   }
- }//end isNewBar
+  if (ConditionForSell() > ConditionForBuy())
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
+   tradeManager.OpenPosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+  }
+ }
 
  if (useTrailing)
  {
