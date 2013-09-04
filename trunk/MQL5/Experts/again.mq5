@@ -9,6 +9,7 @@
 input uint n=4; //количество баров, после которых идет проверка пробоя
 input uint N=20; //количество баров, до которых идет проверка пробоя
 input double diff=0.3; //разница между ценами
+input double   volume = 1;
 
 double high[];   // массив высоких цен 
 double low[];   // массив низких цен
@@ -105,6 +106,8 @@ new_trade.OnTick();
             flagMax = false; //значит максимум найден
             proboy_max = true; //значит пробой еще не найден
             MaxPos--;
+            PrintFormat("Max = %.06f\n",max_value);
+            Print("Max index = ",MaxPos);
            }
           if (flagMin) //если требуется найти минимум
            {
@@ -113,6 +116,8 @@ new_trade.OnTick();
             flagMin = false; //значит минимум найден
             proboy_min = true;  //значит пробой еще не найден
             MinPos--;
+            PrintFormat("Min = %.06f\n",min_value);
+            Print("Min index = ",MinPos);
            }             
          }
 
@@ -146,7 +151,7 @@ new_trade.OnTick();
               sl = NormalizeDouble(MathMax(SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL)*_Point,
                          max_value-tick.ask) / _Point, SymbolInfoInteger(sym, SYMBOL_DIGITS));
                
-              trade.OpenPosition(symbol, OP_SELL, volume, sl, tp, 0.0, 0.0, 0.0))
+              new_trade.OpenPosition(sym, OP_SELL, volume, sl, tp,0,0,0);
             
                  Alert("Продавать");
             
@@ -172,7 +177,7 @@ new_trade.OnTick();
               sl = NormalizeDouble(MathMax(SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL)*_Point,
                          tick.bid - min_value) / _Point, SymbolInfoInteger(sym, SYMBOL_DIGITS)); 
                          
-              trade.OpenPosition(symbol, OP_BUY, volume, sl, tp, 0.0, 0.0, 0.0))           
+              new_trade.OpenPosition(sym, OP_BUY, volume, sl, tp,0,0,0);           
              Alert("Покупать");
              }
             if (buyTest && tick.bid > min_value) //если цена поднялась
