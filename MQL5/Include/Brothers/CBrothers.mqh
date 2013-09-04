@@ -54,7 +54,7 @@ protected:
  bool _isDayInit;   // ключ инициализации массива цен дня
 public:
 //--- Конструкторы
- void CBrothers(void);      // Конструктор CBrothers
+ void CBrothers(void){};      // Конструктор CBrothers
 //--- Методы доступа к защищенным данным:
  datetime GetLastDay() const {return(m_last_day_number);}      // 18:00 последнего дня
  datetime GetLastMonth() const {return(m_last_month_number);}  // Дата и время определния последнего месяца
@@ -194,4 +194,44 @@ int CBrothers::GetDayOfWeek(datetime date)
  MqlDateTime _date;
  TimeToStruct(date, _date);
  return (_date.day_of_week);
+}
+
+//+------------------------------------------------------------------+
+//| Пересчет объемов торга на основании новых дельта                 |
+//| INPUT:  double volume.                                           |
+//| OUTPUT: result of correction - true or false                     |
+//| REMARK: no.                                                      |
+//+------------------------------------------------------------------+
+bool CBrothers::CorrectOrder(double volume)
+{
+ if (volume == 0) return(false);
+ 
+ MqlTradeRequest request = {0};
+ MqlTradeResult result = {0};
+ 
+ ENUM_ORDER_TYPE type;
+ double price;
+ 
+ if (volume > 0)
+ {
+  type = _type;
+  price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
+ }
+ else
+ {
+  type = (ENUM_ORDER_TYPE)(_type + MathPow(-1, _type)); // Если _type= 0, то type =1, если  _type= 1, то type =0
+  price = SymbolInfoDouble(_symbol, SYMBOL_BID);
+ }
+ 
+ request.action = TRADE_ACTION_DEAL;
+ request.symbol = _symbol;
+ request.volume = MathAbs(volume);
+ log_file.Write(LOG_DEBUG, StringFormat("%s operation=%s, volume=%f", MakeFunctionPrefix(__FUNCTION__), EnumToString(type), MathAbs(volume)));
+ request.price = price;
+ request.sl = 0;
+ request.tp = 0;
+ request.deviation = SymbolInfoInteger(_symbol, SYMBOL_SPREAD); 
+ request.type = type;
+ request.type_filling = ORDER_FILLING_FOK;
+ return (OrderSend(request, result));
 }

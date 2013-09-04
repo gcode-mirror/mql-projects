@@ -10,22 +10,9 @@
 //| Expert includes                                                  |
 //+------------------------------------------------------------------+
 #include <CompareDoubles.mqh>
-#include <Dinya\CDynamo.mqh>
-#include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
+#include <Brothers\CSanya.mqh>
 #include <CLog.mqh>
 
-enum DELTA_STEP
-{
- ONE = 1,
- TWO = 2,
- FOUR = 4,
- FIVE = 5,
- TEN = 10,
- TWENTY = 20,
- TWENTY_FIVE = 25,
- FIFTY = 50,
- HUNDRED = 100
-};
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -48,6 +35,8 @@ double currentVolume;
 
 int fastDelta = 0;   // Младшая дельта
 DELTA_STEP fastDeltaStep = HUNDRED;  // Шаг изменения МЛАДШЕЙ дельты
+
+CSanya san(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, type, volume, factor, percentage, fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -67,8 +56,13 @@ int OnInit()
    
    symbol = Symbol();
    startTime = TimeCurrent();
+   san.SetSymbol(symbol);
+   san.SetPeriod(Period());
+   san.SetStartHour(startTime);
    
    currentVolume = 0;
+   san.InitDayTrade();
+   san.InitMonthTrade();
 //---
    return(INIT_SUCCEEDED);
   }
@@ -85,18 +79,17 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
  {
- 
-  //dyn.InitDayTrade();
-  //dyn.InitMonthTrade();
-  if (dyn.isInit())
+  san.InitDayTrade();
+  san.InitMonthTrade();
+  if (san.isInit())
   {
-   dyn.RecountDelta();
-   double vol = dyn.RecountVolume();
+   san.RecountDelta();
+   double vol = san.RecountVolume();
    if (currentVolume != vol)
    {
     PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
     log_file.Write(LOG_DEBUG, StringFormat("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol));
-    if (dyn.CorrectOrder(vol - currentVolume))
+    if (san.CorrectOrder(vol - currentVolume))
     {
      currentVolume = vol;
     }

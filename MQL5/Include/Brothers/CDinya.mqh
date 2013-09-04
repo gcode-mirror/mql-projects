@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                      CDynamo.mq5 |
+//|                                                       CDinya.mq5 |
 //|                                              Copyright 2013, GIA |
 //|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
@@ -15,28 +15,27 @@
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
 //+------------------------------------------------------------------+
-class CDynamo: public CBrothers
+class CDinya: public CBrothers
 {
 public:
 //--- Конструкторы
- //void CDynamo();
- void CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
-             , ENUM_ORDER_TYPE type ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CDynamo
+ //void CDinya();
+ void CDinya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
+             , ENUM_ORDER_TYPE type ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CDinya
              
  void InitDayTrade();
  void InitMonthTrade();
  double RecountVolume();
  void RecountDelta();
- bool CorrectOrder(double volume);
 };
 
 //+------------------------------------------------------------------+
-//| Конструктор CDynamo.                                             |
+//| Конструктор CDinya.                                             |
 //| INPUT:  no.                                                      |
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
+void CDinya::CDinya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
                      ,ENUM_ORDER_TYPE type, int volume, double factor, int percentage, int fastPeriod, int slowPeriod)
   {
    _deltaFastBase=deltaFast;
@@ -69,7 +68,7 @@ void CDynamo::CDynamo(int deltaFast, int deltaSlow, int fastDeltaStep, int slowD
 //| OUTPUT: no.
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDynamo::InitDayTrade()
+void CDinya::InitDayTrade()
 {
  if (timeToUpdateFastDelta()) // Если случился новый день
  {
@@ -98,7 +97,7 @@ void CDynamo::InitDayTrade()
 //| OUTPUT: no.
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDynamo::InitMonthTrade()
+void CDinya::InitMonthTrade()
 {
  if(isNewMonth())
  {
@@ -117,7 +116,7 @@ void CDynamo::InitMonthTrade()
 //| OUTPUT: no.
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDynamo::RecountDelta()
+void CDinya::RecountDelta()
 {
  double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
  if (_direction*(_deltaFast - 50) < 50 && GreatDoubles(currentPrice, _prevDayPrice + _dayStep*Point())) // _dir = 1 : delta < 100; _dir = -1 : delta > 0
@@ -169,51 +168,11 @@ void CDynamo::RecountDelta()
 //| OUTPUT: no.
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-double CDynamo::RecountVolume()
+double CDinya::RecountVolume()
 {
  _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
  _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
  //PrintFormat("%s большой объем %.02f, _deltaSlow=%d", MakeFunctionPrefix(__FUNCTION__),  _slowVol, _deltaSlow);
  //PrintFormat("%s малый объем %.02f, _deltaFast=%d", MakeFunctionPrefix(__FUNCTION__), _fastVol, _deltaFast);
  return (_slowVol - _fastVol); 
-}
-
-//+------------------------------------------------------------------+
-//| Пересчет объемов торга на основании новых дельта                 |
-//| INPUT:  no.                                                      |
-//| OUTPUT: no.
-//| REMARK: no.                                                      |
-//+------------------------------------------------------------------+
-bool CDynamo::CorrectOrder(double volume)
-{
- if (volume == 0) return(false);
- 
- MqlTradeRequest request = {0};
- MqlTradeResult result = {0};
- 
- ENUM_ORDER_TYPE type;
- double price;
- 
- if (volume > 0)
- {
-  type = _type;
-  price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
- }
- else
- {
-  type = (ENUM_ORDER_TYPE)(_type + MathPow(-1, _type)); // Если _type= 0, то type =1, если  _type= 1, то type =0
-  price = SymbolInfoDouble(_symbol, SYMBOL_BID);
- }
- 
- request.action = TRADE_ACTION_DEAL;
- request.symbol = _symbol;
- request.volume = MathAbs(volume);
- log_file.Write(LOG_DEBUG, StringFormat("%s operation=%s, volume=%f", MakeFunctionPrefix(__FUNCTION__), EnumToString(type), MathAbs(volume)));
- request.price = price;
- request.sl = 0;
- request.tp = 0;
- request.deviation = SymbolInfoInteger(_symbol, SYMBOL_SPREAD); 
- request.type = type;
- request.type_filling = ORDER_FILLING_FOK;
- return (OrderSend(request, result));
 }
