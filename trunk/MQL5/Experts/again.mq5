@@ -15,6 +15,7 @@ double low[];   // массив низких цен
 double cur_color[]; //массив текущих цветов свечей 
 double max_value=DBL_MIN;   //максимальное значение в массиве high
 double min_value=DBL_MAX;   //минимальное значение в массиве low
+double sl, tp;
 datetime date_buffer[];          //буфер времени
 int handle_PBI;     //хэндл PriceBasedIndicator
 int tn; //действительное значение малого количества баров
@@ -26,10 +27,17 @@ CTradeManager new_trade; //класс совершения сделок
 
 string sym  =  _Symbol;
 ENUM_TIMEFRAMES timeFrame=_Period;   //таймфрейм
-
-uint mode = 0; //режим расчета
-
 MqlTick tick;
+//флаги о загрузке поиске максимума и минимума среди N текущих баров
+bool flagMax = true;  //флаг о поиске максимума 
+bool flagMin = true;  //флаг о поиске минимума
+//
+bool sellTest = false;
+bool buyTest = false;
+
+bool proboy_max = true;  //условие пробоя максимума
+bool proboy_min = true;  //условие пробоя минимума
+
 
 
 int OnInit()
@@ -77,80 +85,122 @@ void OnDeinit(const int reason)
 void OnTick()
   {
 new_trade.OnTick();
+  //редим обработки баров
   if (  newCisBar.isNewBar()>0 )  //если сформировался новый бар
     {
-    if (mode == 0) //режим загрузки баров
-     {
+
      if( CopyBuffer(handle_PBI, 4, 1, 1, cur_color) <= 0)
         return;  
      if (cur_color[0]==MOVE_TYPE_FLAT ||    //если цвет совпал с требованиями
          cur_color[0]==MOVE_TYPE_CORRECTION_UP || 
          cur_color[0]==MOVE_TYPE_CORRECTION_DOWN)
-         {
-         
+         {       
       if (CopyBuffer(handle_PBI, 1, 1, tN, high) <= 0 || //если загрузка прошла не успешно
           CopyBuffer(handle_PBI, 2, 1, tN, low) <= 0)
           return;
-          mode=1;
-          MaxPos = ArrayMaximum(high);
-          MinPos = ArrayMaximum(low);
-          max_value = high[MaxPos];
-          min_value = low[MinPos];
-          MaxPos--;
-          MinPos--;
+          if (flagMax)  //если требуется найти максимум
+           {
+            MaxPos = ArrayMaximum(high);
+            max_value = high[MaxPos];
+            flagMax = false; //значит максимум найден
+            proboy_max = true; //значит пробой еще не найден
+            MaxPos--;
+           }
+          if (flagMin) //если требуется найти минимум
+           {
+            MinPos = ArrayMinimum(low);
+            min_value = low[MinPos];
+            flagMin = false; //значит минимум найден
+            proboy_min = true;  //значит пробой еще не найден
+            MinPos--;
+           }             
          }
-     } 
-     else if (mode == 1) //режим отступов
-      {
-        MaxPos++;
-        MinPos++;
-        if (MaxPos > tN && MinPos>tN)
-          mode = 0; 
-      }    
-    }
-  //режим тиков
-    switch (mode)
-     {
-      case 1:
-      if (MaxPos>=tn && MaxPos<=tN && tick.bid > max_value) //пробой максимума
+
+       if (!flagMax && proboy_max)  //если максимум найден а пробоя еще не было
         {
-         mode=2; //перевод в режим ожидания продажи
+        MaxPos++; //смещаем текущее положение максимума влево
+        if (MaxPos > tN) //если положение максимума от текущего бара превысило N
+          flagMax = true; //то переходим в режим поиска нового максимума
         }
-      
-      if (MinPos>=tn && MinPos<=tN && tick.ask < min_value) //пробой минимума 
+        
+       if (!flagMin && proboy_min)  //если минимум найден а пробоя еще не было
         {
-         mode=3; //перевод в режим ожидания покупки
-        }    
-      break;
-      case 2: //ожидание продажи
+        MinPos++; //смещаем текущее положение минимума влево
+        if (MinPos > tN) //если положение максимума от текущего бара превысило N
+          flagMin = true; //то переходим в режим поиска нового максимума
+        }        
+        
+     }
+    //режим обработки тиков
+    //поиск пробоев  
       
-      if (tick.bid < max_value)  //если цена вернулась назад
-        {
-          //сделка о продаже совершена     
-        }
-      if (diff < MathAbs(max_value-tick.bid) && max_value < tick.bid)
-        {
-          mode = 0;
-          //переход в начальный режим. Сделка не совершена
-        }
-      
-      break;   
-      case 3: //ожидание покупки
-      
-      if (tick.ask > min_value) //если цена вернулась назад
-        {
-          //сделка о покупке совершена
-        }
-      if (diff < MathAbs(min_value-tick.ask) && min_value < tick.ask)
-        {
-          mode = 0;
-          //переход в начальный режим. Сделка не совершена
-        }   
-      
-      break;
+      if (!proboy_max) //если был пробой максимума
+       {      
+        if (diff >= (max_value-tick.ask) ) //проверка, что цена не двинулась замено дальше
+         {
+            if (!sellTest && tick.ask > max_value) //если цена вернулась назад
+             {
+           //   Alert("Трейлинг");
+              tp = 0;
+              
+              sl = NormalizeDouble(MathMax(SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL)*_Point,
+                         max_value-tick.ask) / _Point, SymbolInfoInteger(sym, SYMBOL_DIGITS));
+               
+              trade.OpenPosition(symbol, OP_SELL, volume, sl, tp, 0.0, 0.0, 0.0))
+            
+                 Alert("Продавать");
+            
+             }
+            if (sellTest && tick.ask < max_value) //если цена опустилась
+                sellTest = false; //переводим в режим проверки того, что цена вернулась
+             
+         }
+        else
+         {
+          flagMax = true;
+         }       
+       }
        
-     }  
-    
-  
+      if (!proboy_min) //если был пробой минимума
+       {      
+        if (diff >= (tick.bid-min_value) ) //проверка, что цена не двинулась замено дальше
+         {
+            if (!buyTest && tick.bid < min_value) //если цена вернулась назад
+             {
+            //   Alert("Трейлинг");
+              tp = 0;
+              sl = NormalizeDouble(MathMax(SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL)*_Point,
+                         tick.bid - min_value) / _Point, SymbolInfoInteger(sym, SYMBOL_DIGITS)); 
+                         
+              trade.OpenPosition(symbol, OP_BUY, volume, sl, tp, 0.0, 0.0, 0.0))           
+             Alert("Покупать");
+             }
+            if (buyTest && tick.bid > min_value) //если цена поднялась
+             buyTest = false; //переводим в режим проверки того, что цена вернулась
+         }
+        else
+         {
+          flagMin = true;
+         }       
+       }       
+      
+      if (!flagMax && proboy_max) //если максимум найден
+       {
+        //то ищем пробой по максиму
+         if (MaxPos>=tn && tick.ask > max_value ) //если найден пробой
+          {
+           proboy_max = false;
+           sellTest = true;
+          }
+       } 
+      if (!flagMin && proboy_min) //если минимум найден
+       {
+        //то ищем пробой по минимуму
+         if (MinPos>=tn && tick.bid < min_value ) //если найден пробой
+          {
+           proboy_min = false;
+           buyTest = true;
+          }
+       }        
   }
 
