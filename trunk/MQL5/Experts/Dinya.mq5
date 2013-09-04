@@ -10,22 +10,9 @@
 //| Expert includes                                                  |
 //+------------------------------------------------------------------+
 #include <CompareDoubles.mqh>
-#include <Brothers\CDynamo.mqh>
-#include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
+#include <Brothers\CDinya.mqh>
 #include <CLog.mqh>
 
-enum DELTA_STEP
-{
- ONE = 1,
- TWO = 2,
- FOUR = 4,
- FIVE = 5,
- TEN = 10,
- TWENTY = 20,
- TWENTY_FIVE = 25,
- FIFTY = 50,
- HUNDRED = 100
-};
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -48,7 +35,7 @@ datetime startTime;
 double openPrice;
 double currentVolume;
 
-CDynamo dyn(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, type, volume, factor, percentage, fastPeriod, slowPeriod);
+CDinya dyn(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, type, volume, factor, percentage, fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
