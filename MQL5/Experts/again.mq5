@@ -131,9 +131,16 @@ void OnTick()
              proboy_max = false; //то переходим в режим поиска максимума
              max_value = DBL_MAX;
            }
-         if (tick.ask < max_value) //если цена вернулась за max_value
+        else if (tick.ask < max_value) //если цена вернулась за max_value
            {
-             Alert("Заявка исполнена");
+    sl = NormalizeDouble(MathMax(SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL)*_Point,
+                         new_max_value - tick.ask) / _Point, SymbolInfoInteger(sym, SYMBOL_DIGITS));
+    tp = 0; 
+    
+      if (new_trade.OpenPosition(sym, OP_SELL, volume, sl, tp, 0.0, 0.0, 0.0))
+    {
+     Print("SELL");
+    }
            }  
          else 
            {
@@ -157,9 +164,16 @@ void OnTick()
             proboy_min = false; //то переходим в режим поиска минимума
             min_value = DBL_MIN;
           }
-         if (tick.bid > min_value)  //если цена вернулась за минимум
+       else   if (tick.bid > min_value)  //если цена вернулась за минимум
           {
-            Alert("Заявка исполнена");
+    sl = NormalizeDouble(MathMax(SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL)*_Point,
+                         tick.bid-new_min_value) / _Point, SymbolInfoInteger(sym, SYMBOL_DIGITS));
+    tp = 0; 
+              
+    if (new_trade.OpenPosition(sym, OP_BUY, volume, sl, tp, 0.0, 0.0, 0.0))
+    {
+     Print("BUY");
+    }
           } 
          else 
            {
