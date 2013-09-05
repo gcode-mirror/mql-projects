@@ -89,8 +89,8 @@ void OnTick()
   if (  newCisBar.isNewBar()>0 )  //если сформировался новый бар
     {
     
-    if (!proboy_max) max_value = DBL_MAX;
-    if (!proboy_min) min_value = DBL_MIN;
+     if (!proboy_max) max_value = DBL_MAX;
+     if (!proboy_min) min_value = DBL_MIN;
      if( CopyBuffer(handle_PBI, 4, 1, 1, cur_color) <= 0)
         return; 
 
@@ -99,8 +99,8 @@ void OnTick()
          cur_color[0]==MOVE_TYPE_CORRECTION_DOWN)
          {      
             
-      if (CopyBuffer(handle_PBI, 1, tn, tN, high) <= 0 || //если загрузка прошла не успешно
-          CopyBuffer(handle_PBI, 2, tn, tN, low) <= 0)
+      if (CopyBuffer(handle_PBI, 1, tn, tN-tn, high) <= 0 || //если загрузка прошла не успешно
+          CopyBuffer(handle_PBI, 2, tn, tN-tn, low) <= 0)
           return;
            if (!proboy_max)    //если пробой максимума не найден
             {
@@ -135,6 +135,11 @@ void OnTick()
            {
              Alert("Заявка исполнена");
            }  
+         else 
+           {
+            if (tick.bid > new_max_value) new_max_value = tick.bid;
+           }  
+           
        }  
       if (!proboy_min) //если пробой минимума еще не найден
        {
@@ -156,6 +161,10 @@ void OnTick()
           {
             Alert("Заявка исполнена");
           } 
+         else 
+           {
+            if (tick.ask < new_min_value) new_min_value = tick.ask;
+           }    
         }     
   }
 
