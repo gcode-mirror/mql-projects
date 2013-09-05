@@ -84,7 +84,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int cou
  for(int bar = 1; bar < shift - 1 && !IsStopped(); bar++) // вычисл€ем экстремумы со сдвигом в историю
  { 
   difToNewExtremum = ATR_buf[bar] / 2;
-  Print("Constructor: ATR/2 = ", difToNewExtremum);
+  //Print("Constructor: ATR/2 = ", difToNewExtremum);
   aExtremums[bar] =  isExtremum(rates[bar - 1].close, rates[bar].close, rates[bar + 1].close);
   if (aExtremums[bar].direction != 0)
   {
@@ -120,7 +120,7 @@ void CColoredTrend::CountMoveType(int count, int shift = 1)
  {
   enumMoveType[bar] = enumMoveType[bar - 1];
   difToNewExtremum = ATR_buf[bar] / 2;
-  Print("ATR/2 = ", difToNewExtremum);
+  //Print("ATR/2 = ", difToNewExtremum);
   /*
   PrintFormat("bar = %d, экстремумы num0=%.05f, num1=%.05f, num2=%.05f, num0 - num1 =%.05f, num0 - close=%.05f"
              , bar, aExtremums[num0].price, aExtremums[num1].price, aExtremums[num2].price
@@ -130,7 +130,7 @@ void CColoredTrend::CountMoveType(int count, int shift = 1)
   if (LessDoubles(MathAbs(aExtremums[num0].price - aExtremums[num1].price)*difToTrend
                  ,MathAbs(aExtremums[num0].price - rates[bar].close), digits))
   {// ≈сли разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движени€ 
-   PrintFormat("bar = %d, движение больше последней разницы экстремумов", bar);
+   //PrintFormat("bar = %d, движение больше последней разницы экстремумов", bar);
    if (LessDoubles(rates[bar].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
    {
     //PrintFormat("bar = %d, началс€ тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].price);
