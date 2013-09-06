@@ -256,7 +256,9 @@ int ConditionForBuy()
     return(100); 
  return(0);
 }
-
+///
+//
+///
 int ConditionForSell()
 {
  if(divergenceMACD(handleMACDEld, Symbol(), eldTF) == -1) return(100);
