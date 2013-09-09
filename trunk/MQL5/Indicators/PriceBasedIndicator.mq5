@@ -131,7 +131,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
 //---- проверка на начало нового бара
    if(isNewBar.isNewBar(symbol, GetBottomTimeframe(current_timeframe)))
    {
-    Print("init trend, rates_total = ", rates_total);
+  //  Print("init trend, rates_total = ", rates_total);
     trend.CountMoveType(bars, historyDepth);
     
     //--- На новом баре производим вычисление и перезапись буферов
