@@ -147,6 +147,7 @@ void OnTick()
     sl = NormalizeDouble(MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)*_Point,
                          high_buf[ArrayMaximum(high_buf, 0)] - tick.ask) / _Point, SymbolInfoInteger(symbol, SYMBOL_DIGITS));
     tp = 0; 
+    
     PrintFormat("%s ask+stopLvl= %.05f, high= %.05f, sl=%f", MakeFunctionPrefix(__FUNCTION__), tick.ask + SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)*_Point, high_buf[ArrayMaximum(high_buf, 0)], sl);
     if (trade.OpenPosition(symbol, OP_SELL, volume, sl, tp, 0.0, 0.0, 0.0))
     {
