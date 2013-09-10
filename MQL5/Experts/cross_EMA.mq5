@@ -97,7 +97,7 @@ void OnTick()
    if (GreatDoubles(ma_fast[1],ma_slow[1]) && GreatDoubles(ma_slow[0],ma_fast[0]) && GreatDoubles(close[0],ma_ema3[0])  ) 
      {
       new_trade.OpenPosition(sym,OP_SELL,orderVolume,stopLoss,takeProfit,0,0,0);
-            Print("Продажа Дата сделки: ",date_buffer[0]);
+      Print("Продажа Дата сделки: ",date_buffer[0]);
      }
    }
  }
