@@ -40,7 +40,7 @@ class CHistoryTradeManager
  int _count_order;               //переменная для сбора статистических данных : счетчик сделок
  
  public:
- CHistoryTradeManager(string symbol, ENUM_TIMEFRAMES tf, int depth);
+ CHistoryTradeManager(string symbol, ENUM_TIMEFRAMES tf, datetime start_time, datetime stop_time);
 ~CHistoryTradeManager(); 
  void   UpdateInfo();
  void   OpenPosition(ENUM_HTM_POSITION_TYPE type, int index); 
@@ -50,13 +50,12 @@ class CHistoryTradeManager
  double GetBalance()    { return(_balance); }
 };
 
-CHistoryTradeManager::CHistoryTradeManager(string symbol, ENUM_TIMEFRAMES tf, int depth):
+CHistoryTradeManager::CHistoryTradeManager(string symbol, ENUM_TIMEFRAMES tf, datetime start_time, datetime stop_time):
                       _balance (INITIAL_BALANCE),
                       _profit (0),
                       _count_order (0)
 {
- ArrayResize(_rates, depth);
- ArraySetAsSeries(_rates, true);
+ int depth = (stop_time - start_time)/PeriodSeconds(tf);
  int copiedRates = -1;
  for(int attempts = 0; attempts < 25 && copiedRates < 0; attempts++)
  {
@@ -64,7 +63,7 @@ CHistoryTradeManager::CHistoryTradeManager(string symbol, ENUM_TIMEFRAMES tf, in
  }
  if(copiedRates != depth)
  {
-  Alert("Не удалось скопировать массив котировок.");
+  Alert("Не удалось скопировать массив котировок.(", depth, ") (", copiedRates, ")");
   return;
  }
  log_file.Write (LOG_DEBUG, StringFormat("%s Инициализация", __FUNCTION__));
@@ -73,7 +72,7 @@ CHistoryTradeManager::CHistoryTradeManager(string symbol, ENUM_TIMEFRAMES tf, in
 CHistoryTradeManager::~CHistoryTradeManager(void)
 {
  ArrayFree(_rates);
- log_file.Write (LOG_DEBUG, StringFormat("%s Деинициализация", __FUNCTION__));
+ log_file.Write (LOG_DEBUG, StringFormat("%s Деинициализация. Профит = %f; Счетчик сделок = %d", __FUNCTION__, _profit, _count_order));
 }
 
 void CHistoryTradeManager::UpdateInfo()
@@ -101,13 +100,16 @@ void CHistoryTradeManager::OpenPosition(ENUM_HTM_POSITION_TYPE type, int index)
     break;
   }
  }
- //открытие самой позиции
- _is_position = true;
- _position.type  = type;
- _position.price = _rates[index].close;
- _balance -= _position.price;
- _count_order++;
- log_file.Write (LOG_DEBUG, StringFormat("%s Открыли позицию типа %s. Текущий баланс %f", __FUNCTION__, EnumToString((ENUM_HTM_POSITION_TYPE)type), _balance));
+ if(!_is_position)
+ {
+  //открытие самой позиции
+  _is_position = true;
+  _position.type  = type;
+  _position.price = _rates[index].close;
+  _balance -= _position.price;
+  _count_order++;
+  log_file.Write (LOG_DEBUG, StringFormat("%s Открыли позицию типа %s. Текущий баланс %f", __FUNCTION__, EnumToString((ENUM_HTM_POSITION_TYPE)type), _balance));
+ }
 }
 
 bool CHistoryTradeManager::ClosePosition(int index)
