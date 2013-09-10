@@ -20,12 +20,13 @@ protected:
  double _high;
  double _low;
  double _average;
+ int _countSteps;
  
  MqlTick tick;
 public:
 //--- Конструкторы
  //void CSanya();
- void CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
+ void CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, int countSteps
              , ENUM_ORDER_TYPE type ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CSanya
              
  void InitDayTrade();
@@ -40,8 +41,8 @@ public:
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
-                     ,ENUM_ORDER_TYPE type, int volume, double factor, int percentage, int fastPeriod, int slowPeriod)
+void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, int countSteps,
+                     ENUM_ORDER_TYPE type, int volume, double factor, int percentage, int fastPeriod, int slowPeriod)
   {
    _deltaFastBase=deltaFast;
    _deltaSlowBase=deltaSlow;
@@ -49,6 +50,7 @@ void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDel
    _slowDeltaStep=slowDeltaStep;
    _dayStep=dayStep;
    _monthStep=monthStep;
+   _countSteps=countSteps;
    _fastPeriod=fastPeriod;
    _slowPeriod=slowPeriod;
    _type=type;
@@ -123,8 +125,12 @@ void CSanya::RecountDelta()
  if (currentPrice > _high + _dayStep*Point()) // Если текущая цена повысилась на шаг
  {
   Print("цена увеличилась на шаг");
-  _average = currentPrice - (currentPrice - _high)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
-  _high = currentPrice;                                 // запомним это
+  _average = currentPrice - (currentPrice - _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+  _high = currentPrice;                                          // запомним это
+ }
+ if (_average > _startDayPrice + _countSteps*_dayStep*Point()/2)
+ {
+  _startDayPrice = _average;
  }
 //... а потом вниз
  if (_average > _startDayPrice && tick.bid < _average && _deltaFast < 100)     // Если среднее уже вычислено, цена опустилась ниже среднего и младшая дельта еще не выбрана полностью
@@ -137,8 +143,13 @@ void CSanya::RecountDelta()
  if (currentPrice < _low - _dayStep*Point()) // Если текущая цена понизилась на шаг
  {
   Print("цена уменьшилась на шаг");
-  _average = currentPrice + (currentPrice - _low)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
-  _low = currentPrice;                                 // запомним это
+  _average = currentPrice + (_startDayPrice - currentPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+  _low = currentPrice;                                           // запомним это
+ }
+ if (_average < _startDayPrice - _countSteps*_dayStep*Point()/2) // Если цена упала слишком сильно
+ {
+  PrintFormat("Увеличиваем мл. дельта");
+  _deltaFast = _deltaFast + _fastDeltaStep;                      // увеличим младшую дельта
  }
  if (_average < _startDayPrice && tick.ask > _average && _deltaFast > 0)     // Если среднее уже вычислено и цена опустилась ниже среднего
  {
