@@ -35,6 +35,23 @@ ENUM_TIMEFRAMES timeFrame = _Period;
 CisNewBar newCisBar; 
 CTradeManager new_trade; //класс продажи
 
+void SavePositionToFile(string file_url)  //сохраняет позицию в файл 
+{
+ int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
+ if(file_handle == INVALID_HANDLE)
+ {
+  Alert(" Не получилось открыть файл: ", file_url);
+  return;
+ }
+ PositionSelect(_Symbol);
+ 
+ FileWrite(file_handle,PositionGetDouble(POSITION_VOLUME));
+ FileWrite(file_handle,PositionGetDouble(POSITION_PRICE_OPEN));
+ //FileWrite(file_handle,PositionGetInteger(POSITION_VOLUME));  
+
+ FileClose(file_handle);
+}
+
 int OnInit() //функция инициализации
  {
  new_trade.Initialization(); //инициализация 
@@ -104,3 +121,18 @@ void OnTick()
      }
    }
  }
+
+
+void OnTrade()  
+  {
+  
+  if(PositionSelect(_Symbol)) //если позиция по символу существует
+   {
+    if(PositionsTotal()>0)   //если есть открытая позиция
+     {
+      //сохраняем в файл свойства позиция  
+      Alert("что то хэппенд");
+      SavePositionToFile("my_file.csv");
+     }
+   }   
+  }
