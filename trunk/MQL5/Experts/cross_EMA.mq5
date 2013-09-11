@@ -3,7 +3,10 @@
 #property version   "1.00"
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBar.mqh>
-#include<TradeManager/TradeManager.mqh>
+#include<TradeManager/TradeManager.mqh> //подключаем библиотеку TradeManager
+#include<Trigger64/PositionSys.mqh>     //подключаем библиотеку для работы с позициями
+#include<Trigger64/SymbolSys.mqh>       //подключаем библиотеку для работы с символом
+#include<Trigger64/Graph.mqh>           //подключаем библиотеку отображения панели
 
 input ENUM_MA_METHOD MA_METHOD=MODE_EMA;
 input ENUM_APPLIED_PRICE applied_price=PRICE_CLOSE;

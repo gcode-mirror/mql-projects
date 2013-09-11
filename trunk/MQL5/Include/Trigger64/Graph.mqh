@@ -9,10 +9,10 @@
 #include "TestFunc.mqh"
 #include "PosConst.mqh"
 #include "PositionSys.mqh"
-//графическая библиотека
 
-//
-
+//+------------------------------------------------------------------+
+//| Класс графического модуля                                        |
+//+------------------------------------------------------------------+
 class GraphModule  //класс графического модуля
  {
   private:
@@ -47,12 +47,17 @@ class GraphModule  //класс графического модуля
                  long               z_order);    // приоритет  
    public:                            
    void DeleteObjectByName(string name); //удаляет объект   
-   void SetInfoPanel(PositionSys * my_pos);    
-   void DeleteInfoPanel();     
+   void SetInfoPanel();    //отображает панель на графике
+   void DeleteInfoPanel();  //удаляет панель из графика 
+   string PositionTypeToString(ENUM_POSITION_TYPE type);  //конвертирует свойство позиции в строку
+   string CurrentPositionDurationToString(ulong time); //Преобразует длительность позиции в строку   
+   string GetPropertyValue(int number);   //возвращает свойство позиции в виде строки       
    GraphModule();  //конструктор класса
   ~GraphModule();  //деструктор класса        
  };
-
+//+------------------------------------------------------------------+
+//| Создает объект Edit                                              |
+//+------------------------------------------------------------------+
 void GraphModule::CreateEdit(long             chart_id,         // id графика
                 int              sub_window,       // номер окна (подокна)
                 string           name,             // имя объекта
@@ -126,7 +131,7 @@ void GraphModule::CreateLabel(long               chart_id,   // id графика
 //+------------------------------------------------------------------+
 //|   Удаляет объект по имени                                        |
 //+------------------------------------------------------------------+
-void GraphModule::DeleteObjectByName(string name)
+void GraphModule::DeleteObjectByName(string name) //протестировать удаление объектов с графика
   {
    int  sub_window=0;      // Возвращаемый номер подокна, в котором находится объект
    bool res       =false;  // Результат после попытки удалить объект
@@ -142,10 +147,11 @@ void GraphModule::DeleteObjectByName(string name)
          Print("Ошибка при удалении объекта: ("+IntegerToString(GetLastError())+"): "+ErrorDescription(GetLastError()));
      }
   }
-
-void GraphModule::SetInfoPanel(PositionSys  * my_pos)  //устанавливает графическую панель
+//+------------------------------------------------------------------+
+//| Отображает информационную панель на графике                      |
+//+------------------------------------------------------------------+
+void GraphModule::SetInfoPanel()  //потрачено
   {
-  
 //--- Режим визуализации или реального времени
    if(IsVisualMode() || IsRealtime())
      {
@@ -186,7 +192,7 @@ void GraphModule::SetInfoPanel(PositionSys  * my_pos)  //устанавливает графическ
          //--- Название свойства
          CreateLabel(0,0,pos_prop_names[i],pos_prop_texts[i],anchor,corner,font_name,font_size,font_color,x_first_column,y_prop_array[i],2);
          //--- Значение свойства
-         CreateLabel(0,0,pos_prop_values[i],my_pos.GetPropertyValue(i),anchor,corner,font_name,font_size,font_color,x_second_column,y_prop_array[i],2);
+         CreateLabel(0,0,pos_prop_values[i],GetPropertyValue(i),anchor,corner,font_name,font_size,font_color,x_second_column,y_prop_array[i],2);
         }
       //---
       ChartRedraw(); // Перерисовать график
@@ -195,15 +201,12 @@ void GraphModule::SetInfoPanel(PositionSys  * my_pos)  //устанавливает графическ
 //+------------------------------------------------------------------+
 //| Удаляет информационную панель                                    |
 //+------------------------------------------------------------------+
-void GraphModule::DeleteInfoPanel()
+void GraphModule::DeleteInfoPanel()   //проверить, удаляется ли информаионная панель
   {
    DeleteObjectByName("InfoPanelBackground");   // Удалить фон панели
    DeleteObjectByName("InfoPanelHeader");       // Удалить заголовок панели
 //--- Удалить свойства позиции и их значения
    for(int i=0; i<INFOPANEL_SIZE; i++)
-      //+------------------------------------------------------------------+
-      //|                                                                  |
-      //+------------------------------------------------------------------+
      {
       DeleteObjectByName(pos_prop_names[i]);    // Удалить свойство
       DeleteObjectByName(pos_prop_values[i]);   // Удалить значение
@@ -212,11 +215,106 @@ void GraphModule::DeleteInfoPanel()
    ChartRedraw(); // Перерисовать график
   }
   
+//+------------------------------------------------------------------+
+//| Переводит время позиции в строку                                 |
+//+------------------------------------------------------------------+
+string GraphModule::CurrentPositionDurationToString(ulong time) //протестировать 
+  {
+//--- Прочерк в случае отсутствия позиции
+   string result="-";
+//--- Если есть позиция
+   if(pos.exists)
+     {
+      //--- Переменные для результата расчетов
+      ulong days=0;
+      ulong hours=0;
+      ulong minutes=0;
+      ulong seconds=0;
+      //--- 
+      seconds=time%60;
+      time/=60;
+      //---
+      minutes=time%60;
+      time/=60;
+      //---
+      hours=time%24;
+      time/=24;
+      //---
+      days=time;
+      //--- Сформируем строку в указанном формате DD:HH:MM:SS
+      result=StringFormat("%02u d: %02u h : %02u m : %02u s",days,hours,minutes,seconds);
+     }
+//--- Вернем результат
+   return(result);
+  }
+
+//+------------------------------------------------------------------+
+//| Переводит тип позиции в строку                                   |
+//+------------------------------------------------------------------+  
+string GraphModule::PositionTypeToString(ENUM_POSITION_TYPE type)
+  {
+   string str="";
+//---
+   if(type==POSITION_TYPE_BUY)
+      str="buy";
+   else if(type==POSITION_TYPE_SELL)
+      str="sell";
+   else
+      str="wrong value";
+//---
+   return(str);
+  }
+//+------------------------------------------------------------------+
+//| Возвращает свойство текущей позиции в виде строки                |
+//+------------------------------------------------------------------+    
+string GraphModule::GetPropertyValue(int number)
+  {
+//--- Знак отсутствия позиции или отсутствие того или иного свойства
+//    Например, отсутствие комментария, Stop Loss или Take Profit
+   string empty="-";
+//--- Если позиция есть, возвращаем значение запрошенного свойства
+   if(pos.exists)
+     {
+      switch(number)
+        {
+         case 0   : return(IntegerToString(pos.total_deals));                     break;
+         case 1   : return(pos.symbol);                                           break;
+         case 2   : return(IntegerToString((int)pos.magic));                      break;
+         //--- возвращаем значение комментария, если есть, иначе - знак отсутствия
+         case 3   : return(pos.comment!="" ? pos.comment : empty);                break;
+         case 4   : return(DoubleToString(pos.swap,2));                           break;
+         case 5   : return(DoubleToString(pos.commission,2));                     break;
+         case 6   : return(DoubleToString(pos.first_deal_price,_Digits));         break;
+         case 7   : return(DoubleToString(pos.price,_Digits));                    break;
+         case 8   : return(DoubleToString(pos.current_price,_Digits));            break;
+         case 9   : return(DoubleToString(pos.last_deal_price,_Digits));          break;
+         case 10  : return(DoubleToString(pos.profit,2));                         break;
+         case 11  : return(DoubleToString(pos.volume,2));                         break;
+         case 12  : return(DoubleToString(pos.initial_volume,2));                 break;
+         case 13  : return(pos.sl!=0.0 ? DoubleToString(pos.sl,_Digits) : empty); break;
+         case 14  : return(pos.tp!=0.0 ? DoubleToString(pos.tp,_Digits) : empty); break;
+         case 15  : return(TimeToString(pos.time,TIME_DATE|TIME_MINUTES));        break;
+         case 16  : return(CurrentPositionDurationToString(pos.duration));        break;
+         case 17  : return(IntegerToString((int)pos.id));                         break;
+         case 18  : return(PositionTypeToString(pos.type));                       break;
+
+         default : return(empty);
+        }
+     }
+//---
+// Если же позиции нет, возвращаем знак отсутствия позиции "-"
+   return(empty);
+  }
+//+------------------------------------------------------------------+
+//| Конструктор класса                                               |
+//+------------------------------------------------------------------+  
   GraphModule::GraphModule(void) //конструктор класса
    {
 
    }
-  
+//+------------------------------------------------------------------+
+//| Деструктор класса                                                |
+//+------------------------------------------------------------------+    
   GraphModule::~GraphModule(void) //деструктор класса
    {
    

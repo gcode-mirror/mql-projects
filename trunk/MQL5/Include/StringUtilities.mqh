@@ -9,6 +9,25 @@
 /// \param [in]   Return code from trade request
 /// \return       Desciption of return code
 //+------------------------------------------------------------------+
+string OnDeinitDescription (int reason_code)
+{
+  switch (reason_code)
+   {
+   //updated 10.09.2013
+    case REASON_PROGRAM: return("Эксперт прекратил свою работу, вызвав функцию ExpertRemove()."); break;
+    case REASON_REMOVE: return("Программа была удалена с графика."); break;
+    case REASON_RECOMPILE: return("Программа была перекомпилирована."); break;
+    case REASON_CHARTCHANGE: return("Символ или период графика был изменен."); break;    
+    case REASON_CHARTCLOSE: return("График закрыт."); break;   
+    case REASON_PARAMETERS: return("Входные параметры были изменены пользователем."); break;   
+    case REASON_ACCOUNT: return("Активирован другой счет."); break;   
+    case REASON_TEMPLATE: return("Применен другой шаблон графика."); break;   
+    case REASON_INITFAILED: return("Признак того, что обработчик OnInit() вернул ненулевое значение."); break;   
+    case REASON_CLOSE: return("Терминал был закрыт."); break;                                                 
+    default: return("Error: unknown retcode "+(string)reason_code);  
+   }
+}
+
 string ReturnCodeDescription(uint retcode)
   {
    switch(retcode)
