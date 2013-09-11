@@ -8,27 +8,22 @@
 #include "PositionEnum.mqh"
 #include <StringUtilities.mqh>
 //библиотека функций по работе с позицией
-//ErrorDescription
-
-class  PositionSys  //класс работы с позицией 
+//+------------------------------------------------------------------+
+//| класс для работы с позициями                                     |
+//+------------------------------------------------------------------+  
+class  PositionSys   
  {
-  public:
-   position_properties  pos; //переменная свойств позиции  
+   public: 
    void ZeroPositionProperties();    //очищает свойства позиции
    uint CurrentPositionTotalDeals(); //возвращает количество сделок текущей позиции
    double CurrentPositionFirstDealPrice(); //Возвращает цену первой сделки текущей позиции    
    double CurrentPositionLastDealPrice();  //Возвращает цену последней сделки текущей позиции    
    double CurrentPositionInitialVolume();  //Возвращает начальный объем текущей позиции    
-   ulong CurrentPositionDuration(ENUM_POSITION_DURATION mode); //
-   string PositionTypeToString(ENUM_POSITION_TYPE type);  //
-   string CurrentPositionDurationToString(ulong time); //Преобразует длительность позиции в строку   
-   string GetPropertyValue(int number);   //возвращает свойство позиции в виде строки          
+   ulong CurrentPositionDuration(ENUM_POSITION_DURATION mode); //      
    void GetPositionProperties(string mask); //извлекает свойство позиции
    PositionSys(); //конструктор класса
   ~PositionSys(); //деструктор класса
  };
-
-
 //+------------------------------------------------------------------+
 //| Возвращает количество сделок текущей позиции                     |
 //+------------------------------------------------------------------+
@@ -52,7 +47,6 @@ uint PositionSys::CurrentPositionTotalDeals()
             count++;
         }
      }
-//---
    return(count);
   }
 //+------------------------------------------------------------------+
@@ -81,7 +75,7 @@ double PositionSys::CurrentPositionFirstDealPrice()
          //--- Если время сделки и время открытия позиции равны, 
          //    а также равны символ сделки и текущий символ, выйдем из цикла
          if(deal_time==pos.time && deal_symbol==_Symbol)
-            break;
+         break;
         }
      }
 //---
@@ -202,37 +196,7 @@ ulong PositionSys::CurrentPositionDuration(ENUM_POSITION_DURATION mode)
 //+------------------------------------------------------------------+
 //| Преобразует длительность позиции в строку                        |
 //+------------------------------------------------------------------+
-string PositionSys::CurrentPositionDurationToString(ulong time)
-  {
-//--- Прочерк в случае отсутствия позиции
-   string result="-";
-//--- Если есть позиция
-   if(pos.exists)
-     {
-      //--- Переменные для результата расчетов
-      ulong days=0;
-      ulong hours=0;
-      ulong minutes=0;
-      ulong seconds=0;
-      //--- 
-      seconds=time%60;
-      time/=60;
-      //---
-      minutes=time%60;
-      time/=60;
-      //---
-      hours=time%24;
-      time/=24;
-      //---
-      days=time;
-      //--- Сформируем строку в указанном формате DD:HH:MM:SS
-      result=StringFormat("%02u d: %02u h : %02u m : %02u s",days,hours,minutes,seconds);
-     }
-//--- Вернем результат
-   return(result);
-  }
-  
-  void PositionSys::ZeroPositionProperties()
+void PositionSys::ZeroPositionProperties()
   {
    pos.symbol ="";
    pos.comment="";
@@ -252,115 +216,64 @@ string PositionSys::CurrentPositionDurationToString(ulong time)
 //+------------------------------------------------------------------+
 //| Преобразует тип позиции в строку                                 |
 //+------------------------------------------------------------------+
-string PositionSys::PositionTypeToString(ENUM_POSITION_TYPE type)
-  {
-   string str="";
-//---
-   if(type==POSITION_TYPE_BUY)
-      str="buy";
-   else if(type==POSITION_TYPE_SELL)
-      str="sell";
-   else
-      str="wrong value";
-//---
-   return(str);
-  }
-  
-  string PositionSys::GetPropertyValue(int number)
-  {
-//--- Знак отсутствия позиции или отсутствие того или иного свойства
-//    Например, отсутствие комментария, Stop Loss или Take Profit
-   string empty="-";
-//--- Если позиция есть, возвращаем значение запрошенного свойства
-   if(pos.exists)
-     {
-      switch(number)
-        {
-         case 0   : return(IntegerToString(pos.total_deals));                     break;
-         case 1   : return(pos.symbol);                                           break;
-         case 2   : return(IntegerToString((int)pos.magic));                      break;
-         //--- возвращаем значение комментария, если есть, иначе - знак отсутствия
-         case 3   : return(pos.comment!="" ? pos.comment : empty);                break;
-         case 4   : return(DoubleToString(pos.swap,2));                           break;
-         case 5   : return(DoubleToString(pos.commission,2));                     break;
-         case 6   : return(DoubleToString(pos.first_deal_price,_Digits));         break;
-         case 7   : return(DoubleToString(pos.price,_Digits));                    break;
-         case 8   : return(DoubleToString(pos.current_price,_Digits));            break;
-         case 9   : return(DoubleToString(pos.last_deal_price,_Digits));          break;
-         case 10  : return(DoubleToString(pos.profit,2));                         break;
-         case 11  : return(DoubleToString(pos.volume,2));                         break;
-         case 12  : return(DoubleToString(pos.initial_volume,2));                 break;
-         case 13  : return(pos.sl!=0.0 ? DoubleToString(pos.sl,_Digits) : empty); break;
-         case 14  : return(pos.tp!=0.0 ? DoubleToString(pos.tp,_Digits) : empty); break;
-         case 15  : return(TimeToString(pos.time,TIME_DATE|TIME_MINUTES));        break;
-         case 16  : return(CurrentPositionDurationToString(pos.duration));        break;
-         case 17  : return(IntegerToString((int)pos.id));                         break;
-         case 18  : return(PositionTypeToString(pos.type));                       break;
-
-         default : return(empty);
-        }
-     }
-//---
-// Если же позиции нет, возвращаем знак отсутствия позиции "-"
-   return(empty);
-  }
-  
-
-  
-  void PositionSys::GetPositionProperties(string mask) //метод возвращения свойства позиции
+void PositionSys::GetPositionProperties(string mask) //метод возвращения свойства позиции
   {
 //--- Узнаем, есть ли позиция
    pos.exists=PositionSelect(_Symbol);
 //--- Если позиция есть, получим её свойства
    if(pos.exists)
      {    
-         if (StringGetCharacter(mask,0)=='1')
-            {
-                             pos.time=(datetime)PositionGetInteger(POSITION_TIME);
-                             pos.total_deals=CurrentPositionTotalDeals();             
-            }                            
-         if (StringGetCharacter(mask,1)=='1')        pos.symbol=PositionGetString(POSITION_SYMBOL);                 
-         if (StringGetCharacter(mask,2)=='1')        pos.magic=PositionGetInteger(POSITION_MAGIC);                  
-         if (StringGetCharacter(mask,3)=='1')        pos.comment=PositionGetString(POSITION_COMMENT);               
-         if (StringGetCharacter(mask,4)=='1')        pos.swap=PositionGetDouble(POSITION_SWAP);                      
-         if (StringGetCharacter(mask,5)=='1')        pos.commission=PositionGetDouble(POSITION_COMMISSION);          
-         if (StringGetCharacter(mask,6)=='1')
-            {
-                             pos.time=(datetime)PositionGetInteger(POSITION_TIME);
-                             pos.first_deal_price=CurrentPositionFirstDealPrice();
-            }                                 
-         if (StringGetCharacter(mask,7)=='1')        pos.price=PositionGetDouble(POSITION_PRICE_OPEN);               
-         if (StringGetCharacter(mask,8)=='1')        pos.current_price=PositionGetDouble(POSITION_PRICE_CURRENT);    
-         if (StringGetCharacter(mask,9)=='1')
-            {
-                             pos.time=(datetime)PositionGetInteger(POSITION_TIME);
-                             pos.last_deal_price=CurrentPositionLastDealPrice();           
-            }                        
-         if (StringGetCharacter(mask,10)=='1')       pos.profit=PositionGetDouble(POSITION_PROFIT);                  
-         if (StringGetCharacter(mask,11)=='1')       pos.volume=PositionGetDouble(POSITION_VOLUME);                  
-         if (StringGetCharacter(mask,12)=='1')
-            {
-                             pos.time=(datetime)PositionGetInteger(POSITION_TIME);
-                             pos.initial_volume=CurrentPositionInitialVolume();          
-            }                           
-         if (StringGetCharacter(mask,13)=='1')       pos.sl=PositionGetDouble(POSITION_SL);                          
-         if (StringGetCharacter(mask,14)=='1')       pos.tp=PositionGetDouble(POSITION_TP);                          
-         if (StringGetCharacter(mask,15)=='1')       pos.time=(datetime)PositionGetInteger(POSITION_TIME);           
-         if (StringGetCharacter(mask,16)=='1')       pos.duration=CurrentPositionDuration(SECONDS);                  
-         if (StringGetCharacter(mask,17)=='1')       pos.id=PositionGetInteger(POSITION_IDENTIFIER);                 
-         if (StringGetCharacter(mask,18)=='1')       pos.type=(ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE); 
-        
+      if(StringGetCharacter(mask,0)=='1')
+         {
+          pos.time=(datetime)PositionGetInteger(POSITION_TIME);
+          pos.total_deals=CurrentPositionTotalDeals();             
+         }                            
+      if(StringGetCharacter(mask,1)=='1') pos.symbol=PositionGetString(POSITION_SYMBOL);                 
+      if(StringGetCharacter(mask,2)=='1') pos.magic=PositionGetInteger(POSITION_MAGIC);                  
+      if(StringGetCharacter(mask,3)=='1') pos.comment=PositionGetString(POSITION_COMMENT);               
+      if(StringGetCharacter(mask,4)=='1') pos.swap=PositionGetDouble(POSITION_SWAP);                      
+      if(StringGetCharacter(mask,5)=='1') pos.commission=PositionGetDouble(POSITION_COMMISSION);          
+      if(StringGetCharacter(mask,6)=='1')
+         {
+          pos.time=(datetime)PositionGetInteger(POSITION_TIME);
+          pos.first_deal_price=CurrentPositionFirstDealPrice();
+         }                                 
+      if(StringGetCharacter(mask,7)=='1') pos.price=PositionGetDouble(POSITION_PRICE_OPEN);               
+      if(StringGetCharacter(mask,8)=='1') pos.current_price=PositionGetDouble(POSITION_PRICE_CURRENT);    
+      if(StringGetCharacter(mask,9)=='1')
+         {
+          pos.time=(datetime)PositionGetInteger(POSITION_TIME);
+          pos.last_deal_price=CurrentPositionLastDealPrice();           
+         }                        
+      if(StringGetCharacter(mask,10)=='1') pos.profit=PositionGetDouble(POSITION_PROFIT);                  
+      if(StringGetCharacter(mask,11)=='1') pos.volume=PositionGetDouble(POSITION_VOLUME);                  
+      if(StringGetCharacter(mask,12)=='1')
+         {
+          pos.time=(datetime)PositionGetInteger(POSITION_TIME);
+          pos.initial_volume=CurrentPositionInitialVolume();          
+         }                           
+      if(StringGetCharacter(mask,13)=='1') pos.sl=PositionGetDouble(POSITION_SL);                          
+      if(StringGetCharacter(mask,14)=='1') pos.tp=PositionGetDouble(POSITION_TP);                          
+      if(StringGetCharacter(mask,15)=='1') pos.time=(datetime)PositionGetInteger(POSITION_TIME);           
+      if(StringGetCharacter(mask,16)=='1') pos.duration=CurrentPositionDuration(SECONDS);                  
+      if(StringGetCharacter(mask,17)=='1') pos.id=PositionGetInteger(POSITION_IDENTIFIER);                 
+      if(StringGetCharacter(mask,18)=='1') pos.type=(ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);   
      }
 //--- Если позиции нет, обнулим переменные свойств позиции
    else
       ZeroPositionProperties();
   }
-  
-  PositionSys::PositionSys(void) //конструктор класса
+//+------------------------------------------------------------------+
+//| Конструктор класса                                               |
+//+------------------------------------------------------------------+  
+PositionSys::PositionSys(void) 
    {
    
    }
-  PositionSys::~PositionSys(void) //деструктор класса
+//+------------------------------------------------------------------+
+//| Деструктор класса                                                |
+//+------------------------------------------------------------------+   
+PositionSys::~PositionSys(void) //деструктор класса
    {
    
    }
