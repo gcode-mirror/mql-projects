@@ -58,10 +58,11 @@ input bool messages=false;   // вывод сообщений в лог "Эксперты"
 //+----------------------------------------------+
 static CIsNewBar isNewBar;
 
-CColoredTrend *trend, *topTrend, *bottomTrend;
+CColoredTrend *trend, *topTrend;
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int digits;
+int topTFBarsDepth = 50;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -72,8 +73,7 @@ int OnInit()
   current_timeframe = Period();
   digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
   trend = new CColoredTrend(symbol, current_timeframe, bars, historyDepth);
-  topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), bars, historyDepth);
-  bottomTrend = new CColoredTrend(symbol, GetBottomTimeframe(current_timeframe), bars * 12, historyDepth);
+  topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), topTFBarsDepth, historyDepth);
   
 //---- превращение динамических массивов в индикаторные буферы
    SetIndexBuffer(0, ExtOpenBuffer, INDICATOR_DATA);
@@ -129,9 +129,10 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
    else first = prev_calculated - 1;        // стартовый номер для расчета новых баров
 */   
 //---- проверка на начало нового бара
-   if(isNewBar.isNewBar(symbol, GetBottomTimeframe(current_timeframe)))
+   if(isNewBar.isNewBar(symbol, current_timeframe))
    {
   //  Print("init trend, rates_total = ", rates_total);
+    topTrend.CountMoveType(topTFBarsDepth, historyDepth);
     trend.CountMoveType(bars, historyDepth);
     
     //--- На новом баре производим вычисление и перезапись буферов
