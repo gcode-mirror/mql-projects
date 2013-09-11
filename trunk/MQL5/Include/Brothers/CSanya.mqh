@@ -119,6 +119,7 @@ void CSanya::RecountDelta()
 {
 // Текущая цена
  double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+ double priceAB, priceHL;
  SymbolInfoTick(_symbol, tick);
 
 // Если цена пошла вверх...
@@ -130,16 +131,17 @@ void CSanya::RecountDelta()
  }
  if (_average > _startDayPrice + _countSteps*_dayStep*Point()/2)
  {
+  PrintFormat("цена ушла вверх на %d шагов, переносим цену старта расчетов", _countSteps);
   _startDayPrice = _average;
+  _average = 0;
+  if (_type == ORDER_TYPE_SELL) // цена растет, а основное направление - вниз, пора "засейвиться"
+  {
+   Print("Увеличиваем мл. дельта");
+   _deltaFast = _deltaFast + _fastDeltaStep;    // увеличим младшую дельта
+  }
  }
-//... а потом вниз
- if (_average > _startDayPrice && tick.bid < _average && _deltaFast < 100)     // Если среднее уже вычислено, цена опустилась ниже среднего и младшая дельта еще не выбрана полностью
- {
-  PrintFormat("Увеличиваем мл. дельта");
-  _deltaFast = _deltaFast + _fastDeltaStep;   // увеличим младшую дельта
- }
-
-// Если цена пошла вниз
+ 
+// Если цена пошла вниз...
  if (currentPrice < _low - _dayStep*Point()) // Если текущая цена понизилась на шаг
  {
   Print("цена уменьшилась на шаг");
@@ -148,13 +150,40 @@ void CSanya::RecountDelta()
  }
  if (_average < _startDayPrice - _countSteps*_dayStep*Point()/2) // Если цена упала слишком сильно
  {
-  PrintFormat("Увеличиваем мл. дельта");
-  _deltaFast = _deltaFast + _fastDeltaStep;                      // увеличим младшую дельта
+  PrintFormat("цена ушла вверх на %d шагов, переносим цену старта расчетов.", _countSteps);
+  _startDayPrice = _average;
+  _average = 0;
+  if (_type == ORDER_TYPE_BUY) // цена падает, а основное направление - вверх, пора "засейвиться"
+  {
+   Print("Увеличиваем мл. дельта");
+   _deltaFast = _deltaFast + _fastDeltaStep;    // увеличим младшую дельта
+  }
  }
- if (_average < _startDayPrice && tick.ask > _average && _deltaFast > 0)     // Если среднее уже вычислено и цена опустилась ниже среднего
+ 
+ priceAB = (_direction == 1) ? tick.ask : tick.bid;
+ if ( _direction*(_average - _startDayPrice) > 0 && // Если среднее уже вычислено на уровне выше(ниже) стартовой
+      _direction*(priceAB - _average) < 0 &&          // цена прошла через среднее вниз(вверх)
+      _deltaFast < 100)                             // мы еще не "засейвилсь"
+ {
+  PrintFormat("Увеличиваем мл. дельта");
+  _deltaFast = _deltaFast + _fastDeltaStep;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
+ }
+
+ priceAB = (_direction == 1) ? tick.bid : tick.ask;
+ if (_direction*(_average - _startDayPrice) < 0 &&  // Если среднее уже вычислено на уровне ниже(выше) стартовой
+     _direction*(priceAB - _average) > 0 &&           // цена прошла через среднее вверх(вниз)
+     _deltaFast > 0)                                // мы засейвлены
  {
   PrintFormat("Уменьшаем мл. дельта");
-  _deltaFast = _deltaFast - _fastDeltaStep;   // уменьшим младшую дельта
+  _deltaFast = _deltaFast - _fastDeltaStep;   // уменьшим младшую дельта (цена пошла в нашу сторону - прекращаем сейв)
+ }
+ 
+ priceHL = (_direction == 1) ? _high : _low;
+ priceAB = (_direction == 1) ? tick.bid : tick.ask;
+ if (_deltaFast > 0 && _direction*(priceAB - priceHL) > 0)
+ {
+  PrintFormat("Уменьшаем мл. дельта");
+  _deltaFast = _deltaFast - _fastDeltaStep;   // уменьшим младшую дельта (цена пошла в нашу сторону - прекращаем сейв)
  }
  
  // Вычисляем старшую дельта
