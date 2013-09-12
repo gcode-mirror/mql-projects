@@ -51,7 +51,7 @@ void SavePositionToFile(string file_url)  //сохраняет позицию в файл
 {
  long tmp_time = TimeCurrent();  //сохраняем текущее время
  int total;
- int file_handle = FileOpen(file_url, FILE_WRITE|FILE_COMMON|, "");
+ int file_handle = FileOpen(file_url, FILE_WRITE|FILE_COMMON, ";");
  if(file_handle == INVALID_HANDLE)
  {
   return;
@@ -72,27 +72,19 @@ void SavePositionToFile(string file_url)  //сохраняет позицию в файл
 
 bool ReadPositionFromFile (string file_url) //открывает файл для открытия позиции
  {
- int file_handle = FileOpen(file_url, FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
-int tmp_time;
-string fuck;
+ int file_handle = FileOpen(file_url, FILE_READ|FILE_COMMON, ";");
+ long tmp_time;
  if(file_handle == INVALID_HANDLE)
  {
-  
   return false;
  }
 
  //сохраняем позицию 
  
- //tmp_time = FileReadLong(file_handle); //загружаем время из файла 
-
-  tmp_time = FileReadInteger(file_handle,4); //загружаем время из файла  
- //fuck = FileReadString(file_handle,-1);
- 
-  Alert("Time} = ",tmp_time);
+ tmp_time = FileReadLong(file_handle); //загружаем время из файла 
  
  if (tmp_time > date_last_pos) //если время в файле больше, чем последнее сохраненное время
   {
- 
    deal_type  =  FileReadLong(file_handle); //загружаем тип сделки
    deal_volue =  FileReadDouble(file_handle); //загружаем объем сделки
    deal_price =  FileReadDouble(file_handle); //загружаем цену сделки
@@ -118,21 +110,17 @@ void OnDeinit(const int reason)
 void OnTick()
   {
     //проверяем каждый раз, есть ли 
-    /*
     if (ReadPositionFromFile("my_file.txt") ) //если была новая сделка
       {
-       Alert("Made!");
        if (deal_type == DEAL_TYPE_BUY)
        new_trade.OpenPosition(_Symbol,OP_BUY,deal_volue,0,0,0,0,0);
        if (deal_type == DEAL_TYPE_SELL)
        new_trade.OpenPosition(_Symbol,OP_SELL,deal_volue,0,0,0,0,0);       
       } 
-      */
   }
 
 void OnTrade()  
   {
       //сохраняем в файл
       SavePositionToFile("my_file.txt");     
-      ReadPositionFromFile("wtf.txt");
   }
