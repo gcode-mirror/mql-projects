@@ -8,37 +8,41 @@
 #property version   "1.00"
 #include <TradeManager/TradeManager.mqh> //библиотека совершени€ сделок
 
-long   deal_type;  //тип сделки
-double deal_volue; //объем сделки
-double deal_price; //цена сделки
+long   deal_type=0;  //тип сделки
+double deal_volue=0; //объем сделки
+double deal_price=0; //цена сделки
    
 long date_last_pos;  //дата последней позиции
+long first_time;     //сама€ перва€ дата при загрузке эксперта
 CTradeManager new_trade; //класс торговли
 
 void CurrentPositionLastDealPrice() //возвращает параметры последней сделки
   {
    int    total       =0;   // ¬сего сделок в списке выбранной истории
    string deal_symbol ="";  // —имвол сделки 
-   double deal_price  =0.0; // ÷ена
 //--- ≈сли истори€ позиции получена
-   if(HistorySelect(date_last_pos,TimeCurrent()))
+   if(HistorySelect(first_time,TimeCurrent()))
      {
       //--- ѕолучим количество сделок в полученном списке
       total=HistoryDealsTotal();
+     
       //--- ѕройдем по всем сделкам в полученном списке от последней сделки в списке к первой
+
       for(int i=total-1; i>=0; i--)
         {
          //--- ѕолучим цену сделки
-         Alert("HELL");
          deal_type=HistoryDealGetInteger(HistoryDealGetTicket(i),DEAL_TYPE);
          deal_volue=HistoryDealGetDouble(HistoryDealGetTicket(i),DEAL_VOLUME);
-         deal_price=HistoryDealGetDouble(HistoryDealGetTicket(i),DEAL_PRICE);                  
+         deal_price=HistoryDealGetDouble(HistoryDealGetTicket(i),DEAL_PRICE);     
+                           
          //--- ѕолучим символ сделки
          deal_symbol=HistoryDealGetString(HistoryDealGetTicket(i),DEAL_SYMBOL);
          //--- ≈сли символ сделки и текущий символ равны, остановим цикл
          if(deal_symbol==_Symbol)
             break;
         }
+        
+        
      }
 
   }
@@ -53,20 +57,12 @@ void SavePositionToFile(string file_url)  //сохран€ет позицию в файл
   return;
  }
    FileWrite(file_handle,tmp_time); //сохран€ем текущее врем€
-    
-     //сохран€ем параметры последней сделки
-    /*
-    HistorySelect(date_last_pos,tmp_time);  //загружаем историю сделок
-    
-    total = HistoryDealsTotal(); //получаем количество сделок
-    
 
-   */
    CurrentPositionLastDealPrice(); //сохран€ет параметры последней сделки
    
-   FileWrite(file_handle, HistoryDealGetInteger(HistoryDealGetTicket(total-1),DEAL_TYPE) ); //сохран€ем тип сделки    
-   FileWrite(file_handle, HistoryDealGetDouble(HistoryDealGetTicket(total-1),DEAL_VOLUME) ); //сохран€ем объем сделки
-   FileWrite(file_handle, HistoryDealGetDouble(HistoryDealGetTicket(total-1),DEAL_PRICE) ); //сохран€ем цену сделки   
+   FileWrite(file_handle, deal_type ); //сохран€ем тип сделки    
+   FileWrite(file_handle, deal_volue ); //сохран€ем объем сделки
+   FileWrite(file_handle, deal_price ); //сохран€ем цену сделки   
      
       
      date_last_pos = tmp_time;  //сохран€ем врем€ сделки
@@ -102,6 +98,7 @@ int OnInit()
   {
    //загружаем текущее врем€ сервера
    date_last_pos = TimeCurrent();
+   first_time    = date_last_pos;
    return(INIT_SUCCEEDED);
   }
 
