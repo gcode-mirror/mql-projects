@@ -132,11 +132,12 @@ void CSanya::RecountDelta()
  if (_average > _startDayPrice + _countSteps*_dayStep*Point()/2)
  {
   PrintFormat("цена ушла вверх на %d шагов, переносим цену старта расчетов", _countSteps);
-  _startDayPrice = _average;
+  _startDayPrice = _high;
+  _low = _high - _dayStep*Point();
   _average = 0;
   if (_type == ORDER_TYPE_SELL) // цена растет, а основное направление - вниз, пора "засейвиться"
   {
-   Print("Увеличиваем мл. дельта");
+   Print("цена растет, а основное направление - вниз, пора \"засейвиться\". Увеличиваем мл. дельта");
    _deltaFast = _deltaFast + _fastDeltaStep;    // увеличим младшую дельта
   }
  }
@@ -148,41 +149,43 @@ void CSanya::RecountDelta()
   _average = currentPrice + (_startDayPrice - currentPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
   _low = currentPrice;                                           // запомним это
  }
- if (_average < _startDayPrice - _countSteps*_dayStep*Point()/2) // Если цена упала слишком сильно
+ if (_average > 0 && _average < _startDayPrice - _countSteps*_dayStep*Point()/2) // Если цена упала слишком сильно
  {
-  PrintFormat("цена ушла вверх на %d шагов, переносим цену старта расчетов.", _countSteps);
-  _startDayPrice = _average;
+  PrintFormat("цена ушла вниз на %d шагов , переносим цену старта расчетов.", _countSteps);
+  _startDayPrice = _low;
+  _high = _low + _dayStep*Point();
   _average = 0;
   if (_type == ORDER_TYPE_BUY) // цена падает, а основное направление - вверх, пора "засейвиться"
   {
-   Print("Увеличиваем мл. дельта");
+   Print("цена падает, а основное направление - вверх, пора \"засейвиться\". Увеличиваем мл. дельта");
    _deltaFast = _deltaFast + _fastDeltaStep;    // увеличим младшую дельта
   }
  }
  
  priceAB = (_direction == 1) ? tick.ask : tick.bid;
- if ( _direction*(_average - _startDayPrice) > 0 && // Если среднее уже вычислено на уровне выше(ниже) стартовой
-      _direction*(priceAB - _average) < 0 &&          // цена прошла через среднее вниз(вверх)
+ if ( _average > 0 &&
+      _direction*(_average - _startDayPrice) > 0 && // Если среднее уже вычислено на уровне выше(ниже) стартовой
+      _direction*(priceAB - _average) < 0 &&        // цена прошла через среднее вниз(вверх)
       _deltaFast < 100)                             // мы еще не "засейвилсь"
  {
-  PrintFormat("Увеличиваем мл. дельта");
+  PrintFormat("Цена ушла в нашу сторону, развернулась и прошла через среднее - Увеличиваем мл. дельта");
   _deltaFast = _deltaFast + _fastDeltaStep;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
  }
 
  priceAB = (_direction == 1) ? tick.bid : tick.ask;
  if (_direction*(_average - _startDayPrice) < 0 &&  // Если среднее уже вычислено на уровне ниже(выше) стартовой
-     _direction*(priceAB - _average) > 0 &&           // цена прошла через среднее вверх(вниз)
+     _direction*(priceAB - _average) > 0 &&         // цена прошла через среднее вверх(вниз)
      _deltaFast > 0)                                // мы засейвлены
  {
-  PrintFormat("Уменьшаем мл. дельта");
+  PrintFormat("Мы сейвились, цена ушла против нас, развернулась и прошла среднее - Уменьшаем мл. дельта.");
   _deltaFast = _deltaFast - _fastDeltaStep;   // уменьшим младшую дельта (цена пошла в нашу сторону - прекращаем сейв)
  }
  
- priceHL = (_direction == 1) ? _high : _low;
- priceAB = (_direction == 1) ? tick.bid : tick.ask;
- if (_deltaFast > 0 && _direction*(priceAB - priceHL) > 0)
+ priceHL = (_direction == 1) ? _high : _low;               // Если стоим на покупку - выберем High, если на продажу - Low 
+ priceAB = (_direction == 1) ? tick.bid : tick.ask;        // Если стоим на покупку - выберем bid, если на продажу - ask
+ if (_deltaFast > 0 && _direction*(priceAB - priceHL) > 0) // Покупка: Bid>High , Продажа: Ask<Low
  {
-  PrintFormat("Уменьшаем мл. дельта");
+  PrintFormat("Мы сейвились, но цена снова пошла в нашу сторону - Уменьшаем мл. дельта");
   _deltaFast = _deltaFast - _fastDeltaStep;   // уменьшим младшую дельта (цена пошла в нашу сторону - прекращаем сейв)
  }
  
