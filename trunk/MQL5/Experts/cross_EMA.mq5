@@ -14,8 +14,8 @@ input int      TakeProfit=100;//take profit
 input int      StopLoss=100; //stop loss
 input double   orderVolume = 1;
 input ulong    magic = 111222;
-input uint SlowPer=15;
-input uint FastPer=9;
+input uint SlowPer=26;
+input uint FastPer=12;
 
 double ma_slow[];   // массив для медленного индикатора iMA 
 double ma_fast[];   // массив для быстрого индикатора iMA
@@ -47,7 +47,7 @@ void SavePositionToFile(string file_url)  //сохраняет позицию в файл
  
  FileWrite(file_handle,PositionGetDouble(POSITION_VOLUME));
  FileWrite(file_handle,PositionGetDouble(POSITION_PRICE_OPEN));
- //FileWrite(file_handle,PositionGetInteger(POSITION_VOLUME));  
+ FileWrite(file_handle,PositionGetInteger(POSITION_VOLUME));  
 
  FileClose(file_handle);
 }
