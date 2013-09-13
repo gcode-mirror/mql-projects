@@ -89,11 +89,22 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
      pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
-      if (pos.getType() == OP_SELL || pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
+      if (pos.getType() == OP_SELL)
       {
+       ClosePosition(i);
+      }
+      if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
+      {
+       ResetLastError();
        if(OrderSelect(pos.getPositionTicket()))
        {
         ClosePosition(i);
+       }
+       else
+       {
+        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                       , MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()
+                       , GetLastError(), ErrorDescription(GetLastError())));
        }
       }
      }
@@ -110,11 +121,22 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
      pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
-      if (pos.getType() == OP_BUY || pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
+      if (pos.getType() == OP_BUY)
       {
+       ClosePosition(i);
+      }
+      if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
+      {
+       ResetLastError();
        if(OrderSelect(pos.getPositionTicket()))
        {
         ClosePosition(i);
+       }
+       else
+       {
+        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                       , MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()
+                       , GetLastError(), ErrorDescription(GetLastError())));
        }
       }
      }

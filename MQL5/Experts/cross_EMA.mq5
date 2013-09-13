@@ -83,10 +83,8 @@ void OnDeinit(const int reason)
 void OnTick()
  { 
   new_trade.OnTick();
-  Alert("раз");
   if ( newCisBar.isNewBar() > 0 )
    {
-   Alert("------------");
    if(CopyBuffer(ma_slow_handle, 0, 1, 2, ma_slow) <= 0 || 
       CopyBuffer(ma_fast_handle, 0, 1, 2, ma_fast) <= 0 || 
       CopyBuffer(ma_ema3_handle, 0, 1, 1, ma_ema3) <= 0 ||
