@@ -34,27 +34,18 @@ MqlTick tick;
 //флаги о загрузке поиске максимума и минимума среди N текущих баров
 bool flagMax = false;  //флаг о поиске максимума 
 bool flagMin = false;  //флаг о поиске минимума
-
 bool proboy_max = false;  //условие пробоя максимума
 bool proboy_min = false;  //условие пробоя минимума
 
-int check=0; //проверка заполнения формы
-
-bool first_disp = true; //первое отображение
-
 int OnInit()
   {
-
-   handle_PBI = iCustom(sym,timeFrame,"PriceBasedIndicator"); //загружаем хэндл индикатора PriceBasedIndicator
-     
+   handle_PBI = iCustom(sym,timeFrame,"PriceBasedIndicator"); //загружаем хэндл индикатора PriceBasedIndicator  
    if(handle_PBI<0)
     {
      Print("Не возможно проинициализировать индиктор PriceBasedIndicator");
      return INIT_FAILED;
-    }
-    
-   new_trade.Initialization(); //инициализация объекта класса библиотеки TradeManeger  
-    
+    }    
+   new_trade.Initialization(); //инициализация объекта класса библиотеки TradeManeger      
    if (n>=N) //если параметры не корректны, то выставляем их по умолчанию
     {
      tn = 4;
@@ -68,7 +59,6 @@ int OnInit()
     //переворачивания массивов
     ArraySetAsSeries(high,true); 
     ArraySetAsSeries(low,true);  
-    
    return(INIT_SUCCEEDED);
   }
 
@@ -87,14 +77,12 @@ void OnTick()
   new_trade.OnTick();
   SymbolInfoTick(sym, tick);
   //режим обработки баров
-  if (  newCisBar.isNewBar()>0 )  //если сформировался новый бар
+  if (newCisBar.isNewBar()>0)  //если сформировался новый бар
     {
-    
      if (!proboy_max) max_value = DBL_MAX;
      if (!proboy_min) min_value = DBL_MIN;
      if( CopyBuffer(handle_PBI, 4, 1, 1, cur_color) <= 0)
         return; 
-
      if (cur_color[0]==MOVE_TYPE_FLAT ||    //если цвет совпал с требованиями
          cur_color[0]==MOVE_TYPE_CORRECTION_UP || 
          cur_color[0]==MOVE_TYPE_CORRECTION_DOWN)
@@ -109,7 +97,7 @@ void OnTick()
             }
            if (!proboy_min)   //если пробой минимума не найден
             {
-            minPos = ArrayMinimum(low,1);
+            minPos = ArrayMinimum(low);
             min_value = low[minPos];
             }
          }       
@@ -145,7 +133,6 @@ void OnTick()
            {
             if (tick.bid > new_max_value) new_max_value = tick.bid;
            }  
-           
        }  
       if (!proboy_min) //если пробой минимума еще не найден
        {
@@ -169,10 +156,8 @@ void OnTick()
                          tick.bid-new_min_value) / _Point, SymbolInfoInteger(sym, SYMBOL_DIGITS));
     tp = 0; 
     if (new_trade.OpenPosition(sym, OP_BUY, volume, sl, tp, 0.0, 0.0, 0.0));
-    
        min_value = DBL_MIN;
        proboy_min = false;
-    
           } 
          else 
            {
