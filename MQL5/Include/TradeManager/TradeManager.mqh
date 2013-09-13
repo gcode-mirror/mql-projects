@@ -242,7 +242,7 @@ void CTradeManager::OnTick()
   pos = _openPositions.At(i);   // выберем позицию по ее индексу
   ENUM_TM_POSITION_TYPE type = pos.getType();
   
-  if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING) // Если мы не можем выбрать стоп по его тикету, значит он сработал
+  if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING && pos.getStopLossStatus() != STOPLEVEL_STATUS_NOT_DEFINED) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
    _openPositions.Delete(i);            // удалить позицию из массива позиций
