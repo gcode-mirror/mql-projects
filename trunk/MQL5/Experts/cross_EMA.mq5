@@ -35,30 +35,15 @@ ENUM_TIMEFRAMES timeFrame = _Period;
 CisNewBar newCisBar; 
 CTradeManager new_trade; //класс продажи
 
-void SavePositionToFile(string file_url)  //сохраняет позицию в файл 
-{
- int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
- if(file_handle == INVALID_HANDLE)
- {
-  Alert(" Не получилось открыть файл: ", file_url);
-  return;
- }
- PositionSelect(_Symbol);
- 
- FileWrite(file_handle,PositionGetDouble(POSITION_VOLUME));
- FileWrite(file_handle,PositionGetDouble(POSITION_PRICE_OPEN));
- FileWrite(file_handle,PositionGetInteger(POSITION_VOLUME));  
 
- FileClose(file_handle);
-}
 
 int OnInit() //функция инициализации
  {
  new_trade.Initialization(); //инициализация 
  if (SlowPer<=FastPer || FastPer<=3)
   {
-   fast_per=9;
-   slow_per=15;
+   fast_per=12;
+   slow_per=26;
    Alert("Не правильно заданы периоды. По умолчанию slow=15, fast=9");
   }
  else
@@ -98,8 +83,10 @@ void OnDeinit(const int reason)
 void OnTick()
  { 
   new_trade.OnTick();
+  Alert("раз");
   if ( newCisBar.isNewBar() > 0 )
    {
+   Alert("------------");
    if(CopyBuffer(ma_slow_handle, 0, 1, 2, ma_slow) <= 0 || 
       CopyBuffer(ma_fast_handle, 0, 1, 2, ma_fast) <= 0 || 
       CopyBuffer(ma_ema3_handle, 0, 1, 1, ma_ema3) <= 0 ||
@@ -123,16 +110,3 @@ void OnTick()
  }
 
 
-void OnTrade()  
-  {
-  
-  if(PositionSelect(_Symbol)) //если позиция по символу существует
-   {
-    if(PositionsTotal()>0)   //если есть открытая позиция
-     {
-      //сохраняем в файл свойства позиция  
-      Alert("что то хэппенд");
-      SavePositionToFile("my_file.csv");
-     }
-   }   
-  }

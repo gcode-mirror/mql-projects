@@ -52,7 +52,7 @@
     {
      fast_per=12;
      slow_per=26;
-     Print("Не правильно заданы периоды. По умолчанию slow=15, fast=9");
+     Print("Не правильно заданы периоды. По умолчанию slow=26, fast=12");
     }
    else
     {
@@ -86,6 +86,7 @@
 
  ENUM_TM_POSITION_TYPE CrossEMA::GetSignal(void)  //получает торговый сингал
   {
+
    if ( newCisBar.isNewBar() > 0 )
    {
    if(CopyBuffer(ma_slow_handle, 0, 1, 2, ma_slow) <= 0 || 
