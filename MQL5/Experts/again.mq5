@@ -5,7 +5,6 @@
 #include <CompareDoubles.mqh>    //для сравнения действительных переменных
 #include <Lib CisNewBar.mqh>     //для проверки баров
 #include<TradeManager/TradeManager.mqh> //для совершения сделок
-#include<ma_value.mqh> //подключаем библиотеку для отображения параметров
 
 input uint n=4; //количество баров, после которых идет проверка пробоя
 input uint N=20; //количество баров, до которых идет проверка пробоя
@@ -24,9 +23,9 @@ datetime date_buffer[];          //буфер времени
 int handle_PBI;     //хэндл PriceBasedIndicator
 int tn; //действительное значение малого количества баров
 int tN; //действительное значение большого количества баров
-uint maxPos;     //позиция максимума в массиве high
-uint minPos;     //позиция минимума в массиве low
-CisNewBar newCisBar;     //массив по обработке баров
+uint maxPos=0;     //позиция максимума в массиве high
+uint minPos=0;     //позиция минимума в массиве low
+CisNewBar newCisBar;     //класс по обработке баров
 CTradeManager new_trade; //класс совершения сделок
 
 string sym  =  _Symbol;
@@ -36,50 +35,12 @@ MqlTick tick;
 bool flagMax = false;  //флаг о поиске максимума 
 bool flagMin = false;  //флаг о поиске минимума
 
-
 bool proboy_max = false;  //условие пробоя максимума
 bool proboy_min = false;  //условие пробоя минимума
 
 int check=0; //проверка заполнения формы
 
 bool first_disp = true; //первое отображение
-
-double my_max;
-double my_sec_max;
-double my_return;
-double my_min;
-double my_sec_min;
-
-
-
-
-void PrintInfo (bool what) 
-{
- if (first_disp )
-  {
- CreateEdit(0,0,"InfoPanelBackground","",corner,font_name,8,clrWhite,x_first_column,200,331,y_bg,0,C'15,15,15',true);
- CreateEdit(0,0,"InfoPanelHeader","Параметры сделки",corner,font_name,8,clrWhite,x_first_column,200,231,y_bg,1,clrFireBrick,true);
-  first_disp  = false;
-  }
- switch (what)
-  {
-   case true: 
-   Print("fuck");
- CreateLabel(0,0,"ololo","Пред. максимум: "+DoubleToString(my_max),anchor,corner,font_name,font_size,font_color,x_first_column,60,2);   
- CreateLabel(0,0,"ololo2","Второй. максимум: "+DoubleToString(my_sec_max),anchor,corner,font_name,font_size,font_color,x_first_column,90,2);   
- CreateLabel(0,0,"ololo3","Возвратное значение: "+DoubleToString(my_return),anchor,corner,font_name,font_size,font_color,x_first_column,120,2);  
-   break;
-   case false: 
- CreateLabel(0,0,"ololo","Пред. минимум: "+DoubleToString(my_min),anchor,corner,font_name,font_size,font_color,x_first_column,60,2);   
- CreateLabel(0,0,"ololo2","Второй. минимум: "+DoubleToString(my_sec_min),anchor,corner,font_name,font_size,font_color,x_first_column,90,2);   
- CreateLabel(0,0,"ololo3","Возвратное значение: "+DoubleToString(my_return),anchor,corner,font_name,font_size,font_color,x_first_column,120,2);  
- 
-   break;   
-  }
-  
-
-}
-
 
 int OnInit()
   {
@@ -175,19 +136,8 @@ void OnTick()
     sl = NormalizeDouble(MathMax(SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL)*_Point,
                          new_max_value - tick.ask) / _Point, SymbolInfoInteger(sym, SYMBOL_DIGITS));
     tp = 0; 
-      if (new_trade.OpenPosition(sym, OP_SELL, volume, sl, tp, 0.0, 0.0, 0.0))
-    {
-    
-          
-        my_max = max_value;
-        my_return = tick.ask;
-        my_sec_max = new_max_value;
-        
-   
-        PrintInfo(true);
-       
+      if (new_trade.OpenPosition(sym, OP_SELL, volume, sl, tp, 0.0, 0.0, 0.0));
 
-    }
        max_value = DBL_MAX;
        proboy_max = false;
            }  
@@ -218,19 +168,8 @@ void OnTick()
     sl = NormalizeDouble(MathMax(SymbolInfoInteger(sym, SYMBOL_TRADE_STOPS_LEVEL)*_Point,
                          tick.bid-new_min_value) / _Point, SymbolInfoInteger(sym, SYMBOL_DIGITS));
     tp = 0; 
-    if (new_trade.OpenPosition(sym, OP_BUY, volume, sl, tp, 0.0, 0.0, 0.0))
-    {
-     Print("BUY");
-     
-
-        my_min = min_value;
-        my_return = tick.bid;
-        my_sec_min = new_min_value;
-
-
-        PrintInfo(false);
+    if (new_trade.OpenPosition(sym, OP_BUY, volume, sl, tp, 0.0, 0.0, 0.0));
     
-    }
        min_value = DBL_MIN;
        proboy_min = false;
     
@@ -241,4 +180,3 @@ void OnTick()
            }    
         }     
   }
-
