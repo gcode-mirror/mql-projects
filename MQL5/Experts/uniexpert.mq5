@@ -11,6 +11,7 @@
 #include<Trigger64/PositionSys.mqh>     //подключаем библиотеку дл€ работы с позици€ми
 #include<Trigger64/SymbolSys.mqh>       //подключаем библиотеку дл€ работы с символом
 #include<Trigger64/Graph.mqh>           //подключаем библиотеку отображени€ панели
+#include <Lib CisNewBar.mqh>
 //+------------------------------------------------------------------+
 //| универсальный эксперт                                            |
 //+------------------------------------------------------------------+
@@ -26,6 +27,7 @@ string sym = _Symbol;
 ENUM_TIMEFRAMES timeFrame = _Period; 
 int takeProfit;
 int stopLoss;
+ENUM_TM_POSITION_TYPE signal;
 
 CTradeManager new_trade; //класс продажи
 CrossEMA  crossEMA;  //объ€вл€ем объект класса CrossEMA
@@ -44,10 +46,11 @@ void OnDeinit(const int reason)
   }
 
 void OnTick()
-  {
-   ENUM_TM_POSITION_TYPE signal;
+  {   
+   new_trade.OnTick();
    signal = crossEMA.GetSignal(); //получаем торговый сигнал
    if (signal != OP_UNKNOWN)      //если сигнал успешно получен
     new_trade.OpenPosition(sym,signal,orderVolume,stopLoss,takeProfit,0,0,0); //то открываем позицию
+      
   }
 
