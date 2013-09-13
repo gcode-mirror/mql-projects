@@ -9,6 +9,7 @@
 #include <CLog.mqh>
 
 #define INITIAL_BALANCE 10000
+#define LOT_PRICE 1000
 
 enum ENUM_HTM_POSITION_TYPE
 {
@@ -55,15 +56,15 @@ CHistoryTradeManager::CHistoryTradeManager(string symbol, ENUM_TIMEFRAMES tf, da
                       _profit (0),
                       _count_order (0)
 {
- int depth = (stop_time - start_time)/PeriodSeconds(tf);
+ int depth = Bars(symbol, tf, start_time, stop_time);
  int copiedRates = -1;
  for(int attempts = 0; attempts < 25 && copiedRates < 0; attempts++)
  {
-  copiedRates = CopyRates(symbol, tf, 0, depth, _rates);
+  copiedRates = CopyRates(symbol, tf, start_time, stop_time, _rates);
  }
  if(copiedRates != depth)
  {
-  Alert("Не удалось скопировать массив котировок.(", depth, ") (", copiedRates, ")");
+  Alert("Не удалось скопировать массив котировок.(", depth, ") (", GetLastError(), ")");
   return;
  }
  log_file.Write (LOG_DEBUG, StringFormat("%s Инициализация", __FUNCTION__));
@@ -106,7 +107,7 @@ void CHistoryTradeManager::OpenPosition(ENUM_HTM_POSITION_TYPE type, int index)
   _is_position = true;
   _position.type  = type;
   _position.price = _rates[index].close;
-  _balance -= _position.price;
+  _balance -= _position.price*LOT_PRICE;
   _count_order++;
   log_file.Write (LOG_DEBUG, StringFormat("%s Открыли позицию типа %s. Текущий баланс %f", __FUNCTION__, EnumToString((ENUM_HTM_POSITION_TYPE)type), _balance));
  }
@@ -117,7 +118,7 @@ bool CHistoryTradeManager::ClosePosition(int index)
  if (_is_position)
  {
   _is_position = false;
-  _balance += _rates[index].close;
+  _balance += _rates[index].close*LOT_PRICE;
   _profit = _balance - INITIAL_BALANCE;
   log_file.Write (LOG_DEBUG, StringFormat("%s Закрыди позицию типа %s. Текущий баланс %f. Текущий профит %f.", 
                                           __FUNCTION__, EnumToString((ENUM_HTM_POSITION_TYPE)_position.type), _balance, _profit));

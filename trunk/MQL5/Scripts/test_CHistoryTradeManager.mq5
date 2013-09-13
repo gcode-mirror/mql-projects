@@ -13,13 +13,13 @@
 #include <UGA/CHistoryTradeManager.mqh>
 #include <CompareDoubles.mqh>
 
-input datetime start_time = D'2013.09.02 00:00';
-input datetime stop_time =  __DATE__;
+input datetime start_time = D'2013.08.01 00:00';
+input datetime stop_time =  D'2013.09.01 00:00';
 input ENUM_TIMEFRAMES timeframe = PERIOD_CURRENT;
 input int slow_period = 26;
 input int fast_period = 12;
 
-CHistoryTradeManager manager(Symbol(), Period(), start_time, stop_time);
+CHistoryTradeManager manager(Symbol(), timeframe, start_time, stop_time);
 //+------------------------------------------------------------------+
 //| Script program start function                                    |
 //+------------------------------------------------------------------+
@@ -38,23 +38,23 @@ void OnStart()
  int copiedEMAfast = -1;
  int copiedEMAslow = -1;
  int copiedEMA3    = -1;
- int depth = (stop_time - start_time)/PeriodSeconds(timeframe);
+ int depth = Bars(Symbol(), timeframe, start_time, stop_time);
  for(int attempts = 0; attempts < 25 && copiedDate   < 0
                                      && copiedClose  < 0
                                      && copiedEMAfast  < 0
                                      && copiedEMAslow < 0
                                      && copiedEMA3   < 0; attempts++)
  {
-  copiedDate   =  CopyTime(Symbol(), timeframe, 0, depth, buffer_date);
-  copiedClose  = CopyClose(Symbol(), timeframe, 0, depth, buffer_close);
-  copiedEMAfast = CopyBuffer(handleEMAfast, 0, 0, depth, buffer_EMAfast);
-  copiedEMAslow = CopyBuffer(handleEMAslow, 0, 0, depth, buffer_EMAslow);
-  copiedEMA3    = CopyBuffer(   handleEMA3, 0, 0, depth, buffer_EMA3);
+  copiedDate   =  CopyTime(Symbol(), timeframe, start_time, stop_time, buffer_date);
+  copiedClose  = CopyClose(Symbol(), timeframe, start_time, stop_time, buffer_close);
+  copiedEMAfast = CopyBuffer(handleEMAfast, 0, start_time, stop_time, buffer_EMAfast);
+  copiedEMAslow = CopyBuffer(handleEMAslow, 0, start_time, stop_time, buffer_EMAslow);
+  copiedEMA3    = CopyBuffer(   handleEMA3, 0, start_time, stop_time, buffer_EMA3);
  }
  if(copiedDate  != depth || copiedClose  != depth ||
     copiedEMAfast != depth || copiedEMAslow != depth || copiedEMA3 != depth)
  {
-  Alert("Не удалось скопировать буфер.(", depth, ") (", copiedClose, ") (", copiedEMAfast, ")");
+  Alert("Не удалось скопировать буфер.(", depth, ") (", GetLastError(), ")");
   return;
  }
  log_file.Write(LOG_DEBUG, StringFormat("%s BEGIN TIME %s", __FUNCTION__, TimeToString(buffer_date[0])));
