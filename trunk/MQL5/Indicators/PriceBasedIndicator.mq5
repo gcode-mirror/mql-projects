@@ -129,11 +129,12 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
    else first = prev_calculated - 1;        // стартовый номер для расчета новых баров
 */   
 //---- проверка на начало нового бара
-   if(isNewBar.isNewBar(symbol, current_timeframe))
+   if(isNewBar.isNewBar(symbol, GetBottomTimeframe(current_timeframe)))
    {
   //  Print("init trend, rates_total = ", rates_total);
-    topTrend.CountMoveType(topTFBarsDepth, historyDepth);
-    trend.CountMoveType(bars, historyDepth);
+    //topTrend.CountMoveType(topTFBarsDepth, historyDepth);
+    //trend.CountMoveType(bars, historyDepth, topTrend.GetMoveType(topTFBarsDepth - 1));
+    trend.CountMoveType();
     
     //--- На новом баре производим вычисление и перезапись буферов
     //--- инициализируем буферы пустыми значениями
