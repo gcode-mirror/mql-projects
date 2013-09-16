@@ -7,6 +7,7 @@
 //Библиотека "Универсального Генетического Алгоритма UGAlib"             |
 //использующего представление хромосомы вещественными числами.           |
 //+——————————————————————————————————————————————————————————————————————+
+#include "MATrainLib.mqh"
 
 //----------------------Глобальные переменные-----------------------------
 double Chromosome[];            //Набор оптимизируемых аргументов функции - генов
@@ -101,7 +102,7 @@ double NMutationProbability//Вероятность мутации каждого гена в %
   for (gene=0;gene<=GeneCount;gene++)
     Chromosome[gene]=Population[gene][0];
   //======================================================================
-  ServiceFunction();
+  //ServiceFunction();
 
   //Основной цикл генетического алгоритма с 5 по 6
   while (currentEpoch<=Epoch)
@@ -134,7 +135,7 @@ double NMutationProbability//Вероятность мутации каждого гена в %
         //Заменим эталонную хромосому
         for (gene=0;gene<=GeneCount;gene++)
           Chromosome[gene]=Population[gene][0];
-        ServiceFunction();
+      //  ServiceFunction();
         //Сбросим счетчик "эпох без улучшений"
         if (currentEpoch<MinOfCurrentEpoch)
           MinOfCurrentEpoch=currentEpoch;
@@ -154,7 +155,7 @@ double NMutationProbability//Вероятность мутации каждого гена в %
         //Заменим эталонную хромосому
         for (gene=0;gene<=GeneCount;gene++)
           Chromosome[gene]=Population[gene][0];
-        ServiceFunction();
+     //   ServiceFunction();
         //Сбросим счетчик "эпох без улучшений"
         if (currentEpoch<MinOfCurrentEpoch)
           MinOfCurrentEpoch=currentEpoch;
@@ -169,6 +170,7 @@ double NMutationProbability//Вероятность мутации каждого гена в %
     //Прошла ещё одна эпоха....
     epochGlob++;
   }
+/*
   Print("Прошло всего эпох=",epochGlob," Всего сбросов=",resetCounterFF);
   Print("Мин.эпох без улучш.=",MinOfCurrentEpoch,
         " Средн.эпох без улучш.=",
@@ -180,6 +182,7 @@ double NMutationProbability//Вероятность мутации каждого гена в %
   Print(NormalizeDouble(100.0-((double)ChrCountInHistory*100.0/
                                (double)TotalOfChromosomesInHistory),2),"% дубликатов");
   Print(Chromosome[0]," - Лучший результат");
+*/
 }
 //————————————————————————————————————————————————————————————————————————
 

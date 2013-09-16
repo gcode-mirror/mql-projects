@@ -1,37 +1,19 @@
 //+------------------------------------------------------------------+
 //| Пересечение двух МА: оптимизируем периоды                        |
 //+------------------------------------------------------------------+
-
-
-#include            <UGA\MATrainLib.mqh>
-#include            <UGA\MustHaveLib.mqh>
-#include            <TradeManager/TradeManager.mqh>
-
+#include            "MATrainLib.mqh"
+#include            "MustHaveLib.mqh"
 //---
 input double        trainDD=0.5;   // Максимально возможная просадка баланса в тренировке
 input double        maxDD=0.2;     // Просадка баланса, после которой сеть перетренируется
-input uint          SlowPer=26;    // Период медленного EMA
-input uint          FastPer=12;    // Период быстрого ЕМА
-input int           TakeProfit=100;//take profit
-input int           StopLoss=100; //stop loss
-input double        orderVolume = 1;
-input ENUM_MA_METHOD MA_METHOD=MODE_EMA;
-input ENUM_APPLIED_PRICE applied_price=PRICE_CLOSE;
 //---
 int                 MAlong,MAshort;              // МА-хэндлы
 double              LongBuffer[],ShortBuffer[];  // Индикаторные буферы
-string              sym = _Symbol;               //текущий символ
-ENUM_TIMEFRAMES     timeFrame = _Period;     
-CTradeManager       new_trade; //класс торговли 
-
-
-
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
-Alert("Time to experiment");
    tf=Period();
 //--- для побарного тестирования...
    prevBT[0]=D'2001.01.01';
@@ -41,29 +23,23 @@ Alert("Time to experiment");
    depth=10000;
 //--- сколько за раз копируем (задаем, так как оптимизируем на исторических данных)
    count=2;
-   traindd = trainDD;    
-   
-  // ArrayResize(LongBuffer,count);
-  // ArrayResize(ShortBuffer,count);
-  // ArrayInitialize(LongBuffer,0);
-  // ArrayInitialize(ShortBuffer,0);
-   
-  trade.InitTradeBlock(_Symbol,timeFrame,FastPer,SlowPer,MA_METHOD,applied_price);  //инициализируем торговый блок
-      
+   ArrayResize(LongBuffer,count);
+   ArrayResize(ShortBuffer,count);
+   ArrayInitialize(LongBuffer,0);
+   ArrayInitialize(ShortBuffer,0);
 //--- вызываем функцию генетической оптимизации нейросети
    GA();
 //--- получаем оптимизированные параметры нейросети и других переменных
    GetTrainResults();
 //--- получаем просадку по балансу
    InitRelDD();
-   return(INIT_SUCCEEDED);
+   return(0);
   }
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-    trade.DeinitTradeBlock();   //удаляем из памяти объект класса CrossEMA
   }
 //+------------------------------------------------------------------+
 //| Trade function                                                   |
@@ -76,20 +52,12 @@ void OnTrade()
 //+------------------------------------------------------------------+
 void OnTick()
   {
-
+   if(isNewBars()==true)
+     {
       bool trig=false;
-      Alert("WTH");
-      new_trade.OnTick();
-      my_signal =  trade.GetSignal(false); //получаем торговый сигнал
-      
-      if (my_signal != OP_UNKNOWN)      //если сигнал успешно получен
-       {
-        new_trade.OpenPosition(sym,my_signal,orderVolume,StopLoss,TakeProfit,0,0,0); //то открываем позицию      
-        trig=true;
-       }
-       
-       /*
-        if(my_signal == OP_SELL)
+      CopyBuffer(MAshort,0,0,count,ShortBuffer);
+      CopyBuffer(MAlong,0,0,count,LongBuffer);
+      if(LongBuffer[0]>LongBuffer[1] && ShortBuffer[0]>LongBuffer[0] && ShortBuffer[1]<LongBuffer[1])
         {
          if(PositionsTotal()>0)
            {
@@ -100,7 +68,7 @@ void OnTick()
               }
            }
         }
-        if (my_signal == OP_BUY)
+      if(LongBuffer[0]<LongBuffer[1] && ShortBuffer[0]<LongBuffer[0] && ShortBuffer[1]>LongBuffer[1])
         {
          if(PositionsTotal()>0)
            {
@@ -110,9 +78,7 @@ void OnTick()
                trig=true;
               }
            }
-        } */
-        
-        
+        }
       if(trig==true)
         {
         //--- если просадка баланса превысила допустимую:
@@ -126,10 +92,18 @@ void OnTick()
             maxBalance=AccountInfoDouble(ACCOUNT_BALANCE);
            }
         }
-      my_signal = trade.GetSignal(false); //получаем торговый сигнал
-      if (my_signal != OP_UNKNOWN)      //если сигнал успешно получен
-       new_trade.OpenPosition(sym,my_signal,orderVolume,StopLoss,TakeProfit,0,0,0); //то открываем позицию      
-      
-     
+      CopyBuffer(MAshort,0,0,count,ShortBuffer);
+      CopyBuffer(MAlong,0,0,count,LongBuffer);
+      if(LongBuffer[0]>LongBuffer[1] && ShortBuffer[0]>LongBuffer[0] && ShortBuffer[1]<LongBuffer[1])
+        {
+         request.type=ORDER_TYPE_SELL;
+         OpenPosition();
+        }
+      if(LongBuffer[0]<LongBuffer[1] && ShortBuffer[0]<LongBuffer[0] && ShortBuffer[1]>LongBuffer[1])
+        {
+         request.type=ORDER_TYPE_BUY;
+         OpenPosition();
+        }
+     };
   }
 //+------------------------------------------------------------------+
