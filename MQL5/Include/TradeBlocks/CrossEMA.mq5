@@ -10,6 +10,18 @@
 #include <TradeManager/TradeManagerEnums.mqh> 
 #include <Lib CisNewBar.mqh>
 #include <CompareDoubles.mqh>
+//+------------------------------------------------------------------+
+//|ѕоследний апдейт - 16.09.2013   
+//|ƒобавлено перечисление дл€ типа EMA                                  
+//|ƒобавлен метод  UpdateHandle дл€ редактировани€ хэндла EMA        
+//|ƒобавлен метод загрузки буферов UploadBuffers 
+//|ƒобавлен конструктор класса, в котором переворачиваютс€ массивы                                     
+//+------------------------------------------------------------------+ 
+ enum CROSS_EMA_HANDLE //тип хэндла дл€ CrossEMA
+  {
+   SLOW_EMA=0,
+   FAST_EMA=1  
+  };
 
  class CrossEMA                                                   //класс CrossEMA
   {
@@ -29,25 +41,33 @@
    uint slow_per;                                                 //период медленного индикатора
    string sym;                                                    //текущий символ
    ENUM_TIMEFRAMES timeFrame;                                     //таймфрейм
+   ENUM_MA_METHOD method;                                         //
+   ENUM_APPLIED_PRICE applied_price;                              //
    CisNewBar newCisBar; 
    public:
-   int InitTradeBlock(string sym,
-                      ENUM_TIMEFRAMES timeFrame,
+   int InitTradeBlock(string _sym,
+                      ENUM_TIMEFRAMES _timeFrame,
                       uint FastPer, 
                       uint SlowPer,
-                      ENUM_MA_METHOD method,
-                      ENUM_APPLIED_PRICE applied_price);          //инициализирует торговый блок
-   int DeinitTradeBlock();          
-   ENUM_TM_POSITION_TYPE GetSignal ();                            //получает торговый сигнал            
+                      ENUM_MA_METHOD _method,
+                      ENUM_APPLIED_PRICE _applied_price);          //инициализирует торговый блок
+   int DeinitTradeBlock();                                         //деинициализирует торговый блок
+   int UpdateHandle(CROSS_EMA_HANDLE handle,uint period);          //измен€ет параметры выбранной EMA на period. ≈сли не успешно, то вернет false, а параметры не помен€ет
+   bool UploadBuffers(uint start=1);                                           //загружает буферы 
+   ENUM_TM_POSITION_TYPE GetSignal (bool ontick,uint start=1);                 //получает торговый сигнал 
+  // bool UpdateParam (string sym,ENUM_TIMEFRAMES timeframe);      //обновд€ет параметры объекта
+   CrossEMA ();   //конструктор класса CrossEMA           
   };
   
- int CrossEMA::InitTradeBlock(string sym,
-                              ENUM_TIMEFRAMES timeFrame,
+  
+ int CrossEMA::InitTradeBlock(string _sym,
+                              ENUM_TIMEFRAMES _timeFrame,
                               uint FastPer, 
                               uint SlowPer,
-                              ENUM_MA_METHOD method,
-                              ENUM_APPLIED_PRICE applied_price)   //инициализирует торговый блок
+                              ENUM_MA_METHOD _method,
+                              ENUM_APPLIED_PRICE _applied_price)   //инициализирует торговый блок
   {
+   
    if (SlowPer<=FastPer || FastPer<=3)
     {
      fast_per=12;
@@ -59,6 +79,10 @@
      fast_per=FastPer;
      slow_per=SlowPer;
     } 
+   sym = _sym;
+   timeFrame = _timeFrame;
+   method = _method;
+   applied_price = _applied_price; 
    ma_slow_handle=iMA(sym,timeFrame,slow_per,0,method,applied_price); //инициализаци€ медленного индикатора
    if(ma_slow_handle<0)
     return INIT_FAILED;
@@ -67,9 +91,7 @@
     return INIT_FAILED;
    ma_ema3_handle=iMA(sym,timeFrame,3,0,method,applied_price); //инициализаци€ индикатора EMA3
    if(ma_ema3_handle<0)
-    return INIT_FAILED;  
-   ArraySetAsSeries(ma_fast, true); // разметка массивов в обратном пор€дке
-   ArraySetAsSeries(ma_slow, true);        
+    return INIT_FAILED;    
    return INIT_SUCCEEDED;
   }
   
@@ -83,17 +105,49 @@
    ArrayFree(date_buffer); 
    return 1;   
   }
-
- ENUM_TM_POSITION_TYPE CrossEMA::GetSignal(void)  //получает торговый сингал
-  {
-
-   if ( newCisBar.isNewBar() > 0 )
+  
+ int CrossEMA::UpdateHandle(CROSS_EMA_HANDLE handle,uint period) //обновл€ет параметры хэндлов
    {
-   if(CopyBuffer(ma_slow_handle, 0, 1, 2, ma_slow) <= 0 || 
-      CopyBuffer(ma_fast_handle, 0, 1, 2, ma_fast) <= 0 || 
-      CopyBuffer(ma_ema3_handle, 0, 1, 1, ma_ema3) <= 0 ||
-      CopyClose(sym, 0, 1, 1, close) <= 0 ||
-      CopyTime(sym, 0, 1, 1, date_buffer) <= 0) //копирование буферов
+    switch (handle)  //выборка по хэндлу
+     {
+      case SLOW_EMA: //изменение параметров медленной EMA
+       if (period > fast_per) 
+        {
+         slow_per = period;
+         ma_slow_handle=iMA(sym,timeFrame,slow_per,0,method,applied_price); //инициализаци€ медленного индикатора
+         if(ma_slow_handle>=0)
+          return INIT_SUCCEEDED;
+        }
+      break;
+      case FAST_EMA: //изменение параметров быстрой EMA
+       if (period < slow_per && period > 3) 
+        {
+         fast_per = period;
+         ma_fast_handle=iMA(sym,timeFrame,fast_per,0,method,applied_price); //инициализаци€ медленного индикатора
+         if(ma_slow_handle>=0)
+          return INIT_SUCCEEDED;
+        }      
+      break;
+     }
+     return INIT_FAILED;
+   } 
+   
+ bool CrossEMA::UploadBuffers(uint start=1)                       //загружает буферы 
+  {
+     if(CopyBuffer(ma_slow_handle, 0, start, 2, ma_slow) <= 0 || 
+      CopyBuffer(ma_fast_handle, 0, start, 2, ma_fast) <= 0 || 
+      CopyBuffer(ma_ema3_handle, 0, start, 1, ma_ema3) <= 0 ||
+      CopyClose(sym, 0, start, 1, close) <= 0 ||
+      CopyTime(sym, 0, start, 1, date_buffer) <= 0) //копирование буферов
+      return false;
+     return true;
+  }  
+
+ ENUM_TM_POSITION_TYPE CrossEMA::GetSignal(bool ontick,uint start=1)  //получает торговый сингал
+  {
+   if ( newCisBar.isNewBar() > 0 || ontick)
+   {
+   if(!UploadBuffers()) //копирование буферов
      {
       return OP_UNKNOWN;
      }  
@@ -108,3 +162,9 @@
    }
    return OP_UNKNOWN;
   } 
+  
+  CrossEMA::CrossEMA(void)  //конструктор класса CrossEMA
+   {
+    ArraySetAsSeries(ma_fast, true); // разметка массивов в обратном пор€дке
+    ArraySetAsSeries(ma_slow, true);     
+   }
