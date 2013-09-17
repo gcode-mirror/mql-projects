@@ -149,7 +149,7 @@
    {
    if(!UploadBuffers()) //копирование буферов
      {
-      return OP_UNKNOWN;
+      return OP_UNKNOWN;  //неизвестный сигнал
      }  
    if(GreatDoubles(ma_slow[1],ma_fast[1]) && GreatDoubles(ma_fast[0],ma_slow[0]) && GreatDoubles(ma_ema3[0],close[0]))
     {      
@@ -160,7 +160,7 @@
       return OP_SELL; //получен сигнал на продажу
     }
    }
-   return OP_UNKNOWN;
+   return OP_IMPOSSIBLE; //признак неисполнения функции
   } 
   
   CrossEMA::CrossEMA(void)  //конструктор класса CrossEMA

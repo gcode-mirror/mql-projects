@@ -16,7 +16,8 @@ enum ENUM_TM_POSITION_TYPE
    OP_SELLLIMIT,     //Отложенный ордер SELL LIMIT 
    OP_BUYSTOP,       //Отложенный ордер BUY STOP 
    OP_SELLSTOP,      //Отложенный ордер SELL STOP
-   OP_UNKNOWN        //Для инициализации или ошибка
+   OP_UNKNOWN,       //Для инициализации или ошибка
+   OP_IMPOSSIBLE     //Не возможно совершить действие  
   };
 
 //+------------------------------------------------------------------+ 
