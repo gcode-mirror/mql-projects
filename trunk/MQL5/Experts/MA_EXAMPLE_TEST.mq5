@@ -14,7 +14,7 @@ input ENUM_MA_METHOD MA_METHOD=MODE_EMA;
 input ENUM_APPLIED_PRICE applied_price=PRICE_CLOSE;
 string              sym = _Symbol;               //текущий символ
 ENUM_TIMEFRAMES     timeFrame = _Period;     
-//CTradeManager       new_trade; //класс торговли 
+CTradeManager       new_trade; //класс торговли 
 GenOptimosator      gen_optimisator;   //генетический оптимизатор
 
 int OnInit()
@@ -44,6 +44,8 @@ void OnTrade()
 void OnTick()
   {
   
+  Alert("хуй");
+  
   gen_optimisator.signal =  gen_optimisator.trade_block.GetSignal(false); //получаем торговый сигнал
    
    if(gen_optimisator.signal!=OP_IMPOSSIBLE)  
@@ -57,7 +59,7 @@ void OnTick()
             if(PositionGetInteger(POSITION_TYPE)==POSITION_TYPE_BUY)
               {
                //ClosePosition();
-               gen_optimisator.new_trade.ClosePosition(0);
+               new_trade.ClosePosition(0);
                trig=true;
               }
            }
@@ -68,7 +70,7 @@ void OnTick()
            {
             if(PositionGetInteger(POSITION_TYPE)==POSITION_TYPE_SELL)
               {
-               gen_optimisator.new_trade.ClosePosition(0);
+               new_trade.ClosePosition(0);
                trig=true;
               }
            }
@@ -88,17 +90,17 @@ void OnTick()
            }
         }
         gen_optimisator.signal = gen_optimisator.trade_block.GetSignal(false); 
-        if(signal == OP_SELL)
+        if(gen_optimisator.signal == OP_SELL)
         {
          gen_optimisator.request.type=ORDER_TYPE_SELL;
        //  OpenPosition();
-         gen_optimisator.new_trade.OpenPosition(sym,OP_SELL,orderVolume,StopLoss,TakeProfit,0,0,0);
+         new_trade.OpenPosition(sym,OP_SELL,orderVolume,StopLoss,TakeProfit,0,0,0);
         }
         if(gen_optimisator.signal == OP_BUY)
         {
          gen_optimisator.request.type=ORDER_TYPE_BUY;
        //  OpenPosition();
-         gen_optimisator.new_trade.OpenPosition(sym,OP_BUY,orderVolume,StopLoss,TakeProfit,0,0,0);
+         new_trade.OpenPosition(sym,OP_BUY,orderVolume,StopLoss,TakeProfit,0,0,0);
         }
      };
   }
