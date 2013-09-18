@@ -44,15 +44,13 @@ void OnTrade()
 void OnTick()
   {
   
-  Alert("хуй");
-  
-  gen_optimisator.signal =  gen_optimisator.trade_block.GetSignal(false); //получаем торговый сигнал
+  ENUM_TM_POSITION_TYPE signal =  gen_optimisator.trade_block.GetSignal(false); //получаем торговый сигнал
    
-   if(gen_optimisator.signal!=OP_IMPOSSIBLE)  
+   if(signal!=OP_IMPOSSIBLE)  
      {
       bool trig=false;
       
-        if (gen_optimisator.signal == OP_SELL)
+        if (signal == OP_SELL)
         {
          if(PositionsTotal()>0)
            {
@@ -64,7 +62,7 @@ void OnTick()
               }
            }
         }
-        if (gen_optimisator.signal == OP_BUY)
+        if (signal == OP_BUY)
         {
          if(PositionsTotal()>0)
            {
@@ -104,3 +102,4 @@ void OnTick()
         }
      };
   }
+  
