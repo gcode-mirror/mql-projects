@@ -100,7 +100,7 @@ void OnTick()
    int errHigh = 0;                                                   
    int errClose = 0;
    int errOpen = 0;
-   int errMACD = 0;
+
    
    double sum = 0;
    double avgBar = 0;
