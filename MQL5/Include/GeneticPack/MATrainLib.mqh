@@ -3,6 +3,8 @@
 //+------------------------------------------------------------------+
 #include        "UGAlib.mqh"
 #include        "MustHaveLib.mqh"
+#include        <TradeBlocks/CrossEMA.mq5>
+#include        <TradeManager/TradeManager.mqh>
 //---
 double          cap=10000;           // Стартовый капитал
 double          optF=0.3;            // Оптимальное F
@@ -19,8 +21,13 @@ int             count=2;             // Сколько за раз копируем (по умолчанию - 
 //---
 double          ERROR=0.0;           // Средняя ошибка на ген (это для генетического оптимизатора, значение мне неизвестно)
 
-//int                 MAlong,MAshort;              // МА-хэндлы
-//double              LongBuffer[],ShortBuffer[];  // Индикаторные буферы
+CrossEMA        trade_block;         //трейд блок
+
+int                 MAlong,MAshort;              // МА-хэндлы
+double              LongBuffer[],ShortBuffer[];  // Индикаторные буферы
+
+ENUM_TM_POSITION_TYPE   signal;      //торговый сигнал
+ENUM_TM_POSITION_TYPE   signal2;      //торговый сигнал
 
 double traindd;
 //+------------------------------------------------------------------+
@@ -88,8 +95,13 @@ void FitnessFunction(int chromos)
       case 12: {s="USDJPY"; break;};
       default: {s="EURUSD"; break;};
      }
-   MAshort=iMA(s,tf,(int)MathRound(Colony[1][chromos]*MaxMAPeriod)+1,0,MODE_SMA,PRICE_OPEN);
-   MAlong =iMA(s,tf,(int)MathRound(Colony[2][chromos]*MaxMAPeriod)+1,0,MODE_SMA,PRICE_OPEN);
+  // MAshort=iMA(s,tf,(int)MathRound(Colony[1][chromos]*MaxMAPeriod)+1,0,MODE_SMA,PRICE_OPEN);
+  // MAlong =iMA(s,tf,(int)MathRound(Colony[2][chromos]*MaxMAPeriod)+1,0,MODE_SMA,PRICE_OPEN);
+  
+   trade_block.UpdateHandle(FAST_EMA,(int)MathRound(Colony[1][chromos]*MaxMAPeriod)+1); //обновляем хэндл быстрого индикатора   
+   trade_block.UpdateHandle(SLOW_EMA,(int)MathRound(Colony[2][chromos]*MaxMAPeriod)+1); //обновляем хэндл медленного индикатора
+
+   
    dig=MathPow(10.0,(double)SymbolInfoInteger(s,SYMBOL_DIGITS));
 //--- ГА выбирает оптимальное F
    optF=Colony[GeneCount][chromos];
@@ -99,9 +111,13 @@ void FitnessFunction(int chromos)
 //--- Для нейросети, использующей исторические данные - откуда начинаем их копировать
    for(from=b;from>=1;from--)
      {
-      CopyBuffer(MAshort,0,from,count,ShortBuffer);
-      CopyBuffer(MAlong,0,from,count,LongBuffer);
-      if(LongBuffer[0]>LongBuffer[1] && ShortBuffer[0]>LongBuffer[0] && ShortBuffer[1]<LongBuffer[1])
+     // CopyBuffer(MAshort,0,from,count,ShortBuffer);
+     // CopyBuffer(MAlong,0,from,count,LongBuffer);
+      
+      signal2 = trade_block.GetSignal(true,from); //получаем торговый сигнал
+      
+      //if(LongBuffer[0]>LongBuffer[1] && ShortBuffer[0]>LongBuffer[0] && ShortBuffer[1]<LongBuffer[1])
+        if(signal2 == OP_SELL)
         {
          if(trig==false)
            {
@@ -124,7 +140,8 @@ void FitnessFunction(int chromos)
               }
            }
         }
-      if(LongBuffer[0]<LongBuffer[1] && ShortBuffer[0]<LongBuffer[0] && ShortBuffer[1]>LongBuffer[1])
+     // if(LongBuffer[0]<LongBuffer[1] && ShortBuffer[0]<LongBuffer[0] && ShortBuffer[1]>LongBuffer[1])
+       if (signal2 == OP_BUY)
         {
          if(trig==false)
            {
@@ -192,10 +209,17 @@ void GetTrainResults() //
   {
 //--- промежуточное звено между колонией генов и оптимизируемыми параметрами
    int z;
-   MAshort=iMA(s,tf,(int)MathRound(Chromosome[1]*MaxMAPeriod)+1,0,MODE_SMA,PRICE_OPEN);
-   MAlong =iMA(s,tf,(int)MathRound(Chromosome[2]*MaxMAPeriod)+1,0,MODE_SMA,PRICE_OPEN);
-   CopyBuffer(MAshort,0,from,count,ShortBuffer);
-   CopyBuffer(MAlong,0,from,count,LongBuffer);
+   
+ //  MAshort=iMA(s,tf,(int)MathRound(Chromosome[1]*MaxMAPeriod)+1,0,MODE_SMA,PRICE_OPEN);
+ //  MAlong =iMA(s,tf,(int)MathRound(Chromosome[2]*MaxMAPeriod)+1,0,MODE_SMA,PRICE_OPEN);
+   
+   trade_block.UpdateHandle(SLOW_EMA,(int)MathRound(Chromosome[2]*MaxMAPeriod)+1);   //меняем хэндлы индикаторов
+   trade_block.UpdateHandle(SLOW_EMA,(int)MathRound(Chromosome[2]*MaxMAPeriod)+1);
+   
+   trade_block.UploadBuffers(from);  //запоняем буферы
+   
+// CopyBuffer(MAshort,0,from,count,ShortBuffer);
+//   CopyBuffer(MAlong,0,from,count,LongBuffer);
 //--- запоминаем лучшую пару
    z=(int)MathRound(Chromosome[GeneCount-1]*12);
    switch(z)
