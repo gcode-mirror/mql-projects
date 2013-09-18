@@ -16,8 +16,7 @@ enum ENUM_TM_POSITION_TYPE
    OP_SELLLIMIT,     //Отложенный ордер SELL LIMIT 
    OP_BUYSTOP,       //Отложенный ордер BUY STOP 
    OP_SELLSTOP,      //Отложенный ордер SELL STOP
-   OP_UNKNOWN,       //Для инициализации или ошибка
-   OP_IMPOSSIBLE     //Не возможно совершить действие  
+   OP_UNKNOWN       //Для инициализации или ошибка
   };
 
 //+------------------------------------------------------------------+ 
@@ -49,7 +48,7 @@ ENUM_TM_POSITION_TYPE StringToPositionType(string posType)
    if(posType == "Buy Limit") return(OP_BUYLIMIT);
    if(posType == "Sell Limit") return(OP_SELLLIMIT);
    if(posType == "Buy Stop") return(OP_BUYSTOP);
-   if(posType == "Sell Stop") return(OP_SELLSTOP);
+   if(posType == "Sell Stop") return(OP_SELLSTOP);   
    return("Error: unknown position type " + posType);
   }
 

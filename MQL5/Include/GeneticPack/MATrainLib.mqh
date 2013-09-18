@@ -23,8 +23,8 @@ double          ERROR=0.0;           // Средняя ошибка на ген (это для генетичес
 
 CrossEMA        trade_block;         //трейд блок
 
-int                 MAlong,MAshort;              // МА-хэндлы
-double              LongBuffer[],ShortBuffer[];  // Индикаторные буферы
+//int                 MAlong,MAshort;              // МА-хэндлы
+//double              LongBuffer[],ShortBuffer[];  // Индикаторные буферы
 
 ENUM_TM_POSITION_TYPE   signal;      //торговый сигнал
 ENUM_TM_POSITION_TYPE   signal2;      //торговый сигнал
