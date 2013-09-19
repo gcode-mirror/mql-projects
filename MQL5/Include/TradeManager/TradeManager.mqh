@@ -93,18 +93,21 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
       {
        ClosePosition(i);
       }
-      if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
+      else
       {
-       ResetLastError();
-       if(OrderSelect(pos.getPositionTicket()))
+       if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
        {
-        ClosePosition(i);
-       }
-       else
-       {
-        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+        ResetLastError();
+        if(OrderSelect(pos.getPositionTicket()))
+        {
+         ClosePosition(i);
+        }
+        else
+        {
+         log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
                        , MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()
                        , GetLastError(), ErrorDescription(GetLastError())));
+        }
        }
       }
      }
@@ -125,18 +128,21 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
       {
        ClosePosition(i);
       }
-      if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
+      else
       {
-       ResetLastError();
-       if(OrderSelect(pos.getPositionTicket()))
+       if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
        {
-        ClosePosition(i);
-       }
-       else
-       {
-        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                       , MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()
-                       , GetLastError(), ErrorDescription(GetLastError())));
+        ResetLastError();
+        if(OrderSelect(pos.getPositionTicket()))
+        {
+         ClosePosition(i);
+        }
+        else
+        {
+         log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                        , MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()
+                        , GetLastError(), ErrorDescription(GetLastError())));
+        }
        }
       }
      }
