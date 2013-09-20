@@ -121,21 +121,22 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
   {
 //---- проверка количества баров на достаточность для расчета
    if(rates_total < bars + historyDepth) return(0);
-/*   
+   
 //---- объявление целочисленных переменных
    int first, bar;
    if(prev_calculated > rates_total || prev_calculated <= 0) // проверка на первый старт расчета индикатора
-      first = rates_total - bars;           // стартовый номер для расчета всех баров
+      first = rates_total - bars - historyDepth;           // стартовый номер для расчета всех баров
    else first = prev_calculated - 1;        // стартовый номер для расчета новых баров
-*/   
+   
 //---- проверка на начало нового бара
    if(isNewBar.isNewBar(symbol, GetBottomTimeframe(current_timeframe)))
    {
   //  Print("init trend, rates_total = ", rates_total);
-    //topTrend.CountMoveType(topTFBarsDepth, historyDepth);
+    topTrend.CountMoveType();
     //trend.CountMoveType(bars, historyDepth, topTrend.GetMoveType(topTFBarsDepth - 1));
     trend.CountMoveType();
     
+    /*
     //--- На новом баре производим вычисление и перезапись буферов
     //--- инициализируем буферы пустыми значениями
     ArrayInitialize(ExtOpenBuffer, 0.0);
@@ -144,9 +145,10 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
     ArrayInitialize(ExtCloseBuffer, 0.0);
     ArrayInitialize(ExtUpArrowBuffer, 0.0);
     ArrayInitialize(ExtDownArrowBuffer, 0.0);
-    
+    */
     //--- копируем цены в буферы
-    for(int bar = rates_total - bars - historyDepth; bar < rates_total - 1  && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
+    //for(int bar = rates_total - bars - historyDepth; bar < rates_total - 1  && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
+    for(int bar = first; bar < rates_total - 1  && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
     {
      //--- записываем цены в буферы
      ExtOpenBuffer[bar] = open[bar];
@@ -158,6 +160,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
      int buffer_index = bar - rates_total + bars + historyDepth;
    //--- зададим цвет свечи
      ExtColorsBuffer[bar] = trend.GetMoveType(buffer_index); 
+     PrintFormat("bar = %d, buf_index = %d, MoveType = %s", bar, buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
    //--- зададим код символа из шрифта Wingdings для отрисовки в PLOT_ARROW
      if (buffer_index > 0)
      {
