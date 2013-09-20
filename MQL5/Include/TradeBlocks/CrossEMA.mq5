@@ -45,8 +45,11 @@
    ENUM_APPLIED_PRICE applied_price;                              //
    CisNewBar newCisBar; 
    public:
+   double takeProfit;                                             //тейк профит
+   int priceDifference;                                           
    int InitTradeBlock(string _sym,
                       ENUM_TIMEFRAMES _timeFrame,
+                      double _takeProfit,
                       uint FastPer, 
                       uint SlowPer,
                       ENUM_MA_METHOD _method,
@@ -62,6 +65,7 @@
   
  int CrossEMA::InitTradeBlock(string _sym,
                               ENUM_TIMEFRAMES _timeFrame,
+                              double _takeProfit,
                               uint FastPer, 
                               uint SlowPer,
                               ENUM_MA_METHOD _method,
@@ -79,10 +83,12 @@
      fast_per=FastPer;
      slow_per=SlowPer;
     } 
-   sym = _sym;
-   timeFrame = _timeFrame;
-   method = _method;
-   applied_price = _applied_price; 
+   sym             = _sym;
+   timeFrame       = _timeFrame;
+   method          = _method;
+   applied_price   = _applied_price; 
+   takeProfit      = _takeProfit;
+   priceDifference = 0;
    ma_slow_handle=iMA(sym,timeFrame,slow_per,0,method,applied_price); //инициализация медленного индикатора
    if(ma_slow_handle<0)
     return INIT_FAILED;
@@ -160,7 +166,7 @@
       return OP_SELL; //получен сигнал на продажу
     }
    }
-   return OP_IMPOSSIBLE; //признак неисполнения функции
+   return OP_UNKNOWN; //признак неисполнения функции
   } 
   
   CrossEMA::CrossEMA(void)  //конструктор класса CrossEMA
