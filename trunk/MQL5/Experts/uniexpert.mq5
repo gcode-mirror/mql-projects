@@ -7,7 +7,6 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #include <TradeManager/TradeManager.mqh>
-#include <Trade\Trade.mqh> //подключаем библиотеку для совершения торговых операций
 #include<Trigger64/PositionSys.mqh>     //подключаем библиотеку для работы с позициями
 #include<Trigger64/SymbolSys.mqh>       //подключаем библиотеку для работы с символом
 #include<Trigger64/Graph.mqh>           //подключаем библиотеку отображения панели

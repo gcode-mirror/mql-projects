@@ -123,9 +123,9 @@ void CSanya::RecountDelta()
  SymbolInfoTick(_symbol, tick);
 
 // Если цена пошла вверх...
- if (currentPrice > _high + _dayStep*Point()) // Если текущая цена повысилась на шаг
+ if (currentPrice > _high + 2*_dayStep*Point()) // Если текущая цена повысилась на шаг
  {
-  Print("цена увеличилась на шаг");
+  Print("цена увеличилась на 2 шага, начинаем расчет среднего");
   _average = currentPrice - (currentPrice - _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
   _high = currentPrice;                                          // запомним это
  }

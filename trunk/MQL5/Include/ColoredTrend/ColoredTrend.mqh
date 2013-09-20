@@ -119,49 +119,26 @@ void CColoredTrend::CountMoveType(ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKN
  FillTimeSeries(bottomTF_rates, _count + _shift, 0, BOTTOM_TF);
  FillATRBuf(_count + _shift);                              // заполним массив данными индикатора ATR
  // ¬ыделим пам€ть под массивы цветов и экстремумов
- ArrayResize(enumMoveType, rates_total);
- ArrayResize(aExtremums, rates_total);
+ ArrayResize(enumMoveType, rates_total, rates_total);
+ ArrayResize(aExtremums, rates_total, rates_total);
  
  for(int bar = _shift; bar < _count + _shift - 1 && !IsStopped(); bar++) // заполн€ем ценами заданное количество баров, кроме формирующегос€
  {
   enumMoveType[bar] = enumMoveType[bar - 1];
   difToNewExtremum = ATR_buf[bar] / 2;
-  //Print("ATR/2 = ", difToNewExtremum);
-  /*
-  PrintFormat("bar = %d, экстремумы num0=%.05f, num1=%.05f, num2=%.05f, num0 - num1 =%.05f, num0 - close=%.05f"
-             , bar, aExtremums[num0].price, aExtremums[num1].price, aExtremums[num2].price
-             , MathAbs(aExtremums[num0].price - aExtremums[num1].price)*difToTrend, MathAbs(aExtremums[num0].price - rates[bar].close));
-  */ 
             
   if (LessDoubles(MathAbs(aExtremums[num0].price - aExtremums[num1].price)*difToTrend
                  ,MathAbs(aExtremums[num0].price - rates[bar].close), digits))
   {// ≈сли разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движени€ 
-   //PrintFormat("bar = %d, движение больше последней разницы экстремумов", bar);
    if (LessDoubles(rates[bar].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
    {
-    if (topTF_Movement == MOVE_TYPE_FLAT)
-    {
-     enumMoveType[bar] = MOVE_TYPE_TREND_DOWN_FORBIDEN;
-    }
-    else
-    {
-     //PrintFormat("bar = %d, началс€ тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].price);
-     enumMoveType[bar] = MOVE_TYPE_TREND_DOWN;
-     //continue;
-    }
+    enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
+    //PrintFormat("bar = %d, началс€ тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].price);
    }
    if (GreatDoubles(rates[bar].close, aExtremums[num0].price, digits)) // если текущее закрытие выше последнего экстремума 
    {
-    if (topTF_Movement == MOVE_TYPE_FLAT)
-    {
-     enumMoveType[bar] = MOVE_TYPE_TREND_UP_FORBIDEN;
-    }
-    else
-    {
-     //PrintFormat("bar = %d, началс€ тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].price);
-     enumMoveType[bar] = MOVE_TYPE_TREND_UP;
-     //continue;
-    }
+    enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
+    //PrintFormat("bar = %d, началс€ тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].price);
    }
   }
   
@@ -181,27 +158,13 @@ void CColoredTrend::CountMoveType(ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKN
   if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && 
        isCorrectionEnds(rates, bottomTF_rates, bar, MOVE_TYPE_CORRECTION_UP))
   {
-   if (topTF_Movement == MOVE_TYPE_FLAT)
-   {
-    enumMoveType[bar] = MOVE_TYPE_TREND_DOWN_FORBIDEN;
-   }
-   else
-   {
-    enumMoveType[bar] = MOVE_TYPE_TREND_DOWN;
-   }
+   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
   }
   
   if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_DOWN) && 
        isCorrectionEnds(rates, bottomTF_rates, bar, MOVE_TYPE_CORRECTION_DOWN))
   {
-   if (topTF_Movement == MOVE_TYPE_FLAT)
-   {
-    enumMoveType[bar] = MOVE_TYPE_TREND_UP_FORBIDEN;
-   }
-   else
-   {
-    enumMoveType[bar] = MOVE_TYPE_TREND_UP;
-   }
+   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
   }
 
   aExtremums[bar] =  isExtremum(rates[bar - 1].close, rates[bar].close, rates[bar + 1].close, num0);
