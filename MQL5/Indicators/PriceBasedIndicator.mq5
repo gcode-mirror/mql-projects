@@ -62,18 +62,18 @@ CColoredTrend *trend, *topTrend;
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int digits;
-int topTFBarsDepth = 50;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
   {
+   Print("Init Started");
 //---- инициализаци€ глобальных переменных  
   symbol = Symbol();
   current_timeframe = Period();
   digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
   trend = new CColoredTrend(symbol, current_timeframe, bars, historyDepth);
-  topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), topTFBarsDepth, historyDepth);
+  topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), bars, historyDepth);
   
 //---- превращение динамических массивов в индикаторные буферы
    SetIndexBuffer(0, ExtOpenBuffer, INDICATOR_DATA);
@@ -102,7 +102,17 @@ int OnInit()
 //---- им€ дл€ окон данных и метка дл€ окон
    string short_name="ColoredTrend";
    IndicatorSetString(INDICATOR_SHORTNAME, short_name);
-
+/*
+   //--- инициализируем буферы пустыми значени€ми
+   ArrayInitialize(ExtOpenBuffer, 0.0);
+   ArrayInitialize(ExtHighBuffer, 0.0);
+   ArrayInitialize(ExtLowBuffer, 0.0);
+   ArrayInitialize(ExtCloseBuffer, 0.0);
+   ArrayInitialize(ExtUpArrowBuffer, 0.0);
+   ArrayInitialize(ExtDownArrowBuffer, 0.0);
+   ArrayInitialize(ExtColorsBuffer, clrNONE);
+*/  
+   Print("Init succesful");
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -132,54 +142,46 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
    if(isNewBar.isNewBar(symbol, GetBottomTimeframe(current_timeframe)))
    {
   //  Print("init trend, rates_total = ", rates_total);
-    topTrend.CountMoveType();
-    //trend.CountMoveType(bars, historyDepth, topTrend.GetMoveType(topTFBarsDepth - 1));
-    trend.CountMoveType();
     
-    /*
-    //--- Ќа новом баре производим вычисление и перезапись буферов
-    //--- инициализируем буферы пустыми значени€ми
-    ArrayInitialize(ExtOpenBuffer, 0.0);
-    ArrayInitialize(ExtHighBuffer, 0.0);
-    ArrayInitialize(ExtLowBuffer, 0.0);
-    ArrayInitialize(ExtCloseBuffer, 0.0);
-    ArrayInitialize(ExtUpArrowBuffer, 0.0);
-    ArrayInitialize(ExtDownArrowBuffer, 0.0);
-    */
     //--- копируем цены в буферы
     //for(int bar = rates_total - bars - historyDepth; bar < rates_total - 1  && !IsStopped(); bar++) // заполн€ем ценами заданное количество баров, кроме формирующегос€
     for(int bar = first; bar < rates_total - 1  && !IsStopped(); bar++) // заполн€ем ценами заданное количество баров, кроме формирующегос€
     {
+   //--- вычислим соответствующий индекс дл€ графических буферов
+     int buffer_index = bar - rates_total + bars + historyDepth + 1;
+     topTrend.CountMoveType(buffer_index);
+     //trend.CountMoveType(bars, historyDepth, topTrend.GetMoveType(topTFBarsDepth - 1));
+     trend.CountMoveType(buffer_index, topTrend.GetMoveType(buffer_index));
+     
      //--- записываем цены в буферы
      ExtOpenBuffer[bar] = open[bar];
      ExtHighBuffer[bar] = high[bar];
      ExtLowBuffer[bar] = low[bar];
      ExtCloseBuffer[bar] = close[bar];
      
-   //--- вычислим соответствующий индекс дл€ графических буферов
-     int buffer_index = bar - rates_total + bars + historyDepth;
    //--- зададим цвет свечи
      ExtColorsBuffer[bar] = trend.GetMoveType(buffer_index); 
      PrintFormat("bar = %d, buf_index = %d, MoveType = %s", bar, buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
+     //PrintFormat("open_buf = %.05f, high_buf = %.05f, low_buf = %.05f, close_buf = %.05f, open = %.05f, high = %.05f, low = %.05f, close = %.05f"
+     //           , ExtOpenBuffer[bar], ExtHighBuffer[bar], ExtLowBuffer[bar], ExtCloseBuffer[bar]
+     //           , open[bar], high[bar], low[bar], close[bar]);
+           
    //--- зададим код символа из шрифта Wingdings дл€ отрисовки в PLOT_ARROW
-     if (buffer_index > 0)
+     if (trend.GetExtremumDirection(buffer_index) > 0)
      {
-      if (trend.GetExtremumDirection(buffer_index) > 0)
-      {
-       ExtUpArrowBuffer[bar] = trend.GetExtremum(buffer_index);
-      }
-      else
-      {
-       ExtUpArrowBuffer[bar] = 0;
-      }
-      if (trend.GetExtremumDirection(buffer_index) < 0)
-      {
-       ExtDownArrowBuffer[bar] = trend.GetExtremum(buffer_index);
-      }
-      else
-      {
-       ExtDownArrowBuffer[bar] = 0;
-      }
+      ExtUpArrowBuffer[bar] = trend.GetExtremum(buffer_index);
+     }
+     else
+     {
+      ExtUpArrowBuffer[bar] = 0;
+     }
+     if (trend.GetExtremumDirection(buffer_index) < 0)
+     {
+      ExtDownArrowBuffer[bar] = trend.GetExtremum(buffer_index);
+     }
+     else
+     {
+      ExtDownArrowBuffer[bar] = 0;
      }
     }
    }
