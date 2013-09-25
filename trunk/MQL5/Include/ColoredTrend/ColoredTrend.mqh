@@ -48,7 +48,7 @@ protected:
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count, int shift = 3);
   SExtremum isExtremum(double vol1, double vol2, double vol3, int bar = 0);
-  void CountMoveType(ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
+  void CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
   ENUM_MOVE_TYPE GetMoveType(int i);
   double GetExtremum(int i);
   int GetExtremumDirection(int i);
@@ -110,7 +110,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int cou
 //+------------------------------------------+
 //| Функция вычисляет тип движения рынка     |
 //+------------------------------------------+
-void CColoredTrend::CountMoveType(ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
+void CColoredTrend::CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
  // Заполним массив с информацией о таймсериях
  MqlRates rates[];
@@ -122,13 +122,34 @@ void CColoredTrend::CountMoveType(ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKN
  ArrayResize(enumMoveType, rates_total, rates_total);
  ArrayResize(aExtremums, rates_total, rates_total);
  
- for(int bar = _shift; bar < _count + _shift - 1 && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
- {
+ //for(int bar = _shift; bar < _count + _shift - 1 && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
+ //{
+ // PrintFormat("rates = %d, bar = %d", rates_total, bar);
   enumMoveType[bar] = enumMoveType[bar - 1];
   difToNewExtremum = ATR_buf[bar] / 2;
+  
+  // Здесь проверяются разные случаи начала тренда. Два варианта, когда цена пошла в сторону предпоследнего экстремума и когда цена пошла в сторону последнего экстремума
+  bool newTrend = false;
+  if ((aExtremums[num1].price < aExtremums[num0].price && aExtremums[num0].price < rates[bar].close) ||
+      (aExtremums[num1].price > aExtremums[num0].price && aExtremums[num0].price > rates[bar].close))
+  {
+   if (LessDoubles(MathAbs(aExtremums[num2].price - aExtremums[num1].price)*difToTrend
+                  ,MathAbs(aExtremums[num1].price - rates[bar].close), digits))
+   {
+    newTrend = true;
+   }
+  }
+  else
+  {
+   if (LessDoubles(MathAbs(aExtremums[num0].price - aExtremums[num1].price)*difToTrend
+                  ,MathAbs(aExtremums[num0].price - rates[bar].close), digits))
+   {
+    newTrend = true;
+   }
+  }
+     
             
-  if (LessDoubles(MathAbs(aExtremums[num0].price - aExtremums[num1].price)*difToTrend
-                 ,MathAbs(aExtremums[num0].price - rates[bar].close), digits))
+  if (newTrend)
   {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения 
    if (LessDoubles(rates[bar].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
    {
@@ -212,7 +233,7 @@ void CColoredTrend::CountMoveType(ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKN
    //enumMoveType[bar] = enumMoveType[bar - 1];
   //else
    //PrintFormat("enumMoveType[%d]=%d",bar,enumMoveType[bar]);
- }
+ //}
 }
 
 //+------------------------------------------+
@@ -294,7 +315,7 @@ int CColoredTrend::FillTimeSeries(MqlRates &_rates[], int count, int start_pos =
    period = GetTopTimeframe(_period);
    break;
  }
- while(attempts < 25 && (copied = CopyRates(_symbol, period, start_pos, count, _rates))<0) // справа налево от 0 до count, всего count элементов
+ while(attempts < 25 && (copied = CopyRates(_symbol, period, start_pos, count + 1, _rates))<0) // справа налево от 0 до count, всего count элементов
  {
   Sleep(100);
   attempts++;
@@ -323,7 +344,7 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //--- сколько скопировано
    int copied = 0;
 //--- делаем 25 попыток получить таймсерию по нужному символу
- while(attempts < 25 && (copied = CopyBuffer(ATR_handle, 0, start_pos, count, ATR_buf)) < 0) // справа налево от 0 до count, всего count элементов
+ while(attempts < 25 && (copied = CopyBuffer(ATR_handle, 0, start_pos, count + 1, ATR_buf)) < 0) // справа налево от 0 до count, всего count элементов
  {
   Sleep(100);
   attempts++;
