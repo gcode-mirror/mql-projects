@@ -61,12 +61,19 @@ void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDel
    m_last_day_number = TimeCurrent() - _fastPeriod*60*60;       // »нициализируем день текущим днем
    m_last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // »нициализируем мес€ц текущим мес€цем
    m_comment = "";        //  омментарий выполнени€
-   _isDayInit = false;
+   _isDayInit = true;
    _isMonthInit = false;
    _symbol = Symbol();   // »м€ инструмента, по умолчанию символ текущего графика
    _period = Period();   // ѕериод графика, по умолчанию период текущего графика
-  _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
-  _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
+   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+   _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
+   
+   _deltaFast = _deltaFastBase;
+   _average = 0;
+   _high = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+   _low = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+   _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
+   _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
   }
 
 //+------------------------------------------------------------------+
@@ -77,18 +84,20 @@ void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDel
 //+------------------------------------------------------------------+
 void CSanya::InitDayTrade()
 {
+ /*
  if (timeToUpdateFastDelta()) // ≈сли случилс€ новый день
  {
   PrintFormat("%s Ќовый день %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_day_number));
   _deltaFast = _deltaFastBase;
-  _isDayInit = true;
   _average = 0;
   _high = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _low = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
   _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
+  _isDayInit = true;
  }
+ */
 }
 
 //+------------------------------------------------------------------+
@@ -123,18 +132,23 @@ void CSanya::RecountDelta()
  SymbolInfoTick(_symbol, tick);
 
 // ≈сли цена пошла вверх...
- if (currentPrice > _high + 2*_dayStep*Point()) // ≈сли текуща€ цена повысилась на шаг
+ if (GreatDoubles (currentPrice, _high + 2*_dayStep*Point()) && _average == 0) // ≈сли текуща€ цена повысилась на шаг
  {
   Print("цена увеличилась на 2 шага, начинаем расчет среднего");
   _average = currentPrice - (currentPrice - _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
   _high = currentPrice;                                          // запомним это
  }
- if (_average > _startDayPrice + _countSteps*_dayStep*Point()/2)
+ if (GreatDoubles(currentPrice, _high) && _average != 0)
+ {
+  _average = currentPrice - (currentPrice - _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+  _high = currentPrice;                                          // запомним это
+ }
+ 
+ if (GreatDoubles(_average, _startDayPrice + _countSteps*_dayStep*Point())) // ≈сли цена выросла слишком сильно
  {
   PrintFormat("цена ушла вверх на %d шагов, переносим цену старта расчетов", _countSteps);
-  _startDayPrice = _high;
-  _low = _high - _dayStep*Point();
-  _average = 0;
+  _startDayPrice = _average;
+  _low = _startDayPrice - _dayStep*Point();
   if (_type == ORDER_TYPE_SELL) // цена растет, а основное направление - вниз, пора "засейвитьс€"
   {
    Print("цена растет, а основное направление - вниз, пора \"засейвитьс€\". ”величиваем мл. дельта");
@@ -143,25 +157,31 @@ void CSanya::RecountDelta()
  }
  
 // ≈сли цена пошла вниз...
- if (currentPrice < _low - _dayStep*Point()) // ≈сли текуща€ цена понизилась на шаг
+ if (LessDoubles(currentPrice, _low - _dayStep*Point()) && _average == 0) // ≈сли текуща€ цена понизилась на шаг
  {
   Print("цена уменьшилась на шаг");
   _average = currentPrice + (_startDayPrice - currentPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
   _low = currentPrice;                                           // запомним это
  }
- if (_average > 0 && _average < _startDayPrice - _countSteps*_dayStep*Point()/2) // ≈сли цена упала слишком сильно
+ if (LessDoubles(currentPrice, _low) && _average != 0)
+ {
+  _average = currentPrice + (_startDayPrice - currentPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+  _low = currentPrice;                                           // запомним это
+ }
+ 
+ if (_average != 0 && LessDoubles(_average, _startDayPrice - _countSteps*_dayStep*Point())) // ≈сли цена упала слишком сильно
  {
   PrintFormat("цена ушла вниз на %d шагов , переносим цену старта расчетов.", _countSteps);
-  _startDayPrice = _low;
-  _high = _low + _dayStep*Point();
-  _average = 0;
+  _startDayPrice = _average;
+  _high = _startDayPrice + _dayStep*Point();
   if (_type == ORDER_TYPE_BUY) // цена падает, а основное направление - вверх, пора "засейвитьс€"
   {
    Print("цена падает, а основное направление - вверх, пора \"засейвитьс€\". ”величиваем мл. дельта");
    _deltaFast = _deltaFast + _fastDeltaStep;    // увеличим младшую дельта
   }
  }
- 
+
+// ≈сли цена прошла через вычисленное среднее
  priceAB = (_direction == 1) ? tick.ask : tick.bid;
  if ( _average > 0 &&
       _direction*(_average - _startDayPrice) > 0 && // ≈сли среднее уже вычислено на уровне выше(ниже) стартовой
