@@ -80,22 +80,22 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
  {
-  san.InitDayTrade();
+  //san.InitDayTrade();
   san.InitMonthTrade();
-  if (san.isInit())
+  //if (san.isInit())
+  //{
+  san.RecountDelta();
+  double vol = san.RecountVolume();
+  if (currentVolume != vol)
   {
-   san.RecountDelta();
-   double vol = san.RecountVolume();
-   if (currentVolume != vol)
+   PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
+   log_file.Write(LOG_DEBUG, StringFormat("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol));
+   if (san.CorrectOrder(vol - currentVolume))
    {
-    PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
-    log_file.Write(LOG_DEBUG, StringFormat("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol));
-    if (san.CorrectOrder(vol - currentVolume))
-    {
-     currentVolume = vol;
-    }
+    currentVolume = vol;
    }
-  } 
+  }
+  //} 
    
  }
 //+------------------------------------------------------------------+
