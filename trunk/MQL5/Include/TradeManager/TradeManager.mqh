@@ -64,7 +64,7 @@ public:
 bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
                                  int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
 {
- if (_positionsToReProcessing.Total() > 0) 
+ if (_positionsToReProcessing.OrderCount(symbol, _magic) > 0) 
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Невозможно открыть позицию так как еще есть позиции в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));
   return false;
