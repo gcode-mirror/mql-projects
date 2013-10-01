@@ -62,7 +62,7 @@ int OnInit()
    san.SetStartHour(startTime);
    
    currentVolume = 0;
-   san.InitDayTrade();
+   //san.InitDayTrade();
    san.InitMonthTrade();
 //---
    return(INIT_SUCCEEDED);
