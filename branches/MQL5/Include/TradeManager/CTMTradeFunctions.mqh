@@ -20,7 +20,7 @@ class CTMTradeFunctions : public CTrade
  public:
   void CTMTradeFunctions(void){};
   void ~CTMTradeFunctions(void){};
-  
+   
   bool OrderOpen(const string symbol,const ENUM_ORDER_TYPE type, const double volume, const double price,
                  const ENUM_ORDER_TYPE_TIME type_time=ORDER_TIME_GTC,const datetime expiration=0,const string comment="");
   bool OrderDelete(const ulong ticket);
@@ -118,6 +118,7 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
                                      const double price,const double sl = 0.0,const double tp = 0.0,const string comment = "")
 {
  ENUM_ORDER_TYPE order_type;
+  
  if(volume <= 0.0)
  {
   m_result.retcode=TRADE_RETCODE_INVALID_VOLUME;
@@ -130,6 +131,7 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
    break;
   case POSITION_TYPE_SELL:
    order_type = ORDER_TYPE_SELL;
+
    break;
   default:
    log_file.Write(LOG_DEBUG, StringFormat("%s Неправильный тип позиции", MakeFunctionPrefix(__FUNCTION__)));

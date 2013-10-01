@@ -15,6 +15,7 @@
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
+
 class CPosition : public CObject
   {
 private:
@@ -33,6 +34,11 @@ private:
    int _minProfit, _trailingStop, _trailingStep;
    ENUM_TM_POSITION_TYPE _type;
    datetime _expiration;
+   datetime open_pos_time;  //время открытия позиции
+   datetime close_pos_time; //время завершения позиции 
+   double   priceOpen;      //цена, по которой позиция открылась
+   double   priceClose;     //цена, по которой позиция закрылась
+   double   posProfit;      //прибыль с позиции
    int _priceDifference;
    
    CEntryPriceLine   _entryPriceLine;
@@ -47,10 +53,26 @@ private:
    ENUM_ORDER_TYPE PositionOrderType(int type);
    
 public:
+   bool     pos_closed;     //флаг закрытия позиции
    void CPosition() {}; // конструктор по умолчанию
    void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                 ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
                 
+   datetime getOpenPosDT() { return (open_pos_time); };   //получает дату открытия позиции
+   void setOpenPosDT(datetime open_time) { open_pos_time = open_time; };
+   
+   datetime getClosePosDT() { return (close_pos_time); }; //получает дату закрытия позиции             
+   void setClosePosDT(datetime close_time) { close_pos_time = close_time; };
+      
+   double getPriceOpen() { return(priceOpen); };             //получает цену открытия позиции
+   void   setPriceOpen(double price) { priceOpen = price; }; //сохраняет цену открытия позиции
+   
+   double getPriceClose() { return(priceClose); };             //получает цену закрытия позиции
+   void   setPriceClose(double price) { priceClose = price; }; //сохраняет цену закрытия позиции      
+   
+   double getPosProfit() { return(posProfit); };               //получает прибыль позиции
+   void   setPosProfit(double profit) { posProfit = profit; }; //сохраняет прибыль позиции
+                   
    ulong getMagic() {return (_magic);};
    void setMagic(ulong magic) {_magic = magic;};
    
@@ -120,6 +142,7 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, dou
    trade = new CTMTradeFunctions();
    pos_status = POSITION_STATUS_NOT_INITIALISED;
    sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
+   pos_closed = false; 
   }
 
 //+------------------------------------------------------------------+
@@ -216,6 +239,7 @@ ENUM_ORDER_TYPE CPosition::TPOrderType(int type)
 //+------------------------------------------------------------------+
 ENUM_POSITION_STATUS CPosition::OpenPosition()
 {
+
  UpdateSymbolInfo();
  //double stopLevel = _Point*SymbolInfoInteger(Symbol(),SYMBOL_TRADE_STOPS_LEVEL);
  //double ask = SymbInfo.Ask();
@@ -232,6 +256,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
     {
      _posTicket = 0;
      pos_status = POSITION_STATUS_OPEN;
+     
     }
     else
     {
@@ -247,7 +272,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
      _posTicket = 0;
-     pos_status = POSITION_STATUS_OPEN;
+     pos_status = POSITION_STATUS_OPEN;   
     }
     else
     {
@@ -257,14 +282,16 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_BUYLIMIT:
+   Alert("OP_BUYLIMIT");
    if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     _posTicket = trade.ResultOrder();
-    pos_status = POSITION_STATUS_PENDING;
+    pos_status = POSITION_STATUS_PENDING;             
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыт ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
    }
    break;
   case OP_SELLLIMIT:
+   Alert("OP_SELLLIMIT");  
    if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     _posTicket = trade.ResultOrder();
@@ -273,14 +300,16 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_BUYSTOP:
+   Alert("OP_BUYSTOP");  
    if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     _posTicket = trade.ResultOrder();
-    pos_status = POSITION_STATUS_PENDING;
+    pos_status = POSITION_STATUS_PENDING;  
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыт ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
    }
    break;
   case OP_SELLSTOP:
+   Alert("OP_SELLSTOP");  
    if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     _posTicket = trade.ResultOrder();
@@ -446,6 +475,7 @@ ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
 bool CPosition::ClosePosition()
 {
  int i = 0;
+ double tmp_profit;   //переменная для хранения профита позиции
  ResetLastError();
  if (pos_status == POSITION_STATUS_PENDING)
  {
@@ -458,8 +488,14 @@ bool CPosition::ClosePosition()
   switch(_type)
   {
    case OP_BUY:
+     PositionSelect(_symbol);
+     tmp_profit = PositionGetDouble(POSITION_PROFIT); //сохраняем профит позиции
     if(trade.PositionClose(_symbol, POSITION_TYPE_BUY, _lots, config.Deviation))
-    {
+    {     
+     setPriceClose(SymbolInfoDouble(_symbol,SYMBOL_ASK));  //сохраняем текущую цену закрытия
+     setPosProfit(tmp_profit);
+     setClosePosDT(TimeCurrent()); //сохраняем текущее значение времени
+     pos_closed = true;  
      log_file.Write(LOG_DEBUG, StringFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     }
     else
@@ -468,8 +504,15 @@ bool CPosition::ClosePosition()
     }
     break;
    case OP_SELL:
+     PositionSelect(_symbol);
+     tmp_profit = PositionGetDouble(POSITION_PROFIT); //сохраняем профит позиции 
     if(trade.PositionClose(_symbol, POSITION_TYPE_SELL, _lots, config.Deviation))
     {
+     tmp_profit = PositionGetDouble(POSITION_PROFIT); //сохраняем профит позиции     
+     setPriceClose(SymbolInfoDouble(_symbol,SYMBOL_BID));  //сохраняем текущую цену закрытия
+     setPosProfit(tmp_profit);
+     setClosePosDT(TimeCurrent()); //сохраняем текущее значение времени   
+     pos_closed = true; 
      log_file.Write(LOG_DEBUG, StringFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     }
     else

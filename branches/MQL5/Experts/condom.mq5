@@ -40,7 +40,7 @@ input int stopPriceDifference = 20;
 string symbol;                               //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm();
+CTradeManager ctm(true);
 MqlTick tick;
 
 int handleMACD;

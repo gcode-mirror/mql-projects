@@ -9,7 +9,7 @@
 #include "ChartObjectsTradeLines.mqh"
 #include "TradeManagerConfig.mqh"
 #include "CTMTradeFunctions.mqh" //подключаем библиотеку для совершения торговых операций
-#include "StringUtilities.mqh"
+#include <StringUtilities.mqh>
 #include <CompareDoubles.mqh>
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -31,6 +31,7 @@ private:
    double _tpPrice;
    int _sl, _tp;
    int _minProfit, _trailingStop, _trailingStep;
+   datetime openDatetime;     //время открытия позиции
    ENUM_POSITION_TYPE _type;
    ENUM_POSITION_STATUS _status;
    
@@ -217,6 +218,8 @@ bool CPosition::OpenPosition()
    PrintFormat("%s Ошибка при установке стоплосса", MakeFunctionPrefix(__FUNCTION__));
   }
  }
+ 
+ openDatetime =  TimeCurrent();  //сохраняем дату и время открытия позиции   
       
  if (pos_status != POSITION_STATUS_NOT_INITIALISED && sl_status != STOPLEVEL_STATUS_NOT_PLACED && tp_status != STOPLEVEL_STATUS_NOT_PLACED)
  {
@@ -313,7 +316,7 @@ void CPosition::DoTrailing(void)
 /// \return 				True if successful, false otherwise
 //+------------------------------------------------------------------+
 bool CPosition::ReadFromFile(int handle)
-{
+{/*
  if(handle<=0)
  {
   //LogFile.Log(LOG_PRINT,__FUNCTION__," error: file handle is not valid, returning false");

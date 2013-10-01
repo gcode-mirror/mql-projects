@@ -14,6 +14,7 @@
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
 #include <CLog.mqh>
+#include <Graph\Graph.mqh>
 
 int error = 0;
 //+------------------------------------------------------------------+
@@ -26,18 +27,32 @@ protected:
   bool _useSound;
   string _nameFileSound;   // Наименование звукового файла
   datetime _historyStart;
-  
-  CPositionArray _positionsToReProcessing;
-  CPositionArray _openPositions; ///< Array of open virtual orders for this VOM instance, also persisted as a file
-  //CPositionArray _positionsHistory; ///< Array of closed virtual orders, also persisted as a file
-  
+  GraphModule  graphModule;   //графический модуль
+  CPositionArray _positionsToReProcessing; ///массив позиций, находящихся в процессе
+  CPositionArray _openPositions;           ///массив текущих открытых позиций
+  CPositionArray _positionsHistory;        ///массив истории виртуальных позиций
+  //дополнительные параметры  
+  bool _pos_panel_draw;                     //флаг отображения позиции
 public:
-  void CTradeManager():  _useSound(true), _nameFileSound("expert.wav") 
+  void CTradeManager(bool pos_panel_draw=false):  _useSound(true), _nameFileSound("expert.wav") 
   {
    _magic = MakeMagic();
    _historyStart = TimeCurrent(); 
    log_file.Write(LOG_DEBUG, StringFormat("%s Создание объекта CTradeManager", MakeFunctionPrefix(__FUNCTION__)));
    log_file.Write(LOG_DEBUG, StringFormat("%s History start: %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_historyStart))); 
+   graphModule.RenameGraph("свойства позиции"); //добавляем новый заголовок
+   graphModule.SetElem("Мэджик");            //отображаем магическое число        
+   graphModule.SetElem("Цена");              //отображаем цену позиции
+   graphModule.SetElem("Статус");            //статус позиции
+   graphModule.SetElem("Тип");               //тип позиции
+   graphModule.SetElem("Стоп лосс");         //стоп лосс
+   graphModule.SetElem("Тейк профит");       //отображаем цену позиции
+   graphModule.SetElem("Тикет");             //тикет 
+   graphModule.SetElem("СтопЛосс статус");   //стоп лосс статус  
+   graphModule.SetElem("Время открытия");    //время открытия позиции 
+   graphModule.SetElem("Цена открытия");     //цена открытия
+   //graphModule.SetElem("Время закрытия");  //время открытия позиции    
+   _pos_panel_draw = pos_panel_draw;
   };
   
   bool OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
@@ -55,7 +70,10 @@ public:
   void OnTick();
   void OnTrade(datetime history_start);
   void SaveSituationToFile(bool debug = false);
+  private:
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
+  void SaveHistoryToFile();
+  void DrawCurrentPosition(int index);  //отображение текущей позиции
 };
 
 //+------------------------------------------------------------------+
@@ -164,7 +182,24 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
                                           , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
-   _openPositions.Add(pos);  // добавляем открутую позицию в массив открытых позиций
+   
+   pos.setOpenPosDT(TimeCurrent()); //сохраняем текущее время
+   pos.setPosProfit(0);  //сохраняем текущий профит
+   pos.pos_closed = false;
+   switch (pos.getType())
+    {
+    case OP_BUY:
+    case OP_BUYLIMIT:
+    case OP_BUYSTOP:
+     pos.setPriceOpen(SymbolInfoDouble(symbol,SYMBOL_ASK));  //сохраняем текущую цену
+    break;
+    case OP_SELL:
+    case OP_SELLLIMIT:
+    case OP_SELLSTOP:
+     pos.setPriceOpen(SymbolInfoDouble(symbol,SYMBOL_BID));  //сохраняем текущую цену   
+    break;
+    }
+   _openPositions.Add(pos);  // добавляем открытую позицию в массив открытых позиций
    SaveSituationToFile();
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
    return(true); // Если удачно открыли позицию
@@ -209,8 +244,10 @@ void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
 /// Called from EA OnTrade().
 /// Include the folowing in each EA that uses TradeManager
 //+------------------------------------------------------------------+
-void CTradeManager::OnTrade(datetime history_start)
+void CTradeManager::OnTrade(datetime history_start=0)
 {
+ if (_pos_panel_draw) 
+  DrawCurrentPosition(_openPositions.Total()-1);  //отображаем панель свойств позиции
 }
 
 //+------------------------------------------------------------------+
@@ -230,7 +267,12 @@ void CTradeManager::OnTick()
    if (pos.RemovePendingPosition() == POSITION_STATUS_DELETED)
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось удалить позицию [%d].Удаляем её из positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
-    _positionsToReProcessing.Delete(i);
+              //       pos.setClosePosDT(TimeCurrent());  //сохраняем время закрытия
+              //       pos.pos_closed = true;
+                    
+                    // pos.setPriceClose(SymbolInfoDouble(pos.getSymbol(),SYMB
+/*ADD TO HISTORY*/   _positionsHistory.Add(_positionsToReProcessing.Detach(i)); //добавляем удаляемую позицию в массив
+    SaveHistoryToFile();                  
     break;
    }
   }
@@ -248,12 +290,29 @@ void CTradeManager::OnTick()
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и TakeProfit у позиции [%d].Перемещаем её из positionsToReProcessing в openPositions.", MakeFunctionPrefix(__FUNCTION__), i));    
     pos.setPositionStatus(POSITION_STATUS_OPEN);
-    _openPositions.Add(_positionsToReProcessing.Detach(i));
+    
+   pos.setOpenPosDT(TimeCurrent()); //сохраняем текущее время
+   pos.setPosProfit(0);  //сохраняем текущий профит
+   pos.pos_closed = false;
+   switch (pos.getType())
+    {
+    case OP_BUY:
+    case OP_BUYLIMIT:
+    case OP_BUYSTOP:
+     pos.setPriceOpen(SymbolInfoDouble(pos.getSymbol(),SYMBOL_ASK));  //сохраняем текущую цену
+    break;
+    case OP_SELL:
+    case OP_SELLLIMIT:
+    case OP_SELLSTOP:
+     pos.setPriceOpen(SymbolInfoDouble(pos.getSymbol(),SYMBOL_BID));  //сохраняем текущую цену   
+    break;
+     }
+    _openPositions.Add(_positionsToReProcessing.Detach(i));    
     SaveSituationToFile();
    }
   }
  } 
- 
+
 //--- Подгружаем историю
  if(!HistorySelect(_historyStart, TimeCurrent()))
  {
@@ -273,7 +332,10 @@ void CTradeManager::OnTick()
   if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING && pos.getStopLossStatus() != STOPLEVEL_STATUS_NOT_DEFINED) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-   _openPositions.Delete(i);            // удалить позицию из массива позиций
+                   //  pos.setClosePosDT(TimeCurrent());  //сохраняем время закрытия
+                   //  pos.pos_closed = true;
+/*ADD TO HISTORY*/    _positionsHistory.Add(_openPositions.Detach(i));   
+    SaveHistoryToFile();  
    SaveSituationToFile();               // Переписать файл состояния
    break;                          
   }
@@ -325,13 +387,20 @@ void CTradeManager::OnTick()
       case ORDER_STATE_CANCELED:
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s ордер отменен %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
-       _openPositions.Delete(i);
+                 //    pos.setClosePosDT(TimeCurrent());  //сохраняем время закрытия
+                 //    pos.pos_closed = true; 
+/*ADD TO HISTORY*/   _positionsHistory.Add(_openPositions.Detach(i));
+                     SaveHistoryToFile();  
+                     SaveHistoryToFile();  
        break;
       }
       case ORDER_STATE_EXPIRED:
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
-       _openPositions.Delete(i);
+                 //    pos.setClosePosDT(TimeCurrent());  //сохраняем время закрытия
+                 //    pos.pos_closed = true; 
+/*ADD TO HISTORY*/   _positionsHistory.Add(_openPositions.Detach(i));
+                     SaveHistoryToFile();  
        break;
       }
       
@@ -357,6 +426,9 @@ void CTradeManager::OnTick()
    }
   }
  }
+
+
+ 
 }
 
 //+------------------------------------------------------------------+
@@ -458,7 +530,12 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
  if (pos.ClosePosition())
  {
-  _openPositions.Delete(i);  // удаляем позицию по индексу
+                  //   pos.setClosePosDT(TimeCurrent());  //сохраняем время закрытия
+                   //  pos.setClosePosDT(0);
+                   //  pos.pos_closed = true; 
+                  //   pos.setPosProfit(PositionGetDouble(POSITION_PROFIT)); //сохраняем прибыль по позиции
+/*ADD TO HISTORY*/   _positionsHistory.Add(_openPositions.Detach(i));  //перемещаем удаленную позицию в массив истории позиций
+                     SaveHistoryToFile();  
   SaveSituationToFile();
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
   return(true);
@@ -485,7 +562,10 @@ bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
  if (pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
-  _positionsToReProcessing.Delete(i);  // удаляем позицию по индексу
+                 //    pos.setClosePosDT(TimeCurrent());  //сохраняем время закрытия
+                 //    pos.pos_closed = true; 
+/*ADD TO HISTORY*/  _positionsHistory.Add(_positionsToReProcessing.Detach(i));
+                    SaveHistoryToFile();  
   return(true);
  }
  return(false);
@@ -570,3 +650,93 @@ ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
  }
  return OP_UNKNOWN;
 }
+
+
+
+void CTradeManager::SaveHistoryToFile(void) //сохраняет историю открытия\закрытия позиций в файл
+ {
+ int file_handle = FileOpen("positionsHistory.csv", FILE_WRITE|FILE_COMMON|FILE_CSV|FILE_ANSI, "");
+ int index;
+ int total = _positionsHistory.Total(); //получаем количество элементов истории
+ string result;
+ CPosition *pos; //указатель на позицию
+
+ if(file_handle == INVALID_HANDLE)
+ {
+  Alert("Не удалось создать файл для сохранения истории позиций");
+  return;
+ }
+
+     //сохраняем наименования колонок таблицы
+     result = "";
+     StringConcatenate(result, "Мэджик;",
+                               "Цена позиции;",
+                               "Статус позиции;",
+                               "Тип ордера;",
+                               "Цена стоп лосс;",
+                               "Цена тейк профит;",
+                               "Тикет стоп лосс;",
+                               "Статус стоп лосс;",
+                               "Дата\время открытия;",
+                               "Дата\время завершения;",
+                               "Цена открытия;",
+                               "Цена закрытия;",
+                               "Прибыль по позиции;",
+                               "Статус ордера;"
+                               );                 
+  
+     FileWrite(file_handle,result); //сохраняем свойства позиции                            
+ 
+   for (index=0;index<_positionsHistory.Total();index++)
+    {    
+    result = "";
+     pos  = _positionsHistory.Position(index); //указатель на позицию
+     StringConcatenate(result, pos.getMagic(), ";[", 
+                       pos.getPositionPrice(), "];", 
+                       PositionStatusToStr(pos.getPositionStatus()), ";",
+                       GetNameOP(pos.getType()), ";[",
+                       pos.getStopLossPrice(), "];[", 
+                       pos.getTakeProfitPrice(), "];", 
+                       pos.getStopLossTicket(), ";", 
+                       pos.getStopLossStatus(),";",
+                       TimeToString(pos.getOpenPosDT()),";",
+                       TimeToString(pos.getClosePosDT()),";[",
+                       pos.getPriceOpen(),"];[",
+                       pos.getPriceClose(),"];[",
+                       pos.getPosProfit(),"];"                       
+                       );     
+                       
+   if(pos.getType() != OP_BUY && pos.getType() != OP_SELL) 
+     {
+      if(OrderSelect(pos.getPositionTicket()))
+        StringConcatenate(result, result, ";",EnumToString((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE)));
+      else
+        StringConcatenate(result, result,";",EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE)));
+    } 
+     FileWrite(file_handle,result); //сохраняем свойства позиции
+   } 
+    FileClose(file_handle); //закрываем файл     
+ }
+ 
+void CTradeManager::DrawCurrentPosition(int index)  //отображение текущей позиции и её параметров
+ {
+ CPosition *pos; //указатель на позицию
+ if( index >= 0)
+  {
+ pos  = _openPositions.Position(index); //указатель на позицию
+ //pos  = _openPositions.Position(index);
+ graphModule.EditElem("Мэджик",pos.getMagic()); //отображаем магическое число        
+ graphModule.EditElem("Цена",pos.getPositionPrice()); //отображаем цену позиции
+ graphModule.EditElem("Статус",PositionStatusToStr(pos.getPositionStatus())); //статус позиции
+ graphModule.EditElem("Тип",GetNameOP(pos.getType())); //тип позиции
+ graphModule.EditElem("Стоп лосс", pos.getStopLossPrice()); //стоп лосс
+ graphModule.EditElem("Тейк профит",pos.getTakeProfitPrice()); //отображаем цену позиции
+ graphModule.EditElem("Тикет",pos.getStopLossTicket());  //тикет 
+ graphModule.EditElem("СтопЛосс статус",pos.getStopLossStatus());  //стоп лосс статус 
+ graphModule.EditElem("Время открытия",TimeToString(pos.getOpenPosDT()) );  //время открытия позиции  
+ graphModule.EditElem("Цена открытия",pos.getPriceOpen());    //цена открытия  
+ //graphModule.EditElem("Время закрытия",TimeToString(pos.getClosePosDT()) );  //время закрытия  позиции    
+ 
+ graphModule.ShowPanel(); //отображаем панель           
+  }              
+ } 

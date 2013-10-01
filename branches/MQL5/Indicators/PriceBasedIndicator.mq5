@@ -50,8 +50,8 @@ double ExtDownArrowBuffer[];
 //| Входные параметры индикатора                 |
 //+----------------------------------------------+
 input int historyDepth = 40;     // глубина истории для расчета
-input int bars=30;         // сколько свечей показывать
-input bool messages=false;   // вывод сообщений в лог "Эксперты"
+input int bars=30;               // сколько свечей показывать
+input bool messages=false;       // вывод сообщений в лог "Эксперты"
 
 //+----------------------------------------------+
 //| Глобальные переменные индикатора             |
@@ -120,7 +120,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
                 const int &spread[])
   {
 //---- проверка количества баров на достаточность для расчета
-   if(rates_total < bars + historyDepth) return(0);
+   if(rates_total < (bars + historyDepth) ) return(0);
    
 //---- объявление целочисленных переменных
    int first, bar;
@@ -159,7 +159,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
    //--- вычислим соответствующий индекс для графических буферов
      int buffer_index = bar - rates_total + bars + historyDepth;
    //--- зададим цвет свечи
-     ExtColorsBuffer[bar] = trend.GetMoveType(buffer_index); 
+    ExtColorsBuffer[bar] = trend.GetMoveType(buffer_index);   
      PrintFormat("bar = %d, buf_index = %d, MoveType = %s", bar, buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
    //--- зададим код символа из шрифта Wingdings для отрисовки в PLOT_ARROW
      if (buffer_index > 0)

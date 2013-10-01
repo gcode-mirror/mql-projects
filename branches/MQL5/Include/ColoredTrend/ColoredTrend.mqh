@@ -110,7 +110,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int cou
 //+------------------------------------------+
 //| Функция вычисляет тип движения рынка     |
 //+------------------------------------------+
-void CColoredTrend::CountMoveType(ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
+/*МАРК*/void CColoredTrend::CountMoveType(ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
  // Заполним массив с информацией о таймсериях
  MqlRates rates[];
@@ -213,6 +213,9 @@ void CColoredTrend::CountMoveType(ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKN
   //else
    //PrintFormat("enumMoveType[%d]=%d",bar,enumMoveType[bar]);
  }
+ 
+
+ 
 }
 
 //+------------------------------------------+

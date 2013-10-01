@@ -14,6 +14,7 @@
 #include <CompareDoubles.mqh>
 #include <CIsNewBar.mqh>
 #include <TradeManager\TradeManager.mqh>
+#include <Graph\Graph.mqh>   //подключаем графическую библиотеку
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -36,18 +37,22 @@ input int stopPriceDifference = 20;
 string my_symbol;                                       //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm();
+CTradeManager ctm(true);
 MqlTick tick;
 
 double takeProfit, stopLoss;
 double high_buf[], low_buf[], close_buf[1], open_buf[1];
 ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
 int priceDifference;
+
+GraphModule  graphModule;   //графический модуль
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
+             
    my_symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    
@@ -84,6 +89,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+   
    ctm.Deinitialization();
    // Освобождаем динамические массивы от данных
    ArrayFree(low_buf);
@@ -158,11 +164,15 @@ void OnTick()
    {
     ctm.DoTrailing();
    }
+   
+   
    return;   
   }
 //+------------------------------------------------------------------+
 
 void OnTrade()
   {
-   ctm.OnTrade(history_start);
+   
+   //ctm.SaveHistoryToFile
+   ctm.OnTrade();
   }

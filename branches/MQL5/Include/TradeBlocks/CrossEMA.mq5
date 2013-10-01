@@ -33,70 +33,65 @@
    double close[];                                                //массив для Close
    datetime date_buffer[];                                        //массив для даты
    //хэндлы индикаторов
-   int ma_slow_handle;                                            //хэндл медленного индикатора
-   int ma_fast_handle;                                            //хэндл быстрого индикатора
-   int ma_ema3_handle;                                            //хэндл EMA(3) индикатора
+   int _ma_slow_handle;                                            //хэндл медленного индикатора
+   int _ma_fast_handle;                                            //хэндл быстрого индикатора
+   int _ma_ema3_handle;                                            //хэндл EMA(3) индикатора
    //периоды индиакторов  
-   uint fast_per;                                                 //период быстрого индикатора
-   uint slow_per;                                                 //период медленного индикатора
-   string sym;                                                    //текущий символ
-   ENUM_TIMEFRAMES timeFrame;                                     //таймфрейм
-   ENUM_MA_METHOD method;                                         //
-   ENUM_APPLIED_PRICE applied_price;                              //
-   CisNewBar newCisBar; 
-   public:
-   double takeProfit;                                             //тейк профит
-   int priceDifference;                                           
-   int InitTradeBlock(string _sym,
-                      ENUM_TIMEFRAMES _timeFrame,
-                      double _takeProfit,
+   uint _fast_per;                                                 //период быстрого индикатора
+   uint _slow_per;                                                 //период медленного индикатора
+   string _sym;                                                    //текущий символ
+   ENUM_TIMEFRAMES _timeFrame;                                     //таймфрейм
+   ENUM_MA_METHOD _method;                                         //метод EMA
+   ENUM_APPLIED_PRICE _applied_price;                              //применяемая цена
+   CisNewBar _newCisBar;                                           //для проверки формирования нового бара
+   double  _takeProfit;                                            //тейк профит
+   public:                  
+   double GetTakeProfit() { return (_takeProfit); };               //получает значение тейк профита                 
+   int InitTradeBlock(string sym,
+                      ENUM_TIMEFRAMES timeFrame,   
                       uint FastPer, 
                       uint SlowPer,
-                      ENUM_MA_METHOD _method,
-                      ENUM_APPLIED_PRICE _applied_price);          //инициализирует торговый блок
+                      ENUM_MA_METHOD method,
+                      ENUM_APPLIED_PRICE applied_price);           //инициализирует торговый блок
    int DeinitTradeBlock();                                         //деинициализирует торговый блок
    int UpdateHandle(CROSS_EMA_HANDLE handle,uint period);          //изменяет параметры выбранной EMA на period. Если не успешно, то вернет false, а параметры не поменяет
-   bool UploadBuffers(uint start=1);                                           //загружает буферы 
-   ENUM_TM_POSITION_TYPE GetSignal (bool ontick,uint start=1);                 //получает торговый сигнал 
-  // bool UpdateParam (string sym,ENUM_TIMEFRAMES timeframe);      //обновдяет параметры объекта
+   bool UploadBuffers(uint start=1);                               //загружает буферы 
+   ENUM_TM_POSITION_TYPE GetSignal (bool ontick,uint start=1);     //получает торговый сигнал 
    CrossEMA ();   //конструктор класса CrossEMA           
   };
   
   
- int CrossEMA::InitTradeBlock(string _sym,
-                              ENUM_TIMEFRAMES _timeFrame,
-                              double _takeProfit,
+ int CrossEMA::InitTradeBlock(string sym,
+                              ENUM_TIMEFRAMES timeFrame,
                               uint FastPer, 
                               uint SlowPer,
-                              ENUM_MA_METHOD _method,
-                              ENUM_APPLIED_PRICE _applied_price)   //инициализирует торговый блок
+                              ENUM_MA_METHOD method,
+                              ENUM_APPLIED_PRICE applied_price)   //инициализирует торговый блок
   {
    
    if (SlowPer<=FastPer || FastPer<=3)
     {
-     fast_per=12;
-     slow_per=26;
+     _fast_per=12;
+     _slow_per=26;
      Print("Не правильно заданы периоды. По умолчанию slow=26, fast=12");
     }
    else
     {
-     fast_per=FastPer;
-     slow_per=SlowPer;
+     _fast_per=FastPer;
+     _slow_per=SlowPer;
     } 
-   sym             = _sym;
-   timeFrame       = _timeFrame;
-   method          = _method;
-   applied_price   = _applied_price; 
-   takeProfit      = _takeProfit;
-   priceDifference = 0;
-   ma_slow_handle=iMA(sym,timeFrame,slow_per,0,method,applied_price); //инициализация медленного индикатора
-   if(ma_slow_handle<0)
+   _sym             = sym;
+   _timeFrame       = timeFrame;
+   _method          = method;
+   _applied_price   = applied_price; 
+   _ma_slow_handle=iMA(_sym,_timeFrame,_slow_per,0,_method,_applied_price); //инициализация медленного индикатора
+   if(_ma_slow_handle<0)
     return INIT_FAILED;
-   ma_fast_handle=iMA(sym,timeFrame,fast_per,0,method,applied_price); //инициализация быстрого индикатора
-   if(ma_fast_handle<0)
+   _ma_fast_handle=iMA(_sym,_timeFrame,_fast_per,0,_method,_applied_price); //инициализация быстрого индикатора
+   if(_ma_fast_handle<0)
     return INIT_FAILED;
-   ma_ema3_handle=iMA(sym,timeFrame,3,0,method,applied_price); //инициализация индикатора EMA3
-   if(ma_ema3_handle<0)
+   _ma_ema3_handle=iMA(_sym,_timeFrame,3,0,_method,_applied_price); //инициализация индикатора EMA3
+   if(_ma_ema3_handle<0)
     return INIT_FAILED;    
    return INIT_SUCCEEDED;
   }
@@ -117,20 +112,20 @@
     switch (handle)  //выборка по хэндлу
      {
       case SLOW_EMA: //изменение параметров медленной EMA
-       if (period > fast_per) 
+       if (period > _fast_per) 
         {
-         slow_per = period;
-         ma_slow_handle=iMA(sym,timeFrame,slow_per,0,method,applied_price); //инициализация медленного индикатора
-         if(ma_slow_handle>=0)
+         _slow_per = period;
+         _ma_slow_handle=iMA(_sym,_timeFrame,_slow_per,0,_method,_applied_price); //инициализация медленного индикатора
+         if(_ma_slow_handle>=0)
           return INIT_SUCCEEDED;
         }
       break;
       case FAST_EMA: //изменение параметров быстрой EMA
-       if (period < slow_per && period > 3) 
+       if (period < _slow_per && period > 3) 
         {
-         fast_per = period;
-         ma_fast_handle=iMA(sym,timeFrame,fast_per,0,method,applied_price); //инициализация медленного индикатора
-         if(ma_slow_handle>=0)
+         _fast_per = period;
+         _ma_fast_handle=iMA(_sym,_timeFrame,_fast_per,0,_method,_applied_price); //инициализация медленного индикатора
+         if(_ma_slow_handle>=0)
           return INIT_SUCCEEDED;
         }      
       break;
@@ -140,18 +135,18 @@
    
  bool CrossEMA::UploadBuffers(uint start=1)                       //загружает буферы 
   {
-     if(CopyBuffer(ma_slow_handle, 0, start, 2, ma_slow) <= 0 || 
-      CopyBuffer(ma_fast_handle, 0, start, 2, ma_fast) <= 0 || 
-      CopyBuffer(ma_ema3_handle, 0, start, 1, ma_ema3) <= 0 ||
-      CopyClose(sym, 0, start, 1, close) <= 0 ||
-      CopyTime(sym, 0, start, 1, date_buffer) <= 0) //копирование буферов
+     if(CopyBuffer(_ma_slow_handle, 0, start, 2, ma_slow) <= 0 || 
+      CopyBuffer(_ma_fast_handle, 0, start, 2, ma_fast) <= 0 || 
+      CopyBuffer(_ma_ema3_handle, 0, start, 1, ma_ema3) <= 0 ||
+      CopyClose(_sym, 0, start, 1, close) <= 0 ||
+      CopyTime(_sym, 0, start, 1, date_buffer) <= 0) //копирование буферов
       return false;
      return true;
   }  
 
  ENUM_TM_POSITION_TYPE CrossEMA::GetSignal(bool ontick,uint start=1)  //получает торговый сингал
   {
-   if ( newCisBar.isNewBar() > 0 || ontick)
+   if ( _newCisBar.isNewBar() > 0 || ontick)
    {
    if(!UploadBuffers()) //копирование буферов
      {

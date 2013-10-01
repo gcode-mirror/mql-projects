@@ -23,13 +23,13 @@
 input int SL = 150;
 input int TP = 500;
 input double _lot = 1;
-input int historyDepth = 40;
+input int historyDepth = 50;
 input ENUM_TIMEFRAMES timeframe = PERIOD_M1;
 input bool trailing = false;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
-input bool tradeOnTrend = false;
+input bool tradeOnTrend = true;
 
 input bool useLimitOrders = false;
 input int limitPriceDifference = 20;
@@ -39,7 +39,7 @@ input int stopPriceDifference = 20;
 string symbol;                               //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm(false);
+CTradeManager ctm(true);
 MqlTick tick;
 
 //int handleMACD;
@@ -52,7 +52,6 @@ double globalMax;
 double globalMin;
 bool waitForSell;
 bool waitForBuy;
-
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -84,7 +83,7 @@ int OnInit()
    
    if (tradeOnTrend)
    {    
-    handle_PBI = iCustom(symbol,timeframe,"PriceBasedIndicator"); //загружаем хэндл индикатора PriceBasedIndicator  
+    handle_PBI = iCustom(symbol,timeframe,"PriceBasedIndicator",4,historyDepth,false); //загружаем хэндл индикатора PriceBasedIndicator  
     
     if(handle_PBI == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
     {
@@ -109,12 +108,10 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   ctm.SaveHistoryToFile();   //сохраним историю в файл
    ctm.Deinitialization();
    // Освобождаем динамические массивы от данных
    ArrayFree(low_buf);
    ArrayFree(high_buf);
-  // ArrayFree(PBI_buf);
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -130,19 +127,20 @@ void OnTick()
    int errClose = 0;
    int errPBI = 0;
    
+   string result;  //для проверки
+   
    static CisNewBar isNewBar(symbol, timeframe);
    
    if(isNewBar.isNewBar() > 0)
    {
     if (tradeOnTrend)
     {
-     //копируем данные из индикаторного массива в динамический массив MACD_buf для дальнейшей работы с ними
-     //errMACD=CopyBuffer(handleMACD, 0, 1, 1, MACD_buf);
+     //копируем данные из индикаторного массива в динамический массив PBI_buf для дальнейшей работы с ними
      errPBI = CopyBuffer(handle_PBI, 4, 1, 1, PBI_buf); //копируем буфер Price Based Indicator
-     
+          
      if(errPBI < 0)
      {
-      Alert("Не удалось скопировать данные из индикаторного буфера"); 
+      Alert(")))Не удалось скопировать данные из индикаторного буфера"); 
       return; 
      }
     } 
@@ -172,11 +170,12 @@ void OnTick()
      waitForSell = true;
     }
    }
-   
-
+                                     
+ //выше - проверка
    
  if (!tradeOnTrend || (PBI_buf[0]!=MOVE_TYPE_TREND_DOWN && PBI_buf[0]!=MOVE_TYPE_TREND_UP))
   {         
+    
    if(!SymbolInfoTick(Symbol(),tick))
    {
     Alert("SymbolInfoTick() failed, error = ",GetLastError());
@@ -203,6 +202,7 @@ void OnTick()
      {
       waitForBuy = false;
       waitForSell = false;
+      
      }
     }
    }

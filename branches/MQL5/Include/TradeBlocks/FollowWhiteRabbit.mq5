@@ -13,70 +13,44 @@
   {
    private:
    //системные переменные
-   string sym;                                       //переменная для хранения символа
-   ENUM_TIMEFRAMES timeFrame;
-   double supremacyPercent;
-   double profitPercent;
-   MqlTick tick;
-   int historyDepth;                                //глубина истории
+   string _sym;                                       //переменная для хранения символа
+   ENUM_TIMEFRAMES _timeFrame;
+   double _supremacyPercent;
+   double _profitPercent;
+   MqlTick _tick;
+   int _historyDepth;                                //глубина истории
    //буферы
    double  high_buf[]; 
    double  low_buf[]; 
    double  close_buf[1]; 
    double  open_buf[1];
-   ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
+   double  _takeProfit;  //тейк профит
+   ENUM_TM_POSITION_TYPE _opBuy, _opSell, _pos_type;
    public:
-   double takeProfit;
-   int priceDifference;
-   int InitTradeBlock(string _sym,
-                      ENUM_TIMEFRAMES _timeFrame,
-                      double _supremacyPercent,
-                      double _profitPercent,
-                      int _historyDepth,
-                      bool useLimitOrders,
-                      bool useStopOrders,
-                      int limitPriceDifference,
-                      int stopPriceDifference);          //инициализирует торговый блок
+   double GetTakeProfit() { return (_takeProfit); }; //получает значение тейк профита
+   int InitTradeBlock(string sym,
+                      ENUM_TIMEFRAMES timeFrame,
+                      double supremacyPercent,
+                      double profitPercent,
+                      int historyDepth);          //инициализирует торговый блок
    int DeinitTradeBlock();                                         //деинициализирует торговый блок
    bool UploadBuffers();                               //загружает буферы 
    ENUM_TM_POSITION_TYPE GetSignal (bool ontick);     //получает торговый сигнал 
   // FWRabbit ();   //конструктор класса Follow White Rabbit      
   };
 
-int FWRabbit::InitTradeBlock(string _sym,
-                             ENUM_TIMEFRAMES _timeFrame,
-                             double _supremacyPercent,
-                             double _profitPercent,
-                             int _historyDepth,
-                             bool useLimitOrders,
-                             bool useStopOrders,
-                             int limitPriceDifference,
-                             int stopPriceDifference
+int FWRabbit::InitTradeBlock(string sym,
+                             ENUM_TIMEFRAMES timeFrame,
+                             double supremacyPercent,
+                             double profitPercent,
+                             int historyDepth
                              )  //инициализация торгового блока
  {
-   sym = _sym;                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
-   timeFrame = _timeFrame; //запомним время запуска эксперта для получения торговой истории
-   supremacyPercent =  _supremacyPercent;
-   profitPercent    =  _profitPercent;
-   historyDepth     =  _historyDepth;
-   if (useLimitOrders)
-   {
-    opBuy = OP_BUYLIMIT;
-    opSell = OP_SELLLIMIT;
-    priceDifference = limitPriceDifference;
-   }
-   else if (useStopOrders)
-        {
-         opBuy = OP_BUYSTOP;
-         opSell = OP_SELLSTOP;
-         priceDifference = stopPriceDifference;
-        }
-        else
-        {
-         opBuy = OP_BUY;
-         opSell = OP_SELL;
-         priceDifference = 0;
-        }
+   _sym = _sym;                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
+   _timeFrame        =  timeFrame; //запомним время запуска эксперта для получения торговой истории
+   _supremacyPercent =  supremacyPercent;
+   _profitPercent    =  profitPercent;
+   _historyDepth     =  historyDepth;
    //устанавливаем индексацию для массивов ХХХ_buf
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
@@ -99,10 +73,10 @@ bool FWRabbit::UploadBuffers()    //загружает буферы
    int errHigh = 0;                                                   
    int errClose = 0;
    int errOpen = 0;
-   errLow   = CopyLow(sym, timeFrame, 1, historyDepth, low_buf);
-   errHigh  = CopyHigh(sym, timeFrame, 1, historyDepth, high_buf);
-   errClose = CopyClose(sym, timeFrame, 1, 1, close_buf);          
-   errOpen  = CopyOpen(sym, timeFrame, 1, 1, open_buf);
+   errLow   = CopyLow(_sym, _timeFrame, 1, _historyDepth, low_buf);
+   errHigh  = CopyHigh(_sym, _timeFrame, 1, _historyDepth, high_buf);
+   errClose = CopyClose(_sym, _timeFrame, 1, 1, close_buf);          
+   errOpen  = CopyOpen(_sym, _timeFrame, 1, 1, open_buf);
     if(errLow < 0 || errHigh < 0 || errClose < 0 || errOpen < 0)         //если есть ошибки
     {
      return false; //и выходим из функции 
@@ -120,7 +94,7 @@ ENUM_TM_POSITION_TYPE FWRabbit::GetSignal(bool ontick)  //получает торговый сигн
    
    static CIsNewBar isNewBar;
    
-   if ( isNewBar.isNewBar(sym, timeFrame) || ontick)
+   if ( isNewBar.isNewBar(_sym, _timeFrame) || ontick)
       
    {
     //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
@@ -128,29 +102,29 @@ ENUM_TM_POSITION_TYPE FWRabbit::GetSignal(bool ontick)  //получает торговый сигн
     if ( !UploadBuffers () )  //проверка, загрузились ли буферы
      return OP_UNKNOWN;
      
-    for(i = 0; i < historyDepth; i++)
+    for(i = 0; i < _historyDepth; i++)
     {
      sum = sum + high_buf[i] - low_buf[i];  
     }
-    avgBar = sum / historyDepth;
+    avgBar = sum / _historyDepth;
 
     lastBar = MathAbs(open_buf[0] - close_buf[0]);
     
-    if(GreatDoubles(lastBar, avgBar*(1 + supremacyPercent)))
+    if(GreatDoubles(lastBar, avgBar*(1 + _supremacyPercent)))
     {
-     double point = SymbolInfoDouble(sym, SYMBOL_POINT);
-     int digits   = SymbolInfoInteger(sym, SYMBOL_DIGITS);
+     double point = SymbolInfoDouble(_sym, SYMBOL_POINT);
+     int digits   = SymbolInfoInteger(_sym, SYMBOL_DIGITS);
      double vol=MathPow(10.0, digits); 
       
      if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
      {
-      takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
-      return opSell;
+      _takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + _profitPercent),0);
+      return _opSell;
      }
      if(GreatDoubles(close_buf[0], open_buf[0]))
      {   
-      takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
-      return opBuy;
+      _takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + _profitPercent),0);
+      return _opBuy;
      }
  
     }
