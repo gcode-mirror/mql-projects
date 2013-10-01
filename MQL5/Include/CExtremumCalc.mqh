@@ -8,16 +8,9 @@
 
 #include <CompareDoubles.mqh>
 
-enum DIRECTION
-{
- ZERO, 
- MAX, 
- MIN
-};
-
 struct SExtremum
 {
- DIRECTION direction;
+ int direction;
  double price;
 };
 
@@ -33,12 +26,13 @@ class CExtremumCalc
  CExtremumCalc();
  CExtremumCalc(int e, int depth);
 ~CExtremumCalc();
- DIRECTION isExtremum(double a, double b, double c);
+ SExtremum isExtremum(double a, double b, double c);
  void FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf);
  void ZeroArray();
  int NumberOfExtr();
  SExtremum getExtr(int index);
 };
+
 CExtremumCalc::CExtremumCalc():
                _epsilon (50),
                _depth (128),
@@ -61,20 +55,23 @@ CExtremumCalc::~CExtremumCalc()
                  ArrayFree(_extr_array);
                 }             
 
-DIRECTION CExtremumCalc::isExtremum(double a,double b,double c)
+SExtremum CExtremumCalc::isExtremum(double vol1,double vol2,double vol3)
 {
- if(_last == -1 || GreatDoubles(MathAbs(b - _extr_array[_last].price), _epsilon*Point()))
+ SExtremum res;
+ res.direction = 0;
+ res.price = vol2;
+ if(_last == -1 || GreatDoubles(MathAbs(vol2 - _extr_array[_last].price), _epsilon*Point()))
  {
-  if(GreatDoubles(b, a) && GreatDoubles(b, c))
+  if(GreatDoubles(vol2, vol1) && GreatDoubles(vol2, vol3))
   {
-   return(MAX);
+   res.direction = 1;// минимум в точке vol2
   }
-  else if(LessDoubles(b, a) && LessDoubles(b, c))
+  else if(LessDoubles(vol2, vol1) && LessDoubles(vol2, vol3))
        {
-        return(MIN);
+        res.direction = -1;// минимум в точке vol2
        }
  }
- return(ZERO);
+ return(res);
 }
 
 
@@ -99,14 +96,14 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
  if(!ArrayGetAsSeries(price)) ArraySetAsSeries(price, true);
  if(!ArrayGetAsSeries(_extr_array)) ArraySetAsSeries(_extr_array, true);
  //if(!ArrayGetAsSeries(time)) ArraySetAsSeries(time, true);
- SExtremum zero = {ZERO, 0};
+ SExtremum zero = {0, 0};
  ZeroArray();
  _last = -1;
  for(int i = _depth-1; i > 1; i--)
  {  
-  _extr_array[i].direction = isExtremum(price[i+1], price[i], price[i-1]);
+  _extr_array[i].direction = isExtremum(price[i+1], price[i], price[i-1]).direction;
   //Print(StringFormat("%s i = %d; price[i+1] = %f, price[i] = %f, price[i-1] = %f, dir = %s", TimeToString(time[i]), i,  price[i+1], price[i], price[i-1], EnumToString((DIRECTION)_extr_array[i].direction)));
-  if(_extr_array[i].direction != ZERO)
+  if(_extr_array[i].direction != 0)
   {
    //Alert( i, " ", _last, " ", time[i], " ", EnumToString((DIRECTION)_extr_array[i].direction));
    if(_last == -1)
@@ -122,7 +119,7 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
    }
    else
    {
-    if(_extr_array[i].direction == MAX)
+    if(_extr_array[i].direction == 1)
     {
      if(_extr_array[i].price > _extr_array[_last].price)
      {
@@ -134,7 +131,7 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
       _extr_array[i] = zero;
      }
     }
-    if(_extr_array[i].direction == MIN)
+    if(_extr_array[i].direction == -1)
     {
      if(_extr_array[i].price < _extr_array[_last].price)
      {
@@ -155,7 +152,7 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
 
 void CExtremumCalc::ZeroArray()
 {
- SExtremum zero = {ZERO, 0};
+ SExtremum zero = {0, 0};
  for(int i = _depth-1; i > 0; i--)
  {
   _extr_array[i] = zero;
@@ -171,6 +168,7 @@ int CExtremumCalc::NumberOfExtr ()
  }
  return count;
 }
+
 SExtremum CExtremumCalc::getExtr(int index)
 {
  if(0 <= index && index < _depth)
@@ -178,7 +176,7 @@ SExtremum CExtremumCalc::getExtr(int index)
  else
  {
   Alert(__FUNCTION__, " bad index = ", index);
-  SExtremum error = {ZERO, -1};
+  SExtremum error = {0, -1};
   return error;
  }
 }
