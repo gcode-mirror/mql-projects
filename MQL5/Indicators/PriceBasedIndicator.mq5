@@ -161,7 +161,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
      
    //--- зададим цвет свечи
      ExtColorsBuffer[bar] = trend.GetMoveType(buffer_index); 
-     PrintFormat("bar = %d, buf_index = %d, MoveType = %s", bar, buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
+     //PrintFormat("bar = %d, buf_index = %d, MoveType = %s", bar, buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
      //PrintFormat("open_buf = %.05f, high_buf = %.05f, low_buf = %.05f, close_buf = %.05f, open = %.05f, high = %.05f, low = %.05f, close = %.05f"
      //           , ExtOpenBuffer[bar], ExtHighBuffer[bar], ExtLowBuffer[bar], ExtCloseBuffer[bar]
      //           , open[bar], high[bar], low[bar], close[bar]);
@@ -170,6 +170,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
      if (trend.GetExtremumDirection(buffer_index) > 0)
      {
       ExtUpArrowBuffer[bar] = trend.GetExtremum(buffer_index);
+      //Print("ћаксимум");
      }
      else
      {
@@ -178,6 +179,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
      if (trend.GetExtremumDirection(buffer_index) < 0)
      {
       ExtDownArrowBuffer[bar] = trend.GetExtremum(buffer_index);
+      //Print("ћинимум");
      }
      else
      {
