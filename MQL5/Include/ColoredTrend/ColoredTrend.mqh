@@ -277,7 +277,7 @@ SExtremum CColoredTrend::isExtremum(double vol1, double vol2, double vol3, int l
  
  if (LessDoubles(vol1, vol2, digits)
   && GreatDoubles(vol2, vol3, digits)
-  && LessDoubles(aExtremums[last].price, vol2 - difToNewExtremum*Point(), 5))
+  && LessDoubles(aExtremums[last].price, vol2 - difToNewExtremum, 5))
  {
   res.direction = 1;// максимум в точке vol2
  } 

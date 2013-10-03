@@ -27,7 +27,7 @@ class CExtremumCalc
  CExtremumCalc();
  CExtremumCalc(int e, int depth);
 ~CExtremumCalc();
- SExtremum isExtremum(double a, double b, double c);
+ SExtremum isExtremum(double vol1,double vol2,double vol3);
  void FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf);
  void ZeroArray();
  int NumberOfExtr();
@@ -160,6 +160,7 @@ void CExtremumCalc::ZeroArray()
   _extr_array[i] = zero;
  }
 }
+
 int CExtremumCalc::NumberOfExtr ()
 {
  int count = 0;
