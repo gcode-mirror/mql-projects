@@ -11,6 +11,13 @@
 #include <StringUtilities.mqh>
 #include <CLog.mqh>
 #include "TradeLines.mqh"
+
+struct SExtremum
+{
+ int direction;
+ double price;
+};
+
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
 //+------------------------------------------------------------------+
@@ -19,9 +26,12 @@ class CSanya: public CBrothers
 protected:
  double _high;
  double _low;
+ double _average;
  double _averageMin;
  double _averageMax;
  int _countSteps;
+ 
+ SExtremum num0, num1, num2;
  
  MqlTick tick;
  
@@ -31,6 +41,7 @@ protected:
  CTradeLine averageMinLine;
  CTradeLine averageMaxLine;
 
+ SExtremum isExtremum();
 public:
 //--- Конструкторы
  //void CSanya();
@@ -41,6 +52,7 @@ public:
  void InitMonthTrade();
  double RecountVolume();
  void RecountDelta();
+ void RecountStartPrice();
 };
 
 //+------------------------------------------------------------------+
@@ -78,6 +90,7 @@ void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDel
    _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
 
    _deltaFast = _deltaFastBase;
+   _average = 0;
    _averageMin = 0;
    _averageMax = 0;
    _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
@@ -105,7 +118,7 @@ void CSanya::InitDayTrade()
  {
   PrintFormat("%s Новый день %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_day_number));
   _deltaFast = _deltaFastBase;
-  _isDayInit = true;
+  _average = 0;
   _averageMin = 0;
   _averageMax = 0;
   _high = SymbolInfoDouble(_symbol, SYMBOL_LAST);
@@ -113,6 +126,7 @@ void CSanya::InitDayTrade()
   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
   _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
+  _isDayInit = true;
  }
 }
 
@@ -131,6 +145,7 @@ void CSanya::InitMonthTrade()
   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
   _high = SymbolInfoDouble(_symbol, SYMBOL_BID);
   _low = SymbolInfoDouble(_symbol, SYMBOL_BID);
+  _average = 0;
   _averageMax = 0;
   _averageMin = 0;
   _prevMonthPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
@@ -158,35 +173,14 @@ void CSanya::RecountDelta()
 // Текущая цена
  double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
 
- double priceAB, priceHL, _average;
+ double priceAB, priceHL;
  SymbolInfoTick(_symbol, tick);
 
-// Если цена пошла вверх...
-
- if (GreatDoubles (currentPrice, _high + 2*_dayStep*Point()) && _averageMax == 0) // Если текущая цена повысилась на шаг
- {
-  Print("цена увеличилась на 2 шага, начинаем расчет среднего");
-
-  _averageMax = currentPrice - (currentPrice - _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
-  _high = currentPrice;                                          // запомним это
-
-  highLine.Price(0, _high);
-  averageMaxLine.Price(0, _averageMax);
- }
-
- if (GreatDoubles(currentPrice, _high) && _averageMax != 0)
- {
-  _averageMax = currentPrice - (currentPrice - _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
-  _high = currentPrice;
-                                            // запомним это
-  highLine.Price(0, _high);
-  averageMaxLine.Price(0, _averageMax);
- }
  
  if (GreatDoubles(_high, _startDayPrice + _countSteps*_dayStep*Point())) // Если цена выросла слишком сильно
  {
-  PrintFormat("цена ушла вверх на %d шагов, переносим цену старта расчетов. average=%.06f, start=%.06f", _countSteps, _averageMax, _startDayPrice);
-  _startDayPrice = _averageMax;
+  //PrintFormat("цена ушла вверх на %d шагов, переносим цену старта расчетов. average=%.06f, start=%.06f", _countSteps, _average, _startDayPrice);
+  _startDayPrice = _average;
   _low = _startDayPrice - _dayStep*Point();
   
   startLine.Price(0, _startDayPrice);
@@ -198,29 +192,11 @@ void CSanya::RecountDelta()
   }
  }
  
-// Если цена пошла вниз...
- if (LessDoubles(currentPrice, _low - 2*_dayStep*Point()) && _averageMin == 0) // Если текущая цена понизилась на шаг
- {
-  Print("цена уменьшилась на 2 шага");
-  _averageMin = currentPrice + (_startDayPrice - currentPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
-  _low = currentPrice;                                           // запомним это
-  
-  lowLine.Price(0, _low);
-  averageMinLine.Price(0, _averageMin);
- }
- if (LessDoubles(currentPrice, _low) && _averageMin != 0)
- {
-  _averageMin = currentPrice + (_startDayPrice - currentPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
-  _low = currentPrice;                                           // запомним это
-  
-  lowLine.Price(0, _low);
-  averageMinLine.Price(0, _averageMin);
- }
 
- if (LessDoubles(_low, _startDayPrice - _countSteps*_dayStep*Point()) && _averageMin != 0) // Если цена упала слишком сильно
+ if (LessDoubles(_low, _startDayPrice - _countSteps*_dayStep*Point()) && _average != 0) // Если цена упала слишком сильно
  {
   PrintFormat("цена ушла вниз на %d шагов , переносим цену старта расчетов.", _countSteps);
-  _startDayPrice = _averageMin;
+  _startDayPrice = _average;
   _high = _startDayPrice + _dayStep*Point();
   
   startLine.Price(0, _startDayPrice);
@@ -233,7 +209,7 @@ void CSanya::RecountDelta()
  }
  
  priceAB = (_direction == 1) ? tick.ask : tick.bid;
- _average = (_direction == 1) ? _averageMax : _averageMin;
+ //_average = (_direction == 1) ? _averageMax : _averageMin;
  if ( _average > 0 &&
       _direction*(_average - _startDayPrice) > 0 && // Если среднее уже вычислено на уровне выше(ниже) стартовой
       _direction*(priceAB - _average) < 0 &&        // цена прошла через среднее вниз(вверх)
@@ -246,7 +222,7 @@ void CSanya::RecountDelta()
  }
 
  priceAB = (_direction == 1) ? tick.bid : tick.ask;
- _average = (_direction == 1) ? _averageMin : _averageMax;
+ //_average = (_direction == 1) ? _averageMin : _averageMax;
  if (_direction*(_average - _startDayPrice) < 0 &&  // Если среднее уже вычислено на уровне ниже(выше) стартовой
      _direction*(priceAB - _average) > 0 &&         // цена прошла через среднее вверх(вниз)
      _direction*(priceAB - _startDayPrice) < 0 &&   // цена ниже стартовой
@@ -309,4 +285,79 @@ double CSanya::RecountVolume()
  //PrintFormat("%s большой объем %.02f, _deltaSlow=%d", MakeFunctionPrefix(__FUNCTION__),  _slowVol, _deltaSlow);
  //PrintFormat("%s малый объем %.02f, _deltaFast=%d", MakeFunctionPrefix(__FUNCTION__), _fastVol, _deltaFast);
  return (_slowVol - _fastVol); 
+}
+
+//+------------------------------------------------------------------+
+//| Пересчет цены начала отсчета                                     |
+//| INPUT:  no.                                                      |
+//| OUTPUT: no.
+//| REMARK: no.                                                      |
+//+------------------------------------------------------------------+
+void CSanya::RecountStartPrice()
+{
+ // Проверяем наличие экстремума на текущем баре
+ SExtremum extr =  isExtremum();
+ if (extr.direction != 0)
+ {
+  if (extr.direction == num0.direction) // если новый экстремум в том же напрвлении, что старый
+  {
+   num0.direction = 0;
+  }
+  else
+  {
+   num2 = num1;
+   num1 = num0;
+   num0 = extr;
+  }
+ }
+}
+
+//+--------------------------------------------------------------------+
+//| Функция возвращает направление и значение экстремума в точке vol2  |
+//+--------------------------------------------------------------------+
+SExtremum CSanya::isExtremum()
+{
+ SExtremum result = {0,0};
+ double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+// Если цена пошла вверх...
+
+ if (GreatDoubles (currentPrice, _high + 2*_dayStep*Point()) && _average == 0) // Если текущая цена повысилась на шаг
+ {
+  Print("цена увеличилась на 2 шага, начинаем расчет среднего");
+
+  _average = currentPrice - (currentPrice - _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+  _high = currentPrice;                                          // запомним это
+
+  highLine.Price(0, _high);
+  //averageMaxLine.Price(0, _averageMax);
+ }
+
+ if (GreatDoubles(currentPrice, _high) && _average != 0)
+ {
+  _average = currentPrice - (currentPrice - _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+  _high = currentPrice;
+                                            // запомним это
+  highLine.Price(0, _high);
+  //averageMaxLine.Price(0, _averageMax);
+ }
+
+// Если цена пошла вниз...
+ if (LessDoubles(currentPrice, _low - 2*_dayStep*Point()) && _average == 0) // Если текущая цена понизилась на шаг
+ {
+  Print("цена уменьшилась на 2 шага");
+  _average = currentPrice + (_startDayPrice - currentPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+  _low = currentPrice;                                           // запомним это
+  
+  lowLine.Price(0, _low);
+  //averageMinLine.Price(0, _averageMin);
+ }
+ if (LessDoubles(currentPrice, _low) && _average != 0)
+ {
+  _average = currentPrice + (_startDayPrice - currentPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+  _low = currentPrice;                                           // запомним это
+  
+  lowLine.Price(0, _low);
+  //averageMinLine.Price(0, _averageMin);
+ }
+ return(result);
 }

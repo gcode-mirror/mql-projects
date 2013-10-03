@@ -21,6 +21,11 @@ int error = 0;
 //+------------------------------------------------------------------+
 class CTradeManager
 {
+private:
+  bool CloseReProcessingPosition(int i,color Color=CLR_NONE);
+  long MakeMagic(string strSymbol = "");
+  void SaveSituationToFile();  
+  
 protected:
   ulong _magic;
   bool _useSound;
@@ -53,10 +58,6 @@ public:
   void OnTrade(datetime history_start);
   bool isMinProfit(string symbol);
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
-private:
-  bool CloseReProcessingPosition(int i,color Color=CLR_NONE);
-  long MakeMagic(string strSymbol = "");
-  void SaveSituationToFile();  
 };
 
 //+------------------------------------------------------------------+
@@ -369,6 +370,7 @@ void CTradeManager::OnTick()
 }
 
 //+------------------------------------------------------------------+
+//
 //+------------------------------------------------------------------+
 void CTradeManager::Initialization()
 {
