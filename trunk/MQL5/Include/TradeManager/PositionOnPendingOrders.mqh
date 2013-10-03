@@ -133,13 +133,9 @@ bool CPosition::isMinProfit(void)
   switch(_type)
   {
    case OP_BUY:
-   case OP_BUYLIMIT:
-   case OP_BUYSTOP:
     if (SymbInfo.Bid() - _minProfit*SymbInfo.Point() >= _posPrice ) return true;
     break;
    case OP_SELL:
-   case OP_SELLLIMIT:
-   case OP_SELLSTOP:
     if (SymbInfo.Ask() + _minProfit*SymbInfo.Point() <= _posPrice ) return true;
     break;
   }

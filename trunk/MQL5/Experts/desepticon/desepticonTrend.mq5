@@ -198,8 +198,8 @@ void OnTick()
    switch(tradeManager.GetPositionType(Symbol()))
    {
     case OP_BUY:
-    case OP_BUYLIMIT:
-    case OP_BUYSTOP:
+    //case OP_BUYLIMIT:
+    //case OP_BUYSTOP:
     {
      if (GreatDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0] + deltaEMAtoEMA*point))
      {
@@ -209,8 +209,8 @@ void OnTick()
      break;
     }
     case OP_SELL:
-    case OP_SELLLIMIT:
-    case OP_SELLSTOP:
+    //case OP_SELLLIMIT:
+    //case OP_SELLSTOP:
     {
      if (LessDoubles(bufferEMAfastJr[0], bufferEMAslowJr[0] - deltaEMAtoEMA*point))
      {

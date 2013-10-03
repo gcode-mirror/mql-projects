@@ -46,16 +46,17 @@ public:
   bool ClosePosition(long ticket, color Color=CLR_NONE);     // Закртыие позиции по тикету
   bool ClosePosition(int i,color Color=CLR_NONE);            // Закрытие позиции по индексу в массиве позиций
   bool ClosePosition(string symbol, color Color=CLR_NONE);   // Закрытие позиции по символу 
-  bool CloseReProcessingPosition(int i,color Color=CLR_NONE);
-  long MakeMagic(string strSymbol = "");
   void DoTrailing();
   void Initialization();
   void Deinitialization();
-  bool isMinProfit(string symbol);
   void OnTick();
   void OnTrade(datetime history_start);
-  void SaveSituationToFile(bool debug = false);
+  bool isMinProfit(string symbol);
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
+private:
+  bool CloseReProcessingPosition(int i,color Color=CLR_NONE);
+  long MakeMagic(string strSymbol = "");
+  void SaveSituationToFile();  
 };
 
 //+------------------------------------------------------------------+
@@ -109,6 +110,10 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
                        , GetLastError(), ErrorDescription(GetLastError())));
         }
        }
+       else
+       {
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось выбрать позицию по тикету %d", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()));
+       }
       }
      }
     }
@@ -144,13 +149,17 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
                         , GetLastError(), ErrorDescription(GetLastError())));
         }
        }
+       else
+       {
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось выбрать позицию по тикету %d", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()));
+       }
       }
      }
     }
    }
    break;
   default:
-   //log_file.Write(LOG_DEBUG, StringFormat("%s Error: Invalid ENUM_VIRTUAL_ORDER_TYPE", MakeFunctionPrefix(__FUNCTION__)));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Error: Invalid ENUM_VIRTUAL_ORDER_TYPE", MakeFunctionPrefix(__FUNCTION__)));
    break;
  }
  
@@ -371,8 +380,24 @@ void CTradeManager::Initialization()
   _openPositions.ReadFromFile(file_handle);
   FileClose(CreateRDFilename());
   log_file.Write(LOG_DEBUG, StringFormat("%s Скопировали данные из файла состояния.", MakeFunctionPrefix(__FUNCTION__)));
-  //SaveSituationToFile(true);
   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+  int total = _openPositions.Total();
+  CPosition *pos;
+  log_file.Write(LOG_DEBUG, StringFormat("%s %d Проверим соответствует ли загруженное состояние реальному.", MakeFunctionPrefix(__FUNCTION__), total));
+  for (int i = 0; i < total; i++)  //проверка на соответствие загруженной и текущей ситуации
+  {
+   pos = _openPositions.At(i);
+   if(PositionSelect(pos.getSymbol()))
+   {
+    if (pos.getPositionTicket() == PositionGetInteger(POSITION_IDENTIFIER))
+    {
+     continue;
+    }
+   }
+   _openPositions.Delete(i);
+   log_file.Write(LOG_DEBUG, StringFormat("%s Загруженная ситуация из файла %s не совпадает с текущей. Удаляем позицию из массива _openPositions", MakeFunctionPrefix(__FUNCTION__), CreateRDFilename()));
+  }
+  log_file.Write(LOG_DEBUG, StringFormat("%s Проверка пройдена.", MakeFunctionPrefix(__FUNCTION__)));
  }
  else
   log_file.Write(LOG_DEBUG, StringFormat("%s Файл состояния отсутствует.Предыдущее завершенее программы было корректным.", MakeFunctionPrefix(__FUNCTION__)));
@@ -512,11 +537,10 @@ long CTradeManager::MakeMagic(string strSymbol = "")
 /// \param [bool] debug       if want to debug
 /// \return							generated string
 //+------------------------------------------------------------------+
-string CreateRDFilename (bool debug = false)
+string CreateRDFilename ()
 {
  string result;
- if (debug) result = StringFormat("%s\\RescueData\\%s_%s_%s_debug.csv", MQL5InfoString(MQL5_PROGRAM_NAME), MQL5InfoString(MQL5_PROGRAM_NAME), StringSubstr(Symbol(),0,6), PeriodToString(Period()));
- else result = StringFormat("%s\\RescueData\\%s_%s_%s_rd.csv", MQL5InfoString(MQL5_PROGRAM_NAME), MQL5InfoString(MQL5_PROGRAM_NAME), StringSubstr(Symbol(),0,6), PeriodToString(Period()));
+ result = StringFormat("%s\\RescueData\\%s_%s_%s_rd.csv", MQL5InfoString(MQL5_PROGRAM_NAME), MQL5InfoString(MQL5_PROGRAM_NAME), StringSubstr(Symbol(),0,6), PeriodToString(Period()));
  return(result);
 }
 
@@ -524,13 +548,12 @@ string CreateRDFilename (bool debug = false)
 /// Save position array to file
 /// \param [bool] debug       if want to debug
 //+------------------------------------------------------------------+
-void CTradeManager::SaveSituationToFile(bool debug = false)
+void CTradeManager::SaveSituationToFile()
 {
- string file_name = CreateRDFilename(debug);
- int file_handle = FileOpen(file_name, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
+ int file_handle = FileOpen(CreateRDFilename(), FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
  if(file_handle == INVALID_HANDLE)
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), file_name));
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), CreateRDFilename()));
   return;
  }
  _openPositions.WriteToFile(file_handle);
