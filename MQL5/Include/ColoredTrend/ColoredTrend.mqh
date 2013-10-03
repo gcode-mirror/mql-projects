@@ -122,7 +122,7 @@ void CColoredTrend::CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_
  ArrayResize(enumMoveType, rates_total, rates_total);
  ArrayResize(aExtremums, rates_total, rates_total);
 
- // PrintFormat("rates = %d, bar = %d", rates_total, bar);
+ PrintFormat("rates = %d, bar = %d", rates_total, bar);
  enumMoveType[bar] = enumMoveType[bar - 1];
  //PrintFormat("enumMoveType[%d] = %s, bar = %d, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar, bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
  difToNewExtremum = ATR_buf[bar] / 2;
