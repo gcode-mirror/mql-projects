@@ -13,13 +13,14 @@
 
 input int epsilon = 25;
 input int depth = 50;
+input int period_ATR = 100;
 
-input bool show_Extr_MN = true;
-input bool show_Extr_W1 = true;
-input bool show_Extr_D1 = true;
-input bool show_Extr_H4 = true;
-input bool show_Extr_H1 = true;
-input bool show_Price_D1 = true;
+input bool show_Extr_MN = false;
+input bool show_Extr_W1 = false;
+input bool show_Extr_D1 = false;
+input bool show_Extr_H4 = false;
+input bool show_Extr_H1 = false;
+input bool show_Price_D1 = false;
 
 CExtremumCalc calcMN(epsilon, depth);
 CExtremumCalc calcW1(epsilon, depth);
@@ -143,9 +144,9 @@ bool HLineCreate(const long            chart_ID=0,        // ID графика
                  const int             sub_window=0,      // номер подокна
                  double                price=0,           // цена линии
                  const color           clr=clrRed,        // цвет линии
-                 const ENUM_LINE_STYLE style=STYLE_SOLID, // стиль линии
                  const int             width=1,           // толщина линии
-                 const bool            back=false         // на заднем плане
+                 const ENUM_LINE_STYLE style=STYLE_SOLID, // стиль линии
+                 const bool            back=true          // на заднем плане
                 )      
 {
 //--- если цена не задана, то установим ее на уровне текущей цены Bid
@@ -207,38 +208,38 @@ bool HLineDelete(const long   chart_ID=0,   // ID графика
 
 void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[])
 {
- double open_buf[1];
+ double  open_buf[1];
  double close_buf[1];
- double high_buf[1];
- double low_buf[1];
+ double  high_buf[1];
+ double   low_buf[1];
    
  CopyOpen (symbol, tf, 1, 1,  open_buf);
  CopyClose(symbol, tf, 1, 1, close_buf);
  CopyHigh (symbol, tf, 1, 1,  high_buf);
  CopyLow  (symbol, tf, 1, 1,   low_buf);
  
- resArray[0].price  = open_buf[0];
+ resArray[0].price =  open_buf[0];
  resArray[1].price = close_buf[0];
- resArray[2].price  = high_buf[0];
- resArray[3].price   = low_buf[0];
+ resArray[2].price =  high_buf[0];
+ resArray[3].price =   low_buf[0];
 }
 
 void CreatePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "price_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"open" , 0,  fp[0].price, clr);
- HLineCreate(0, name+"close", 0, fp[1].price, clr);
- HLineCreate(0, name+"high" , 0,  fp[2].price, clr);
- HLineCreate(0, name+"low"  , 0,   fp[3].price, clr);
+ HLineCreate(0, name+"open" , 0, fp[0].price, clr, fp[0].width);
+ HLineCreate(0, name+"close", 0, fp[1].price, clr, fp[1].width);
+ HLineCreate(0, name+"high" , 0, fp[2].price, clr, fp[2].width);
+ HLineCreate(0, name+"low"  , 0, fp[3].price, clr, fp[3].width);
 }
 
 void MovePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf)
 {
  string name = "price_" + EnumToString(tf) + "_";
- HLineMove(0, name+"open" ,  fp[0].price);
+ HLineMove(0, name+"open" , fp[0].price);
  HLineMove(0, name+"close", fp[1].price); 
- HLineMove(0, name+"high" ,  fp[2].price); 
- HLineMove(0, name+"low"  ,   fp[3].price);  
+ HLineMove(0, name+"high" , fp[2].price); 
+ HLineMove(0, name+"low"  , fp[3].price);  
 }
 
 void DeletePriceLines(ENUM_TIMEFRAMES tf)
@@ -259,12 +260,31 @@ void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, 
   return;
  }
  
+ int handle_ATR = iATR(symbol, tf, period_ATR);
+ double buffer_ATR [];
+ ArrayResize(buffer_ATR, depth, 0);
+ if(handle_ATR != INVALID_HANDLE)
+ {
+  int copiedATR = -1;
+  for(int attempts = 0; attempts < 25 && copiedATR < 0; attempts++)
+  {
+   copiedATR = CopyBuffer(handle_ATR, 0, 0, depth, buffer_ATR);
+  } 
+  if (copiedATR != depth) 
+  {
+   Alert(__FUNCTION__, "Не удалось скопировать буффер полностью ATR. Error = ", GetLastError());
+   if(GetLastError() == 4401) 
+    Alert(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
+  }
+ }
+ 
  int count = 0;
  for(int i = 0; i < depth && count < 3; i++)
  {
   if(extrcalc.getExtr(i).price > 0)
   {
    resArray[count] = extrcalc.getExtr(i);
+   resArray[count].width = (int)(buffer_ATR[i]*SymbolInfoInteger(symbol, SYMBOL_DIGITS)*10/4);
    count++;
   }
  }
@@ -273,9 +293,9 @@ void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, 
 void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"one"   , 0, te[0].price, clr);
- HLineCreate(0, name+"two"   , 0, te[1].price, clr);
- HLineCreate(0, name+"three" , 0, te[2].price, clr);
+ HLineCreate(0, name+"one"   , 0, te[0].price, clr, te[0].width);
+ HLineCreate(0, name+"two"   , 0, te[1].price, clr, te[1].width);
+ HLineCreate(0, name+"three" , 0, te[2].price, clr, te[2].width);
 }
 
 void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)

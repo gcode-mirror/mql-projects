@@ -47,7 +47,7 @@ private:
    ENUM_ORDER_TYPE PositionOrderType(int type);
    
 public:
-   void CPosition() {}; // конструктор по умолчанию
+   void CPosition() { trade = new CTMTradeFunctions(); }; // конструктор по умолчанию
    void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                 ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
                 
@@ -593,6 +593,7 @@ void CPosition::WriteToFile(int handle)
 {
  if(handle != INVALID_HANDLE)
  {
+  FileWrite(handle, TimeCurrent());
   FileWrite(handle,      
             _magic,           
             Symbol(),         

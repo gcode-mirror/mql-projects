@@ -12,6 +12,7 @@ struct SExtremum
 {
  int direction;
  double price;
+ int width;
 };
 
 class CExtremumCalc
@@ -96,7 +97,7 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
  if(!ArrayGetAsSeries(price)) ArraySetAsSeries(price, true);
  if(!ArrayGetAsSeries(_extr_array)) ArraySetAsSeries(_extr_array, true);
  //if(!ArrayGetAsSeries(time)) ArraySetAsSeries(time, true);
- SExtremum zero = {0, 0};
+ SExtremum zero = {0, 0, 0};
  ZeroArray();
  _last = -1;
  for(int i = _depth-1; i > 1; i--)
@@ -105,6 +106,7 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
   //Print(StringFormat("%s i = %d; price[i+1] = %f, price[i] = %f, price[i-1] = %f, dir = %s", TimeToString(time[i]), i,  price[i+1], price[i], price[i-1], EnumToString((DIRECTION)_extr_array[i].direction)));
   if(_extr_array[i].direction != 0)
   {
+   _extr_array[i].width = 1;
    //Alert( i, " ", _last, " ", time[i], " ", EnumToString((DIRECTION)_extr_array[i].direction));
    if(_last == -1)
    {

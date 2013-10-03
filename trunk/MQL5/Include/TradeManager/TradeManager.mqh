@@ -376,28 +376,16 @@ void CTradeManager::Initialization()
  int file_handle = FileOpen(CreateRDFilename(), FILE_READ|FILE_CSV|FILE_COMMON, ";");
  if (file_handle != INVALID_HANDLE)
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Существует файл состояния. Считываем данные из него.", MakeFunctionPrefix(__FUNCTION__)));
-  _openPositions.ReadFromFile(file_handle);
-  FileClose(CreateRDFilename());
-  log_file.Write(LOG_DEBUG, StringFormat("%s Скопировали данные из файла состояния.", MakeFunctionPrefix(__FUNCTION__)));
-  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-  int total = _openPositions.Total();
-  CPosition *pos;
-  log_file.Write(LOG_DEBUG, StringFormat("%s %d Проверим соответствует ли загруженное состояние реальному.", MakeFunctionPrefix(__FUNCTION__), total));
-  for (int i = 0; i < total; i++)  //проверка на соответствие загруженной и текущей ситуации
+  if(FileReadDatetime(file_handle) < TimeCurrent())
   {
-   pos = _openPositions.At(i);
-   if(PositionSelect(pos.getSymbol()))
-   {
-    if (pos.getPositionTicket() == PositionGetInteger(POSITION_IDENTIFIER))
-    {
-     continue;
-    }
-   }
-   _openPositions.Delete(i);
-   log_file.Write(LOG_DEBUG, StringFormat("%s Загруженная ситуация из файла %s не совпадает с текущей. Удаляем позицию из массива _openPositions", MakeFunctionPrefix(__FUNCTION__), CreateRDFilename()));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Существует файл состояния. Считываем данные из него.", MakeFunctionPrefix(__FUNCTION__)));
+   _openPositions.ReadFromFile(file_handle);
+   FileClose(CreateRDFilename());
+   log_file.Write(LOG_DEBUG, StringFormat("%s Скопировали данные из файла состояния.", MakeFunctionPrefix(__FUNCTION__)));
+   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
   }
-  log_file.Write(LOG_DEBUG, StringFormat("%s Проверка пройдена.", MakeFunctionPrefix(__FUNCTION__)));
+  else
+   log_file.Write(LOG_DEBUG, StringFormat("%s Файл состояния не является актуальным.Игнорируем.", MakeFunctionPrefix(__FUNCTION__)));
  }
  else
   log_file.Write(LOG_DEBUG, StringFormat("%s Файл состояния отсутствует.Предыдущее завершенее программы было корректным.", MakeFunctionPrefix(__FUNCTION__)));
