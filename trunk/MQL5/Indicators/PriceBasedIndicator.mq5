@@ -62,6 +62,7 @@ CColoredTrend *trend, *topTrend;
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int digits;
+int startBars;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -135,7 +136,10 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
 //---- объявление целочисленных переменных
    int first, bar;
    if(prev_calculated > rates_total || prev_calculated <= 0) // проверка на первый старт расчета индикатора
-      first = rates_total - bars - historyDepth;           // стартовый номер для расчета всех баров
+   {
+    first = rates_total - bars - historyDepth;           // стартовый номер для расчета всех баров
+    startBars =  rates_total - 1;
+   }
    else first = prev_calculated - 1;        // стартовый номер для расчета новых баров
    
 //---- проверка на начало нового бара
@@ -144,11 +148,11 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
   //  Print("init trend, rates_total = ", rates_total);
     
     //--- копируем цены в буферы
-    //for(int bar = rates_total - bars - historyDepth; bar < rates_total - 1  && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
     for(int bar = first; bar < rates_total - 1  && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
     {
    //--- вычислим соответствующий индекс для графических буферов
-     int buffer_index = bar - rates_total + bars + historyDepth + 1;
+     PrintFormat("bar=%d, startBars=%d",bar,startBars);
+     int buffer_index = bar - startBars + bars + historyDepth + 1;
      topTrend.CountMoveType(buffer_index);
      //trend.CountMoveType(bars, historyDepth, topTrend.GetMoveType(topTFBarsDepth - 1));
      trend.CountMoveType(buffer_index, topTrend.GetMoveType(buffer_index));

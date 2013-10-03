@@ -191,7 +191,7 @@ void CSanya::RecountDelta()
   
   startLine.Price(0, _startDayPrice);
   lowLine.Price(0, _low);
-  if (_type == ORDER_TYPE_SELL) // цена растет, а основное направление - вниз, пора "засейвиться"
+  if (_type == ORDER_TYPE_SELL && _deltaFast < 100) // цена растет, а основное направление - вниз, пора "засейвиться"
   {
    Print("цена растет, а основное направление - вниз, пора \"засейвиться\". Увеличиваем мл. дельта");
    _deltaFast = _deltaFast + _fastDeltaStep;    // увеличим младшую дельта
@@ -201,7 +201,7 @@ void CSanya::RecountDelta()
 // Если цена пошла вниз...
  if (LessDoubles(currentPrice, _low - 2*_dayStep*Point()) && _averageMin == 0) // Если текущая цена понизилась на шаг
  {
-  Print("цена уменьшилась на шаг");
+  Print("цена уменьшилась на 2 шага");
   _averageMin = currentPrice + (_startDayPrice - currentPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
   _low = currentPrice;                                           // запомним это
   
@@ -225,7 +225,7 @@ void CSanya::RecountDelta()
   
   startLine.Price(0, _startDayPrice);
   highLine.Price(0, _high);
-  if (_type == ORDER_TYPE_BUY) // цена падает, а основное направление - вверх, пора "засейвиться"
+  if (_type == ORDER_TYPE_BUY && _deltaFast < 100) // цена падает, а основное направление - вверх, пора "засейвиться"
   {
    Print("цена падает, а основное направление - вверх, пора \"засейвиться\". Увеличиваем мл. дельта");
    _deltaFast = _deltaFast + _fastDeltaStep;    // увеличим младшую дельта
@@ -237,9 +237,11 @@ void CSanya::RecountDelta()
  if ( _average > 0 &&
       _direction*(_average - _startDayPrice) > 0 && // Если среднее уже вычислено на уровне выше(ниже) стартовой
       _direction*(priceAB - _average) < 0 &&        // цена прошла через среднее вниз(вверх)
+      _direction*(priceAB - _startDayPrice) > 0 &&  // цена выше(ниже) стартовой
       _deltaFast < 100)                             // мы еще не "засейвилсь"
  {
-  PrintFormat("Цена ушла в нашу сторону, развернулась и прошла через среднее - Увеличиваем мл. дельта");
+  Print("Цена ушла в нашу сторону, развернулась и прошла через среднее - Увеличиваем мл. дельта");
+  PrintFormat("dir=%d, start=%.05f, ave=%.05f, price=%.05f, high=%.05f", _direction, _startDayPrice, _average, priceAB, _high);
   _deltaFast = _deltaFast + _fastDeltaStep;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
  }
 
@@ -247,9 +249,11 @@ void CSanya::RecountDelta()
  _average = (_direction == 1) ? _averageMin : _averageMax;
  if (_direction*(_average - _startDayPrice) < 0 &&  // Если среднее уже вычислено на уровне ниже(выше) стартовой
      _direction*(priceAB - _average) > 0 &&         // цена прошла через среднее вверх(вниз)
+     _direction*(priceAB - _startDayPrice) < 0 &&   // цена ниже стартовой
      _deltaFast > 0)                                // мы засейвлены
  {
-  PrintFormat("Мы сейвились, цена ушла против нас, развернулась и прошла среднее - Уменьшаем мл. дельта.");
+  Print("Мы сейвились, цена ушла против нас, развернулась и прошла среднее - Уменьшаем мл. дельта.");
+  PrintFormat("dir=%d, start=%.05f, ave=%.05f, price=%.05f, low=%.05f", _direction, _startDayPrice, _average, priceAB, _low);
   _deltaFast = _deltaFast - _fastDeltaStep;   // уменьшим младшую дельта (цена пошла в нашу сторону - прекращаем сейв)
  }
  
