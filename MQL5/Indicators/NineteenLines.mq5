@@ -11,63 +11,85 @@
 #include <CExtremumCalc.mqh>
 #include <Lib CisNewBar.mqh>
 
-input int epsilon = 25;
-input int depth = 50;
-input int period_ATR = 100;
+ input int epsilon = 25;
+ input int depth = 50;
+ input int period_ATR = 100; 
 
-input bool show_Extr_MN = false;
-input bool show_Extr_W1 = false;
-input bool show_Extr_D1 = false;
-input bool show_Extr_H4 = false;
-input bool show_Extr_H1 = false;
-input bool show_Price_D1 = false;
+ input bool show_Extr_MN = true;
+ input bool show_Extr_W1 = false;
+ input bool show_Extr_D1 = false;
+ input bool show_Extr_H4 = false;
+ input bool show_Extr_H1 = false;
+ input bool show_Price_D1 = false;
 
-CExtremumCalc calcMN(epsilon, depth);
-CExtremumCalc calcW1(epsilon, depth);
-CExtremumCalc calcD1(epsilon, depth);
-CExtremumCalc calcH4(epsilon, depth);
-CExtremumCalc calcH1(epsilon, depth);
+ CExtremumCalc calcMN(epsilon, depth);
+ CExtremumCalc calcW1(epsilon, depth);
+ CExtremumCalc calcD1(epsilon, depth);
+ CExtremumCalc calcH4(epsilon, depth);
+ CExtremumCalc calcH1(epsilon, depth);
 
-SExtremum estructMN[3];
-SExtremum estructW1[3];
-SExtremum estructD1[3];
-SExtremum estructH4[3];
-SExtremum estructH1[3];
-SExtremum pstructD1[4];
-CisNewBar barMN(Symbol(), PERIOD_MN1);
-CisNewBar barW1(Symbol(), PERIOD_W1);
-CisNewBar barD1(Symbol(), PERIOD_D1);
-CisNewBar barH4(Symbol(), PERIOD_H4);
-CisNewBar barH1(Symbol(), PERIOD_H1);
+ SExtremum estructMN[3];
+ SExtremum estructW1[3];
+ SExtremum estructD1[3];
+ SExtremum estructH4[3];
+ SExtremum estructH1[3];
+ SExtremum pstructD1[4];
+ CisNewBar barMN(Symbol(), PERIOD_MN1);
+ CisNewBar barW1(Symbol(), PERIOD_W1);
+ CisNewBar barD1(Symbol(), PERIOD_D1);
+ CisNewBar barH4(Symbol(), PERIOD_H4);
+ CisNewBar barH1(Symbol(), PERIOD_H1);
 
-string symbol = Symbol();
+ string symbol = Symbol();
+ int handle_ATR_MN;
+ int handle_ATR_W1;
+ int handle_ATR_D1;
+ int handle_ATR_H4;
+ int handle_ATR_H1;
 
-//+------------------------------------------------------------------+
+ double buffer_ATR_MN [];
+ double buffer_ATR_W1 [];
+ double buffer_ATR_D1 [];
+ double buffer_ATR_H4 [];
+ double buffer_ATR_H1 [];
+ 
+ bool first = true;
+ //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
 {
  if(depth < 10) return(INIT_PARAMETERS_INCORRECT);
-//--- indicator buffers mapping
- if(show_Extr_MN)  FillThreeExtr(symbol, PERIOD_MN1, calcMN, estructMN);
- if(show_Extr_W1)  FillThreeExtr(symbol, PERIOD_W1,  calcW1, estructW1);
- if(show_Extr_D1)  FillThreeExtr(symbol, PERIOD_D1,  calcD1, estructD1);
- if(show_Extr_H4)  FillThreeExtr(symbol, PERIOD_H4,  calcH4, estructH4);
- if(show_Extr_H1)  FillThreeExtr(symbol, PERIOD_H1,  calcH1, estructH1);
- if(show_Price_D1) FillFourPrice(symbol, PERIOD_D1, pstructD1);
+ handle_ATR_MN = iATR(symbol, PERIOD_MN1, period_ATR);
+ handle_ATR_W1 = iATR(symbol,  PERIOD_W1, period_ATR);
+ handle_ATR_D1 = iATR(symbol,  PERIOD_D1, period_ATR);
+ handle_ATR_H4 = iATR(symbol,  PERIOD_H4, period_ATR);
+ handle_ATR_H1 = iATR(symbol,  PERIOD_H1, period_ATR);
  
- if(show_Extr_MN)  CreateExtrLines(estructMN, PERIOD_MN1, clrRed);
- if(show_Extr_W1)  CreateExtrLines(estructW1,  PERIOD_W1, clrOrange);
- if(show_Extr_D1)  CreateExtrLines(estructD1,  PERIOD_D1, clrYellow);
- if(show_Extr_H4)  CreateExtrLines(estructH4,  PERIOD_H4, clrBlue);
- if(show_Extr_H1)  CreateExtrLines(estructH1,  PERIOD_H1, clrAqua);
- if(show_Price_D1) CreatePriceLines(pstructD1, PERIOD_D1, clrYellow);  
+ ArrayResize(buffer_ATR_MN, depth);
+ ArrayResize(buffer_ATR_W1, depth);
+ ArrayResize(buffer_ATR_D1, depth);
+ ArrayResize(buffer_ATR_H4, depth);
+ ArrayResize(buffer_ATR_H1, depth);
+
+//--- indicator buffers mapping
+
 //---
  return(INIT_SUCCEEDED);
 }
 
 void OnDeinit(const int reason)
 {
+ IndicatorRelease(handle_ATR_MN);
+ IndicatorRelease(handle_ATR_W1);
+ IndicatorRelease(handle_ATR_D1);
+ IndicatorRelease(handle_ATR_H4);
+ IndicatorRelease(handle_ATR_H1);
+ ArrayFree(buffer_ATR_MN);
+ ArrayFree(buffer_ATR_W1); 
+ ArrayFree(buffer_ATR_D1); 
+ ArrayFree(buffer_ATR_H4); 
+ ArrayFree(buffer_ATR_H1); 
  if(show_Extr_MN)  DeleteExtrLines(PERIOD_MN1);
  if(show_Extr_W1)  DeleteExtrLines(PERIOD_W1);
  if(show_Extr_D1)  DeleteExtrLines(PERIOD_D1);
@@ -90,50 +112,62 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
 //---
-   if(barMN.isNewBar() > 0)
+   bool load = CalculateATRbuffer();
+ 
+   if(load)
    {
-    if(show_Extr_MN)
+    if(barMN.isNewBar() > 0 || first)
     {
-     FillThreeExtr(symbol, PERIOD_MN1, calcMN, estructMN);
-     MoveExtrLines(estructMN, PERIOD_MN1);
+     if(show_Extr_MN)
+     {
+      FillThreeExtr(symbol, PERIOD_MN1, calcMN, estructMN, buffer_ATR_MN);
+      if(first == true) CreateExtrLines(estructMN, PERIOD_MN1, clrRed);
+       else MoveExtrLines(estructMN, PERIOD_MN1);
+     }
     }
-   }
-   if(barW1.isNewBar() > 0)
-   {
-    if(show_Extr_W1)
+    if(barW1.isNewBar() > 0 || first)
     {
-     FillThreeExtr(symbol, PERIOD_W1, calcW1, estructW1);
-     MoveExtrLines(estructW1, PERIOD_W1);
+     if(show_Extr_W1)
+     {
+      FillThreeExtr(symbol, PERIOD_W1, calcW1, estructW1, buffer_ATR_W1);
+      if(first) CreateExtrLines(estructW1,  PERIOD_W1, clrOrange);
+       else MoveExtrLines(estructW1, PERIOD_W1);
+     }
     }
-   }
-   if(barD1.isNewBar() > 0)
-   {
-    if(show_Extr_D1)
+    if(barD1.isNewBar() > 0 || first)
+    { 
+     if(show_Extr_D1)
+     {
+      FillThreeExtr(symbol, PERIOD_D1, calcD1, estructD1, buffer_ATR_D1);
+      if(first) CreateExtrLines(estructD1,  PERIOD_D1, clrYellow); 
+       else MoveExtrLines(estructD1, PERIOD_D1);
+     }
+     if(show_Price_D1)
+     {
+      FillFourPrice(symbol, PERIOD_D1, pstructD1, buffer_ATR_D1);
+      if(first) CreatePriceLines(pstructD1, PERIOD_D1, clrYellow);
+       else MovePriceLines(pstructD1, PERIOD_D1);
+     }
+    }
+    if(barH4.isNewBar() > 0 || first)
     {
-     FillThreeExtr(symbol, PERIOD_D1, calcD1, estructD1);
-     MoveExtrLines(estructD1, PERIOD_D1);
+     if(show_Extr_H4)
+     {
+      FillThreeExtr(symbol, PERIOD_H4, calcH4, estructH4, buffer_ATR_H4);
+      if(first) CreateExtrLines(estructH4,  PERIOD_H4, clrBlue);
+       else MoveExtrLines(estructH4, PERIOD_H4);
+     }
     }
-    if(show_Price_D1)
+    if(barH1.isNewBar() > 0 || first)
     {
-     FillFourPrice(symbol, PERIOD_D1, pstructD1);
-     MovePriceLines(pstructD1, PERIOD_D1);
+     if(show_Extr_H1)
+     {
+      FillThreeExtr(symbol, PERIOD_H1, calcH1, estructH1, buffer_ATR_H1);
+      if(first) CreateExtrLines(estructH1,  PERIOD_H1, clrAqua);
+       else MoveExtrLines(estructH1, PERIOD_H1);
+     }
     }
-   }
-   if(barH4.isNewBar() > 0)
-   {
-    if(show_Extr_H4)
-    {
-     FillThreeExtr(symbol, PERIOD_H4, calcH4, estructH4);
-     MoveExtrLines(estructH4, PERIOD_H4);
-    }
-   }
-   if(barH1.isNewBar() > 0)
-   {
-    if(show_Extr_H1)
-    {
-     FillThreeExtr(symbol, PERIOD_H1, calcH1, estructH1);
-     MoveExtrLines(estructH1, PERIOD_H1);
-    }
+    first = false;
    }
 //--- return value of prev_calculated for next call
    return(rates_total);
@@ -206,7 +240,7 @@ bool HLineDelete(const long   chart_ID=0,   // ID графика
  return(true);
 }
 
-void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[])
+void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[], double &buffer_ATR[])
 {
  double  open_buf[1];
  double close_buf[1];
@@ -218,40 +252,68 @@ void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[])
  CopyHigh (symbol, tf, 1, 1,  high_buf);
  CopyLow  (symbol, tf, 1, 1,   low_buf);
  
- resArray[0].price =  open_buf[0];
- resArray[1].price = close_buf[0];
- resArray[2].price =  high_buf[0];
- resArray[3].price =   low_buf[0];
+ resArray[0].price   =   open_buf[0];
+ resArray[0].channel = buffer_ATR[0];
+ resArray[1].price   =  close_buf[0];
+ resArray[1].channel = buffer_ATR[0];
+ resArray[2].price   =   high_buf[0];
+ resArray[2].channel = buffer_ATR[0];
+ resArray[3].price   =    low_buf[0];
+ resArray[3].channel = buffer_ATR[0];
 }
 
 void CreatePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "price_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"open" , 0, fp[0].price, clr, fp[0].width);
- HLineCreate(0, name+"close", 0, fp[1].price, clr, fp[1].width);
- HLineCreate(0, name+"high" , 0, fp[2].price, clr, fp[2].width);
- HLineCreate(0, name+"low"  , 0, fp[3].price, clr, fp[3].width);
+ HLineCreate(0, name+"open"  , 0, fp[0].price              , clr, 2);
+ HLineCreate(0, name+"open+" , 0, fp[0].price+fp[0].channel, clr, 1);
+ HLineCreate(0, name+"open-" , 0, fp[0].price-fp[0].channel, clr, 1); 
+ HLineCreate(0, name+"close" , 0, fp[1].price              , clr, 2);
+ HLineCreate(0, name+"close+", 0, fp[1].price+fp[1].channel, clr, 1);
+ HLineCreate(0, name+"close-", 0, fp[1].price-fp[1].channel, clr, 1);
+ HLineCreate(0, name+"high"  , 0, fp[2].price              , clr, 2);
+ HLineCreate(0, name+"high+" , 0, fp[2].price+fp[2].channel, clr, 1);
+ HLineCreate(0, name+"high-" , 0, fp[2].price-fp[2].channel, clr, 1);
+ HLineCreate(0, name+"low"   , 0, fp[3].price              , clr, 2);
+ HLineCreate(0, name+"low+"  , 0, fp[3].price+fp[3].channel, clr, 1);
+ HLineCreate(0, name+"low-"  , 0, fp[3].price-fp[3].channel, clr, 1);
 }
 
 void MovePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf)
 {
  string name = "price_" + EnumToString(tf) + "_";
- HLineMove(0, name+"open" , fp[0].price);
- HLineMove(0, name+"close", fp[1].price); 
- HLineMove(0, name+"high" , fp[2].price); 
- HLineMove(0, name+"low"  , fp[3].price);  
+ HLineMove(0, name+"open"  , fp[0].price);
+ HLineMove(0, name+"open+" , fp[0].price+fp[0].channel);
+ HLineMove(0, name+"open-" , fp[0].price-fp[0].channel);
+ HLineMove(0, name+"close" , fp[1].price);
+ HLineMove(0, name+"close+", fp[1].price+fp[1].channel);
+ HLineMove(0, name+"close-", fp[1].price-fp[1].channel); 
+ HLineMove(0, name+"high"  , fp[2].price);
+ HLineMove(0, name+"high+" , fp[2].price+fp[2].channel);
+ HLineMove(0, name+"high-" , fp[2].price-fp[2].channel); 
+ HLineMove(0, name+"low"   , fp[3].price);
+ HLineMove(0, name+"low+"  , fp[3].price+fp[3].channel);
+ HLineMove(0, name+"low-"  , fp[3].price-fp[3].channel);  
 }
 
 void DeletePriceLines(ENUM_TIMEFRAMES tf)
 {
  string name = "price_" + EnumToString(tf) + "_";
  HLineDelete(0, name+"open");
+ HLineDelete(0, name+"open+");
+ HLineDelete(0, name+"open-");
  HLineDelete(0, name+"close");
+ HLineDelete(0, name+"close+");
+ HLineDelete(0, name+"close-");
  HLineDelete(0, name+"high");
+ HLineDelete(0, name+"high+");
+ HLineDelete(0, name+"high-");
  HLineDelete(0, name+"low");
+ HLineDelete(0, name+"low+");
+ HLineDelete(0, name+"low-");
 }
 
-void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, SExtremum &resArray[])
+void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, SExtremum &resArray[], double &buffer_ATR[])
 {
  extrcalc.FillExtremumsArray(symbol, tf);
  if (extrcalc.NumberOfExtr() < 3)
@@ -259,32 +321,14 @@ void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, 
   Alert(__FUNCTION__, "Не удалось рассчитать три экстремума на таймфрейме ", EnumToString((ENUM_TIMEFRAMES)tf));
   return;
  }
- 
- int handle_ATR = iATR(symbol, tf, period_ATR);
- double buffer_ATR [];
- ArrayResize(buffer_ATR, depth, 0);
- if(handle_ATR != INVALID_HANDLE)
- {
-  int copiedATR = -1;
-  for(int attempts = 0; attempts < 25 && copiedATR < 0; attempts++)
-  {
-   copiedATR = CopyBuffer(handle_ATR, 0, 0, depth, buffer_ATR);
-  } 
-  if (copiedATR != depth) 
-  {
-   Alert(__FUNCTION__, "Не удалось скопировать буффер полностью ATR. Error = ", GetLastError());
-   if(GetLastError() == 4401) 
-    Alert(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
-  }
- }
- 
+  
  int count = 0;
  for(int i = 0; i < depth && count < 3; i++)
  {
   if(extrcalc.getExtr(i).price > 0)
   {
    resArray[count] = extrcalc.getExtr(i);
-   resArray[count].width = (int)(buffer_ATR[i]*SymbolInfoInteger(symbol, SYMBOL_DIGITS)*10/4);
+   resArray[count].channel = buffer_ATR[i]/4;
    count++;
   }
  }
@@ -293,23 +337,65 @@ void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, 
 void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"one"   , 0, te[0].price, clr, te[0].width);
- HLineCreate(0, name+"two"   , 0, te[1].price, clr, te[1].width);
- HLineCreate(0, name+"three" , 0, te[2].price, clr, te[2].width);
+ HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 2);
+ HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 1);
+ HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 1);
+ HLineCreate(0, name+"two"   , 0, te[1].price              , clr, 2);
+ HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr, 1);
+ HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr, 1);
+ HLineCreate(0, name+"three" , 0, te[2].price              , clr, 2);
+ HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr, 1);
+ HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 1);
 }
 
 void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
 {
  string name = "extr_" + EnumToString(tf) + "_";
  HLineMove(0, name+"one"   , te[0].price);
+ HLineMove(0, name+"one+"  , te[0].price+te[0].channel);
+ HLineMove(0, name+"one-"  , te[0].price-te[0].channel);
  HLineMove(0, name+"two"   , te[1].price);
+ HLineMove(0, name+"two+"  , te[1].price+te[1].channel);
+ HLineMove(0, name+"two-"  , te[1].price-te[1].channel);
  HLineMove(0, name+"three" , te[2].price);
+ HLineMove(0, name+"three+", te[2].price+te[2].channel);
+ HLineMove(0, name+"three-", te[2].price-te[2].channel);
 }
 
 void DeleteExtrLines(ENUM_TIMEFRAMES tf)
 {
  string name = "extr_" + EnumToString(tf) + "_";
  HLineDelete(0, name+"one");
+ HLineDelete(0, name+"one+");
+ HLineDelete(0, name+"one-");
  HLineDelete(0, name+"two");
+ HLineDelete(0, name+"two+");
+ HLineDelete(0, name+"two-");
  HLineDelete(0, name+"three");
+ HLineDelete(0, name+"three+");
+ HLineDelete(0, name+"three-");
+}
+
+bool CalculateATRbuffer()
+{
+   if(handle_ATR_MN != INVALID_HANDLE && handle_ATR_W1 != INVALID_HANDLE && handle_ATR_D1 != INVALID_HANDLE &&
+      handle_ATR_H4 != INVALID_HANDLE && handle_ATR_H1 != INVALID_HANDLE )
+   {
+    int copiedATR_MN = CopyBuffer(handle_ATR_MN, 0, 1, depth, buffer_ATR_MN);
+    int copiedATR_W1 = CopyBuffer(handle_ATR_W1, 0, 1, depth, buffer_ATR_W1);
+    int copiedATR_D1 = CopyBuffer(handle_ATR_D1, 0, 1, depth, buffer_ATR_D1);
+    int copiedATR_H4 = CopyBuffer(handle_ATR_H4, 0, 1, depth, buffer_ATR_H4);
+    int copiedATR_H1 = CopyBuffer(handle_ATR_H1, 0, 1, depth, buffer_ATR_H1); 
+    
+    if (copiedATR_MN != depth || copiedATR_W1 != depth || copiedATR_D1 != depth ||
+        copiedATR_H4 != depth || copiedATR_H1 != depth) 
+    {
+     Alert(__FUNCTION__, "Не удалось полностью скопировать буффер ATR. Error = ", GetLastError());
+     if(GetLastError() == 4401) 
+      Alert(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
+     return false;
+    }
+    return true;
+   }
+  return false;
 }
