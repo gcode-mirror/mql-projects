@@ -65,14 +65,6 @@ int OnInit()
  handle_ATR_D1 = iATR(symbol,  PERIOD_D1, period_ATR);
  handle_ATR_H4 = iATR(symbol,  PERIOD_H4, period_ATR);
  handle_ATR_H1 = iATR(symbol,  PERIOD_H1, period_ATR);
- 
- ArrayResize(buffer_ATR_MN, depth);
- ArrayResize(buffer_ATR_W1, depth);
- ArrayResize(buffer_ATR_D1, depth);
- ArrayResize(buffer_ATR_H4, depth);
- ArrayResize(buffer_ATR_H1, depth);
-
-//--- indicator buffers mapping
 
 //---
  return(INIT_SUCCEEDED);
@@ -116,58 +108,86 @@ int OnCalculate(const int rates_total,
  
    if(load)
    {
-    if(barMN.isNewBar() > 0 || first)
+    if(first)
     {
      if(show_Extr_MN)
      {
       FillThreeExtr(symbol, PERIOD_MN1, calcMN, estructMN, buffer_ATR_MN);
-      if(first == true) CreateExtrLines(estructMN, PERIOD_MN1, clrRed);
-       else MoveExtrLines(estructMN, PERIOD_MN1);
+      CreateExtrLines(estructMN, PERIOD_MN1, clrRed);
      }
-    }
-    if(barW1.isNewBar() > 0 || first)
-    {
      if(show_Extr_W1)
      {
       FillThreeExtr(symbol, PERIOD_W1, calcW1, estructW1, buffer_ATR_W1);
-      if(first) CreateExtrLines(estructW1,  PERIOD_W1, clrOrange);
-       else MoveExtrLines(estructW1, PERIOD_W1);
+      CreateExtrLines(estructW1,  PERIOD_W1, clrOrange);
      }
-    }
-    if(barD1.isNewBar() > 0 || first)
-    { 
      if(show_Extr_D1)
      {
       FillThreeExtr(symbol, PERIOD_D1, calcD1, estructD1, buffer_ATR_D1);
-      if(first) CreateExtrLines(estructD1,  PERIOD_D1, clrYellow); 
-       else MoveExtrLines(estructD1, PERIOD_D1);
+      CreateExtrLines(estructD1,  PERIOD_D1, clrYellow); 
      }
      if(show_Price_D1)
      {
       FillFourPrice(symbol, PERIOD_D1, pstructD1, buffer_ATR_D1);
-      if(first) CreatePriceLines(pstructD1, PERIOD_D1, clrYellow);
-       else MovePriceLines(pstructD1, PERIOD_D1);
+      CreatePriceLines(pstructD1, PERIOD_D1, clrDarkKhaki);
+     }
+     if(show_Extr_H4)
+     {
+      FillThreeExtr(symbol, PERIOD_H4, calcH4, estructH4, buffer_ATR_H4);
+      CreateExtrLines(estructH4,  PERIOD_H4, clrBlue);
+     }
+     if(show_Extr_H1)
+     {
+      FillThreeExtr(symbol, PERIOD_H1, calcH1, estructH1, buffer_ATR_H1);
+      CreateExtrLines(estructH1,  PERIOD_H1, clrAqua);
+     }
+     first = false;
+    }//end first
+    
+    if(barMN.isNewBar() > 0)
+    {
+     if(show_Extr_MN)
+     {
+      FillThreeExtr(symbol, PERIOD_MN1, calcMN, estructMN, buffer_ATR_MN);
+      MoveExtrLines(estructMN, PERIOD_MN1);
      }
     }
-    if(barH4.isNewBar() > 0 || first)
+    if(barW1.isNewBar() > 0)
+    {
+     if(show_Extr_W1)
+     {
+      FillThreeExtr(symbol, PERIOD_W1, calcW1, estructW1, buffer_ATR_W1);
+      MoveExtrLines(estructW1, PERIOD_W1);
+     }
+    }
+    if(barD1.isNewBar() > 0)
+    { 
+     if(show_Extr_D1)
+     {
+      FillThreeExtr(symbol, PERIOD_D1, calcD1, estructD1, buffer_ATR_D1);
+      MoveExtrLines(estructD1, PERIOD_D1);
+     }
+     if(show_Price_D1)
+     {
+      FillFourPrice(symbol, PERIOD_D1, pstructD1, buffer_ATR_D1);
+      MovePriceLines(pstructD1, PERIOD_D1);
+     }
+    }
+    if(barH4.isNewBar() > 0)
     {
      if(show_Extr_H4)
      {
       FillThreeExtr(symbol, PERIOD_H4, calcH4, estructH4, buffer_ATR_H4);
-      if(first) CreateExtrLines(estructH4,  PERIOD_H4, clrBlue);
-       else MoveExtrLines(estructH4, PERIOD_H4);
+      MoveExtrLines(estructH4, PERIOD_H4);
      }
     }
-    if(barH1.isNewBar() > 0 || first)
+    if(barH1.isNewBar() > 0)
     {
      if(show_Extr_H1)
      {
       FillThreeExtr(symbol, PERIOD_H1, calcH1, estructH1, buffer_ATR_H1);
-      if(first) CreateExtrLines(estructH1,  PERIOD_H1, clrAqua);
-       else MoveExtrLines(estructH1, PERIOD_H1);
+      MoveExtrLines(estructH1, PERIOD_H1);
      }
     }
-    first = false;
    }
 //--- return value of prev_calculated for next call
    return(rates_total);
@@ -265,18 +285,18 @@ void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[], dou
 void CreatePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "price_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"open"  , 0, fp[0].price              , clr, 2);
- HLineCreate(0, name+"open+" , 0, fp[0].price+fp[0].channel, clr, 1);
- HLineCreate(0, name+"open-" , 0, fp[0].price-fp[0].channel, clr, 1); 
- HLineCreate(0, name+"close" , 0, fp[1].price              , clr, 2);
- HLineCreate(0, name+"close+", 0, fp[1].price+fp[1].channel, clr, 1);
- HLineCreate(0, name+"close-", 0, fp[1].price-fp[1].channel, clr, 1);
- HLineCreate(0, name+"high"  , 0, fp[2].price              , clr, 2);
- HLineCreate(0, name+"high+" , 0, fp[2].price+fp[2].channel, clr, 1);
- HLineCreate(0, name+"high-" , 0, fp[2].price-fp[2].channel, clr, 1);
- HLineCreate(0, name+"low"   , 0, fp[3].price              , clr, 2);
- HLineCreate(0, name+"low+"  , 0, fp[3].price+fp[3].channel, clr, 1);
- HLineCreate(0, name+"low-"  , 0, fp[3].price-fp[3].channel, clr, 1);
+ HLineCreate(0, name+"open"  , 0, fp[0].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"open+" , 0, fp[0].price+fp[0].channel, clr, 2);
+ HLineCreate(0, name+"open-" , 0, fp[0].price-fp[0].channel, clr, 2); 
+ HLineCreate(0, name+"close" , 0, fp[1].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"close+", 0, fp[1].price+fp[1].channel, clr, 2);
+ HLineCreate(0, name+"close-", 0, fp[1].price-fp[1].channel, clr, 2);
+ HLineCreate(0, name+"high"  , 0, fp[2].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"high+" , 0, fp[2].price+fp[2].channel, clr, 2);
+ HLineCreate(0, name+"high-" , 0, fp[2].price-fp[2].channel, clr, 2);
+ HLineCreate(0, name+"low"   , 0, fp[3].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"low+"  , 0, fp[3].price+fp[3].channel, clr, 2);
+ HLineCreate(0, name+"low-"  , 0, fp[3].price-fp[3].channel, clr, 2);
 }
 
 void MovePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf)
@@ -337,15 +357,15 @@ void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, 
 void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 2);
- HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 1);
- HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 1);
- HLineCreate(0, name+"two"   , 0, te[1].price              , clr, 2);
- HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr, 1);
- HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr, 1);
- HLineCreate(0, name+"three" , 0, te[2].price              , clr, 2);
- HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr, 1);
- HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 1);
+ HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 2);
+ HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 2);
+ HLineCreate(0, name+"two"   , 0, te[1].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr, 2);
+ HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr, 2);
+ HLineCreate(0, name+"three" , 0, te[2].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr, 2);
+ HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 2);
 }
 
 void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
