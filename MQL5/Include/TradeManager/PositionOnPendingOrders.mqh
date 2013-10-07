@@ -110,12 +110,13 @@ public:
 CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                     ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0)
                     : _magic(magic), _symbol(symbol), _type(type), _lots(volume), _minProfit(minProfit), 
-                      _trailingStop(trailingStop), _trailingStep(trailingStep), _priceDifference(priceDifference), _sl(0), _tp(0)
+                      _trailingStop(trailingStop), _trailingStep(trailingStep), _priceDifference(0), _sl(0), _tp(0)
   {
 //--- initialize trade functions class
    UpdateSymbolInfo();
    if(sl > 0) _sl = (sl < SymbInfo.StopsLevel()) ? SymbInfo.StopsLevel() : sl;
    if(tp > 0) _tp = (tp < SymbInfo.StopsLevel()) ? SymbInfo.StopsLevel() : tp;
+   if(priceDifference > 0) _priceDifference = (priceDifference < SymbInfo.StopsLevel()) ? SymbInfo.StopsLevel() : priceDifference; 
    _expiration = TimeCurrent()+2*PeriodSeconds(Period());
    trade = new CTMTradeFunctions();
    pos_status = POSITION_STATUS_NOT_INITIALISED;
