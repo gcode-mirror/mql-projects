@@ -25,7 +25,7 @@
    double  close_buf[1]; 
    double  open_buf[1];
    double  _takeProfit;  //тейк профит
-   ENUM_TM_POSITION_TYPE _opBuy, _opSell, _pos_type;
+   ENUM_TM_POSITION_TYPE  _pos_type;
    public:
    double GetTakeProfit() { return (_takeProfit); }; //получает значение тейк профита
    int InitTradeBlock(string sym,
@@ -35,8 +35,7 @@
                       int historyDepth);          //инициализирует торговый блок
    int DeinitTradeBlock();                                         //деинициализирует торговый блок
    bool UploadBuffers();                               //загружает буферы 
-   ENUM_TM_POSITION_TYPE GetSignal (bool ontick);     //получает торговый сигнал 
-  // FWRabbit ();   //конструктор класса Follow White Rabbit      
+   ENUM_TM_POSITION_TYPE GetSignal (bool ontick);      //получает торговый сигнал      
   };
 
 int FWRabbit::InitTradeBlock(string sym,
@@ -46,7 +45,7 @@ int FWRabbit::InitTradeBlock(string sym,
                              int historyDepth
                              )  //инициализация торгового блока
  {
-   _sym = _sym;                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
+   _sym = sym;                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    _timeFrame        =  timeFrame; //запомним время запуска эксперта для получения торговой истории
    _supremacyPercent =  supremacyPercent;
    _profitPercent    =  profitPercent;
@@ -119,12 +118,12 @@ ENUM_TM_POSITION_TYPE FWRabbit::GetSignal(bool ontick)  //получает торговый сигн
      if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
      {
       _takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + _profitPercent),0);
-      return _opSell;
+      return OP_SELL;
      }
      if(GreatDoubles(close_buf[0], open_buf[0]))
      {   
       _takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + _profitPercent),0);
-      return _opBuy;
+      return OP_BUY;
      }
  
     }

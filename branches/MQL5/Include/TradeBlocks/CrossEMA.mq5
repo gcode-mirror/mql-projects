@@ -23,15 +23,15 @@
    FAST_EMA=1  
   };
 
- class CrossEMA                                                   //класс CrossEMA
+ class CrossEMA                                                 //класс CrossEMA
   {
    private:
    //буферы
-   double ma_slow[];                                              //массив для медленного индикатора iMA 
-   double ma_fast[];                                              //массив для быстрого индикатора iMA
-   double ma_ema3[];                                              //массив для EMA(3) 
-   double close[];                                                //массив для Close
-   datetime date_buffer[];                                        //массив для даты
+   double ma_slow[];                                               //массив для медленного индикатора iMA 
+   double ma_fast[];                                               //массив для быстрого индикатора iMA
+   double ma_ema3[];                                               //массив для EMA(3) 
+   double close[];                                                 //массив для Close
+   datetime date_buffer[];                                         //массив для даты
    //хэндлы индикаторов
    int _ma_slow_handle;                                            //хэндл медленного индикатора
    int _ma_fast_handle;                                            //хэндл быстрого индикатора

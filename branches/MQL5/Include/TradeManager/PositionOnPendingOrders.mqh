@@ -34,12 +34,11 @@ private:
    int _minProfit, _trailingStop, _trailingStep;
    ENUM_TM_POSITION_TYPE _type;
    datetime _expiration;
-   datetime open_pos_time;  //время открытия позиции
-   datetime close_pos_time; //время завершения позиции 
-   double   priceOpen;      //цена, по которой позиция открылась
-   double   priceClose;     //цена, по которой позиция закрылась
-   double   posProfit;      //прибыль с позиции
-   int _priceDifference;
+   datetime _open_pos_time;  //время открытия позиции
+   datetime _close_pos_time; //время завершения позиции 
+   double   _priceClose;     //цена, по которой позиция закрылась
+   double   _posProfit;      //прибыль с позиции
+   int      _priceDifference;
    
    CEntryPriceLine   _entryPriceLine;
    CStopLossLine     _stopLossLine;
@@ -58,35 +57,24 @@ public:
    void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                 ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
                 
-   datetime getOpenPosDT() { return (open_pos_time); };   //получает дату открытия позиции
-   void setOpenPosDT(datetime open_time) { open_pos_time = open_time; };
-   
-   datetime getClosePosDT() { return (close_pos_time); }; //получает дату закрытия позиции             
-   void setClosePosDT(datetime close_time) { close_pos_time = close_time; };
-      
-   double getPriceOpen() { return(priceOpen); };             //получает цену открытия позиции
-   void   setPriceOpen(double price) { priceOpen = price; }; //сохраняет цену открытия позиции
-   
-   double getPriceClose() { return(priceClose); };             //получает цену закрытия позиции
-   void   setPriceClose(double price) { priceClose = price; }; //сохраняет цену закрытия позиции      
-   
-   double getPosProfit() { return(posProfit); };               //получает прибыль позиции
-   void   setPosProfit(double profit) { posProfit = profit; }; //сохраняет прибыль позиции
+   datetime getOpenPosDT() { return (_open_pos_time); };   //получает дату открытия позиции
+   datetime getClosePosDT() { return (_close_pos_time); }; //получает дату закрытия позиции             
+   double getPriceOpen() { return(_posPrice); };           //получает цену открытия позиции
+   double getPriceClose() { return(_priceClose); };        //получает цену закрытия позиции
+   double getPosProfit() { return(_posProfit); };          //получает прибыль позиции
+
                    
    ulong getMagic() {return (_magic);};
    void setMagic(ulong magic) {_magic = magic;};
    
    ulong getPositionTicket() {return(_posTicket);};
-   void setPositionTicket(ulong ticket) {_posTicket = ticket;};
    
    string getSymbol() {return (_symbol);};
-   void setSymbol(string symbol) {_symbol = symbol;};
    
    double getVolume() {return (_lots);};
    void setVolume(double lots) {_lots = lots;};
    
    ulong getStopLossTicket() {return (_slTicket);};
-   void setStopLossTicket(ulong ticket) {_slTicket = ticket;};
    
    double getPositionPrice() {return(_posPrice);};
    double getStopLossPrice() {return(_slPrice);};
@@ -251,12 +239,12 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_BUY:
    if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _lots, _posPrice))
    {
+    _open_pos_time= TimeCurrent(); //сохраняем время открытия позиции    
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
      _posTicket = 0;
      pos_status = POSITION_STATUS_OPEN;
-     
     }
     else
     {
@@ -268,6 +256,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_SELL:
    if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _lots, _posPrice))
    {
+    _open_pos_time= TimeCurrent(); //сохраняем время открытия позиции    
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
@@ -489,12 +478,13 @@ bool CPosition::ClosePosition()
   {
    case OP_BUY:
      PositionSelect(_symbol);
-     tmp_profit = PositionGetDouble(POSITION_PROFIT); //сохраняем профит позиции
+
     if(trade.PositionClose(_symbol, POSITION_TYPE_BUY, _lots, config.Deviation))
     {     
-     setPriceClose(SymbolInfoDouble(_symbol,SYMBOL_ASK));  //сохраняем текущую цену закрытия
-     setPosProfit(tmp_profit);
-     setClosePosDT(TimeCurrent()); //сохраняем текущее значение времени
+    // tmp_profit = PositionGetDouble(POSITION_PROFIT); //сохраняем профит позиции    
+     _priceClose = SymbolInfoDouble(_symbol,SYMBOL_ASK);   //сохраняем цену закрытия позиции
+     _close_pos_time = TimeCurrent();                      //сохраняем время закрытия позиции
+     _posProfit =  _posPrice-_priceClose;;
      pos_closed = true;  
      log_file.Write(LOG_DEBUG, StringFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     }
@@ -505,14 +495,14 @@ bool CPosition::ClosePosition()
     break;
    case OP_SELL:
      PositionSelect(_symbol);
-     tmp_profit = PositionGetDouble(POSITION_PROFIT); //сохраняем профит позиции 
+
     if(trade.PositionClose(_symbol, POSITION_TYPE_SELL, _lots, config.Deviation))
     {
-     tmp_profit = PositionGetDouble(POSITION_PROFIT); //сохраняем профит позиции     
-     setPriceClose(SymbolInfoDouble(_symbol,SYMBOL_BID));  //сохраняем текущую цену закрытия
-     setPosProfit(tmp_profit);
-     setClosePosDT(TimeCurrent()); //сохраняем текущее значение времени   
-     pos_closed = true; 
+     // tmp_profit = PositionGetDouble(POSITION_PROFIT); //сохраняем профит позиции     
+     _priceClose = SymbolInfoDouble(_symbol,SYMBOL_BID);   //сохраняем цену закрытия позиции
+     _close_pos_time = TimeCurrent();                      //сохраняем время закрытия позиции
+     _posProfit = _posPrice-_priceClose;
+     pos_closed = true;  
      log_file.Write(LOG_DEBUG, StringFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     }
     else
@@ -587,43 +577,84 @@ bool CPosition::DoTrailing(void)
 /// \param [in] bCreateLineObjects  if true, creates open, sl & tp lines on chart 
 /// \return 				True if successful, false otherwise
 //+------------------------------------------------------------------+
+
+ulong _magic;
+   ulong _posTicket;
+   double _posPrice;
+   string _symbol;
+   double _lots;
+   ulong _slTicket;
+   double _slPrice;
+   double _tpPrice;
+   int _sl, _tp;
+   int _minProfit, _trailingStop, _trailingStep;
+   ENUM_TM_POSITION_TYPE _type;
+   datetime _expiration;
+   datetime _open_pos_time;  //время открытия позиции
+   datetime _close_pos_time; //время завершения позиции 
+   double   _priceClose;     //цена, по которой позиция закрылась
+   double   _posProfit;      //прибыль с позиции
+   int      _priceDifference;
+
 bool CPosition::ReadFromFile(int handle)
 {
+ string ggg;
  if(handle != INVALID_HANDLE)
  {
   if(FileIsEnding(handle)) return false;
-  Print("Read Position");
-  _magic = FileReadNumber(handle);
-  Print("__", _magic, "__");
+  _magic = StringToInteger(FileReadString(handle));                               //считываем мэджик
   if(FileIsEnding(handle)) return false;
-  _symbol = FileReadString(handle);
-  Print("__", _symbol, "__");
-  _type = StringToPositionType(FileReadString(handle));
-  Print("__", _type, "__");
-  _lots = FileReadNumber(handle);
-  Print("__", _lots, "__");
-  _posTicket = FileReadNumber(handle);
-  Print("__", _posTicket, "__");
-  _posPrice = FileReadNumber(handle);
-  Print("__", _posPrice, "__");
-  _slTicket = FileReadNumber(handle);
-  Print("__", _slTicket, "__");
-  _slPrice = FileReadNumber(handle);
-  Print("__", _slPrice, "__");
-  _sl = FileReadNumber(handle);
-  Print("__", _sl, "__");
-  _tpPrice = FileReadNumber(handle);
-  Print("__", _tpPrice, "__");
-  _tp = FileReadNumber(handle);
-  Print("__", _tp, "__");
-  _minProfit = FileReadNumber(handle);
-  Print("__", _minProfit, "__");
-  _trailingStop = FileReadNumber(handle);
-  Print("__", _trailingStop, "__");
-  _trailingStep = FileReadNumber(handle);
-  Print("__", _trailingStep, "__");
-  _expiration = FileReadDatetime(handle);
-  Print("__", _expiration, "__");
+  _symbol         = FileReadString(handle);                      //считываем символ
+  if(FileIsEnding(handle)) return false;  
+  _type           = StringToPositionType(FileReadString(handle));//считываем тип
+  if(FileIsEnding(handle)) return false;  
+  _lots           = FileReadNumber(handle);                      //считываем размер лота
+  if(FileIsEnding(handle)) return false;  
+  _posTicket      = StringToInteger(FileReadString(handle));                      //считываем тикет позиции
+  if(FileIsEnding(handle)) return false;  
+  _slTicket       = StringToInteger(FileReadString(handle));                      //считываем тикет стоп лосса
+  if(FileIsEnding(handle)) return false;  
+  _slPrice        = FileReadNumber(handle);                      //считываем цену стоп лосса
+  if(FileIsEnding(handle)) return false;  
+  _sl             = FileReadNumber(handle);                      //считываем стоп лосс
+  if(FileIsEnding(handle)) return false;  
+  _tpPrice        = FileReadNumber(handle);                      //считываем цену тейк профита
+  if(FileIsEnding(handle)) return false;  
+  _trailingStop   = FileReadNumber(handle);                      //Трейлинг стоп
+  if(FileIsEnding(handle)) return false;  
+  _trailingStep   = FileReadNumber(handle);                      //Трейлинг степ
+  if(FileIsEnding(handle)) return false;  
+  _posPrice       = FileReadNumber(handle);                      //цена открытия позиции
+  if(FileIsEnding(handle)) return false;  
+  _priceClose     = FileReadNumber(handle);                      //цена закрытия позиции
+  if(FileIsEnding(handle)) return false;  
+  _open_pos_time  = FileReadDatetime(handle);                    //время открытия позиции
+  if(FileIsEnding(handle)) return false;  
+  _close_pos_time = FileReadDatetime(handle);                    //время закрытия позиции
+  if(FileIsEnding(handle)) return false;  
+  _posProfit      = FileReadNumber(handle);                      //профит позиции
+  if(FileIsEnding(handle)) return false;  
+     FileReadString(handle);                                     //пропуск пустого символа  
+
+  ggg = 
+        " мэджик = "+IntegerToString(_magic)+
+        " символ = "+_symbol+        
+        " тип = "+GetNameOP(_type)+
+        " лот = "+DoubleToString(_lots,5)+
+        " тикет_поз = "+IntegerToString(_posTicket)+
+        " тикет_стоп = "+IntegerToString(_slTicket)+
+        " цена_стоп = "+DoubleToString(_slPrice,5)+
+        " стоп_лосс = "+IntegerToString(_sl)+
+        " тейк_цена = "+DoubleToString(_tpPrice)+
+        " трейлинг_стоп = "+IntegerToString(_trailingStop)+
+        " трейлинг_степ = "+IntegerToString(_trailingStep)+
+        " цена_позиции = "+DoubleToString(_posPrice)+
+        " цена_закрытия = "+DoubleToString(_priceClose)+
+        " время_открытия = "+TimeToString(_open_pos_time)+
+        " время_закрытия = "+TimeToString(_close_pos_time)+
+        " профит_позиции = "+DoubleToString(_posProfit); 
+                                                                        
+  Alert("",ggg);
   //log_file.Write(LOG_DEBUG, StringFormat("%s Файл успешно прочитан", MakeFunctionPrefix(__FUNCTION__)));
   return true;
  }

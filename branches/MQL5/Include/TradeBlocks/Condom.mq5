@@ -13,6 +13,7 @@
 #include <Lib CisNewBar.mqh>
 #include <ColoredTrend\ColoredTrendUtilities.mqh> //загружаем бибилиотеку цветов
 
+
 //+------------------------------------------------------------------+
 //| Торговый класс Condom                                            |
 //+------------------------------------------------------------------+
@@ -30,13 +31,12 @@
      string _sym;                             //переменная для хранения символа
      ENUM_TIMEFRAMES _timeFrame;              //таймфрейм
      MqlTick _tick;                           //тик
-     ENUM_TM_POSITION_TYPE _opBuy,_opSell;    //торговые сигналы 
      //параметры Price Based Indicator 
      int _handle_PBI;                         //хэндл Price Based Indicator
-     double PBI_buf[1],                      //буфер Price Based Indicator
-            high_buf[],                      //буфер высоких цен
-            low_buf[],                       //буфер низких цен
-            close_buf[2];                    //буфер цен закрытия      
+     double PBI_buf[1],                       //буфер Price Based Indicator
+            high_buf[],                       //буфер высоких цен
+            low_buf[],                        //буфер низких цен
+            close_buf[2];                     //буфер цен закрытия      
      double _takeProfit;     
     public:
      double GetTakeProfit() { return (_takeProfit); }; //получает значение тейк профита
@@ -63,7 +63,7 @@
 
     if (_tradeOnTrend)
     {
-     _handle_PBI = iCustom(_sym,_timeFrame,"PriceBasedIndicator");  //подключаем индикатор и получаем его хендл
+     _handle_PBI = iCustom(_sym,_timeFrame,"PriceBasedIndicator",4,_historyDepth,false);  //подключаем индикатор и получаем его хендл
      if(_handle_PBI == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
       {
        Print("Не удалось получить хендл MACD");               //если хендл не получен, то выводим сообщение в лог об ошибке
@@ -162,7 +162,7 @@
     {
       _waitForBuy  = false;
       _waitForSell = false;
-       order_type  = _opBuy;    
+       order_type  = OP_BUY;    
     }
    } 
 
@@ -172,7 +172,7 @@
     {
       _waitForBuy  = false;
       _waitForSell = false;   
-       order_type  = _opSell;        
+       order_type  = OP_SELL;        
     }
    }  
       

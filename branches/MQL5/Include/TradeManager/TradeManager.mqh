@@ -14,9 +14,44 @@
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
 #include <CLog.mqh>
-#include <Graph\Graph.mqh>
+//количество столбцов в файле
+#define N_COLUMNS 17
+  
+//#include <Graph\Graph.mqh>
+
 
 int error = 0;
+//+------------------------------------------------------------------+
+//| Временный класс для  хранения вычисленных параметров бэктеста    |
+//+------------------------------------------------------------------+
+ struct SysParam
+  {
+
+   uint nTrades;               //количество трейдов
+   uint nDeals;                //количество сделок
+   uint nWinTrades;            //количество выйгрышных трейдов
+   uint nLoseTrades;           //количество убыточных трейдов
+   
+   double shortTradeWinPer;    //процент выйгрышных коротких сделок (от выйгрывших)
+   double longTradeWinPer;     //процент выйгрышных длинных сделок (от выйгрывших)
+   double profitTradesPer;     //процент прибыльный трейдов (от всех)
+   double loseTradesPer;       //процент проигравших трейдов (от всех)
+   
+   double maxWinTrade;         //самый большой выйгравший трейд
+   double maxLoseTrade;        //самый большой убыточный трейд
+   
+   double medWinTrade;         //средний выйгрышный трейд
+   double medLoseTrade;        //средний сливший трейд
+   
+   uint maxWinTradesN;         //максимальное число непрерывных выйгрышей
+   uint maxLoseTradesN;        //максимальное число непрерывных проигрышей
+   
+   double maxWinTradeSum;      //максимальная непрерывная прибыль
+   double maxLoseTradeSum;     //максимальный непрерывный убыток
+      
+  };
+  
+
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
 //+------------------------------------------------------------------+
@@ -27,19 +62,29 @@ protected:
   bool _useSound;
   string _nameFileSound;   // Наименование звукового файла
   datetime _historyStart;
-  GraphModule  graphModule;   //графический модуль
+ // GraphModule  graphModule;   //графический модуль
   CPositionArray _positionsToReProcessing; ///массив позиций, находящихся в процессе
   CPositionArray _openPositions;           ///массив текущих открытых позиций
   CPositionArray _positionsHistory;        ///массив истории виртуальных позиций
+  
+
+  
   //дополнительные параметры  
   bool _pos_panel_draw;                     //флаг отображения позиции
+  
 public:
+
+  SysParam tmpParam;   //временное хранение данных
+
   void CTradeManager(bool pos_panel_draw=false):  _useSound(true), _nameFileSound("expert.wav") 
   {
    _magic = MakeMagic();
    _historyStart = TimeCurrent(); 
    log_file.Write(LOG_DEBUG, StringFormat("%s Создание объекта CTradeManager", MakeFunctionPrefix(__FUNCTION__)));
    log_file.Write(LOG_DEBUG, StringFormat("%s History start: %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_historyStart))); 
+  
+  /*
+  
    graphModule.RenameGraph("свойства позиции"); //добавляем новый заголовок
    graphModule.SetElem("Мэджик");            //отображаем магическое число        
    graphModule.SetElem("Цена");              //отображаем цену позиции
@@ -51,9 +96,38 @@ public:
    graphModule.SetElem("СтопЛосс статус");   //стоп лосс статус  
    graphModule.SetElem("Время открытия");    //время открытия позиции 
    graphModule.SetElem("Цена открытия");     //цена открытия
-   //graphModule.SetElem("Время закрытия");  //время открытия позиции    
+   //graphModule.SetElem("Время закрытия");  //время открытия позиции
+   
+   */
+       
    _pos_panel_draw = pos_panel_draw;
   };
+  
+  //временные методы для вычисления бэктеста
+  
+  bool BackTest();   //базовый метод, вычисляющий значения бэктеста
+  
+  void GetNTrades();          //возвращает количество трейдов в истории                                       (сделано)
+  void GetNDeals();           //возвращает количество сделок  
+  void GetNWinLoseTrades();   //возвращает количество выйгрышных и убыточных трейдов                          (сделано)
+  void GetShortTradeWinPer(); //возвращает процент выйгрышных коротких сделок по отношению ко всем выйгрышным
+  void GetLongTradeWinPer();  //возвращает процент выйгрышных длинных сделок по отношению ко всем выйгрышным
+  void GetProfitTradesPer();  //возвращает процент прибыльных трейдов по отношению ко всем                    (сделано)
+  void GetLoseTradesPer();    //возвращает процент  убыточных трейдов по отношению ко всем                    (сделано)
+  void GetMaxWinTrade();      //возвращает самый большой выйгрышный трейд                                     (сделано)
+  void GetMaxLoseTrade();     //возвращает самый большой убыточный трейд                                      (сделано)
+  void GetMedWinTrade();      //возвращает средний выйгрышный трейд                                           (сделано)
+  void GetMedLoseTrade();     //возвращает средний убыточный трейд                                            (сделано)
+  void GetMaxWinTradesN();    //возвращает максимальное число непрерывных выйгрышных трейдов                  (сделано)
+  void GetMaxLoseTradesN();    //возвращает максимальное число непрерывных убыточных трейдов                  (сделано)
+  void GetMaxWinTradeSum();   //возвращает максимальную су
+  void GetMaxLoseTradeSum();  //максимальный непрерывный убыток  
+  
+  void   ZeroParam();          //очищает параметры бэктеста
+  
+  void   ShowBackTestResults();  //отображает вычисленные значения бэктеста
+  
+  //базовые методы TradeManager
   
   bool OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
                     int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
@@ -69,12 +143,206 @@ public:
   bool isMinProfit(string symbol);
   void OnTick();
   void OnTrade(datetime history_start);
-  void SaveSituationToFile(bool debug = false);
+  void SaveSituationToFile();
+  bool LoadHistoryFromFile(); //считывает историю из файла
   private:
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
   void SaveHistoryToFile();
   void DrawCurrentPosition(int index);  //отображение текущей позиции
 };
+//+------------------------------------------------------------------+
+//| Временные методы вычисления бэктеста                             |
+//+------------------------------------------------------------------+
+
+void CTradeManager::GetNTrades(void)      //получает количество трейдов
+ {
+   tmpParam.nTrades = _positionsHistory.Total();
+ }
+ 
+void CTradeManager::GetLoseTradesPer(void)  //вычисляет процент убыточных трейдов по отношению ко всем
+ {
+  tmpParam.loseTradesPer = (double)(int)(tmpParam.nLoseTrades/tmpParam.nTrades);
+ } 
+ 
+void CTradeManager::GetProfitTradesPer(void)  //вычисляет процент выйгрышных трейдов по отношению ко всем
+ {
+  tmpParam.profitTradesPer = (double)(int)(tmpParam.nWinTrades/tmpParam.nTrades);
+ }  
+ 
+void CTradeManager::GetNWinLoseTrades(void)   //получает количество выйгрышных и убыточных трейдов
+ {
+   uint index;
+   tmpParam.nWinTrades = 0;    //обнуляем количество выйгрышных трейдов
+   tmpParam.nLoseTrades = 0;   //обнуляем количество убыточных трейдов   
+   GetNTrades();               //вычисляем количество трейдов
+   uint total = tmpParam.nTrades;
+   CPosition * pos;          //указатель на позицию
+   for (index=0;index<total;index++)
+    {
+    pos  = _positionsHistory.Position(index); //указатель на позицию по индексу
+    //если выйгрышный трейд
+    if (pos.getPosProfit()>0) 
+     tmpParam.nWinTrades++;  //увеличиваем счетчик выйгрышных трейдов на единицу
+    //если убыточный трейд
+    if (pos.getPosProfit()<0) 
+     tmpParam.nLoseTrades++;  //увеличиваем счетчик убыточных трейдов на единицу     
+    }   
+ } 
+
+
+void CTradeManager::GetMaxWinTrade(void) //вычисляет самый большой выйгрышный трейд
+ {
+   uint index;
+   GetNTrades(); //вычисляем количество трейдов
+   uint total = tmpParam.nTrades;
+   CPosition * pos;  //указатель на позицию
+   tmpParam.maxWinTrade = 0;
+   Alert("N TRADES = ",total);
+   for (index=0;index<total;index++)
+    {
+     Alert("<<<< ",index);
+    pos  = _positionsHistory.Position(index); //указатель на позицию по индексу
+    //вычисление самого большого выйгрышного трэйда
+    if (pos.getPosProfit()>tmpParam.maxWinTrade)
+     tmpParam.maxWinTrade = pos.getPosProfit();
+    }
+ }
+ 
+void CTradeManager::GetMaxLoseTrade(void) //вычисляет самый большой убыточный трейд
+ {
+   uint index;
+   GetNTrades(); //вычисляем количество трейдов
+   uint total = tmpParam.nTrades;
+   CPosition * pos;  //указатель на позицию
+   tmpParam.maxLoseTrade = 0;   
+   for (index=0;index<total;index++)
+    {
+    pos  = _positionsHistory.Position(index); //указатель на позицию по индексу
+    //вычисление самого большого выйгрышного трэйда
+    if ( pos.getPosProfit()<tmpParam.maxLoseTrade)
+     tmpParam.maxLoseTrade = pos.getPosProfit();
+    }
+ } 
+
+void CTradeManager::GetMedWinTrade(void)  //вычисляет средний выйгрышный трейд
+ {
+   uint index;
+   uint count=0;   //счетчик выйгрышных трейдов
+   GetNTrades(); //вычисляем количество трейдов
+   uint total = tmpParam.nTrades;
+   double profitSum=0; //сумма профитов 
+   CPosition * pos;  //указатель на позицию
+   for (index=0;index<total;index++)
+    {
+    pos  = _positionsHistory.Position(index); //указатель на позицию по индексу
+    //вычисление самого большого выйгрышного трэйда
+    if (pos.getPosProfit()>0)  //если трейд - выйгрышный
+     {
+      profitSum = profitSum + pos.getPosProfit();
+      count++;
+     }
+    } 
+    if (count) //если количество выйгрышных трейдов больше нуля
+    tmpParam.medWinTrade = profitSum/count; //вычисляем средний выйгрышный трейд
+ } 
+ 
+void CTradeManager::GetMedLoseTrade(void)  //вычисляет средний убыточный трейд
+ {
+   uint index;
+   uint count=0;   //счетчик убыточных трейдов
+   GetNTrades(); //вычисляем количество трейдов
+   uint total = tmpParam.nTrades;
+   double profitSum=0; //сумма профитов 
+   CPosition * pos;  //указатель на позицию
+   for (index=0;index<total;index++)
+    {
+    pos  = _positionsHistory.Position(index); //указатель на позицию по индексу
+    //вычисление самого большого выйгрышного трэйда
+    if (pos.getPosProfit()<0)  //если трейд - убыточный
+     {
+      profitSum = profitSum + pos.getPosProfit();
+      count++;
+     }
+    } 
+    if (count) //если количество убыточных трейдов больше нуля
+    tmpParam.medLoseTrade = profitSum/count; //вычисляем средний убыточный трейд
+ }  
+
+
+void CTradeManager::GetMaxWinTradesN(void)  //вычисляет  максимальное количество подряд идуших выйгрышных трейдов
+ {
+  uint count=0;                   //текущее число подряд идущих трейдов
+  uint index;                     //индекс по массиву позиций
+  CPosition * pos;                //указатель на позицию
+  GetNTrades();                   //вычисляет количество трейдов (позиций) в истории
+  uint total = tmpParam.nTrades;  //количество позиций в истории
+  tmpParam.maxWinTradesN = 0;     //обнуляем максимальное число подряд идущих прибыльных трейдов
+  for (index=0;index<total;index++)
+   {
+    pos  = _positionsHistory.Position(index); //указатель на позицию по индексу    
+    if (pos.getPosProfit()>0) count++;  //если выйгрышный трейд, то считаем
+    else //иначе
+     {
+      if (count>0) //счетчик положительный, значит прошлый трейд был выйгрышным
+       {
+        if (count > tmpParam.maxWinTradesN) //если найдено большее количество подряд идущих трейдов
+         tmpParam.maxWinTradesN = count;
+        count = 0; //обнуляем счетчик
+       }
+     }
+   }
+  if (count > tmpParam.maxWinTradesN)  
+   tmpParam.maxWinTradesN = count;
+ }
+ 
+void CTradeManager::GetMaxLoseTradesN(void)  //вычисляет  максимальное количество подряд идуших убыточных трейдов
+ {
+  uint count=0;                   //текущее число подряд идущих трейдов
+  uint index;                     //индекс по массиву позиций
+  CPosition * pos;                //указатель на позицию
+  GetNTrades();                   //вычисляет количество трейдов (позиций) в истории
+  uint total = tmpParam.nTrades;  //количество позиций в истории
+  tmpParam.maxLoseTradesN = 0;     //обнуляем максимальное число подряд идущих убыточных трейдов
+  for (index=0;index<total;index++)
+   {
+    pos  = _positionsHistory.Position(index); //указатель на позицию по индексу    
+    if (pos.getPosProfit()<0) count++;  //если  убыточный трейд, то считаем
+    else //иначе
+     {
+      if (count>0) //счетчик положительный, значит прошлый трейд был убыточным
+       {
+        if (count > tmpParam.maxLoseTradesN) //если найдено большее количество подряд идущих трейдов
+         tmpParam.maxLoseTradesN = count;
+        count = 0; //обнуляем счетчик
+       }
+     }
+   }
+  if (count > tmpParam.maxLoseTradesN)  
+   tmpParam.maxLoseTradesN = count;
+ } 
+ 
+   void CTradeManager::ZeroParam(void)  //обнуляет все параметры бэктеста
+   {
+     tmpParam.nTrades=0;             //количество трейдов
+     tmpParam.nDeals=0;              //количество сделок
+   
+     tmpParam.shortTradeWinPer=0;    //процент выйгрышных коротких сделок (от выйгрывших)
+     tmpParam.longTradeWinPer=0;     //процент выйгрышных длинных сделок (от выйгрывших)
+     tmpParam.profitTradesPer=0;     //процент прибыльный трейдов (от всех)
+     tmpParam.loseTradesPer=0;       //процент проигравших трейдов (от всех)
+   
+     tmpParam.maxWinTrade=0;         //самый большой выйгравший трейд
+     tmpParam.maxLoseTrade=0;        //самый большой убыточный трейд
+   
+     tmpParam.medWinTrade=0;         //средний выйгрышный трейд
+     tmpParam.medLoseTrade=0;        //средний сливший трейд
+   
+     tmpParam.maxWinTradesN=0;       //максимальное число непрерывных выйгрышей
+     tmpParam.maxLoseTradesN=0;      //максимальное число непрерывных проигрышей
+   
+     tmpParam.maxWinTradeSum=0;      //максимальная непрерывная прибыль
+     tmpParam.maxLoseTradeSum=0;     //максимальный непрерывный убыток   
+   }
 
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -182,23 +450,8 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
                                           , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
-   
-   pos.setOpenPosDT(TimeCurrent()); //сохраняем текущее время
-   pos.setPosProfit(0);  //сохраняем текущий профит
-   pos.pos_closed = false;
-   switch (pos.getType())
-    {
-    case OP_BUY:
-    case OP_BUYLIMIT:
-    case OP_BUYSTOP:
-     pos.setPriceOpen(SymbolInfoDouble(symbol,SYMBOL_ASK));  //сохраняем текущую цену
-    break;
-    case OP_SELL:
-    case OP_SELLLIMIT:
-    case OP_SELLSTOP:
-     pos.setPriceOpen(SymbolInfoDouble(symbol,SYMBOL_BID));  //сохраняем текущую цену   
-    break;
-    }
+
+
    _openPositions.Add(pos);  // добавляем открытую позицию в массив открытых позиций
    SaveSituationToFile();
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
@@ -246,8 +499,10 @@ void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
 //+------------------------------------------------------------------+
 void CTradeManager::OnTrade(datetime history_start=0)
 {
+/*
  if (_pos_panel_draw) 
   DrawCurrentPosition(_openPositions.Total()-1);  //отображаем панель свойств позиции
+*/
 }
 
 //+------------------------------------------------------------------+
@@ -271,7 +526,9 @@ void CTradeManager::OnTick()
               //       pos.pos_closed = true;
                     
                     // pos.setPriceClose(SymbolInfoDouble(pos.getSymbol(),SYMB
-/*ADD TO HISTORY*/   _positionsHistory.Add(_positionsToReProcessing.Detach(i)); //добавляем удаляемую позицию в массив
+/*ADD TO HISTORY*/
+   //_positionsHistory.Add(_positionsToReProcessing.Detach(i)); //добавляем удаляемую позицию в массив
+   _positionsToReProcessing.Delete(i);   
     SaveHistoryToFile();                  
     break;
    }
@@ -290,23 +547,7 @@ void CTradeManager::OnTick()
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и TakeProfit у позиции [%d].Перемещаем её из positionsToReProcessing в openPositions.", MakeFunctionPrefix(__FUNCTION__), i));    
     pos.setPositionStatus(POSITION_STATUS_OPEN);
-    
-   pos.setOpenPosDT(TimeCurrent()); //сохраняем текущее время
-   pos.setPosProfit(0);  //сохраняем текущий профит
-   pos.pos_closed = false;
-   switch (pos.getType())
-    {
-    case OP_BUY:
-    case OP_BUYLIMIT:
-    case OP_BUYSTOP:
-     pos.setPriceOpen(SymbolInfoDouble(pos.getSymbol(),SYMBOL_ASK));  //сохраняем текущую цену
-    break;
-    case OP_SELL:
-    case OP_SELLLIMIT:
-    case OP_SELLSTOP:
-     pos.setPriceOpen(SymbolInfoDouble(pos.getSymbol(),SYMBOL_BID));  //сохраняем текущую цену   
-    break;
-     }
+  
     _openPositions.Add(_positionsToReProcessing.Detach(i));    
     SaveSituationToFile();
    }
@@ -390,7 +631,6 @@ void CTradeManager::OnTick()
                  //    pos.setClosePosDT(TimeCurrent());  //сохраняем время закрытия
                  //    pos.pos_closed = true; 
 /*ADD TO HISTORY*/   _positionsHistory.Add(_openPositions.Detach(i));
-                     SaveHistoryToFile();  
                      SaveHistoryToFile();  
        break;
       }
@@ -589,14 +829,19 @@ long CTradeManager::MakeMagic(string strSymbol = "")
 
 //+------------------------------------------------------------------+
 /// Create file name
-/// \param [bool] debug       if want to debug
 /// \return							generated string
 //+------------------------------------------------------------------+
-string CreateRDFilename (bool debug = false)
+string CreateRDFilename ()
 {
  string result;
- if (debug) result = StringFormat("%s\\RescueData\\%s_%s_%s_debug.csv", MQL5InfoString(MQL5_PROGRAM_NAME), MQL5InfoString(MQL5_PROGRAM_NAME), StringSubstr(Symbol(),0,6), PeriodToString(Period()));
- else result = StringFormat("%s\\RescueData\\%s_%s_%s_rd.csv", MQL5InfoString(MQL5_PROGRAM_NAME), MQL5InfoString(MQL5_PROGRAM_NAME), StringSubstr(Symbol(),0,6), PeriodToString(Period()));
+ result = StringFormat("%s\\RescueData\\%s_%s_%s_rd.csv", MQL5InfoString(MQL5_PROGRAM_NAME), MQL5InfoString(MQL5_PROGRAM_NAME), StringSubstr(Symbol(),0,6), PeriodToString(Period()));
+ return(result);
+}
+
+string CreateHistoryFilename ()
+{
+ string result;
+ result = StringFormat("%s\\History\\%s_%s_%s_history.csv", MQL5InfoString(MQL5_PROGRAM_NAME), MQL5InfoString(MQL5_PROGRAM_NAME), StringSubstr(Symbol(),0,6), PeriodToString(Period()));
  return(result);
 }
 
@@ -604,9 +849,9 @@ string CreateRDFilename (bool debug = false)
 /// Save position array to file
 /// \param [bool] debug       if want to debug
 //+------------------------------------------------------------------+
-void CTradeManager::SaveSituationToFile(bool debug = false)
+void CTradeManager::SaveSituationToFile()
 {
- string file_name = CreateRDFilename(debug);
+ string file_name = CreateRDFilename();
  int file_handle = FileOpen(file_name, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
  if(file_handle == INVALID_HANDLE)
  {
@@ -651,11 +896,59 @@ ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
  return OP_UNKNOWN;
 }
 
-
+bool CTradeManager::LoadHistoryFromFile()   //загружает историю позиции из файла
+ {
+  string historyUrl = CreateHistoryFilename(); 
+  int file_handle;   //файловый хэндл
+  int ind;
+  string tmp_str[17];
+  bool read_flag;  //флаг считывания данных из файла
+  CPosition *pos;  
+     if (!FileIsExist(historyUrl,FILE_COMMON) ) //проверка существования файла истории 
+      return false;   
+   file_handle = FileOpen(historyUrl, FILE_READ|FILE_COMMON|FILE_CSV|FILE_ANSI, ";");
+   if (file_handle == INVALID_HANDLE) //не удалось открыть файл
+    return false;
+   _positionsHistory.Clear(); //очищаем массив истории позиций
+   for(ind=0;ind<N_COLUMNS;ind++) //N_COLUMNS - количество столбцов 
+    {
+    tmp_str[ind] = FileReadString(file_handle);  //пропуск первой строки таблицы
+    } 
+    /*
+   Alert("11 = ", tmp_str[11],
+         " 12 = ", tmp_str[12],
+         " 13 = ", tmp_str[13],
+         " 14 = ", tmp_str[14],
+         " 15 = ", tmp_str[15],
+         " 16 = ", tmp_str[16],
+         " 6 = ", tmp_str[17],
+         " 7 = ", tmp_str[1],
+         " 8 = ", tmp_str[2],
+         " 9 = ", tmp_str[3],
+         " 10 = ", tmp_str[4],
+         " 11 = ", tmp_str[5],
+         " 12 = ", tmp_str[12],
+         " 13 = ", tmp_str[13],
+         " 14 = ", tmp_str[14],
+         " 15 = ", tmp_str[15],
+         " 16 = ", tmp_str[16]       
+                );*/ 
+   read_flag = true;      //как минимум одну строку мы должны попытаться считать
+   
+   while (read_flag)
+    {
+     pos = new CPosition(0,"",OP_UNKNOWN,0);    //выделяем память под новый элемент 
+     read_flag = pos.ReadFromFile(file_handle); //считываем строку для одной позиции
+     if (read_flag)                             //если удалось считать строку 
+      _positionsHistory.Add(pos);               //то добавляем элемент в массив историй 
+    }   
+   FileClose(file_handle);  //закрывает файл истории позиций 
+  return true;
+ }
 
 void CTradeManager::SaveHistoryToFile(void) //сохраняет историю открытия\закрытия позиций в файл
- {
- int file_handle = FileOpen("positionsHistory.csv", FILE_WRITE|FILE_COMMON|FILE_CSV|FILE_ANSI, "");
+ { /*
+ int file_handle = FileOpen(CreateHistoryFilename(), FILE_WRITE|FILE_COMMON|FILE_CSV|FILE_ANSI, "");
  int index;
  int total = _positionsHistory.Total(); //получаем количество элементов истории
  string result;
@@ -670,19 +963,21 @@ void CTradeManager::SaveHistoryToFile(void) //сохраняет историю открытия\закрыти
      //сохраняем наименования колонок таблицы
      result = "";
      StringConcatenate(result, "Мэджик;",
-                               "Цена позиции;",
-                               "Статус позиции;",
-                               "Тип ордера;",
-                               "Цена стоп лосс;",
-                               "Цена тейк профит;",
+                               "Символ;",
+                               "Тип позиции;",
+                               "Лот;",
+                               "Тикет позиции;",
                                "Тикет стоп лосс;",
-                               "Статус стоп лосс;",
-                               "Дата\время открытия;",
-                               "Дата\время завершения;",
-                               "Цена открытия;",
-                               "Цена закрытия;",
-                               "Прибыль по позиции;",
-                               "Статус ордера;"
+                               "Цена стоп лосс;",
+                               "Стоп лосс;",
+                               "Цена тейк профита;",
+                               "Трейлинг стоп;",
+                               "Трейлинг степ;",
+                               "Цена открытия позиции;",
+                               "Цена закрытия позиции;",
+                               "Время открытия позиции;",
+                               "Время закрытия позиции;",
+                               "Прибыль по позиции;"
                                );                 
   
      FileWrite(file_handle,result); //сохраняем свойства позиции                            
@@ -691,20 +986,25 @@ void CTradeManager::SaveHistoryToFile(void) //сохраняет историю открытия\закрыти
     {    
     result = "";
      pos  = _positionsHistory.Position(index); //указатель на позицию
-     StringConcatenate(result, pos.getMagic(), ";[", 
-                       pos.getPositionPrice(), "];", 
-                       PositionStatusToStr(pos.getPositionStatus()), ";",
-                       GetNameOP(pos.getType()), ";[",
-                       pos.getStopLossPrice(), "];[", 
-                       pos.getTakeProfitPrice(), "];", 
-                       pos.getStopLossTicket(), ";", 
-                       pos.getStopLossStatus(),";",
-                       TimeToString(pos.getOpenPosDT()),";",
-                       TimeToString(pos.getClosePosDT()),";[",
-                       pos.getPriceOpen(),"];[",
-                       pos.getPriceClose(),"];[",
-                       pos.getPosProfit(),"];"                       
+     StringConcatenate(result, 
+                       pos.getMagic(), ";",                   //мэджик
+                       pos.getSymbol(), ";",                  //символ
+                       GetNameOP(pos.getType()), ";",         //тип позиции
+                       pos.getVolume(), ";",                  //лот
+                       pos.getPositionTicket(), ";",          //тикет позиции
+                       pos.getStopLossTicket(), ";",          //тикет стоп лосс                     
+                       pos.getStopLossPrice(), ";",           //цена стоп лосс
+                       pos.getStopLossStatus(), ";",          //статус стоп лосс 
+                       pos.getTakeProfitPrice(),";",          //цена тейк профит
+                       pos.getTrailingStop(), ";",            //трейлинг стоп
+                       pos.getTrailingStep(), ";",            //трейлинг степ
+                       DoubleToString(pos.getPriceOpen(),SymbolInfoInteger(pos.getSymbol(),SYMBOL_DIGITS)), ";",  //цена открытия
+                       DoubleToString(pos.getPriceClose(),SymbolInfoInteger(pos.getSymbol(),SYMBOL_DIGITS)), ";", //цена закрытия
+                       TimeToString(pos.getOpenPosDT()),";",  //время открытия позиции
+                       TimeToString(pos.getClosePosDT()),";", //время закрытия позиции 
+                       DoubleToString(pos.getPosProfit(),SymbolInfoInteger(pos.getSymbol(),SYMBOL_DIGITS)),";"    //прибыль по позиции                  
                        );     
+                                     
                        
    if(pos.getType() != OP_BUY && pos.getType() != OP_SELL) 
      {
@@ -713,10 +1013,15 @@ void CTradeManager::SaveHistoryToFile(void) //сохраняет историю открытия\закрыти
       else
         StringConcatenate(result, result,";",EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE)));
     } 
+   else
+        StringConcatenate(result, result, ";","Немедленное_исполнение");  
      FileWrite(file_handle,result); //сохраняем свойства позиции
    } 
     FileClose(file_handle); //закрываем файл     
+    */
  }
+ 
+ /*
  
 void CTradeManager::DrawCurrentPosition(int index)  //отображение текущей позиции и её параметров
  {
@@ -740,3 +1045,4 @@ void CTradeManager::DrawCurrentPosition(int index)  //отображение текущей позици
  graphModule.ShowPanel(); //отображаем панель           
   }              
  } 
+ */

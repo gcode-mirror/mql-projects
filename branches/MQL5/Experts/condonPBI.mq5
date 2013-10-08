@@ -13,13 +13,11 @@
 #include  <Lib CisNewBar.mqh>
 #include  <TradeManager\TradeManager.mqh>          //подключаем библиотеку для совершения торговых операций
 #include  <CLog.mqh> 
-#include  <Graph\Graph.mqh>                        //подключаем графическую библиотеку
 #include  <ColoredTrend\ColoredTrendUtilities.mqh> //загружаем бибилиотеку цветов
 
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
-//input ulong _magic = 1122;
 input int SL = 150;
 input int TP = 500;
 input double _lot = 1;
@@ -39,7 +37,7 @@ input int stopPriceDifference = 20;
 string symbol;                               //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm(true);
+CTradeManager ctm(false);
 MqlTick tick;
 
 //int handleMACD;
