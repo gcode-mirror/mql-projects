@@ -11,9 +11,10 @@
 #include <CExtremumCalc.mqh>
 #include <Lib CisNewBar.mqh>
 
- input int epsilon = 25;
- input int depth = 50;
- input int period_ATR = 100; 
+ input int epsilon = 25;      //
+ input int depth = 50;        //
+ input int period_ATR = 100;  //
+ input int percent_ATR = 25;  // 
 
  input bool show_Extr_MN = true;
  input bool show_Extr_W1 = false;
@@ -104,7 +105,7 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
 //---
-   bool load = CalculateATRbuffer();
+   bool load = FillATRbuffer();
  
    if(load)
    {
@@ -348,7 +349,7 @@ void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, 
   if(extrcalc.getExtr(i).price > 0)
   {
    resArray[count] = extrcalc.getExtr(i);
-   resArray[count].channel = buffer_ATR[i]/4;
+   resArray[count].channel = (buffer_ATR[i]/percent_ATR) * 100;
    count++;
   }
  }
@@ -396,16 +397,16 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"three-");
 }
 
-bool CalculateATRbuffer()
+bool FillATRbuffer()
 {
    if(handle_ATR_MN != INVALID_HANDLE && handle_ATR_W1 != INVALID_HANDLE && handle_ATR_D1 != INVALID_HANDLE &&
       handle_ATR_H4 != INVALID_HANDLE && handle_ATR_H1 != INVALID_HANDLE )
    {
-    int copiedATR_MN = CopyBuffer(handle_ATR_MN, 0, 1, depth, buffer_ATR_MN);
-    int copiedATR_W1 = CopyBuffer(handle_ATR_W1, 0, 1, depth, buffer_ATR_W1);
-    int copiedATR_D1 = CopyBuffer(handle_ATR_D1, 0, 1, depth, buffer_ATR_D1);
-    int copiedATR_H4 = CopyBuffer(handle_ATR_H4, 0, 1, depth, buffer_ATR_H4);
-    int copiedATR_H1 = CopyBuffer(handle_ATR_H1, 0, 1, depth, buffer_ATR_H1); 
+    int copiedATR_MN = CopyBuffer(handle_ATR_MN, PERIOD_MN1, 1, depth, buffer_ATR_MN);
+    int copiedATR_W1 = CopyBuffer(handle_ATR_W1, PERIOD_W1, 1, depth, buffer_ATR_W1);
+    int copiedATR_D1 = CopyBuffer(handle_ATR_D1, PERIOD_D1, 1, depth, buffer_ATR_D1);
+    int copiedATR_H4 = CopyBuffer(handle_ATR_H4, PERIOD_H4, 1, depth, buffer_ATR_H4);
+    int copiedATR_H1 = CopyBuffer(handle_ATR_H1, PERIOD_H1, 1, depth, buffer_ATR_H1); 
     
     if (copiedATR_MN != depth || copiedATR_W1 != depth || copiedATR_D1 != depth ||
         copiedATR_H4 != depth || copiedATR_H1 != depth) 
