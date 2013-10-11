@@ -35,7 +35,7 @@
                       int historyDepth);          //инициализирует торговый блок
    int DeinitTradeBlock();                                         //деинициализирует торговый блок
    bool UploadBuffers();                               //загружает буферы 
-   ENUM_TM_POSITION_TYPE GetSignal (bool ontick);      //получает торговый сигнал      
+   short GetSignal (bool ontick);      //получает торговый сигнал      
   };
 
 int FWRabbit::InitTradeBlock(string sym,
@@ -83,7 +83,7 @@ bool FWRabbit::UploadBuffers()    //загружает буферы
   return true;
  }  
 
-ENUM_TM_POSITION_TYPE FWRabbit::GetSignal(bool ontick)  //получает торговый сигнал
+short FWRabbit::GetSignal(bool ontick)  //получает торговый сигнал
  {
    double sum = 0;
    double avgBar = 0;
@@ -99,8 +99,10 @@ ENUM_TM_POSITION_TYPE FWRabbit::GetSignal(bool ontick)  //получает торговый сигн
     //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
   
     if ( !UploadBuffers () )  //проверка, загрузились ли буферы
-     return OP_UNKNOWN;
-     
+     {
+     Alert("Не удалось скопировать буферы ");          
+     return 0; //неизвестный сигнал
+     }
     for(i = 0; i < _historyDepth; i++)
     {
      sum = sum + high_buf[i] - low_buf[i];  
@@ -118,16 +120,16 @@ ENUM_TM_POSITION_TYPE FWRabbit::GetSignal(bool ontick)  //получает торговый сигн
      if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
      {
       _takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + _profitPercent),0);
-      return OP_SELL;
+      return 2; //SELL
      }
      if(GreatDoubles(close_buf[0], open_buf[0]))
      {   
       _takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + _profitPercent),0);
-      return OP_BUY;
+      return 1; //BUY
      }
  
     }
     
    }
-   return OP_UNKNOWN;      
+   return 0; //неизвестен      
  }

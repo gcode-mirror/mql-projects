@@ -629,7 +629,7 @@ bool CPosition::ReadFromFile(int handle)
   _posProfit      = FileReadNumber(handle);                      //профит позиции
   if(FileIsEnding(handle)) return false;  
      FileReadString(handle);                                     //пропуск пустого символа  
-
+/*
   ggg = 
         " мэджик = "+IntegerToString(_magic)+
         " символ = "+_symbol+        
@@ -648,7 +648,7 @@ bool CPosition::ReadFromFile(int handle)
         " время_закрытия = "+TimeToString(_close_pos_time)+
         " профит_позиции = "+DoubleToString(_posProfit); 
                                                                         
-  Alert("",ggg);
+  Alert("",ggg);*/
   //log_file.Write(LOG_DEBUG, StringFormat("%s Файл успешно прочитан", MakeFunctionPrefix(__FUNCTION__)));
   return true;
  }

@@ -44,9 +44,7 @@
    ENUM_MA_METHOD _method;                                         //метод EMA
    ENUM_APPLIED_PRICE _applied_price;                              //применяемая цена
    CisNewBar _newCisBar;                                           //для проверки формирования нового бара
-   double  _takeProfit;                                            //тейк профит
-   public:                  
-   double GetTakeProfit() { return (_takeProfit); };               //получает значение тейк профита                 
+   public:                                
    int InitTradeBlock(string sym,
                       ENUM_TIMEFRAMES timeFrame,   
                       uint FastPer, 
@@ -56,7 +54,7 @@
    int DeinitTradeBlock();                                         //деинициализирует торговый блок
    int UpdateHandle(CROSS_EMA_HANDLE handle,uint period);          //изменяет параметры выбранной EMA на period. Если не успешно, то вернет false, а параметры не поменяет
    bool UploadBuffers(uint start=1);                               //загружает буферы 
-   ENUM_TM_POSITION_TYPE GetSignal (bool ontick,uint start=1);     //получает торговый сигнал 
+   short GetSignal (bool ontick,uint start=1);     //получает торговый сигнал 
    CrossEMA ();   //конструктор класса CrossEMA           
   };
   
@@ -86,13 +84,22 @@
    _applied_price   = applied_price; 
    _ma_slow_handle=iMA(_sym,_timeFrame,_slow_per,0,_method,_applied_price); //инициализация медленного индикатора
    if(_ma_slow_handle<0)
+    {
+    Alert("Не удалось создать хэндл EMA");
     return INIT_FAILED;
+    }
    _ma_fast_handle=iMA(_sym,_timeFrame,_fast_per,0,_method,_applied_price); //инициализация быстрого индикатора
    if(_ma_fast_handle<0)
+    {
+    Alert("Не удалось создать хэндл EMA");
     return INIT_FAILED;
+    }
    _ma_ema3_handle=iMA(_sym,_timeFrame,3,0,_method,_applied_price); //инициализация индикатора EMA3
    if(_ma_ema3_handle<0)
-    return INIT_FAILED;    
+    {
+    Alert("Не удалось создать хэндл EMA");
+    return INIT_FAILED;
+    }    
    return INIT_SUCCEEDED;
   }
   
@@ -130,6 +137,7 @@
         }      
       break;
      }
+     Alert("Не удалось обновить хэндлы EMA");    
      return INIT_FAILED;
    } 
    
@@ -140,28 +148,29 @@
       CopyBuffer(_ma_ema3_handle, 0, start, 1, ma_ema3) <= 0 ||
       CopyClose(_sym, 0, start, 1, close) <= 0 ||
       CopyTime(_sym, 0, start, 1, date_buffer) <= 0) //копирование буферов
-      return false;
+      return false;   
      return true;
   }  
 
- ENUM_TM_POSITION_TYPE CrossEMA::GetSignal(bool ontick,uint start=1)  //получает торговый сингал
+ short CrossEMA::GetSignal(bool ontick,uint start=1)  //получает торговый сингал
   {
    if ( _newCisBar.isNewBar() > 0 || ontick)
    {
    if(!UploadBuffers()) //копирование буферов
      {
-      return OP_UNKNOWN;  //неизвестный сигнал
+      Alert("Не удалось скопировать буферы EMA");     
+      return 0;  //неизвестный сигнал
      }  
    if(GreatDoubles(ma_slow[1],ma_fast[1]) && GreatDoubles(ma_fast[0],ma_slow[0]) && GreatDoubles(ma_ema3[0],close[0]))
     {      
-      return OP_BUY;  //получен сигнал на покупку
+      return 1;  //получен сигнал на покупку BUY
     }
    if (GreatDoubles(ma_fast[1],ma_slow[1]) && GreatDoubles(ma_slow[0],ma_fast[0]) && GreatDoubles(close[0],ma_ema3[0])  ) 
     {
-      return OP_SELL; //получен сигнал на продажу
+      return 2; //получен сигнал на продажу SELL
     }
-   }
-   return OP_UNKNOWN; //признак неисполнения функции
+   }      
+   return 0; //признак неисполнения функции
   } 
   
   CrossEMA::CrossEMA(void)  //конструктор класса CrossEMA

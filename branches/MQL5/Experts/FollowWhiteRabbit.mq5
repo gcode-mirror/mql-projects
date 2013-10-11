@@ -181,6 +181,7 @@ void OnTick()
      ctm.OpenPosition(my_symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep, priceDifference);
     }
    }
+
    
    pos = ctm.GetLastClosedPosition(); //получаем последнюю закрытую позицию
    if (pos != NULL)  //если позиция существует
@@ -193,9 +194,12 @@ void OnTick()
     }
     
    uint index;
+   //проходим по циклу, пока не переберем все позиции, готовые на отыгрыш
    while (!index = rp.CustomPosition())>0)
     {
-      
+      pos = rp.GetPosition(index);
+      pos.getPositionPrice();
+     ctm.OpenPosition(my_symbol, pos.getType(), _lot, SL, , minProfit, trailingStop, trailingStep, priceDifference); 
       rp.DeletePosition(index); //удаляем позицию из очереди ожидания отыгрыша
       
       

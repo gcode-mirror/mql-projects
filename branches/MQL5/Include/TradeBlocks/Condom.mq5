@@ -40,17 +40,17 @@
      double _takeProfit;     
     public:
      double GetTakeProfit() { return (_takeProfit); }; //получает значение тейк профита
-     int InitTradeBlock(string sym,
+     Condom            (string sym,
                         ENUM_TIMEFRAMES timeFrame,
                         bool   tradeOnTrend,                        
                         int historyDepth);       //метод инициализации торгового блока
      int DeinitTradeBlock();                             //метод деинициализации торгового блока
      bool UploadBuffers();                               //загружает буферы 
-     ENUM_TM_POSITION_TYPE GetSignal (bool ontick);      //получает торговый сигнал     
+     short GetSignal (bool ontick);      //получает торговый сигнал     
        
   };
   
- int Condom::InitTradeBlock(string sym,
+    Condom::Condom             (string sym,   //конструктор класса
                         ENUM_TIMEFRAMES timeFrame,
                         bool   tradeOnTrend,                  
                         int historyDepth)
@@ -66,8 +66,7 @@
      _handle_PBI = iCustom(_sym,_timeFrame,"PriceBasedIndicator",4,_historyDepth,false);  //подключаем индикатор и получаем его хендл
      if(_handle_PBI == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
       {
-       Print("Не удалось получить хендл MACD");               //если хендл не получен, то выводим сообщение в лог об ошибке
-       return(-1);                                                  //завершаем работу с ошибкой
+       Print("Не удалось получить хендл Price Based Indicator");               //если хендл не получен, то выводим сообщение в лог об ошибке                                                //завершаем работу с ошибкой
       }      
      } 
 
@@ -78,8 +77,7 @@
    _globalMin = 0;
    _waitForSell = false;
    _waitForBuy = false;
-   
-   return(0);      
+      
     }
     
   int  Condom::DeinitTradeBlock(void)  //деинициализация торгового блока Condom
@@ -119,14 +117,14 @@
     return true;
    }
     
-  ENUM_TM_POSITION_TYPE Condom::GetSignal(bool ontick)  //получает торговый сигнал
+  short Condom::GetSignal(bool ontick)  //получает торговый сигнал
    {
    CisNewBar isNewBar(_sym, _timeFrame);
     ENUM_TM_POSITION_TYPE order_type = OP_UNKNOWN;
      if(isNewBar.isNewBar() > 0)
        {       
        if (!UploadBuffers()) //если буферы не удалось скопировать
-        return OP_UNKNOWN;
+        return 0; //неизвестный сигнал
        
         _globalMax = high_buf[ArrayMaximum(high_buf)];
         _globalMin = low_buf[ArrayMinimum(low_buf)];
@@ -147,13 +145,13 @@
             if (PBI_buf[0]==MOVE_TYPE_TREND_DOWN || 
                 PBI_buf[0]==MOVE_TYPE_TREND_UP)
              {
-              return OP_UNKNOWN;
+              return 0; //неизвестный сигнал
              }
           } 
          if(!SymbolInfoTick(_sym,_tick))
    {
     Alert("SymbolInfoTick() failed, error = ",GetLastError());
-    return OP_UNKNOWN;
+    return 0; //неизвестный сигнал
    }
       
    if (_waitForBuy)
@@ -162,7 +160,7 @@
     {
       _waitForBuy  = false;
       _waitForSell = false;
-       order_type  = OP_BUY;    
+       order_type  = 1;  //BUY
     }
    } 
 
@@ -172,7 +170,7 @@
     {
       _waitForBuy  = false;
       _waitForSell = false;   
-       order_type  = OP_SELL;        
+       order_type  = 2;   //SELL
     }
    }  
       
