@@ -14,7 +14,8 @@
 #include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
 #include <CompareDoubles.mqh>
 #include <CIsNewBar.mqh>
-#include <TradeManager\TradeManager.mqh>
+#include <TradeManager\TradeManager.mqh>   
+#include <TradeManager\ReplayPosition.mqh>  
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -37,13 +38,15 @@ input int stopPriceDifference = 150;
 string my_symbol;                                       //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm(true);
+CTradeManager ctm(true);  //торговый класс
+ReplayPosition rp;        //класс отыгрыша убыточной позиции
 MqlTick tick;
 
 double takeProfit, stopLoss;
 double high_buf[], low_buf[], close_buf[1], open_buf[1];
 ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
 int priceDifference;
+CPosition * pos;   //указатель на позицию
 
 //GraphModule  graphModule;   //графический модуль
 
@@ -84,19 +87,19 @@ int OnInit()
    ctm.LoadHistoryFromFile(); //загружаем историю позиций из файла
    ctm.ZeroParam();  //обнуляем все параметры бэктест
    ctm.GetNTrades(); //проверяем количество трейдов в истории
-  // ctm.GetNWinLoseTrades(); //проверяем количество трейдов выйгрышных и убыточных
-   //ctm.GetProfitTradesPer(); //процент выйгрышных по отношению ко всему
+   ctm.GetNWinLoseTrades(); //проверяем количество трейдов выйгрышных и убыточных
+   ctm.GetProfitTradesPer(); //процент выйгрышных по отношению ко всему
    ctm.GetMaxWinTrade();  //получаем максимальный выйгрышный трейд
    ctm.GetMaxLoseTrade();  //получаем максимальный выйгрышный трейд  
    ctm.GetMedLoseTrade();  //получаем среднее значение убытка 
    ctm.GetMaxWinTradesN();  //получаем максимальное количество подряд идущих выйгрышных трейдов
    //Comment("Кол-во трейдов = ",ctm.tmpParam.nTrades);
    //Comment("кол-во выйгрышных и убыточных =  ",ctm.tmpParam.nWinTrades," | ",ctm.tmpParam.nLoseTrades); //отображаем на графике
-   //Comment("Процент выйгр. ко всем = ",ctm.tmpParam.profitTradesPer);
+   Comment("Процент выйгр. ко всем = ",ctm.tmpParam.profitTradesPer);
    //Comment("Максимальный профит = ",ctm.tmpParam.maxWinTrade);
-  // Comment("Максимальный убыток = ",ctm.tmpParam.maxLoseTrade);
-  //  Comment("Средний убыток = ",ctm.tmpParam.medLoseTrade);
-     Comment("Макс. = ",ctm.tmpParam.maxWinTradesN);
+   //Comment("Максимальный убыток = ",ctm.tmpParam.maxLoseTrade);
+   //Comment("Средний убыток = ",ctm.tmpParam.medLoseTrade);
+   //Comment("Макс. = ",ctm.tmpParam.maxWinTradesN);
    //LoadHistoryFromFile()
 
    return(0);
@@ -179,6 +182,26 @@ void OnTick()
     }
    }
    
+   pos = ctm.GetLastClosedPosition(); //получаем последнюю закрытую позицию
+   if (pos != NULL)  //если позиция существует
+    {
+     if (pos.getPosProfit() < 0)  //если позиция убыточная
+      {
+        rp.AddToArray(pos); //тогда добавляем позицию в массив ожидания
+      }
+      ctm.DeleteLastPosition();  //удаляем последнюю закрытую позицию
+    }
+    
+   uint index;
+   while (!index = rp.CustomPosition())>0)
+    {
+      
+      rp.DeletePosition(index); //удаляем позицию из очереди ожидания отыгрыша
+      
+      
+      
+    }
+   
    if (trailing)
    {
     ctm.DoTrailing();
@@ -193,6 +216,5 @@ void OnTick()
 void OnTrade()
   {
    
-   //ctm.SaveHistoryToFile
    ctm.OnTrade();
   }

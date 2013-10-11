@@ -57,32 +57,25 @@ public:
    void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                 ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
                 
-   datetime getOpenPosDT() { return (_open_pos_time); };   //получает дату открытия позиции
-   datetime getClosePosDT() { return (_close_pos_time); }; //получает дату закрытия позиции             
-   double getPriceOpen() { return(_posPrice); };           //получает цену открытия позиции
-   double getPriceClose() { return(_priceClose); };        //получает цену закрытия позиции
-   double getPosProfit() { return(_posProfit); };          //получает прибыль позиции
-
-                   
-   ulong getMagic() {return (_magic);};
-   void setMagic(ulong magic) {_magic = magic;};
-   
-   ulong getPositionTicket() {return(_posTicket);};
-   
-   string getSymbol() {return (_symbol);};
-   
-   double getVolume() {return (_lots);};
-   void setVolume(double lots) {_lots = lots;};
-   
-   ulong getStopLossTicket() {return (_slTicket);};
-   
-   double getPositionPrice() {return(_posPrice);};
-   double getStopLossPrice() {return(_slPrice);};
-   double getTakeProfitPrice() {return(_tpPrice);};
-   double getMinProfit() {return(_minProfit);};
-   bool   isMinProfit();
-   double getTrailingStop() {return(_trailingStop);};
-   double getTrailingStep() {return(_trailingStep);};
+   datetime getOpenPosDT() { return (_open_pos_time); };     //получает дату открытия позиции
+   datetime getClosePosDT() { return (_close_pos_time); };   //получает дату закрытия позиции             
+   double   getPriceOpen() { return(_posPrice); };           //получает цену открытия позиции
+   double   getPriceClose() { return(_priceClose); };        //получает цену закрытия позиции
+   double   getPosProfit() { return(_posProfit); };          //получает прибыль позиции             
+   ulong    getMagic() {return (_magic);};
+   void     setMagic(ulong magic) {_magic = magic;};
+   ulong    getPositionTicket() {return(_posTicket);};
+   string   getSymbol() {return (_symbol);};
+   double   getVolume() {return (_lots);};
+   void     setVolume(double lots) {_lots = lots;};
+   ulong    getStopLossTicket() {return (_slTicket);};
+   double   getPositionPrice() {return(_posPrice);};
+   double   getStopLossPrice() {return(_slPrice);};
+   double   getTakeProfitPrice() {return(_tpPrice);};
+   double   getMinProfit() {return(_minProfit);};
+   bool     isMinProfit();
+   double   getTrailingStop() {return(_trailingStop);};
+   double   getTrailingStep() {return(_trailingStep);};
    
    ENUM_TM_POSITION_TYPE getType() {return (_type);};
    void setType(ENUM_TM_POSITION_TYPE type) {_type = type;};
@@ -484,8 +477,9 @@ bool CPosition::ClosePosition()
     // tmp_profit = PositionGetDouble(POSITION_PROFIT); //сохраняем профит позиции    
      _priceClose = SymbolInfoDouble(_symbol,SYMBOL_ASK);   //сохраняем цену закрытия позиции
      _close_pos_time = TimeCurrent();                      //сохраняем время закрытия позиции
-     _posProfit =  _posPrice-_priceClose;;
+     _posProfit =  _priceClose-_posPrice; 
      pos_closed = true;  
+     
      log_file.Write(LOG_DEBUG, StringFormat("%s Закрыта позиция %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
     }
     else
