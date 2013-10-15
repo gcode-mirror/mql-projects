@@ -150,7 +150,7 @@ void OnTick()
      takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
      //PrintFormat("(open-close) = %.05f, vol = %.05f, (1+profitpercent) = %.02f, takeprofit = %.01f"
      //           , MathAbs(open_buf[0] - close_buf[0]), vol, (1+profitPercent), takeProfit);
-     ctm.OpenPosition(my_symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep, priceDifference);
+     ctm.OpenUniquePosition(my_symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep, priceDifference);
     }
    }
    
