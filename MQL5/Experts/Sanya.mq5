@@ -84,7 +84,6 @@ void OnTick()
   san.InitMonthTrade();
   //if (san.isInit())
   //{
-  san.RecountLevels();
   san.RecountDelta();
   double vol = san.RecountVolume();
   if (currentVolume != vol)
