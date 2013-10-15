@@ -249,7 +249,7 @@ void OnTick()
     {
      //log_file.Write(LOG_DEBUG, StringFormat("%s Пересечение EMA на младшем TF.", MakeFunctionPrefix(__FUNCTION__)));
      log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
-     tradeManager.OpenPosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+     tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
      order_direction = 1;
     }
    }
@@ -269,7 +269,7 @@ void OnTick()
     {
      //log_file.Write(LOG_DEBUG, StringFormat("%s Пересечение EMA на младшем TF.", MakeFunctionPrefix(__FUNCTION__)));
      log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
-     tradeManager.OpenPosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+     tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
      order_direction = -1;
     }
    }

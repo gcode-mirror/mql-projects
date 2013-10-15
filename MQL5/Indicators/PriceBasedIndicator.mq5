@@ -152,7 +152,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
     {
    //--- вычислим соответствующий индекс для графических буферов
      PrintFormat("bar=%d, startBars=%d",bar,startBars);
-     int buffer_index = bar - startBars + bars + historyDepth + 1;
+     int buffer_index = bar - startBars + bars + historyDepth;
      topTrend.CountMoveType(buffer_index);
      //trend.CountMoveType(bars, historyDepth, topTrend.GetMoveType(topTFBarsDepth - 1));
      trend.CountMoveType(buffer_index, topTrend.GetMoveType(buffer_index));
