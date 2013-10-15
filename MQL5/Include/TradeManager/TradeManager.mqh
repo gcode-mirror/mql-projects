@@ -45,7 +45,9 @@ public:
    log_file.Write(LOG_DEBUG, StringFormat("%s History start: %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_historyStart))); 
   };
   
-  bool OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
+  bool OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
+                    int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
+  bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
                     int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
   void ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action);
   bool ClosePosition(long ticket, color Color=CLR_NONE);     // «акртыие позиции по тикету
@@ -61,9 +63,11 @@ public:
 };
 
 //+------------------------------------------------------------------+
-//|                                                                  |
+//| ќткрывает единственную позицию                                   |
+//| если существует така€ же позици€ - открыти€ не будет             |
+//| если существует противоположна€ позици€ - она будет закрыта      |
 //+------------------------------------------------------------------+
-bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
+bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
                                  int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
 {
  if (_positionsToReProcessing.OrderCount(symbol, _magic) > 0) 
@@ -190,6 +194,46 @@ bool CTradeManager::OpenPosition(string symbol, ENUM_TM_POSITION_TYPE type, doub
  log_file.Write(LOG_DEBUG, StringFormat("%s ќсталось открытых позиций %d", MakeFunctionPrefix(__FUNCTION__), total));
  return(true); // ≈сли остались открытые позиции, значит не надо открыватьс€ 
 }
+
+//+------------------------------------------------------------------+
+//| ќткрывает позицию                                   |
+//| если существует така€ же позици€ - открыти€ не будет             |
+//| если существует противоположна€ позици€ - она будет закрыта      |
+//+------------------------------------------------------------------+
+bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
+                                 int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
+{
+ int i = 0;
+ int total = _openPositions.Total();
+ CPosition *pos;
+ log_file.Write(LOG_DEBUG
+               ,StringFormat("%s, ќткрываем позицию %s. ќткрытых позиций на данный момент: %d"
+                            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
+ log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // –аспечатка всех позиций из массива _openPositions
+ 
+ pos = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
+ ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
+ if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
+                                         , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
+  _openPositions.Add(pos);  // добавл€ем открутую позицию в массив открытых позиций
+  SaveSituationToFile();
+  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+  return(true); // ≈сли удачно открыли позицию
+ }
+ else
+ {
+  error = GetLastError();
+  if(pos.getType() == OP_SELL || pos.getType() == OP_BUY) _positionsToReProcessing.Add(pos);
+  log_file.Write(LOG_DEBUG, StringFormat("%s Ќе удалось открыть позицию. Error{%d} = %s. Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(pos.getPositionStatus())));
+  return(false); // ≈сли открыть позицию не удалось
+ }
+
+ log_file.Write(LOG_DEBUG, StringFormat("%s ќсталось открытых позиций %d", MakeFunctionPrefix(__FUNCTION__), total));
+ return(true); // ≈сли остались открытые позиции, значит не надо открыватьс€ 
+}
+
 //+------------------------------------------------------------------+ 
 // ‘ункци€ вычислени€ параметров трейлинга
 //+------------------------------------------------------------------+
