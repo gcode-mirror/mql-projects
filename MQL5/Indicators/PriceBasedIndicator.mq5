@@ -133,7 +133,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
   
  
 //---- проверка количества баров на достаточность для расчета
-   if(rates_total < bars + historyDepth) return(0);
+   if(rates_total < (bars + historyDepth) ) return(0);
    
 //---- объявление целочисленных переменных
    int first, bar;

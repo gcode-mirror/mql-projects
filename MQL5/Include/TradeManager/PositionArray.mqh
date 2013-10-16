@@ -33,8 +33,9 @@ public:
    bool              ReadFromFile(int handle);
    bool              WriteToFile(int handle);
    string            SummaryList();
-   void              Clear(const long nMagic);
-   void              Clear(const string strSymbol);
+   void              Clear(const long nMagic);      //очищение массива позиций по мэджику
+   void              Clear(const string strSymbol); //очищение массива позиций по символу
+   void              Clear();                       //очищение всего массива позиций
    string            PrintToString();
    CPosition    *Position(int nIndex){return((CPosition*)CArrayObj::At(nIndex));}
 
@@ -296,6 +297,17 @@ void CPositionArray::Clear(const string strSymbol)
       if(pos.getSymbol()==strSymbol) Delete(i);
      }
   }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void CPositionArray::Clear()
+  {
+   for(int i=Total()-1;i>=0;i--)
+     {
+      CPosition *pos=Position(i);
+      Delete(i);
+     }
+  }  
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+

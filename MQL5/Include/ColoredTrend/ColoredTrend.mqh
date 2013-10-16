@@ -226,6 +226,9 @@ void CColoredTrend::CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_
    enumMoveType[bar] = MOVE_TYPE_FLAT;
   }
  }
+ 
+
+ 
 }
 
 //+------------------------------------------+

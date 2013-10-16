@@ -9,11 +9,13 @@
 //+------------------------------------------------------------------+
 //| Expert includes                                                  |
 //+------------------------------------------------------------------+
-#include <Trade\Trade.mqh> //подключаем библиотеку для совершения торговых операций
+
+//#include <Trade\Trade.mqh> //подключаем библиотеку для совершения торговых операций
 #include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
 #include <CompareDoubles.mqh>
 #include <CIsNewBar.mqh>
 #include <TradeManager\TradeManager.mqh>
+#include <TradeManager\ReplayPosition.mqh>  
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -29,25 +31,31 @@ input int trailingStop = 150;
 input int trailingStep = 5;
 
 input bool useLimitOrders = false;
-input int limitPriceDifference = 20;
+input int limitPriceDifference = 150;
 input bool useStopOrders = false;
-input int stopPriceDifference = 20;
+input int stopPriceDifference = 150;
 
 string my_symbol;                                       //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm();
+CTradeManager ctm(true);  //торговый класс
+ReplayPosition rp;        //класс отыгрыша убыточной позиции
 MqlTick tick;
 
 double takeProfit, stopLoss;
 double high_buf[], low_buf[], close_buf[1], open_buf[1];
 ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
 int priceDifference;
+CPosition * pos;   //указатель на позицию
+
+//GraphModule  graphModule;   //графический модуль
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
+             
    my_symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    
@@ -76,6 +84,23 @@ int OnInit()
    ArraySetAsSeries(high_buf, false);
    ArraySetAsSeries(close_buf, false);
    ArraySetAsSeries(open_buf, false);
+   ctm.LoadHistoryFromFile(); //загружаем историю позиций из файла
+   ctm.ZeroParam();  //обнуляем все параметры бэктест
+   ctm.GetNTrades(); //проверяем количество трейдов в истории
+   ctm.GetNWinLoseTrades(); //проверяем количество трейдов выйгрышных и убыточных
+   ctm.GetProfitTradesPer(); //процент выйгрышных по отношению ко всему
+   ctm.GetMaxWinTrade();  //получаем максимальный выйгрышный трейд
+   ctm.GetMaxLoseTrade();  //получаем максимальный выйгрышный трейд  
+   ctm.GetMedLoseTrade();  //получаем среднее значение убытка 
+   ctm.GetMaxWinTradesN();  //получаем максимальное количество подряд идущих выйгрышных трейдов
+   //Comment("Кол-во трейдов = ",ctm.tmpParam.nTrades);
+   //Comment("кол-во выйгрышных и убыточных =  ",ctm.tmpParam.nWinTrades," | ",ctm.tmpParam.nLoseTrades); //отображаем на графике
+   Comment("Процент выйгр. ко всем = ",ctm.tmpParam.profitTradesPer);
+   //Comment("Максимальный профит = ",ctm.tmpParam.maxWinTrade);
+   //Comment("Максимальный убыток = ",ctm.tmpParam.maxLoseTrade);
+   //Comment("Средний убыток = ",ctm.tmpParam.medLoseTrade);
+   //Comment("Макс. = ",ctm.tmpParam.maxWinTradesN);
+   //LoadHistoryFromFile()
    
    return(0);
   }
@@ -84,16 +109,19 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+   
    ctm.Deinitialization();
    // Освобождаем динамические массивы от данных
    ArrayFree(low_buf);
    ArrayFree(high_buf);
+   
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
   {
+
    ctm.OnTick();
    //переменные для хранения результатов работы с ценовым графиком
    int errLow = 0;                                                   
@@ -154,15 +182,43 @@ void OnTick()
     }
    }
    
+   
+   pos = ctm.GetLastClosedPosition(); //получаем последнюю закрытую позицию
+   if (pos != NULL)  //если позиция существует
+    {
+     if (pos.getPosProfit() < 0)  //если позиция убыточная
+      {
+        rp.AddToArray(pos); //тогда добавляем позицию в массив ожидания
+      }
+      ctm.DeleteLastPosition();  //удаляем последнюю закрытую позицию
+    }
+    
+   uint index;
+   //проходим по циклу, пока не переберем все позиции, готовые на отыгрыш
+   while (!index = rp.CustomPosition())>0)
+    {
+      pos = rp.GetPosition(index);
+      pos.getPositionPrice();
+     ctm.OpenPosition(my_symbol, pos.getType(), _lot, SL, , minProfit, trailingStop, trailingStep, priceDifference); 
+      rp.DeletePosition(index); //удаляем позицию из очереди ожидания отыгрыша
+      
+      
+      
+    }
+   
    if (trailing)
    {
     ctm.DoTrailing();
    }
+   
+   
+   
    return;   
   }
 //+------------------------------------------------------------------+
 
 void OnTrade()
   {
-   ctm.OnTrade(history_start);
+   
+   ctm.OnTrade();
   }
