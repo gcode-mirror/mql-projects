@@ -64,6 +64,8 @@ enum ENUM_POSITION_STATUS
    POSITION_STATUS_NOT_DELETED,
    POSITION_STATUS_NOT_INITIALISED,
    POSITION_STATUS_NOT_COMPLETE,
+   POSITION_STATUS_MUST_BE_REPLAYED,
+   POSITION_STATUS_READY_TO_REPLAY
   };
 //+------------------------------------------------------------------+
 /// Returns string description of ENUM_POSITION_STATUS.                                                                 
@@ -119,3 +121,16 @@ enum ENUM_STOPLEVEL_STATUS
    STOPLEVEL_STATUS_DELETED,
    STOPLEVEL_STATUS_NOT_DELETED
   };
+//+------------------------------------------------------------------+
+/// Структура свойств позиций на отыгрыш
+//+------------------------------------------------------------------+
+class ReplayPos
+ {
+ public:
+  double price_open;           //цена открытия
+  double price_close;          //цена закрытия
+  double profit;               //профит позиции
+  string symbol;               //символ 
+  ENUM_POSITION_STATUS status; //статус позиции
+  ENUM_TM_POSITION_TYPE type;  //тип позиции
+ };

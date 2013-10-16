@@ -130,6 +130,8 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
                 const long &volume[],
                 const int &spread[])
   {
+  
+ 
 //---- проверка количества баров на достаточность для расчета
    if(rates_total < bars + historyDepth) return(0);
    
