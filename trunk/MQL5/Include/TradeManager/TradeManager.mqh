@@ -60,6 +60,11 @@ public:
   void OnTrade(datetime history_start);
   bool isMinProfit(string symbol);
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
+  
+    //методы по работе с ReplayPosition
+  
+  ReplayPos* GetReplayPosition(long index); //извлекает свойства позиции 
+  long GetHistoryDepth();  //возвращает глубину истории
 };
 
 //+------------------------------------------------------------------+
@@ -328,6 +333,8 @@ void CTradeManager::OnTick()
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
    _openPositions.Delete(i);            // удалить позицию из массива позиций
+
+
    SaveSituationToFile();               // Переписать файл состояния
    break;                          
   }
@@ -517,7 +524,8 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
  if (pos.ClosePosition())
  {
-  _openPositions.Delete(i);  // удаляем позицию по индексу
+  //_positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
+   
   SaveSituationToFile();
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
   return(true);
@@ -627,3 +635,34 @@ ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
  }
  return OP_UNKNOWN;
 }
+
+ //методы работы с Replay Position
+ 
+/* 
+ReplayPos* CTradeManager::GetReplayPosition(long index)
+ { 
+  ReplayPos *rep_pos;
+  CPosition *pos;
+  pos = _positionsHistory.Position(index);
+  if (pos != NULL) //если позиция с данным индексом существует
+   {
+    if (pos.getPosProfit() < 0)  //если позиция в убытке
+    {
+     rep_pos = new ReplayPos();
+     rep_pos.price_close = pos.getPriceClose();         //сохраняем цену закрытия
+     rep_pos.price_open  = pos.getPriceOpen();          //сохраняем цену открытия
+     rep_pos.status = POSITION_STATUS_MUST_BE_REPLAYED; //позиция должна отыграться
+     rep_pos.symbol = pos.getSymbol();                  //сохраняем символа
+     rep_pos.type = pos.getType();                      //сохраняем тип позиции  
+     rep_pos.profit = pos.getPosProfit();               //профит позиции
+    }                       
+   }
+         
+   return rep_pos;
+ } 
+ 
+
+long CTradeManager::GetHistoryDepth() //возвращает грубину истории
+ {
+  return _positionsHistory.Total();
+ }*/
