@@ -191,7 +191,7 @@ ulong PositionSys::CurrentPositionDuration(ENUM_POSITION_DURATION mode)
          return(0);
      }
 //--- Вернем результат
-   return(result);
+   return(result); 
   }
 //+------------------------------------------------------------------+
 //| Преобразует длительность позиции в строку                        |

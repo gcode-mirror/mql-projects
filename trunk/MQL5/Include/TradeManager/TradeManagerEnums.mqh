@@ -64,8 +64,8 @@ enum ENUM_POSITION_STATUS
    POSITION_STATUS_NOT_DELETED,
    POSITION_STATUS_NOT_INITIALISED,
    POSITION_STATUS_NOT_COMPLETE,
-   POSITION_STATUS_MUST_BE_REPLAYED,
-   POSITION_STATUS_READY_TO_REPLAY
+   POSITION_STATUS_MUST_BE_REPLAYED, //позиция должна отыграться
+   POSITION_STATUS_READY_TO_REPLAY   //позиция готова к отыгрышу
   };
 //+------------------------------------------------------------------+
 /// Returns string description of ENUM_POSITION_STATUS.                                                                 
@@ -81,6 +81,9 @@ string PositionStatusToStr(ENUM_POSITION_STATUS enumPositionStatus)
       case POSITION_STATUS_CLOSED: return("closed");
       case POSITION_STATUS_DELETED: return("deleted");
       case POSITION_STATUS_NOT_INITIALISED: return("not initialised");
+      case POSITION_STATUS_NOT_COMPLETE: return("not completed");
+      case POSITION_STATUS_MUST_BE_REPLAYED: return("must be replayed");
+      case POSITION_STATUS_READY_TO_REPLAY: return ("ready to replay");            
       default: return("Error: unknown virtual order status "+(string)enumPositionStatus);
      }
   }

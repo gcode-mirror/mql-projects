@@ -7,9 +7,8 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #include <TradeManager/TradeManager.mqh>
-#include<Trigger64/PositionSys.mqh>     //подключаем библиотеку для работы с позициями
-#include<Trigger64/SymbolSys.mqh>       //подключаем библиотеку для работы с символом
-#include<Trigger64/Graph.mqh>           //подключаем библиотеку отображения панели
+#include <Trigger64/PositionSys.mqh>     //подключаем библиотеку для работы с позициями
+#include <Trigger64/SymbolSys.mqh>       //подключаем библиотеку для работы с символом
 //подключение торговых блоков
 #include <TradeBlocks/CrossEMA.mq5>
 #include <TradeBlocks/FollowWhiteRabbit.mq5>  
@@ -20,44 +19,56 @@
 //| универсальный эксперт                                            |
 //+------------------------------------------------------------------+
 //параметр торгового блока
-input TRADE_BLOCKS_TYPE TRADE_BLOCK = TB_CROSSEMA;
+
+enum USE_PENDING_ORDERS //режим вычисления priceDifference
+ { 
+  USE_LIMIT_ORDERS=0, //useLimitOrders = true
+  USE_STOP_ORDERS,    //useStopOrders = true
+  USE_NO_ORDERS       //оба равны false
+ };
+
+input TRADE_BLOCKS_TYPE TRADE_BLOCK = TB_RABBIT;    //торговая стратегия
 //общие параметры
-input int      TakeProfit=500;//take profit
-input int      StopLoss=150; //stop loss
-input double   _lot = 1;
-input ulong    magic = 111222;
-input int historyDepth = 40;
-input double supremacyPercent = 0.2;
-input double profitPercent = 0.5; 
-input ENUM_TIMEFRAMES timeframe = PERIOD_M1;
-input bool trailing = false;
-input int minProfit = 250;
-input int trailingStop = 150;
-input int trailingStep = 5;
-//дополнительные параметры
-input bool useLimitOrders = false;
-input int limitPriceDifference = 20;
-input bool useStopOrders = false;
-input int stopPriceDifference = 20;
-//параметры CrossEMA
-input ENUM_MA_METHOD MA_METHOD=MODE_EMA;
-input ENUM_APPLIED_PRICE applied_price=PRICE_CLOSE;
-input uint SlowPer=26;             //для CrossEMA
-input uint FastPer=12;             //для CrossEMA
-//параметры MACD
-input bool tradeOnTrend = false;
-input int fastMACDPeriod = 12;
-input int slowMACDPeriod = 26;
-input int signalPeriod = 9;
-input double levelMACD = 0.02;
+sinput string main;                                   //базовые параметры
+
+input int      TakeProfit=500;                        //take profit
+input int      StopLoss=150;                          //stop loss
+input double   _lot = 1;                              //размер лота
+input int historyDepth = 40;                          //глубина истории
+input ENUM_TIMEFRAMES timeframe = PERIOD_M1;          //таймфрейм
+input bool trailing = false;                          //трейлинг
+input int minProfit = 250;                            //минимальный профит
+input int trailingStop = 150;                         //трейлинг стоп
+input int trailingStep = 5;                           //шаг трейлинга
+input USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;           //тип Price Difference                    
+input int priceDifference = 50;                       // Price Difference
+
+sinput string ema_param;                              //параметры CrossEMA
+
+input ENUM_MA_METHOD MA_METHOD=MODE_EMA;              //режим EMA
+input ENUM_APPLIED_PRICE applied_price=PRICE_CLOSE;   //применяемая цена
+input uint SlowPer=26;                                //период медленной EMA     
+input uint FastPer=12;                                //период быстрой EMA
+
+sinput string rabbit_param;                           //параметры Кролика
+
+input double supremacyPercent = 0.2;                  // во сколько раз новый бар больше среднего 
+input double profitPercent = 0.5;                     // сколько процентов от движения брать прибылью
+
+sinput string condom_param;                           //параметры Condom
+
+input bool tradeOnTrend = false;                      //торговля на тренде
 
 string sym;
 datetime history_start;
-int takeProfit;
+//int takeProfit;
 int stopLoss;
-ENUM_TM_POSITION_TYPE signal;
+ENUM_TM_POSITION_TYPE op_buy,op_sell; //торговые сигналы
+ENUM_TM_POSITION_TYPE signal=OP_UNKNOWN; //торговые сигналы
+double take_profit;
 
-CTradeManager ctm();    //класс тогровых операций
+CTradeManager ctm(false);    //класс тогровых операций
+
 CrossEMA  cross_ema;  //объявляем объект класса CrossEMA
 FWRabbit  rabbit;     //объявляем объект класса FWRabbit
 Condom    condom;     //объявляем объект класса Condom
@@ -68,13 +79,29 @@ int OnInit()
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    ctm.Initialization();  //инициализирует торговую библиотеку
    stopLoss = StopLoss;
-   takeProfit = TakeProfit;    
+ //  takeProfit = TakeProfit;   
+   
+   switch (pending_orders_type)  //вычисление priceDifference
+    {
+     case USE_LIMIT_ORDERS: //useLimitsOrders = true;
+      op_buy  = OP_BUYLIMIT;
+      op_sell = OP_SELLLIMIT;
+     break;
+     case USE_STOP_ORDERS:
+      op_buy  = OP_BUYSTOP;
+      op_sell = OP_SELLSTOP;
+     break;
+     case USE_NO_ORDERS:
+      op_buy  = OP_BUY;
+      op_sell = OP_SELL;      
+     break;
+    }
+             
    switch (TRADE_BLOCK)  //выбор 
    {
      case TB_CROSSEMA:
       return cross_ema.InitTradeBlock(sym,
                                       timeframe,
-                                      takeProfit,
                                       FastPer,
                                       SlowPer,
                                       MA_METHOD,
@@ -82,33 +109,20 @@ int OnInit()
      break;
      case TB_RABBIT:
       return rabbit.InitTradeBlock(sym,
-                                        timeframe,
-                                        supremacyPercent,
-                                        profitPercent,
-                                        historyDepth,
-                                        useLimitOrders,
-                                        useStopOrders,
-                                        limitPriceDifference,
-                                        stopPriceDifference);  //инициализирует торговый блок кролика
+                                   timeframe,
+                                   supremacyPercent,
+                                   profitPercent,
+                                   historyDepth);  //инициализирует торговый блок кролика
      break;
      case TB_CONDOM:     
       return condom.InitTradeBlock(sym,
                                    timeframe,
-                                   takeProfit,
                                    tradeOnTrend,
-                                   fastMACDPeriod,
-                                   slowMACDPeriod,
-                                   signalPeriod,
-                                   levelMACD,
-                                   historyDepth,
-                                   useLimitOrders,
-                                   useStopOrders,
-                                   limitPriceDifference,
-                                   stopPriceDifference); //инициализирует торговый блок гандона
+                                   historyDepth); //инициализирует торговый блок гандона
                                    
      break;
    }                           
-    return 1;
+    return INIT_SUCCEEDED;
   }
 
 void OnDeinit(const int reason)
@@ -120,32 +134,37 @@ void OnDeinit(const int reason)
   }
 
 void OnTick()
-  {   
-   ctm.OnTick();
-
+ {   
+  ctm.OnTick();
    
-   switch (TRADE_BLOCK)
-   {
-    case TB_CROSSEMA:
-     signal = cross_ema.GetSignal(false);//получаем торговый сигнал  
-        if (signal == OP_SELL || signal == OP_BUY)      //если сигнал успешно получен
-    ctm.OpenPosition(sym,signal,_lot,stopLoss,takeProfit,0,0,0,0); //то открываем позицию
-    break;
-    case TB_RABBIT:
-     signal = rabbit.GetSignal(false); //получаем торговый сигнал
-         if (signal != OP_UNKNOWN)       //если сигнал успешно получен
-          {
-    ctm.OpenPosition(sym, signal, _lot, stopLoss, rabbit.takeProfit, minProfit, trailingStop, trailingStep, rabbit.priceDifference); //то открываем позицию
-          }
-    break;
-    case TB_CONDOM:
-     signal = condom.GetSignal(false); //получаем торговый сигнал
-         if (signal != OP_UNKNOWN)       //если сигнал успешно получен
-    ctm.OpenPosition(sym,signal,_lot,stopLoss,condom.takeProfit,0,0,condom.priceDifference); //то открываем позицию
-    break;
-
-   }
-      if (trailing)
+  switch (TRADE_BLOCK)
+  {
+   //выбор торговой стратегии
+   case TB_CROSSEMA: //пересечение EMA
+    signal = cross_ema.GetSignal(false);//получаем торговый сигнал
+    take_profit = TakeProfit;
+   break;
+   case TB_CONDOM:   //Гандон
+    signal = condom.GetSignal(false); //получаем торговый сигнал 
+    take_profit = condom.GetTakeProfit();         
+   break;
+   case TB_RABBIT:   //Кролик
+    signal = rabbit.GetSignal(false); //получаем торговый сигнал   
+    take_profit = rabbit.GetTakeProfit();      
+   break; 
+  }
+  
+  switch (signal)
+  {
+   case 1: //сигнал buy
+    ctm.OpenPosition(sym,op_buy,_lot,stopLoss,take_profit,minProfit, trailingStop, trailingStep,priceDifference); //то открываем позицию на покупку
+   break;
+   case 2://сигнал sell
+    ctm.OpenPosition(sym,op_sell,_lot,stopLoss,take_profit,minProfit, trailingStop, trailingStep,priceDifference); //то открываем позицию на продажу
+   break;
+  }
+       
+  if (trailing)
    {
     ctm.DoTrailing();
    } 
@@ -155,3 +174,4 @@ void OnTrade()
   {
    ctm.OnTrade(history_start);
   }
+  

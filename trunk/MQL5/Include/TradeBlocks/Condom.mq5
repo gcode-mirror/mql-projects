@@ -9,8 +9,10 @@
 #property version   "1.00"
 #include <CompareDoubles.mqh>
 #include <TradeManager/TradeManagerEnums.mqh> 
-#include <TradeManager/TradeManager.mqh> 
+//#include <TradeManager/TradeManager.mqh> 
 #include <Lib CisNewBar.mqh>
+#include <ColoredTrend\ColoredTrendUtilities.mqh> //загружаем бибилиотеку цветов
+
 
 //+------------------------------------------------------------------+
 //| Торговый класс Condom                                            |
@@ -20,108 +22,62 @@
   {
     private:
      //системные параметры
-     bool waitForSell;
-     bool waitForBuy;
-     bool tradeOnTrend;
-     double globalMax;
-     double globalMin;  
-     int historyDepth;                       //глубина истории
-     string sym;                             //переменная для хранения символа
-     ENUM_TIMEFRAMES timeFrame;              //таймфрейм
-     MqlTick tick;   
-     ENUM_TM_POSITION_TYPE opBuy,opSell;               //торговые сигналы 
-     //параметры MACD
-     int handleMACD;
-     double MACD_buf[1], high_buf[], low_buf[], close_buf[2];   //буферы      
-     int fastMACDPeriod;     //период быстрого MACD
-     int slowMACDPeriod;     //период медленного MACD
-     int signalPeriod;
-     double levelMACD;     
+     bool _waitForSell;                       //флаг ожидания продажи
+     bool _waitForBuy;                        //флаг ожидаения торговли
+     bool _tradeOnTrend;                      //флаг торговли на тренде
+     double _globalMax;                       //максимум
+     double _globalMin;                       //минимум
+     int _historyDepth;                       //глубина истории
+     string _sym;                             //переменная для хранения символа
+     ENUM_TIMEFRAMES _timeFrame;              //таймфрейм
+     MqlTick _tick;                           //тик
+     //параметры Price Based Indicator 
+     int _handle_PBI;                         //хэндл Price Based Indicator
+     double PBI_buf[1],                       //буфер Price Based Indicator
+            high_buf[],                       //буфер высоких цен
+            low_buf[],                        //буфер низких цен
+            close_buf[2];                     //буфер цен закрытия      
+     double _takeProfit;     
     public:
-     double takeProfit;
-     int priceDifference;   
-     //------------------
-     int InitTradeBlock(string _sym,
-                        ENUM_TIMEFRAMES _timeFrame,
-                        double _takeProfit,
-                        bool   _tradeOnTrend,                        
-                        int    _fastMACDPeriod,
-                        int _slowMACDPeriod,
-                        int _signalPeriod,
-                        double _levelMACD,
-                        int _historyDepth,
-                        bool useLimitOrders,
-                        bool useStopOrders,
-                        int limitPriceDifference,
-                        int stopPriceDifference);       //метод инициализации торгового блока
+     double GetTakeProfit() { return (_takeProfit); }; //получает значение тейк профита
+     Condom            (string sym,
+                        ENUM_TIMEFRAMES timeFrame,
+                        bool   tradeOnTrend,                        
+                        int historyDepth);       //метод инициализации торгового блока
      int DeinitTradeBlock();                             //метод деинициализации торгового блока
      bool UploadBuffers();                               //загружает буферы 
-     ENUM_TM_POSITION_TYPE GetSignal (bool ontick);      //получает торговый сигнал     
+     short GetSignal (bool ontick);      //получает торговый сигнал     
        
   };
   
- int Condom::InitTradeBlock(string _sym,
-                        ENUM_TIMEFRAMES _timeFrame,
-                        double _takeProfit,
-                        bool   _tradeOnTrend,
-                        int    _fastMACDPeriod,
-                        int _slowMACDPeriod,
-                        int _signalPeriod,    
-                        double _levelMACD,                    
-                        int _historyDepth,
-                        bool useLimitOrders,
-                        bool useStopOrders,
-                        int limitPriceDifference,
-                        int stopPriceDifference)
+    Condom::Condom             (string sym,   //конструктор класса
+                        ENUM_TIMEFRAMES timeFrame,
+                        bool   tradeOnTrend,                  
+                        int historyDepth)
    {
-    sym          = _sym;
-    timeFrame    = _timeFrame;
-   // isNewBar.SetSymbol(sym);
-   // isNewBar.SetPeriod(timeFrame);
-    tradeOnTrend = _tradeOnTrend;   
-    historyDepth = _historyDepth; 
-    takeProfit   = _takeProfit;
-    if (tradeOnTrend)
+    _sym          = sym;
+    _timeFrame    = timeFrame;
+    
+    _tradeOnTrend = tradeOnTrend;   
+    _historyDepth = historyDepth; 
+
+    if (_tradeOnTrend)
     {
-     fastMACDPeriod = _fastMACDPeriod;     //период быстрого MACD
-     slowMACDPeriod = _slowMACDPeriod;     //период медленного MACD
-     signalPeriod   = _signalPeriod;       //период сигнала
-     levelMACD      = _levelMACD;          //уровень MACD
-     handleMACD = iMACD(sym, timeFrame, fastMACDPeriod, slowMACDPeriod, signalPeriod, PRICE_CLOSE);  //подключаем индикатор и получаем его хендл
-     if(handleMACD == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
+     _handle_PBI = iCustom(_sym,_timeFrame,"PriceBasedIndicator",4,_historyDepth,false);  //подключаем индикатор и получаем его хендл
+     if(_handle_PBI == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
       {
-       Print("Не удалось получить хендл MACD");               //если хендл не получен, то выводим сообщение в лог об ошибке
-       return(-1);                                                  //завершаем работу с ошибкой
+       Print("Не удалось получить хендл Price Based Indicator");               //если хендл не получен, то выводим сообщение в лог об ошибке                                                //завершаем работу с ошибкой
       }      
      } 
-   if (useLimitOrders)
-   {
-    opBuy = OP_BUYLIMIT;
-    opSell = OP_SELLLIMIT;
-    priceDifference = limitPriceDifference;
-   }
-   else if (useStopOrders)
-        {
-         opBuy = OP_BUYSTOP;
-         opSell = OP_SELLSTOP;
-         priceDifference = stopPriceDifference;
-        }
-        else
-        {
-         opBuy = OP_BUY;
-         opSell = OP_SELL;
-         priceDifference = 0;
-        }
-         
+
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
 
-   globalMax = 0;
-   globalMin = 0;
-   waitForSell = false;
-   waitForBuy = false;
-   
-   return(0);      
+   _globalMax = 0;
+   _globalMin = 0;
+   _waitForSell = false;
+   _waitForBuy = false;
+      
     }
     
   int  Condom::DeinitTradeBlock(void)  //деинициализация торгового блока Condom
@@ -137,21 +93,21 @@
    int errLow = 0;                                                   
    int errHigh = 0;                                                   
    int errClose = 0;
-   int errMACD = 0;
-   if (tradeOnTrend)
+   int errPBI = 0;
+   if (_tradeOnTrend)
     {
      //копируем данные из индикаторного массива в динамический массив MACD_buf для дальнейшей работы с ними
-     errMACD=CopyBuffer(handleMACD, 0, 1, 1, MACD_buf);
-     if(errMACD < 0)
+     errPBI = CopyBuffer(_handle_PBI, 4, 1, 1, PBI_buf);
+     if(errPBI < 0)
      {
       Alert("Не удалось скопировать данные из индикаторного буфера"); 
       return false; 
      }
     } 
     //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
-    errLow=CopyLow(sym, timeFrame, 2, historyDepth, low_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
-    errHigh=CopyHigh(sym, timeFrame, 2, historyDepth, high_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
-    errClose=CopyClose(sym, timeFrame, 1, 2, close_buf); // (0 - тек. бар, копируем 2 сформ. бара)
+    errLow=CopyLow(_sym, _timeFrame, 2, _historyDepth, low_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
+    errHigh=CopyHigh(_sym, _timeFrame, 2, _historyDepth, high_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
+    errClose=CopyClose(_sym, _timeFrame, 1, 2, close_buf); // (0 - тек. бар, копируем 2 сформ. бара)
              
     if(errLow < 0 || errHigh < 0 || errClose < 0)                         //если есть ошибки
     {
@@ -161,59 +117,60 @@
     return true;
    }
     
-  ENUM_TM_POSITION_TYPE Condom::GetSignal(bool ontick)  //получает торговый сигнал
+  short Condom::GetSignal(bool ontick)  //получает торговый сигнал
    {
-   CisNewBar isNewBar(sym, timeFrame);
+   CisNewBar isNewBar(_sym, _timeFrame);
     ENUM_TM_POSITION_TYPE order_type = OP_UNKNOWN;
      if(isNewBar.isNewBar() > 0)
        {       
        if (!UploadBuffers()) //если буферы не удалось скопировать
-        return OP_UNKNOWN;
+        return 0; //неизвестный сигнал
        
-        globalMax = high_buf[ArrayMaximum(high_buf)];
-        globalMin = low_buf[ArrayMinimum(low_buf)];
+        _globalMax = high_buf[ArrayMaximum(high_buf)];
+        _globalMin = low_buf[ArrayMinimum(low_buf)];
     
-        if(LessDoubles(close_buf[1], globalMin)) // Последний Close(0 - старше, 1 - моложе, т.е НЕ как в таймсерии) ниже глобального минимума
+        if(LessDoubles(close_buf[1], _globalMin)) // Последний Close(0 - старше, 1 - моложе, т.е НЕ как в таймсерии) ниже глобального минимума
          {
-          waitForSell = false;
-          waitForBuy = true;
+          _waitForSell = false;
+          _waitForBuy = true;
          }
-        if(GreatDoubles(close_buf[1], globalMax)) // Последний Close(0 - старше, 1 - моложе, т.е НЕ как в таймсерии) выше глобального максимума
+        if(GreatDoubles(close_buf[1], _globalMax)) // Последний Close(0 - старше, 1 - моложе, т.е НЕ как в таймсерии) выше глобального максимума
          {
-          waitForBuy = false;
-          waitForSell = true;
+          _waitForBuy = false;
+          _waitForSell = true;
          } 
       }
-        if(tradeOnTrend)
+        if(_tradeOnTrend)
           {
-           if(GreatDoubles(MACD_buf[0], levelMACD) || LessDoubles (MACD_buf[0], -levelMACD))
+            if (PBI_buf[0]==MOVE_TYPE_TREND_DOWN || 
+                PBI_buf[0]==MOVE_TYPE_TREND_UP)
              {
-              return OP_UNKNOWN;
+              return 0; //неизвестный сигнал
              }
           } 
-         if(!SymbolInfoTick(sym,tick))
+         if(!SymbolInfoTick(_sym,_tick))
    {
     Alert("SymbolInfoTick() failed, error = ",GetLastError());
-    return OP_UNKNOWN;
+    return 0; //неизвестный сигнал
    }
       
-   if (waitForBuy)
+   if (_waitForBuy)
    { 
-    if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
+    if (GreatDoubles(_tick.ask, close_buf[0]) && GreatDoubles(_tick.ask, close_buf[1]))
     {
-      waitForBuy = false;
-      waitForSell = false;
-      order_type = opBuy;    
+      _waitForBuy  = false;
+      _waitForSell = false;
+       order_type  = 1;  //BUY
     }
    } 
 
-   if (waitForSell)
+   if (_waitForSell)
    { 
-    if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
+    if (LessDoubles(_tick.bid, close_buf[0]) && LessDoubles(_tick.bid, close_buf[1]))
     {
-      waitForBuy = false;
-      waitForSell = false;   
-      order_type = opSell;        
+      _waitForBuy  = false;
+      _waitForSell = false;   
+       order_type  = 2;   //SELL
     }
    }  
       
