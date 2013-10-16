@@ -16,12 +16,18 @@
  input int period_ATR = 100;
  input double percent_ATR = 0.25; 
 
- input bool show_Extr_MN = true;
- input bool show_Extr_W1 = false;
- input bool show_Extr_D1 = false;
- input bool show_Extr_H4 = false;
- input bool show_Extr_H1 = false;
- input bool show_Price_D1 = false;
+ input bool  show_Extr_MN = true;
+ input color color_Extr_MN = clrRed;
+ input bool  show_Extr_W1 = false;
+ input color color_Extr_W1 = clrOrange;
+ input bool  show_Extr_D1 = false;
+ input color color_Extr_D1 = clrYellow;
+ input bool  show_Extr_H4 = false;
+ input color color_Extr_H4 = clrBlue;
+ input bool  show_Extr_H1 = false;
+ input color color_Extr_H1 = clrAqua;
+ input bool  show_Price_D1 = false;
+ input color color_Price_D1 = clrDarkKhaki;
 
  CExtremumCalc calcMN(epsilon, depth);
  CExtremumCalc calcW1(epsilon, depth);
@@ -114,32 +120,32 @@ int OnCalculate(const int rates_total,
      if(show_Extr_MN)
      {
       FillThreeExtr(symbol, PERIOD_MN1, calcMN, estructMN, buffer_ATR_MN);
-      CreateExtrLines(estructMN, PERIOD_MN1, clrRed);
+      CreateExtrLines(estructMN, PERIOD_MN1, color_Extr_MN);
      }
      if(show_Extr_W1)
      {
       FillThreeExtr(symbol, PERIOD_W1, calcW1, estructW1, buffer_ATR_W1);
-      CreateExtrLines(estructW1,  PERIOD_W1, clrOrange);
+      CreateExtrLines(estructW1,  PERIOD_W1, color_Extr_W1);
      }
      if(show_Extr_D1)
      {
       FillThreeExtr(symbol, PERIOD_D1, calcD1, estructD1, buffer_ATR_D1);
-      CreateExtrLines(estructD1,  PERIOD_D1, clrYellow); 
+      CreateExtrLines(estructD1,  PERIOD_D1, color_Extr_D1); 
      }
      if(show_Price_D1)
      {
       FillFourPrice(symbol, PERIOD_D1, pstructD1, buffer_ATR_D1);
-      CreatePriceLines(pstructD1, PERIOD_D1, clrDarkKhaki);
+      CreatePriceLines(pstructD1, PERIOD_D1, color_Price_D1);
      }
      if(show_Extr_H4)
      {
       FillThreeExtr(symbol, PERIOD_H4, calcH4, estructH4, buffer_ATR_H4);
-      CreateExtrLines(estructH4,  PERIOD_H4, clrBlue);
+      CreateExtrLines(estructH4,  PERIOD_H4, color_Extr_H4);
      }
      if(show_Extr_H1)
      {
       FillThreeExtr(symbol, PERIOD_H1, calcH1, estructH1, buffer_ATR_H1);
-      CreateExtrLines(estructH1,  PERIOD_H1, clrAqua);
+      CreateExtrLines(estructH1,  PERIOD_H1, color_Extr_H1);
      }
      first = false;
     }//end first
@@ -274,13 +280,13 @@ void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[], dou
  CopyLow  (symbol, tf, 1, 1,   low_buf);
  
  resArray[0].price   =   open_buf[0];
- resArray[0].channel = buffer_ATR[0]*percent_ATR;
+ resArray[0].channel = (buffer_ATR[0]*percent_ATR)/2;
  resArray[1].price   =  close_buf[0];
- resArray[1].channel = buffer_ATR[0]*percent_ATR;
+ resArray[1].channel = (buffer_ATR[0]*percent_ATR)/2;
  resArray[2].price   =   high_buf[0];
- resArray[2].channel = buffer_ATR[0]*percent_ATR;
+ resArray[2].channel = (buffer_ATR[0]*percent_ATR)/2;
  resArray[3].price   =    low_buf[0];
- resArray[3].channel = buffer_ATR[0]*percent_ATR;
+ resArray[3].channel = (buffer_ATR[0]*percent_ATR)/2;
 }
 
 void CreatePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf, color clr)
@@ -349,7 +355,7 @@ void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, 
   if(extrcalc.getExtr(i).price > 0)
   {
    resArray[count] = extrcalc.getExtr(i);
-   resArray[count].channel = buffer_ATR[i]*percent_ATR;
+   resArray[count].channel = (buffer_ATR[i]*percent_ATR)/2;
    count++;
   }
  }
@@ -402,11 +408,11 @@ bool FillATRbuffer()
    if(handle_ATR_MN != INVALID_HANDLE && handle_ATR_W1 != INVALID_HANDLE && handle_ATR_D1 != INVALID_HANDLE &&
       handle_ATR_H4 != INVALID_HANDLE && handle_ATR_H1 != INVALID_HANDLE )
    {
-    int copiedATR_MN = CopyBuffer(handle_ATR_MN, PERIOD_MN1, 1, depth, buffer_ATR_MN);
-    int copiedATR_W1 = CopyBuffer(handle_ATR_W1, PERIOD_W1, 1, depth, buffer_ATR_W1);
-    int copiedATR_D1 = CopyBuffer(handle_ATR_D1, PERIOD_D1, 1, depth, buffer_ATR_D1);
-    int copiedATR_H4 = CopyBuffer(handle_ATR_H4, PERIOD_H4, 1, depth, buffer_ATR_H4);
-    int copiedATR_H1 = CopyBuffer(handle_ATR_H1, PERIOD_H1, 1, depth, buffer_ATR_H1); 
+    int copiedATR_MN = CopyBuffer(handle_ATR_MN, 0, 1, depth, buffer_ATR_MN);
+    int copiedATR_W1 = CopyBuffer(handle_ATR_W1, 0, 1, depth, buffer_ATR_W1);
+    int copiedATR_D1 = CopyBuffer(handle_ATR_D1, 0, 1, depth, buffer_ATR_D1);
+    int copiedATR_H4 = CopyBuffer(handle_ATR_H4, 0, 1, depth, buffer_ATR_H4);
+    int copiedATR_H1 = CopyBuffer(handle_ATR_H1, 0, 1, depth, buffer_ATR_H1); 
     
     if (copiedATR_MN != depth || copiedATR_W1 != depth || copiedATR_D1 != depth ||
         copiedATR_H4 != depth || copiedATR_H1 != depth) 
