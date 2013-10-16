@@ -16,6 +16,7 @@
 #include <CIsNewBar.mqh>
 #include <TradeManager\TradeManager.mqh>
 #include <TradeManager\ReplayPosition.mqh>  
+#include <Graph\Graph.mqh>
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+

@@ -13,6 +13,7 @@
 #include <Lib CisNewBar.mqh>
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 #include <CLog.mqh>
+#include <Graph\Graph.mqh>
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -52,11 +53,17 @@ double globalMax;
 double globalMin;
 bool waitForSell;
 bool waitForBuy;
+
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
+   
+
+     
+  
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    
@@ -205,7 +212,7 @@ void OnTick()
      }
     }
    }
-   
+      new Label("button1","Button",0,0,100,100,0,0,CORNER_RIGHT_UPPER,0); 
    if (trailing)
    {
     ctm.DoTrailing();
