@@ -57,25 +57,8 @@ public:
    _historyStart = TimeCurrent(); 
    log_file.Write(LOG_DEBUG, StringFormat("%s Создание объекта CTradeManager", MakeFunctionPrefix(__FUNCTION__)));
    log_file.Write(LOG_DEBUG, StringFormat("%s History start: %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_historyStart))); 
-  
-  /*
-  
-   graphModule.RenameGraph("свойства позиции"); //добавляем новый заголовок
-   graphModule.SetElem("Мэджик");            //отображаем магическое число        
-   graphModule.SetElem("Цена");              //отображаем цену позиции
-   graphModule.SetElem("Статус");            //статус позиции
-   graphModule.SetElem("Тип");               //тип позиции
-   graphModule.SetElem("Стоп лосс");         //стоп лосс
-   graphModule.SetElem("Тейк профит");       //отображаем цену позиции
-   graphModule.SetElem("Тикет");             //тикет 
-   graphModule.SetElem("СтопЛосс статус");   //стоп лосс статус  
-   graphModule.SetElem("Время открытия");    //время открытия позиции 
-   graphModule.SetElem("Цена открытия");     //цена открытия
-   //graphModule.SetElem("Время закрытия");  //время открытия позиции
-   
-   */
        
-   _pos_panel_draw = pos_panel_draw;
+  _pos_panel_draw = pos_panel_draw;
   };
  
   
@@ -93,10 +76,10 @@ public:
   bool isMinProfit(string symbol);
   void OnTick();
   void OnTrade(datetime history_start);
-  void SaveSituationToFile();
+  //void SaveSituationToFile();
   bool LoadHistoryFromFile(); //считывает историю из файла
-  CPosition * GetLastClosedPosition();  //возвращает последнюю закрытую позицию
-  void DeleteLastPosition();           //удаляет последнюю позицию из массива позиций на отправку в эксперт 
+  //CPosition * GetLastClosedPosition();  //возвращает последнюю закрытую позицию
+  //void DeleteLastPosition();           //удаляет последнюю позицию из массива позиций на отправку в эксперт 
   private:
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
   void SaveHistoryToFile();
