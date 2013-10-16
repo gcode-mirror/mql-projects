@@ -13,21 +13,23 @@
 #include  <Lib CisNewBar.mqh>
 #include  <TradeManager\TradeManager.mqh>          //подключаем библиотеку для совершения торговых операций
 #include  <CLog.mqh> 
+//#include  <Graph\Graph.mqh>                        //подключаем графическую библиотеку
 #include  <ColoredTrend\ColoredTrendUtilities.mqh> //загружаем бибилиотеку цветов
 
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
+//input ulong _magic = 1122;
 input int SL = 150;
 input int TP = 500;
 input double _lot = 1;
-input int historyDepth = 50;
+input int historyDepth = 40;
 input ENUM_TIMEFRAMES timeframe = PERIOD_M1;
 input bool trailing = false;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
-input bool tradeOnTrend = true;
+input bool tradeOnTrend = false;
 
 input bool useLimitOrders = false;
 input int limitPriceDifference = 20;
@@ -37,7 +39,7 @@ input int stopPriceDifference = 20;
 string symbol;                               //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm(false);
+CTradeManager ctm();
 MqlTick tick;
 
 //int handleMACD;
@@ -81,7 +83,7 @@ int OnInit()
    
    if (tradeOnTrend)
    {    
-    handle_PBI = iCustom(symbol,timeframe,"PriceBasedIndicator",4,historyDepth,false); //загружаем хэндл индикатора PriceBasedIndicator  
+    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", 5, 50, false); //загружаем хэндл индикатора PriceBasedIndicator  
     
     if(handle_PBI == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
     {
@@ -89,7 +91,6 @@ int OnInit()
      return(-1);                                                  //завершаем работу с ошибкой
     }
    }
-
    //устанавливаем индексацию для массивов ХХХ_buf
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
@@ -116,16 +117,12 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
-  
-       //сохраним историю в файл
    ctm.OnTick();
    //переменные для хранения результатов работы с ценовым графиком
    int errLow = 0;                                                   
    int errHigh = 0;                                                   
    int errClose = 0;
    int errPBI = 0;
-   
-   string result;  //для проверки
    
    static CisNewBar isNewBar(symbol, timeframe);
    
@@ -134,11 +131,10 @@ void OnTick()
     if (tradeOnTrend)
     {
      //копируем данные из индикаторного массива в динамический массив PBI_buf для дальнейшей работы с ними
-     errPBI = CopyBuffer(handle_PBI, 4, 1, 1, PBI_buf); //копируем буфер Price Based Indicator
-          
+     errPBI = CopyBuffer(handle_PBI, 4, 0, 1, PBI_buf); //копируем буфер Price Based Indicator
      if(errPBI < 0)
      {
-      Alert(")))Не удалось скопировать данные из индикаторного буфера"); 
+      Alert("Не удалось скопировать данные из индикаторного буфера"); 
       return; 
      }
     } 
@@ -146,16 +142,15 @@ void OnTick()
     errLow   = CopyLow(symbol, timeframe, 2, historyDepth, low_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
     errHigh  = CopyHigh(symbol, timeframe, 2, historyDepth, high_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
     errClose = CopyClose(symbol, timeframe, 1, 2, close_buf); // (0 - тек. бар, копируем 2 сформ. бара)
-             
     if(errLow < 0 || errHigh < 0 || errClose < 0)                         //если есть ошибки
     {
      Alert("Не удалось скопировать данные из буфера ценового графика");  //то выводим сообщение в лог об ошибке
-     return;                                                                  //и выходим из функции
+     return;                                                             //и выходим из функции
     }  
 
     globalMax = high_buf[ArrayMaximum(high_buf)];
     globalMin = low_buf[ArrayMinimum(low_buf)];
-    
+
     if(LessDoubles(close_buf[1], globalMin)) // Последний Close(0 - старше, 1 - моложе, т.е НЕ как в таймсерии) ниже глобального минимума
     {
      waitForSell = false;
@@ -168,12 +163,9 @@ void OnTick()
      waitForSell = true;
     }
    }
-                                     
- //выше - проверка
    
- if (!tradeOnTrend || (PBI_buf[0]!=MOVE_TYPE_TREND_DOWN && PBI_buf[0]!=MOVE_TYPE_TREND_UP))
+ if (!tradeOnTrend || (PBI_buf[0] != MOVE_TYPE_TREND_DOWN && PBI_buf[0] != MOVE_TYPE_TREND_UP))
   {         
-    
    if(!SymbolInfoTick(Symbol(),tick))
    {
     Alert("SymbolInfoTick() failed, error = ",GetLastError());
@@ -184,7 +176,7 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     if (ctm.OpenPosition(symbol, opBuy, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenUniquePosition(symbol, opBuy, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -196,11 +188,10 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (ctm.OpenPosition(symbol, opSell, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenUniquePosition(symbol, opSell, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
-      
      }
     }
    }
@@ -212,10 +203,5 @@ void OnTick()
    }
    return;   
   }
-//+------------------------------------------------------------------+
 
-void OnTrade()
-  {
-   ctm.OnTrade(history_start);
-  }
 
