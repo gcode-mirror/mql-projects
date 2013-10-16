@@ -66,7 +66,6 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int cou
  _symbol = symbol;
  _period = period;
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
- //difToNewExtremum = 70;
  difToTrend = 2;  // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
  
  //подключаем индикатор и получаем его хендл 
@@ -74,11 +73,9 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int cou
  if(ATR_handle == INVALID_HANDLE)                      //проверяем наличие хендла индикатора
  {
   Print("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
-  //return(-1);                                          //завершаем работу с ошибкой
  }
  // Получаем данные буфера в массив
  FillATRBuf(shift, count - 1);
- 
  ArrayResize(aExtremums, shift);
  // Заполним массив с информацией о таймсериях
  MqlRates rates[];
