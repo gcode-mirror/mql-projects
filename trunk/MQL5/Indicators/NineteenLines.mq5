@@ -11,10 +11,10 @@
 #include <CExtremumCalc.mqh>
 #include <Lib CisNewBar.mqh>
 
- input int epsilon = 25;      //
- input int depth = 50;        //
- input int period_ATR = 100;  //
- input int percent_ATR = 25;  // 
+ input int epsilon = 25;
+ input int depth = 50;
+ input int period_ATR = 100;
+ input double percent_ATR = 0.25; 
 
  input bool show_Extr_MN = true;
  input bool show_Extr_W1 = false;
@@ -274,13 +274,13 @@ void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[], dou
  CopyLow  (symbol, tf, 1, 1,   low_buf);
  
  resArray[0].price   =   open_buf[0];
- resArray[0].channel = buffer_ATR[0];
+ resArray[0].channel = buffer_ATR[0]*percent_ATR;
  resArray[1].price   =  close_buf[0];
- resArray[1].channel = buffer_ATR[0];
+ resArray[1].channel = buffer_ATR[0]*percent_ATR;
  resArray[2].price   =   high_buf[0];
- resArray[2].channel = buffer_ATR[0];
+ resArray[2].channel = buffer_ATR[0]*percent_ATR;
  resArray[3].price   =    low_buf[0];
- resArray[3].channel = buffer_ATR[0];
+ resArray[3].channel = buffer_ATR[0]*percent_ATR;
 }
 
 void CreatePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf, color clr)
@@ -349,7 +349,7 @@ void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, 
   if(extrcalc.getExtr(i).price > 0)
   {
    resArray[count] = extrcalc.getExtr(i);
-   resArray[count].channel = (buffer_ATR[i]/percent_ATR) * 100;
+   resArray[count].channel = buffer_ATR[i]*percent_ATR;
    count++;
   }
  }
@@ -411,9 +411,9 @@ bool FillATRbuffer()
     if (copiedATR_MN != depth || copiedATR_W1 != depth || copiedATR_D1 != depth ||
         copiedATR_H4 != depth || copiedATR_H1 != depth) 
     {
-     Alert(__FUNCTION__, "Не удалось полностью скопировать буффер ATR. Error = ", GetLastError());
+     Print(__FUNCTION__, "Не удалось полностью скопировать буффер ATR. Error = ", GetLastError());
      if(GetLastError() == 4401) 
-      Alert(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
+      Print(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
      return false;
     }
     return true;
