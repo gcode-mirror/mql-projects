@@ -22,6 +22,7 @@ class ReplayPosition
   int ATR_handle;
   double ATR_buf[];
   */
+  datetime prevDate;  // дата последнего получения истории
  public: 
   void ReplayPosition();
   void ~ReplayPosition();
@@ -133,5 +134,8 @@ void ReplayPosition::CustomPosition()
     _posToReplay.Delete(index); //и удаляем её из массива  
    }      
   }
- }    
+ }
+ 
+ setArrayToReplay(ctm.GetPositionHistory(prevDate));
+ prevDate = TimeCurrent();  
 }

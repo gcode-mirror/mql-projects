@@ -39,7 +39,7 @@ input int stopPriceDifference = 150;
 string symbol;                                       //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm();  //торговый класс
+CTradeManager ctm;  //торговый класс
 ReplayPosition rp;        //класс отыгрыша убыточной позиции
 MqlTick tick;
 
@@ -170,5 +170,6 @@ void OnTick()
 void OnTrade()
   {
    ctm.OnTrade();
-   
+   rp.setArrayToReplay(ctm.GetPositionHistory(history_start));
+   history_start = TimeCurrent();
   }
