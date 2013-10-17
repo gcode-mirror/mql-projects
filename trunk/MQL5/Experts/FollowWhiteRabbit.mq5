@@ -6,10 +6,16 @@
 #property copyright "Copyright 2012, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
+
+enum USE_PENDING_ORDERS //режим вычисления priceDifference
+ { 
+  USE_LIMIT_ORDERS=0, //useLimitOrders = true
+  USE_STOP_ORDERS,    //useStopOrders = true
+  USE_NO_ORDERS       //оба равны false
+ };
 //+------------------------------------------------------------------+
 //| Expert includes                                                  |
 //+------------------------------------------------------------------+
-
 //#include <Trade\Trade.mqh> //подключаем библиотеку для совершения торговых операций
 #include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
 #include <CompareDoubles.mqh>
@@ -30,11 +36,8 @@ input bool trailing = false;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
-
-input bool useLimitOrders = false;
-input int limitPriceDifference = 150;
-input bool useStopOrders = false;
-input int stopPriceDifference = 150;
+input USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;           //тип Price Difference                    
+input int priceDifference = 50;                       // Price Difference
 
 string symbol;                                       //переменная для хранения символа
 datetime history_start;
@@ -46,7 +49,6 @@ MqlTick tick;
 double takeProfit, stopLoss;
 double high_buf[], low_buf[], close_buf[1], open_buf[1];
 ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
-int priceDifference;
 CPosition *pos;   //указатель на позицию
 
 //+------------------------------------------------------------------+
@@ -57,24 +59,21 @@ int OnInit()
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    
-   if (useLimitOrders)
+   switch (pending_orders_type)  //вычисление priceDifference
    {
-    opBuy = OP_BUYLIMIT;
-    opSell = OP_SELLLIMIT;
-    priceDifference = limitPriceDifference;
+    case USE_LIMIT_ORDERS: //useLimitsOrders = true;
+     opBuy  = OP_BUYLIMIT;
+     opSell = OP_SELLLIMIT;
+    break;
+    case USE_STOP_ORDERS:
+     opBuy  = OP_BUYSTOP;
+     opSell = OP_SELLSTOP;
+    break;
+    case USE_NO_ORDERS:
+     opBuy  = OP_BUY;
+     opSell = OP_SELL;      
+    break;
    }
-   else if (useStopOrders)
-        {
-         opBuy = OP_BUYSTOP;
-         opSell = OP_SELLSTOP;
-         priceDifference = stopPriceDifference;
-        }
-        else
-        {
-         opBuy = OP_BUY;
-         opSell = OP_SELL;
-         priceDifference = 0;
-        }
         
    //устанавливаем индексацию для массивов ХХХ_buf
    ArraySetAsSeries(low_buf, false);
