@@ -13,7 +13,7 @@
 #include <Lib CisNewBar.mqh>
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 #include <CLog.mqh>
-#include <Graph\Graph.mqh>
+//#include <Graph\Graph.mqh>
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -41,7 +41,7 @@ input int stopPriceDifference = 20;
 string symbol;                               //переменная для хранения символа
 datetime history_start;
 
-CTradeManager ctm(true);
+CTradeManager ctm();
 MqlTick tick;
 
 int handleMACD;
@@ -60,14 +60,9 @@ bool waitForBuy;
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   
-
-     
-  
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    
-   ctm.Initialization();
    if (useLimitOrders)
    {
     opBuy = OP_BUYLIMIT;
@@ -113,7 +108,6 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   ctm.Deinitialization();
    // Освобождаем динамические массивы от данных
    ArrayFree(low_buf);
    ArrayFree(high_buf);
@@ -212,7 +206,6 @@ void OnTick()
      }
     }
    }
-      new Label("button1","Button",0,0,100,100,0,0,CORNER_RIGHT_UPPER,0); 
    if (trailing)
    {
     ctm.DoTrailing();

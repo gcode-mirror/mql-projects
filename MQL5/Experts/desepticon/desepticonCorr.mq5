@@ -73,7 +73,6 @@ CTradeManager tradeManager;        // Мэнеджер ордеров
 //+------------------------------------------------------------------+
 int OnInit()
 {
- tradeManager.Initialization();
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  handleTrend = iCustom(Symbol(), Period(), "PriceBasedIndicator", historyDepth, bars);
  handleMACDEld = iMACD(Symbol(), eldTF, fast_EMA_period, slow_EMA_period, signal_period, PRICE_CLOSE);
@@ -127,7 +126,6 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
- tradeManager.Deinitialization();
  IndicatorRelease(handleTrend);
  IndicatorRelease(handleMACDEld);
  IndicatorRelease(handleMACDJr);
@@ -147,7 +145,6 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  static bool isProfit = false;
- static int  wait = 0;
  double point = Point();
  double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
  double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);

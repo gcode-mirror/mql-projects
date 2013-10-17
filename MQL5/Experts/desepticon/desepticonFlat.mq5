@@ -68,7 +68,6 @@ CTradeManager tradeManager;        // Мэнеджер ордеров
 //+------------------------------------------------------------------+
 int OnInit()
 {
- tradeManager.Initialization();
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  handleTrend = iCustom(Symbol(), Period(), "PriceBasedIndicator", historyDepth, bars);
  handleSTOCEld = iStochastic(NULL, eldTF, kPeriod, dPeriod, slow, MODE_SMA, STO_CLOSECLOSE);
@@ -120,7 +119,6 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
- tradeManager.Deinitialization();
  IndicatorRelease(handleTrend);
  IndicatorRelease(handleEMA3Eld);
  IndicatorRelease(handleEMAfastJr);

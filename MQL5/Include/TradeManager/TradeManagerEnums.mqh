@@ -124,16 +124,23 @@ enum ENUM_STOPLEVEL_STATUS
    STOPLEVEL_STATUS_DELETED,
    STOPLEVEL_STATUS_NOT_DELETED
   };
+  
+enum ENUM_FILENAME
+  {
+   FILENAME_RESCUE,
+   FILENAME_HISTORY
+  };
+  
 //+------------------------------------------------------------------+
 /// Структура свойств позиций на отыгрыш
 //+------------------------------------------------------------------+
 class ReplayPos
- {
- public:
+{
+ public:  
+  string symbol;               //символ 
   double price_open;           //цена открытия
   double price_close;          //цена закрытия
   double profit;               //профит позиции
-  string symbol;               //символ 
   ENUM_POSITION_STATUS status; //статус позиции
   ENUM_TM_POSITION_TYPE type;  //тип позиции
- };
+};
