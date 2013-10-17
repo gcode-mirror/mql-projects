@@ -61,7 +61,6 @@ int OnInit()
    symbol=Symbol();                    //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
  
-   ctm.Initialization();
    if (useLimitOrders)
    {
     opBuy = OP_BUYLIMIT;
@@ -107,7 +106,6 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   ctm.Deinitialization();
    // Освобождаем динамические массивы от данных
    ArrayFree(low_buf);
    ArrayFree(high_buf);

@@ -29,7 +29,6 @@ public:
    string            PersistFilename(){return(m_strPersistFilename);}
    string            PersistFilename(string strFilename);
    int               TicketToIndex(long lTicket);
-   void              ReadAllVomOpenOrders(string strFolder);
    bool              ReadFromFile(int handle);
    bool              WriteToFile(int handle);
    string            SummaryList();
@@ -140,29 +139,6 @@ string CPositionArray::PersistFilename(string strFilename)
    return(m_strPersistFilename=strFilename);
   }
 /*  
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void CPositionArray::ReadAllVomOpenOrders(string strFolder)
-  {
-   Clear();
-   string strFilenameWildcard=strFolder+"*_OpenOrders.csv";
-   string strFoundFile="";
-
-   long hFind=FileFindFirst(strFilenameWildcard,strFoundFile);
-   if(hFind!=INVALID_HANDLE)
-     {
-      do
-        {
-         PersistFilename(strFolder+strFoundFile);
-         // read without creating line objects
-         ReadFromFile(false);
-        }
-      while(FileFindNext(hFind,strFoundFile));
-      FileFindClose(hFind);
-     }
-  }
- 
 //+------------------------------------------------------------------+
 /// Reads array contents from PersistFilename()
 //+------------------------------------------------------------------+
@@ -335,20 +311,18 @@ bool CPositionArray::ReadFromFile(int handle)
 {
  if(handle != INVALID_HANDLE)
  {
-  CPosition *pos;// = new CPosition();
-  int count = 0;
+  CPosition *pos;
   while(!FileIsEnding(handle))
   {
    pos = new CPosition();
    if (pos.ReadFromFile(handle))
    {
     Add(pos);
-    count++;
    }
    else
     delete pos;
   }
-  Print("Read count: ", count);
+  Print("Read count: ", this.Total());
   return true;
  }
  return false;
@@ -363,7 +337,7 @@ bool CPositionArray::WriteToFile(int handle)
   for(int i = size-1; i >= 0; i--)
   {
    pos = Position(i);
-   pos.WriteToFile (handle);
+   pos.WriteToFile(handle);
   }
   return true;
  }

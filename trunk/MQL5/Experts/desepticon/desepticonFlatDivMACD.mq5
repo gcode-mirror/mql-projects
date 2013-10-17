@@ -60,7 +60,6 @@ CTradeManager tradeManager;        // Мэнеджер ордеров
 
 int OnInit()
 {
- tradeManager.Initialization();
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  history_start = TimeCurrent();        // запомним время запуска эксперта для получения торговой истории
  handleTrend = iCustom(Symbol(), eldTF, "PriceBasedIndicator", historyDepth, bars);
@@ -107,7 +106,6 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
- tradeManager.Deinitialization();
  IndicatorRelease(handleTrend);
  IndicatorRelease(handleMACD); 
  IndicatorRelease(handleEMA3Eld);

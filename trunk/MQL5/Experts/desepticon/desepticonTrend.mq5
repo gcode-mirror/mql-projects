@@ -66,7 +66,6 @@ CTradeManager tradeManager;        // Мэнеджер ордеров
 //+------------------------------------------------------------------+
 int OnInit()
 {
- tradeManager.Initialization();
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  handleTrend = iCustom(Symbol(), Period(), "PriceBasedIndicator", historyDepth, bars);
  handleEMA3Day = iMA(Symbol(), PERIOD_D1, 3, 0, MODE_EMA, PRICE_CLOSE);
@@ -124,7 +123,6 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
- tradeManager.Deinitialization();
  IndicatorRelease(handleTrend);
  IndicatorRelease(handleEMAfastEld);
  IndicatorRelease(handleEMAfastJr);
