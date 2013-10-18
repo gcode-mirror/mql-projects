@@ -33,7 +33,7 @@ class GraphModule  //класс графического модуля
                 long             z_order,          // приоритет
                 color            background_color, // цвет фона
                 bool             read_only);        // флаг "только для чтения"
-   void CreateLabel(long               chart_id,   // id графика
+   void CreateLabel(long            chart_id,   // id графика
                  int                sub_window, // номер окна (подокна)
                  string             name,       // имя объекта
                  string             text,       // отображаемый текст

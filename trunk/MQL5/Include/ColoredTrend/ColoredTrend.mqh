@@ -44,7 +44,7 @@ protected:
   int FillATRBuf(int count, int start_pos);
   bool isCorrectionEnds(MqlRates &cur_rates[], MqlRates &bot_rates[], int bar, ENUM_MOVE_TYPE move_type);
   bool isLastBarHuge(MqlRates &rates[]);
-  
+  bool isNewTrend(double price);
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count, int shift = 3);
   SExtremum isExtremum(double vol1, double vol2, double vol3, int bar = 0);
@@ -124,25 +124,7 @@ void CColoredTrend::CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_
  //PrintFormat("enumMoveType[%d] = %s, bar = %d, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar, bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
  difToNewExtremum = ATR_buf[bar] / 2;
  
- // «десь провер€ютс€ разные случаи начала тренда. ƒва варианта, когда цена пошла в сторону предпоследнего экстремума и когда цена пошла в сторону последнего экстремума
- bool newTrend = false;
- if ((aExtremums[num1].price < aExtremums[num0].price && aExtremums[num0].price < rates[bar].close) ||
-     (aExtremums[num1].price > aExtremums[num0].price && aExtremums[num0].price > rates[bar].close))
- {
-  if (LessDoubles(MathAbs(aExtremums[num2].price - aExtremums[num1].price)*difToTrend
-                 ,MathAbs(aExtremums[num1].price - rates[bar].close), digits))
-  {
-   newTrend = true;
-  }
- }
- else
- {
-  if (LessDoubles(MathAbs(aExtremums[num0].price - aExtremums[num1].price)*difToTrend
-                 ,MathAbs(aExtremums[num0].price - rates[bar].close), digits))
-  {
-   newTrend = true;
-  }
- }
+ bool newTrend = isNewTrend(rates[bar].close);
            
  if (newTrend)
  {// ≈сли разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движени€ 
@@ -385,4 +367,28 @@ bool CColoredTrend::isLastBarHuge(MqlRates &rates[])
  double lastBar = MathAbs(rates[0].open - rates[0].close);
     
  return(GreatDoubles(lastBar, avgBar*2));
+}
+
+bool CColoredTrend::isNewTrend(double price)
+{
+ // «десь провер€ютс€ разные случаи начала тренда. ƒва варианта, когда цена пошла в сторону предпоследнего экстремума и когда цена пошла в сторону последнего экстремума
+ bool newTrend = false;
+ if ((aExtremums[num1].price < aExtremums[num0].price && aExtremums[num0].price < price) ||
+     (aExtremums[num1].price > aExtremums[num0].price && aExtremums[num0].price > price))
+ {
+  if (LessDoubles(MathAbs(aExtremums[num2].price - aExtremums[num1].price)*difToTrend
+                 ,MathAbs(aExtremums[num1].price - price), digits))
+  {
+   newTrend = true;
+  }
+ }
+ else
+ {
+  if (LessDoubles(MathAbs(aExtremums[num0].price - aExtremums[num1].price)*difToTrend
+                 ,MathAbs(aExtremums[num0].price - price), digits))
+  {
+   newTrend = true;
+  }
+ }
+ return(newTrend);
 }
