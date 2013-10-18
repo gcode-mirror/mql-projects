@@ -49,8 +49,8 @@ double ExtDownArrowBuffer[];
 //+----------------------------------------------+
 //| Входные параметры индикатора                 |
 //+----------------------------------------------+
-input int historyDepth = 40;     // глубина истории для расчета
-input int bars=30;         // сколько свечей показывать
+input int historyDepth = 40; // глубина истории для расчета
+input int bars=30;           // сколько свечей показывать
 input bool messages=false;   // вывод сообщений в лог "Эксперты"
 
 //+----------------------------------------------+
@@ -83,9 +83,9 @@ int OnInit()
    SetIndexBuffer(3, ExtCloseBuffer, INDICATOR_DATA);
    
    bool AsSeries = false;
-   ArraySetAsSeries(ExtOpenBuffer, AsSeries);
-   ArraySetAsSeries(ExtHighBuffer, AsSeries);
-   ArraySetAsSeries(ExtLowBuffer, AsSeries);
+   ArraySetAsSeries( ExtOpenBuffer, AsSeries);
+   ArraySetAsSeries( ExtHighBuffer, AsSeries);
+   ArraySetAsSeries(  ExtLowBuffer, AsSeries);
    ArraySetAsSeries(ExtCloseBuffer, AsSeries);
 //---- превращение динамического массива в цветовой, индексный буфер   
    SetIndexBuffer(4, ExtColorsBuffer, INDICATOR_COLOR_INDEX);
