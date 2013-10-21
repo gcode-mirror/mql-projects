@@ -41,7 +41,7 @@ protected:
   datetime _historyStart;
   CPositionArray _positionsToReProcessing; ///массив позиций, наход€щихс€ в процессе
   CPositionArray _openPositions;           ///массив текущих открытых позиций
-  CPositionArray _positionsHistory;        ///массив истории виртуальных позиций
+ public: CPositionArray _positionsHistory;        ///массив истории виртуальных позиций
     
 public:
   void CTradeManager();
@@ -77,7 +77,7 @@ void CTradeManager::CTradeManager():  _useSound(true), _nameFileSound("expert.wa
  
  rescueDataFileName = CreateFilename(FILENAME_RESCUE);
  historyDataFileName = CreateFilename(FILENAME_HISTORY);
- LoadHistoryFromFile();
+// LoadHistoryFromFile();
  LoadSituationFromFile();
 };
 
@@ -371,7 +371,8 @@ void CTradeManager::OnTick()
   if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING && pos.getStopLossStatus() != STOPLEVEL_STATUS_NOT_DEFINED) // ≈сли мы не можем выбрать стоп по его тикету, значит он сработал
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Ќет ордера-StopLoss, удал€ем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-   _positionsHistory.Add(_openPositions.Detach(i));
+  // _positionsHistory.Add(_openPositions.Detach(i));
+   ClosePosition(i);   
    SaveHistoryToFile();  
    SaveSituationToFile();               // ѕереписать файл состо€ни€
    break;                          
@@ -432,6 +433,7 @@ void CTradeManager::OnTick()
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s прошло врем€ ожидани€ %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
        _positionsHistory.Add(_openPositions.Detach(i));
+           
        SaveHistoryToFile();  
        break;
       }
@@ -517,11 +519,18 @@ bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
 /// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
 /// \return							true if successful, false if not
 //+------------------------------------------------------------------+
+
+
+
 bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
 {
  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
+
+ 
+
  if (pos.ClosePosition())
  {
+  
   _positionsHistory.Add(_openPositions.Detach(i)); //добавл€ем позицию в историю и удал€ем из массива открытых позиций
   SaveHistoryToFile();  
   SaveSituationToFile();
@@ -755,7 +764,7 @@ void CTradeManager::SaveHistoryToFile(void) //сохран€ет историю открыти€\закрыти
 /// \param [bool] debug       if want to debug
 //+------------------------------------------------------------------+
 bool CTradeManager::LoadHistoryFromFile()   //загружает историю позиции из файла
-{
+{ 
  int file_handle;   //файловый хэндл
  int ind;
  string tmp_str[17];
@@ -784,11 +793,15 @@ bool CTradeManager::LoadHistoryFromFile()   //загружает историю позиции из файла
  _openPositions.ReadFromFile(file_handle);
  FileClose(file_handle);  //закрывает файл истории позиций 
  return (true);
+ 
 }
 
 //+----------------------------------------------------
 //  методы дл€ работы с Replay Position
 //+----------------------------------------------------
+
+
+
 CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime toDate = 0)
 {
  CPositionArray *resultArray;
@@ -796,18 +809,22 @@ CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime to
  CPosition *pos;
  datetime posTime;
  int total = _positionsHistory.Total();
- if (toDate == 0) toDate = TimeCurrent();
+
  
+ if (toDate == 0) toDate = TimeCurrent();
+
  for(int i = 0; i < total; i++)
  {
+
   pos = _positionsHistory.At(i);
   posTime = pos.getClosePosDT();
-  if (posTime < fromDate) continue;  // ѕозиции с ранней датой - пропускаем
+
+  if (posTime <= fromDate) continue;  // ѕозиции с ранней датой - пропускаем
   if (posTime > toDate) break;       // ƒобрались до позиций с поздней датой - выходим
-  
+ 
   resultArray.Add(pos);              // «аполн€ем массив позици€ми с датой закрыти€ в нужном диапазоне
  }
- 
+
  return resultArray;
 } 
  

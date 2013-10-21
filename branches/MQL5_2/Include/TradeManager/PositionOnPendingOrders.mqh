@@ -68,7 +68,7 @@ public:
    datetime getOpenPosDT() { return (_posOpenTime); };     //получает дату открыти€ позиции
    datetime getClosePosDT() { return (_posCloseTime); };   //получает дату закрыти€ позиции             
    double   getPriceOpen() { return(_posOpenPrice); };           //получает цену открыти€ позиции
-   double   getPriceClose() { return(_posOpenPrice); };        //получает цену закрыти€ позиции
+   double   getPriceClose() { return(_posClosePrice); };        //получает цену закрыти€ позиции
    double   getPosProfit() { return(_posProfit); };          //получает прибыль позиции             
    ulong    getMagic() {return (_magic);};
    void     setMagic(ulong magic) {_magic = magic;};
@@ -456,8 +456,13 @@ ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
+
+
+
+
 bool CPosition::ClosePosition()
 {
+ //Alert("ѕќ«»÷»я «ј –џ“ј");
  int i = 0;
  double tmp_profit;   //переменна€ дл€ хранени€ профита позиции
  ResetLastError();
