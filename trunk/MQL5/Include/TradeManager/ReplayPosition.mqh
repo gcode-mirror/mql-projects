@@ -59,13 +59,16 @@ void ReplayPosition::setArrayToReplay(CPositionArray *array)
 {
  int total = array.Total();
  CPosition *pos;
- 
  for(int i = 0; i < total; i++)
  {
   pos = array.At(i);
   if (pos.getPosProfit() < 0)
   {
    pos.setPositionStatus(POSITION_STATUS_MUST_BE_REPLAYED);
+   Alert("[ѕозици€ убыточна]",
+           " врем€ открыти€  = ",TimeToString(pos.getOpenPosDT()),
+           " врем€ закрыти€ = ",TimeToString(pos.getClosePosDT())
+   );
    _posToReplay.Add(pos);
   }
  }
@@ -85,7 +88,9 @@ void ReplayPosition::CustomPosition()
 
  for (index=0; index < total; index++)     //пробегаем по массиву позиций
  {
+
   pos = _posToReplay.At(index);
+
   symbol = pos.getSymbol();
   profit = pos.getPosProfit();
   openPrice = pos.getPriceOpen();
@@ -95,30 +100,27 @@ void ReplayPosition::CustomPosition()
   {
    direction = 1;
    curPrice = SymbolInfoDouble(symbol, SYMBOL_ASK);
-   Comment("тип = BUY цена = ", curPrice, 
-           "; цена открыти€ = ", openPrice, 
-           " цена закрыти€ = ", closePrice,
-           " профит позиции = ",profit,
-           " дата и врем€ = ", TimeToString(TimeCurrent())
-          );
   }
   if (pos.Type() == OP_SELL)
   {
    direction = -1;
-   curPrice = SymbolInfoDouble(symbol, SYMBOL_BID);
-   Comment("тип = SELL цена = ", curPrice, 
-           "; цена открыти€ = ", openPrice, 
-           " цена закрыти€ = ", closePrice,
-           " профит позиции = ",profit,
-           " дата и врем€ = ", TimeToString(TimeCurrent())
-          );
+   curPrice = SymbolInfoDouble(symbol, SYMBOL_BID);         
   }
   if (pos.getPositionStatus() == POSITION_STATUS_MUST_BE_REPLAYED)  //если позици€ ожидает перевала за рубеж в Loss
   {
+  
    //если цена перевалила за Loss
    if (direction*(curPrice - closePrice) < profit)
    {
     pos.setPositionStatus(POSITION_STATUS_READY_TO_REPLAY);  //переводим позицию в режим готовности к отыгрушу
+       /*Comment(
+           "[ѕозици€ готова к отыгрышу] ",
+           "тип = ", GetNameOP(pos.getType()), 
+           "; цена открыти€ = ", openPrice, 
+           " цена закрыти€ = ", closePrice,
+           " профит позиции = ",profit,
+           " дата и врем€ = ", TimeToString(TimeCurrent())
+          );*/
    } 
   }
   else
@@ -130,8 +132,19 @@ void ReplayPosition::CustomPosition()
                  NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));
     sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL),
                  NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));              
-    ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, 0, 0, 0); //открываем позицию
-    _posToReplay.Delete(index); //и удал€ем еЄ из массива  
+   ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, 0, 0, 0); //открываем позицию
+   pos.setPositionStatus(POSITION_STATUS_OPEN);
+         /* Comment(
+           "[ѕозици€ открыта на отыгрыш] ",
+           "тип = ", GetNameOP(pos.getType()), 
+           "; цена открыти€ = ", openPrice, 
+           " цена закрыти€ = ", closePrice,
+           " профит позиции = ",profit,
+           " дата и врем€ = ", TimeToString(TimeCurrent())
+          );*/
+   
+   // _posToReplay.Delete(index); //и удал€ем еЄ из массива  
+
    }      
   }
  }
