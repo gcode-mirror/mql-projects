@@ -9,6 +9,7 @@
 #include "PositionOnPendingOrders.mqh"
 #include "PositionArray.mqh"
 #include "TradeManager.mqh"
+#include <Arrays/ArrayLong.mqh>
 
 //+------------------------------------------------------------------+
 //| Класс-контейнер для хранения и работы с позициями                |
@@ -17,27 +18,29 @@ class ReplayPosition
 { 
  private:
   CTradeManager ctm;  //торговый класс 
-  CPositionArray _posToReplay;   //динамический массив для обработки позиций на отыгрыш
-  /*
+  CPositionArray aPositionsToReplay;         // массив убыточных позиций на отыгрыш
+  CArrayLong aReplayingPositionsDT;  // массив позиций для отыгрыша убыточных позиций
+  
   int ATR_handle;
   double ATR_buf[];
-  */
+  
   datetime prevDate;  // дата последнего получения истории
  public: 
-  void ReplayPosition();
+  void ReplayPosition(string symbol, ENUM_TIMEFRAMES period);
   void ~ReplayPosition();
   
+  void OnTrade();
   void setArrayToReplay(CPositionArray *array);
   void CustomPosition ();   //пробагает по массиву и изменяет статусы позиций возвращает индекс позиции    
 };
 //+------------------------------------------------------------------+
 //| Конструктор                                                      |
 //+------------------------------------------------------------------+
-void ReplayPosition::ReplayPosition(void)
+void ReplayPosition::ReplayPosition(string symbol, ENUM_TIMEFRAMES period)
 {
 /*
- ATR_handle = iATR(_symbol, _period, 100);
- if(handleMACD == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
+ ATR_handle = iATR(symbol, period, 100);
+ if(ATR_handle == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
  {
   Print("Не удалось получить хендл ATR");               //если хендл не получен, то выводим сообщение в лог об ошибке
  }
@@ -49,26 +52,63 @@ void ReplayPosition::ReplayPosition(void)
 //+------------------------------------------------------------------+
 void ReplayPosition::~ReplayPosition(void)
 {
- 
 }
 
+void ReplayPosition::OnTrade()
+{
+ PrintFormat("total=%d", aPositionsToReplay.Total());
+ ctm.OnTrade();
+ CPositionArray *array;
+ CPosition *posFromHistory, *posToReplay;
+ array = ctm.GetPositionHistory(prevDate);
+ prevDate = TimeCurrent();
+ 
+ setArrayToReplay(array);
+ int totalReplayed = array.Total();
+ int totalOnReplaying = aReplayingPositionsDT.Total();
+ int index;
+ 
+ for (int i = 0; i < totalReplayed; i++)
+ {
+  posFromHistory = new CPosition(array.At(i));
+  index = 0;
+  while (index < totalOnReplaying && posFromHistory.getOpenPosDT() != aReplayingPositionsDT[index])
+  {
+   index++;
+  }
+  
+  if (posFromHistory.getPosProfit() > 0)
+  {
+   aPositionsToReplay.Delete(index);
+   aReplayingPositionsDT.Delete(index);
+  } 
+
+  if (posFromHistory.getPosProfit() < 0)
+  {
+   posToReplay = aPositionsToReplay.At(index);
+   posToReplay.setPositionStatus(POSITION_STATUS_READY_TO_REPLAY);
+   aReplayingPositionsDT.Update(index, 0);
+  }
+ }
+}
 //+------------------------------------------------------------------+
 //| заполняет массив для отыгрыша из внешнего массива                |
 //+------------------------------------------------------------------+
 void ReplayPosition::setArrayToReplay(CPositionArray *array)
 {
- int total = array.Total();
+ int total, size;
+ int n = array.Total();
  CPosition *pos;
- for(int i = 0; i < total; i++)
+ for(int i = 0; i < n; i++)
  {
   pos = new CPosition(array.At(i));
   if (pos.getPosProfit() < 0)
   {
    pos.setPositionStatus(POSITION_STATUS_MUST_BE_REPLAYED);
-   PrintFormat("%s [Убыток], openTime=%s, closeTime=%s, profit=%.05f, close=%.05f"
-               ,MakeFunctionPrefix(__FUNCTION__), TimeToString(pos.getOpenPosDT()), TimeToString(pos.getClosePosDT()), pos.getPosProfit(), pos.getPriceClose());
-   _posToReplay.Add(pos);
-   PrintFormat("%s , Total = %d", MakeFunctionPrefix(__FUNCTION__), _posToReplay.Total());
+   //PrintFormat("%s [Убыток], openTime=%s, closeTime=%s, profit=%.05f, close=%.05f"
+   //            ,MakeFunctionPrefix(__FUNCTION__), TimeToString(pos.getOpenPosDT()), TimeToString(pos.getClosePosDT()), pos.getPosProfit(), pos.getPriceClose());
+   aPositionsToReplay.Add(pos);
+   aReplayingPositionsDT.Add(0);
   }
  }
 }
@@ -77,9 +117,10 @@ void ReplayPosition::setArrayToReplay(CPositionArray *array)
 //+------------------------------------------------------------------+
 void ReplayPosition::CustomPosition()
 {
+ ctm.OnTick();
  int direction = 0;
  int index;
- uint total = _posToReplay.Total();        //текущая длина массива
+ uint total = aPositionsToReplay.Total();        //текущая длина массива
  string symbol;
  double curPrice, profit, openPrice, closePrice;
  int sl, tp;
@@ -87,7 +128,7 @@ void ReplayPosition::CustomPosition()
 
  for (index = total - 1; index >= 0; index--)     //пробегаем по массиву позиций
  {
-  pos = _posToReplay.At(index);
+  pos = aPositionsToReplay.At(index);
 
   symbol = pos.getSymbol();
   profit = MathAbs(pos.getPosProfit());
@@ -125,12 +166,10 @@ void ReplayPosition::CustomPosition()
                  NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));   
     PrintFormat("Удалили позицию из массива отыгрышей profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
     ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, 0, 0, 0); //открываем позицию
-    //pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
-    _posToReplay.Delete(index); //и удаляем её из массива  
+    pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
+    aReplayingPositionsDT.Update(index, TimeCurrent());
+    //aPositionsToReplay.Delete(index); //и удаляем её из массива  
    }      
   }
  }
- 
- setArrayToReplay(ctm.GetPositionHistory(prevDate));
- prevDate = TimeCurrent();  
 }
