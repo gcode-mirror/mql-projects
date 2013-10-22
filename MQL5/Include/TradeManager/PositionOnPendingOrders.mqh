@@ -384,7 +384,7 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
  if (_tp > 0)
  {
   _tpPrice = TPtype(_type);
-  log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен виртуальный тейкпрофит с ценой %0.6f", MakeFunctionPrefix(__FUNCTION__), _tpPrice));     
+  log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен виртуальный тейкпрофит с ценой %.05f", MakeFunctionPrefix(__FUNCTION__), _tpPrice));     
  }
  else
  {
@@ -400,6 +400,14 @@ bool CPosition::CheckTakeProfit(void)
  if (_tpPrice > 0)
  {
   UpdateSymbolInfo();
+  if (_type == OP_SELL && _tpPrice >= SymbInfo.Ask())
+  {
+   PrintFormat("Позиция Селл, пройден уровень тейкпрофит");
+  }
+  if (_type == OP_BUY  && _tpPrice <= SymbInfo.Bid())
+  {
+   PrintFormat("Позиция Бай, пройден уровень тейкпрофит");
+  }
   return ((_type == OP_SELL && _tpPrice >= SymbInfo.Ask()) || 
           (_type == OP_BUY  && _tpPrice <= SymbInfo.Bid()) );
  }

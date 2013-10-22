@@ -247,11 +247,11 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
  int i = 0;
  int total = _openPositions.Total();
  CPosition *pos;
- //log_file.Write(LOG_DEBUG
- //             ,StringFormat("%s, ќткрываем позицию %s. ќткрытых позиций на данный момент: %d"
- //                           , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
- PrintFormat("%s, ќткрываем позицию %s. ќткрытых позиций на данный момент: %d"
-             , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total);
+ log_file.Write(LOG_DEBUG
+              ,StringFormat("%s, ќткрываем позицию %s. ќткрытых позиций на данный момент: %d"
+                            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
+ //PrintFormat("%s, ќткрываем позицию %s. ќткрытых позиций на данный момент: %d"
+ //            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total);
  
  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // –аспечатка всех позиций из массива _openPositions
  
@@ -259,10 +259,10 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
  {
-  //log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
-  //                                       , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
-  PrintFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
-                                         , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice());                                       
+  log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
+                                         , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
+  //PrintFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
+  //                                       , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice());                                       
   _openPositions.Add(pos);  // добавл€ем открутую позицию в массив открытых позиций
   SaveSituationToFile();
   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
@@ -310,6 +310,7 @@ void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
 //+------------------------------------------------------------------+
 void CTradeManager::OnTrade(datetime history_start=0)
 {
+ //PrintFormat("total=%d",_openPositions.Total());
 }
 
 //+------------------------------------------------------------------+
@@ -385,7 +386,8 @@ void CTradeManager::OnTick()
   
   if (pos.CheckTakeProfit())    //провер€ем условие выполнени€ TP
   {
-   log_file.Write(LOG_DEBUG, StringFormat("%s ÷ена дошла до уровн€ TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()));
+   //log_file.Write(LOG_DEBUG, StringFormat("%s ÷ена дошла до уровн€ TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()));
+   PrintFormat("%s ÷ена дошла до уровн€ TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice());
    ClosePosition(i);
    break;             
   }
@@ -825,7 +827,6 @@ CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime to
   
   resultArray.Add(pos);              // «аполн€ем массив позици€ми с датой закрыти€ в нужном диапазоне
  }
- 
  return resultArray;
 } 
  

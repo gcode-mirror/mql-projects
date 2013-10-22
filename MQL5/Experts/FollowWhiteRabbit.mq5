@@ -43,7 +43,7 @@ string symbol;                                       //переменная для хранения с
 datetime history_start;
 
 CTradeManager ctm;  //торговый класс
-ReplayPosition rp;        //класс отыгрыша убыточной позиции
+ReplayPosition *rp;        //класс отыгрыша убыточной позиции
 MqlTick tick;
 
 double takeProfit, stopLoss;
@@ -74,7 +74,8 @@ int OnInit()
      opSell = OP_SELL;      
     break;
    }
-        
+   
+   rp = new ReplayPosition(symbol, timeframe);     
    //устанавливаем индексацию для массивов ХХХ_buf
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
@@ -170,6 +171,7 @@ void OnTick()
 void OnTrade()
   {
    ctm.OnTrade();
+   rp.OnTrade();
    rp.setArrayToReplay(ctm.GetPositionHistory(history_start));
    history_start = TimeCurrent();
   }
