@@ -56,8 +56,6 @@ public:
   bool ClosePosition(int i,color Color=CLR_NONE);            // Закрытие позиции по индексу в массиве позиций
   bool ClosePosition(string symbol, color Color=CLR_NONE);   // Закрытие позиции по символу 
   void DoTrailing();
-  void Initialization();
-  void Deinitialization();
   bool isMinProfit(string symbol);
   void OnTick();
   void OnTrade(datetime history_start);
@@ -371,9 +369,12 @@ void CTradeManager::OnTick()
   if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING && pos.getStopLossStatus() != STOPLEVEL_STATUS_NOT_DEFINED) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+   /*
    _positionsHistory.Add(_openPositions.Detach(i));
    SaveHistoryToFile();  
    SaveSituationToFile();               // Переписать файл состояния
+   */
+   ClosePosition(i);
    break;                          
   }
   
@@ -656,6 +657,12 @@ void CTradeManager::LoadSituationFromFile()
  int file_handle = FileOpen(rescueDataFileName, FILE_READ|FILE_CSV|FILE_COMMON, ";");
  if (file_handle != INVALID_HANDLE)
  {
+  if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
+  {
+   FileDelete(rescueDataFileName);
+   return;
+  }
+  
   if(FileReadDatetime(file_handle) < TimeCurrent())
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Существует файл состояния. Считываем данные из него.", MakeFunctionPrefix(__FUNCTION__))); 
@@ -685,7 +692,7 @@ void CTradeManager::SaveHistoryToFile(void) //сохраняет историю открытия\закрыти
 
  if(file_handle == INVALID_HANDLE)
  {
-  Alert("Не удалось создать файл для сохранения истории позиций");
+  PrintFormat("Не удалось создать файл с именем %s для сохранения истории позиций", historyDataFileName);
   return;
  }
  //сохраняем наименования колонок таблицы
@@ -756,6 +763,12 @@ void CTradeManager::SaveHistoryToFile(void) //сохраняет историю открытия\закрыти
 //+------------------------------------------------------------------+
 bool CTradeManager::LoadHistoryFromFile()   //загружает историю позиции из файла
 {
+ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
+ {
+  FileDelete(historyDataFileName);
+  return(true);
+ }
+ 
  int file_handle;   //файловый хэндл
  int ind;
  string tmp_str[17];
@@ -764,14 +777,14 @@ bool CTradeManager::LoadHistoryFromFile()   //загружает историю позиции из файла
   
  if (!FileIsExist(historyDataFileName, FILE_COMMON) ) //проверка существования файла истории 
  {
-  Print("History file doesn't exist");
+  PrintFormat("%s History file doesn't exist", MakeFunctionPrefix(__FUNCTION__));
   return (true);
  }  
    
  file_handle = FileOpen(historyDataFileName, FILE_READ|FILE_COMMON|FILE_CSV|FILE_ANSI, ";");
  if (file_handle == INVALID_HANDLE) //не удалось открыть файл
  {
-  PrintFormat(" error: %s opening %s", ErrorDescription(::GetLastError()), historyDataFileName);
+  PrintFormat("%s error: %s opening %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(::GetLastError()), historyDataFileName);
   return (false);
  }
  
@@ -802,7 +815,7 @@ CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime to
  {
   pos = _positionsHistory.At(i);
   posTime = pos.getClosePosDT();
-  if (posTime < fromDate) continue;  // Позиции с ранней датой - пропускаем
+  if (posTime <= fromDate) continue;  // Позиции с ранней датой - пропускаем
   if (posTime > toDate) break;       // Добрались до позиций с поздней датой - выходим
   
   resultArray.Add(pos);              // Заполняем массив позициями с датой закрытия в нужном диапазоне

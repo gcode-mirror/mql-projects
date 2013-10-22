@@ -61,15 +61,14 @@ void ReplayPosition::setArrayToReplay(CPositionArray *array)
  CPosition *pos;
  for(int i = 0; i < total; i++)
  {
-  pos = array.At(i);
+  pos = new CPosition(array.At(i));
   if (pos.getPosProfit() < 0)
   {
    pos.setPositionStatus(POSITION_STATUS_MUST_BE_REPLAYED);
-   Alert("[ѕозици€ убыточна]",
-           " врем€ открыти€  = ",TimeToString(pos.getOpenPosDT()),
-           " врем€ закрыти€ = ",TimeToString(pos.getClosePosDT())
-   );
+   PrintFormat("%s [”быток], openTime=%s, closeTime=%s, profit=%.05f, close=%.05f"
+               ,MakeFunctionPrefix(__FUNCTION__), TimeToString(pos.getOpenPosDT()), TimeToString(pos.getClosePosDT()), pos.getPosProfit(), pos.getPriceClose());
    _posToReplay.Add(pos);
+   PrintFormat("%s , Total = %d", MakeFunctionPrefix(__FUNCTION__), _posToReplay.Total());
   }
  }
 }
@@ -79,20 +78,19 @@ void ReplayPosition::setArrayToReplay(CPositionArray *array)
 void ReplayPosition::CustomPosition()
 {
  int direction = 0;
- uint index;
+ int index;
  uint total = _posToReplay.Total();        //текуща€ длина массива
  string symbol;
  double curPrice, profit, openPrice, closePrice;
  int sl, tp;
  CPosition *pos;                           //указатель на позицию 
 
- for (index=0; index < total; index++)     //пробегаем по массиву позиций
+ for (index = total - 1; index >= 0; index--)     //пробегаем по массиву позиций
  {
-
   pos = _posToReplay.At(index);
 
   symbol = pos.getSymbol();
-  profit = pos.getPosProfit();
+  profit = MathAbs(pos.getPosProfit());
   openPrice = pos.getPriceOpen();
   closePrice = pos.getPriceClose();
   
@@ -108,19 +106,12 @@ void ReplayPosition::CustomPosition()
   }
   if (pos.getPositionStatus() == POSITION_STATUS_MUST_BE_REPLAYED)  //если позици€ ожидает перевала за рубеж в Loss
   {
-  
    //если цена перевалила за Loss
-   if (direction*(curPrice - closePrice) < profit)
+   if (direction*(closePrice - curPrice) > profit)
    {
+    PrintFormat("ѕозици€ %d переведена в режим готовности к отыгрышу, type=%s, direction=%d, profit=%.05f, close=%.05f, current=%.05f"
+                , index, GetNameOP(pos.getType()), direction, profit, closePrice, curPrice);
     pos.setPositionStatus(POSITION_STATUS_READY_TO_REPLAY);  //переводим позицию в режим готовности к отыгрушу
-       /*Comment(
-           "[ѕозици€ готова к отыгрышу] ",
-           "тип = ", GetNameOP(pos.getType()), 
-           "; цена открыти€ = ", openPrice, 
-           " цена закрыти€ = ", closePrice,
-           " профит позиции = ",profit,
-           " дата и врем€ = ", TimeToString(TimeCurrent())
-          );*/
    } 
   }
   else
@@ -131,20 +122,11 @@ void ReplayPosition::CustomPosition()
     tp = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL),
                  NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));
     sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL),
-                 NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));              
-   ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, 0, 0, 0); //открываем позицию
-   pos.setPositionStatus(POSITION_STATUS_OPEN);
-         /* Comment(
-           "[ѕозици€ открыта на отыгрыш] ",
-           "тип = ", GetNameOP(pos.getType()), 
-           "; цена открыти€ = ", openPrice, 
-           " цена закрыти€ = ", closePrice,
-           " профит позиции = ",profit,
-           " дата и врем€ = ", TimeToString(TimeCurrent())
-          );*/
-   
-   // _posToReplay.Delete(index); //и удал€ем еЄ из массива  
-
+                 NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));   
+    //PrintFormat("”далили позицию из массива отыгрышей profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
+    ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, 0, 0, 0); //открываем позицию
+    //pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
+    _posToReplay.Delete(index); //и удал€ем еЄ из массива  
    }      
   }
  }

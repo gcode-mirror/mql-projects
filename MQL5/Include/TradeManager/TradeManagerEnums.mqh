@@ -65,7 +65,8 @@ enum ENUM_POSITION_STATUS
    POSITION_STATUS_NOT_INITIALISED,
    POSITION_STATUS_NOT_COMPLETE,
    POSITION_STATUS_MUST_BE_REPLAYED, //позиция должна отыграться
-   POSITION_STATUS_READY_TO_REPLAY   //позиция готова к отыгрышу
+   POSITION_STATUS_READY_TO_REPLAY,   //позиция готова к отыгрышу
+   POSITION_STATUS_ON_REPLAY
   };
 //+------------------------------------------------------------------+
 /// Returns string description of ENUM_POSITION_STATUS.                                                                 

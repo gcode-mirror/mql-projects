@@ -9,9 +9,9 @@
 
 enum USE_PENDING_ORDERS //режим вычисления priceDifference
  { 
-  USE_LIMIT_ORDERS=0, //useLimitOrders = true
-  USE_STOP_ORDERS,    //useStopOrders = true
-  USE_NO_ORDERS       //оба равны false
+  USE_LIMIT_ORDERS=0, //использовать лимит ордера
+  USE_STOP_ORDERS,    //использовать стоп ордера
+  USE_NO_ORDERS       //не использовать отложенники
  };
 //+------------------------------------------------------------------+
 //| Expert includes                                                  |
@@ -36,7 +36,7 @@ input bool trailing = false;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
-input USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;           //тип Price Difference                    
+input USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;           //Тип отложенного ордера                    
 input int priceDifference = 50;                       // Price Difference
 
 string symbol;                                       //переменная для хранения символа
