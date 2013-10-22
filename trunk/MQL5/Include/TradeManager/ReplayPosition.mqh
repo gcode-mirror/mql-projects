@@ -94,12 +94,12 @@ void ReplayPosition::CustomPosition()
   openPrice = pos.getPriceOpen();
   closePrice = pos.getPriceClose();
   
-  if (pos.Type() == OP_BUY)
+  if (pos.getType() == OP_BUY)
   {
    direction = 1;
    curPrice = SymbolInfoDouble(symbol, SYMBOL_ASK);
   }
-  if (pos.Type() == OP_SELL)
+  if (pos.getType() == OP_SELL)
   {
    direction = -1;
    curPrice = SymbolInfoDouble(symbol, SYMBOL_BID);         
@@ -117,13 +117,13 @@ void ReplayPosition::CustomPosition()
   else
   {
    if ((pos.getPositionStatus() == POSITION_STATUS_READY_TO_REPLAY)
-      && (direction*curPrice >= closePrice))//если позиция готова к отыгрышу и цена перевалила за зону цены закрытия позиции
+      && (direction*(curPrice - closePrice) >= 0))//если позиция готова к отыгрышу и цена перевалила за зону цены закрытия позиции
    {
     tp = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL),
                  NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));
     sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL),
                  NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));   
-    //PrintFormat("Удалили позицию из массива отыгрышей profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
+    PrintFormat("Удалили позицию из массива отыгрышей profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
     ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, 0, 0, 0); //открываем позицию
     //pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
     _posToReplay.Delete(index); //и удаляем её из массива  
