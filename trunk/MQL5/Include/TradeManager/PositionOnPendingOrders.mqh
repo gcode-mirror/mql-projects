@@ -15,7 +15,6 @@
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-
 class CPosition : public CObject
   {
 private:
@@ -56,19 +55,21 @@ private:
    
 public:
    void CPosition()   // конструктор по умолчанию
-    {
-     trade = new CTMTradeFunctions();
-     pos_status = POSITION_STATUS_NOT_INITIALISED;
-     sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
-    };  
-    
+   {
+    trade = new CTMTradeFunctions();
+    pos_status = POSITION_STATUS_NOT_INITIALISED;
+    sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
+   };  
+   
+   void CPosition(CPosition *pos);
+   
    void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                 ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
                 
    datetime getOpenPosDT() { return (_posOpenTime); };     //получает дату открытия позиции
    datetime getClosePosDT() { return (_posCloseTime); };   //получает дату закрытия позиции             
    double   getPriceOpen() { return(_posOpenPrice); };           //получает цену открытия позиции
-   double   getPriceClose() { return(_posOpenPrice); };        //получает цену закрытия позиции
+   double   getPriceClose() { return(_posClosePrice); };        //получает цену закрытия позиции
    double   getPosProfit() { return(_posProfit); };          //получает прибыль позиции             
    ulong    getMagic() {return (_magic);};
    void     setMagic(ulong magic) {_magic = magic;};
@@ -76,6 +77,8 @@ public:
    string   getSymbol() {return (_symbol);};
    double   getVolume() {return (_lots);};
    void     setVolume(double lots) {_lots = lots;};
+   int      getSL() {return(_sl);};
+   int      getTP() {return(_tp);};
    ulong    getStopLossTicket() {return (_slTicket);};
    double   getPositionPrice() {return(_posOpenPrice);};
    double   getStopLossPrice() {return(_slPrice);};
@@ -84,6 +87,8 @@ public:
    bool     isMinProfit();
    double   getTrailingStop() {return(_trailingStop);};
    double   getTrailingStep() {return(_trailingStep);};
+   double   getPriceDifference() {return(_priceDifference);};
+   datetime getExpiration() {return (_expiration);};
    
    ENUM_TM_POSITION_TYPE getType() {return (_type);};
    void setType(ENUM_TM_POSITION_TYPE type) {_type = type;};
@@ -93,10 +98,7 @@ public:
    
    ENUM_STOPLEVEL_STATUS getStopLossStatus() {return (sl_status);};
    void setStopLossStatus(ENUM_STOPLEVEL_STATUS status) {sl_status = status;};
-   
-   datetime getExpiration() {return (_expiration);};
-   void setExpiration(datetime expiration) {_expiration = expiration;};
-   
+
    bool UpdateSymbolInfo();        // Получение актуальной информации по торговому инструменту 
    double pricetype(ENUM_TM_POSITION_TYPE type);     // вычисляет уровень открытия в зависимости от типа 
    double SLtype(ENUM_TM_POSITION_TYPE type);        // вычисляет уровень стоп-лосса в зависимости от типа
@@ -116,7 +118,41 @@ public:
  };
 
 //+------------------------------------------------------------------+
-//| Constructor                                                      |
+//| Copy Constructor                                                 |
+//+------------------------------------------------------------------+
+CPosition::CPosition(CPosition *pos)
+{
+ _magic = pos.getMagic();
+ _posTicket = pos.getPositionTicket();
+ _symbol = pos.getSymbol();
+ _lots = pos.getVolume();
+ _slTicket = pos.getStopLossTicket();
+ _slPrice = pos.getStopLossPrice(); // цена установки стопа
+ _tpPrice = pos.getTakeProfitPrice(); // цена установки тейка
+   
+ _posOpenTime = pos.getOpenPosDT();  //время открытия позиции
+ _posCloseTime = pos.getClosePosDT(); //время завершения позиции 
+   
+ _posOpenPrice = pos.getPriceOpen();
+ _posClosePrice = pos.getPriceClose();     //цена, по которой позиция закрылась
+ _posProfit = pos.getPosProfit();      //прибыль с позиции
+   
+ _sl = pos.getSL();
+ _tp = pos.getTP();  // Стоп и Тейк в пунктах
+ _minProfit = pos.getMinProfit();
+ _trailingStop = pos.getTrailingStop();
+ _trailingStep = pos.getTrailingStep(); // параметры трейла в пунктах
+ _type = pos.getType();
+ _expiration = pos.getExpiration();
+ _priceDifference = pos.getPriceDifference();
+
+ pos_status = getPositionStatus();
+ sl_status = getStopLossStatus();
+  
+}
+
+//+------------------------------------------------------------------+
+//| Constructor with parameters                                      |
 //+------------------------------------------------------------------+
 CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                     ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0)
@@ -229,8 +265,9 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
 {
  UpdateSymbolInfo();
  _posOpenPrice = pricetype(_type);
- _posOpenTime= TimeCurrent(); //сохраняем время открытия позиции    
-
+ _posOpenTime = TimeCurrent(); //сохраняем время открытия позиции    
+ _posProfit = 0;
+ 
  switch(_type)
  {
   case OP_BUY:
