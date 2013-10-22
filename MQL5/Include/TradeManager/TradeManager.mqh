@@ -247,17 +247,22 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
  int i = 0;
  int total = _openPositions.Total();
  CPosition *pos;
- log_file.Write(LOG_DEBUG
-               ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
-                            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
+ //log_file.Write(LOG_DEBUG
+ //             ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
+ //                           , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
+ PrintFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
+             , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total);
+ 
  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
  
  pos = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
-                                         , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
+  //log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
+  //                                       , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
+  PrintFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
+                                         , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice());                                       
   _openPositions.Add(pos);  // добавляем открутую позицию в массив открытых позиций
   SaveSituationToFile();
   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
@@ -654,15 +659,15 @@ void CTradeManager::SaveSituationToFile()
 //+------------------------------------------------------------------+
 void CTradeManager::LoadSituationFromFile()
 {
+ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
+ {
+  FileDelete(rescueDataFileName);
+  return;
+ }
+
  int file_handle = FileOpen(rescueDataFileName, FILE_READ|FILE_CSV|FILE_COMMON, ";");
  if (file_handle != INVALID_HANDLE)
  {
-  if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
-  {
-   FileDelete(rescueDataFileName);
-   return;
-  }
-  
   if(FileReadDatetime(file_handle) < TimeCurrent())
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Существует файл состояния. Считываем данные из него.", MakeFunctionPrefix(__FUNCTION__))); 
