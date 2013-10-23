@@ -14,9 +14,6 @@
 #include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
 #include <CLog.mqh>
-//количество столбцов в файле
-
-
 int error = 0;
 
 //+------------------------------------------------------------------+
@@ -256,8 +253,6 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
  log_file.Write(LOG_DEBUG
               ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
                             , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
- //PrintFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
- //            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total);
  
  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
  
@@ -267,8 +262,6 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
                                          , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
-  //PrintFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
-  //                                       , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice());                                       
   _openPositions.Add(pos);  // добавляем открутую позицию в массив открытых позиций
   //SaveSituationToFile();
   SavePositionArray(rescueDataFileName ,_openPositions);  
@@ -382,11 +375,7 @@ void CTradeManager::OnTick()
   if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING && pos.getStopLossStatus() != STOPLEVEL_STATUS_NOT_DEFINED) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-   /*
-   _positionsHistory.Add(_openPositions.Detach(i));
-   SaveHistoryToFile();  
-   SaveSituationToFile();               // Переписать файл состояния
-   */
+   pos.setPositionStatus(POSITION_STATUS_CLOSED);
    ClosePosition(i);
    break;                          
   }
@@ -541,10 +530,8 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  if (pos.ClosePosition())
  {
   _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
-  //SaveHistoryToFile();  
   SavePositionArray(CreateFilename(FILENAME_HISTORY),_positionsHistory); 
   SavePositionArray(CreateFilename(FILENAME_RESCUE),_openPositions);   
- // SaveSituationToFile();
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
   return(true);
  }
@@ -571,7 +558,6 @@ bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
   _positionsHistory.Add(_positionsToReProcessing.Detach(i));
-  //SaveHistoryToFile();  
   SavePositionArray(CreateFilename(FILENAME_HISTORY),_positionsHistory);  
   return(true);
  }
@@ -657,7 +643,6 @@ string CTradeManager::CreateFilename (ENUM_FILENAME filename)
 
 bool CTradeManager::SavePositionArray(string file_url,CPositionArray *array)
  {
- //string file_name = CreateFilename(FILENAME_RESCUE);
  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
  if(file_handle == INVALID_HANDLE)
  {

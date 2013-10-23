@@ -38,13 +38,11 @@ class ReplayPosition
 //+------------------------------------------------------------------+
 void ReplayPosition::ReplayPosition(string symbol, ENUM_TIMEFRAMES period)
 {
-/*
  ATR_handle = iATR(symbol, period, 100);
  if(ATR_handle == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
  {
   Print("Не удалось получить хендл ATR");               //если хендл не получен, то выводим сообщение в лог об ошибке
  }
- */
 }
 
 //+------------------------------------------------------------------+
@@ -56,7 +54,6 @@ void ReplayPosition::~ReplayPosition(void)
 
 void ReplayPosition::OnTrade()
 {
- PrintFormat("total=%d", aPositionsToReplay.Total());
  ctm.OnTrade();
  CPositionArray *array;
  CPosition *posFromHistory, *posToReplay;
@@ -105,8 +102,6 @@ void ReplayPosition::setArrayToReplay(CPositionArray *array)
   if (pos.getPosProfit() < 0)
   {
    pos.setPositionStatus(POSITION_STATUS_MUST_BE_REPLAYED);
-   //PrintFormat("%s [Убыток], openTime=%s, closeTime=%s, profit=%.05f, close=%.05f"
-   //            ,MakeFunctionPrefix(__FUNCTION__), TimeToString(pos.getOpenPosDT()), TimeToString(pos.getClosePosDT()), pos.getPosProfit(), pos.getPriceClose());
    aPositionsToReplay.Add(pos);
    aReplayingPositionsDT.Add(0);
   }
@@ -124,9 +119,9 @@ void ReplayPosition::CustomPosition()
  string symbol;
  double curPrice, profit, openPrice, closePrice;
  int sl, tp;
- CPosition *pos;                           //указатель на позицию 
+ CPosition *pos;                                 //указатель на позицию 
 
- for (index = total - 1; index >= 0; index--)     //пробегаем по массиву позиций
+ for (index = total - 1; index >= 0; index--)    //пробегаем по массиву позиций
  {
   pos = aPositionsToReplay.At(index);
 
@@ -148,7 +143,7 @@ void ReplayPosition::CustomPosition()
   if (pos.getPositionStatus() == POSITION_STATUS_MUST_BE_REPLAYED)  //если позиция ожидает перевала за рубеж в Loss
   {
    //если цена перевалила за Loss
-   if (direction*(closePrice - curPrice) > profit)
+   if (direction*(closePrice - curPrice) > profit || true)
    {
     PrintFormat("Позиция %d переведена в режим готовности к отыгрышу, type=%s, direction=%d, profit=%.05f, close=%.05f, current=%.05f"
                 , index, GetNameOP(pos.getType()), direction, profit, closePrice, curPrice);
@@ -164,7 +159,7 @@ void ReplayPosition::CustomPosition()
                  NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));
     sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL),
                  NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));   
-    PrintFormat("Удалили позицию из массива отыгрышей profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
+    PrintFormat("Открыли позицию для отыгрыша profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
     ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, 0, 0, 0); //открываем позицию
     pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
     aReplayingPositionsDT.Update(index, TimeCurrent());
