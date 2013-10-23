@@ -598,7 +598,7 @@ bool CPosition::ReadFromFile(int handle)
   if(FileIsEnding(handle)) return false;  
   _posOpenPrice       = FileReadNumber(handle);                      //цена открытия позиции
   if(FileIsEnding(handle)) return false;  
-  _posOpenPrice     = FileReadNumber(handle);                      //цена закрытия позиции
+  _posClosePrice     = FileReadNumber(handle);                 //цена закрытия позиции
   if(FileIsEnding(handle)) return false;  
   _posOpenTime  = FileReadDatetime(handle);                    //время открытия позиции
   if(FileIsEnding(handle)) return false;  
@@ -628,17 +628,18 @@ void CPosition::WriteToFile(int handle)
             Symbol(),         
             GetNameOP(_type), 
             _lots,            
-            _posTicket,       
-            _posOpenPrice,        
+            _posTicket,        
             _slTicket,        
             _slPrice,         
             _sl,              
-            _tpPrice,         
-            _tp,              
-            _minProfit,       
-            _trailingStop,   
-            _trailingStep,    
-            TimeToString(_expiration)
+            _tpPrice, 
+            _trailingStop,
+            _trailingStep,   
+            _posOpenPrice,
+            _posClosePrice,
+            _posOpenTime,
+            _posCloseTime,
+            _posProfit
             );
  }
 }
