@@ -501,8 +501,13 @@ ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
+
+
+
+
 bool CPosition::ClosePosition()
 {
+ //Alert("ПОЗИЦИЯ ЗАКРЫТА");
  int i = 0;
  double tmp_profit;   //переменная для хранения профита позиции
  ResetLastError();
@@ -638,7 +643,7 @@ bool CPosition::ReadFromFile(int handle)
   if(FileIsEnding(handle)) return false;  
   _posOpenPrice       = FileReadNumber(handle);                      //цена открытия позиции
   if(FileIsEnding(handle)) return false;  
-  _posOpenPrice     = FileReadNumber(handle);                      //цена закрытия позиции
+  _posClosePrice     = FileReadNumber(handle);                 //цена закрытия позиции
   if(FileIsEnding(handle)) return false;  
   _posOpenTime  = FileReadDatetime(handle);                    //время открытия позиции
   if(FileIsEnding(handle)) return false;  
@@ -669,16 +674,17 @@ void CPosition::WriteToFile(int handle)
             GetNameOP(_type), 
             _lots,            
             _posTicket,       
-            _posOpenPrice,        
             _slTicket,        
             _slPrice,         
             _sl,              
             _tpPrice,         
-            _tp,              
-            _minProfit,       
             _trailingStop,   
             _trailingStep,    
-            TimeToString(_expiration)
+            _posOpenPrice,
+            _posClosePrice,
+            _posOpenTime,
+            _posCloseTime,
+            _posProfit
             );
  }
 }
