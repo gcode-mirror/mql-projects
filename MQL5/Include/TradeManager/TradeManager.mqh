@@ -221,9 +221,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type
 
 
    _openPositions.Add(pos);  // добавл€ем открытую позицию в массив открытых позиций
-   
    SavePositionArray(rescueDataFileName ,_openPositions);
-   
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
    return(true); // ≈сли удачно открыли позицию
   }
@@ -530,8 +528,8 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  if (pos.ClosePosition())
  {
   _positionsHistory.Add(_openPositions.Detach(i)); //добавл€ем позицию в историю и удал€ем из массива открытых позиций
-  SavePositionArray(CreateFilename(FILENAME_HISTORY),_positionsHistory); 
-  SavePositionArray(CreateFilename(FILENAME_RESCUE),_openPositions);   
+  SavePositionArray(historyDataFileName,_positionsHistory); 
+  SavePositionArray(rescueDataFileName,_openPositions);   
   log_file.Write(LOG_DEBUG, StringFormat("%s ”далена позици€ [%d]", MakeFunctionPrefix(__FUNCTION__), i));
   return(true);
  }
@@ -558,7 +556,7 @@ bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s ”далили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
   _positionsHistory.Add(_positionsToReProcessing.Detach(i));
-  SavePositionArray(CreateFilename(FILENAME_HISTORY),_positionsHistory);  
+  SavePositionArray(historyDataFileName,_positionsHistory);  
   return(true);
  }
  return(false);
@@ -640,7 +638,6 @@ string CTradeManager::CreateFilename (ENUM_FILENAME filename)
 //+----------------------------------------------------
 //  —охранение в файл массива позиций
 //+----------------------------------------------------
-
 bool CTradeManager::SavePositionArray(string file_url,CPositionArray *array)
  {
  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
@@ -657,7 +654,6 @@ bool CTradeManager::SavePositionArray(string file_url,CPositionArray *array)
 //+----------------------------------------------------
 //  «агрузка из файла массива позиций                 
 //+----------------------------------------------------
-
 bool CTradeManager::LoadPositionsFromFile(string file_url,CPositionArray *array)
  {
 if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
@@ -706,7 +702,9 @@ CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime to
  }
  return resultArray;
 } 
- 
+
+//+----------------------------------------------------
+//+----------------------------------------------------
 long CTradeManager::GetHistoryDepth() //возвращает грубину истории
 {
  return _positionsHistory.Total();
