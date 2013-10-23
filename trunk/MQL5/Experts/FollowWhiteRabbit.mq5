@@ -16,13 +16,11 @@ enum USE_PENDING_ORDERS //режим вычисления priceDifference
 //+------------------------------------------------------------------+
 //| Expert includes                                                  |
 //+------------------------------------------------------------------+
-//#include <Trade\Trade.mqh> //подключаем библиотеку для совершения торговых операций
 #include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
 #include <CompareDoubles.mqh>
 #include <CIsNewBar.mqh>
 #include <TradeManager\TradeManager.mqh>
 #include <TradeManager\ReplayPosition.mqh>  
-//#include <Graph\Graph.mqh>
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
@@ -38,6 +36,9 @@ input int trailingStop = 150;
 input int trailingStep = 5;
 input USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;           //Тип отложенного ордера                    
 input int priceDifference = 50;                       // Price Difference
+input bool replayPositions = true;
+input int percentATRforReadyToReplay = 10;
+input int percentATRforTrailing = 50;
 
 string symbol;                                       //переменная для хранения символа
 datetime history_start;
@@ -75,7 +76,7 @@ int OnInit()
     break;
    }
    
-   rp = new ReplayPosition(symbol, timeframe);     
+   rp = new ReplayPosition(symbol, timeframe, percentATRforReadyToReplay, percentATRforTrailing);     
    //устанавливаем индексацию для массивов ХХХ_buf
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);

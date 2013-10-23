@@ -21,12 +21,13 @@ class ReplayPosition
   CPositionArray aPositionsToReplay;         // массив убыточных позиций на отыгрыш
   CArrayLong aReplayingPositionsDT;  // массив позиций дл€ отыгрыша убыточных позиций
   
-  int ATR_handle;
+  int ATR_handle, errATR;
   double ATR_buf[];
+  double _ATRforReplay, _ATRforTrailing;
   
   datetime prevDate;  // дата последнего получени€ истории
  public: 
-  void ReplayPosition(string symbol, ENUM_TIMEFRAMES period);
+  void ReplayPosition(string symbol, ENUM_TIMEFRAMES period, int ATRforReplay, int ATRforTrailing);
   void ~ReplayPosition();
   
   void OnTrade();
@@ -36,7 +37,8 @@ class ReplayPosition
 //+------------------------------------------------------------------+
 //|  онструктор                                                      |
 //+------------------------------------------------------------------+
-void ReplayPosition::ReplayPosition(string symbol, ENUM_TIMEFRAMES period)
+void ReplayPosition::ReplayPosition(string symbol, ENUM_TIMEFRAMES period, int ATRforReplay, int ATRforTrailing)
+                    : _ATRforReplay(ATRforReplay/100), _ATRforTrailing(ATRforTrailing/100)
 {
  ATR_handle = iATR(symbol, period, 100);
  if(ATR_handle == INVALID_HANDLE)                                  //провер€ем наличие хендла индикатора
@@ -52,8 +54,12 @@ void ReplayPosition::~ReplayPosition(void)
 {
 }
 
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
 void ReplayPosition::OnTrade()
 {
+ Print("total=", aPositionsToReplay.Total());
  ctm.OnTrade();
  CPositionArray *array;
  CPosition *posFromHistory, *posToReplay;
@@ -93,6 +99,7 @@ void ReplayPosition::OnTrade()
 //+------------------------------------------------------------------+
 void ReplayPosition::setArrayToReplay(CPositionArray *array)
 {
+ Print("«аполн€ем массив на отыгрыш total=", array.Total());
  int total, size;
  int n = array.Total();
  CPosition *pos;
@@ -121,6 +128,13 @@ void ReplayPosition::CustomPosition()
  int sl, tp;
  CPosition *pos;                                 //указатель на позицию 
 
+ errATR = CopyBuffer(ATR_handle, 0, 1, 1, ATR_buf);
+ if(errATR < 0)
+ {
+  Alert("Ќе удалось скопировать данные из индикаторного буфера"); 
+  return; 
+ }
+
  for (index = total - 1; index >= 0; index--)    //пробегаем по массиву позиций
  {
   pos = aPositionsToReplay.At(index);
@@ -143,7 +157,7 @@ void ReplayPosition::CustomPosition()
   if (pos.getPositionStatus() == POSITION_STATUS_MUST_BE_REPLAYED)  //если позици€ ожидает перевала за рубеж в Loss
   {
    //если цена перевалила за Loss
-   if (direction*(closePrice - curPrice) > profit || true)
+   if (direction*(closePrice - curPrice) > profit || direction*(closePrice - curPrice) > ATR_buf[0]*_ATRforReplay)
    {
     PrintFormat("ѕозици€ %d переведена в режим готовности к отыгрышу, type=%s, direction=%d, profit=%.05f, close=%.05f, current=%.05f"
                 , index, GetNameOP(pos.getType()), direction, profit, closePrice, curPrice);
@@ -155,15 +169,13 @@ void ReplayPosition::CustomPosition()
    if ((pos.getPositionStatus() == POSITION_STATUS_READY_TO_REPLAY)
       && (direction*(curPrice - closePrice) >= 0))//если позици€ готова к отыгрышу и цена перевалила за зону цены закрыти€ позиции
    {
-    tp = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL),
-                 NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));
-    sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL),
-                 NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)));   
+    tp = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL), (profit/_Point));
+    sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL), (profit/_Point));
+    int trailParam = ATR_buf[0]*_ATRforTrailing/_Point;
+    ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, trailParam, trailParam, trailParam); //открываем позицию
     PrintFormat("ќткрыли позицию дл€ отыгрыша profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
-    ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, 0, 0, 0); //открываем позицию
     pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
     aReplayingPositionsDT.Update(index, TimeCurrent());
-    //aPositionsToReplay.Delete(index); //и удал€ем еЄ из массива  
    }      
   }
  }
