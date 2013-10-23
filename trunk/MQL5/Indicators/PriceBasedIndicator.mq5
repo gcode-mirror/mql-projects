@@ -49,9 +49,9 @@ double ExtDownArrowBuffer[];
 //+----------------------------------------------+
 //| Входные параметры индикатора                 |
 //+----------------------------------------------+
-input int historyDepth = 40; // глубина истории для расчета
-input int bars=30;           // сколько свечей показывать
-input bool messages=false;   // вывод сообщений в лог "Эксперты"
+//input int historyDepth = 40; // глубина истории для расчета
+input int bars = 30;           // сколько свечей показывать
+input bool messages = false;   // вывод сообщений в лог "Эксперты"
 
 //+----------------------------------------------+
 //| Глобальные переменные индикатора             |
@@ -73,8 +73,8 @@ int OnInit()
   symbol = Symbol();
   current_timeframe = Period();
   digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-  trend = new CColoredTrend(symbol, current_timeframe, bars, historyDepth);
-  topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), bars, historyDepth);
+  //trend = new CColoredTrend(symbol, current_timeframe, bars);
+  //topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), bars);
   
 //---- превращение динамических массивов в индикаторные буферы
    SetIndexBuffer(0, ExtOpenBuffer, INDICATOR_DATA);
@@ -130,17 +130,16 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
                 const long &volume[],
                 const int &spread[])
   {
-  
- 
+/*  
+   static int buffer_index = 0;
 //---- проверка количества баров на достаточность для расчета
-   if(rates_total < (bars + historyDepth) ) return(0);
+   if(rates_total < bars) return(0);
    
 //---- объявление целочисленных переменных
    int first, bar;
    if(prev_calculated > rates_total || prev_calculated <= 0) // проверка на первый старт расчета индикатора
    {
-    first = rates_total - bars - historyDepth;           // стартовый номер для расчета всех баров
-    startBars =  rates_total - 1;
+    first = rates_total - bars;           // стартовый номер для расчета всех баров
    }
    else first = prev_calculated - 1;        // стартовый номер для расчета новых баров
    
@@ -148,16 +147,16 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
    if(isNewBar.isNewBar(symbol, GetBottomTimeframe(current_timeframe)))
    {
   //  Print("init trend, rates_total = ", rates_total);
-    
+    buffer_index++;
     //--- копируем цены в буферы
     for(int bar = first; bar < rates_total - 1  && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
     {
    //--- вычислим соответствующий индекс для графических буферов
      PrintFormat("bar=%d, startBars=%d",bar,startBars);
-     int buffer_index = bar - startBars + bars + historyDepth;
-     topTrend.CountMoveType(buffer_index);
-     //trend.CountMoveType(bars, historyDepth, topTrend.GetMoveType(topTFBarsDepth - 1));
-     trend.CountMoveType(buffer_index, topTrend.GetMoveType(buffer_index));
+     //int buffer_index = bar - startBars + bars + historyDepth;
+ 
+     //topTrend.CountMoveType(buffer_index);
+     //trend.CountMoveType(buffer_index, topTrend.GetMoveType(buffer_index));
      
      //--- записываем цены в буферы
      ExtOpenBuffer[bar] = open[bar];
@@ -166,14 +165,14 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
      ExtCloseBuffer[bar] = close[bar];
      
    //--- зададим цвет свечи
-     ExtColorsBuffer[bar] = trend.GetMoveType(buffer_index); 
+    ExtColorsBuffer[bar] = clrRed;//trend.GetMoveType(buffer_index); 
      //PrintFormat("bar = %d, buf_index = %d, MoveType = %s", bar, buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
      //PrintFormat("open_buf = %.05f, high_buf = %.05f, low_buf = %.05f, close_buf = %.05f, open = %.05f, high = %.05f, low = %.05f, close = %.05f"
      //           , ExtOpenBuffer[bar], ExtHighBuffer[bar], ExtLowBuffer[bar], ExtCloseBuffer[bar]
      //           , open[bar], high[bar], low[bar], close[bar]);
            
    //--- зададим код символа из шрифта Wingdings для отрисовки в PLOT_ARROW
-     if (trend.GetExtremumDirection(buffer_index) > 0)
+   /*  if (trend.GetExtremumDirection(buffer_index) > 0)
      {
       ExtUpArrowBuffer[bar] = trend.GetExtremum(buffer_index);
       //Print("Максимум");
@@ -192,7 +191,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
       ExtDownArrowBuffer[bar] = 0;
      }
     }
-   }
+   }*/
 //--- return value of prev_calculated for next call
    return(rates_total);
   }

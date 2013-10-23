@@ -11,6 +11,7 @@
 //#include <ErrorDescription.mqh> 
 #define DAY  86400        //60*60*24
 #define MgB  1048576      //1024*1024
+
 //-----------------Global-variables----------------------------------+
 enum ENUM_OUTPUT
 {
@@ -27,13 +28,14 @@ enum ENUM_LOGLEVEL     //уровень логирования
  LOG_MAIN = 1,        //ключевая информация
  LOG_DEBUG = 2       //информация для дебага
 };
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 class CLog
 {
  private:
-  ENUM_OUTPUT   _output_type;    // тип вывода информации
+  ENUM_OUTPUT _output_type;    // тип вывода информации
   ENUM_LOGLEVEL _level;          // уровень логирования
   int _limit_size;               // предельный размер log-файла в Mb
   string _catalog_name;          // имя каталога для хранения логов
@@ -52,19 +54,24 @@ class CLog
   string LogLevelString();                                 //возвращает строку с именем перменной из ENUM_LOG_LEVEL
   string PeriodString();                                   //возвращает строку с названием периода
   datetime LogFileDate(string strLogFilename);             //берет дату из названия log-файла
-  bool CreateLogFile(datetime dt);                                    //создает log-файл
-  void DeleteLogFile();                                    //удаляет log-файлы 
+  bool CreateLogFile(datetime dt);                         //создает log-файл
+  void DeleteLogFile();                                    //удаляет log-файлы
+  void SetOutputType (ENUM_OUTPUT type) { _output_type = type; }
+  void SetLogLevel (ENUM_LOGLEVEL level) { _level = level; }
+  void SetLimitFileSize (int size) { _limit_size = size; }
+  void SetCatalogName (string name) { _catalog_name = name; }
+  void SetExpirationTime (int days) { _expiration_time = days; } 
 };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 CLog::CLog()
 {
- _output_type = CONF_OUT_TYPE;
- _level = CONF_LOG_LEVEL;         
- _limit_size = CONF_LIMIT_SIZE;          
- _catalog_name = CONF_CATALOG_NAME;   
- _expiration_time = CONF_EXPIRATION_TIME;
+ _output_type = OUT_FILE;
+ _level = LOG_DEBUG;         
+ _limit_size = 50;          
+ _catalog_name = "Log";   
+ _expiration_time = 365;
  CreateLogFile(TimeCurrent());
 }
 //+------------------------------------------------------------------+
@@ -93,7 +100,7 @@ bool CLog::Check()
  else
  {
   int fhandle = FileOpen(_current_filename, FILE_WRITE|FILE_READ|FILE_TXT);
-  if(FileSize(fhandle) > CONF_LIMIT_SIZE*MgB)
+  if(FileSize(fhandle) > _limit_size*MgB)
   {
    StringConcatenate(_current_filename, "_", n);  // заменить когда n> 1  не добавлять а заменять номер n
    n++; 

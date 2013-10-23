@@ -100,7 +100,7 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    ctm.OnTick();
-   rp.CustomPosition();
+   //rp.CustomPosition();
    //переменные для хранения результатов работы с ценовым графиком
    int errLow = 0;                                                   
    int errHigh = 0;                                                   
@@ -157,6 +157,7 @@ void OnTick()
      //PrintFormat("(open-close) = %.05f, vol = %.05f, (1+profitpercent) = %.02f, takeprofit = %.01f"
      //           , MathAbs(open_buf[0] - close_buf[0]), vol, (1+profitPercent), takeProfit);
      ctm.OpenUniquePosition(symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep, priceDifference);
+     //ctm.OpenMultiPosition(symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep, priceDifference);
     }
    }
    
@@ -171,7 +172,7 @@ void OnTick()
 void OnTrade()
   {
    ctm.OnTrade();
-   rp.OnTrade();
+  // rp.OnTrade();
    rp.setArrayToReplay(ctm.GetPositionHistory(history_start));
    history_start = TimeCurrent();
   }
