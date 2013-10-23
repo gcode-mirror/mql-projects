@@ -475,6 +475,7 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
    }
   }
  }
+ Alert("END REMOVESTOPLOSS");
  return (sl_status);
 }
 
@@ -503,7 +504,7 @@ ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
 //+------------------------------------------------------------------+
 bool CPosition::ClosePosition()
 {
- //Alert("ПОЗИЦИЯ ЗАКРЫТА");
+ Alert("ПОЗИЦИЯ ЗАКРЫТА");
  int i = 0;
  double tmp_profit;   //переменная для хранения профита позиции
  ResetLastError();
@@ -549,6 +550,7 @@ bool CPosition::ClosePosition()
   
   if (sl_status == STOPLEVEL_STATUS_PLACED)
   {
+   Alert("REMOVE STOPLOSS");
    sl_status = RemoveStopLoss();
   }
  }

@@ -27,7 +27,6 @@ class CColoredTrend
 protected:
   string _symbol;
   ENUM_TIMEFRAMES _period;
-  int _depth;
   ENUM_MOVE_TYPE enumMoveType[];
   SExtremum aExtremums[];
   int digits;
@@ -37,7 +36,7 @@ protected:
   double difToTrend;     // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
   int ATR_handle;
   double ATR_buf[];
-  int _count;            // Количество баров для расчета индикатора 
+  int _depth;            // Количество баров для расчета индикатора 
   int _shift;            // Количество баров в истории
   
   int FillTimeSeries(MqlRates &_rates[], int count, int start_pos, ENUM_TF tfType = CURRENT_TF);
@@ -46,7 +45,7 @@ protected:
   bool isLastBarHuge(MqlRates &rates[]);
   bool isNewTrend(double price);
 public:
-  void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count, int shift = 3);
+  void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count);
   SExtremum isExtremum(double vol1, double vol2, double vol3, int bar = 0);
   void CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
   ENUM_MOVE_TYPE GetMoveType(int i);
@@ -58,11 +57,12 @@ public:
 //+-----------------------------------------+
 //| Конструктор                             |
 //+-----------------------------------------+
-void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count, int shift = 3) : _count(count), _shift(shift)
+void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth) : _depth(depth), _shift(40)
 {
  ArraySetAsSeries(enumMoveType, true);
- ArraySetAsSeries(ATR_buf, true);
- if (shift < 3) shift = 3;
+ ArraySetAsSeries(  aExtremums, true);
+ ArraySetAsSeries(     ATR_buf, true);
+ 
  _symbol = symbol;
  _period = period;
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
@@ -70,23 +70,19 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int cou
  
  //подключаем индикатор и получаем его хендл 
  ATR_handle = iATR(_symbol, _period, 100);
- if(ATR_handle == INVALID_HANDLE)                      //проверяем наличие хендла индикатора
- {
-  Print("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
- }
  // Получаем данные буфера в массив
- FillATRBuf(shift, count - 1);
- ArrayResize(aExtremums, shift);
+ FillATRBuf(_depth + _shift);
+ ArrayResize(aExtremums, _depth + _shift);
  // Заполним массив с информацией о таймсериях
  MqlRates rates[];
- int rates_total = FillTimeSeries(rates, shift, count - 1); // получим размер заполненного массива 
- //Print("rates_total= ", rates_total);
+ ArraySetAsSeries(rates, true);
+ FillTimeSeries(rates, _depth + _shift); // получим размер заполненного массива 
  
- for(int bar = 1; bar < shift - 1 && !IsStopped(); bar++) // вычисляем экстремумы со сдвигом в историю
+ for(int bar = (_depth + _shift - 2); bar >= _depth && !IsStopped(); bar--) // вычисляем экстремумы со сдвигом в историю
  { 
   difToNewExtremum = ATR_buf[bar] / 2;
   //Print("Constructor: ATR/2 = ", difToNewExtremum);
-  aExtremums[bar] =  isExtremum(rates[bar - 1].close, rates[bar].close, rates[bar + 1].close);
+  aExtremums[bar] =  isExtremum(rates[bar + 1].close, rates[bar].close, rates[bar - 1].close);
   if (aExtremums[bar].direction != 0)
   {
    if (aExtremums[bar].direction == aExtremums[num0].direction) // если новый экстремум в том же напрвлении, что старый
@@ -112,9 +108,9 @@ void CColoredTrend::CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_
  // Заполним массив с информацией о таймсериях
  MqlRates rates[];
  MqlRates bottomTF_rates[];
- int rates_total = FillTimeSeries(rates, _count + _shift); // получим размер заполненного массива
- FillTimeSeries(bottomTF_rates, _count + _shift, 0, BOTTOM_TF);
- FillATRBuf(_count + _shift);                              // заполним массив данными индикатора ATR
+ int rates_total = FillTimeSeries(rates, _depth + _shift); // получим размер заполненного массива
+ FillTimeSeries(bottomTF_rates, _depth + _shift, 0, BOTTOM_TF);
+ FillATRBuf(_depth + _shift);                              // заполним массив данными индикатора ATR
  // Выделим память под массивы цветов и экстремумов
  ArrayResize(enumMoveType, rates_total, rates_total);
  ArrayResize(aExtremums, rates_total, rates_total);
@@ -313,6 +309,10 @@ int CColoredTrend::FillTimeSeries(MqlRates &_rates[], int count, int start_pos =
 //+----------------------------------------------------+
 int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 {
+ if(ATR_handle == INVALID_HANDLE)                      //проверяем наличие хендла индикатора
+ {
+  Print("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
+ }
  //--- счетчик попыток
    int attempts = 0;
 //--- сколько скопировано
@@ -359,7 +359,7 @@ bool CColoredTrend::isCorrectionEnds(MqlRates &cur_rates[], MqlRates &bot_rates[
 bool CColoredTrend::isLastBarHuge(MqlRates &rates[])
 {
  double sum;
- for(int i = _shift; i < _count + _shift - 1; i++)
+ for(int i = _shift; i < _depth + _shift - 1; i++)
  {
   sum = sum + rates[i].high - rates[i].low;  
  }
