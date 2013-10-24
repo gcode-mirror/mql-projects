@@ -333,6 +333,7 @@ bool CPositionArray::WriteToFile(int handle)
  if(handle != INVALID_HANDLE)
  {
   int size = Total();
+
   CPosition *pos;
   for(int i = size-1; i >= 0; i--)
   {
