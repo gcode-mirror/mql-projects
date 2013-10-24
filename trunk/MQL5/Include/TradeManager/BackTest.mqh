@@ -7,7 +7,7 @@
 #property link      "http://www.mql5.com"
 #include <TradeManager/TradeManagerEnums.mqh>
 #include <TradeManager/PositionArray.mqh>
-#define N_COLUMNS 17
+
 //+------------------------------------------------------------------+
 //| Класс для работы с бэктестом                                     |
 //+------------------------------------------------------------------+
@@ -15,41 +15,25 @@
 class BackTest
  {
   private:
-   CPositionArray _positionsHistory;        ///массив истории виртуальных позиций
+   CPositionArray *_positionsHistory;        ///массив истории виртуальных позиций
+
   public:
-   //поля для доступа к элементам
-   uint nTrades;                            //количество трейдов
-   uint nDeals;                             //количество сделок
-   uint nWinTrades;            //количество выйгрышных трейдов
-   uint nLoseTrades;           //количество убыточных трейдов
-   double shortTradeWinPer;    //процент выйгрышных коротких сделок (от выйгрывших)
-   double longTradeWinPer;     //процент выйгрышных длинных сделок (от выйгрывших)
-   double profitTradesPer;     //процент прибыльный трейдов (от всех)
-   double loseTradesPer;       //процент проигравших трейдов (от всех)
-   double maxWinTrade;         //самый большой выйгравший трейд
-   double maxLoseTrade;        //самый большой убыточный трейд
-   double medWinTrade;         //средний выйгрышный трейд
-   double medLoseTrade;        //средний сливший трейд
-   uint maxWinTradesN;         //максимальное число непрерывных выйгрышей
-   uint maxLoseTradesN;        //максимальное число непрерывных проигрышей  
-   double maxWinTradeSum;      //максимальная непрерывная прибыль
-   double maxLoseTradeSum;     //максимальный непрерывный убыток
-  public:
+   //конструктор
+   BackTest() { _positionsHistory = new CPositionArray(); };                             //конструктор класса
+  ~BackTest() { delete _positionsHistory; };
    //методы бэктеста
    //методы вычисления количест трейдов в истории по символу
-   uint GetNTrades(string symbol);     //вычисляет количество трейдов по символу
-   uint GetNWinTrades(string symbol);  //вычисляет количество выйгрышных трейдов по символу
-   uint GetNLoseTrades(string symbol); //вычисляет количество убыточных трейдов по символу
+   uint   GetNTrades(string symbol);     //вычисляет количество трейдов по символу
+   uint   GetNWinTrades(string symbol);  //вычисляет количество выйгрышных трейдов по символу
+   uint   GetNLoseTrades(string symbol); //вычисляет количество убыточных трейдов по символу
    //знаки позиций по прибыли
   private:
-   int  GetSPosition(uint index);  //вычисляет знак позиции 
+   int    GetSPosition(uint index);  //вычисляет знак позиции 
   public:
-   int  GetSignFirstPosition(string symbol); //вычисляет знак первой позиции
-   int  GetSignPosition(string symbol,uint index);      //вычисляет знак позиции по индексу 
-   //методы вычисления процентных соотношений
+   int    GetSignLastPosition(string symbol);  //возвращает знак последней позиции 
+   int    GetSignPosition(string symbol,uint index);      //вычисляет знак позиции по индексу 
+   //метод вычисления процентных соотношений
    double GetIntegerPercent(uint value1,uint value2);  //метод вычисления процентного соотношения value1 по отношению  к value2
-   double GetWinTradesPercent(string symbol,bool math=true);  //вычисляет процент выйгрышных трейдов к общему числу
-   double GetLoseTradesPercent(string symbol,bool math=true); //вычисляет процент убыточных трейдов к общему числу 
    //методы вычисления максимальных и средних трейдов
    double GetMaxWinTrade(string symbol);  //вычисляет самый большой выйгрышный трейд по символу
    double GetMaxLoseTrade(string symbol); //вычисляет самый большой убыточный трейд по символу
@@ -66,7 +50,10 @@ class BackTest
    double GetRelDrawdown (string symbol);      //вычисляет относительную просадку баланса
    double GetMaxDrawdown (string symbol);      //вычисляет максимальную просадку баланса
    //прочие системные методы
-   bool LoadHistoryFromFile(string historyUrl);   //загружает историю позиции из файла
+   bool LoadHistoryFromFile(string file_url);   //загружает историю позиции из файла
+   void GetHistoryExtra(CPositionArray *array); //получает историю позиций извне
+   bool SaveBackTestToFile (string file_url);   //сохраняет результаты бэктеста
+   
  };
 //+------------------------------------------------------------------+
 //| Вычисляет количество трейдов по символу                          |
@@ -75,8 +62,8 @@ class BackTest
   {
    uint index;
    uint total = _positionsHistory.Total();  //размер массива
-   uint count=0; //количество позиций с данным символом
    CPosition *pos;
+   uint count=0; //количество позиций с данным символом   
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию
@@ -113,14 +100,14 @@ class BackTest
   {
    uint index;
    uint total = _positionsHistory.Total();  //размер массива
-   uint count=0; //количество позиций с данным символом
+   uint count = 0; //количество позиций с данным символом
    CPosition * pos;
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию
      if (pos.getSymbol() == symbol && pos.getPosProfit() < 0) //если символ позиции совпадает с переданным и профит отрицательный
       {
-       count++; //увеличиваем количество посчитанных позиций на единицу
+      count++; //увеличиваем количество посчитанных позиций на единицу
       }
     }
     return count;
@@ -165,7 +152,7 @@ class BackTest
    CPosition * pos;
    uint index = 0;
    uint pos_index=0;
-   uint max = _positionsHistory.Total();
+   uint total = _positionsHistory.Total();
    while (index<total)
     {
      pos = _positionsHistory.Position(index);
@@ -173,7 +160,7 @@ class BackTest
       {
       pos_index++;
       }
-     index--;
+     index++;
     }
    return 0;
   }
@@ -185,28 +172,6 @@ class BackTest
   {
    return 1.0*value1/value2;
   }
-
-//+------------------------------------------------------------------+
-//| Вычисляет процентное соотношение выйгрышных трейдов к общему     |
-//+------------------------------------------------------------------+
-
- double BackTest::GetWinTradesPercent(string symbol,bool math=true)
-  {
-   if (math == true)
-    return GetIntegerPercent(GetNWinTrades(symbol),GetNTrades(symbol));
-   return GetIntegerPercent(nWinTrades,nTrades);
-  }  
-  
-//+------------------------------------------------------------------+
-//| Вычисляет процентное соотношение убыточных трейдов к общему      |
-//+------------------------------------------------------------------+
-
- double BackTest::GetLoseTradesPercent(string symbol,bool math=true)
-  {
-   if (math == true)
-    return GetIntegerPercent(GetNLoseTrades(symbol),GetNTrades(symbol));
-   return GetIntegerPercent(nLoseTrades,nTrades);
-  }    
 
 //+------------------------------------------------------------------+
 //| Вычисляет самый большой выйгрышный трейд по символу              |
@@ -485,33 +450,113 @@ double BackTest::GetMaxDrawdown (string symbol) //(сейчас для теста вместо балан
    return MaxDrawdown; //возвращаем максимальную просадку по балансу
  }
   
+//+-------------------------------------------------------------------+
+//| Загружает историю позиций из файла                                |
+//+-------------------------------------------------------------------+   
   
- bool BackTest::LoadHistoryFromFile(string historyUrl)   //загружает историю позиции из файла
+bool BackTest::LoadHistoryFromFile(string file_url)
  {
-  int file_handle;   //файловый хэндл
-  int ind;
-  bool read_flag;  //флаг считывания данных из файла
-  CPosition *pos;  
-
-     if (!FileIsExist(historyUrl,FILE_COMMON) ) //проверка существования файла истории 
-      return false;   
-   file_handle = FileOpen(historyUrl, FILE_READ|FILE_COMMON|FILE_CSV|FILE_ANSI, ";");
-   if (file_handle == INVALID_HANDLE) //не удалось открыть файл
-    return false;
-   _positionsHistory.Clear(); //очищаем массив истории позиций
-   for(ind=0;ind<N_COLUMNS;ind++) //N_COLUMNS - количество столбцов 
-    {
-     FileReadString(file_handle);  //пропуск первой строки таблицы
-    } 
-   read_flag = true;      //как минимум одну строку мы должны попытаться считать
-
-   while (read_flag)
-    {
-     pos = new CPosition(0,"",OP_UNKNOWN,0);    //выделяем память под новый элемент 
-     read_flag = pos.ReadFromFile(file_handle); //считываем строку для одной позиции
-     if (read_flag)                             //если удалось считать строку 
-      _positionsHistory.Add(pos);               //то добавляем элемент в массив историй 
-    }   
-   FileClose(file_handle);  //закрывает файл истории позиций 
-  return true;
+if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
+ {
+  FileDelete(file_url);
+  return(true);
  }
+ int file_handle;   //файловый хэндл  
+ if (!FileIsExist(file_url, FILE_COMMON) ) //проверка существования файла истории 
+ {
+  PrintFormat("%s File %s doesn't exist", MakeFunctionPrefix(__FUNCTION__),file_url);
+  return (false);
+ }  
+ file_handle = FileOpen(file_url, FILE_READ|FILE_COMMON|FILE_CSV|FILE_ANSI, ";");
+ if (file_handle == INVALID_HANDLE) //не удалось открыть файл
+ {
+  PrintFormat("%s error: %s opening %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(::GetLastError()), file_url);
+  return (false);
+ }
+ _positionsHistory.Clear();                   //очищаем массив
+ _positionsHistory.ReadFromFile(file_handle); //загружаем данные из файла 
+ FileClose(file_handle);          //закрывает файл  
+ return (true);
+ }  
+ 
+//+-------------------------------------------------------------------+
+//| Получает историю позиций извне                                    |
+//+-------------------------------------------------------------------+
+
+void BackTest::GetHistoryExtra(CPositionArray *array)
+ {
+  CPosition * pos;
+  _positionsHistory = array;
+  if (_positionsHistory.Total()) 
+   {
+  pos = array.At(0);
+  Alert("Прибыль позиции = ",DoubleToString(pos.getPosProfit()));  
+   }
+ } 
+ 
+//+-------------------------------------------------------------------+
+//| Сохраняет результаты бэктеста в файл                              |
+//+-------------------------------------------------------------------+
+
+bool BackTest::SaveBackTestToFile(string file_url)
+ {
+uint   NTrades;      //количество позиций
+uint   NWinTrades;   //количество выйгрышных сделок
+uint   NLoseTrades;  //количество убыточных сделок
+int    SignLastPosition; //знак последней позиции
+int    SignPosition;     //знак позиции по индексу
+double WinTradesPercent;  //процент выйгрышных позиций к общему числу
+double LoseTradesPercent; //процент убыточных позиций к общему числу
+double MaxWinTrade;  //самый большой выйгрышный трейд по символу
+double MaxLoseTrade; //самый большой убыточный трейд по символу
+double MedWinTrade;  //средний выйгрышный трейд
+double MedLoseTrade; //средний убыточный трейд
+uint   MaxInARowWinTrades; //вычисляет максимальное 
+uint   MaxInARowLoseTrades;
+double MaxInARowProfit;
+double MaxInARowLose;
+double MaxDrawdown;
+ 
+NTrades             = GetNTrades(_Symbol);      //количество позиций
+//NWinTrades          = GetNWinTrades(_Symbol);   //количество выйгрышных сделок
+//NLoseTrades         = GetNLoseTrades(_Symbol);  //количество убыточных сделок
+//SignLastPosition    = GetSignLastPosition(_Symbol); //знак последней позиции
+//SignPosition        = GetSignPosition(_Symbol,2);     //знак позиции по индексу
+//WinTradesPercent    = GetIntegerPercent(NWinTrades,NTrades);  //процент выйгрышных позиций к общему числу
+//LoseTradesPercent   = GetIntegerPercent(NLoseTrades,NTrades); //процент убыточных позиций к общему числу
+//MaxWinTrade         = GetMaxWinTrade(_Symbol);  //самый большой выйгрышный трейд по символу
+//MaxLoseTrade        = GetMaxLoseTrade(_Symbol); //самый большой убыточный трейд по символу
+//MedWinTrade         = GetMedWinTrade(_Symbol);  //средний выйгрышный трейд
+//MedLoseTrade        = GetMedLoseTrade(_Symbol); //средний убыточный трейд
+//MaxInARowWinTrades  = GetMaxInARowWinTrades(_Symbol); //вычисляет максимальное 
+//MaxInARowLoseTrades = GetMaxInARowLoseTrades(_Symbol);
+//MaxInARowProfit     = GetMaxinARowProfit(_Symbol);
+//MaxInARowLose       = GetMaxinARowLose(_Symbol);
+//MaxDrawdown         = GetMaxDrawdown(_Symbol);
+ 
+ int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
+ if(file_handle == INVALID_HANDLE)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), file_url));
+  return(false);
+ }
+ FileWrite(file_handle,"количество позиций = "+IntegerToString(NTrades));
+ FileWrite(file_handle,"количество выйгрышных позиций = "+IntegerToString(NWinTrades));
+ FileWrite(file_handle,"количество убыточных позиций = "+IntegerToString(NLoseTrades));
+ FileWrite(file_handle,"знак последней позиции = "+IntegerToString(SignLastPosition));
+ FileWrite(file_handle,"знак второй позиции = "+IntegerToString(SignPosition ));
+ FileWrite(file_handle,"процент выйгрышных позиций = "+DoubleToString(WinTradesPercent));
+ FileWrite(file_handle,"процент убыточных позиций = "+DoubleToString(LoseTradesPercent));
+ FileWrite(file_handle,"максимальный выйгрышный трейд = "    +DoubleToString(MaxWinTrade ));
+ FileWrite(file_handle,"максимальный убыточный трейд = "     +DoubleToString(MaxLoseTrade));  
+ FileWrite(file_handle,"максимальный убыточный трейд = "     +DoubleToString(MaxLoseTrade));  
+ FileWrite(file_handle,"максимум подряд идущих выйгрышных = "+IntegerToString(MaxInARowWinTrades));  
+ FileWrite(file_handle,"максимум подряд идущих выйгрышных = "+IntegerToString(MaxInARowLoseTrades));  
+ FileWrite(file_handle,"максимумальный непрерывный профит = " +DoubleToString(MaxInARowProfit));   
+ FileWrite(file_handle,"максимальный непрерывный убыток = " +DoubleToString(MaxInARowLose));    
+ FileWrite(file_handle,"Максимальная просадка по балансу = " +DoubleToString(MaxDrawdown));    
+     
+ FileClose(file_handle);
+  return(true);  
+ }
+ 
