@@ -640,6 +640,7 @@ string CTradeManager::CreateFilename (ENUM_FILENAME filename)
 //+----------------------------------------------------
 bool CTradeManager::SavePositionArray(string file_url,CPositionArray *array)
  {
+ Comment("Название = ",rescueDataFileName);
  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
  if(file_handle == INVALID_HANDLE)
  {
