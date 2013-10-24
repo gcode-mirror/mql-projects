@@ -26,7 +26,7 @@ private:
   long MakeMagic(string strSymbol = "");
   string CreateFilename(ENUM_FILENAME filename);
   
-  bool SavePositionArray(string file_url,CPositionArray *array);
+ public: bool SavePositionArray(string file_url,CPositionArray *array);
   bool LoadPositionsFromFile(string file_url,CPositionArray *array);
   
 protected:
@@ -261,7 +261,7 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
   log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
                                          , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
   _openPositions.Add(pos);  // добавляем открутую позицию в массив открытых позиций
-  //SaveSituationToFile();
+
   SavePositionArray(rescueDataFileName ,_openPositions);  
   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
   return(true); // Если удачно открыли позицию
@@ -308,7 +308,7 @@ void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
 //+------------------------------------------------------------------+
 void CTradeManager::OnTrade(datetime history_start=0)
 {
- //PrintFormat("total=%d",_openPositions.Total());
+ //PrintFormat("total=%d",_positionsHistory.Total());
 }
 
 //+------------------------------------------------------------------+
@@ -349,7 +349,7 @@ void CTradeManager::OnTick()
     pos.setPositionStatus(POSITION_STATUS_OPEN);
   
     _openPositions.Add(_positionsToReProcessing.Detach(i));    
-   SavePositionArray(rescueDataFileName,_openPositions);    
+    SavePositionArray(rescueDataFileName,_openPositions);    
    }
   }
  } 
@@ -640,11 +640,10 @@ string CTradeManager::CreateFilename (ENUM_FILENAME filename)
 //+----------------------------------------------------
 bool CTradeManager::SavePositionArray(string file_url,CPositionArray *array)
  {
- Comment("Название = ",rescueDataFileName);
  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
  if(file_handle == INVALID_HANDLE)
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), rescueDataFileName));
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), file_url));
   return(false);
  }
  array.WriteToFile(file_handle);  //сохраняем массив в файл
