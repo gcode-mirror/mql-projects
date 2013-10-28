@@ -9,9 +9,10 @@
 #include "GraphConstants.mqh"
 #include "TestFunc.mqh"
 //подключение библиотек графических объектов
-#include "Objects\Button.mqh" //кнопка
+#include "Objects\Button.mqh"//кнопка
 #include "Objects\Input.mqh" //поле ввода
 #include "Objects\Label.mqh" //лейбл
+#include "Objects\List.mqh"  //список
 
 
 
