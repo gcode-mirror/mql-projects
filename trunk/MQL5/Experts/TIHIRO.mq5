@@ -6,37 +6,70 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
-#include <TIHIRO\CTihiro.mqh>
-
-input uint bars=50; //количество баров истории
-
-//буферы для хранения цен 
-
-double price_max[];   // массив максимумов цен  
-double price_min[];   // массив минимумов цен  
+#include <TIHIRO\CTihiro.mqh>           //класс CTihiro
+#include <Lib CisNewBar.mqh>            //для проверки формирования нового бара
+#include<TradeManager/TradeManager.mqh> //подключаем библиотеку TradeManager
 
 //+------------------------------------------------------------------+
 //| TIHIRO эксперт                                                   |
 //+------------------------------------------------------------------+
+//внешние, задаваемые пользователем параметры эксперта
+input uint     bars=50;          //количество баров истории
+input int      takeProfit=100;   //take profit
+input int      stopLoss=100;     //stop loss
+input double   orderVolume = 1;  //размер лота
+input ulong    magic = 111222;   //магическое число
+//буферы для хранения цен 
+double price_high[];      // массив высоких цен  
+double price_low[];       // массив низких цен  
+//символ
+string symbol=_Symbol;
+//объекты классов
+CTihiro       tihiro(bars); // объект класса CTihiro   
+CisNewBar     newCisBar;    // для проверки на новый бар
+CTradeManager ctm;          // объект класса TradeManager
+
+
 int OnInit()
   {
-   //1) пытаемся загрузить заданное количество баров истории
-   
+   //порядок как в таймсерии
+   ArraySetAsSeries(price_high, true);
+   ArraySetAsSeries(price_low, true);       
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
-//| Expert deinitialization function                                 |
+//| TIHITO деинициализация эксперта                                  |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-
-   
+  //очищаем динамические массивы
+  ArrayFree(price_high);
+  ArrayFree(price_low);
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   
+   short signal;
+   ctm.OnTick();
+   //если сформирован новый бар
+   if ( newCisBar.isNewBar() > 0 )
+    {
+     //загружаем буферы максимальных и минимальных цен баров (количество баров - bars)
+     if(CopyHigh(symbol, 0, 1, bars, price_high) <= 0 ||
+        CopyLow(symbol, 0, 1, bars, price_low) <= 0)
+       {
+        Print("Не удалось загрузить бары из истории");
+        return;
+       }
+     tihiro.OnNewBar(price_high,price_low);
+    }
+   //получаем сигнал 
+   signal = tihiro.OnTick(symbol); 
+   if (signal == BUY)
+    ctm.OpenUniquePosition(symbol,OP_BUY,orderVolume,stopLoss,takeProfit,0,0,0);
+   if (signal == SELL)
+    ctm.OpenUniquePosition(symbol,OP_SELL,orderVolume,stopLoss,takeProfit,0,0,0); 
   }
 
