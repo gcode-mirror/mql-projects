@@ -101,7 +101,8 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    ctm.OnTick();
-   rp.CustomPosition();
+   if (replayPositions)
+     rp.CustomPosition();
    //переменные для хранения результатов работы с ценовым графиком
    int errLow = 0;                                                   
    int errHigh = 0;                                                   
