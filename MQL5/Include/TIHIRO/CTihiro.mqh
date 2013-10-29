@@ -66,13 +66,13 @@ class CTihiro
 //+------------------------------------------------------------------+
 
 void CTihiro::GetTan() 
-//получает значение тангенса угла наклона линии трейда
+//получает значение тангенса угла наклона линии тренда
  {
   _tg =  (_extr_present.price-_extr_past.price)/(_extr_present.time - _extr_past.time);
  }
  
 void CTihiro::GetRange()
-//вычисляет расстояние от экстремума до линии трейда
+//вычисляет расстояние от экстремума до линии тренда
  {
   datetime L=_extr_present.time-_extr_past.time;  
   double H=_extr_present.price-_extr_past.price;
@@ -82,12 +82,12 @@ void CTihiro::GetRange()
 short CTihiro::TestPointLocate(datetime cur_time,double cur_price)
 //проверяет, выше или ниже линии трейда находится текущая точка
  {
-   double line_level=_extr_past.price+(cur_time-_extr_past.time)*_tg;  //значение  линии трейда в данной точке 
+   double line_level=_extr_past.price+(cur_time-_extr_past.time)*_tg;  //значение  линии тренда в данной точке 
    if (cur_price>line_level)
-    return 1;  //точка находится выше линии трейда
+    return 1;  //точка находится выше линии тренда
    if (cur_price<line_level)
-    return -1; //точка находится ниже линии трейда
-   return 0;   //точка находится на линии трейда
+    return -1; //точка находится ниже линии тренда
+   return 0;   //точка находится на линии тренда
  }
  
 short CTihiro::TestCrossTrendLine(string symbol)
@@ -95,6 +95,7 @@ short CTihiro::TestCrossTrendLine(string symbol)
  {
  datetime time;   //текущее время
  double   price;  //текущая цена
+  //если тренд восходящий 
  if (_tg > 0) 
    {
     //сохраняем текущее время
@@ -166,6 +167,9 @@ short CTihiro::TestReachRange(string symbol)
 void CTihiro::OnNewBar(double &price_high[],double &price_low[])
 //вычисляет все необходимые значения по массивам максимальных и минимальных цен баров
  {
+  //если режим ожидания пересечения цены с линией тренда
+  if (_mode==TM_WAIT_FOR_CROSS)
+  {
   //вычисляем экстремумы
   // ---- здесь будет вычисление экстремумов
   
@@ -176,6 +180,7 @@ void CTihiro::OnNewBar(double &price_high[],double &price_low[])
   GetTan();
   //вычисляем range
   GetRange();
+  }
  }
  
 short CTihiro::OnTick(string symbol)
