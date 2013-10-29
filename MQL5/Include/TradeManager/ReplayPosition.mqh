@@ -212,4 +212,5 @@ void ReplayPosition::CustomPosition()
    }      
   }
  }
+ ctm.DoTrailing();
 }
