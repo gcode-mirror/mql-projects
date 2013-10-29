@@ -101,7 +101,7 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    ctm.OnTick();
-   //rp.CustomPosition();
+   rp.CustomPosition();
    //переменные для хранения результатов работы с ценовым графиком
    int errLow = 0;                                                   
    int errHigh = 0;                                                   
@@ -173,7 +173,10 @@ void OnTick()
 void OnTrade()
   {
    ctm.OnTrade();
-  // rp.OnTrade();
-   rp.setArrayToReplay(ctm.GetPositionHistory(history_start));
-   history_start = TimeCurrent();
+   rp.OnTrade();
+   if (history_start != TimeCurrent())
+   {
+    rp.setArrayToReplay(ctm.GetPositionHistory(history_start));
+    history_start = TimeCurrent() + 1;
+   }
   }

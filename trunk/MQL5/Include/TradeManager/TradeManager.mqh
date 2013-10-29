@@ -26,8 +26,8 @@ private:
   long MakeMagic(string strSymbol = "");
   string CreateFilename(ENUM_FILENAME filename);
   
- public: bool SavePositionArray(string file_url,CPositionArray *array);
-  bool LoadPositionsFromFile(string file_url,CPositionArray *array);
+  bool SaveArrayToFile(string file_url,CPositionArray *array);
+  bool LoadArrayFromFile(string file_url,CPositionArray *array);
   
 protected:
   ulong _magic;
@@ -75,8 +75,8 @@ void CTradeManager::CTradeManager():  _useSound(true), _nameFileSound("expert.wa
  
  rescueDataFileName = CreateFilename(FILENAME_RESCUE);
  historyDataFileName = CreateFilename(FILENAME_HISTORY);
- LoadPositionsFromFile(rescueDataFileName ,_openPositions);
- LoadPositionsFromFile(historyDataFileName,_positionsHistory);
+ LoadArrayFromFile(rescueDataFileName ,_openPositions);
+ LoadArrayFromFile(historyDataFileName,_positionsHistory);
 
 };
 
@@ -221,7 +221,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type
 
 
    _openPositions.Add(pos);  // добавляем открытую позицию в массив открытых позиций
-   SavePositionArray(rescueDataFileName ,_openPositions);
+   SaveArrayToFile(rescueDataFileName ,_openPositions);
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
    return(true); // Если удачно открыли позицию
   }
@@ -248,21 +248,23 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
  int i = 0;
  int total = _openPositions.Total();
  CPosition *pos;
- log_file.Write(LOG_DEBUG
-              ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
-                            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
- 
+ //log_file.Write(LOG_DEBUG
+ //             ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
+ //                           , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
+ PrintFormat("%s, Открываем мульти-позицию %s. Открытых позиций на данный момент: %d"
+                            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total); 
  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
  
  pos = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
+ Print("openingResult=", PositionStatusToStr(openingResult));
  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
                                          , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
   _openPositions.Add(pos);  // добавляем открутую позицию в массив открытых позиций
 
-  SavePositionArray(rescueDataFileName ,_openPositions);  
+  SaveArrayToFile(rescueDataFileName ,_openPositions);  
   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
   return(true); // Если удачно открыли позицию
  }
@@ -329,7 +331,7 @@ void CTradeManager::OnTick()
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось удалить позицию [%d].Удаляем её из positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
     _positionsHistory.Add(_positionsToReProcessing.Detach(i)); //добавляем удаляемую позицию в массив
-   SavePositionArray(historyDataFileName,_positionsHistory);                    
+    SaveArrayToFile(historyDataFileName,_positionsHistory);                    
     break;
    }
   }
@@ -347,9 +349,9 @@ void CTradeManager::OnTick()
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и TakeProfit у позиции [%d].Перемещаем её из positionsToReProcessing в openPositions.", MakeFunctionPrefix(__FUNCTION__), i));    
     pos.setPositionStatus(POSITION_STATUS_OPEN);
-  
+    
     _openPositions.Add(_positionsToReProcessing.Detach(i));    
-    SavePositionArray(rescueDataFileName,_openPositions);    
+   SaveArrayToFile(rescueDataFileName,_openPositions);    
    }
   }
  } 
@@ -421,7 +423,7 @@ void CTradeManager::OnTick()
        if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP) pos.setType(OP_SELL);
        log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
        
-       SavePositionArray(rescueDataFileName,_openPositions);       
+       SaveArrayToFile(rescueDataFileName,_openPositions);       
        break;
       }
       case ORDER_STATE_CANCELED:
@@ -429,7 +431,7 @@ void CTradeManager::OnTick()
        log_file.Write(LOG_DEBUG, StringFormat("%s ордер отменен %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
        _positionsHistory.Add(_openPositions.Detach(i));
   
-       SavePositionArray(historyDataFileName,_positionsHistory);       
+       SaveArrayToFile(historyDataFileName,_positionsHistory);       
        break;
       }
       case ORDER_STATE_EXPIRED:
@@ -437,7 +439,7 @@ void CTradeManager::OnTick()
        log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
        _positionsHistory.Add(_openPositions.Detach(i));
 
-       SavePositionArray(historyDataFileName,_positionsHistory);       
+       SaveArrayToFile(historyDataFileName,_positionsHistory);       
        break;
       }
       
@@ -527,9 +529,10 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
  if (pos.ClosePosition())
  {
+  //Print("Перемещаем позицию в хистори");
   _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
-  SavePositionArray(historyDataFileName,_positionsHistory); 
-  SavePositionArray(rescueDataFileName,_openPositions);   
+  SaveArrayToFile(historyDataFileName,_positionsHistory); 
+  SaveArrayToFile(rescueDataFileName,_openPositions);   
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
   return(true);
  }
@@ -556,7 +559,7 @@ bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
   _positionsHistory.Add(_positionsToReProcessing.Detach(i));
-  SavePositionArray(historyDataFileName,_positionsHistory);  
+  SaveArrayToFile(historyDataFileName,_positionsHistory);  
   return(true);
  }
  return(false);
@@ -638,8 +641,8 @@ string CTradeManager::CreateFilename (ENUM_FILENAME filename)
 //+----------------------------------------------------
 //  Сохранение в файл массива позиций
 //+----------------------------------------------------
-bool CTradeManager::SavePositionArray(string file_url,CPositionArray *array)
- {
+bool CTradeManager::SaveArrayToFile(string file_url, CPositionArray *array)
+{
  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
  if(file_handle == INVALID_HANDLE)
  {
@@ -648,24 +651,25 @@ bool CTradeManager::SavePositionArray(string file_url,CPositionArray *array)
  }
  array.WriteToFile(file_handle);  //сохраняем массив в файл
  FileClose(file_handle);
-  return(true);
- }
+ return(true);
+}
  
 //+----------------------------------------------------
 //  Загрузка из файла массива позиций                 
 //+----------------------------------------------------
-bool CTradeManager::LoadPositionsFromFile(string file_url,CPositionArray *array)
- {
-if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
+bool CTradeManager::LoadArrayFromFile(string file_url,CPositionArray *array)
+{
+ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
  {
   FileDelete(file_url);
   return(true);
  }
+ 
  int file_handle;   //файловый хэндл  
  if (!FileIsExist(file_url, FILE_COMMON) ) //проверка существования файла истории 
  {
   PrintFormat("%s File %s doesn't exist", MakeFunctionPrefix(__FUNCTION__),file_url);
-  return (false);
+  return (true);
  }  
  file_handle = FileOpen(file_url, FILE_READ|FILE_COMMON|FILE_CSV|FILE_ANSI, ";");
  if (file_handle == INVALID_HANDLE) //не удалось открыть файл
@@ -673,6 +677,7 @@ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5In
   PrintFormat("%s error: %s opening %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(::GetLastError()), historyDataFileName);
   return (false);
  }
+ 
  array.Clear();                   //очищаем массив
  array.ReadFromFile(file_handle); //загружаем данные из файла 
  FileClose(file_handle);          //закрывает файл  
@@ -689,17 +694,20 @@ CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime to
  CPosition *pos;
  datetime posTime;
  int total = _positionsHistory.Total();
+ //Print("historyTotal=", _positionsHistory.Total());
  if (toDate == 0) toDate = TimeCurrent();
  
  for(int i = 0; i < total; i++)
  {
   pos = _positionsHistory.At(i);
   posTime = pos.getClosePosDT();
-  if (posTime <= fromDate) continue;  // Позиции с ранней датой - пропускаем
-  if (posTime > toDate) break;       // Добрались до позиций с поздней датой - выходим
+  //PrintFormat("posCloseDate=%s, fromDate=%s, toDate=%s", TimeToString(posTime), TimeToString(fromDate), TimeToString(toDate));
+  if (posTime < fromDate) continue;   // Позиции с ранней датой - пропускаем
+  if (posTime > toDate) break;        // Добрались до позиций с поздней датой - выходим
   
-  resultArray.Add(pos);              // Заполняем массив позициями с датой закрытия в нужном диапазоне
+  resultArray.Add(pos);               // Заполняем массив позициями с датой закрытия в нужном диапазоне
  }
+ //Print("resultTotal=", resultArray.Total());
  return resultArray;
 } 
 

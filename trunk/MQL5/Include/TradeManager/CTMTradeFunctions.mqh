@@ -118,7 +118,7 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
                                      const double price,const double sl = 0.0,const double tp = 0.0,const string comment = "")
 {
  ENUM_ORDER_TYPE order_type;
-  
+ PrintFormat("%s, Ордер на открытие %s, %s, %.02f, %.05f, %.05f, %.05f", MakeFunctionPrefix(__FUNCTION__), symbol, OrderTypeToString(order_type), volume, price, sl, tp);
  if(volume <= 0.0)
  {
   m_result.retcode=TRADE_RETCODE_INVALID_VOLUME;
@@ -137,6 +137,7 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
    log_file.Write(LOG_DEBUG, StringFormat("%s Неправильный тип позиции", MakeFunctionPrefix(__FUNCTION__)));
    return(false);
  }
+ PrintFormat("%s, Ордер на открытие %s, %s, %.02f, %.05f, %.05f, %.05f", MakeFunctionPrefix(__FUNCTION__), symbol, OrderTypeToString(order_type), volume, price, sl, tp);
  return(PositionOpen(symbol, order_type, volume, price, sl, tp, comment));
 }                                     
 
