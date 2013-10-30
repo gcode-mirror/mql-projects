@@ -8,7 +8,7 @@
 #property version   "1.00"
 #include <TIHIRO\CTihiro.mqh>           //класс CTihiro
 #include <Lib CisNewBar.mqh>            //для проверки формирования нового бара
-#include<TradeManager/TradeManager.mqh> //подключаем библиотеку TradeManager
+#include <TradeManager/TradeManager.mqh> //подключаем библиотеку TradeManager
 
 //+------------------------------------------------------------------+
 //| TIHIRO эксперт                                                   |
@@ -22,8 +22,11 @@ input ulong    magic = 111222;   //магическое число
 //буферы для хранения цен 
 double price_high[];      // массив высоких цен  
 double price_low[];       // массив низких цен  
+datetime price_date[];    // массив времени 
 //символ
 string symbol=_Symbol;
+//таймфрейм
+ENUM_TIMEFRAMES timeFrame = _Period; 
 //объекты классов
 CTihiro       tihiro(bars); // объект класса CTihiro   
 CisNewBar     newCisBar;    // для проверки на новый бар
@@ -32,9 +35,7 @@ CTradeManager ctm;          // объект класса TradeManager
 
 int OnInit()
   {
-   //порядок как в таймсерии
-   ArraySetAsSeries(price_high, true);
-   ArraySetAsSeries(price_low, true);       
+  
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -42,9 +43,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-  //очищаем динамические массивы
-  ArrayFree(price_high);
-  ArrayFree(price_low);
+
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -56,13 +55,7 @@ void OnTick()
    //если сформирован новый бар
    if ( newCisBar.isNewBar() > 0 )
     {
-     //загружаем буферы максимальных и минимальных цен баров (количество баров - bars)
-     if(CopyHigh(symbol, 0, 1, bars, price_high) <= 0 ||
-        CopyLow(symbol, 0, 1, bars, price_low) <= 0)
-       {
-        Print("Не удалось загрузить бары из истории");
-        return;
-       }
+
      tihiro.OnNewBar(price_high,price_low);
     }
    //получаем сигнал 

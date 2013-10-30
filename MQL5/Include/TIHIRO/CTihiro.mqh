@@ -15,28 +15,38 @@ class CTihiro
  {
     //приватные поля класса
    private:
-    //режим 
+    //буферы 
+    double   price_high[];      // массив высоких цен  
+    double   price_low[];       // массив низких цен  
+    datetime price_date[];      // массив времени 
+    //символ
+    string _symbol;
+    //таймфрейм
+    ENUM_TIMEFRAMES _timeFrame;
+    //режим обработки тиков
     TIHIRO_MODE _mode;
     //количество баров истории
     uint   _bars;  
-    //тангенс линии тренда
+    //тангенс линий тренда
     double _tg;
     //расстояние от линии тренда до последнего экстремума
     double _range;
     //цена, на которой была открыта позиция
     double _open_price;
     //экстремум предыдущий
-    Extrem _extr_past;
+    Extrem _extr_up_past,_extr_down_past;
     //экстремум последующий
-    Extrem _extr_present;
+    Extrem _extr_up_present,extr_down_present;
     //экстремум последний
-    Extrem _extr_last;
+    Extrem _extr_up_last,_extr_down_last;
     //приватные методы класса
    private:
     //получает значение тангенса угла наклона линии тренда   
     void    GetTan();  
     //возвращает расстояние от экстремума до линии тренда
     void    GetRange();
+    //ищет TD точки для тренд линии
+    void    GetTDPoints();
     //проверяет, выше или ниже линии тренда находится текущая точка
     short   TestPointLocate(datetime cur_time,double cur_price);
     //проверяет, что цена зашла за линию тренда
@@ -45,16 +55,30 @@ class CTihiro
     short   TestReachRange(string symbol);
    public:
    //конструктор класса 
-   CTihiro(uint bars):
+   CTihiro(string symbol,ENUM_TIMEFRAMES timeFrame,uint bars):
+     _symbol(symbol),
+     _timeFrame(timeFrame),
      _mode(TM_WAIT_FOR_CROSS),
      _bars(bars)
-    {
-    
+    { 
+     //порядок как в таймсерии
+     ArraySetAsSeries(price_high,true);
+     ArraySetAsSeries(price_low, true);   
+     ArraySetAsSeries(price_date,true);        
     }; 
+   //деструктор класса
+   ~CTihiro()
+    {
+     //удаляем массивы из динамической памяти
+     ArrayFree(price_high);
+     ArrayFree(price_low);
+     ArrayFree(price_date);
+    };
+   // -----------------------------------------------------------------------------
    //получает от эксперта указатели на массивы максимальных и минимальных цен баров
    //и вычисляет все необходимые значения по ним
    //а имеено - экстремумы, тангенс трендовой линии, расстояние от линии тренда до последнего экстремума 
-   void   OnNewBar(double  &price_max[],double  &price_min[]);
+   void   OnNewBar(datetime &price_time[],double &price_high[],double &price_low[]);
    //на каждом тике проверяет, перешла ли цена за тренд линию  
    //возвращает торговый сигнал 
    //0 - UNKNOWN, 1 - BUY, 2 - SELL
@@ -78,6 +102,57 @@ void CTihiro::GetRange()
   double H=_extr_present.price-_extr_past.price;
   _range=H-_tg*L;
  }
+ 
+bool CTihiro::GetTDPoints()
+//ищет TD точки для тренд линий
+ {
+   short i; 
+   bool flag_down = false;
+   bool
+   //проходим по циклу и вычисляем экстремумы
+   for(i = 1; i < _bars; i++)
+    {
+     //если текущая high цена больше high цен последующей и предыдущей
+     if (price_high[i] > price_high[i-1] && price_high[i] > price_high[i+1])
+      {
+       if (flag_down == false)
+        {
+         //сохраняем правый экстремум
+         point_down_right.SetExtrem(time[i],high[i]);
+         flag_down = true; 
+        }
+       else 
+        {
+         if(price_high[i] > point_down_right.price)
+          {
+          //сохраняем левый экстремум
+          point_down_left.SetExtrem(time[i],high[i]);               
+          return true;
+          }
+        }            
+      }  //нисходящий тренд
+//если текущая low цена меньше low цен последующей и предыдущей
+     if (low[i] < low[i-1] && low[i] < low[i+1] && flag_up < 2 )
+      {
+       if (flag_up == 0)
+        {
+         //сохраняем правый экстремум
+         point_up_right.SetExtrem(time[i],low[i]);
+         flag_up++; 
+        }
+       else 
+        {
+         if(low[i] < point_up_right.price)
+          {
+          //сохраняем левый экстремум
+          point_up_left.SetExtrem(time[i],low[i]);        
+          flag_up++;
+          }
+        }            
+      }  //восходящий тренд               
+     }
+   return false; //не найдены оба экстремума
+ } 
  
 short CTihiro::TestPointLocate(datetime cur_time,double cur_price)
 //проверяет, выше или ниже линии трейда находится текущая точка
@@ -164,9 +239,16 @@ short CTihiro::TestReachRange(string symbol)
 //| Описание публичных методов                                       |
 //+------------------------------------------------------------------+ 
 
-void CTihiro::OnNewBar(double &price_high[],double &price_low[])
+void CTihiro::OnNewBar(string symbol)
 //вычисляет все необходимые значения по массивам максимальных и минимальных цен баров
  {
+   if(CopyHigh(symbol, 0, 1, _bars, price_high) <= 0 ||
+      CopyLow (symbol, 0, 1, _bars, price_low) <= 0 ||
+      CopyTime(symbol,0,1,_bars,price_date)<=0) 
+       {
+        Print("Не удалось загрузить бары из истории");
+        return;
+       }
   //если режим ожидания пересечения цены с линией тренда
   if (_mode==TM_WAIT_FOR_CROSS)
   {
