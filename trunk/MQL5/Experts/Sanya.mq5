@@ -80,10 +80,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
  {
-  //san.InitDayTrade();
   san.InitMonthTrade();
-  //if (san.isInit())
-  //{
   san.RecountDelta();
   double vol = san.RecountVolume();
   if (currentVolume != vol)
@@ -95,7 +92,5 @@ void OnTick()
     currentVolume = vol;
    }
   }
-  //} 
-   
  }
 //+------------------------------------------------------------------+
