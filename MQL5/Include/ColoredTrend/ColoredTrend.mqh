@@ -10,6 +10,11 @@
 #include <CompareDoubles.mqh>
 #include "ColoredTrendUtilities.mqh"
 
+double buffer_ATR[];
+MqlRates buffer_Rates[];
+MqlRates buffer_TopRates[];
+MqlRates buffer_BottomRates[];
+
 //+------------------------------------------------------------------+
 //| Структура для хранения информации об экстремуме                  |
 //+------------------------------------------------------------------+
@@ -34,20 +39,18 @@ protected:
   int lastOnTrend;       // последний экстремум текущего тренда
   double difToNewExtremum;
   double difToTrend;     // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
-  int ATR_handle;
-  double ATR_buf[];
   int _depth;            // Количество баров для расчета индикатора 
   int _shift;            // Количество баров в истории
   
-  int FillTimeSeries(MqlRates &_rates[], int count, int start_pos, ENUM_TF tfType = CURRENT_TF);
+  int FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlRates &array[]);
   int FillATRBuf(int count, int start_pos);
-  bool isCorrectionEnds(MqlRates &cur_rates[], MqlRates &bot_rates[], int bar, ENUM_MOVE_TYPE move_type);
-  bool isLastBarHuge(MqlRates &rates[]);
+  bool isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type);
+  bool isLastBarHuge();
   bool isNewTrend(double price);
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int count);
   SExtremum isExtremum(double vol1, double vol2, double vol3, int bar = 0);
-  void CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
+  void CountMoveType(int bar, int start_pos, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
   ENUM_MOVE_TYPE GetMoveType(int i);
   double GetExtremum(int i);
   int GetExtremumDirection(int i);
@@ -57,32 +60,33 @@ public:
 //+-----------------------------------------+
 //| Конструктор                             |
 //+-----------------------------------------+
-void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth) : _depth(depth), _shift(40)
+void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth) : 
+                   _depth(depth), 
+                   _shift(40)
 {
- ArraySetAsSeries(enumMoveType, true);
- ArraySetAsSeries(  aExtremums, true);
- ArraySetAsSeries(     ATR_buf, true);
- 
+
  _symbol = symbol;
  _period = period;
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
+ ArrayResize(enumMoveType, 1024);
+ ArrayResize(  aExtremums, 1024);
+ ArrayInitialize(enumMoveType, 0);
+ SExtremum zero = {0, 0};
+ for(int i = 0; i < 1024; i++)
+ {
+  aExtremums[i] = zero;
+ }
  difToTrend = 2;  // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
- 
- //подключаем индикатор и получаем его хендл 
- ATR_handle = iATR(_symbol, _period, 100);
+/*
  // Получаем данные буфера в массив
  FillATRBuf(_depth + _shift);
+ FillTimeSeries(CURRENT_TF, _depth + _shift, 0, buffer_Rates); // получим размер заполненного массива
  ArrayResize(aExtremums, _depth + _shift);
- // Заполним массив с информацией о таймсериях
- MqlRates rates[];
- ArraySetAsSeries(rates, true);
- FillTimeSeries(rates, _depth + _shift); // получим размер заполненного массива 
  
- for(int bar = (_depth + _shift - 2); bar >= _depth && !IsStopped(); bar--) // вычисляем экстремумы со сдвигом в историю
+ for(int bar = 1; bar < _shift-2 && !IsStopped(); bar++) // вычисляем экстремумы со сдвигом в историю
  { 
-  difToNewExtremum = ATR_buf[bar] / 2;
-  //Print("Constructor: ATR/2 = ", difToNewExtremum);
-  aExtremums[bar] =  isExtremum(rates[bar + 1].close, rates[bar].close, rates[bar - 1].close);
+  difToNewExtremum = buffer_ATR[bar] / 2;  //переменная difToNewExtremum используется в функции isExtremum
+  aExtremums[bar] =  isExtremum(buffer_Rates[bar - 1].close, buffer_Rates[bar].close, buffer_Rates[bar + 1].close);
   if (aExtremums[bar].direction != 0)
   {
    if (aExtremums[bar].direction == aExtremums[num0].direction) // если новый экстремум в том же напрвлении, что старый
@@ -91,77 +95,74 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
     num0 = bar;
    }
    else
+   
    {
     num2 = num1;
     num1 = num0;
     num0 = bar;
    }
   }
- }
+ }*/
 }
 
 //+------------------------------------------+
 //| Функция вычисляет тип движения рынка     |
 //+------------------------------------------+
-void CColoredTrend::CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
+void CColoredTrend::CountMoveType(int bar, int start_pos, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
- // Заполним массив с информацией о таймсериях
- MqlRates rates[];
- MqlRates bottomTF_rates[];
- int rates_total = FillTimeSeries(rates, _depth + _shift); // получим размер заполненного массива
- FillTimeSeries(bottomTF_rates, _depth + _shift, 0, BOTTOM_TF);
- FillATRBuf(_depth + _shift);                              // заполним массив данными индикатора ATR
+ PrintFormat("bar = %d && start_pos = %d", bar, start_pos);
+ FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates); // получим размер заполненного массива
+ FillTimeSeries(BOTTOM_TF, 4, start_pos, buffer_BottomRates);
+ FillATRBuf(4, start_pos);                              // заполним массив данными индикатора ATR
  // Выделим память под массивы цветов и экстремумов
- ArrayResize(enumMoveType, rates_total, rates_total);
- ArrayResize(aExtremums, rates_total, rates_total);
-
- PrintFormat("rates = %d, bar = %d", rates_total, bar);
- enumMoveType[bar] = enumMoveType[bar - 1];
- //PrintFormat("enumMoveType[%d] = %s, bar = %d, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar, bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
- difToNewExtremum = ATR_buf[bar] / 2;
  
- bool newTrend = isNewTrend(rates[bar].close);
+ difToNewExtremum = buffer_ATR[1] / 2;
+ /*if (bar != 0) enumMoveType[bar] = enumMoveType[bar - 1];
+ //PrintFormat("enumMoveType[%d] = %s, bar = %d, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar, bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
+ 
+ 
+ bool newTrend = isNewTrend(buffer_Rates[3].close);
            
  if (newTrend)
  {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения 
-  if (LessDoubles(rates[bar].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
+  if (LessDoubles(buffer_Rates[3].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
   {
    enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
    //PrintFormat("bar = %d, начался тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].price);
   }
-  if (GreatDoubles(rates[bar].close, aExtremums[num0].price, digits)) // если текущее закрытие выше последнего экстремума 
+  if (GreatDoubles(buffer_Rates[3].close, aExtremums[num0].price, digits)) // если текущее закрытие выше последнего экстремума 
   {
    enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
    //PrintFormat("bar = %d, начался тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, rates[bar].close, aExtremums[num0].price);
   }
  }
  
- if ((enumMoveType[bar] == MOVE_TYPE_TREND_UP || enumMoveType[bar] == MOVE_TYPE_TREND_UP_FORBIDEN) && 
-      LessDoubles(rates[bar].close, rates[bar - 1].open, digits))
+ if ((enumMoveType[bar] == MOVE_TYPE_TREND_UP || enumMoveType[3] == MOVE_TYPE_TREND_UP_FORBIDEN) && 
+      LessDoubles(buffer_Rates[3].close, buffer_Rates[2].open, digits))
  {
-  enumMoveType[bar] = MOVE_TYPE_CORRECTION_DOWN;
+  enumMoveType[3] = MOVE_TYPE_CORRECTION_DOWN;
   lastOnTrend = num0;
  }
- if ((enumMoveType[bar] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar] == MOVE_TYPE_TREND_DOWN_FORBIDEN) && 
-      GreatDoubles(rates[bar].close, rates[bar - 1].open, digits))
+ if ((enumMoveType[3] == MOVE_TYPE_TREND_DOWN || enumMoveType[3] == MOVE_TYPE_TREND_DOWN_FORBIDEN) && 
+      GreatDoubles(buffer_Rates[3].close, buffer_Rates[2].open, digits))
  {
   enumMoveType[bar] = MOVE_TYPE_CORRECTION_UP;
   lastOnTrend = num0;
  }
  
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && 
-      isCorrectionEnds(rates, bottomTF_rates, bar, MOVE_TYPE_CORRECTION_UP))
+      isCorrectionEnds(buffer_Rates[3].close, MOVE_TYPE_CORRECTION_UP))
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
  }
  
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_DOWN) && 
-      isCorrectionEnds(rates, bottomTF_rates, bar, MOVE_TYPE_CORRECTION_DOWN))
+      isCorrectionEnds(buffer_Rates[3].close, MOVE_TYPE_CORRECTION_DOWN))
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
- }
+ }*/
  // Проверяем наличие экстремума на текущем баре
- aExtremums[bar] =  isExtremum(rates[bar - 1].close, rates[bar].close, rates[bar + 1].close, num0);
+ aExtremums[bar] =  isExtremum(buffer_Rates[0].close, buffer_Rates[1].close, buffer_Rates[2].close, num0);
  if (aExtremums[bar].direction != 0)
  {
   if (aExtremums[bar].direction == aExtremums[num0].direction) // если новый экстремум в том же напрвлении, что старый
@@ -176,8 +177,9 @@ void CColoredTrend::CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_
    num0 = bar;
   }
   
-  PrintFormat("bar = %d, экстремумы num0 =%.05f, num1=%.05f, num2=%.05f", bar, aExtremums[num0].price, aExtremums[num1].price, aExtremums[num2].price);
-  if ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_DOWN)
+  //PrintFormat("bar = %d, экстремумы %d =%.05f, %d=%.05f, %d=%.05f", bar, num0, aExtremums[num0].price, num1, aExtremums[num1].price, num2, aExtremums[num2].price);
+  /*if ( bar != 0
+    &&(enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_DOWN)
     &&(aExtremums[bar].direction > 0)
     &&(
        LessDoubles(aExtremums[bar].price, aExtremums[num2].price, digits) // если новый максимум меньше предыдущего
@@ -189,7 +191,8 @@ void CColoredTrend::CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_
    enumMoveType[bar] = MOVE_TYPE_FLAT;
   }
   
-  if ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_UP)
+  if ( bar != 0
+    &&(enumMoveType[bar - 1] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_UP)
     &&(aExtremums[bar].direction < 0)
     &&(
        GreatDoubles(aExtremums[bar].price, aExtremums[num2].price, digits)
@@ -199,11 +202,8 @@ void CColoredTrend::CountMoveType(int bar, ENUM_MOVE_TYPE topTF_Movement = MOVE_
   { 
    //PrintFormat("bar = %d, начался флэт, новый минимум больше предыдущего num0 =%.05f < num2=%.05f", bar, aExtremums[num0].price, aExtremums[num2].price);
    enumMoveType[bar] = MOVE_TYPE_FLAT;
-  }
+  }*/
  }
- 
-
- 
 }
 
 //+------------------------------------------+
@@ -242,6 +242,7 @@ int CColoredTrend::GetExtremumDirection(int i)
 //+--------------------------------------------------------------------+
 SExtremum CColoredTrend::isExtremum(double vol1, double vol2, double vol3, int last = 0)
 {
+ //PrintFormat("%f %f %f", vol1, vol2, vol3);
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  SExtremum res;
  res.direction = 0;
@@ -265,7 +266,7 @@ SExtremum CColoredTrend::isExtremum(double vol1, double vol2, double vol3, int l
 //+-------------------------------------------------+
 //| Функция заполняет массив экстремумов из истории |
 //+-------------------------------------------------+
-int CColoredTrend::FillTimeSeries(MqlRates &_rates[], int count, int start_pos = 0, ENUM_TF tfType = CURRENT_TF)
+int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlRates &array[])
 {
  //--- счетчик попыток
  int attempts = 0;
@@ -285,7 +286,7 @@ int CColoredTrend::FillTimeSeries(MqlRates &_rates[], int count, int start_pos =
    period = GetTopTimeframe(_period);
    break;
  }
- while(attempts < 25 && (copied = CopyRates(_symbol, period, start_pos, count + 1, _rates))<0) // справа налево от 0 до count, всего count элементов
+ while(attempts < 25 && (copied = CopyRates(_symbol, period, start_pos, count, array))<0) // справа налево от 0 до count, всего count элементов
  {
   Sleep(100);
   attempts++;
@@ -293,7 +294,7 @@ int CColoredTrend::FillTimeSeries(MqlRates &_rates[], int count, int start_pos =
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
-  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных",
+  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных Rates",
                              _symbol,
                              copied,
                              count
@@ -309,6 +310,7 @@ int CColoredTrend::FillTimeSeries(MqlRates &_rates[], int count, int start_pos =
 //+----------------------------------------------------+
 int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 {
+ int ATR_handle = iATR(_symbol, _period, 100);
  if(ATR_handle == INVALID_HANDLE)                      //проверяем наличие хендла индикатора
  {
   Print("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
@@ -318,7 +320,7 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //--- сколько скопировано
    int copied = 0;
 //--- делаем 25 попыток получить таймсерию по нужному символу
- while(attempts < 25 && (copied = CopyBuffer(ATR_handle, 0, start_pos, count + 1, ATR_buf)) < 0) // справа налево от 0 до count, всего count элементов
+ while(attempts < 25 && (copied = CopyBuffer(ATR_handle, 0, start_pos, count, buffer_ATR)) < 0) // справа налево от 0 до count, всего count элементов
  {
   Sleep(100);
   attempts++;
@@ -326,7 +328,7 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
-  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных",
+  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных ATR",
                              _symbol,
                              copied,
                              count
@@ -340,31 +342,34 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //+----------------------------------------------------+
 //| Функция заполняет массив индикатора ATR из истории |
 //+----------------------------------------------------+
-bool CColoredTrend::isCorrectionEnds(MqlRates &cur_rates[], MqlRates &bot_rates[], int bar, ENUM_MOVE_TYPE move_type)
+bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type)
 {
- bool extremum_condition, bottomTF_condition;
+ bool extremum_condition, 
+      bottomTF_condition;
  if (move_type == MOVE_TYPE_CORRECTION_UP)
  {
-  extremum_condition = LessDoubles(cur_rates[bar].close, aExtremums[lastOnTrend].price, digits);
-  bottomTF_condition = isLastBarHuge(bot_rates);
+  extremum_condition = LessDoubles(price, aExtremums[lastOnTrend].price, digits);
+  bottomTF_condition = isLastBarHuge();
  }
  if (move_type == MOVE_TYPE_CORRECTION_DOWN)
  {
-  extremum_condition = GreatDoubles(cur_rates[bar].close, aExtremums[lastOnTrend].price, digits);
-  bottomTF_condition = isLastBarHuge(bot_rates);
+  extremum_condition = GreatDoubles(price, aExtremums[lastOnTrend].price, digits);
+  bottomTF_condition = isLastBarHuge();
  }
  return ((extremum_condition) || (bottomTF_condition));
 }
 
-bool CColoredTrend::isLastBarHuge(MqlRates &rates[])
+bool CColoredTrend::isLastBarHuge()
 {
  double sum;
- for(int i = _shift; i < _depth + _shift - 1; i++)
+ MqlRates rates[];
+ FillTimeSeries(BOTTOM_TF, _depth, 0, rates);
+ for(int i = 0; i < _depth - 1; i++)
  {
   sum = sum + rates[i].high - rates[i].low;  
  }
- double avgBar = sum / _shift;
- double lastBar = MathAbs(rates[0].open - rates[0].close);
+ double avgBar = sum / _depth;
+ double lastBar = MathAbs(rates[_depth-1].open - rates[_depth-1].close);
     
  return(GreatDoubles(lastBar, avgBar*2));
 }
