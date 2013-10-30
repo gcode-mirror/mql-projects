@@ -46,7 +46,7 @@ class CTihiro
     //возвращает расстояние от экстремума до линии тренда
     void    GetRange();
     //ищет TD точки для тренд линии
-    void    GetTDPoints();
+    short   GetTDPoints();
     //проверяет, выше или ниже линии тренда находится текущая точка
     short   TestPointLocate(datetime cur_time,double cur_price);
     //проверяет, что цена зашла за линию тренда
@@ -103,12 +103,12 @@ void CTihiro::GetRange()
   _range=H-_tg*L;
  }
  
-bool CTihiro::GetTDPoints()
+short CTihiro::GetTDPoints()
 //ищет TD точки для тренд линий
  {
    short i; 
    bool flag_down = false;
-   bool
+
    //проходим по циклу и вычисляем экстремумы
    for(i = 1; i < _bars; i++)
     {
