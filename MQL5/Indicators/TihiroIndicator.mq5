@@ -14,7 +14,6 @@
 //---- использовано 1 графическое построение
 #property indicator_plots   2
 //---- в качестве индикатора использованы линии
-//#property indicator_type1   DRAW_LINE
 #property indicator_type1 DRAW_LINE
 //---- цвет индикатора
 #property indicator_color1  clrBlue
@@ -22,16 +21,24 @@
 #property indicator_style1  STYLE_SOLID
 //---- толщина линии индикатора
 #property indicator_width1  1
+//---- в качестве индикатора использованы линии
+#property indicator_type2 DRAW_LINE
+//---- цвет индикатора
+#property indicator_color2  clrRed
+//---- стиль линии индикатора
+#property indicator_style2  STYLE_SOLID
+//---- толщина линии индикатора
+#property indicator_width2  1
 //---- отображение метки линии индикатора
 #property indicator_label1  "TIHIRO"
 
 input short bars=50;  //начальное количество баров истории
 
-
-//---- буфер значений линии восходящего тренда
-double trendLineUp[];
 //---- буфер значений линии нисходящего тренда
 double trendLineDown[];
+//---- буфер значений линии восходящего тренда
+double trendLineUp[];
+
 
 //---- TD точки (экстремумы) восходящего тренда
 Extrem point_up_left;    //левая точка
@@ -49,8 +56,8 @@ short   flag_down=0;     //флаг для нисходящего тренда, 0-нет экстремума, 1-найд
 int OnInit()
   {
 //---- назначаем индексы буферов
-   SetIndexBuffer(0,trendLineUp,  INDICATOR_DATA);
-   SetIndexBuffer(1,trendLineDown,INDICATOR_DATA);   
+   SetIndexBuffer(0,trendLineDown,INDICATOR_DATA);   
+   SetIndexBuffer(1,trendLineUp,  INDICATOR_DATA);
 //---- настраиваем свойства индикатора
 //--- зададим код символа для отрисовки в PLOT_ARROW
 
@@ -71,10 +78,10 @@ int OnCalculate(const int rates_total,
   {
    int i;
    //проходим по циклу и вычисляем экстремумы
-   for(i = 2; i <= rates_total; i++)
+   for(i = rates_total-3; i > 0; i--)
     {
-     trendLineUp[i]=high[i];
-    // trendLineDown[i]=low[i];
+     trendLineDown[i]=0;    
+     trendLineUp[i]=0;
      //если текущая high цена больше high цен последующей и предыдущей
      if (high[i] > high[i-1] && high[i] > high[i+1] && flag_down < 2 )
       {
@@ -82,8 +89,7 @@ int OnCalculate(const int rates_total,
         {
          //сохраняем правый экстремум
          point_down_right.SetExtrem(time[i],high[i]);
-         trendLineDown[i]=high[i];
-         Alert("получили правый экстремум DOWN");
+      //   Alert("получили правый экстремум DOWN ",time[i]);
          flag_down++; 
         }
        else 
@@ -91,9 +97,8 @@ int OnCalculate(const int rates_total,
          if(high[i] > point_down_right.price)
           {
           //сохраняем левый экстремум
-          point_down_left.SetExtrem(time[i],high[i]);
-          trendLineDown[i]=high[i];          
-         Alert("получили левый экстремум DOWN");          
+          point_down_left.SetExtrem(time[i],high[i]);       
+       //  Alert("получили левый экстремум DOWN ",time[i]);          
           flag_down++;
           }
         }            
@@ -105,18 +110,16 @@ int OnCalculate(const int rates_total,
         {
          //сохраняем правый экстремум
          point_up_right.SetExtrem(time[i],low[i]);
-         trendLineUp[i] = low[i];
-         Alert("получили правый экстремум UP"); 
+     //    Alert("получили правый экстремум UP ",time[i]); 
          flag_up++; 
         }
        else 
         {
-         if(low[i] > point_up_right.price)
+         if(low[i] < point_up_right.price)
           {
           //сохраняем левый экстремум
           point_up_left.SetExtrem(time[i],low[i]);
-          trendLineUp[i] = low[i];
-         Alert("получили левый экстремум UP");          
+     //    Alert("получили левый экстремум UP ",time[i]);          
           flag_up++;
           }
         }            
@@ -132,9 +135,21 @@ int OnCalculate(const int rates_total,
       tg_up = (point_up_right.price-point_up_left.price)/(point_up_right.time-point_up_left.time);
      }     
     //проходим по циклу и вычисляем точки, принадлежащие линиям тренда
-  /*  for (i=2;i<= rates_total; i++)
+//Alert("тангенс вверх = ",tg_up," Тангенс вниз = ",tg_down);
+    for (i = rates_total-1; i > 0 ; i--)
      {
-      
-     }*/
+      if (flag_down==2)
+       {
+        if (time[i]<=point_down_right.time&&time[i]>=point_down_left.time)
+         trendLineDown[i] = point_down_left.price+(time[i]-point_down_left.time)*tg_down;
+       }
+      if (flag_up==2)
+       {
+        if (time[i]<=point_up_right.time&&time[i]>=point_up_left.time)
+         trendLineUp[i] = point_up_left.price+(time[i]-point_up_left.time)*tg_up;
+       }       
+     }
+     flag_down = 0;
+     flag_up = 0;
    return(rates_total);
   }
