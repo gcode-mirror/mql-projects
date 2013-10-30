@@ -107,8 +107,8 @@ short CTihiro::GetTDPoints()
 //ищет TD точки для тренд линий
  {
    short i; 
-   bool flag_down = false;
-
+   short flag_down = 0;
+   short flag_up   = 0;
    //проходим по циклу и вычисляем экстремумы
    for(i = 1; i < _bars; i++)
     {
