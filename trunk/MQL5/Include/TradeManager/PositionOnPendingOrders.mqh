@@ -596,40 +596,43 @@ bool CPosition::ClosePosition()
 //+------------------------------------------------------------------+
 bool CPosition::DoTrailing(void)
 {
- UpdateSymbolInfo();
- double ask = SymbInfo.Ask();
- double bid = SymbInfo.Bid();
- double point = SymbInfo.Point();
- int digits = SymbInfo.Digits();
- double newSL = 0;
- 
- if (getType() == OP_BUY)
+ if (_minProfit > 0 && _trailingStop > 0 && _trailingStep > 0)
  {
-  if (LessDoubles(_posOpenPrice, bid - _minProfit*point))
+  UpdateSymbolInfo();
+  double ask = SymbInfo.Ask();
+  double bid = SymbInfo.Bid();
+  double point = SymbInfo.Point();
+  int digits = SymbInfo.Digits();
+  double newSL = 0;
+ 
+  if (getType() == OP_BUY)
   {
-   if (LessDoubles(_slPrice, bid - (_trailingStop+_trailingStep-1)*point) || _slPrice == 0)
+   if (LessDoubles(_posOpenPrice, bid - _minProfit*point))
    {
-    newSL = NormalizeDouble(bid - _trailingStop*point, digits);
-    if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
+    if (LessDoubles(_slPrice, bid - (_trailingStop+_trailingStep-1)*point) || _slPrice == 0)
     {
-     _slPrice = newSL;
-     return true;
-    } 
+     newSL = NormalizeDouble(bid - _trailingStop*point, digits);
+     if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
+     {
+      _slPrice = newSL;
+      return true;
+     } 
+    }
    }
   }
- }
  
- if (getType() == OP_SELL)
- {
-  if (GreatDoubles(_posOpenPrice - ask, _minProfit*point))
+  if (getType() == OP_SELL)
   {
-   if (GreatDoubles(_slPrice, ask+(_trailingStop+_trailingStep-1)*point) || _slPrice == 0) 
+   if (GreatDoubles(_posOpenPrice - ask, _minProfit*point))
    {
-    newSL = NormalizeDouble(ask + _trailingStop*point, digits);
-    if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
+    if (GreatDoubles(_slPrice, ask+(_trailingStop+_trailingStep-1)*point) || _slPrice == 0) 
     {
-     _slPrice = newSL;
-     return true;
+     newSL = NormalizeDouble(ask + _trailingStop*point, digits);
+     if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
+     {
+      _slPrice = newSL;
+      return true;
+     }
     }
    }
   }
