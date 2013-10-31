@@ -10,9 +10,12 @@
 //+------------------------------------------------------------------+
 
 //константы 
-#define UNKNOWN 0
-#define BUY 1
-#define SELL 2
+#define UNKNOWN    0
+#define BUY        1
+#define SELL       2
+#define TREND_UP   3
+#define TREND_DOWN 4
+#define NOTREND    5
 
 //перечисление режимов
 enum  TIHIRO_MODE
