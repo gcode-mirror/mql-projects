@@ -15,10 +15,11 @@
 //+------------------------------------------------------------------+
 //внешние, задаваемые пользователем параметры эксперта
 input uint     bars=50;          //количество баров истории
-input int      takeProfit=100;   //take profit
-input int      stopLoss=100;     //stop loss
+input int      takeProfit=0;   //take profit
+input int      stopLoss=0;     //stop loss
 input double   orderVolume = 1;  //размер лота
 input ulong    magic = 111222;   //магическое число
+input bool trailing = false;     //трейлинг
 //буферы для хранения цен 
 double price_high[];      // массив высоких цен  
 double price_low[];       // массив низких цен  
@@ -63,5 +64,9 @@ void OnTick()
     ctm.OpenUniquePosition(symbol,OP_BUY,orderVolume,stopLoss,takeProfit,0,0,0);
    if (signal == SELL)
     ctm.OpenUniquePosition(symbol,OP_SELL,orderVolume,stopLoss,takeProfit,0,0,0); 
+    
+       if (trailing)
+   {
+    ctm.DoTrailing();
+   }
   }
-

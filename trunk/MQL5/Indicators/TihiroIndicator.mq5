@@ -78,7 +78,7 @@ int OnCalculate(const int rates_total,
   {
    int i;
    //проходим по циклу и вычисляем экстремумы
-   for(i = rates_total-3; i > 0; i--)
+   for(i = rates_total-2; i > 0; i--)
     {
      trendLineDown[i]=0;    
      trendLineUp[i]=0;
