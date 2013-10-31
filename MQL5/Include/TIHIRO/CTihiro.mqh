@@ -16,29 +16,31 @@ class CTihiro
     //приватные поля класса
    private:
     //буферы 
-    double   price_high[];      // массив высоких цен  
-    double   price_low[];       // массив низких цен  
-    datetime price_date[];      // массив времени 
+    double   _price_high[];      // массив высоких цен  
+    double   _price_low[];       // массив низких цен  
+    datetime _price_time[];      // массив времени 
     //символ
-    string _symbol;
+    string  _symbol;
     //таймфрейм
     ENUM_TIMEFRAMES _timeFrame;
     //режим обработки тиков
     TIHIRO_MODE _mode;
     //количество баров истории
-    uint   _bars;  
+    uint    _bars;  
     //тангенс линий тренда
-    double _tg;
+    double  _tg;
     //расстояние от линии тренда до последнего экстремума
-    double _range;
+    double  _range;
     //цена, на которой была открыта позиция
-    double _open_price;
+    double  _open_price;
     //экстремум предыдущий
-    Extrem _extr_up_past,_extr_down_past;
+    Extrem  _extr_up_past,_extr_down_past;
     //экстремум последующий
-    Extrem _extr_up_present,extr_down_present;
-    //экстремум последний
-    Extrem _extr_up_last,_extr_down_last;
+    Extrem  _extr_up_present,_extr_down_present;
+    //флаги нахождения экстремумов
+    short   _flag_up,_flag_down;
+    //тип ситуации
+    short   _trend_type;
     //приватные методы класса
    private:
     //получает значение тангенса угла наклона линии тренда   
@@ -46,13 +48,15 @@ class CTihiro
     //возвращает расстояние от экстремума до линии тренда
     void    GetRange();
     //ищет TD точки для тренд линии
-    short   GetTDPoints();
+    void    GetTDPoints();
+    //распознает ситуацию
+    void    RecognizeSituation();
     //проверяет, выше или ниже линии тренда находится текущая точка
     short   TestPointLocate(datetime cur_time,double cur_price);
     //проверяет, что цена зашла за линию тренда
-    short   TestCrossTrendLine(string symbol);
+    short   TestCrossTrendLine();
     //проверяет, что цена зашла за зону range
-    short   TestReachRange(string symbol);
+    short   TestReachRange();
    public:
    //конструктор класса 
    CTihiro(string symbol,ENUM_TIMEFRAMES timeFrame,uint bars):
@@ -62,27 +66,27 @@ class CTihiro
      _bars(bars)
     { 
      //порядок как в таймсерии
-     ArraySetAsSeries(price_high,true);
-     ArraySetAsSeries(price_low, true);   
-     ArraySetAsSeries(price_date,true);        
+     ArraySetAsSeries(_price_high,true);
+     ArraySetAsSeries(_price_low, true);   
+     ArraySetAsSeries(_price_time,true);        
     }; 
    //деструктор класса
    ~CTihiro()
     {
      //удаляем массивы из динамической памяти
-     ArrayFree(price_high);
-     ArrayFree(price_low);
-     ArrayFree(price_date);
+     ArrayFree(_price_high);
+     ArrayFree(_price_low);
+     ArrayFree(_price_time);
     };
    // -----------------------------------------------------------------------------
    //получает от эксперта указатели на массивы максимальных и минимальных цен баров
    //и вычисляет все необходимые значения по ним
    //а имеено - экстремумы, тангенс трендовой линии, расстояние от линии тренда до последнего экстремума 
-   void   OnNewBar(datetime &price_time[],double &price_high[],double &price_low[]);
+   void   OnNewBar();
    //на каждом тике проверяет, перешла ли цена за тренд линию  
    //возвращает торговый сигнал 
    //0 - UNKNOWN, 1 - BUY, 2 - SELL
-   short  OnTick(string symbol);
+   short  OnTick();
  };
 
 //+------------------------------------------------------------------+
@@ -92,72 +96,124 @@ class CTihiro
 void CTihiro::GetTan() 
 //получает значение тангенса угла наклона линии тренда
  {
-  _tg =  (_extr_present.price-_extr_past.price)/(_extr_present.time - _extr_past.time);
+  if (_trend_type == TREND_DOWN)
+   {  
+    _tg =  (_extr_down_present.price-_extr_down_past.price)/(_extr_down_present.time - _extr_down_past.time);
+   }
+  if (_trend_type == TREND_UP)
+   {  
+    _tg =  (_extr_up_present.price-_extr_up_past.price)/(_extr_up_present.time - _extr_up_past.time);
+   }   
  }
  
 void CTihiro::GetRange()
 //вычисляет расстояние от экстремума до линии тренда
  {
-  datetime L=_extr_present.time-_extr_past.time;  
-  double H=_extr_present.price-_extr_past.price;
+  datetime L;
+  double H;
+  if (_trend_type == TREND_DOWN)
+   {
+    L=_extr_down_present.time-_extr_down_past.time;  
+    H=_extr_down_present.price-_extr_down_past.price;
+   }
+  if (_trend_type == TREND_UP)
+   {
+    L=_extr_up_present.time-_extr_up_past.time;  
+    H=_extr_up_present.price-_extr_up_past.price;
+   }   
   _range=H-_tg*L;
  }
  
-short CTihiro::GetTDPoints()
+void CTihiro::GetTDPoints()
 //ищет TD точки для тренд линий
  {
    short i; 
-   short flag_down = 0;
-   short flag_up   = 0;
+   _flag_down = 0;
+   _flag_up   = 0;
    //проходим по циклу и вычисляем экстремумы
-   for(i = 1; i < _bars; i++)
+   for(i = 1; i < _bars && (_flag_down<2||_flag_up<2); i++)
     {
      //если текущая high цена больше high цен последующей и предыдущей
-     if (price_high[i] > price_high[i-1] && price_high[i] > price_high[i+1])
+     if (_price_high[i] > _price_high[i-1] && _price_high[i] > _price_high[i+1] && _flag_down < 2)
       {
-       if (flag_down == false)
+       if (_flag_down == 0)
         {
          //сохраняем правый экстремум
-         point_down_right.SetExtrem(time[i],high[i]);
-         flag_down = true; 
+         _extr_down_present.SetExtrem(_price_time[i],_price_high[i]);
+         _flag_down = 1; 
         }
        else 
         {
-         if(price_high[i] > point_down_right.price)
+         if(_price_high[i] > _extr_down_present.price)
           {
           //сохраняем левый экстремум
-          point_down_left.SetExtrem(time[i],high[i]);               
-          return true;
+          _extr_down_past.SetExtrem(_price_time[i],_price_high[i]);               
+          _flag_down = 2;
           }
         }            
       }  //нисходящий тренд
 //если текущая low цена меньше low цен последующей и предыдущей
-     if (low[i] < low[i-1] && low[i] < low[i+1] && flag_up < 2 )
+     if (_price_low[i] < _price_low[i-1] && _price_low[i] < _price_low[i+1] && _flag_up < 2 )
       {
-       if (flag_up == 0)
+       if (_flag_up == 0)
         {
          //сохраняем правый экстремум
-         point_up_right.SetExtrem(time[i],low[i]);
-         flag_up++; 
+         _extr_up_present.SetExtrem(_price_time[i],_price_low[i]);
+         _flag_up = 1; 
         }
        else 
         {
-         if(low[i] < point_up_right.price)
+         if(_price_low[i] < _extr_up_present.price)
           {
           //сохраняем левый экстремум
-          point_up_left.SetExtrem(time[i],low[i]);        
-          flag_up++;
+          _extr_up_past.SetExtrem(_price_time[i],_price_low[i]);        
+          _flag_up = 2;
           }
         }            
       }  //восходящий тренд               
      }
-   return false; //не найдены оба экстремума
  } 
+ 
+void  CTihiro::RecognizeSituation(void)
+//возвращает ситуацию 
+ {
+   _trend_type = NOTREND; //нет тренда
+   if (_flag_down == 2) //если нисходящий тренд найден
+    {
+     if (_flag_up > 0) //если хоть один экстремум найден
+      {
+       if (_extr_up_present.time > _extr_down_present.time)  //если нижний экстремум позднее линии тренда
+        {
+         _trend_type = TREND_DOWN; //то вернем, что тренд нисходящий
+        } 
+      }
+    }
+   if (_flag_up == 2) //если восходящий тренд найден
+    {
+     if (_flag_down > 0) //если хоть один экстремум найден
+      {
+       if (_extr_down_present.time > _extr_up_present.time)  //если верхний экстремум позднее линии тренда
+        {
+         _trend_type = TREND_UP; //то вернем, что тренд восходящий
+        } 
+      }
+    }      
+ }
  
 short CTihiro::TestPointLocate(datetime cur_time,double cur_price)
 //проверяет, выше или ниже линии трейда находится текущая точка
  {
-   double line_level=_extr_past.price+(cur_time-_extr_past.time)*_tg;  //значение  линии тренда в данной точке 
+   datetime time;
+   double price;
+   double line_level;
+   if (_trend_type == TREND_DOWN)
+    {
+     line_level = _extr_down_past.price+(cur_time-_extr_down_past.time)*_tg;  //значение  линии тренда в данной точке 
+    }
+   if (_trend_type == TREND_UP)
+    {
+     line_level = _extr_up_past.price+(cur_time-_extr_up_past.time)*_tg;  //значение  линии тренда в данной точке 
+    }    
    if (cur_price>line_level)
     return 1;  //точка находится выше линии тренда
    if (cur_price<line_level)
@@ -165,18 +221,18 @@ short CTihiro::TestPointLocate(datetime cur_time,double cur_price)
    return 0;   //точка находится на линии тренда
  }
  
-short CTihiro::TestCrossTrendLine(string symbol)
+short CTihiro::TestCrossTrendLine()
 //проверяет, что цена зашла за линию тренда 
  {
  datetime time;   //текущее время
  double   price;  //текущая цена
   //если тренд восходящий 
- if (_tg > 0) 
+ if (_trend_type == TREND_UP) 
    {
     //сохраняем текущее время
     time = TimeCurrent();
     //сохраняем цену BID, как низкую
-    price = SymbolInfoDouble(symbol,SYMBOL_BID);
+    price = SymbolInfoDouble(_symbol,SYMBOL_BID);
     //если цена перевалила за линию тренда
     if (TestPointLocate(time,price)<=0)
      {
@@ -186,12 +242,12 @@ short CTihiro::TestCrossTrendLine(string symbol)
      }
    }
   //если тренд нисходящий
-  if (_tg < 0) 
+  if (_trend_type == TREND_DOWN) 
    {
     //сохраняем текущее время
     time = TimeCurrent();   
     //сохраняем цену ASK, как высокую
-    price = SymbolInfoDouble(symbol,SYMBOL_ASK);
+    price = SymbolInfoDouble(_symbol,SYMBOL_ASK);
     //если цена перевалила за линию тренда
     if (TestPointLocate(time,price)>=0)
      {
@@ -203,7 +259,7 @@ short CTihiro::TestCrossTrendLine(string symbol)
   return UNKNOWN;  
  }
   
-short CTihiro::TestReachRange(string symbol)
+short CTihiro::TestReachRange()
 //проверяет, что цена зашла за зону range
  {
   double cur_price;
@@ -211,7 +267,7 @@ short CTihiro::TestReachRange(string symbol)
   //если тренд восходящий
   if (_tg > 0)
    {
-     cur_price = SymbolInfoDouble(symbol,SYMBOL_BID);
+     cur_price = SymbolInfoDouble(_symbol,SYMBOL_BID);
      abs=_open_price-cur_price;
      if (abs>_range) 
       {
@@ -223,7 +279,7 @@ short CTihiro::TestReachRange(string symbol)
   //если тренд нисходящий
   if (_tg < 0)
    {
-     cur_price = SymbolInfoDouble(symbol,SYMBOL_ASK);   
+     cur_price = SymbolInfoDouble(_symbol,SYMBOL_ASK);   
      abs=cur_price-_open_price;
      if (abs>_range) 
       {
@@ -239,12 +295,13 @@ short CTihiro::TestReachRange(string symbol)
 //| Описание публичных методов                                       |
 //+------------------------------------------------------------------+ 
 
-void CTihiro::OnNewBar(string symbol)
+void CTihiro::OnNewBar()
 //вычисляет все необходимые значения по массивам максимальных и минимальных цен баров
  {
-   if(CopyHigh(symbol, 0, 1, _bars, price_high) <= 0 ||
-      CopyLow (symbol, 0, 1, _bars, price_low) <= 0 ||
-      CopyTime(symbol,0,1,_bars,price_date)<=0) 
+   //загружаем буферы 
+   if(CopyHigh(_symbol, _timeFrame, 1, _bars, _price_high) <= 0 ||
+      CopyLow (_symbol, _timeFrame, 1, _bars, _price_low)  <= 0 ||
+      CopyTime(_symbol, _timeFrame, 1, _bars, _price_time) <= 0  ) 
        {
         Print("Не удалось загрузить бары из истории");
         return;
@@ -252,20 +309,16 @@ void CTihiro::OnNewBar(string symbol)
   //если режим ожидания пересечения цены с линией тренда
   if (_mode==TM_WAIT_FOR_CROSS)
   {
-  //вычисляем экстремумы
-  // ---- здесь будет вычисление экстремумов
-  
-  //если экстремумы вычислены - распознать тип ситуации (один из двух)
-  //если ситуация распознана, то
-  
-  //вычисляем тангенс линии тренда
-  GetTan();
-  //вычисляем range
-  GetRange();
+   // вычисляем экстремумы (TD-точки линии тренда)
+   GetTDPoints();
+   //
+   GetTan();
+   //вычисляем range
+   GetRange();
   }
  }
  
-short CTihiro::OnTick(string symbol)
+short CTihiro::OnTick()
 //на каждом тике проверяет, перешла ли цена за тренд линию  
 {
   //режим обработки тиков
@@ -273,11 +326,11 @@ short CTihiro::OnTick(string symbol)
  {
  //ожидание пересечения линии тренда
  case TM_WAIT_FOR_CROSS:   
-  return TestCrossTrendLine(symbol); 
+  return TestCrossTrendLine(); 
  break;
  //режим ожидания достижения уровня range
  case TM_REACH_THE_RANGE:
-  return TestReachRange(symbol);
+  return TestReachRange();
  break; 
  } //switch
  return UNKNOWN;

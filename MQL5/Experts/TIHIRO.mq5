@@ -28,7 +28,7 @@ string symbol=_Symbol;
 //таймфрейм
 ENUM_TIMEFRAMES timeFrame = _Period; 
 //объекты классов
-CTihiro       tihiro(bars); // объект класса CTihiro   
+CTihiro       tihiro(symbol,timeFrame,bars); // объект класса CTihiro   
 CisNewBar     newCisBar;    // для проверки на новый бар
 CTradeManager ctm;          // объект класса TradeManager
 
@@ -56,10 +56,10 @@ void OnTick()
    if ( newCisBar.isNewBar() > 0 )
     {
 
-     tihiro.OnNewBar(price_high,price_low);
+     tihiro.OnNewBar();
     }
    //получаем сигнал 
-   signal = tihiro.OnTick(symbol); 
+   signal = tihiro.OnTick(); 
    if (signal == BUY)
     ctm.OpenUniquePosition(symbol,OP_BUY,orderVolume,stopLoss,takeProfit,0,0,0);
    if (signal == SELL)
