@@ -113,13 +113,13 @@ void CTihiro::GetRange()
   double H;
   if (_trend_type == TREND_DOWN)
    {
-    L=_extr_down_present.time-_extr_down_past.time;  
-    H=_extr_down_present.price-_extr_down_past.price;
+    L=_extr_up_present.time-_extr_down_past.time;  
+    H=_extr_up_present.price-_extr_down_past.price;
    }
   if (_trend_type == TREND_UP)
    {
-    L=_extr_up_present.time-_extr_up_past.time;  
-    H=_extr_up_present.price-_extr_up_past.price;
+    L=_extr_down_present.time-_extr_up_past.time;  
+    H=_extr_down_present.price-_extr_up_past.price;
    }   
   _range=H-_tg*L;
  }
@@ -131,7 +131,7 @@ void CTihiro::GetTDPoints()
    _flag_down = 0;
    _flag_up   = 0;
    //проходим по циклу и вычисляем экстремумы
-   for(i = 1; i < _bars && (_flag_down<2||_flag_up<2); i++)
+   for(i = 1; i < (_bars-1) && (_flag_down<2||_flag_up<2); i++)
     {
      //если текущая high цена больше high цен последующей и предыдущей
      if (_price_high[i] > _price_high[i-1] && _price_high[i] > _price_high[i+1] && _flag_down < 2)
@@ -265,7 +265,7 @@ short CTihiro::TestReachRange()
   double cur_price;
   double abs;
   //если тренд восходящий
-  if (_tg > 0)
+  if (_trend_type == TREND_UP)
    {
      cur_price = SymbolInfoDouble(_symbol,SYMBOL_BID);
      abs=_open_price-cur_price;
@@ -277,7 +277,7 @@ short CTihiro::TestReachRange()
       }
    }
   //если тренд нисходящий
-  if (_tg < 0)
+  if (_trend_type == TREND_DOWN)
    {
      cur_price = SymbolInfoDouble(_symbol,SYMBOL_ASK);   
      abs=cur_price-_open_price;
@@ -311,9 +311,11 @@ void CTihiro::OnNewBar()
   {
    // вычисляем экстремумы (TD-точки линии тренда)
    GetTDPoints();
-   //
+   // вычисляем тип тренда (ситуацию)
+   RecognizeSituation();
+   // вычисляем тангенс тренд линии
    GetTan();
-   //вычисляем range
+   // вычисляем расстояние от экстремума до линии тренда
    GetRange();
   }
  }

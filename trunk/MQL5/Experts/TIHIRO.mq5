@@ -55,7 +55,6 @@ void OnTick()
    //если сформирован новый бар
    if ( newCisBar.isNewBar() > 0 )
     {
-
      tihiro.OnNewBar();
     }
    //получаем сигнал 
