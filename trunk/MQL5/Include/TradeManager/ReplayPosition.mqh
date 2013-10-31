@@ -19,7 +19,7 @@ class ReplayPosition
  private:
   CTradeManager ctm;  //торговый класс 
   CPositionArray aPositionsToReplay;         // массив убыточных позиций на отыгрыш
-  CArrayLong aReplayingPositionsDT;  // массив позиций для отыгрыша убыточных позиций
+  CArrayLong aReplayingPositionsDT;          // массив позиций для отыгрыша убыточных позиций
   
   int ATR_handle, errATR;
   double ATR_buf[];
@@ -64,6 +64,8 @@ void ReplayPosition::OnTrade()
  ctm.OnTrade();
  CPositionArray *array;
  CPosition *posFromHistory, *posToReplay;
+ double profitToReplay, profitFromHistory;
+ 
  if (prevDate != TimeCurrent())
  {
   array = ctm.GetPositionHistory(prevDate);
@@ -80,7 +82,11 @@ void ReplayPosition::OnTrade()
  
  for (int i = 0; i < totalReplayed; i++)
  {
+  posToReplay = aPositionsToReplay.At(index);
   posFromHistory = new CPosition(array.At(i));
+  profitToReplay = posToReplay.getPosProfit();
+  profitFromHistory = posFromHistory.getPosProfit();
+  
   index = 0;
   while (index < totalOnReplaying && posFromHistory.getOpenPosDT() != aReplayingPositionsDT[index])
   {
@@ -88,22 +94,29 @@ void ReplayPosition::OnTrade()
    index++;
   }
   
-  if (posFromHistory.getPosProfit() > 0)
+  if (profitFromHistory > 0)
   {
-   aPositionsToReplay.Delete(index);
-   aReplayingPositionsDT.Delete(index);
-  } 
-
+   if (profitFromHistory >= profitToReplay)
+   {
+    aPositionsToReplay.Delete(index);
+    aReplayingPositionsDT.Delete(index);
+   } 
+   else
+   {
+    posToReplay.setPositionStatus(POSITION_STATUS_MUST_BE_REPLAYED);
+    aReplayingPositionsDT.Update(index, 0);
+   }
+  }
+   
   if (posFromHistory.getPosProfit() < 0)
   {
    Print("index=",index);
-   posToReplay = aPositionsToReplay.At(index);
    aPositionsToReplay.Add(
        CreatePositionToReplay(
                     posToReplay.getSymbol()
                   , posToReplay.getType()
                   , posToReplay.getVolume()
-                  , posFromHistory.getPosProfit() + posToReplay.getPosProfit()
+                  , profitFromHistory + profitToReplay
                   , posToReplay.getPriceOpen()
                   , posFromHistory.getPriceClose()));
                   
@@ -205,10 +218,17 @@ void ReplayPosition::CustomPosition()
     tp = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL), (profit/_Point));
     sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL), (profit/_Point));
     int trailParam = ATR_buf[0]*_ATRforTrailing/_Point;
+    
     if (ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, trailParam, trailParam, trailParam)) //открываем позицию
+    {
      PrintFormat("Открыли позицию для отыгрыша profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
-    pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
-    aReplayingPositionsDT.Update(index, TimeCurrent());
+     pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
+     aReplayingPositionsDT.Update(index, TimeCurrent());
+    }
+    else
+    {
+     PrintFormat("Не удалось открыть позицию для отыгрыша profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
+    }
    }      
   }
  }

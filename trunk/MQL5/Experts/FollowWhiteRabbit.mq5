@@ -134,7 +134,6 @@ void OnTick()
     
     for(i = 0; i < historyDepth; i++)
     {
-     //Print("high_buf[",i,"] = ", NormalizeDouble(high_buf[i],8), " low_buf[",i,"] = ", NormalizeDouble(low_buf[i],8));
      sum = sum + high_buf[i] - low_buf[i];  
     }
     avgBar = sum / historyDepth;
@@ -143,7 +142,6 @@ void OnTick()
     
     if(GreatDoubles(lastBar, avgBar*(1 + supremacyPercent)))
     {
-     //PrintFormat("last bar = %.08f avg Bar = %.08f", NormalizeDouble(lastBar,8), NormalizeDouble(avgBar,8));
      double point = SymbolInfoDouble(symbol, SYMBOL_POINT);
      int digits = SymbolInfoInteger(symbol, SYMBOL_DIGITS);
      double vol=MathPow(10.0, digits); 
@@ -156,10 +154,7 @@ void OnTick()
       pos_type = opBuy;
      }
      takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
-     //PrintFormat("(open-close) = %.05f, vol = %.05f, (1+profitpercent) = %.02f, takeprofit = %.01f"
-     //           , MathAbs(open_buf[0] - close_buf[0]), vol, (1+profitPercent), takeProfit);
      ctm.OpenUniquePosition(symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep, priceDifference);
-     //ctm.OpenMultiPosition(symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep, priceDifference);
     }
    }
    
