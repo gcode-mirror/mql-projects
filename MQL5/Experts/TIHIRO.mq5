@@ -28,15 +28,19 @@ datetime price_date[];    // массив времени
 string symbol=_Symbol;
 //таймфрейм
 ENUM_TIMEFRAMES timeFrame = _Period; 
+//пункт
+double point = _Point;
 //объекты классов
-CTihiro       tihiro(symbol,timeFrame,bars); // объект класса CTihiro   
+CTihiro       tihiro(symbol,timeFrame,point,bars); // объект класса CTihiro   
 CisNewBar     newCisBar;    // для проверки на новый бар
 CTradeManager ctm;          // объект класса TradeManager
 
+double trendLine[];
+int handle;
 
 int OnInit()
   {
-  
+  handle = iCustom(symbol, timeFrame, "TihiroIndicator",50); //загружаем хэндл индикатора Tihiro
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -52,18 +56,25 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    short signal;
+   int errPBI;
    ctm.OnTick();
    //если сформирован новый бар
    if ( newCisBar.isNewBar() > 0 )
     {
+     errPBI = CopyBuffer(handle, 0, 0, bars, trendLine); //копируем буфер TihiroIndicator
+     if(errPBI < 0)
+     {
+      Alert("Не удалось скопировать данные из индикаторного буфера"); 
+      return; 
+     }    
      tihiro.OnNewBar();
     }
    //получаем сигнал 
-   signal = tihiro.OnTick(); 
+   signal = tihiro.GetSignal(); 
    if (signal == BUY)
-    ctm.OpenUniquePosition(symbol,OP_BUY,orderVolume,stopLoss,takeProfit,0,0,0);
+    ctm.OpenUniquePosition(symbol,OP_BUY,orderVolume,stopLoss,tihiro.GetTakeProfit(),0,0,0);
    if (signal == SELL)
-    ctm.OpenUniquePosition(symbol,OP_SELL,orderVolume,stopLoss,takeProfit,0,0,0); 
+    ctm.OpenUniquePosition(symbol,OP_SELL,orderVolume,stopLoss,tihiro.GetTakeProfit(),0,0,0); 
     
        if (trailing)
    {
