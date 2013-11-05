@@ -6,6 +6,7 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #include "Extrem.mqh" 
+#include <CompareDoubles.mqh>  
 
 //+------------------------------------------------------------------+
 //| Класс для эксперта TIHIRO                                        |
@@ -117,6 +118,7 @@ void CTihiro::GetRange(void)
    {
     L=_extr_up_present.time-_extr_down_past.time;  
     H=_extr_up_present.price-_extr_down_past.price;
+    //PrintFormat("");
    }
   if (_trend_type == TREND_UP)
    {
@@ -187,6 +189,7 @@ void  CTihiro::RecognizeSituation(void)
        if (_extr_up_present.time > _extr_down_present.time)  //если нижний экстремум позднее линии тренда
         {
          _trend_type = TREND_DOWN; //то вернем, что тренд нисходящий
+         return;
         } 
       }
     }
@@ -197,6 +200,7 @@ void  CTihiro::RecognizeSituation(void)
        if (_extr_down_present.time > _extr_up_present.time)  //если верхний экстремум позднее линии тренда
         {
          _trend_type = TREND_UP; //то вернем, что тренд восходящий
+         return;
         } 
       }
     }      
@@ -279,12 +283,47 @@ void CTihiro::OnNewBar()
        }
    // вычисляем экстремумы (TD-точки линии тренда)
    GetTDPoints();
+   
+      //ниже блок для теста 
+    
+      if (_flag_down==2)  //проверка на коректное вычисление экстремумов
+       {
+        PrintFormat("ТРЕНД ВНИЗ. Экстремум правый = (%s,%s), Экстрем левый = (%s,%s)",TimeToString(_extr_down_present.time),DoubleToString(_extr_down_present.price),
+        TimeToString(_extr_down_past.time),DoubleToString(_extr_down_past.price));
+       }
+      if (_flag_up==2)  //проверка на коректное вычисление экстремумов
+       {
+        PrintFormat("ТРЕНД ВВЕРХ. Экстремум правый = (%s,%s), Экстрем левый = (%s,%s)",TimeToString(_extr_up_present.time),DoubleToString(_extr_up_present.price),
+        TimeToString(_extr_up_past.time),DoubleToString(_extr_up_past.price));
+       }       
+      
+      //выше блок для теста
+   
+   
    // вычисляем тип тренда (ситуацию)
    RecognizeSituation();
+   
+     //ниже блок для теста
+     
+      if (_trend_type == TREND_DOWN)
+       Comment("ТИП - ТРЕНД ВНИЗ");
+      if (_trend_type == TREND_UP)
+       Comment("ТИП - ТРЕНД ВВЕРХ");
+      if (_trend_type == TREND_DOWN)
+       PrintFormat("НЕТ ТРЕНДА");              
+     
+     //выше блок для теста
+   
+   
    // вычисляем тангенс тренд линии
    GetTan();
    // вычисляем расстояние от экстремума до линии тренда
    GetRange();
+   
+   if (_trend_type==TREND_DOWN)
+   PrintFormat("Расстояние от экстремума до линии тренда DOWN = %s",DoubleToString(_range));
+   if (_trend_type==TREND_UP)
+   PrintFormat("Расстояние от экстремума до линии тренда UP = %s",DoubleToString(_range));   
  }
  
  
