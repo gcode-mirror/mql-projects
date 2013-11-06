@@ -247,6 +247,8 @@ short CTihiro::GetSignal()
      {
      //вычисляем тейк профит
       _takeProfit = (price-_range)/_point;     
+      Comment("ЦЕНА = ",DoubleToString(price)," РЭНДЖ = ",DoubleToString(_range));
+      _trend_type = NOTREND;      
       return SELL;
      }
    }
@@ -262,6 +264,8 @@ short CTihiro::GetSignal()
      { 
       //вычисляем тейк профит
       _takeProfit = (price-_range)/_point; 
+      _trend_type = NOTREND;
+      Comment("ЦЕНА = ",DoubleToString(price)," РЭНДЖ = ",DoubleToString(_range));    
       return BUY;
      }    
    }  
@@ -303,14 +307,14 @@ void CTihiro::OnNewBar()
    RecognizeSituation();
    
      //ниже блок для теста
-     
+    /* 
       if (_trend_type == TREND_DOWN)
        Comment("ТИП - ТРЕНД ВНИЗ");
       if (_trend_type == TREND_UP)
        Comment("ТИП - ТРЕНД ВВЕРХ");
       if (_trend_type == TREND_DOWN)
        Comment("НЕТ ТРЕНДА");              
-     
+     */
      //выше блок для теста
    
    

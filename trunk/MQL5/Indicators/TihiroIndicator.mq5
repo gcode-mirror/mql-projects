@@ -11,9 +11,9 @@
 #include <CompareDoubles.mqh>   
 
 //---- всего задействовано 2 буфера
-#property indicator_buffers 6
+#property indicator_buffers 4
 //---- использовано 1 графическое построение
-#property indicator_plots   6
+#property indicator_plots   4
 //---- в качестве индикатора использованы линии
 #property indicator_type1 DRAW_LINE
 //---- цвет индикатора
@@ -55,23 +55,6 @@
 //---- толщина линии индикатора
 #property indicator_width4  1
 
-//---- в качестве индикатора использованы линии
-#property indicator_type5 DRAW_LINE
-//---- цвет индикатора
-#property indicator_color5  clrLightBlue
-//---- стиль линии индикатора
-#property indicator_style5  STYLE_SOLID
-//---- толщина линии индикатора
-#property indicator_width5  1
-
-//---- в качестве индикатора использованы линии
-#property indicator_type6 DRAW_LINE
-//---- цвет индикатора
-#property indicator_color6  clrLightCyan
-//---- стиль линии индикатора
-#property indicator_style6  STYLE_SOLID
-//---- толщина линии индикатора
-#property indicator_width6  1
 
 input short bars=50;  //начальное количество баров истории
 
@@ -80,8 +63,6 @@ double trendLineDown[];
 double trendLineUp[];
 double highPrice[];
 double lowPrice[];
-double levelLineDown[];
-double levelLineUp[];
 
 
 //---- TD точки (экстремумы) восходящего тренда
@@ -103,9 +84,7 @@ int OnInit()
    SetIndexBuffer(0,trendLineDown,INDICATOR_DATA);   
    SetIndexBuffer(1,trendLineUp,  INDICATOR_DATA);   
    SetIndexBuffer(2,highPrice,  INDICATOR_DATA);   
-   SetIndexBuffer(3,lowPrice,  INDICATOR_DATA);  
-   SetIndexBuffer(4,levelLineDown,  INDICATOR_DATA);   
-   SetIndexBuffer(5,levelLineUp,  INDICATOR_DATA);                   
+   SetIndexBuffer(3,lowPrice,  INDICATOR_DATA);                    
 //---- настраиваем свойства индикатора
 //--- зададим код символа для отрисовки в PLOT_ARROW
 
@@ -180,36 +159,13 @@ int OnCalculate(const int rates_total,
      }     
     //проходим по циклу и вычисляем точки, принадлежащие линиям тренда
     
-    datetime L_DOWN,L_UP;
-    double H_DOWN,H_UP;
-    if (flag_down == 2)
-    {
-     L_DOWN=point_down_right.time-point_down_left.time;    
-     H_DOWN=point_down_right.price-point_down_left.price; 
-    }
-    if (flag_up == 2)
-    {
-     L_UP=point_up_right.time-point_up_left.time;    
-     H_UP=point_up_right.price-point_up_left.price;    
-    }    
-    
     for (i = rates_total-2; i > 0 ; i--)
      { 
        trendLineDown[i] = 0;
        trendLineUp[i] = 0;
        highPrice[i] = high[i];
        lowPrice[i]  = low[i];
-       
-      if (flag_down==2)
-       levelLineDown[i] = H_DOWN-tg_down*L_DOWN;
-      else
-       levelLineDown[i] = 0;
-       
-      if (flag_up==2)
-       levelLineUp[i] = H_UP-tg_up*L_UP;
-      else
-       levelLineUp[i] = 0;       
-      
+   
       if (flag_down==2)
        {
 
@@ -220,8 +176,6 @@ int OnCalculate(const int rates_total,
        {
         if (time[i]>=point_up_left.time)
          trendLineUp[i] = point_up_left.price+(time[i]-point_up_left.time)*tg_up;
-
-   
        }       
      }
      flag_down = 0;  
