@@ -118,7 +118,6 @@ void CTihiro::GetRange(void)
    {
     L=_extr_up_present.time-_extr_down_past.time;  
     H=_extr_up_present.price-_extr_down_past.price;
-    //PrintFormat("");
    }
   if (_trend_type == TREND_UP)
    {
@@ -310,7 +309,7 @@ void CTihiro::OnNewBar()
       if (_trend_type == TREND_UP)
        Comment("рхо - рпемд ббепу");
       if (_trend_type == TREND_DOWN)
-       PrintFormat("мер рпемдю");              
+       Comment("мер рпемдю");              
      
      //БШЬЕ АКНЙ ДКЪ РЕЯРЮ
    
