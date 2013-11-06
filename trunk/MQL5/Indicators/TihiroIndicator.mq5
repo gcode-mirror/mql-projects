@@ -126,12 +126,11 @@ int OnCalculate(const int rates_total,
   {
    int i;
    //проходим по циклу и вычисляем экстремумы
-   for(i = rates_total-2; i > 0; i--)
+   for(i = rates_total-3; i > 0; i--)
     {
      trendLineDown[i]=0;    
      trendLineUp[i]=0;       
      //если текущая high цена больше high цен последующей и предыдущей
-   //  if (high[i] > high[i-1] && high[i] > high[i+1] && flag_down < 2 )
      if (GreatDoubles(high[i],high[i-1])&&GreatDoubles(high[i],high[i+1])&&flag_down < 2)
       {
        if (flag_down == 0)
@@ -142,7 +141,6 @@ int OnCalculate(const int rates_total,
         }
        else 
         {
-      //   if(high[i] > point_down_right.price)
          if(GreatDoubles(high[i],point_down_right.price))
           {
           //сохраняем левый экстремум
@@ -152,7 +150,6 @@ int OnCalculate(const int rates_total,
         }            
       }  //нисходящий тренд
      //если текущая low цена меньше low цен последующей и предыдущей
-   //  if (low[i] < low[i-1] && low[i] < low[i+1] && flag_up < 2 )
      if (LessDoubles(low[i],low[i-1])&&LessDoubles(low[i],low[i+1])&&flag_up < 2)
       {
        if (flag_up == 0)
@@ -163,7 +160,6 @@ int OnCalculate(const int rates_total,
         }
        else 
         {
-         //if(low[i] < point_up_right.price)
          if(LessDoubles(low[i],point_up_right.price))
           {
           //сохраняем левый экстремум
@@ -184,8 +180,8 @@ int OnCalculate(const int rates_total,
      }     
     //проходим по циклу и вычисляем точки, принадлежащие линиям тренда
     
-    double L_UP,H_UP;
-    double L_DOWN,H_DOWN;
+    datetime L_DOWN,L_UP;
+    double H_DOWN,H_UP;
     if (flag_down == 2)
     {
      L_DOWN=point_down_right.time-point_down_left.time;    
@@ -197,7 +193,7 @@ int OnCalculate(const int rates_total,
      H_UP=point_up_right.price-point_up_left.price;    
     }    
     
-    for (i = rates_total-1; i > 0 ; i--)
+    for (i = rates_total-2; i > 0 ; i--)
      { 
        trendLineDown[i] = 0;
        trendLineUp[i] = 0;
@@ -216,6 +212,7 @@ int OnCalculate(const int rates_total,
       
       if (flag_down==2)
        {
+
         if (time[i]>=point_down_left.time)
          trendLineDown[i] = point_down_left.price+(time[i]-point_down_left.time)*tg_down;
        }
@@ -223,6 +220,8 @@ int OnCalculate(const int rates_total,
        {
         if (time[i]>=point_up_left.time)
          trendLineUp[i] = point_up_left.price+(time[i]-point_up_left.time)*tg_up;
+
+   
        }       
      }
      flag_down = 0;  
