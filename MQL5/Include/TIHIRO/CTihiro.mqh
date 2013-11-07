@@ -12,6 +12,7 @@
 //| Класс для эксперта TIHIRO                                        |
 //+------------------------------------------------------------------+
 
+
 class CTihiro 
  {
     //приватные поля класса
@@ -35,7 +36,7 @@ class CTihiro
     //расстояние от линии тренда до последнего экстремума
     double  _range;
     //тейк профит
-    uint    _takeProfit;
+    double    _takeProfit;
     //цена, на которой была открыта позиция
     double  _open_price;
     //экстремум предыдущий
@@ -84,7 +85,7 @@ class CTihiro
    //возвращает торговый сигнал
    short   GetSignal();   
    //возвращает тейкпрофит
-   uint    GetTakeProfit() { return (_takeProfit); };
+   double    GetTakeProfit() { return (_takeProfit); };
    //получает от эксперта указатели на массивы максимальных и минимальных цен баров
    //и вычисляет все необходимые значения по ним
    //а имеено - экстремумы, тангенс трендовой линии, расстояние от линии тренда до последнего экстремума 
@@ -246,8 +247,8 @@ short CTihiro::GetSignal()
     if (TestPointLocate(time,price)<=0)
      {
      //вычисляем тейк профит
-      _takeProfit = (price-_range)/_point;     
-      Comment("ЦЕНА = ",DoubleToString(price)," РЭНДЖ = ",DoubleToString(_range));
+      _takeProfit = (price-_range);///_point;     
+   //   Comment("ЦЕНА = ",DoubleToString(price)," РЭНДЖ = ",DoubleToString(_range));
       _trend_type = NOTREND;      
       return SELL;
      }
@@ -263,9 +264,9 @@ short CTihiro::GetSignal()
     if (TestPointLocate(time,price)>=0)
      { 
       //вычисляем тейк профит
-      _takeProfit = (price-_range)/_point; 
+      _takeProfit = (price-_range);///_point; 
       _trend_type = NOTREND;
-      Comment("ЦЕНА = ",DoubleToString(price)," РЭНДЖ = ",DoubleToString(_range));    
+   //   Comment("ЦЕНА = ",DoubleToString(price)," РЭНДЖ = ",DoubleToString(_range));    
       return BUY;
      }    
    }  
