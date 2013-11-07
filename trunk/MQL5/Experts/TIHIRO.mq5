@@ -57,18 +57,12 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    short signal;
-   int errPBI;
+   int errTrendDown,errTrendUp;
    ctm.OnTick();
    //если сформирован новый бар
+   
    if ( newCisBar.isNewBar() > 0 )
-    {
-     errPBI = CopyBuffer(handle, 0, 0, bars, trendLineDown); //копируем буфер TihiroIndicator
-     errPBI = CopyBuffer(handle, 1, 0, bars, trendLineUp); //копируем буфер TihiroIndicator     
-     if(errPBI < 0)
-     {
-      Alert("Не удалось скопировать данные из индикаторного буфера"); 
-      return; 
-     }    
+    {  
      tihiro.OnNewBar();
     }
    //получаем сигнал 
