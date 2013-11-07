@@ -11,9 +11,9 @@
 #include <CompareDoubles.mqh>   
 
 //---- всего задействовано 2 буфера
-#property indicator_buffers 4
-//---- использовано 1 графическое построение
-#property indicator_plots   4
+#property indicator_buffers 2
+//---- использовано 1 графическое пос троение
+#property indicator_plots   2
 //---- в качестве индикатора использованы линии
 #property indicator_type1 DRAW_LINE
 //---- цвет индикатора
@@ -35,34 +35,11 @@
 #property indicator_width2  1
 //---- отображение метки линии индикатора
 #property indicator_label2  "TREND_UP"
-
-//---- в качестве индикатора использованы линии
-#property indicator_type3 DRAW_LINE
-//---- цвет индикатора
-#property indicator_color3  clrLightGreen
-//---- стиль линии индикатора
-#property indicator_style3  STYLE_SOLID
-//---- толщина линии индикатора
-#property indicator_width3  1
-
-
-//---- в качестве индикатора использованы линии
-#property indicator_type4 DRAW_LINE
-//---- цвет индикатора
-#property indicator_color4  clrLightYellow
-//---- стиль линии индикатора
-#property indicator_style4  STYLE_SOLID
-//---- толщина линии индикатора
-#property indicator_width4  1
-
-
 input short bars=50;  //начальное количество баров истории
 
 //---- буфер значений линий  тренда
 double trendLineDown[];
 double trendLineUp[];
-double highPrice[];
-double lowPrice[];
 
 
 //---- TD точки (экстремумы) восходящего тренда
@@ -82,9 +59,7 @@ int OnInit()
   {
 //---- назначаем индексы буферов
    SetIndexBuffer(0,trendLineDown,INDICATOR_DATA);   
-   SetIndexBuffer(1,trendLineUp,  INDICATOR_DATA);   
-   SetIndexBuffer(2,highPrice,  INDICATOR_DATA);   
-   SetIndexBuffer(3,lowPrice,  INDICATOR_DATA);                    
+   SetIndexBuffer(1,trendLineUp,  INDICATOR_DATA);                  
 //---- настраиваем свойства индикатора
 //--- зададим код символа для отрисовки в PLOT_ARROW
 
@@ -104,7 +79,10 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
    int i;
+   flag_down = 0;  
+   flag_up = 0;   
    //проходим по циклу и вычисляем экстремумы
+   
    for(i = rates_total-3; i > 0; i--)
     {
      trendLineDown[i]=0;    
@@ -163,9 +141,7 @@ int OnCalculate(const int rates_total,
      { 
        trendLineDown[i] = 0;
        trendLineUp[i] = 0;
-       highPrice[i] = high[i];
-       lowPrice[i]  = low[i];
-   
+       
       if (flag_down==2)
        {
 
@@ -176,9 +152,8 @@ int OnCalculate(const int rates_total,
        {
         if (time[i]>=point_up_left.time)
          trendLineUp[i] = point_up_left.price+(time[i]-point_up_left.time)*tg_up;
-       }       
+       }    
      }
-     flag_down = 0;  
-     flag_up = 0;
+
    return(rates_total);
   }
