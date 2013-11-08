@@ -69,11 +69,13 @@ void OnTick()
    signal = tihiro.GetSignal(); 
    if (signal == BUY)
     {
-    ctm.OpenUniquePosition(symbol,OP_BUY,orderVolume,stopLoss,tihiro.GetTakeProfit()/_Point,0,0,0);
+    //Comment("ÒÅÉÊ ÏÐÎÔÈÒ = ",tihiro.GetTakeProfit()*_Point);
+    ctm.OpenUniquePosition(symbol,OP_BUY,orderVolume,0,tihiro.GetTakeProfit(),0,0,0);
     }
    if (signal == SELL)
     {
-    ctm.OpenUniquePosition(symbol,OP_SELL,orderVolume,stopLoss,tihiro.GetTakeProfit()/_Point,0,0,0); 
+    //Comment("ÒÅÉÊ ÏÐÎÔÈÒ = ",tihiro.GetTakeProfit()*_Point);    
+    ctm.OpenUniquePosition(symbol,OP_SELL,orderVolume,0,tihiro.GetTakeProfit(),0,0,0); 
     }
     
        if (trailing)
