@@ -145,7 +145,7 @@ void CTihiro::GetTDPoints()
        if (_flag_down == 0)
         {
          //сохраняем правый экстремум
-         _extr_down_present.SetExtrem(_price_time[i],_price_high[i]);
+         _extr_down_present.SetExtrem(_price_time[i+1],_price_high[i]);
          _flag_down = 1; 
         }
        else 
@@ -153,7 +153,7 @@ void CTihiro::GetTDPoints()
          if(_price_high[i] > _extr_down_present.price)
           {
           //сохраняем левый экстремум
-          _extr_down_past.SetExtrem(_price_time[i],_price_high[i]);               
+          _extr_down_past.SetExtrem(_price_time[i+1],_price_high[i]);               
           _flag_down = 2;
           }
         }            
@@ -164,7 +164,7 @@ void CTihiro::GetTDPoints()
        if (_flag_up == 0)
         {
          //сохраняем правый экстремум
-         _extr_up_present.SetExtrem(_price_time[i],_price_low[i]);
+         _extr_up_present.SetExtrem(_price_time[i+1],_price_low[i]);
          _flag_up = 1; 
         }
        else 
@@ -172,7 +172,7 @@ void CTihiro::GetTDPoints()
          if(_price_low[i] < _extr_up_present.price)
           {
           //сохраняем левый экстремум
-          _extr_up_past.SetExtrem(_price_time[i],_price_low[i]);        
+          _extr_up_past.SetExtrem(_price_time[i+1],_price_low[i]);        
           _flag_up = 2;
           }
         }            
@@ -222,16 +222,25 @@ short CTihiro::TestPointLocate(datetime cur_time,double cur_price)
    double line_level;
    if (_trend_type == TREND_DOWN)
     {
-     line_level = _extr_down_past.price+(cur_time-_extr_down_past.time)*_tg;  //значение  линии тренда в данной точке 
+     line_level = _extr_down_past.price+(_price_time[0]-_extr_down_past.time)*_tg;  //значение  линии тренда в данной точке 
+     //Comment("ЗНАЧЕНИЕ ТРЕНДА DOWN = ",DoubleToString(line_level));
     }
    if (_trend_type == TREND_UP)
     {
-     line_level = _extr_up_past.price+(cur_time-_extr_up_past.time)*_tg;  //значение  линии тренда в данной точке 
+     line_level = _extr_up_past.price+(_price_time[0]-_extr_up_past.time)*_tg;  //значение  линии тренда в данной точке 
+     //Comment("ЗНАЧЕНИЕ ТРЕНДА UP = ",DoubleToString(line_level));     
     }    
    if (cur_price>line_level)
+    {
+    Comment("ВЫШЕ");
     return 1;  //точка находится выше линии тренда
+    }
    if (cur_price<line_level)
+    {
+    Comment("НИЖЕ");
     return -1; //точка находится ниже линии тренда
+    }
+    Comment("НА ЛИНИИ");
    return 0;   //точка находится на линии тренда
  }
  
@@ -293,7 +302,7 @@ void CTihiro::OnNewBar()
    //загружаем буферы 
    if(CopyHigh(_symbol, _timeFrame, 1, _bars, _price_high) <= 0 ||
       CopyLow (_symbol, _timeFrame, 1, _bars, _price_low)  <= 0 ||
-      CopyTime(_symbol, _timeFrame, 1, _bars, _price_time) <= 0  ) 
+      CopyTime(_symbol, _timeFrame, 0, _bars+1, _price_time) <= 0  ) 
        {
         Print("Не удалось загрузить бары из истории");
         return;
@@ -321,14 +330,14 @@ void CTihiro::OnNewBar()
    RecognizeSituation();
    
      //ниже блок для теста
-    
+    /*
       if (_trend_type == TREND_DOWN)
        Comment("ТИП - ТРЕНД ВНИЗ");
       if (_trend_type == TREND_UP)
        Comment("ТИП - ТРЕНД ВВЕРХ");
-      if (_trend_type == TREND_DOWN)
-       Comment("НЕТ ТРЕНДА");              
-     
+      if (_trend_type == NOTREND)
+       Comment("НЕТ ТОРГОВОЙ СИТУАЦИИ");              
+     */
      //выше блок для теста
    
    
