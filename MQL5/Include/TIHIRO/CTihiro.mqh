@@ -26,7 +26,7 @@ class CTihiro
     //таймфрейм
     ENUM_TIMEFRAMES _timeFrame;
     //пункт
-    double _point;
+    double  _point;
     //режим обработки тиков
     TIHIRO_MODE _mode;
     //количество баров истории
@@ -36,7 +36,7 @@ class CTihiro
     //расстояние от линии тренда до последнего экстремума
     double  _range;
     //тейк профит
-    double    _takeProfit;
+    uint  _takeProfit;
     //цена, на которой была открыта позиция
     double  _open_price;
     //экстремум предыдущий
@@ -47,6 +47,8 @@ class CTihiro
     short   _flag_up,_flag_down;
     //тип ситуации
     short   _trend_type;
+    //расположение точки относительно линии тренда на предыдущем тике
+    short   _prev_locate;
     //приватные методы класса
    private:
     //получает значение тангенса угла наклона линии тренда   
@@ -85,7 +87,7 @@ class CTihiro
    //возвращает торговый сигнал
    short   GetSignal();   
    //возвращает тейкпрофит
-   double    GetTakeProfit() { return (_takeProfit); };
+   uint    GetTakeProfit() { return (_takeProfit); };
    //получает от эксперта указатели на массивы максимальных и минимальных цен баров
    //и вычисляет все необходимые значения по ним
    //а имеено - экстремумы, тангенс трендовой линии, расстояние от линии тренда до последнего экстремума 
@@ -188,7 +190,10 @@ void  CTihiro::RecognizeSituation(void)
       {
        if (_extr_up_present.time > _extr_down_present.time)  //если нижний экстремум позднее линии тренда
         {
-         _trend_type = TREND_DOWN; //то вернем, что тренд нисходящий
+         //расположение текущей цены относительно линии тренда
+         _prev_locate = TestPointLocate(TimeCurrent(),SymbolInfoDouble(_symbol,SYMBOL_ASK));
+         //сохраним, что тренд нисходящий
+         _trend_type = TREND_DOWN; 
          return;
         } 
       }
@@ -199,7 +204,10 @@ void  CTihiro::RecognizeSituation(void)
       {
        if (_extr_down_present.time > _extr_up_present.time)  //если верхний экстремум позднее линии тренда
         {
-         _trend_type = TREND_UP; //то вернем, что тренд восходящий
+         //расположение текущей цены относительно линии тренда
+         _prev_locate = TestPointLocate(TimeCurrent(),SymbolInfoDouble(_symbol,SYMBOL_BID));        
+         //сохраним, что тренд восходящий
+         _trend_type = TREND_UP; 
          return;
         } 
       }
@@ -236,6 +244,7 @@ short CTihiro::GetSignal()
  {
  datetime time;   //текущее время
  double   price;  //текущая цена
+ short    locate; //положение точки относительно тренда
   //если тренд восходящий 
  if (_trend_type == TREND_UP) 
    {
@@ -243,15 +252,17 @@ short CTihiro::GetSignal()
     time = TimeCurrent();
     //сохраняем цену BID, как низкую
     price = SymbolInfoDouble(_symbol,SYMBOL_BID);
-    //если цена перевалила за линию тренда
-    if (TestPointLocate(time,price)<=0)
+    //сохраняем в локальную переменную положение цены относительно линии тренда
+    locate  = TestPointLocate(time,price);
+    //если цена перевалила за линию тренда сверху вниз
+    if (_prev_locate > 0 && locate<=0)
      {
      //вычисляем тейк профит
-      _takeProfit = (price-_range);///_point;     
-   //   Comment("ЦЕНА = ",DoubleToString(price)," РЭНДЖ = ",DoubleToString(_range));
+      _takeProfit = (price-_range)/_point;     
       _trend_type = NOTREND;      
       return SELL;
      }
+    _prev_locate = locate;     
    }
   //если тренд нисходящий
   if (_trend_type == TREND_DOWN) 
@@ -260,15 +271,17 @@ short CTihiro::GetSignal()
     time = TimeCurrent();   
     //сохраняем цену ASK, как высокую
     price = SymbolInfoDouble(_symbol,SYMBOL_ASK);
-    //если цена перевалила за линию тренда
-    if (TestPointLocate(time,price)>=0)
+    //сохраняем в локальную переменную положение цены относительно линии тренда
+    locate  = TestPointLocate(time,price);    
+    //если цена перевалила за линию тренда снизу вверх
+    if (_prev_locate < 0 && locate>=0)
      { 
       //вычисляем тейк профит
-      _takeProfit = (price-_range);///_point; 
+      _takeProfit = (price-_range)/_point; 
       _trend_type = NOTREND;
-   //   Comment("ЦЕНА = ",DoubleToString(price)," РЭНДЖ = ",DoubleToString(_range));    
       return BUY;
      }    
+    _prev_locate = locate;
    }  
   return UNKNOWN;  
  }
@@ -308,14 +321,14 @@ void CTihiro::OnNewBar()
    RecognizeSituation();
    
      //ниже блок для теста
-    /* 
+    
       if (_trend_type == TREND_DOWN)
        Comment("ТИП - ТРЕНД ВНИЗ");
       if (_trend_type == TREND_UP)
        Comment("ТИП - ТРЕНД ВВЕРХ");
       if (_trend_type == TREND_DOWN)
        Comment("НЕТ ТРЕНДА");              
-     */
+     
      //выше блок для теста
    
    

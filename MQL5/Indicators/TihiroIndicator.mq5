@@ -11,9 +11,9 @@
 #include <CompareDoubles.mqh>   
 
 //---- всего задействовано 2 буфера
-#property indicator_buffers 2
+#property indicator_buffers 4
 //---- использовано 1 графическое пос троение
-#property indicator_plots   2
+#property indicator_plots   4
 //---- в качестве индикатора использованы линии
 #property indicator_type1 DRAW_LINE
 //---- цвет индикатора
@@ -35,11 +35,34 @@
 #property indicator_width2  1
 //---- отображение метки линии индикатора
 #property indicator_label2  "TREND_UP"
+
+
+//---- в качестве индикатора использованы линии
+#property indicator_type3 DRAW_LINE
+//---- цвет индикатора
+#property indicator_color3  clrYellow
+//---- стиль линии индикатора
+#property indicator_style3  STYLE_DASHDOT
+//---- толщина линии индикатора
+#property indicator_width3  1
+
+//---- в качестве индикатора использованы линии
+#property indicator_type4 DRAW_LINE
+//---- цвет индикатора
+#property indicator_color4  clrYellow
+//---- стиль линии индикатора
+#property indicator_style4  STYLE_DASHDOT
+//---- толщина линии индикатора
+#property indicator_width4  1
+
+
 input short bars=50;  //начальное количество баров истории
 
 //---- буфер значений линий  тренда
 double trendLineDown[];
 double trendLineUp[];
+double priceHigh[];
+double priceLow[];
 
 
 //---- TD точки (экстремумы) восходящего тренда
@@ -59,7 +82,9 @@ int OnInit()
   {
 //---- назначаем индексы буферов
    SetIndexBuffer(0,trendLineDown,INDICATOR_DATA);   
-   SetIndexBuffer(1,trendLineUp,  INDICATOR_DATA);                  
+   SetIndexBuffer(1,trendLineUp,  INDICATOR_DATA);  
+   SetIndexBuffer(2,priceHigh,  INDICATOR_DATA);     
+   SetIndexBuffer(3,priceLow,  INDICATOR_DATA);                           
 //---- настраиваем свойства индикатора
 //--- зададим код символа для отрисовки в PLOT_ARROW
 
@@ -88,9 +113,9 @@ int OnCalculate(const int rates_total,
      trendLineDown[i]=0;    
      trendLineUp[i]=0;       
      //если текущая high цена больше high цен последующей и предыдущей
-     if (GreatDoubles(high[i],high[i-1])&&GreatDoubles(high[i],high[i+1])&&flag_down < 2)
+     if ( GreatDoubles(high[i],high[i-1]) && GreatDoubles(high[i],high[i+1]) && flag_down < 2 )
       {
-       if (flag_down == 0)
+       if ( flag_down == 0 )
         {
          //сохраняем правый экстремум
          point_down_right.SetExtrem(time[i],high[i]);
@@ -98,7 +123,7 @@ int OnCalculate(const int rates_total,
         }
        else 
         {
-         if(GreatDoubles(high[i],point_down_right.price))
+         if( GreatDoubles(high[i],point_down_right.price) )
           {
           //сохраняем левый экстремум
           point_down_left.SetExtrem(time[i],high[i]);               
@@ -107,7 +132,7 @@ int OnCalculate(const int rates_total,
         }            
       }  //нисходящий тренд
      //если текущая low цена меньше low цен последующей и предыдущей
-     if (LessDoubles(low[i],low[i-1])&&LessDoubles(low[i],low[i+1])&&flag_up < 2)
+     if ( LessDoubles(low[i],low[i-1]) && LessDoubles(low[i],low[i+1])&&flag_up < 2)
       {
        if (flag_up == 0)
         {
@@ -137,10 +162,15 @@ int OnCalculate(const int rates_total,
      }     
     //проходим по циклу и вычисляем точки, принадлежащие линиям тренда
     
-    for (i = rates_total-2; i > 0 ; i--)
+    priceHigh[rates_total-1] = high[rates_total-1];
+    priceLow[rates_total-1]  = low[rates_total-1];
+    
+    for (i = rates_total-1; i > 0 ; i--)
      { 
        trendLineDown[i] = 0;
        trendLineUp[i] = 0;
+       priceHigh[i] = high[i];
+       priceLow[i]  = low[i];
        
       if (flag_down==2)
        {
