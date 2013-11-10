@@ -77,7 +77,6 @@ void CTradeManager::CTradeManager():  _useSound(true), _nameFileSound("expert.wa
  historyDataFileName = CreateFilename(FILENAME_HISTORY);
  LoadArrayFromFile(rescueDataFileName ,_openPositions);
  LoadArrayFromFile(historyDataFileName,_positionsHistory);
-
 };
 
 //+---------------------------------
@@ -98,6 +97,10 @@ void CTradeManager::~CTradeManager(void)
   if(size == 0) break;
   attempts++;
  }
+ 
+ delete _positionsToReProcessing;
+ delete _openPositions;
+ delete _positionsHistory;
  log_file.Write(LOG_DEBUG, StringFormat("%s Процесс деинициализации завершен.", MakeFunctionPrefix(__FUNCTION__)));
  FileDelete(rescueDataFileName, FILE_COMMON);
 };
@@ -212,6 +215,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type
  if (total <= 0)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
+  PrintFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__));
   pos = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
   ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
@@ -257,7 +261,7 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
  
  pos = new CPosition(_magic, symbol, type, volume, sl, tp, minProfit, trailingStop, trailingStep, priceDifferense);
  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
- Print("openingResult=", PositionStatusToStr(openingResult));
+ //Print("openingResult=", PositionStatusToStr(openingResult));
  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
@@ -527,6 +531,7 @@ bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
 bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
 {
  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
+ //PrintFormat("%s получаем из массива указатель на позицию по ее индексу", MakeFunctionPrefix(__FUNCTION__));
  if (pos.ClosePosition())
  {
   //Print("Перемещаем позицию в хистори");
@@ -534,6 +539,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
   SaveArrayToFile(historyDataFileName,_positionsHistory); 
   SaveArrayToFile(rescueDataFileName,_openPositions);   
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+  PrintFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i);
   return(true);
  }
  else

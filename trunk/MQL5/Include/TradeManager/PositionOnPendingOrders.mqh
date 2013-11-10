@@ -56,6 +56,7 @@ private:
 public:
    void CPosition()   // конструктор по умолчанию
    {
+    //Print("Конструктор по умолчанию");
     trade = new CTMTradeFunctions();
     _pos_status = POSITION_STATUS_NOT_INITIALISED;
     _sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
@@ -123,22 +124,24 @@ public:
 //+------------------------------------------------------------------+
 CPosition::CPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume, double profit, double priceOpen, double priceClose)
 {
-  trade = new CTMTradeFunctions();
-  _symbol = symbol;
-  _type = type;
-  _lots = volume;
-  _posProfit = profit;
-  _posOpenPrice = priceOpen;
-  _posClosePrice = priceClose;
-    _pos_status = POSITION_STATUS_NOT_INITIALISED;
-    _sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
+  //Print("Конструктор с параметрами для реплея");
+ trade = new CTMTradeFunctions();
+ _symbol = symbol;
+ _type = type;
+ _lots = volume;
+ _posProfit = profit;
+ _posOpenPrice = priceOpen;
+ _posClosePrice = priceClose;
+ _pos_status = POSITION_STATUS_NOT_INITIALISED;
+ _sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
 }
 //+------------------------------------------------------------------+
 //| Copy Constructor                                                 |
 //+------------------------------------------------------------------+
 CPosition::CPosition(CPosition *pos)
 {
-  trade = new CTMTradeFunctions();
+ //Print("Конструктор копирования");
+ trade = new CTMTradeFunctions();
  
  _magic = pos.getMagic();
  _posTicket = pos.getPositionTicket();
@@ -177,7 +180,7 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, dou
                        _trailingStep(trailingStep), _priceDifference(priceDifference), _sl(0), _tp(0)
 {
 //--- initialize trade functions class
- Print("Новая позиция - конструктор");
+ //Print("Конструктор с параметрами");
  UpdateSymbolInfo();
  if(sl > 0) _sl = (sl < SymbInfo.StopsLevel()) ? SymbInfo.StopsLevel() : sl;
  if(tp > 0) _tp = (tp < SymbInfo.StopsLevel()) ? SymbInfo.StopsLevel() : tp;
