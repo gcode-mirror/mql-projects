@@ -283,7 +283,7 @@ short CTihiro::GetSignal()
     //сохраняем в локальную переменную положение цены относительно линии тренда
     locate  = TestPointLocate(time,price);    
     //если цена перевалила за линию тренда снизу вверх
-    if (_prev_locate < 0 && locate>=0)
+    if (_prev_locate < 0 && locate >= 0)
      { 
       //вычисляем тейк профит
       _takeProfit = (price-_range)/_point; 
@@ -299,56 +299,56 @@ short CTihiro::GetSignal()
 void CTihiro::OnNewBar()
 //вычисляет все необходимые значения по массивам максимальных и минимальных цен баров
  {
-   //загружаем буферы 
-   if(CopyHigh(_symbol, _timeFrame, 1, _bars, _price_high) <= 0 ||
-      CopyLow (_symbol, _timeFrame, 1, _bars, _price_low)  <= 0 ||
-      CopyTime(_symbol, _timeFrame, 0, _bars+1, _price_time) <= 0  ) 
-       {
-        Print("Не удалось загрузить бары из истории");
-        return;
-       }
-   // вычисляем экстремумы (TD-точки линии тренда)
-   GetTDPoints();
+  //загружаем буферы 
+  if(CopyHigh(_symbol, _timeFrame, 1, _bars, _price_high) <= 0 ||
+     CopyLow (_symbol, _timeFrame, 1, _bars, _price_low)  <= 0 ||
+     CopyTime(_symbol, _timeFrame, 0, _bars+1, _price_time) <= 0  ) 
+      {
+       Print("Не удалось загрузить бары из истории");
+       return;
+      }
+  // вычисляем экстремумы (TD-точки линии тренда)
+  GetTDPoints();
+  
+     //ниже блок для теста 
    
-      //ниже блок для теста 
-    
-      if (_flag_down==2)  //проверка на коректное вычисление экстремумов
-       {
-        PrintFormat("ТРЕНД ВНИЗ. Экстремум правый = (%s,%s), Экстрем левый = (%s,%s)",TimeToString(_extr_down_present.time),DoubleToString(_extr_down_present.price),
-        TimeToString(_extr_down_past.time),DoubleToString(_extr_down_past.price));
-       }
-      if (_flag_up==2)  //проверка на коректное вычисление экстремумов
-       {
-        PrintFormat("ТРЕНД ВВЕРХ. Экстремум правый = (%s,%s), Экстрем левый = (%s,%s)",TimeToString(_extr_up_present.time),DoubleToString(_extr_up_present.price),
-        TimeToString(_extr_up_past.time),DoubleToString(_extr_up_past.price));
-       }       
-      
-      //выше блок для теста
-   
-   
-   // вычисляем тип тренда (ситуацию)
-   RecognizeSituation();
-   
-     //ниже блок для теста
-    /*
-      if (_trend_type == TREND_DOWN)
-       Comment("ТИП - ТРЕНД ВНИЗ");
-      if (_trend_type == TREND_UP)
-       Comment("ТИП - ТРЕНД ВВЕРХ");
-      if (_trend_type == NOTREND)
-       Comment("НЕТ ТОРГОВОЙ СИТУАЦИИ");              
-     */
+     if (_flag_down==2)  //проверка на корректное вычисление экстремумов
+      {
+       PrintFormat("ТРЕНД ВНИЗ. Экстремум правый = (%s,%s), Экстрем левый = (%s,%s)",TimeToString(_extr_down_present.time),DoubleToString(_extr_down_present.price),
+       TimeToString(_extr_down_past.time),DoubleToString(_extr_down_past.price));
+      }
+     if (_flag_up==2)  //проверка на корректное вычисление экстремумов
+      {
+       PrintFormat("ТРЕНД ВВЕРХ. Экстремум правый = (%s,%s), Экстрем левый = (%s,%s)",TimeToString(_extr_up_present.time),DoubleToString(_extr_up_present.price),
+       TimeToString(_extr_up_past.time),DoubleToString(_extr_up_past.price));
+      }       
+     
      //выше блок для теста
-   
-   
-   // вычисляем тангенс тренд линии
-   GetTan();
-   // вычисляем расстояние от экстремума до линии тренда
-   GetRange();
-   
-   if (_trend_type==TREND_DOWN)
+  
+  
+  // вычисляем тип тренда (ситуацию)
+  RecognizeSituation();
+  
+    //ниже блок для теста
+   /*
+     if (_trend_type == TREND_DOWN)
+      Comment("ТИП - ТРЕНД ВНИЗ");
+     if (_trend_type == TREND_UP)
+      Comment("ТИП - ТРЕНД ВВЕРХ");
+     if (_trend_type == NOTREND)
+      Comment("НЕТ ТОРГОВОЙ СИТУАЦИИ");              
+    */
+    //выше блок для теста
+  
+  
+  // вычисляем тангенс тренд линии
+  GetTan();
+  // вычисляем расстояние от экстремума до линии тренда
+  GetRange();
+  
+  if (_trend_type==TREND_DOWN)
    PrintFormat("Расстояние от экстремума до линии тренда DOWN = %s",DoubleToString(_range));
-   if (_trend_type==TREND_UP)
+  if (_trend_type==TREND_UP)
    PrintFormat("Расстояние от экстремума до линии тренда UP = %s",DoubleToString(_range));   
  }
  
