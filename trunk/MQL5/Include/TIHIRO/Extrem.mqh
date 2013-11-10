@@ -28,7 +28,7 @@ enum  TIHIRO_MODE
   {
    public:
    datetime time;   //временное положение экстремума
-   double price;  //ценовое положение экстремума
+   double price;    //ценовое положение экстремума
    void SetExtrem(datetime t,double p){ time=t; price=p; }; //сохраняет экстремум
    Extrem(datetime t=0,double p=0):time(t),price(p){};      //конструктор
   };

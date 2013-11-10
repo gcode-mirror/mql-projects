@@ -19,7 +19,7 @@ input int      takeProfit=0;   //take profit
 input int      stopLoss=0;     //stop loss
 input double   orderVolume = 1;  //размер лота
 input ulong    magic = 111222;   //магическое число
-input bool trailing = false;     //трейлинг
+input bool     trailing = false;     //трейлинг
 //буферы для хранения цен 
 double price_high[];      // массив высоких цен  
 double price_low[];       // массив низких цен  
@@ -32,18 +32,18 @@ ENUM_TIMEFRAMES timeFrame = _Period;
 double point = _Point;
 //объекты классов
 CTihiro       tihiro(symbol,timeFrame,point,bars); // объект класса CTihiro   
-CisNewBar     newCisBar;    // для проверки на новый бар
-CTradeManager ctm;          // объект класса TradeManager
+CisNewBar     isNewBar;                           // для проверки на новый бар
+CTradeManager ctm;                                 // объект класса TradeManager
 
 double trendLineDown[];
 double trendLineUp[];
 int handle;
 
 int OnInit()
-  {
-  handle = iCustom(symbol, timeFrame, "TihiroIndicator",50); //загружаем хэндл индикатора Tihiro
-   return(INIT_SUCCEEDED);
-  }
+{
+ handle = iCustom(symbol, timeFrame, "TihiroIndicator",50); //загружаем хэндл индикатора Tihiro
+ return(INIT_SUCCEEDED);
+}
 //+------------------------------------------------------------------+
 //| TIHITO деинициализация эксперта                                  |
 //+------------------------------------------------------------------+
@@ -57,14 +57,14 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    short signal;
-   int errTrendDown,errTrendUp;
+   int errTrendDown, errTrendUp;
    ctm.OnTick();
    //если сформирован новый бар
    
-   if ( newCisBar.isNewBar() > 0 )
-    {  
-     tihiro.OnNewBar();
-    }
+   if ( isNewBar.isNewBar() > 0 )
+   {  
+    tihiro.OnNewBar();
+   }
    //получаем сигнал 
    signal = tihiro.GetSignal(); 
    if (signal == BUY)
@@ -78,7 +78,7 @@ void OnTick()
     ctm.OpenUniquePosition(symbol,OP_SELL,orderVolume,0,tihiro.GetTakeProfit(),0,0,0); 
     }
     
-       if (trailing)
+   if (trailing)
    {
     ctm.DoTrailing();
    }
