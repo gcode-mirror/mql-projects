@@ -60,11 +60,12 @@ void ReplayPosition::~ReplayPosition(void)
 //+------------------------------------------------------------------+
 void ReplayPosition::OnTrade()
 {
- PrintFormat("total=%d, totalOnRep=%d", aPositionsToReplay.Total(), aReplayingPositionsDT.Total());
+ //PrintFormat("%s, total=%d, totalOnRep=%d", MakeFunctionPrefix(__FUNCTION__), aPositionsToReplay.Total(), aReplayingPositionsDT.Total());
  ctm.OnTrade();
  CPositionArray *array;
  CPosition *posFromHistory, *posToReplay;
  double profitToReplay, profitFromHistory;
+ int index;
  
  if (prevDate != TimeCurrent())
  {
@@ -78,31 +79,33 @@ void ReplayPosition::OnTrade()
    
  int totalReplayed = array.Total();
  int totalOnReplaying = aReplayingPositionsDT.Total();
- int index;
+ if (totalReplayed > 0) PrintFormat("%s Закрыто %d позиций открытых для отыгрыша", MakeFunctionPrefix(__FUNCTION__), totalReplayed);
  
  for (int i = 0; i < totalReplayed; i++)
  {
-  posToReplay = aPositionsToReplay.At(index);
   posFromHistory = new CPosition(array.At(i));
-  profitToReplay = posToReplay.getPosProfit();
-  profitFromHistory = posFromHistory.getPosProfit();
-  
   index = 0;
   while (index < totalOnReplaying && posFromHistory.getOpenPosDT() != aReplayingPositionsDT[index])
   {
-   PrintFormat("total = %d, index = %d, totalOnRep=%d", aPositionsToReplay.Total(), index, totalOnReplaying);
    index++;
+   PrintFormat("%s Из отыграных позиций выбираем сыгравшую: total=%d, totalOnRep=%d, index = %d", MakeFunctionPrefix(__FUNCTION__), aPositionsToReplay.Total(), totalOnReplaying, index);
   }
+  
+  posToReplay = aPositionsToReplay.At(index);
+  profitToReplay = posToReplay.getPosProfit();
+  profitFromHistory = posFromHistory.getPosProfit();
   
   if (profitFromHistory > 0)
   {
    if (profitFromHistory >= profitToReplay)
    {
+    PrintFormat("%s Позиция на отыгрыш отыграла убыток: total=%d, totalOnRep=%d, index=%d", MakeFunctionPrefix(__FUNCTION__), aPositionsToReplay.Total(), aReplayingPositionsDT.Total(), index);
     aPositionsToReplay.Delete(index);
     aReplayingPositionsDT.Delete(index);
    } 
    else
    {
+    PrintFormat("%s Позиция на отыгрыш НЕ отыграла убыток: total=%d, totalOnRep=%d, index=%d", MakeFunctionPrefix(__FUNCTION__), aPositionsToReplay.Total(), aReplayingPositionsDT.Total(), index);
     posToReplay.setPositionStatus(POSITION_STATUS_MUST_BE_REPLAYED);
     aReplayingPositionsDT.Update(index, 0);
    }
@@ -110,7 +113,7 @@ void ReplayPosition::OnTrade()
    
   if (posFromHistory.getPosProfit() < 0)
   {
-   Print("index=",index);
+   PrintFormat("%s Позиция на отыгрыш закрыта с убытком: total=%d, totalOnRep=%d, index=%d", MakeFunctionPrefix(__FUNCTION__), aPositionsToReplay.Total(), aReplayingPositionsDT.Total(), index);
    aPositionsToReplay.Add(
        CreatePositionToReplay(
                     posToReplay.getSymbol()
@@ -121,11 +124,14 @@ void ReplayPosition::OnTrade()
                   , posFromHistory.getPriceClose()));
                   
    aReplayingPositionsDT.Add(0);
+   PrintFormat("%s добавили новую позицию: total=%d, totalOnRep=%d, index=%d", MakeFunctionPrefix(__FUNCTION__), aPositionsToReplay.Total(), aReplayingPositionsDT.Total(), index);
    aPositionsToReplay.Delete(index);
    aReplayingPositionsDT.Delete(index);
-   PrintFormat("total=%d, totalOnRep=%d", aPositionsToReplay.Total(), aReplayingPositionsDT.Total());
+   PrintFormat("%s Удалили старую позицию: total=%d, totalOnRep=%d, index=%d", MakeFunctionPrefix(__FUNCTION__), aPositionsToReplay.Total(), aReplayingPositionsDT.Total(), index);
   }
+  delete posFromHistory;
  }
+ 
 }
 //+------------------------------------------------------------------+
 //| заполняет массив для отыгрыша из внешнего массива                |
@@ -143,10 +149,17 @@ void ReplayPosition::setArrayToReplay(CPositionArray *array)
   {
    pos.setPositionStatus(POSITION_STATUS_MUST_BE_REPLAYED);
    aPositionsToReplay.Add(pos);
-   PrintFormat("Добавили позицию closePrice=%.05f, Profit=%.05f, status=%s", pos.getPriceClose(), pos.getPosProfit(), PositionStatusToStr(pos.getPositionStatus()));
    aReplayingPositionsDT.Add(0);
+   PrintFormat("%s Добавили позицию closePrice=%.05f, Profit=%.05f, status=%s, total=%d, totalOnRep=%d"
+              , MakeFunctionPrefix(__FUNCTION__), pos.getPriceClose(), pos.getPosProfit()
+              , PositionStatusToStr(pos.getPositionStatus()), aPositionsToReplay.Total(), aReplayingPositionsDT.Total());
+  }
+  else
+  {
+   delete pos;
   }
  }
+ //delete array;
 }
 
 //+------------------------------------------------------------------+
@@ -221,7 +234,7 @@ void ReplayPosition::CustomPosition()
     
     if (ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, trailParam, trailParam, trailParam)) //открываем позицию
     {
-     PrintFormat("Открыли позицию для отыгрыша profit=%.05f, sl=%d, tp=%d",NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
+     PrintFormat("Открыли позицию для отыгрыша type=%s, profit=%.05f, sl=%d, tp=%d", GetNameOP(pos.getType()), NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
      pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
      aReplayingPositionsDT.Update(index, TimeCurrent());
     }
