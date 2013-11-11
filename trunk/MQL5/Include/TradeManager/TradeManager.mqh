@@ -73,7 +73,7 @@ void CTradeManager::CTradeManager():  _useSound(true), _nameFileSound("expert.wa
  _magic = MakeMagic();
  _historyStart = TimeCurrent(); 
  
- rescueDataFileName = CreateFilename(FILENAME_RESCUE);
+ rescueDataFileName  = CreateFilename(FILENAME_RESCUE);
  historyDataFileName = CreateFilename(FILENAME_HISTORY);
  LoadArrayFromFile(rescueDataFileName ,_openPositions);
  LoadArrayFromFile(historyDataFileName,_positionsHistory);
