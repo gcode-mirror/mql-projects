@@ -15,11 +15,7 @@
 //+------------------------------------------------------------------+
 //внешние, задаваемые пользователем параметры эксперта
 input uint     bars=50;          //количество баров истории
-input int      takeProfit=0;   //take profit
-input int      stopLoss=0;     //stop loss
 input double   orderVolume = 1;  //размер лота
-input ulong    magic = 111222;   //магическое число
-input bool     trailing = false;     //трейлинг
 //буферы для хранения цен 
 double price_high[];      // массив высоких цен  
 double price_low[];       // массив низких цен  
@@ -34,10 +30,8 @@ double point = _Point;
 CTihiro       tihiro(symbol,timeFrame,point,bars); // объект класса CTihiro   
 CisNewBar     isNewBar;                           // для проверки на новый бар
 CTradeManager ctm;                                 // объект класса TradeManager
-
-double trendLineDown[];
-double trendLineUp[];
 int handle;
+bool first_load = false;
 
 int OnInit()
 {
@@ -56,30 +50,31 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   short signal;
+   ENUM_TM_POSITION_TYPE signal;
    int errTrendDown, errTrendUp;
+   bool allow_continue = true;   //флаг продолжения 
    ctm.OnTick();
    //если сформирован новый бар
    
-   if ( isNewBar.isNewBar() > 0 )
+   if ( isNewBar.isNewBar() > 0 && first_load)
    {  
-    tihiro.OnNewBar();
+    allow_continue = tihiro.OnNewBar();
    }
-   //получаем сигнал 
-   signal = tihiro.GetSignal(); 
-   if (signal == BUY)
-    {
-    //Comment("ТЕЙК ПРОФИТ = ",tihiro.GetTakeProfit()*_Point);
-    ctm.OpenUniquePosition(symbol,OP_BUY,orderVolume,0,tihiro.GetTakeProfit(),0,0,0);
-    }
-   if (signal == SELL)
-    {
-    //Comment("ТЕЙК ПРОФИТ = ",tihiro.GetTakeProfit()*_Point);    
-    ctm.OpenUniquePosition(symbol,OP_SELL,orderVolume,0,tihiro.GetTakeProfit(),0,0,0); 
-    }
-    
-   if (trailing)
+   
+   if (first_load == false)
    {
-    ctm.DoTrailing();
+     allow_continue = tihiro.OnNewBar();
+     first_load = true;
+   }
+   
+   //получаем сигнал 
+   if (allow_continue)
+   {
+    signal = tihiro.GetSignal();   
+    if (signal != OP_UNKNOWN)
+      {
+    Print("Стоп Лосс = ",tihiro.GetStopLoss()*_Point, " ТЕЙК ПРОФИТ = ", tihiro.GetTakeProfit()*_Point);
+    ctm.OpenUniquePosition(symbol,signal,orderVolume,tihiro.GetStopLoss(),tihiro.GetTakeProfit(),0,0,0); 
+       }
    }
   }

@@ -6,7 +6,10 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #include "Extrem.mqh" 
+#include <TradeManager\TradeManagerEnums.mqh>
 #include <CompareDoubles.mqh>  
+
+
 
 //+------------------------------------------------------------------+
 //| Класс для эксперта TIHIRO                                        |
@@ -27,8 +30,6 @@ class CTihiro
     ENUM_TIMEFRAMES _timeFrame;
     //пункт
     double  _point;
-    //режим обработки тиков
-    TIHIRO_MODE _mode;
     //количество баров истории
     uint    _bars;  
     //тангенс линий тренда
@@ -37,6 +38,8 @@ class CTihiro
     double  _range;
     //тейк профит
     uint  _takeProfit;
+    //стоп лосс
+    uint  _stopLoss;
     //цена, на которой была открыта позиция
     double  _open_price;
     //экстремум предыдущий
@@ -67,7 +70,6 @@ class CTihiro
      _symbol(symbol),
      _timeFrame(timeFrame),
      _point(point),
-     _mode(TM_WAIT_FOR_CROSS),
      _bars(bars)
     { 
      //порядок как в таймсерии
@@ -85,13 +87,15 @@ class CTihiro
     };
    // -----------------------------------------------------------------------------
    //возвращает торговый сигнал
-   short   GetSignal();   
+   ENUM_TM_POSITION_TYPE   GetSignal();   
    //возвращает тейкпрофит
    uint    GetTakeProfit() { return (_takeProfit); };
+   //возвращает стоп лосс
+   uint    GetStopLoss()   { return (_stopLoss); };
    //получает от эксперта указатели на массивы максимальных и минимальных цен баров
    //и вычисляет все необходимые значения по ним
    //а имеено - экстремумы, тангенс трендовой линии, расстояние от линии тренда до последнего экстремума 
-   void    OnNewBar();
+   bool    OnNewBar();
 
  };
 
@@ -232,15 +236,15 @@ short CTihiro::TestPointLocate(datetime cur_time,double cur_price)
     }    
    if (cur_price>line_level)
     {
-    Comment("ВЫШЕ");
+   // Comment("ВЫШЕ");
     return 1;  //точка находится выше линии тренда
     }
    if (cur_price<line_level)
     {
-    Comment("НИЖЕ");
+   // Comment("НИЖЕ");
     return -1; //точка находится ниже линии тренда
     }
-    Comment("НА ЛИНИИ");
+  //  Comment("НА ЛИНИИ");
    return 0;   //точка находится на линии тренда
  }
  
@@ -248,7 +252,7 @@ short CTihiro::TestPointLocate(datetime cur_time,double cur_price)
 //| Описание публичных методов                                       |
 //+------------------------------------------------------------------+  
  
-short CTihiro::GetSignal()
+ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
 //возвращает торговый сигнал
  {
  datetime time;   //текущее время
@@ -267,9 +271,11 @@ short CTihiro::GetSignal()
     if (_prev_locate > 0 && locate<=0)
      {
      //вычисляем тейк профит
-      _takeProfit = (price-_range)/_point;     
-      _trend_type = NOTREND;      
-      return SELL;
+      _takeProfit = (price-_range)/_point;    
+      //выставляем стоп лосс
+      _stopLoss   = _extr_down_present.price/_point;   
+      _prev_locate = locate; 
+      return OP_SELL;
      }
     _prev_locate = locate;     
    }
@@ -287,16 +293,18 @@ short CTihiro::GetSignal()
      { 
       //вычисляем тейк профит
       _takeProfit = (price-_range)/_point; 
-      _trend_type = NOTREND;
-      return BUY;
+      //выставляем стоп лосс
+      _stopLoss   = _extr_up_present.price/_point;
+      _prev_locate = locate;       
+      return OP_BUY;
      }    
     _prev_locate = locate;
    }  
-  return UNKNOWN;  
+  return OP_UNKNOWN;  
  }
-   
 
-void CTihiro::OnNewBar()
+
+bool CTihiro::OnNewBar()
 //вычисляет все необходимые значения по массивам максимальных и минимальных цен баров
  {
   //загружаем буферы 
@@ -305,7 +313,7 @@ void CTihiro::OnNewBar()
      CopyTime(_symbol, _timeFrame, 0, _bars+1, _price_time) <= 0  ) 
       {
        Print("Не удалось загрузить бары из истории");
-       return;
+       return false;
       }
   // вычисляем экстремумы (TD-точки линии тренда)
   GetTDPoints();
@@ -330,14 +338,14 @@ void CTihiro::OnNewBar()
   RecognizeSituation();
   
     //ниже блок для теста
-   /*
+   
      if (_trend_type == TREND_DOWN)
       Comment("ТИП - ТРЕНД ВНИЗ");
      if (_trend_type == TREND_UP)
       Comment("ТИП - ТРЕНД ВВЕРХ");
      if (_trend_type == NOTREND)
       Comment("НЕТ ТОРГОВОЙ СИТУАЦИИ");              
-    */
+   
     //выше блок для теста
   
   
@@ -346,10 +354,12 @@ void CTihiro::OnNewBar()
   // вычисляем расстояние от экстремума до линии тренда
   GetRange();
   
+  
   if (_trend_type==TREND_DOWN)
    PrintFormat("Расстояние от экстремума до линии тренда DOWN = %s",DoubleToString(_range));
   if (_trend_type==TREND_UP)
-   PrintFormat("Расстояние от экстремума до линии тренда UP = %s",DoubleToString(_range));   
+   PrintFormat("Расстояние от экстремума до линии тренда UP = %s",DoubleToString(_range));  
+  return true; 
  }
  
  

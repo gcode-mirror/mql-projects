@@ -17,12 +17,6 @@
 #define TREND_DOWN 4
 #define NOTREND    5
 
-//перечисление режимов
-enum  TIHIRO_MODE
- {
-  TM_WAIT_FOR_CROSS=0, //режим ожидания перехода цены за линиию тренда
-  TM_REACH_THE_RANGE   //режим перехода на Range
- };
 //класс экстремумов
  class Extrem
   {
