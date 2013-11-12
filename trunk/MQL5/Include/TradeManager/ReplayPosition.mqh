@@ -41,6 +41,7 @@ class ReplayPosition
 void ReplayPosition::ReplayPosition(string symbol, ENUM_TIMEFRAMES period, int ATRforReplay, int ATRforTrailing)
                     : _ATRforReplay(ATRforReplay/100), _ATRforTrailing(ATRforTrailing/100)
 {
+ if (period < PERIOD_H1) period = PERIOD_H1;
  ATR_handle = iATR(symbol, period, 100);
  if(ATR_handle == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
  {
