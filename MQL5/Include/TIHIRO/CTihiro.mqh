@@ -37,9 +37,9 @@ class CTihiro
     //расстояние от линии тренда до последнего экстремума
     double  _range;
     //тейк профит
-    uint  _takeProfit;
+    int  _takeProfit;
     //стоп лосс
-    uint  _stopLoss;
+    int  _stopLoss;
     //цена, на которой была открыта позиция
     double  _open_price;
     //экстремум предыдущий
@@ -89,9 +89,9 @@ class CTihiro
    //возвращает торговый сигнал
    ENUM_TM_POSITION_TYPE   GetSignal();   
    //возвращает тейкпрофит
-   uint    GetTakeProfit() { return (_takeProfit); };
+   int    GetTakeProfit() { return (_takeProfit); };
    //возвращает стоп лосс
-   uint    GetStopLoss()   { return (_stopLoss); };
+   int    GetStopLoss()   { return (_stopLoss); };
    //получает от эксперта указатели на массивы максимальных и минимальных цен баров
    //и вычисляет все необходимые значения по ним
    //а имеено - экстремумы, тангенс трендовой линии, расстояние от линии тренда до последнего экстремума 
@@ -271,9 +271,10 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
     if (_prev_locate > 0 && locate<=0)
      {
      //вычисляем тейк профит
-      _takeProfit = (price-_range)/_point;    
+      _takeProfit = -_range/_point;  
+      Print("РАССТОЯНИЕ = ",_range);        
       //выставляем стоп лосс
-      _stopLoss   = _extr_down_present.price/_point;   
+      _stopLoss   =  (_extr_down_present.price-price)/_point;   
       _prev_locate = locate; 
       return OP_SELL;
      }
@@ -292,9 +293,10 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
     if (_prev_locate < 0 && locate >= 0)
      { 
       //вычисляем тейк профит
-      _takeProfit = (price-_range)/_point; 
+      _takeProfit = _range/_point; 
+      Print("РАССТОЯНИЕ = ",_range);
       //выставляем стоп лосс
-      _stopLoss   = _extr_up_present.price/_point;
+      _stopLoss   = (price-_extr_up_present.price)/_point;
       _prev_locate = locate;       
       return OP_BUY;
      }    
