@@ -119,12 +119,16 @@ short FWRabbit::GetSignal(bool ontick)  //получает торговый сигнал
       
      if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
      {
+
       _takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + _profitPercent),0);
+      Comment("TAKE PROFIT ПУНКТЫ= ",_takeProfit, "  TAKE PROFIT ЗНАЧЕНИЕ=", _takeProfit*_Point); 
       return 2; //SELL
      }
      if(GreatDoubles(close_buf[0], open_buf[0]))
      {   
+   
       _takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + _profitPercent),0);
+      Comment("TAKE PROFIT ПУНКТЫ= ",_takeProfit, "  TAKE PROFIT ЗНАЧЕНИЕ=", _takeProfit*_Point);      
       return 1; //BUY
      }
  

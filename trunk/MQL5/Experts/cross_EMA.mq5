@@ -4,9 +4,6 @@
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBar.mqh>
 #include<TradeManager/TradeManager.mqh> //подключаем библиотеку TradeManager
-#include<Trigger64/PositionSys.mqh>     //подключаем библиотеку для работы с позициями
-#include<Trigger64/SymbolSys.mqh>       //подключаем библиотеку для работы с символом
-#include<Trigger64/Graph.mqh>           //подключаем библиотеку отображения панели
 
 input ENUM_MA_METHOD MA_METHOD=MODE_EMA;
 input ENUM_APPLIED_PRICE applied_price=PRICE_CLOSE;
@@ -39,7 +36,6 @@ CTradeManager new_trade; //класс продажи
 
 int OnInit() //функция инициализации
  {
- new_trade.Initialization(); //инициализация 
  if (SlowPer<=FastPer || FastPer<=3)
   {
    fast_per=12;
@@ -51,6 +47,7 @@ int OnInit() //функция инициализации
    fast_per=FastPer;
    slow_per=SlowPer;
   } 
+  
   ma_slow_handle=iMA(sym,timeFrame,slow_per,0,MA_METHOD,applied_price); //инициализация медленного индикатора
   if(ma_slow_handle<0)
    return INIT_FAILED;
@@ -60,11 +57,14 @@ int OnInit() //функция инициализации
   ma_ema3_handle=iMA(sym,timeFrame,3,0,MA_METHOD,applied_price); //инициализация индикатора EMA3
   if(ma_ema3_handle<0)
    return INIT_FAILED;  
+  
+   
   ArraySetAsSeries(ma_fast, true); // разметка массивов в обратном порядке
   ArraySetAsSeries(ma_slow, true);    
   ArraySetAsSeries(ma_ema3, true);
   ArraySetAsSeries(close, true);
   ArraySetAsSeries(date_buffer, true); 
+  
   stopLoss = StopLoss;
   takeProfit = TakeProfit;      
   return(INIT_SUCCEEDED);
@@ -77,7 +77,6 @@ void OnDeinit(const int reason)
   ArrayFree(ma_ema3);
   ArrayFree(close);
   ArrayFree(date_buffer);  
-  new_trade.Deinitialization();
   }
   
 void OnTick()
@@ -96,12 +95,12 @@ void OnTick()
      }  
    if(GreatDoubles(ma_slow[1],ma_fast[1]) && GreatDoubles(ma_fast[0],ma_slow[0]) && GreatDoubles(ma_ema3[0],close[0]))
     {      
-      new_trade.OpenPosition(sym,OP_BUY,orderVolume,stopLoss,takeProfit,0,0,0);
+      new_trade.OpenUniquePosition(sym,OP_BUY,orderVolume,stopLoss,takeProfit,0,0,0);
       Print("Покупка Дата сделки: ",date_buffer[0]);
     }
    if (GreatDoubles(ma_fast[1],ma_slow[1]) && GreatDoubles(ma_slow[0],ma_fast[0]) && GreatDoubles(close[0],ma_ema3[0])  ) 
      {
-      new_trade.OpenPosition(sym,OP_SELL,orderVolume,stopLoss,takeProfit,0,0,0);
+      new_trade.OpenUniquePosition(sym,OP_SELL,orderVolume,stopLoss,takeProfit,0,0,0);
       Print("Продажа Дата сделки: ",date_buffer[0]);
      }
    }

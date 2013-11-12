@@ -72,9 +72,9 @@ void OnTick()
    {
     signal = tihiro.GetSignal();   
     if (signal != OP_UNKNOWN)
-      {
-    Print("яРНО кНЯЯ = ",tihiro.GetStopLoss()*_Point, " реий опнтхр = ", tihiro.GetTakeProfit()*_Point);
-    ctm.OpenUniquePosition(symbol,signal,orderVolume,tihiro.GetStopLoss(),tihiro.GetTakeProfit(),0,0,0); 
-       }
+    {      
+     Print("яРНО кНЯЯ = ",tihiro.GetStopLoss(), " реий опнтхр = ", tihiro.GetTakeProfit()," онхмр = ",DoubleToString(_Point));
+     ctm.OpenUniquePosition(symbol,signal,orderVolume,tihiro.GetStopLoss(),tihiro.GetTakeProfit(),0,0,0); 
+    }
    }
   }

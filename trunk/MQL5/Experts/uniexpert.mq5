@@ -7,8 +7,6 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #include <TradeManager/TradeManager.mqh>
-#include <Trigger64/PositionSys.mqh>     //подключаем библиотеку дл€ работы с позици€ми
-#include <Trigger64/SymbolSys.mqh>       //подключаем библиотеку дл€ работы с символом
 //подключение торговых блоков
 #include <TradeBlocks/CrossEMA.mq5>
 #include <TradeBlocks/FollowWhiteRabbit.mq5>  
@@ -67,7 +65,7 @@ ENUM_TM_POSITION_TYPE op_buy,op_sell; //торговые сигналы
 ENUM_TM_POSITION_TYPE signal=OP_UNKNOWN; //торговые сигналы
 double take_profit;
 
-CTradeManager ctm(false);    //класс тогровых операций
+CTradeManager ctm();    //класс тогровых операций
 
 CrossEMA  cross_ema;  //объ€вл€ем объект класса CrossEMA
 FWRabbit  rabbit;     //объ€вл€ем объект класса FWRabbit
