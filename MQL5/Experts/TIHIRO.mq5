@@ -35,7 +35,7 @@ bool first_load = false;
 
 int OnInit()
 {
- handle = iCustom(symbol, timeFrame, "TihiroIndicator",50); //загружаем хэндл индикатора Tihiro
+ //handle = iCustom(symbol, timeFrame, "TihiroIndicator",50); //загружаем хэндл индикатора Tihiro
  return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
