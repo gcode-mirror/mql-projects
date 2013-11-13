@@ -24,12 +24,12 @@ enum USE_PENDING_ORDERS //режим вычисления priceDifference
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
+input ENUM_TIMEFRAMES timeframe = PERIOD_H1;
 input int SL = 150;
 input double _lot = 1;
 input int historyDepth = 40;
 input double supremacyPercent = 0.2;
 input double profitPercent = 0.5; 
-input ENUM_TIMEFRAMES timeframe = PERIOD_M1;
 input bool trailing = false;
 input int minProfit = 250;
 input int trailingStop = 150;

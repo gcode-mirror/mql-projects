@@ -131,7 +131,7 @@ void CTihiro::GetRange(void)
     L=_extr_down_present.time-_extr_up_past.time;  
     H=_extr_down_present.price-_extr_up_past.price;
    }   
-  _range=H-_tg*L;
+  _range=MathAbs(H-_tg*L);
  }
  
 void CTihiro::GetTDPoints()
@@ -144,7 +144,7 @@ void CTihiro::GetTDPoints()
    for(i = 1; i < (_bars-1) && (_flag_down<2||_flag_up<2); i++)
     {
      //если текущая high цена больше high цен последующей и предыдущей
-     if (_price_high[i] > _price_high[i-1] && _price_high[i] > _price_high[i+1] && _flag_down < 2)
+     if ( GreatDoubles(_price_high[i],_price_high[i-1]) && GreatDoubles(_price_high[i],_price_high[i+1]) && _flag_down < 2 )     
       {
        if (_flag_down == 0)
         {
@@ -154,7 +154,7 @@ void CTihiro::GetTDPoints()
         }
        else 
         {
-         if(_price_high[i] > _extr_down_present.price)
+         if( GreatDoubles(_price_high[i],_extr_down_present.price) )
           {
           //сохраняем левый экстремум
           _extr_down_past.SetExtrem(_price_time[i+1],_price_high[i]);               
@@ -163,7 +163,7 @@ void CTihiro::GetTDPoints()
         }            
       }  //нисходящий тренд
 //если текущая low цена меньше low цен последующей и предыдущей
-     if (_price_low[i] < _price_low[i-1] && _price_low[i] < _price_low[i+1] && _flag_up < 2 )
+     if ( LessDoubles(_price_low[i],_price_low[i-1]) && LessDoubles(_price_low[i],_price_low[i+1])&&_flag_up < 2)     
       {
        if (_flag_up == 0)
         {
@@ -173,7 +173,7 @@ void CTihiro::GetTDPoints()
         }
        else 
         {
-         if(_price_low[i] < _extr_up_present.price)
+         if(LessDoubles(_price_low[i],_extr_up_present.price))         
           {
           //сохраняем левый экстремум
           _extr_up_past.SetExtrem(_price_time[i+1],_price_low[i]);        
@@ -271,10 +271,11 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
     if (_prev_locate > 0 && locate<=0)
      {
      //вычисляем тейк профит
-      _takeProfit = -_range/_point;  
-      Print("РАССТОЯНИЕ = ",_range);        
+      _takeProfit = _range/_point;  
+    
       //выставляем стоп лосс
       _stopLoss   =  (_extr_down_present.price-price)/_point;   
+      Print("ПЕРЕСЕЧЕНИЕ");       
       _prev_locate = locate; 
       return OP_SELL;
      }
@@ -294,9 +295,12 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
      { 
       //вычисляем тейк профит
       _takeProfit = _range/_point; 
-      Print("РАССТОЯНИЕ = ",_range);
+ 
       //выставляем стоп лосс
       _stopLoss   = (price-_extr_up_present.price)/_point;
+     
+      Print("ПЕРЕСЕЧЕНИЕ");       
+      
       _prev_locate = locate;       
       return OP_BUY;
      }    
@@ -318,50 +322,29 @@ bool CTihiro::OnNewBar()
        return false;
       }
   // вычисляем экстремумы (TD-точки линии тренда)
-  GetTDPoints();
-  /*
-     //ниже блок для теста 
-   
-     if (_flag_down==2)  //проверка на корректное вычисление экстремумов
-      {
-       PrintFormat("ТРЕНД ВНИЗ. Экстремум правый = (%s,%s), Экстрем левый = (%s,%s)",TimeToString(_extr_down_present.time),DoubleToString(_extr_down_present.price),
-       TimeToString(_extr_down_past.time),DoubleToString(_extr_down_past.price));
-      }
-     if (_flag_up==2)  //проверка на корректное вычисление экстремумов
-      {
-       PrintFormat("ТРЕНД ВВЕРХ. Экстремум правый = (%s,%s), Экстрем левый = (%s,%s)",TimeToString(_extr_up_present.time),DoubleToString(_extr_up_present.price),
-       TimeToString(_extr_up_past.time),DoubleToString(_extr_up_past.price));
-      }       
-     
-     //выше блок для теста
-  */
-  
+  GetTDPoints();  
+  //Comment("ВНИЗ (",TimeToString(_extr_up_past.time),";",DoubleToString(_extr_up_past.price),") (",TimeToString(_extr_up_present.time),";",DoubleToString(_extr_up_present.price),")");
   // вычисляем тип тренда (ситуацию)
   RecognizeSituation();
   
-    //ниже блок для теста
-   
-     if (_trend_type == TREND_DOWN)
-      Comment("ТИП - ТРЕНД ВНИЗ");
+  
+       if (_trend_type == TREND_DOWN)
+      Comment("ТИП ВНИЗ: FLAGDOWN = ",_flag_down," FLAGUP = ",_flag_up);
      if (_trend_type == TREND_UP)
-      Comment("ТИП - ТРЕНД ВВЕРХ");
+      Comment("ТИП ВВЕРХ: FLAGDOWN = ",_flag_down," FLAGUP = ",_flag_up);
      if (_trend_type == NOTREND)
-      Comment("НЕТ ТОРГОВОЙ СИТУАЦИИ");              
-   
-    //выше блок для теста
+      Comment("НЕТ ТОРГОВОЙ СИТУАЦИИ: FLAGDOWN = ",_flag_down," FLAGUP = ",_flag_up);     
   
   
   // вычисляем тангенс тренд линии
   GetTan();
+     Print("ТАНГЕНС = ",DoubleToString(_tg));
   // вычисляем расстояние от экстремума до линии тренда
   GetRange();
-  
-  
   if (_trend_type==TREND_DOWN)
    PrintFormat("Расстояние от экстремума до линии тренда DOWN = %s",DoubleToString(_range));
   if (_trend_type==TREND_UP)
    PrintFormat("Расстояние от экстремума до линии тренда UP = %s",DoubleToString(_range));  
   return true; 
  }
- 
  
