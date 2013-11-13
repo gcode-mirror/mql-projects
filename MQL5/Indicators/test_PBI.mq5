@@ -37,7 +37,8 @@ double         ColorCandlesColors[];
 double         ExtUpArrowBuffer[];
 double         ExtDownArrowBuffer[];
 
-static CisNewBar NewBarBottom;
+static CisNewBar NewBarBottom,
+                 NewBarTop;
 
 CColoredTrend *trend, 
               *topTrend;
@@ -52,6 +53,7 @@ int OnInit()
    symbol = Symbol();
    current_timeframe = Period();
    NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
+   NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
    trend    = new CColoredTrend(symbol, current_timeframe, bars);
    topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), bars);
@@ -86,6 +88,7 @@ int OnCalculate(const int rates_total,
    static int start_index = 0;
    static int start_iteration = 0;
    static int buffer_index = 0;
+   static int buffer_index_top = 0;
 
    if(prev_calculated == 0) 
    {
@@ -98,21 +101,27 @@ int OnCalculate(const int rates_total,
     start_iteration = prev_calculated-1;
    }
    
+   if(NewBarTop.isNewBar() > 0)
+   {
+    buffer_index_top += NewBarTop.isNewBar();
+   }
+   
    if(NewBarBottom.isNewBar() > 0 || prev_calculated == 0) //isNewBar bottom_tf
    {
     //PrintFormat("NEW BAR %d | %d - %d", buffer_index, start_iteration, rates_total-1);
     for(int i = start_iteration; i < rates_total; i++)
     {
-     topTrend.CountMoveType(buffer_index);//???
-     trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(buffer_index));
+     PrintFormat("buffer_index = %d: from %d to %d", buffer_index, i, rates_total-1);
+     topTrend.CountMoveType(buffer_index_top, Bars(symbol, GetTopTimeframe(current_timeframe)));
+     trend.CountMoveType(buffer_index, (rates_total-1) - i);//, topTrend.GetMoveType(buffer_index_top));
      
      ColorCandlesBuffer1[i] = open[i];
      ColorCandlesBuffer2[i] = high[i];
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i];
-     ColorCandlesColors[i]  = trend.GetMoveType(buffer_index);
+     ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
      
-     if (trend.GetExtremumDirection(buffer_index) > 0)
+      if (trend.GetExtremumDirection(buffer_index) > 0)
      {
       ExtUpArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
       //PrintFormat("Максимум %d __ %d", i, buffer_index);
