@@ -28,6 +28,7 @@
  
 //--- input параметры
 input int      bars = 50;         // сколько свечей показывать
+input double   percentage_ATR = 0.05;
 //--- индикаторные буферы
 double         ColorCandlesBuffer1[];
 double         ColorCandlesBuffer2[];
@@ -55,8 +56,8 @@ int OnInit()
    NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   trend    = new CColoredTrend(symbol, current_timeframe, bars);
-   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), bars);
+   trend    = new CColoredTrend(symbol, current_timeframe, bars, percentage_ATR);
+   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), bars, percentage_ATR);
 //--- indicator buffers mapping
    SetIndexBuffer(0,ColorCandlesBuffer1,INDICATOR_DATA);
    SetIndexBuffer(1,ColorCandlesBuffer2,INDICATOR_DATA);
@@ -113,7 +114,7 @@ int OnCalculate(const int rates_total,
     {
      PrintFormat("buffer_index = %d: from %d to %d", buffer_index, i, rates_total-1);
      topTrend.CountMoveType(buffer_index_top, Bars(symbol, GetTopTimeframe(current_timeframe)));
-     trend.CountMoveType(buffer_index, (rates_total-1) - i);//, topTrend.GetMoveType(buffer_index_top));
+     trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(buffer_index_top));
      
      ColorCandlesBuffer1[i] = open[i];
      ColorCandlesBuffer2[i] = high[i];
