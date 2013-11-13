@@ -130,7 +130,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
                 const long &volume[],
                 const int &spread[])
   {
-/*  
+  
    static int buffer_index = 0;
 //---- проверка количества баров на достаточность для расчета
    if(rates_total < bars) return(0);
@@ -140,16 +140,17 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
    if(prev_calculated > rates_total || prev_calculated <= 0) // проверка на первый старт расчета индикатора
    {
     first = rates_total - bars;           // стартовый номер для расчета всех баров
+    buffer_index = rates_total;
    }
-   else first = prev_calculated - 1;        // стартовый номер для расчета новых баров
+   else first = buffer_index - 1;        // стартовый номер для расчета новых баров
    
 //---- проверка на начало нового бара
-   if(isNewBar.isNewBar(symbol, GetBottomTimeframe(current_timeframe)))
-   {
+  // if(isNewBar.isNewBar(symbol, GetBottomTimeframe(current_timeframe)))
+  //{
   //  Print("init trend, rates_total = ", rates_total);
-    buffer_index++;
+  //  buffer_index++;
     //--- копируем цены в буферы
-    for(int bar = first; bar < rates_total - 1  && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
+    for(int bar = rates_total - bars; bar < rates_total - 1  && !IsStopped(); bar++) // заполняем ценами заданное количество баров, кроме формирующегося
     {
    //--- вычислим соответствующий индекс для графических буферов
      PrintFormat("bar=%d, startBars=%d",bar,startBars);
@@ -165,7 +166,7 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
      ExtCloseBuffer[bar] = close[bar];
      
    //--- зададим цвет свечи
-    ExtColorsBuffer[bar] = clrRed;//trend.GetMoveType(buffer_index); 
+     ExtColorsBuffer[bar] = clrRed;//trend.GetMoveType(buffer_index); 
      //PrintFormat("bar = %d, buf_index = %d, MoveType = %s", bar, buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
      //PrintFormat("open_buf = %.05f, high_buf = %.05f, low_buf = %.05f, close_buf = %.05f, open = %.05f, high = %.05f, low = %.05f, close = %.05f"
      //           , ExtOpenBuffer[bar], ExtHighBuffer[bar], ExtLowBuffer[bar], ExtCloseBuffer[bar]
@@ -189,9 +190,9 @@ int OnCalculate(const int rates_total,     // количество истории в барах на теку
      else
      {
       ExtDownArrowBuffer[bar] = 0;
-     }
+     }*/
     }
-   }*/
+  // }
 //--- return value of prev_calculated for next call
    return(rates_total);
   }
