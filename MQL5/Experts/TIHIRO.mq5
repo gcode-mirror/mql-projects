@@ -14,7 +14,7 @@
 //| TIHIRO эксперт                                                   |
 //+------------------------------------------------------------------+
 //внешние, задаваемые пользователем параметры эксперта
-input uint     bars=150;          //количество баров истории
+input uint     bars=500;          //количество баров истории
 input double   orderVolume = 1;  //размер лота
 //буферы для хранения цен 
 double price_high[];      // массив высоких цен  
@@ -38,7 +38,7 @@ int errTrendDown, errTrendUp;                      // переменные для отчета об о
 int OnInit()
 {
  //загружаем хэндл индикатора Tihiro
- //handle = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame); 
+ handle = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame); 
  //вычисляем торговую ситуацию в самом начале работы эксперта
  //allow_continue = tihiro.OnNewBar(); 
  
