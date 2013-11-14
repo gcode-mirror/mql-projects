@@ -38,14 +38,14 @@ int errTrendDown, errTrendUp;                      // переменные для отчета об о
 int OnInit()
 {
  //загружаем хэндл индикатора Tihiro
- handle = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame); 
+ //handle = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame); 
  //вычисляем торговую ситуацию в самом начале работы эксперта
  //allow_continue = tihiro.OnNewBar(); 
  
  return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
-//| TIHITO деинициализация эксперта                                  |
+//| TIHIRO деинициализация эксперта                                  |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
