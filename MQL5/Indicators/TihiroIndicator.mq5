@@ -118,7 +118,7 @@ int OnCalculate(const int rates_total,
        if ( flag_down == 0 )
         {
          //сохраняем правый экстремум
-         point_down_right.SetExtrem(time[i],high[i]);
+         point_down_right.SetExtrem(i,high[i]);
          flag_down=1; 
         }
        else 
@@ -126,7 +126,7 @@ int OnCalculate(const int rates_total,
          if( GreatDoubles(high[i],point_down_right.price) )
           {
           //сохраняем левый экстремум
-          point_down_left.SetExtrem(time[i],high[i]);               
+          point_down_left.SetExtrem(i,high[i]);               
           flag_down=2;
           }
         }            
@@ -137,7 +137,7 @@ int OnCalculate(const int rates_total,
        if (flag_up == 0)
         {
          //сохраняем правый экстремум
-         point_up_right.SetExtrem(time[i],low[i]);
+         point_up_right.SetExtrem(i,low[i]);
          flag_up=1; 
         }
        else 
@@ -145,7 +145,7 @@ int OnCalculate(const int rates_total,
          if(LessDoubles(low[i],point_up_right.price))
           {
           //сохраняем левый экстремум
-          point_up_left.SetExtrem(time[i],low[i]);        
+          point_up_left.SetExtrem(i,low[i]);        
           flag_up=2;
           }
         }            
@@ -154,11 +154,11 @@ int OnCalculate(const int rates_total,
     //вычисляем тангенсы наклона тренд линий
     if (flag_down==2) //если оба экстремума для нисходящего тренда найдены
      {
-      tg_down = (point_down_right.price-point_down_left.price)/(point_down_right.time-point_down_left.time);
+      tg_down = (point_down_right.price-point_down_left.price)/(point_down_right.n_bar-point_down_left.n_bar);
      }
     if (flag_up==2) //если оба экстремума для восходящего тренда найдены
      {
-      tg_up = (point_up_right.price-point_up_left.price)/(point_up_right.time-point_up_left.time);
+      tg_up = (point_up_right.price-point_up_left.price)/(point_up_right.n_bar-point_up_left.n_bar);
      }     
     //проходим по циклу и вычисляем точки, принадлежащие линиям тренда
     
@@ -175,13 +175,13 @@ int OnCalculate(const int rates_total,
       if (flag_down==2)
        {
 
-        if (time[i]>=point_down_left.time)
-         trendLineDown[i] = point_down_left.price+(time[i]-point_down_left.time)*tg_down;
+        if (i>=point_down_left.n_bar)
+         trendLineDown[i] = point_down_left.price+(i-point_down_left.n_bar)*tg_down;
        }
       if (flag_up==2)
        {
-        if (time[i]>=point_up_left.time)
-         trendLineUp[i] = point_up_left.price+(time[i]-point_up_left.time)*tg_up;
+        if (i>=point_up_left.n_bar)
+         trendLineUp[i] = point_up_left.price+(i-point_up_left.n_bar)*tg_up;
        }    
      }
 
