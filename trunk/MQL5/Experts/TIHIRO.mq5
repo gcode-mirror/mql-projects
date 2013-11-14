@@ -20,6 +20,8 @@ input double   orderVolume = 1;  //размер лота
 double price_high[];      // массив высоких цен  
 double price_low[];       // массив низких цен  
 datetime price_date[];    // массив времени 
+//буфер для индикатора Parabolic SAR
+double sar_buffer[1];
 //символ
 string symbol=_Symbol;
 //таймфрейм
@@ -31,6 +33,7 @@ CTihiro       tihiro(symbol,timeFrame,point,bars); // объект класса CTihiro
 CisNewBar     isNewBar;                            // для проверки на новый бар
 CTradeManager ctm;                                 // объект класса TradeManager
 int handle;                                        // хэндл индикатора
+int handle_parabolic;                              // хэндл параболика
 bool allow_continue = true;                        // флаг продолжения 
 ENUM_TM_POSITION_TYPE signal;                      // переменная для хранения торгового сигнала
 int errTrendDown, errTrendUp;                      // переменные для отчета об ошибках
@@ -38,9 +41,10 @@ int errTrendDown, errTrendUp;                      // переменные для отчета об о
 int OnInit()
 {
  //загружаем хэндл индикатора Tihiro
- handle = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame); 
+ handle           = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame); 
+ //хэндл параболика 
+ handle_parabolic = iSAR(symbol,timeFrame,0.02,0.2); 
  //вычисляем торговую ситуацию в самом начале работы эксперта
- //allow_continue = tihiro.OnNewBar(); 
  
  return(INIT_SUCCEEDED);
 }
@@ -65,6 +69,7 @@ void OnTick()
      if ( isNewBar.isNewBar() > 0 )
       {  
        allow_continue = tihiro.OnNewBar();
+       CopyBuffer(handle_parabolic, 0, 0, 1, sar_buffer); //копируем буфер Price Based Indicator       
       }
      //получаем сигнал 
      if (allow_continue)
