@@ -23,6 +23,7 @@ class CTihiro
     //буферы 
     double   _price_high[];      // массив высоких цен  
     double   _price_low[];       // массив низких цен  
+    double   _price_close[];     // массив цен закрытия
     //символ
     string  _symbol;
     //таймфрейм
@@ -75,6 +76,7 @@ class CTihiro
      //порядок как в таймсерии
      ArraySetAsSeries(_price_high,true);
      ArraySetAsSeries(_price_low, true);  
+     ArraySetAsSeries(_price_close,true);
      _prev_ask = -1;
      _prev_bid = -1;     
     }; 
@@ -84,6 +86,7 @@ class CTihiro
      //удаляем массивы из динамической памяти
      ArrayFree(_price_high);
      ArrayFree(_price_low);
+     ArrayFree(_price_close);
     };
    // -----------------------------------------------------------------------------
    //возвращает торговый сигнал
@@ -124,12 +127,12 @@ void CTihiro::GetRange(void)
   if (_trend_type == TREND_DOWN)
    {
     L=_extr_down_past.n_bar-_extr_up_present.n_bar;  
-    H=_extr_up_present.price-_extr_down_past.price;
+    H=_price_close[_extr_up_present.n_bar]-_extr_down_past.price;
    }
   if (_trend_type == TREND_UP)
    {
     L=_extr_up_past.n_bar-_extr_down_present.n_bar;  
-    H=_extr_down_present.price-_extr_up_past.price;
+    H=_price_close[_extr_down_present.n_bar]-_extr_up_past.price;
    }   
   _range=MathAbs(H-_tg*L);
  }
@@ -317,8 +320,9 @@ bool CTihiro::OnNewBar()
 //вычисляет все необходимые значения по массивам максимальных и минимальных цен баров
  {
   //загружаем буферы 
-  if(CopyHigh(_symbol, _timeFrame, 1, _bars, _price_high) <= 0 ||
-     CopyLow (_symbol, _timeFrame, 1, _bars, _price_low)  <= 0 ) 
+  if(CopyHigh (_symbol, _timeFrame, 1, _bars, _price_high)  <= 0 ||
+     CopyLow  (_symbol, _timeFrame, 1, _bars, _price_low)   <= 0 ||
+     CopyClose(_symbol, _timeFrame, 1, _bars, _price_close) <= 0 ) 
       {
        Print("Не удалось загрузить бары из истории");
        return false;
