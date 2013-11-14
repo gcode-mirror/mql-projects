@@ -150,6 +150,7 @@ CPosition::CPosition(CPosition *pos)
  _slTicket = pos.getStopLossTicket();
  _slPrice = pos.getStopLossPrice(); // цена установки стопа
  _tpPrice = pos.getTakeProfitPrice(); // цена установки тейка
+ if (_tpPrice > 0) _takeProfitLine.Create(0, _tpPrice);
    
  _posOpenTime = pos.getOpenPosDT();  //время открытия позиции
  _posCloseTime = pos.getClosePosDT(); //время завершения позиции 
@@ -403,6 +404,7 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
  if (_tp > 0)
  {
   _tpPrice = TPtype(_type);
+  _takeProfitLine.Create(0, _tpPrice);
   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен виртуальный тейкпрофит с ценой %.05f", MakeFunctionPrefix(__FUNCTION__), _tpPrice));     
  }
  else
@@ -590,9 +592,9 @@ bool CPosition::ClosePosition()
   }
  }
  
+ _takeProfitLine.Delete();
  return(_pos_status != POSITION_STATUS_NOT_DELETED
       && _sl_status != STOPLEVEL_STATUS_NOT_DELETED);
-
 }
 
 //+------------------------------------------------------------------+
