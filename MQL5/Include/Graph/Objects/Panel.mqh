@@ -63,7 +63,7 @@ class Panel
       ObjectSetInteger(_chart_id, _name,OBJPROP_XDISTANCE,_x);                    // установка координаты X
       ObjectSetInteger(_chart_id, _name,OBJPROP_YDISTANCE,_y);                    // установка координаты Y
       ObjectSetInteger(_chart_id, _name,OBJPROP_XSIZE,_width);                    // установка ширины
-      ObjectSetInteger(_chart_id, _name,OBJPROP_YSIZE,15);                   // установка высоты шапки         
+      ObjectSetInteger(_chart_id, _name,OBJPROP_YSIZE,15);                        // установка высоты шапки         
       ObjectSetInteger(_chart_id, _name,OBJPROP_SELECTABLE,false);                // нельзя выделить объект, если FALSE
       ObjectSetInteger(_chart_id, _name,OBJPROP_ZORDER,_z_order);                 // приоритет объекта
       ObjectSetString (_chart_id, _name,OBJPROP_TOOLTIP,"\n");                    // нет всплывающей подсказки, если "\n"
