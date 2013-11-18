@@ -107,9 +107,9 @@ class CTihiro
      _takeProfitFactor(takeProfitFactor)
     { 
      //порядок как в таймсерии
-     ArraySetAsSeries(_price_high,true);
+     ArraySetAsSeries(_price_high,true);  
      ArraySetAsSeries(_price_low, true);  
-     ArraySetAsSeries(_price_close,true);
+     ArraySetAsSeries(_price_close,true); 
      _handle_parabolic = iSAR(_symbol,_timeFrame,0.02,0.2);      
      _prev_ask = -1;
      _prev_bid = -1;     
@@ -118,9 +118,9 @@ class CTihiro
    ~CTihiro()
     {
      //удаляем массивы из динамической памяти
-     ArrayFree(_price_high);
-     ArrayFree(_price_low);
-     ArrayFree(_price_close);
+     ArrayFree(_price_high);  
+     ArrayFree(_price_low);   
+     ArrayFree(_price_close); 
     };
    // -----------------------------------------------------------------------------
    //возвращает торговый сигнал
@@ -164,9 +164,12 @@ void CTihiro::GetRange(void)
     
     switch (_takeProfitMode)
      {
-      case TPM_HIGH:
+      case TPM_CLOSE:
       H=_price_close[_extr_up_present.n_bar]-_extr_down_past.price;
       break;
+      case TPM_HIGH:
+      H=_extr_up_present.price-_extr_down_past.price;
+      break;      
      }
    }
   if (_trend_type == TREND_UP)
@@ -175,7 +178,12 @@ void CTihiro::GetRange(void)
     
     switch (_takeProfitMode)
      {
+      case TPM_CLOSE:
       H=_price_close[_extr_down_present.n_bar]-_extr_up_past.price;
+      break;
+      case TPM_HIGH:
+      H=_extr_down_present.price-_extr_up_past.price;
+      break;
      }
    }   
   _range=MathAbs(H-_tg*L);
@@ -322,7 +330,7 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
     if (locate_prev > 0 && locate_now<=0)
      {
      //вычисляем тейк профит
-      _takeProfit = _range/_point;  
+      _takeProfit = _takeProfitFactor*_range/_point;  
     
       //выставляем стоп лосс
       _stopLoss   =  (_extr_down_present.price-price_bid)/_point;   
@@ -344,7 +352,7 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
     if (locate_prev < 0 && locate_now >= 0)
      { 
       //вычисляем тейк профит
-      _takeProfit = _range/_point; 
+      _takeProfit = _takeProfitFactor*_range/_point; 
  
       //выставляем стоп лосс
       _stopLoss   = (price_ask-_extr_up_present.price)/_point;
@@ -380,14 +388,14 @@ bool CTihiro::OnNewBar()
   GetTDPoints();  
   // вычисляем тип тренда (ситуацию)
   RecognizeSituation();
-   /* 
+   
        if (_trend_type == TREND_DOWN)
       Comment("ТИП ВНИЗ: FLAGDOWN = ",_flag_down," FLAGUP = ",_flag_up);
      if (_trend_type == TREND_UP)
       Comment("ТИП ВВЕРХ: FLAGDOWN = ",_flag_down," FLAGUP = ",_flag_up);
      if (_trend_type == NOTREND)
       Comment("НЕТ ТОРГОВОЙ СИТУАЦИИ: FLAGDOWN = ",_flag_down," FLAGUP = ",_flag_up);     
-  */
+  
   // вычисляем тангенс тренд линии
   GetTan();
   // вычисляем расстояние от экстремума до линии тренда
