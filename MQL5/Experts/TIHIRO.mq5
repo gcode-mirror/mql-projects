@@ -18,7 +18,7 @@ input uint              bars=500;                   //количество баров истории
 input double            orderVolume = 1;            //размер лота
 input TAKE_PROFIT_MODE  takeprofitMode = TPM_HIGH;  //режим вычисления тейк профита
 input double            takeprofitFactor = 1.0;     //коэффициент тейк профита  
-input uint              priceDifferent=10;          //разница цен для поиска экстремумов
+input int              priceDifferent=10;          //разница цен для поиска экстремумов
 //символ
 string symbol=_Symbol;
 //таймфрейм
@@ -36,7 +36,7 @@ ENUM_TM_POSITION_TYPE signal;                      // переменная для хранения то
 int OnInit()
 {
  //загружаем хэндл индикатора Tihiro
- handle = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame); 
+ //handle = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame,priceDifferent); 
  //вычисляем торговую ситуацию в самом начале работы эксперта
  
  return(INIT_SUCCEEDED);

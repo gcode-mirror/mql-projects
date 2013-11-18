@@ -57,6 +57,8 @@
 
 
 input short bars=50;  //начальное количество баров истории
+input int   priceDifferent=10; //разница цен для поиска экстремумов
+
 
 //---- буфер значений линий  тренда
 double trendLineDown[];
@@ -64,19 +66,22 @@ double trendLineUp[];
 double priceHigh[];
 double priceLow[];
 
-
 //---- TD точки (экстремумы) восходящего тренда
-Extrem point_up_left;    //левая точка
-Extrem point_up_right;   //правая точка
+Extrem point_up_left;         //левая точка
+Extrem point_up_right;        //правая точка
 //---- TD точки (экстремумы) нисходящего тренда
-Extrem point_down_left;  //левая точка
-Extrem point_down_right; //правая точка
+Extrem point_down_left;       //левая точка
+Extrem point_down_right;      //правая точка
 //---- тангенсы наклона линии тренда
 double tg_down;               //тангенс нисходящей тренд линии
 double tg_up;                 //тангенс восходящей тренд линии
 //---- флаги для поиска экстремумов
-short  flag_up=0;        //флаг для восходящего тренда, 0-нет экстремума, 1-найден один, 2-оба найдены
-short  flag_down=0;      //флаг для нисходящего тренда, 0-нет экстремума, 1-найден один, 2-оба найдены
+short  flag_up=0;             //флаг для восходящего тренда, 0-нет экстремума, 1-найден один, 2-оба найдены
+short  flag_down=0;           //флаг для нисходящего тренда, 0-нет экстремума, 1-найден один, 2-оба найдены
+//---- разницы цен для поиска экстремумов
+double priceDiff;             //минимальная разница цен
+double price_diff_left;       //разница цен слева
+double price_diff_right;      //разница цен справа    
 
 int OnInit()
   {
@@ -85,8 +90,7 @@ int OnInit()
    SetIndexBuffer(1,trendLineUp,  INDICATOR_DATA);  
    SetIndexBuffer(2,priceHigh,  INDICATOR_DATA);     
    SetIndexBuffer(3,priceLow,  INDICATOR_DATA);                           
-//---- настраиваем свойства индикатора
-//--- зададим код символа для отрисовки в PLOT_ARROW
+   priceDiff = priceDifferent*_Point;
 
    return(INIT_SUCCEEDED);
   }
@@ -111,9 +115,12 @@ int OnCalculate(const int rates_total,
    for(i = rates_total-3; i > 0; i--)
     {
      trendLineDown[i]=0;    
-     trendLineUp[i]=0;       
+     trendLineUp[i]=0;      
+     price_diff_left  = high[i] - high[i-1];
+     price_diff_right = high[i] - high[i+1];  
      //если текущая high цена больше high цен последующей и предыдущей
-     if ( GreatDoubles(high[i],high[i-1]) && GreatDoubles(high[i],high[i+1]) && flag_down < 2 )
+     //if ( GreatDoubles(high[i],high[i-1]) && GreatDoubles(high[i],high[i+1]) && flag_down < 2 )
+     if (price_diff_left >= priceDiff && price_diff_right >= priceDiff && flag_down < 2)
       {
        if ( flag_down == 0 )
         {
@@ -132,7 +139,10 @@ int OnCalculate(const int rates_total,
         }            
       }  //нисходящий тренд
      //если текущая low цена меньше low цен последующей и предыдущей
-     if ( LessDoubles(low[i],low[i-1]) && LessDoubles(low[i],low[i+1])&&flag_up < 2)
+     price_diff_left  = low[i-1]-low[i];
+     price_diff_right = low[i+1]-low[i]; 
+    // if ( LessDoubles(low[i],low[i-1]) && LessDoubles(low[i],low[i+1])&&flag_up < 2)
+     if (price_diff_left >= priceDiff && price_diff_right >= priceDiff && flag_up < 2)
       {
        if (flag_up == 0)
         {
