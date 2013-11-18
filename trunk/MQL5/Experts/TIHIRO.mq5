@@ -16,8 +16,9 @@
 //внешние, задаваемые пользователем параметры эксперта
 input uint              bars=500;                   //количество баров истории
 input double            orderVolume = 1;            //размер лота
-input TAKE_PROFIT_MODE  takeprofitMode = TPM_HIGH; //режим вычисления тейк профита
+input TAKE_PROFIT_MODE  takeprofitMode = TPM_HIGH;  //режим вычисления тейк профита
 input double            takeprofitFactor = 1.0;     //коэффициент тейк профита  
+input uint              priceDifferent=10;          //разница цен для поиска экстремумов
 //символ
 string symbol=_Symbol;
 //таймфрейм
@@ -25,7 +26,7 @@ ENUM_TIMEFRAMES timeFrame = _Period;
 //пункт
 double point = _Point;
 //объекты классов
-CTihiro       tihiro(symbol,timeFrame,point,bars,takeprofitMode,takeprofitFactor); // объект класса CTihiro   
+CTihiro       tihiro(symbol,timeFrame,point,bars,takeprofitMode,takeprofitFactor,priceDifferent); // объект класса CTihiro   
 CisNewBar     isNewBar;                            // для проверки на новый бар
 CTradeManager ctm;                                 // объект класса TradeManager
 int handle;                                        // хэндл индикатора

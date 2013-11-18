@@ -10,7 +10,6 @@
 //+------------------------------------------------------------------+
 //| Класс для эксперта TIHIRO                                        |
 //+------------------------------------------------------------------+
-
 //константы 
 #define UNKNOWN    0
 #define BUY        1
@@ -19,16 +18,11 @@
 #define TREND_DOWN 4
 #define NOTREND    5
 
-//класс экстремумов
-class Extrem
+//структура экстремумов
+struct Extrem
   {
-   public:
-   datetime time;   //временное положение экстремума
    uint n_bar;      //номер бара 
    double price;    //ценовое положение экстремума
-   void SetExtrem(uint n,double p){ n_bar=n; price=p; };    //сохраняет экстремум
-   void SetExtrem(datetime t,double p){ time=t; price=p; };    //сохраняет экстремум   
-   Extrem(datetime t=0,double p=0):time(t),price(p){};      //конструктор
   };
   
 //перечисление режимов вычисления тейк профита
@@ -82,6 +76,8 @@ class CTihiro
     TAKE_PROFIT_MODE _takeProfitMode;
     //коэффициент вычисления тейк профита
     double _takeProfitFactor;
+    //разница цен для поиска экстремума
+    uint   _priceDifferent;
     //приватные методы класса
    private:
     //получает значение тангенса угла наклона линии тренда   
@@ -94,17 +90,18 @@ class CTihiro
     void    RecognizeSituation();
     //проверяет, выше или ниже линии тренда находится текущая точка
     short   TestPointLocate(double cur_price);
-    //вычисляет тейк профит согласно заданным пользователем параметрами
-    void    CalculateTakeProfit();
+    //сохраняет экстремум
+    void    SetExtrem(Extrem & extr,uint n,double p);
    public:
    //конструктор класса 
-   CTihiro(string symbol,ENUM_TIMEFRAMES timeFrame,double point,uint bars,TAKE_PROFIT_MODE takeProfitMode,double takeProfitFactor):
+   CTihiro(string symbol,ENUM_TIMEFRAMES timeFrame,double point,uint bars,TAKE_PROFIT_MODE takeProfitMode,double takeProfitFactor,uint priceDifferent):
      _symbol(symbol),
      _timeFrame(timeFrame),
      _point(point),
      _bars(bars),
      _takeProfitMode(takeProfitMode),
-     _takeProfitFactor(takeProfitFactor)
+     _takeProfitFactor(takeProfitFactor),
+     _priceDifferent(priceDifferent)
     { 
      //порядок как в таймсерии
      ArraySetAsSeries(_price_high,true);  
@@ -126,14 +123,13 @@ class CTihiro
    //возвращает торговый сигнал
    ENUM_TM_POSITION_TYPE   GetSignal();   
    //возвращает тейкпрофит
-   int    GetTakeProfit() { return (_takeProfit); };
+   int     GetTakeProfit() { return (_takeProfit); };
    //возвращает стоп лосс
-   int    GetStopLoss()   { return (_stopLoss); };
+   int     GetStopLoss()   { return (_stopLoss); };
    //получает от эксперта указатели на массивы максимальных и минимальных цен баров
    //и вычисляет все необходимые значения по ним
    //а имеено - экстремумы, тангенс трендовой линии, расстояние от линии тренда до последнего экстремума 
    bool    OnNewBar();
-
  };
 
 //+------------------------------------------------------------------+
@@ -204,7 +200,7 @@ void CTihiro::GetTDPoints()
        if (_flag_down == 0)
         {
          //сохраняем правый экстремум
-         _extr_down_present.SetExtrem(i+1,_price_high[i]);
+         SetExtrem(_extr_down_present,i+1,_price_high[i]);
          _flag_down = 1; 
         }
        else 
@@ -212,7 +208,7 @@ void CTihiro::GetTDPoints()
          if( GreatDoubles(_price_high[i],_extr_down_present.price) )
           {
           //сохраняем левый экстремум
-          _extr_down_past.SetExtrem(i+1,_price_high[i]);               
+          SetExtrem(_extr_down_past,i+1,_price_high[i]);             
           _flag_down = 2;
           }
         }            
@@ -223,7 +219,7 @@ void CTihiro::GetTDPoints()
        if (_flag_up == 0)
         {
          //сохраняем правый экстремум
-         _extr_up_present.SetExtrem(i+1,_price_low[i]);
+          SetExtrem(_extr_up_present,i+1,_price_low[i]);           
          _flag_up = 1; 
         }
        else 
@@ -231,42 +227,30 @@ void CTihiro::GetTDPoints()
          if(LessDoubles(_price_low[i],_extr_up_present.price))         
           {
           //сохраняем левый экстремум
-          _extr_up_past.SetExtrem(i+1,_price_low[i]);        
+          SetExtrem(_extr_up_past,i+1,_price_low[i]);                    
           _flag_up = 2;
           }
         }            
       }  //восходящий тренд               
-     }
+    }
  } 
  
 void  CTihiro::RecognizeSituation(void)
 //возвращает ситуацию 
  {
    _trend_type = NOTREND; //нет тренда
-   if (_flag_down == 2) //если нисходящий тренд найден
-    {
-     if (_flag_up > 0) //если хоть один экстремум найден
-      {
-       if (_extr_up_present.n_bar < _extr_down_present.n_bar)  //если нижний экстремум позднее линии тренда
-        {
-         //сохраним, что тренд нисходящий
-         _trend_type = TREND_DOWN; 
-         return;
-        } 
-      }
-    }
-   if (_flag_up == 2) //если восходящий тренд найден
-    {
-     if (_flag_down > 0) //если хоть один экстремум найден
-      {
-       if (_extr_down_present.n_bar < _extr_up_present.n_bar)  //если верхний экстремум позднее линии тренда
-        {      
-         //сохраним, что тренд восходящий
-         _trend_type = TREND_UP; 
-         return;
-        } 
-      }
-    }      
+   if (_flag_down == 2 && _flag_up > 0 &&_extr_up_present.n_bar < _extr_down_present.n_bar)  //если нижний экстремум позднее линии тренда
+     {
+      //сохраним, что тренд нисходящий
+      _trend_type = TREND_DOWN; 
+      return;
+     } 
+   if (_flag_up == 2 && _flag_down > 0 && _extr_down_present.n_bar < _extr_up_present.n_bar)  //если верхний экстремум позднее линии тренда
+     {      
+      //сохраним, что тренд восходящий
+      _trend_type = TREND_UP; 
+      return;
+     }     
  }
  
 short CTihiro::TestPointLocate(double cur_price)
@@ -293,12 +277,13 @@ short CTihiro::TestPointLocate(double cur_price)
     }
    return 0;   //точка находится на линии тренда
  }
- 
-void CTihiro::CalculateTakeProfit(void)
-//вычисляет тейк профит согласно заданным пользователем параметрами
+  
+void CTihiro::SetExtrem(Extrem & extr,uint n,double p)
+//сохраняет экстремум 
  {
- 
- } 
+  extr.n_bar = n;
+  extr.price = p;
+ }
  
 //+------------------------------------------------------------------+
 //| Описание публичных методов                                       |
@@ -331,11 +316,8 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
      {
      //вычисляем тейк профит
       _takeProfit = _takeProfitFactor*_range/_point;  
-    
       //выставляем стоп лосс
-      _stopLoss   =  (_extr_down_present.price-price_bid)/_point;   
-     // _stopLoss   =  (_parabolic[0]-price_bid)/_point;  
-      
+      _stopLoss   =  (_extr_down_present.price-price_bid)/_point;      
       _prev_bid   = price_bid;
       _prev_ask   = price_ask; 
       return OP_SELL;
@@ -353,16 +335,12 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
      { 
       //вычисляем тейк профит
       _takeProfit = _takeProfitFactor*_range/_point; 
- 
       //выставляем стоп лосс
       _stopLoss   = (price_ask-_extr_up_present.price)/_point;
-     // _stopLoss   = (price_ask-_parabolic[0])/_point;
-
       _prev_bid = price_bid;
       _prev_ask = price_ask;       
       return OP_BUY;
      }    
-   
    }  
       _prev_bid = price_bid;
       _prev_ask = price_ask; 
@@ -388,14 +366,6 @@ bool CTihiro::OnNewBar()
   GetTDPoints();  
   // вычисляем тип тренда (ситуацию)
   RecognizeSituation();
-   
-       if (_trend_type == TREND_DOWN)
-      Comment("ТИП ВНИЗ: FLAGDOWN = ",_flag_down," FLAGUP = ",_flag_up);
-     if (_trend_type == TREND_UP)
-      Comment("ТИП ВВЕРХ: FLAGDOWN = ",_flag_down," FLAGUP = ",_flag_up);
-     if (_trend_type == NOTREND)
-      Comment("НЕТ ТОРГОВОЙ СИТУАЦИИ: FLAGDOWN = ",_flag_down," FLAGUP = ",_flag_up);     
-  
   // вычисляем тангенс тренд линии
   GetTan();
   // вычисляем расстояние от экстремума до линии тренда
