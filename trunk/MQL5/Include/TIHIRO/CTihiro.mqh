@@ -77,7 +77,7 @@ class CTihiro
     //коэффициент вычисления тейк профита
     double _takeProfitFactor;
     //разница цен для поиска экстремума
-    uint   _priceDifferent;
+    double   _priceDifferent;
     //приватные методы класса
    private:
     //получает значение тангенса угла наклона линии тренда   
@@ -101,7 +101,7 @@ class CTihiro
      _bars(bars),
      _takeProfitMode(takeProfitMode),
      _takeProfitFactor(takeProfitFactor),
-     _priceDifferent(priceDifferent)
+     _priceDifferent(priceDifferent*point)
     { 
      //порядок как в таймсерии
      ArraySetAsSeries(_price_high,true);  
@@ -189,13 +189,18 @@ void CTihiro::GetTDPoints()
 //ищет TD точки для тренд линий
  {
    short i; 
+   double price_diff_left;
+   double price_diff_right;
    _flag_down = 0;
    _flag_up   = 0;
    //проходим по циклу и вычисляем экстремумы
    for(i = 1; i < (_bars-1) && (_flag_down<2||_flag_up<2); i++)
     {
+     price_diff_left  = _price_high[i] - _price_high[i-1];
+     price_diff_right = _price_high[i] - _price_high[i+1];
      //если текущая high цена больше high цен последующей и предыдущей
-     if ( GreatDoubles(_price_high[i],_price_high[i-1]) && GreatDoubles(_price_high[i],_price_high[i+1]) && _flag_down < 2 )     
+   //  if ( GreatDoubles(_price_high[i],_price_high[i-1]) && GreatDoubles(_price_high[i],_price_high[i+1]) && _flag_down < 2 )  
+     if (price_diff_left >= _priceDifferent && price_diff_right >= _priceDifferent && _flag_down < 2)   
       {
        if (_flag_down == 0)
         {
@@ -213,8 +218,11 @@ void CTihiro::GetTDPoints()
           }
         }            
       }  //нисходящий тренд
+     price_diff_left  = _price_low[i-1] - _price_low[i];
+     price_diff_right = _price_low[i+1] - _price_low[i];
 //если текущая low цена меньше low цен последующей и предыдущей
-     if ( LessDoubles(_price_low[i],_price_low[i-1]) && LessDoubles(_price_low[i],_price_low[i+1])&&_flag_up < 2)     
+    // if ( LessDoubles(_price_low[i],_price_low[i-1]) && LessDoubles(_price_low[i],_price_low[i+1])&&_flag_up < 2)     
+     if (price_diff_left >= _priceDifferent && price_diff_right >= _priceDifferent && _flag_up < 2)
       {
        if (_flag_up == 0)
         {
@@ -360,8 +368,6 @@ bool CTihiro::OnNewBar()
        Print("Не удалось загрузить бары из истории");
        return false;
       }
-    
-  
   // вычисляем экстремумы (TD-точки линии тренда)
   GetTDPoints();  
   // вычисляем тип тренда (ситуацию)
