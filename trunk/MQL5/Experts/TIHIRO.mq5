@@ -16,7 +16,7 @@
 //внешние, задаваемые пользователем параметры эксперта
 input uint              bars=500;                   //количество баров истории
 input double            orderVolume = 1;            //размер лота
-input TAKE_PROFIT_MODE  takeprofitMode = TPM_CLOSE; //режим вычисления тейк профита
+input TAKE_PROFIT_MODE  takeprofitMode = TPM_HIGH; //режим вычисления тейк профита
 input double            takeprofitFactor = 1.0;     //коэффициент тейк профита  
 //символ
 string symbol=_Symbol;
