@@ -39,36 +39,43 @@
 //---- отображение метки линии индикатора
 #property indicator_label2  "TREND_UP"
 
-//системные параметры индикатора
+//---- системные параметры индикатора
 
-//системные параменные индикатора
+//---- системные параменные индикатора
 
 double tg;  //тангенс угла наклона линии
 double point_y_left;  //высота левой точки линии
 double point_y_right; //высота правой точки линии
 
+//---- буферы значений линий
+double line_up[];
+double line_down[];
+
 void   GetTan()
 //вычисляет значение тангенса наклона линии
  {
- 
+  //т.к. линия строится всегда между соседними барами, то делить на разницу по X не нужно, т.к. она равна единице
+  tg = point_y_right - point_y_left; 
  } 
  
-uint   GetAverageY ()
+double   GetAverageY (double a)
 //возвращает среднее значение трех значений 
  {
- 
+   return 1;
  }
 
-uint   GetLineY ()
-//врзвращает значение Y точки текущей линии
+double   GetLineY ()
+//возвращает значение Y точки текущей линии
  {
- 
+   return point_y_right+tg;
  }
 
 int OnInit()
   {
-
   
+   SetIndexBuffer(0,line_up,    INDICATOR_DATA);   
+   SetIndexBuffer(1,line_down,  INDICATOR_DATA);  
+   
    return(INIT_SUCCEEDED);
   }
 
@@ -84,6 +91,13 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
-
+   /*for(i = rates_total-1; i > 0; i--)
+    {
+      
+    }*/
+    
+   line_up[rates_total-1] = high[rates_total-1];
+   line_up[rates_total-2] = high[rates_total-2];
+   
    return(rates_total);
   }
