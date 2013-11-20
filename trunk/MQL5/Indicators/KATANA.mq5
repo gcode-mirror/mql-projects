@@ -7,7 +7,8 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_chart_window
-#include <CompareDoubles.mqh>  
+#include <CompareDoubles.mqh>              //для сравнения переменных типа double
+#include <Lib CisNewBar.mqh>               //для проверки формирования нового бара
 
 //+------------------------------------------------------------------+
 //| Индикатор KATANA                                                 |
@@ -40,34 +41,48 @@
 #property indicator_label2  "TREND_DOWN"
 
 //---- системные параметры индикатора
-
+input uint priceDifference=0;//разница цен для поиска экстремумов
+//---- структура экстремумов 
+struct Extrem
+  {
+   uint   n_bar;             //номер бара 
+   double price;             //ценовое положение экстремума
+  };
 //---- системные параменные индикатора
 
-double tg_up;   //тангенс угла наклона линии
-double tg_down; //тангенс угла наклона линии
-bool   first_start=true;   //первый запуск
+double tg_up;                //тангенс угла наклона линии вверх (нижняя линия)
+double tg_down;              //тангенс угла наклона линии вниз (верхняя линия)
+bool   first_start=true;     //флаг первого запуска OnCalculate
 
 //---- буферы значений линий
-double line_up[];
-double line_down[];
-
-double   GetTan(double value_left,double value_right)
+double line_up[];            //буфер линии вверх (нижняя линия)
+double line_down[];          //буфер линии вниз (верхняя линия)
+//---- экстремумы
+Extrem left_extr_up;         //левый экстремум тренда вверх (нижняя линия)
+Extrem right_extr_up;        //правый экстремум тренда вверх (нижняя линия)
+Extrem left_extr_down;       //левый экстремум тренда вниз (верхняя линия)
+Extrem right_extr_down;      //правый экстремум тренда вниз (верхняя линия)
+//----  флаги поиска экстремумов
+uint   flag_up;              //флаг поиска экстремума тренда вверх (нижняя линия)
+uint   flag_down;            //флаг поиска экстремума тренда вниз (верхняя линия)
+//----  для проверки формирования нового бара
+CisNewBar     isNewBar;                    
+double   GetTan(bool trend_type)
 //вычисляет значение тангенса наклона линии
  {
-  //т.к. линия строится всегда между соседними барами, то делить на разницу по X не нужно, т.к. она равна единице
-  return  value_right - value_left; 
+  //если хотим вычислить тангенс наклона тренда вверх (нижней линии)
+  if (trend_type == true)
+   return ( right_extr_up.price - left_extr_up.price ) / ( right_extr_up.n_bar - left_extr_up.n_bar );
+  //если хотим вычислить тангенс наклона тренда вниз (верхней линии)
+  return ( right_extr_down.price - left_extr_down.price ) / ( right_extr_down.n_bar - left_extr_down.n_bar );   
  } 
- 
-double   GetAverageY (double value1,double value2,double value3)
-//возвращает среднее значение трех значений 
- {
-   return (value1+value2+value3)/3;
- }
 
-double   GetLineY (double value,double tg)
+double   GetLineY (bool trend_type)
 //возвращает значение Y точки текущей линии
  {
-   return value+tg;
+  //если хотим вычислить значение точки на линии тренда вверх
+  if (trend_type == true)
+   return (right_extr_up.price + 
  }
 
 int OnInit()
@@ -91,51 +106,85 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
-  //если первый запуск 
-  
+  uint index;
+  double priceDiff_left;
+  double priceDiff_right;
+  //если первый запуск
   if (first_start)
    {
-    //сохраняем первые две точки 
-    line_up[rates_total-2] = low[rates_total-2];
-    line_up[rates_total-3] = low[rates_total-3];    
-    //вычисляем тангенс угла наклона линии
-    tg_up = GetTan(line_up[rates_total-3],line_up[rates_total-2]);
-    //сохраняем первые две точки 
-    line_down[rates_total-2] = high[rates_total-2];
-    line_down[rates_total-3] = high[rates_total-3];    
-    //вычисляем тангенс угла наклона линии
-    tg_down = GetTan(line_down[rates_total-3],line_down[rates_total-2]);    
-    first_start = false;
+   //0) обнуляем флаги поиска экстремумов
+   flag_down = 0;
+   flag_up   = 0;
+   //1) проходим по барам и ищем два экстремума
+    for (index=rates_total-2;index>0;index--)
+     {
+      //---- обработка экстремумов нижних цен
+      //вычисление разниц цен
+      priceDiff_left  = low[index+1]-low[index];
+      priceDiff_right = low[index-1]-low[index]; 
+      //если найден экстремум
+      if (priceDiff_left >= priceDifference && priceDiff_right >= priceDifference && flag_up < 2)
+       { 
+        //если это первый найденный экстремум
+        if (flag_up == 0)
+         {
+           left_extr_up.n_bar = index;
+           left_extr_up.price = low[index];
+           flag_up = 1;
+         }
+        //если это второй найденный экстремум
+        else
+         {
+           right_extr_up.n_bar = index;
+           right_extr_up.price = low[index];
+           flag_up = 2;
+         }
+       }
+      //---- обработка экстремумов нижних цен
+      //вычисление разниц цен
+      priceDiff_left  = high[index]-high[index+1];
+      priceDiff_right = high[index]-high[index-1]; 
+      //если найден экстремум
+      if (priceDiff_left >= priceDifference && priceDiff_right >= priceDifference && flag_down < 2)
+       { 
+        //если это первый найденный экстремум
+        if (flag_down == 0)
+         {
+           left_extr_down.n_bar = index;
+           left_extr_down.price = high[index];
+           flag_down = 1;
+         }
+        //если это второй найденный экстремум
+        else
+         {
+           right_extr_down.n_bar = index;
+           right_extr_down.price = high[index];
+           flag_down = 2;
+         }
+       }       
+       
+     }
+     //если для тренда вниз найдены два экстремума
+     if (flag_down == 2)
+      //то вычисляем тангенс наклона линии тренда 
+      tg_down = GetTan(false);
+     //если для тренда вверх найдены два экстремума
+     if (flag_up == 2)
+      //то вычисляем тангенс наклона линии тренда
+      tg_up = GetTan(true);
    }
-  else
-   {
-    //очищаем предыдущую левую  точку
-    line_up[rates_total-4] = 0;
-    line_down[rates_total-4] = 0;    
-    //если значение линии в точке меньше, чем низкая цена последнего бара 
-    if (GetLineY(line_up[rates_total-3],tg_up) < low[rates_total-2])
-     {
-      line_up[rates_total-2] = low[rates_total-2];
-      tg_up = GetTan(line_up[rates_total-3],line_up[rates_total-2]);
-     }
-    else
-     {
-      line_up[rates_total-2] = GetAverageY(low[rates_total-2],low[rates_total-3],GetLineY(line_up[rates_total-2],tg_up));
-      tg_up = GetTan(line_up[rates_total-3],line_up[rates_total-2]);     
-     }
-
-    //если значение линии в точке меньше, чем низкая цена последнего бара 
-    if (GetLineY(line_down[rates_total-3],tg_down) > high[rates_total-2])
-     {
-      line_down[rates_total-2] = high[rates_total-2];
-      tg_down = GetTan(line_down[rates_total-3],line_down[rates_total-2]);
-     }
-    else
-     {
-      line_down[rates_total-2] = GetAverageY(high[rates_total-2],high[rates_total-3],GetLineY(line_down[rates_total-2],tg_down));
-      tg_down = GetTan(line_down[rates_total-3],line_down[rates_total-2]);     
-     }     
-     
-   }
+   //если не первый запуск 
+   else
+    {
+     //---- если сформирован новый бар
+     if ( isNewBar.isNewBar() > 0 )
+      {
+       //---- вычисляем разницу цен 
+       priceDiff_left  = low[rates_total-1]-low[rates_total-2];
+       priceDiff_right = low[rates_total-3]-low[rates_total-2];
+       
+       if (priceDiff_left >= priceDifference && priceDiff_right >= priceDifference) 
+      }
+    }
    return(rates_total);
   }
