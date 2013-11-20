@@ -104,16 +104,15 @@ int OnCalculate(const int rates_total,
    
    if(NewBarTop.isNewBar() > 0)
    {
-    buffer_index_top += NewBarTop.isNewBar();
+    buffer_index_top++ ;//+= NewBarTop.isNewBar();
    }
    
    if(NewBarBottom.isNewBar() > 0 || prev_calculated == 0) //isNewBar bottom_tf
    {
-    //PrintFormat("NEW BAR %d | %d - %d", buffer_index, start_iteration, rates_total-1);
     for(int i = start_iteration; i < rates_total; i++)
     {
-     PrintFormat("buffer_index = %d: from %d to %d", buffer_index, i, rates_total-1);
-     topTrend.CountMoveType(buffer_index_top, Bars(symbol, GetTopTimeframe(current_timeframe)));
+     //PrintFormat("buffer_index = %d; buffer_index_top = %d: from %d to %d/ top_bars %d", buffer_index, buffer_index_top, i, rates_total-1, Bars(symbol, GetTopTimeframe(current_timeframe)));
+     topTrend.CountMoveType(buffer_index_top, 0);
      trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(buffer_index_top));
      
      ColorCandlesBuffer1[i] = open[i];
@@ -122,7 +121,7 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer4[i] = close[i];
      ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
      
-      if (trend.GetExtremumDirection(buffer_index) > 0)
+     if (trend.GetExtremumDirection(buffer_index) > 0)
      {
       ExtUpArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
       //PrintFormat("Максимум %d __ %d", i, buffer_index);

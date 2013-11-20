@@ -79,32 +79,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
   aExtremums[i] = zero;
  }
  difToTrend = 2;  // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
-/*
- // Получаем данные буфера в массив
- FillATRBuf(_depth + _shift);
- FillTimeSeries(CURRENT_TF, _depth + _shift, 0, buffer_Rates); // получим размер заполненного массива
- ArrayResize(aExtremums, _depth + _shift);
  
- for(int bar = 1; bar < _shift-2 && !IsStopped(); bar++) // вычисляем экстремумы со сдвигом в историю
- { 
-  difToNewExtremum = buffer_ATR[bar] / 2;  //переменная difToNewExtremum используется в функции isExtremum
-  aExtremums[bar] =  isExtremum(buffer_Rates[bar - 1].close, buffer_Rates[bar].close, buffer_Rates[bar + 1].close);
-  if (aExtremums[bar].direction != 0)
-  {
-   if (aExtremums[bar].direction == aExtremums[num0].direction) // если новый экстремум в том же напрвлении, что старый
-   {
-    aExtremums[num0].direction = 0;
-    num0 = bar;
-   }
-   else
-   
-   {
-    num2 = num1;
-    num1 = num0;
-    num0 = bar;
-   }
-  }
- }*/
 }
 
 //+------------------------------------------+
@@ -112,14 +87,12 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 //+------------------------------------------+
 void CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
- //PrintFormat("bar = %d && start_pos = %d", bar, start_pos);
  FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates); // получим размер заполненного массива
- FillTimeSeries(BOTTOM_TF, 4, start_pos, buffer_BottomRates);
  FillATRBuf(4, start_pos);                              // заполним массив данными индикатора ATR
  // Выделим память под массивы цветов и экстремумов
- 
+ if(bar == ArraySize(enumMoveType)) ArrayResize (enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
+ if(bar == ArraySize(aExtremums)  ) ArrayResize (  aExtremums, ArraySize(  aExtremums)*2, ArraySize(  aExtremums)*2);
  difToNewExtremum = buffer_ATR[1] * _percentage_ATR;
- //PrintFormat("diffToNewExtremum = %f", difToNewExtremum);
  if (bar != 0) 
  {
   enumMoveType[bar] = enumMoveType[bar - 1];
@@ -133,13 +106,11 @@ void CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
   if (LessDoubles(buffer_Rates[3].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
   {
    enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
-   PrintFormat("%s", MoveTypeToString(topTF_Movement));
    //PrintFormat("bar = %d, начался тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, buffer_Rates[3].close, aExtremums[num0].price);
   }
   if (GreatDoubles(buffer_Rates[3].close, aExtremums[num0].price, digits)) // если текущее закрытие выше последнего экстремума 
   {
    enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
-   PrintFormat("%s", MoveTypeToString(topTF_Movement));
    //PrintFormat("bar = %d, начался тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, buffer_Rates[3].close, aExtremums[num0].price);
   }
  }
@@ -183,7 +154,7 @@ void CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
    num1 = num0;
    num0 = bar;
   }
-  PrintFormat("bar = %d, экстремумы num0=%d=%.05f, num1=%d=%.05f, num2=%d=%.05f", bar, num0, aExtremums[num0].price, num1, aExtremums[num1].price, num2, aExtremums[num2].price);
+  //PrintFormat("bar = %d, экстремумы num0=%d=%.05f, num1=%d=%.05f, num2=%d=%.05f", bar, num0, aExtremums[num0].price, num1, aExtremums[num1].price, num2, aExtremums[num2].price);
   if ( bar != 0
     &&(enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_DOWN)
     &&(aExtremums[bar].direction > 0)
@@ -292,6 +263,7 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
    period = GetTopTimeframe(_period);
    break;
  }
+ 
  while(attempts < 25 && (copied = CopyRates(_symbol, period, start_pos, count, array))<0) // справа налево от 0 до count, всего count элементов
  {
   Sleep(100);
