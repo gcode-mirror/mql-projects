@@ -104,7 +104,7 @@ int OnCalculate(const int rates_total,
    flag_up   = 0;
   
    //1) проходим по барам и ищем два экстремума
-    for (index=rates_total-2;index>0;index--)
+    for (index=rates_total-3;index>0;index--)
      {
       //---- обнуление элементов массива
       line_up[index] = 0;
@@ -140,7 +140,8 @@ int OnCalculate(const int rates_total,
        tg_up = GetTan(true);
        //сохраняем значения в массив
        line_up[left_extr_up.n_bar] = left_extr_up.price;
-       line_up[rates_total-1] = GetLineY(true,rates_total-1);
+       line_up[rates_total-1] = GetLineY(true,rates_total-2);
+       first_start = false;
       }
    }
    //если не первый запуск 
@@ -153,25 +154,25 @@ int OnCalculate(const int rates_total,
        priceDiff_left  = low[rates_total-1]-low[rates_total-2];
        priceDiff_right = low[rates_total-3]-low[rates_total-2];
        //---- обнуляем значение элемента массива
-       line_up[rates_total-1] = 0;
+       line_up[rates_total-2] = 0;
 
        //---- если найден экстремум
        if (priceDiff_left >= priceDifference && priceDiff_right >= priceDifference) 
         {     
           //---- если цена не перешла за линию тренда
-          if (low[rates_total-2] > GetLineY(true,rates_total-2) )
+          if (low[rates_total-2] > GetLineY(true,rates_total-3) )
            {
              //---- сохраняем новое значение для левого экстремума
              left_extr_up.price = right_extr_up.price;
              left_extr_up.n_bar = right_extr_up.n_bar;
            } 
              //---- сохраняем текущий экстремум
-             right_extr_up.price = low[rates_total-2];
-             right_extr_up.n_bar = rates_total-2;        
+             right_extr_up.price = low[rates_total-3];
+             right_extr_up.n_bar = rates_total-3;        
              //---- вычисляем тангенс тренд линии    
              tg_up = GetTan(true);
         } 
-        line_up[rates_total-1] = GetLineY(true,rates_total-1);
+        line_up[rates_total-2] = GetLineY(true,rates_total-2);
       }
     }
    return(rates_total);
