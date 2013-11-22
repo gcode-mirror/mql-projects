@@ -152,11 +152,11 @@ int OnCalculate(const int rates_total,
     for(int i = start_iteration; i < rates_total; i++)
     {
      //PrintFormat("buffer_index = %d; buffer_index_top = %d: from %d to %d/ top_bars %d", buffer_index, buffer_index_top, i, rates_total-1, Bars(symbol, GetTopTimeframe(current_timeframe)));
-     //if(topTrend.CountMoveType(buffer_index_top, 0) != 0)
-     //{
-     // Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP");
-     // return(prev_calculated);
-     //} 
+     if(topTrend.CountMoveType(buffer_index_top, 0) != 0)
+     {
+      Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP");
+      return(prev_calculated);
+     } 
      if(trend.CountMoveType(buffer_index, (rates_total-1) - i) != 0)//, topTrend.GetMoveType(buffer_index_top)) != 0);
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT");
