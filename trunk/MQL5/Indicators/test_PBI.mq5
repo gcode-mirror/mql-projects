@@ -29,6 +29,7 @@
 //--- input параметры
 input int      bars = 50;         // сколько свечей показывать
 input double   percentage_ATR = 0.05;
+input bool     show_extr = false;  //показывать экстремумы 
 //--- индикаторные буферы
 double         ColorCandlesBuffer1[];
 double         ColorCandlesBuffer2[];
@@ -51,6 +52,7 @@ int digits;
 //+------------------------------------------------------------------+
 int OnInit()
   {
+   Print("Init");
    symbol = Symbol();
    current_timeframe = Period();
    NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
@@ -69,9 +71,21 @@ int OnInit()
    
    PlotIndexSetInteger(1, PLOT_ARROW, 218);
    PlotIndexSetInteger(2, PLOT_ARROW, 217);
-   
+  
    return(INIT_SUCCEEDED);
   }
+  
+void OnDeinit(const int reason)
+{
+ //--- Первый способ получить код причины деинициализации
+   Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
+   ArrayInitialize(ExtUpArrowBuffer, 0);
+   ArrayInitialize(ExtDownArrowBuffer, 0);
+   ArrayInitialize(ColorCandlesBuffer1, 0);
+   ArrayInitialize(ColorCandlesBuffer2, 0);
+   ArrayInitialize(ColorCandlesBuffer3, 0);
+   ArrayInitialize(ColorCandlesBuffer4, 0);
+}
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
@@ -121,15 +135,22 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer4[i] = close[i];
      ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
      
-     if (trend.GetExtremumDirection(buffer_index) > 0)
+     if(show_extr)
      {
-      ExtUpArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
-      //PrintFormat("Максимум %d __ %d", i, buffer_index);
-     }
-     if (trend.GetExtremumDirection(buffer_index) < 0)
-     {
-      ExtDownArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
-      //PrintFormat("Минимум %d __ %d", i, buffer_index);
+      if (trend.GetExtremumDirection(buffer_index) > 0)
+      {
+       ExtUpArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
+       //PrintFormat("Максимум %d __ %d", i, buffer_index);
+      }
+      else if (trend.GetExtremumDirection(buffer_index) < 0)
+      {
+       ExtDownArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
+       //PrintFormat("Минимум %d __ %d", i, buffer_index);
+      }
+      else
+      {
+       ExtUpArrowBuffer[i] = 0;
+      }
      }
      if(buffer_index < bars) buffer_index++;
     }

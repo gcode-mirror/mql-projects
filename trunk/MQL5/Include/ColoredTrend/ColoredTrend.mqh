@@ -88,11 +88,11 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 void CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
  FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates); // получим размер заполненного массива
- FillATRBuf(4, start_pos);                              // заполним массив данными индикатора ATR
+ //FillATRBuf(4, start_pos);                              // заполним массив данными индикатора ATR
  // Выделим память под массивы цветов и экстремумов
  if(bar == ArraySize(enumMoveType)) ArrayResize (enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
  if(bar == ArraySize(aExtremums)  ) ArrayResize (  aExtremums, ArraySize(  aExtremums)*2, ArraySize(  aExtremums)*2);
- difToNewExtremum = buffer_ATR[1] * _percentage_ATR;
+ difToNewExtremum = 0;//buffer_ATR[1] * _percentage_ATR;
  if (bar != 0) 
  {
   enumMoveType[bar] = enumMoveType[bar - 1];
@@ -264,7 +264,7 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
    break;
  }
  
- while(attempts < 25 && (copied = CopyRates(_symbol, period, start_pos, count, array))<0) // справа налево от 0 до count, всего count элементов
+ while(attempts < 25 && (copied = CopyRates(_symbol, period, start_pos, count, array))<0) // справа налево от 0 до count-1, всего count элементов
  {
   Sleep(100);
   attempts++;
@@ -272,13 +272,16 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
-  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных Rates",
+  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных Rates. Error = %d | start = %d count = %d",
                              _symbol,
                              copied,
+                             count,
+                             GetLastError(),
+                             start_pos,
                              count
                             );
   //--- выведем сообщение в комментарий на главное окно графика
-  Comment(comm);
+  Print(comm);
  }
  return(copied);
 }
@@ -306,13 +309,16 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
-  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных ATR",
+  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных ATR. Error = %d | start = %d count = %d",
                              _symbol,
                              copied,
+                             count,
+                             GetLastError(),
+                             start_pos,
                              count
                             );
   //--- выведем сообщение в комментарий на главное окно графика
-  Comment(comm);
+  Print(comm);
  }
  return(copied);
 }
