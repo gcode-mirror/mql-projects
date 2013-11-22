@@ -29,7 +29,6 @@
 //--- input параметры
 input int      bars = 50;         // сколько свечей показывать
 input double   percentage_ATR = 0.05;
-input bool     show_extr = false;  //показывать экстремумы 
 //--- индикаторные буферы
 double         ColorCandlesBuffer1[];
 double         ColorCandlesBuffer2[];
