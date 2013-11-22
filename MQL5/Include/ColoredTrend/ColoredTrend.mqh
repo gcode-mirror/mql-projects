@@ -88,11 +88,12 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 void CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
  FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates); // получим размер заполненного массива
- //FillATRBuf(4, start_pos);                              // заполним массив данными индикатора ATR
+ FillATRBuf(4, start_pos);                              // заполним массив данными индикатора ATR
  // ¬ыделим пам€ть под массивы цветов и экстремумов
  if(bar == ArraySize(enumMoveType)) ArrayResize (enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
  if(bar == ArraySize(aExtremums)  ) ArrayResize (  aExtremums, ArraySize(  aExtremums)*2, ArraySize(  aExtremums)*2);
- difToNewExtremum = 0;//buffer_ATR[1] * _percentage_ATR;
+ difToNewExtremum = 0;
+ PrintFormat("difToNewExtr = %f | %d", buffer_ATR[1] * _percentage_ATR, start_pos);
  if (bar != 0) 
  {
   enumMoveType[bar] = enumMoveType[bar - 1];
