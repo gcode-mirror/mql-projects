@@ -6,7 +6,7 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
-#include <TIHIRO\CTihiro.mqh>              //класс CTihiro
+#include <JAPAN\jExperts\CTihiro.mqh>              //класс CTihiro
 #include <Lib CisNewBar.mqh>               //для проверки формирования нового бара
 #include <TradeManager/TradeManager.mqh>   //подключаем библиотеку TradeManager
 #include <TradeManager\BackTest.mqh>       //бэктест
