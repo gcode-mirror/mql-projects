@@ -101,8 +101,7 @@ void OnTick()
       my_trade.type_filling=ORDER_FILLING_FOK;
       my_trade.comment="";
 
-      MyOrderSend(my_trade,my_trade_result);
-      
+      MyOrderSend(my_trade,my_trade_result);     
      }
   }
 //+------------------------------------------------------------------+

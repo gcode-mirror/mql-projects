@@ -16,23 +16,23 @@ long   start_time;     //самая первая дата при загрузке эксперта
 
 bool CurrentPositionLastDealPrice() //возвращает параметры последней сделки
 {
- int    total       =0;   // Всего сделок в списке выбранной истории
- string deal_symbol ="";  // Символ сделки 
+ int    total       = 0;   // Всего сделок в списке выбранной истории
+ string deal_symbol = "";  // Символ сделки 
 //--- Если история позиции получена
  if(HistorySelect(start_time,TimeCurrent()))
  {
   //--- Получим количество сделок в полученном списке
-  total=HistoryDealsTotal();     
+  total = HistoryDealsTotal();     
   //--- Пройдем по всем сделкам в полученном списке от последней сделки в списке к первой
-  for(int i=total-1; i>=0; i--)
+  for(int i = total-1; i >= 0; i--)
   {
-   deal_symbol=HistoryDealGetString(HistoryDealGetTicket(i),DEAL_SYMBOL);
+   deal_symbol = HistoryDealGetString(HistoryDealGetTicket(i), DEAL_SYMBOL);
    //--- Если символ сделки и текущий символ равны, остановим цикл
-   if(deal_symbol==_Symbol)
+   if(deal_symbol == _Symbol)
    {
-    deal_type=HistoryDealGetInteger(HistoryDealGetTicket(i),DEAL_TYPE);
-    deal_volume=HistoryDealGetDouble(HistoryDealGetTicket(i),DEAL_VOLUME);
-    deal_price=HistoryDealGetDouble(HistoryDealGetTicket(i),DEAL_PRICE);              
+    deal_type = HistoryDealGetInteger(HistoryDealGetTicket(i), DEAL_TYPE);
+    deal_volume = HistoryDealGetDouble(HistoryDealGetTicket(i), DEAL_VOLUME);
+    deal_price = HistoryDealGetDouble(HistoryDealGetTicket(i), DEAL_PRICE);              
     start_time = TimeCurrent();
     return true; 
    }
@@ -51,7 +51,7 @@ bool SavePositionToFile(string file_url)  //сохраняет позицию в файл
   return false;
  }
 
- FileWrite(file_handle,tmp_time); //сохраняем текущее время
+ FileWrite(file_handle, tmp_time ); //сохраняем текущее время
  FileWrite(file_handle, deal_type ); //сохраняем тип сделки    
  FileWrite(file_handle, deal_volume ); //сохраняем объем сделки
  FileWrite(file_handle, deal_price ); //сохраняем цену сделки   
