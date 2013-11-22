@@ -124,6 +124,7 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
   }
  }
  
+ //Начало коррекции если цена закрытия меньше/больше открытия следующего бара
  if ((enumMoveType[bar] == MOVE_TYPE_TREND_UP || enumMoveType[bar] == MOVE_TYPE_TREND_UP_FORBIDEN) && 
       LessDoubles(buffer_Rates[3].close, buffer_Rates[2].open, digits))
  {
@@ -137,6 +138,8 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
   lastOnTrend = num0;
  }
  
+ //коррекция меняется на тренд вверх/вниз при наступлении условия isCorrectionEnds
+ //если последняя ценя меньше/больше последнего экстремуму и на младшем тф "большой" бар
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && 
       isCorrectionEnds(buffer_Rates[3].close, MOVE_TYPE_CORRECTION_UP))
  {
