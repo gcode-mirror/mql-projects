@@ -10,6 +10,7 @@
 #include <CompareDoubles.mqh>
 #include "ColoredTrendUtilities.mqh"
 
+int ATR_handle;
 double buffer_ATR[];
 MqlRates buffer_Rates[];
 MqlRates buffer_TopRates[];
@@ -51,7 +52,7 @@ protected:
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR);
   SExtremum isExtremum(double vol1, double vol2, double vol3, int bar = 0);
-  void CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
+  int CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
   ENUM_MOVE_TYPE GetMoveType(int i);
   double GetExtremum(int i);
   int GetExtremumDirection(int i);
@@ -68,6 +69,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 
  _symbol = symbol;
  _period = period;
+ ATR_handle = iATR(_symbol, _period, 100);
  _percentage_ATR = percentage_ATR;
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  ArrayResize(enumMoveType, 1024);
@@ -79,21 +81,27 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
   aExtremums[i] = zero;
  }
  difToTrend = 2;  // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
- 
 }
 
 //+------------------------------------------+
 //| Функция вычисляет тип движения рынка     |
 //+------------------------------------------+
-void CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
+int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
- FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates); // получим размер заполненного массива
- FillATRBuf(4, start_pos);                              // заполним массив данными индикатора ATR
+ if(FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates) < 0) 
+ {
+  //Print("Не удалось загрузить rates");
+  return (-1); // получим размер заполненного массива
+ }
+ if(FillATRBuf(4, start_pos) < 0) 
+ {
+  //Print("Не удалось загрузить atr");
+  return (-1);                              // заполним массив данными индикатора ATR
+ }
  // Выделим память под массивы цветов и экстремумов
  if(bar == ArraySize(enumMoveType)) ArrayResize (enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
  if(bar == ArraySize(aExtremums)  ) ArrayResize (  aExtremums, ArraySize(  aExtremums)*2, ArraySize(  aExtremums)*2);
- difToNewExtremum = 0;
- PrintFormat("difToNewExtr = %f | %d", buffer_ATR[1] * _percentage_ATR, start_pos);
+ difToNewExtremum =  buffer_ATR[1] * _percentage_ATR;
  if (bar != 0) 
  {
   enumMoveType[bar] = enumMoveType[bar - 1];
@@ -182,6 +190,7 @@ void CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
    enumMoveType[bar] = MOVE_TYPE_FLAT;
   }
  }
+ return 0;
 }
 
 //+------------------------------------------+
@@ -292,17 +301,16 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
 //+----------------------------------------------------+
 int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 {
- int ATR_handle = iATR(_symbol, _period, 100);
  if(ATR_handle == INVALID_HANDLE)                      //проверяем наличие хендла индикатора
  {
-  Print("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
+  Alert("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
  }
  //--- счетчик попыток
    int attempts = 0;
 //--- сколько скопировано
    int copied = 0;
 //--- делаем 25 попыток получить таймсерию по нужному символу
- while(attempts < 25 && (copied = CopyBuffer(ATR_handle, 0, start_pos, count, buffer_ATR)) < 0) // справа налево от 0 до count, всего count элементов
+ while(attempts < 250 && (copied = CopyBuffer(ATR_handle, 0, start_pos, count, buffer_ATR)) < 0) // справа налево от 0 до count, всего count элементов
  {
   Sleep(100);
   attempts++;
@@ -310,13 +318,14 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
-  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных ATR. Error = %d | start = %d count = %d",
+  string comm = StringFormat("Для символа %s удалось получить только %d баров из %d затребованных ATR. Error = %d | start = %d count = %d handke %d",
                              _symbol,
                              copied,
                              count,
                              GetLastError(),
                              start_pos,
-                             count
+                             count,
+                             BarsCalculated(ATR_handle)
                             );
   //--- выведем сообщение в комментарий на главное окно графика
   Print(comm);
