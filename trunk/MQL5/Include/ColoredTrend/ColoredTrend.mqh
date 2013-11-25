@@ -139,7 +139,7 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
  }
  
  //коррекция меняется на тренд вверх/вниз при наступлении условия isCorrectionEnds
- //если последняя ценя меньше/больше последнего экстремуму и на младшем тф "большой" бар
+ //если последняя ценя меньше/больше последнего экстремуму или на младшем тф "большой" бар
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && 
       isCorrectionEnds(buffer_Rates[3].close, MOVE_TYPE_CORRECTION_UP))
  {
@@ -172,8 +172,8 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
     &&(aExtremums[bar].direction > 0)
     &&(
        LessDoubles(aExtremums[bar].price, aExtremums[num2].price, digits) // если новый максимум меньше предыдущего
-     ||GreatDoubles(MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
-                    ,MathAbs(aExtremums[num2].price - aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
+     ||GreatDoubles( MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
+                    ,MathAbs(aExtremums[num2].price -  aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
                     ,digits)))   
   {
    //PrintFormat("bar = %d, начался флэт, новый максимум меньше предыдущего num0 =%.05f < num2=%.05f", bar, aExtremums[num0].price, aExtremums[num2].price);
@@ -185,8 +185,8 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
     &&(aExtremums[bar].direction < 0)
     &&(
        GreatDoubles(aExtremums[bar].price, aExtremums[num2].price, digits)
-     ||GreatDoubles(MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
-                    ,MathAbs(aExtremums[num2].price - aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
+     ||GreatDoubles( MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
+                    ,MathAbs(aExtremums[num2].price -  aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
                     ,digits)))  // или новый минимум - больше
   { 
    //PrintFormat("bar = %d, начался флэт, новый минимум больше предыдущего num0 =%.05f < num2=%.05f", bar, aExtremums[num0].price, aExtremums[num2].price);
