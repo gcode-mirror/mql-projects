@@ -117,7 +117,7 @@ class Panel
 //| Публичные методы класса панели                                    |
 //+-------------------------------------------------------------------+
 
- void 
+ void AddElement (PANEL_ELEMENTS elem_type, string elem_name
 
 };
 
