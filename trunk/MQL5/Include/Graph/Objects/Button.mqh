@@ -5,7 +5,6 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
-#include <Graph\Style.mqh>  //подключаем библиотеку стилей
 //+------------------------------------------------------------------+
 //| класс кнопки                                                     |
 //+------------------------------------------------------------------+
@@ -21,7 +20,6 @@ class Button
   int              _sub_window;       // номер окна (подокна) 
   ENUM_BASE_CORNER _corner;           // угол графика  
   long             _z_order;          // приоритет   
-  Style           *_style;            // стиль
  public:
   //методы set
   Button(string name,
