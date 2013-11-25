@@ -76,26 +76,7 @@ int OnInit()
    ArraySetAsSeries(ColorCandlesBuffer2, false);
    ArraySetAsSeries(ColorCandlesBuffer3, false);
    ArraySetAsSeries(ColorCandlesBuffer4, false);
-  
- /*  int total_bars = Bars(symbol, current_timeframe);
-   MqlRates rates[];
-   CopyRates(symbol, current_timeframe, 0, bars, rates);
-   for(int i = total_bars - bars + 1; i < total_bars; i++)
-   {
-    Print ("i = ", i, "total = ", total_bars,"buffer_index = ", buffer_index);
-    //topTrend.CountMoveType(buffer_index_top, 0);
-    //trend.CountMoveType(buffer_index, (total_bars-1) - i);//, topTrend.GetMoveType(buffer_index_top));
-     
-    Print("ind ", i , "= ", ColorCandlesBuffer1[]);
-    //Print("ra ", buffer_index , "= ", rates[buffer_index].open); 
-    //ColorCandlesBuffer1[i] = rates[buffer_index].open;
-    //ColorCandlesBuffer2[i] = rates[buffer_index].high;
-    //ColorCandlesBuffer3[i] = rates[buffer_index].low;
-    //ColorCandlesBuffer4[i] = rates[buffer_index].close;
-    //ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
-    buffer_index++;
-   }
-   */
+
    return(INIT_SUCCEEDED);
   }
   
@@ -151,12 +132,12 @@ int OnCalculate(const int rates_total,
     for(int i = start_iteration; i < rates_total; i++)
     {
      //PrintFormat("buffer_index = %d; buffer_index_top = %d: from %d to %d/ top_bars %d", buffer_index, buffer_index_top, i, rates_total-1, Bars(symbol, GetTopTimeframe(current_timeframe)));
-     if(topTrend.CountMoveType(buffer_index_top, 0) != 0)
+     if(topTrend.CountMoveType(buffer_index_top, GetNumberOfTopBarsInCurrentBars(current_timeframe, bars) - buffer_index_top) != 0)
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP");
       return(prev_calculated);
      } 
-     if(trend.CountMoveType(buffer_index, (rates_total-1) - i) != 0)//, topTrend.GetMoveType(buffer_index_top)) != 0);
+     if(trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(buffer_index_top)) != 0);
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT");
       return(prev_calculated);
@@ -179,9 +160,19 @@ int OnCalculate(const int rates_total,
       //PrintFormat("Минимум %d __ %d", i, buffer_index);
      }
    
-     if(buffer_index < bars) buffer_index++;
+     if(buffer_index < bars) 
+     {
+      buffer_index++;
+      buffer_index_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, buffer_index);
+     }
     }
    }//END isNewBar bottom_tf
         
    return(rates_total);
+  }
+  
+  
+  int GetNumberOfTopBarsInCurrentBars(ENUM_TIMEFRAMES timeframe, int current_bars)
+  {
+   return ((current_bars*PeriodSeconds(timeframe))/PeriodSeconds(GetTopTimeframe(timeframe)));
   }
