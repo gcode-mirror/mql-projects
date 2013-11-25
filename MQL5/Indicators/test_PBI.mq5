@@ -137,7 +137,7 @@ int OnCalculate(const int rates_total,
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP");
       return(prev_calculated);
      } 
-     if(trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(buffer_index_top)) != 0);
+     if(trend.CountMoveType(buffer_index, (rates_total-1) - i) != 0)//, topTrend.GetMoveType(buffer_index_top)) != 0);
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT");
       return(prev_calculated);
