@@ -6,7 +6,7 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 //+------------------------------------------------------------------+
-//| класс кнопки                                                     |
+//| класс изображения                                                |
 //+------------------------------------------------------------------+
 
 class Image
@@ -48,18 +48,12 @@ class Image
    if (ObjectFind(ChartID(),_name) < 0 )  
    { 
     
-   objectCreated = ObjectCreate(_chart_id,_name,OBJ_BUTTON,_sub_window,0,0); //пытаемся создать объект
+   objectCreated = ObjectCreate(_chart_id,_name,OBJ_BITMAP,_sub_window,0,0); //пытаемся создать объект
 
    if(objectCreated)  //если графический объект успешно создан
      {
-
-
-     // ObjectSetString (_chart_id, _name,OBJPROP_FONT,_style.font_name);           // установка шрифта
-    //  Alert("Загрузили шрифт");
-     // ObjectSetInteger(_chart_id, _name,OBJPROP_COLOR,_style.font_color);         // установка цвета шрифта
       ObjectSetInteger(_chart_id, _name,OBJPROP_CORNER,_corner);                  // установка угла графика
-      
-    //  ObjectSetInteger(_chart_id, _name,OBJPROP_FONTSIZE,_style.font_size);       // установка размера шрифта
+      ObjectSetString(_chart_id,  _name,OBJPROP_BMPFILE,"C:\\panel.bmp");          //устанавливаем адрес файла изображения
       ObjectSetInteger(_chart_id, _name,OBJPROP_XDISTANCE,_x);                    // установка координаты X
       ObjectSetInteger(_chart_id, _name,OBJPROP_YDISTANCE,_y);                    // установка координаты Y
       ObjectSetInteger(_chart_id, _name,OBJPROP_SELECTABLE,false);                // нельзя выделить объект, если FALSE
