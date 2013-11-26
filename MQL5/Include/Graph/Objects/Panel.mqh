@@ -35,10 +35,8 @@ class Panel
   ENUM_BASE_CORNER _corner;           // угол графика  
   long             _z_order;          // приоритет   
   //---- переменные для хренения количества объектов различного класса
-  uint             _n_buttons;        // количество кнопок
-  uint             _n_inputs;         // количество полей ввода       
-  uint             _n_labels;         // количество лейблов
-  uint             _n_lists;          // количество списков
+  string           _object_name[];    // массив имен созданных объектов
+  uint             _n_objects;        // количество объектов 
  public:
   //методы set
   
@@ -61,7 +59,8 @@ class Panel
   _chart_id(chart_id),
   _sub_window(sub_window),
   _corner(corner),
-  _z_order(z_order)
+  _z_order(z_order),
+  _n_objects(0)
   {
    bool objectCreated;
    //проверка уникальности имени объекта
@@ -117,8 +116,81 @@ class Panel
 //| Публичные методы класса панели                                    |
 //+-------------------------------------------------------------------+
 
- void AddElement (PANEL_ELEMENTS elem_type, string elem_name
-
+ //----  создает объекты 
+ void AddElement (PANEL_ELEMENTS elem_type, string elem_name,string caption,uint x,uint y,uint w,uint h);
+ //---   перемещает панель на координаты x, y
+ void MoveTo(int x,int y);
+ 
 };
 
 //описание методов класса Panel
+
+//+-------------------------------------------------------------------+
+//| Публичные методы класса панели                                    |
+//+-------------------------------------------------------------------+
+
+ void Panel::AddElement(PANEL_ELEMENTS elem_type,string elem_name,string caption,uint x,uint y,uint w,uint h)
+  //добавляет элемент с заданным именем
+  {
+   //возвращаемый номер подокна, в котором находится объект
+   int  sub_win=0;      
+   //создаем уникальное имя внутри панели
+   string new_name = _name + "_" + elem_name;
+   //проверка на существования объекта с таким же именем
+   sub_win = ObjectFind(_chart_id,new_name);
+   //если объект с таким именем не существует
+   if (sub_win < 0)
+    {
+     //сохраняем имя созданного объекта в массив имен
+     _n_objects++; 
+     ArrayResize(_object_name, _n_objects,0);
+     _object_name[_n_objects-1] = new_name;
+     //создание объектов по типу
+     switch (elem_type)
+      {
+       //объект "Кнопка"
+       case PE_BUTTON:
+       new Button(new_name,caption,x+_x,y+_y,w,h,_chart_id,_sub_window,_corner,_z_order);
+       break;
+       //объект "Поле ввода"
+       case PE_INPUT:
+       new Input(new_name,caption,x+_x,y+_y,w,h,_chart_id,_sub_window,_corner,_z_order);
+       break;
+       //объект "Лейбл"
+       case PE_LABEL:
+       new Label(new_name,caption,x+_x,y+_y,w,h,_chart_id,_sub_window,_corner,_z_order);
+       break;              
+      }
+    }
+  }
+  
+  void Panel::MoveTo(int x,int y)
+  //перемещает панель с объектами на координаты x, y
+   {
+    //индекс для цикла
+    uint index;
+    // смещение координат  
+    int x_diff,y_diff;
+    // текущие координаты объекта
+    int x_now,y_now;
+    //если координаты удовлетворяют условиям
+    if (x>=0&&y>=0)
+     {
+      //вычисляем смещение координат
+      x_diff = x-ObjectGetInteger(_chart_id,_name,OBJPROP_XDISTANCE);
+      y_diff = y-ObjectGetInteger(_chart_id,_name,OBJPROP_YDISTANCE);
+      //перемещаем панель на новые координаты
+      ObjectSetInteger(_chart_id, _name,OBJPROP_XDISTANCE,x);  // установка координаты X
+      ObjectSetInteger(_chart_id, _name,OBJPROP_YDISTANCE,y);  // установка координаты Y
+      //пробегаем по всем элементам массива имен объектов 
+      for (index=0;index<_n_objects;index++)
+       {
+        //получаем текущие координаты объектов
+        x_now = ObjectGetInteger(_chart_id,_object_name[index],OBJPROP_XDISTANCE);
+        y_now = ObjectGetInteger(_chart_id,_object_name[index],OBJPROP_YDISTANCE);        
+        //и перемещаем все объекты на заданные координаты в соответсвии со своми координатами
+        ObjectSetInteger(_chart_id,_object_name[index],OBJPROP_XDISTANCE,x_now+x_diff);
+        ObjectSetInteger(_chart_id,_object_name[index],OBJPROP_YDISTANCE,y_now+y_diff);        
+       }
+     }
+   }

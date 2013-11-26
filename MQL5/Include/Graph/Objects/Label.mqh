@@ -51,13 +51,7 @@ class Label
 
    if(objectCreated)  //если графический объект успешно создан
      {
-
-
-     // ObjectSetString (_chart_id, _name,OBJPROP_FONT,_style.font_name);           // установка шрифта
-    //  Alert("Загрузили шрифт");
-     // ObjectSetInteger(_chart_id, _name,OBJPROP_COLOR,_style.font_color);         // установка цвета шрифта
       ObjectSetInteger(_chart_id, _name,OBJPROP_CORNER,_corner);                  // установка угла графика
-    //  ObjectSetInteger(_chart_id, _name,OBJPROP_FONTSIZE,_style.font_size);     // установка размера шрифта
       ObjectSetString(_chart_id, _name,OBJPROP_TEXT,_caption);                    // надпись   
       ObjectSetInteger(_chart_id, _name,OBJPROP_XDISTANCE,_x);                    // установка координаты X
       ObjectSetInteger(_chart_id, _name,OBJPROP_YDISTANCE,_y);                    // установка координаты Y

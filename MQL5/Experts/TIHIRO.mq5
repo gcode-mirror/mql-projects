@@ -10,7 +10,6 @@
 #include <Lib CisNewBar.mqh>               //для проверки формирования нового бара
 #include <TradeManager\TradeManager.mqh>   //подключаем библиотеку TradeManager
 #include <TradeManager\BackTest.mqh>       //бэктест
-#include <Graph\Objects\List.mqh>          //список
 
 //+------------------------------------------------------------------+
 //| TIHIRO эксперт                                                   |
@@ -34,12 +33,9 @@ CTradeManager ctm;                                 // объект класса TradeManager
 int handle;                                        // хэндл индикатора
 bool allow_continue = true;                        // флаг продолжения 
 ENUM_TM_POSITION_TYPE signal;                      // переменная для хранения торгового сигнала
-List * list;                                       // объект списка
 
 int OnInit()
 {
- list = new List("list","list_",10,10,100,0,0,CORNER_LEFT_UPPER,0);
- list.AddToList("ЦЕНА",100);
  //загружаем хэндл индикатора Tihiro
  //handle = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame,priceDifferent); 
  //вычисляем торговую ситуацию в самом начале работы эксперта
@@ -56,6 +52,8 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
+
+
 void OnTick()
   {
    //если есть позволение продолжать торговать
