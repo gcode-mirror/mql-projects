@@ -129,19 +129,25 @@ int OnCalculate(const int rates_total,
    
    if(NewBarBottom.isNewBar() > 0 || prev_calculated == 0) //isNewBar bottom_tf
    {
+    int error = 0;
     for(int i = start_iteration; i < rates_total; i++)
     {
      //PrintFormat("buffer_index = %d; buffer_index_top = %d: from %d to %d/ top_bars %d", buffer_index, buffer_index_top, i, rates_total-1, Bars(symbol, GetTopTimeframe(current_timeframe)));
-     if(topTrend.CountMoveType(buffer_index_top, GetNumberOfTopBarsInCurrentBars(current_timeframe, bars) - buffer_index_top) != 0)
+     int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, bars) - buffer_index_top;
+     if(start_pos_top < 0) start_pos_top = 0;
+     error = topTrend.CountMoveType(buffer_index_top, start_pos_top);
+     if(error != 0)
      {
-      Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP");
+      Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP. Error = ", error);
       return(prev_calculated);
-     } 
-     if(trend.CountMoveType(buffer_index, (rates_total-1) - i) != 0)//, topTrend.GetMoveType(buffer_index_top)) != 0);
+     }
+
+     error = trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(buffer_index_top));
+     if(error != 0) 
      {
-      Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT");
+      Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT. Error = ", error);
       return(prev_calculated);
-     } 
+     }
      
      ColorCandlesBuffer1[i] = open[i];
      ColorCandlesBuffer2[i] = high[i];

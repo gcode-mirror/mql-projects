@@ -88,16 +88,8 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 //+------------------------------------------+
 int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
- if(FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates) < 0) 
- {
-  //Print("Ќе удалось загрузить rates");
-  return (-1); // получим размер заполненного массива
- }
- if(FillATRBuf(4, start_pos) < 0) 
- {
-  //Print("Ќе удалось загрузить atr");
-  return (-1);                              // заполним массив данными индикатора ATR
- }
+ if(FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates) < 0) return (10); // получим размер заполненного массива
+ if(FillATRBuf(4, start_pos) < 0) return (20);  // заполним массив данными индикатора ATR
  // ¬ыделим пам€ть под массивы цветов и экстремумов
  if(bar == ArraySize(enumMoveType)) ArrayResize (enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
  if(bar == ArraySize(aExtremums)  ) ArrayResize (  aExtremums, ArraySize(  aExtremums)*2, ArraySize(  aExtremums)*2);
@@ -285,10 +277,11 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
-  string comm = StringFormat("ƒл€ символа %s удалось получить только %d баров из %d затребованных Rates. Error = %d | start = %d count = %d",
+  string comm = StringFormat("ƒл€ символа %s удалось получить только %d баров из %d затребованных Rates. Period = %s. Error = %d | start = %d count = %d",
                              _symbol,
                              copied,
                              count,
+                             EnumToString((ENUM_TIMEFRAMES)_period),
                              GetLastError(),
                              start_pos,
                              count
@@ -321,10 +314,11 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
-  string comm = StringFormat("ƒл€ символа %s удалось получить только %d баров из %d затребованных ATR. Error = %d | start = %d count = %d handke %d",
+  string comm = StringFormat("ƒл€ символа %s удалось получить только %d баров из %d затребованных ATR. Period = %s.  Error = %d | start = %d count = %d bars_calculated = %d",
                              _symbol,
                              copied,
                              count,
+                             EnumToString((ENUM_TIMEFRAMES)_period),
                              GetLastError(),
                              start_pos,
                              count,
