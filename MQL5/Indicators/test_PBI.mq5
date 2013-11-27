@@ -27,8 +27,9 @@
 //----------------------------------------------------------------
  
 //--- input параметры
-input int      bars = 50;         // сколько свечей показывать
-input double   percentage_ATR = 0.05;
+input int      bars = 10;         // сколько свечей показывать
+input double   percentage_ATR = 0.25;
+input bool     show_top = false;
 //--- индикаторные буферы
 double         ColorCandlesBuffer1[];
 double         ColorCandlesBuffer2[];
@@ -38,8 +39,7 @@ double         ColorCandlesColors[];
 double         ExtUpArrowBuffer[];
 double         ExtDownArrowBuffer[];
 
-static CisNewBar NewBarBottom,
-                 NewBarTop;
+CisNewBar NewBarBottom, NewBarTop;
 
 CColoredTrend *trend, 
               *topTrend;
@@ -47,7 +47,7 @@ string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int digits;
 int buffer_index = 0;
-//int buffer_index_top = 0;
+//int top_buffer_index = 0;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -58,6 +58,7 @@ int OnInit()
    current_timeframe = Period();
    NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
+   PrintFormat("TOP = %s, BOTTOM = %s", EnumToString((ENUM_TIMEFRAMES)NewBarTop.GetPeriod()), EnumToString((ENUM_TIMEFRAMES)NewBarBottom.GetPeriod()));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
    trend    = new CColoredTrend(symbol, current_timeframe, bars, percentage_ATR);
    topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), bars, percentage_ATR);
@@ -105,15 +106,19 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
-   //Print("Begin onCalculate");
    static int start_index = 0;
    static int start_iteration = 0;
+   static datetime start_time;
    static int buffer_index = 0;
-   static int buffer_index_top = 0;
+   static int top_buffer_index = 0;
+   
+   int seconds_current = PeriodSeconds(current_timeframe);
+   int seconds_top = PeriodSeconds(GetTopTimeframe(current_timeframe));
 
    if(prev_calculated == 0) 
    {
     start_index = rates_total - bars;
+    start_time = TimeCurrent() - bars*seconds_current;
     start_iteration = rates_total - bars;
    }
    else 
@@ -124,25 +129,27 @@ int OnCalculate(const int rates_total,
    
    if(NewBarTop.isNewBar() > 0)
    {
-    buffer_index_top++ ;//+= NewBarTop.isNewBar();
+    PrintFormat("%s : сработал новый бар на старшем", TimeToString(TimeCurrent()));
+    top_buffer_index++ ;//+= NewBarTop.isNewBar();
    }
    
    if(NewBarBottom.isNewBar() > 0 || prev_calculated == 0) //isNewBar bottom_tf
    {
+    //PrintFormat("Prev_calc = %d; rates_total = %d", prev_calculated, rates_total);
     int error = 0;
     for(int i = start_iteration; i < rates_total; i++)
     {
-     //PrintFormat("buffer_index = %d; buffer_index_top = %d: from %d to %d/ top_bars %d", buffer_index, buffer_index_top, i, rates_total-1, Bars(symbol, GetTopTimeframe(current_timeframe)));
-     int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, bars) - buffer_index_top;
+     int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, bars) - top_buffer_index;
      if(start_pos_top < 0) start_pos_top = 0;
-     error = topTrend.CountMoveType(buffer_index_top, start_pos_top);
+     
+     error = topTrend.CountMoveType(top_buffer_index, start_pos_top);
      if(error != 0)
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP. Error = ", error);
       return(prev_calculated);
      }
 
-     error = trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(buffer_index_top));
+     error = trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(top_buffer_index));
      if(error != 0) 
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT. Error = ", error);
@@ -153,8 +160,15 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer2[i] = high[i];
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i];
-     ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
+     if(!show_top) ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
+     else
+     {
+      //PrintFormat("TIME: %s : i = %d; bit = %d; move type = %s", TimeToString(TimeCurrent()), i, top_buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
+      ColorCandlesColors [i] = topTrend.GetMoveType(top_buffer_index);
+     }
      
+     PrintFormat("TIME: %s : buffer_index = %d; top_buffer_index = %d; current_move = %s; top_move = %s", TimeToString(start_time+buffer_index*seconds_current), buffer_index, top_buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+
      if (trend.GetExtremumDirection(buffer_index) > 0)
      {
       ExtUpArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
@@ -169,11 +183,12 @@ int OnCalculate(const int rates_total,
      if(buffer_index < bars) 
      {
       buffer_index++;
-      buffer_index_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, buffer_index);
+      top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
      }
+     
+      //PrintFormat("time_c = %s; current = %d; top = %d", TimeToString(TimeCurrent()), buffer_index, top_buffer_index);
     }
-   }//END isNewBar bottom_tf
-        
+   }//END isNewBar bottom_tf     
    return(rates_total);
   }
   
@@ -182,3 +197,19 @@ int OnCalculate(const int rates_total,
   {
    return ((current_bars*PeriodSeconds(timeframe))/PeriodSeconds(GetTopTimeframe(timeframe)));
   }
+  
+/*  void SaveMoveToFile(datetime time)
+  {
+   int f_handle = FileOpen("MOVE"+Symbol()+EnumToString((ENUM_TIMEFRAMES)Period())+".txt", FILE_WRITE|FILE_TXT|FILE_COMMON);
+   int size = bars;
+   FileWrite(f_handle, "TOP", EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe))+"\n");
+   for(int i = 0; i < size; i++)
+   {
+    FileWriteString(f_handle, TimeToString(time+i*PeriodSeconds(current_timeframe))+"   "+MoveTypeToString(topTrend.GetMoveType(i))+"\n");
+   }
+   FileWrite(f_handle, "CURRENT", EnumToString((ENUM_TIMEFRAMES)current_timeframe)+"\n");
+   for(int i = 0; i < size; i++)
+   {
+    FileWriteString(f_handle, TimeToString(time+i*PeriodSeconds(current_timeframe))+"   "+MoveTypeToString(topTrend.GetMoveType(i))+"\n");
+   }
+  }*/
