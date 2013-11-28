@@ -149,7 +149,7 @@ void OnTick()
     tp = 0; 
     
     PrintFormat("%s ask+stopLvl= %.05f, high= %.05f, sl=%f", MakeFunctionPrefix(__FUNCTION__), tick.ask + SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)*_Point, high_buf[ArrayMaximum(high_buf, 0)], sl);
-    if (trade.OpenPosition(symbol, OP_SELL, volume, sl, tp, 0.0, 0.0, 0.0))
+    if (trade.OpenUniquePosition(symbol, OP_SELL, volume, sl, tp, 0.0, 0.0, 0.0))
     {
      PrintFormat("Открыли позицию СЕЛЛ");
      waitForSell = false;
@@ -162,7 +162,7 @@ void OnTick()
                          tick.bid - low_buf[ArrayMinimum(low_buf, 0)]) / _Point, SymbolInfoInteger(symbol, SYMBOL_DIGITS));
     tp = 0; 
     PrintFormat("%s bid+stopLvl= %.05f, low= %.05f, sl=%f", MakeFunctionPrefix(__FUNCTION__), tick.bid - SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)*_Point, low_buf[ArrayMinimum(low_buf, 0)], sl);
-    if (trade.OpenPosition(symbol, OP_BUY, volume, sl, tp, 0.0, 0.0, 0.0))
+    if (trade.OpenUniquePosition(symbol, OP_BUY, volume, sl, tp, 0.0, 0.0, 0.0))
     {
      PrintFormat("Открыли позицию БАЙ");
      waitForBuy = false;
@@ -171,7 +171,7 @@ void OnTick()
    /*
    if (trailing)
    {
-    trade.DoTrailing();
+    trade.DoUsualTrailing();
    } */
    return;  
   }

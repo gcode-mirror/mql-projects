@@ -51,7 +51,8 @@ public:
   bool ClosePosition(long ticket, color Color=CLR_NONE);     // Закртыие позиции по тикету
   bool ClosePosition(int i,color Color=CLR_NONE);            // Закрытие позиции по индексу в массиве позиций
   bool ClosePosition(string symbol, color Color=CLR_NONE);   // Закрытие позиции по символу 
-  void DoTrailing();
+  void DoUsualTrailing();
+  void DoLosslessTrailing();
   bool isMinProfit(string symbol);
   void OnTick();
   void OnTrade(datetime history_start);
@@ -287,21 +288,38 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
 //+------------------------------------------------------------------+ 
 // Функция вычисления параметров трейлинга
 //+------------------------------------------------------------------+
-void CTradeManager::DoTrailing()
+void CTradeManager::DoUsualTrailing()
 {
  int total = _openPositions.Total();
 //--- пройдем в цикле по всем ордерам
  for(int i = 0; i < total; i++)
  {
   CPosition *pos = _openPositions.At(i);
-  if(pos.DoTrailing())
+  if(pos.UsualTrailing())
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Изменился SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
   }
  } 
 };
+
 //+------------------------------------------------------------------+ 
+// Функция вычисления параметров трейлинга
+//+------------------------------------------------------------------+
+void CTradeManager::DoLosslessTrailing()
+{
+ int total = _openPositions.Total();
+//--- пройдем в цикле по всем ордерам
+ for(int i = 0; i < total; i++)
+ {
+  CPosition *pos = _openPositions.At(i);
+  if(pos.UsualTrailing())
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Изменился SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+  }
+ } 
+};//+------------------------------------------------------------------+ 
 // Функция модификации позиции
 //+------------------------------------------------------------------+
 void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
@@ -355,7 +373,7 @@ void CTradeManager::OnTick()
     pos.setPositionStatus(POSITION_STATUS_OPEN);
     
     _openPositions.Add(_positionsToReProcessing.Detach(i));    
-   SaveArrayToFile(rescueDataFileName,_openPositions);    
+    SaveArrayToFile(rescueDataFileName,_openPositions);    
    }
   }
  } 
@@ -488,6 +506,8 @@ bool CTradeManager::isMinProfit(string symbol)
  }
  return false;
 }
+
+
 
 //+------------------------------------------------------------------+
 /// Close a virtual position by ticket.
