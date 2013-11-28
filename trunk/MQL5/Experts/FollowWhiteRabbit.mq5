@@ -161,7 +161,7 @@ void OnTick()
    
    if (trailing)
    {
-    ctm.DoTrailing();
+    ctm.DoUsualTrailing();
    }
    return;   
   }

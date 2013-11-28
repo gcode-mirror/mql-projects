@@ -80,7 +80,6 @@ public:
    double   getStopLossPrice() {return(_slPrice);};
    double   getTakeProfitPrice() {return(_tpPrice);};
    double   getMinProfit() {return(_minProfit);};
-   bool     isMinProfit();
    double   getTrailingStop() {return(_trailingStop);};
    double   getTrailingStep() {return(_trailingStep);};
    double   getPriceDifference() {return(_priceDifference);};
@@ -90,7 +89,7 @@ public:
    double   getPriceOpen() { return(_posOpenPrice); };           //получает цену открытия позиции
    double   getPriceClose() { return(_posClosePrice); };        //получает цену закрытия позиции
    double   getPosProfit() { return(_posProfit); };          //получает прибыль позиции             
-   
+   bool     isMinProfit();
    
    ENUM_TM_POSITION_TYPE getType() {return (_type);};
    void setType(ENUM_TM_POSITION_TYPE type) {_type = type;};
@@ -114,7 +113,8 @@ public:
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();
    ENUM_POSITION_STATUS RemovePendingPosition();
    bool ClosePosition();
-   bool DoTrailing();
+   bool UsualTrailing();
+   bool LosslessTrailing();
    bool ReadFromFile (int handle);
    void WriteToFile (int handle);
  };
@@ -198,22 +198,15 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, dou
 bool CPosition::isMinProfit(void)
 {
  UpdateSymbolInfo();
- if(_pos_status == POSITION_STATUS_OPEN)
- {
-  switch(_type)
-  {
-   case OP_BUY:
-   case OP_BUYLIMIT:
-   case OP_BUYSTOP:
-    if (SymbInfo.Bid() - _minProfit*SymbInfo.Point() >= _posOpenPrice ) return true;
-    break;
-   case OP_SELL:
-   case OP_SELLLIMIT:
-   case OP_SELLSTOP:
-    if (SymbInfo.Ask() + _minProfit*SymbInfo.Point() <= _posOpenPrice ) return true;
-    break;
-  }
- }
+ double ask = SymbInfo.Ask();
+ double bid = SymbInfo.Bid();
+ double point = SymbInfo.Point();
+ 
+ if (getType() == OP_BUY && LessDoubles(_posOpenPrice, bid - _minProfit*point))
+  return true;
+ if (getType() == OP_SELL && GreatDoubles(_posOpenPrice - ask, _minProfit*point))
+  return true;
+  
  return false;
 } 
 //+------------------------------------------------------------------+
@@ -598,8 +591,9 @@ bool CPosition::ClosePosition()
 }
 
 //+------------------------------------------------------------------+
+// Обычный трейлинг
 //+------------------------------------------------------------------+
-bool CPosition::DoTrailing(void)
+bool CPosition::UsualTrailing(void)
 {
  if (_minProfit > 0 && _trailingStop > 0 && _trailingStep > 0)
  {
@@ -610,37 +604,74 @@ bool CPosition::DoTrailing(void)
   int digits = SymbInfo.Digits();
   double newSL = 0;
  
-  if (getType() == OP_BUY)
+  if (getType() == OP_BUY &&
+      LessDoubles(_posOpenPrice, bid - _minProfit*point) &&
+      (LessDoubles(_slPrice, bid - (_trailingStop+_trailingStep-1)*point) || _slPrice == 0))
   {
-   if (LessDoubles(_posOpenPrice, bid - _minProfit*point))
+   newSL = NormalizeDouble(bid - _trailingStop*point, digits);
+   if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
    {
-    if (LessDoubles(_slPrice, bid - (_trailingStop+_trailingStep-1)*point) || _slPrice == 0)
-    {
-     newSL = NormalizeDouble(bid - _trailingStop*point, digits);
-     if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
-     {
-      _slPrice = newSL;
-      return true;
-     } 
-    }
+    _slPrice = newSL;
+    return true;
    }
   }
  
-  if (getType() == OP_SELL)
+  if (getType() == OP_SELL &&
+      GreatDoubles(_posOpenPrice, ask + _minProfit*point) &&
+      (GreatDoubles(_slPrice, ask + (_trailingStop+_trailingStep-1)*point) || _slPrice == 0))
   {
-   if (GreatDoubles(_posOpenPrice - ask, _minProfit*point))
+   newSL = NormalizeDouble(ask + _trailingStop*point, digits);
+   if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
    {
-    if (GreatDoubles(_slPrice, ask+(_trailingStop+_trailingStep-1)*point) || _slPrice == 0) 
-    {
-     newSL = NormalizeDouble(ask + _trailingStop*point, digits);
-     if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
-     {
-      _slPrice = newSL;
-      return true;
-     }
-    }
+    _slPrice = newSL;
+    return true;
    }
   }
+ }
+ return false;
+}
+
+
+//+------------------------------------------------------------------+
+// Трейлинг с выходом на безубыток
+//+------------------------------------------------------------------+
+bool CPosition::LosslessTrailing(void)
+{
+ if (_minProfit > 0 && _trailingStop > 0 && _trailingStep > 0)
+ {
+  UpdateSymbolInfo();
+  double price;
+  int direction;
+  if (getType() == OP_BUY)
+  {
+   price = SymbInfo.Bid();
+   direction = -1;
+  }
+  else if (getType() == OP_SELL)
+       {
+        price = SymbInfo.Ask();
+        direction = 1; 
+       }
+       else return true;
+  
+  double point = SymbInfo.Point();
+  int digits = SymbInfo.Digits();
+  double newSL = 0;
+ 
+  if (GreatDoubles(direction*_posOpenPrice, direction*price + _minProfit*point)) // Если достигнут минпрофит 
+  {
+   newSL = _posOpenPrice*point;                                                  // переносим СЛ в безубыток 
+  }
+  if (isMinProfit() && GreatDoubles(direction*_slPrice, direction*price + (_trailingStop+_trailingStep-1)*point) || _slPrice == 0)
+  {
+   newSL = NormalizeDouble(price + direction*_trailingStop*point, digits);
+  }
+ 
+  if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
+  {
+   _slPrice = newSL;
+   return true;
+  } 
  }
  return false;
 }
