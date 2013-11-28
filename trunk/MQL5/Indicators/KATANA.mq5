@@ -14,9 +14,9 @@
 //| Индикатор KATANA                                                 |
 //+------------------------------------------------------------------+
 //---- всего задействовано 2 буфера
-#property indicator_buffers 1
+#property indicator_buffers 2
 //---- использовано 1 графическое пос троение
-#property indicator_plots   1
+#property indicator_plots   2
 
 //---- в качестве индикатора использованы отрезки
 #property indicator_type1 DRAW_SECTION
@@ -64,11 +64,11 @@ Extrem right_extr_up;        //правый экстремум тренда вверх (нижняя линия)
 Extrem left_extr_down;       //левый экстремум тренда вниз (верхняя линия)
 Extrem right_extr_down;      //правый экстремум тренда вниз (верхняя линия)
 //----  флаги поиска экстремумов
-uint   flag_up;              //флаг поиска экстремума тренда вверх (нижняя линия)
-uint   flag_down;            //флаг поиска экстремума тренда вниз (верхняя линия)
+uint   flag_up;              //флаг поиска экстремумов тренда вверх
+uint   flag_down;            //флаг поиска экстремумов тренда вниз
 //----  для проверки формирования нового бара
 CisNewBar     isNewBar; 
-//---- переменные для хранения разниц цен
+//----  массивы для хранения разниц цен 
 double priceDiff_left;       
 double priceDiff_right;
 
@@ -92,64 +92,6 @@ double   GetLineY (bool trend_type,uint n_bar)
   //если хотим вычислить значение точки на линии тренда вниз
   return (right_extr_down.price + (n_bar-right_extr_down.n_bar)*tg_down);
  }
- 
- /*
-
-void     GetPriceDifferences(double &array[],bool trend_type,uint index)
-//вычисление разниц цен
-    {
-     switch (trend_type)
-      {
-       //---- тренд вверх (нижняя линия)
-       case 0:  
-        priceDiff_left  = array[index+1]-array[index];
-        priceDiff_right = array[index-1]-array[index]; 
-       break;
-       //---- тренд вниз (верхняя линия)
-       case 1:
-        priceDiff_left  = array[index]-array[index+1];
-        priceDiff_right = array[index]-array[index-1];
-       break;
-      }
-    }
- 
-void     ChangeFlag (double &array[],bool trend_type,int index)
-//изменяет флаг поиска экстремумов
-  {
-   switch (trend_type)
-    {
-     case 0:
-      if (flag_up == 0)
-       {
-        right_extr_up.n_bar = index;
-        right_extr_up.price = array[index];
-        flag_up = 1;
-       }
-      //если это второй найденный экстремум
-      else
-       {
-        left_extr_up.n_bar = index;
-        left_extr_up.price = array[index];
-        flag_up = 2;
-       }     
-     break;
-     case 1:
-      if (flag_down == 0)
-       {
-        right_extr_down.n_bar = index;
-        right_extr_down.price = array[index];
-        flag_down = 1;
-       }
-      //если это второй найденный экстремум
-      else
-       {
-        left_extr_down.n_bar = index;
-        left_extr_down.price = array[index];
-        flag_down = 2;
-       }       
-     break;
-    }
-  }    */
 
 int OnInit()
   {
@@ -183,14 +125,18 @@ int OnCalculate(const int rates_total,
    {
    //0) обнуляем флаги поиска экстремумов
      flag_up   = 0;
+     flag_down = 0;
    //обнуление элементов массива
      line_up[rates_total-1]=0;     
      line_up[rates_total-2]=0;
+     line_down[rates_total-1]=0;     
+     line_down[rates_total-2]=0;     
    //1) проходим по барам и ищем два экстремума
-    for (index=rates_total-3;index>0 && flag_up < 2;index--)
+    for (index=rates_total-3;index>0 && (flag_up < 2 || flag_down < 2);index--)
      {
       //---- обнуление элементов массива
-      line_up[index] = 0;
+      line_up[index]   = 0;
+      line_down[index] = 0;
       //---- обработка экстремумов нижних цен
       //вычисление разниц цен
       priceDiff_left  = low[index+1]-low[index];
@@ -213,7 +159,28 @@ int OnCalculate(const int rates_total,
            flag_up = 2;
          }
        }
-      
+      //---- обработка экстремумов верхних цен
+      //вычисление разниц цен
+      priceDiff_left  = high[index]-high[index+1];
+      priceDiff_right = high[index]-high[index-1]; 
+      //если найден экстремум
+      if (priceDiff_left > priceDifference && priceDiff_right > priceDifference)
+       { 
+        //если это первый найденный экстремум
+        if (flag_down == 0)
+         {
+           right_extr_down.n_bar = index;
+           right_extr_down.price = high[index];
+           flag_down = 1;
+         }
+        //если это второй найденный экстремум
+        else
+         {
+           left_extr_down.n_bar = index;
+           left_extr_down.price = high[index];
+           flag_down = 2;
+         }
+       }      
        
      }
 
@@ -229,6 +196,17 @@ int OnCalculate(const int rates_total,
        line_up[rates_total-1] = GetLineY(true,rates_total-1);
        first_start = false;
       }
+     //если для тренда вниз найдены два экстремума
+     if (flag_down == 2)
+      {
+  
+       //то вычисляем тангенс наклона линии тренда
+       tg_down = GetTan(false);
+       //сохраняем значения в массив
+       line_down[left_extr_down.n_bar] = left_extr_down.price;
+       line_down[rates_total-1] = GetLineY(false,rates_total-1);
+       first_start = false;
+      }      
    }
    //если не первый запуск 
    else
@@ -258,11 +236,35 @@ int OnCalculate(const int rates_total,
              //---- сохраняем текущий экстремум
              right_extr_up.price = low[rates_total-3];
              right_extr_up.n_bar = rates_total-3;        
-             //---- вычисляем тангенс тренд линии    
-             tg_up = GetTan(true);
-             Comment("(",DoubleToString(left_extr_up.price),") (",DoubleToString(right_extr_up.price),")");    
+             //---- вычисляем тангенс тренд линии     
         } 
         line_up[rates_total-1] = GetLineY(true,rates_total-1);
+        /*
+       //---- вычисляем разницу цен 
+       priceDiff_left  = high[rates_total-3]-high[rates_total-2];  
+       priceDiff_right = high[rates_total-3]-high[rates_total-4]; 
+       //---- обнуляем значение элемента массива
+       line_down[rates_total-2] = 0;
+
+       //---- если найден экстремум
+       if (priceDiff_left >= priceDifference && priceDiff_right >= priceDifference) 
+        {     
+          //---- если цена не перешла за линию тренда
+          if (high[rates_total-3] < GetLineY(false,rates_total-3) )
+           {
+             //---- сохраняем новое значение для левого экстремума
+             line_down[left_extr_down.n_bar] = 0;
+             left_extr_down.price = right_extr_down.price;
+             left_extr_down.n_bar = right_extr_down.n_bar;
+             line_down[left_extr_down.n_bar] = left_extr_down.price;             
+           } 
+             //---- сохраняем текущий экстремум
+             right_extr_down.price = high[rates_total-3];
+             right_extr_down.n_bar = rates_total-3;        
+             //---- вычисляем тангенс тренд линии     
+        } 
+        line_down[rates_total-1] = GetLineY(false,rates_total-1);        
+        */
       }
     }
    return(rates_total);
