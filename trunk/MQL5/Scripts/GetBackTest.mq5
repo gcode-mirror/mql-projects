@@ -6,6 +6,7 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
+#property script_show_inputs 
 #include <TradeManager\BackTest.mqh> //подключаем библиотеку бэктеста
 #include <StringUtilities.mqh>       //подключаем библиотеку констант
 
@@ -21,6 +22,7 @@ enum EXPERT_NAME
   Condom,              //гандон
   Dinya,               //динья
   Sanya,               //саня
+  TIHIRO,              //тихиро
  };
  
 input EXPERT_NAME expert_name=0;                 //имя эксперта 
@@ -33,46 +35,70 @@ string historyList[]; //массив для хренения имен файлов истории
 
 BackTest backtest;   //объект класса бэктеста
 
-Panel * panel;
+string GetExpertName()
+ {
+  switch (expert_name)
+   {
+    case FollowWhiteRabbit:
+     return "FollowWhiteRabbit";
+    break;
+    case Condom:
+     return "Condom";
+    break;
+    case Dinya:
+     return "Dinya";
+    break;
+    case Sanya:
+     return "Sanya";
+    break;
+    case TIHIRO:
+     return "TIHIRO";
+    break;
+   }
+  return "";
+ }
 
 //---- функция возвращает адрес файла истории
 
 string GetHistoryFileName ()
  {
-  string str;
-  str = StringFormat("%s\\%s\\%s_%s_%s.csv", MQL5InfoString(MQL5_PROGRAM_NAME), name, EXPERT_NAME, StringSubstr(Symbol(),0,6), PeriodToString(InpLoadedPeriod));
+  string str="";
+  str = StringFormat("%s\\%s\\%s_%s_%s.csv", GetExpertName(), "History", GetExpertName(), StringSubstr(symbol,0,6), PeriodToString(InpLoadedPeriod));
   return str;
  }
+ 
+//---- функция возвращает адрес файла результатов вычислений бэктеста 
+ 
+string GetBackTestFileName ()
+ {
+  string str="";
+  str = StringFormat("%s\\%s\\%s_%s_%s.csv", GetExpertName(), "Backtest", GetExpertName(), StringSubstr(symbol,0,6), PeriodToString(InpLoadedPeriod));
+  return str;
+ } 
  
 //---- функция считывания списка файлов истории
 
 bool  ReadHistoryList ()
  {
-   
+  return (true);  
  }
 
 
 void OnStart()
   {
-   //---- переменная индекс
-   uint index;
-   //---- если удалось прочитать файла со списком файлов истории 
-   if (ReadHistoryList () )
+   string historyFile;
+   string backtestFile;
+   //---- получаем имя файла истории
+   historyFile  = GetHistoryFileName ();
+   //---- получаем имя файла бэктеста
+   backtestFile = GetBackTestFileName ();
+   
+   Alert("До сюда дошло ура");
+   //---- загружаем файл истории
+   if (backtest.LoadHistoryFromFile(historyFile) )
+   //---- если файл истории удалось прочитать
     {
-     //---- проходим по всему списку имен файлов
-     for(index=0;index<ArraySize(historyList);index++)
-      {
-       //---- загружаем файл истории в бэктест
-       if (backtest.LoadHistoryFromFile(historyList[index]) )
-        {
-         //---- если загрузка прошла успешно
-         //---- то вычисляем парамеры бэктеста
-         //---- и сохраняем файл результатов
-         backtest.SaveBackTestToFile();
-        }
-       else
-        return;
-      }
+     //---- то вычисляем параметры бэктеста и сохраняем их в файл
+     backtest.SaveBackTestToFile(backtestFile,symbol,time_from,time_to);
     }
-    
   }

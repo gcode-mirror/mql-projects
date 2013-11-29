@@ -685,9 +685,12 @@ bool CPosition::LosslessTrailing(void)
 //+------------------------------------------------------------------+
 bool CPosition::ReadFromFile(int handle)
 {
+
  if(handle != INVALID_HANDLE)
  {
+
   if(FileIsEnding(handle)) return false;
+//  Alert("MAGIC = ",FileReadString(handle));
   _magic = StringToInteger(FileReadString(handle));                               //считываем мэджик
   if(FileIsEnding(handle)) return false;
   _symbol         = FileReadString(handle);                      //считываем символ
@@ -708,9 +711,9 @@ bool CPosition::ReadFromFile(int handle)
   if(FileIsEnding(handle)) return false;  
   _trailingStop   = FileReadNumber(handle);                      //Трейлинг стоп
   if(FileIsEnding(handle)) return false;  
-  _trailingStep   = FileReadNumber(handle);                      //Трейлинг степ
+  _trailingStep   = FileReadNumber(handle);                    //Трейлинг степ
   if(FileIsEnding(handle)) return false;  
-  _posOpenPrice       = FileReadNumber(handle);                      //цена открытия позиции
+  _posOpenPrice       = FileReadNumber(handle);                //цена открытия позиции
   if(FileIsEnding(handle)) return false;  
   _posClosePrice     = FileReadNumber(handle);                 //цена закрытия позиции
   if(FileIsEnding(handle)) return false;  
@@ -722,8 +725,11 @@ bool CPosition::ReadFromFile(int handle)
   if(FileIsEnding(handle)) return false;  
      FileReadString(handle);                                     //пропуск пустого символа  
   //log_file.Write(LOG_DEBUG, StringFormat("%s Файл успешно прочитан", MakeFunctionPrefix(__FUNCTION__)));
+  Alert("SWEET HOME ALABAMA SYMBOL = ",_symbol);
   return true;
  }
+ 
+ 
  return false;
 }
 
