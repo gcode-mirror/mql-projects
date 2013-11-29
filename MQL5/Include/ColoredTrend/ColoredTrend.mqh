@@ -10,12 +10,6 @@
 #include <CompareDoubles.mqh>
 #include "ColoredTrendUtilities.mqh"
 
-int ATR_handle;
-double buffer_ATR[];
-MqlRates buffer_Rates[];
-MqlRates buffer_TopRates[];
-MqlRates buffer_BottomRates[];
-
 //+------------------------------------------------------------------+
 //| Структура для хранения информации об экстремуме                  |
 //+------------------------------------------------------------------+
@@ -37,12 +31,17 @@ protected:
   SExtremum aExtremums[];
   int digits;
   int num0, num1, num2;  // номера последних экстремумов
-  int lastOnTrend;       // последний экстремум текущего тренда
+  int lastOnTrend;       // последний экстремум текущего тренда  
   double _percentage_ATR;
   double difToNewExtremum;
   double difToTrend;     // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
   int _depth;            // Количество баров для расчета индикатора 
   int _shift;            // Количество баров в истории
+  int ATR_handle;
+  double buffer_ATR[];
+  MqlRates buffer_Rates[];
+  MqlRates buffer_TopRates[];
+  MqlRates buffer_BottomRates[];
   
   int FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlRates &array[]);
   int FillATRBuf(int count, int start_pos);
@@ -70,6 +69,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
  _symbol = symbol;
  _period = period;
  ATR_handle = iATR(_symbol, _period, 100);
+ PrintFormat("PERIOD ATR: %s", EnumToString((ENUM_TIMEFRAMES)_period));
  _percentage_ATR = percentage_ATR;
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  ArrayResize(enumMoveType, 1024);
@@ -233,6 +233,7 @@ SExtremum CColoredTrend::isExtremum(double vol1, double vol2, double vol3, int l
   && LessDoubles (vol2, vol3, digits)
   && GreatDoubles(aExtremums[last].price, vol2 + difToNewExtremum, 5))
  {
+  PrintFormat("%s : %s MINIMUM %f; %f; %f; ATR = %f", TimeToString(TimeCurrent()), EnumToString((ENUM_TIMEFRAMES)_period), vol1, vol2, vol3, difToNewExtremum/_percentage_ATR);
   res.direction = -1;// минимум в точке vol2
  }
  
@@ -240,6 +241,7 @@ SExtremum CColoredTrend::isExtremum(double vol1, double vol2, double vol3, int l
   && GreatDoubles(vol2, vol3, digits)
   && LessDoubles(aExtremums[last].price, vol2 - difToNewExtremum, 5))
  {
+  PrintFormat("%s : %s MAXIMUM %f; %f; %f; ATR = %f", TimeToString(TimeCurrent()), EnumToString((ENUM_TIMEFRAMES)_period), vol1, vol2, vol3, difToNewExtremum/_percentage_ATR);
   res.direction = 1;// максимум в точке vol2
  } 
  return(res); // нет экстремума в точке vol2
