@@ -8,8 +8,8 @@
 #property version   "1.00"
  
 #property indicator_chart_window
-#property indicator_buffers 7
-#property indicator_plots   3
+#property indicator_buffers 9
+#property indicator_plots   5
 //--- plot ColorCandles
 #property indicator_label1  "ColoredTrend"
 #property indicator_type1   DRAW_COLOR_CANDLES
@@ -17,6 +17,8 @@
 
 #property indicator_type2   DRAW_ARROW
 #property indicator_type3   DRAW_ARROW
+#property indicator_type4   DRAW_ARROW
+#property indicator_type5   DRAW_ARROW
 
 //----------------------------------------------------------------
 #include <Arrays/ArrayObj.mqh>
@@ -27,7 +29,7 @@
 //----------------------------------------------------------------
  
 //--- input параметры
-input int      bars = 10;         // сколько свечей показывать
+input int      bars = 128;         // сколько свечей показывать
 input double   percentage_ATR = 0.25;
 input bool     show_top = false;
 //--- индикаторные буферы
@@ -38,8 +40,13 @@ double         ColorCandlesBuffer4[];
 double         ColorCandlesColors[];
 double         ExtUpArrowBuffer[];
 double         ExtDownArrowBuffer[];
+double         ExtTopUpArrowBuffer[];
+double         ExtTopDownArrowBuffer[];
 
-CisNewBar NewBarBottom, NewBarTop;
+
+CisNewBar NewBarBottom,
+          NewBarCurrent, 
+          NewBarTop;
 
 CColoredTrend *trend, 
               *topTrend;
@@ -57,11 +64,12 @@ int OnInit()
    symbol = Symbol();
    current_timeframe = Period();
    NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
+   NewBarCurrent.SetLastBarTime(current_timeframe);
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    PrintFormat("TOP = %s, BOTTOM = %s", EnumToString((ENUM_TIMEFRAMES)NewBarTop.GetPeriod()), EnumToString((ENUM_TIMEFRAMES)NewBarBottom.GetPeriod()));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   trend    = new CColoredTrend(symbol, current_timeframe, bars, percentage_ATR);
    topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), bars, percentage_ATR);
+   trend    = new CColoredTrend(symbol,                  current_timeframe, bars, percentage_ATR);
 //--- indicator buffers mapping
    SetIndexBuffer(0,ColorCandlesBuffer1,INDICATOR_DATA);
    SetIndexBuffer(1,ColorCandlesBuffer2,INDICATOR_DATA);
@@ -70,9 +78,14 @@ int OnInit()
    SetIndexBuffer(4,ColorCandlesColors,INDICATOR_COLOR_INDEX);
    SetIndexBuffer(5, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6, ExtDownArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(7, ExtTopUpArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(8, ExtTopDownArrowBuffer, INDICATOR_DATA);
    
    PlotIndexSetInteger(1, PLOT_ARROW, 218);
    PlotIndexSetInteger(2, PLOT_ARROW, 217);
+   PlotIndexSetInteger(3, PLOT_ARROW, 201);
+   PlotIndexSetInteger(4, PLOT_ARROW, 200);
+   
    ArraySetAsSeries(ColorCandlesBuffer1, false);
    ArraySetAsSeries(ColorCandlesBuffer2, false);
    ArraySetAsSeries(ColorCandlesBuffer3, false);
@@ -87,6 +100,8 @@ void OnDeinit(const int reason)
    Print(__FUNCTION__,"_ од причины деинициализации = ",reason);
    ArrayInitialize(ExtUpArrowBuffer, 0);
    ArrayInitialize(ExtDownArrowBuffer, 0);
+   ArrayInitialize(ExtTopUpArrowBuffer, 0);
+   ArrayInitialize(ExtTopDownArrowBuffer, 0);
    ArrayInitialize(ColorCandlesBuffer1, 0);
    ArrayInitialize(ColorCandlesBuffer2, 0);
    ArrayInitialize(ColorCandlesBuffer3, 0);
@@ -123,13 +138,19 @@ int OnCalculate(const int rates_total,
    }
    else 
    { 
-    buffer_index = prev_calculated - start_index;
+    //buffer_index = prev_calculated - start_index;
     start_iteration = prev_calculated-1;
    }
    
-   if(NewBarTop.isNewBar() > 0)
+   if(NewBarCurrent.isNewBar() > 0 && prev_calculated != 0)
    {
-    PrintFormat("%s : сработал новый бар на старшем", TimeToString(TimeCurrent()));
+    //PrintFormat("%s : сработал новый бар на текущем", TimeToString(TimeCurrent()));
+    buffer_index++ ;//+= NewBarTop.isNewBar();
+   }
+   
+   if(NewBarTop.isNewBar() > 0 && prev_calculated != 0)
+   {
+    //PrintFormat("%s : сработал новый бар на старшем", TimeToString(TimeCurrent()));
     top_buffer_index++ ;//+= NewBarTop.isNewBar();
    }
    
@@ -167,7 +188,7 @@ int OnCalculate(const int rates_total,
       ColorCandlesColors [i] = topTrend.GetMoveType(top_buffer_index);
      }
      
-     PrintFormat("TIME: %s : buffer_index = %d; top_buffer_index = %d; current_move = %s; top_move = %s", TimeToString(start_time+buffer_index*seconds_current), buffer_index, top_buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+     //PrintFormat("TIME: %s : buffer_index = %d; top_buffer_index = %d; current_move = %s; top_move = %s", TimeToString(start_time+buffer_index*seconds_current), buffer_index, top_buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
 
      if (trend.GetExtremumDirection(buffer_index) > 0)
      {
@@ -179,14 +200,24 @@ int OnCalculate(const int rates_total,
       ExtDownArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
       //PrintFormat("ћинимум %d __ %d", i, buffer_index);
      }
-   
+     
+     if (topTrend.GetExtremumDirection(top_buffer_index) > 0)
+     {
+      ExtTopUpArrowBuffer[i-2] = topTrend.GetExtremum(top_buffer_index);
+      PrintFormat("ћаксимум %s : %d __ %d", TimeToString(start_time+seconds_current*buffer_index),  i, top_buffer_index);
+     }
+     else if (topTrend.GetExtremumDirection(top_buffer_index) < 0)
+     {
+      ExtTopDownArrowBuffer[i-2] = topTrend.GetExtremum(top_buffer_index);
+      PrintFormat("ћинимум %s : %d __ %d", TimeToString(start_time+seconds_current*buffer_index), i, top_buffer_index);
+     }
+
+     //PrintFormat("%s : current = %d; top = %d; i = %d", TimeToString(TimeCurrent()), buffer_index, top_buffer_index, i);   
      if(buffer_index < bars) 
      {
       buffer_index++;
       top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
-     }
-     
-      //PrintFormat("time_c = %s; current = %d; top = %d", TimeToString(TimeCurrent()), buffer_index, top_buffer_index);
+     } 
     }
    }//END isNewBar bottom_tf     
    return(rates_total);
@@ -197,19 +228,3 @@ int OnCalculate(const int rates_total,
   {
    return ((current_bars*PeriodSeconds(timeframe))/PeriodSeconds(GetTopTimeframe(timeframe)));
   }
-  
-/*  void SaveMoveToFile(datetime time)
-  {
-   int f_handle = FileOpen("MOVE"+Symbol()+EnumToString((ENUM_TIMEFRAMES)Period())+".txt", FILE_WRITE|FILE_TXT|FILE_COMMON);
-   int size = bars;
-   FileWrite(f_handle, "TOP", EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe))+"\n");
-   for(int i = 0; i < size; i++)
-   {
-    FileWriteString(f_handle, TimeToString(time+i*PeriodSeconds(current_timeframe))+"   "+MoveTypeToString(topTrend.GetMoveType(i))+"\n");
-   }
-   FileWrite(f_handle, "CURRENT", EnumToString((ENUM_TIMEFRAMES)current_timeframe)+"\n");
-   for(int i = 0; i < size; i++)
-   {
-    FileWriteString(f_handle, TimeToString(time+i*PeriodSeconds(current_timeframe))+"   "+MoveTypeToString(topTrend.GetMoveType(i))+"\n");
-   }
-  }*/
