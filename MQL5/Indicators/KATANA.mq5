@@ -239,7 +239,7 @@ int OnCalculate(const int rates_total,
              //---- вычисляем тангенс тренд линии     
         } 
         line_up[rates_total-1] = GetLineY(true,rates_total-1);
-        /*
+        
        //---- вычисляем разницу цен 
        priceDiff_left  = high[rates_total-3]-high[rates_total-2];  
        priceDiff_right = high[rates_total-3]-high[rates_total-4]; 
@@ -264,7 +264,7 @@ int OnCalculate(const int rates_total,
              //---- вычисляем тангенс тренд линии     
         } 
         line_down[rates_total-1] = GetLineY(false,rates_total-1);        
-        */
+        
       }
     }
    return(rates_total);

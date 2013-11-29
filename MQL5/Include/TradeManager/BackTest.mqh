@@ -43,7 +43,7 @@ class BackTest
    //прочие системные методы
    bool LoadHistoryFromFile(string file_url);          //загружает историю позиции из файла
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
-   bool SaveBackTestToFile (string file_url);          //сохраняет результаты бэктеста
+   bool SaveBackTestToFile (string file_url,string symbol,datetime time_from,datetime time_to); //сохраняет результаты бэктеста
    
  };
 //+------------------------------------------------------------------+
@@ -323,6 +323,7 @@ double BackTest::GetMaxDrawdown (string symbol) //(сейчас для теста вместо балан
   
 bool BackTest::LoadHistoryFromFile(string file_url)
  {
+  return (true);
 if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
  {
   FileDelete(file_url);
@@ -340,12 +341,20 @@ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5In
   PrintFormat("%s error: %s opening %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(::GetLastError()), file_url);
   return (false);
  }
+
  _positionsHistory.Clear();                   //очищаем массив
  _positionsHistory.ReadFromFile(file_handle); //загружаем данные из файла 
- FileClose(file_handle);          //закрывает файл  
+ 
+
+ CPosition * pos;
+ 
+ pos = _positionsHistory.Position(1);
+ 
+  Alert("! ПОЗИЦИЯ = ",DoubleToString(pos.getPositionPrice()));
+ FileClose(file_handle);                      //закрывает файл  
  return (true);
  }  
- 
+  
 //+-------------------------------------------------------------------+
 //| Получает историю позиций извне                                    |
 //+-------------------------------------------------------------------+
@@ -354,4 +363,55 @@ void BackTest::GetHistoryExtra(CPositionArray *array)
  {
   _positionsHistory = array;
  } 
- 
+
+//+-------------------------------------------------------------------+
+//| Сохраняет вычисленные параметры бэктеста                          |
+//+-------------------------------------------------------------------+
+
+bool BackTest::SaveBackTestToFile (string file_url,string symbol,datetime time_from,datetime time_to)
+ {
+  //открываем файл на запись
+  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
+  //если не удалось создать файл
+  if(file_handle == INVALID_HANDLE)
+   {
+    Print("Не возможно создать файл результатов бэктеста");
+    return(false);
+   }
+  //переменные для хранения параметров бэктеста
+  uint    n_trades           =  GetNTrades(symbol);            //количество трейдов 
+  uint    n_win_trades       =  GetNSignTrades(symbol,1);      //количество выйгрышных трейдов
+  uint    n_lose_trades      =  GetNSignTrades(symbol,-1);     //количество выйгрышных трейдов
+  int     sign_last_pos      =  GetSignLastPosition(symbol);   //знак последней позиции
+  double  max_trade          =  GetMaxTrade(symbol,1);         //самый большой трейд по символу
+  double  min_trade          =  GetMaxTrade(symbol,-1);        //самый маленький трейд по символу
+  double  aver_profit_trade  =  GetAverageTrade(symbol,1);     //средний прибыльный трейд 
+  double  aver_lose_trade    =  GetAverageTrade(symbol,-1);    //средний убыточный трейд   
+  uint    maxPositiveTrades  =  GetMaxInARowTrades(symbol,1);  //максимальное количество подряд идущих положительных трейдов
+  uint    maxNegativeTrades  =  GetMaxInARowTrades(symbol,-1); //максимальное количество подряд идущих отрицательных трейдов
+  double  maxProfitRange     =  GetMaxInARow(symbol,1);        //максимальный профит
+  double  maxLoseRange       =  GetMaxInARow(symbol,-1);       //максимальный убыток
+  double  maxDrawDown        =  GetMaxDrawdown(symbol);        //максимальная просадка
+  //сохраняем файл параметров вычисления бэктеста
+
+ //   Alert("POS PRICE = ",DoubleToString());
+  
+  FileWrite(file_handle,
+            n_trades,
+            n_win_trades,
+            n_lose_trades,
+            sign_last_pos,
+            max_trade,
+            min_trade,
+            aver_profit_trade,
+            aver_lose_trade,
+            maxPositiveTrades,
+            maxNegativeTrades,
+            maxProfitRange,
+            maxLoseRange,
+            maxDrawDown
+            );
+  //закрываем файл
+  FileClose(file_handle);
+ return (true);
+ }

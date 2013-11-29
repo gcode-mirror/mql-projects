@@ -665,7 +665,7 @@ string CTradeManager::CreateFilename (ENUM_FILENAME filename)
 }
 
 //+----------------------------------------------------
-//  Сохранение в файл массива позиций
+//  Сохранение в файл массива позиций                 |
 //+----------------------------------------------------
 bool CTradeManager::SaveArrayToFile(string file_url, CPositionArray *array)
 {
