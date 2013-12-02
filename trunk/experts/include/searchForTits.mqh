@@ -9,6 +9,7 @@
 bool searchForTits(int timeframe, double MACD_channel, bool bothTits)
 {
  int i = 0;
+ int ext = 0;
  int fastPeriod;
  int slowPeriod;
  bool isMax = false;
@@ -32,29 +33,26 @@ bool searchForTits(int timeframe, double MACD_channel, bool bothTits)
       }
  
  //Alert ("fastPeriod ", fastPeriod, " slowPeriod ",slowPeriod, " timeframe ", timeframe);
- while (-MACD_channel < iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i)
-      && iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i) < MACD_channel)
+ for (i = 0; MathAbs(iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i)) < MACD_channel; i++)
  {
-  if (isMACDExtremum(timeframe, fastPeriod, slowPeriod, i) < 0)
+  ext = isMACDExtremum(timeframe, fastPeriod, slowPeriod, i);
+  if (ext != 0)
   {
-   //Alert (" Найден минимум ", i, " баров назад" );
-   isMax = true;
-   break;
-  } 
-  i++;
- }
- 
- i = 0;
- while( MACD_channel > iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i)
-       && iMACD(NULL, timeframe, fastPeriod, slowPeriod, 9, PRICE_CLOSE, MODE_MAIN, i) > -MACD_channel)
- {
-  if (isMACDExtremum(timeframe, fastPeriod, slowPeriod, i) > 0)
-  {
-   //Alert (" Найден максимум ", i, " баров назад" );
-   isMin = true;
-   break;
-  } 
-  i++;
+   if (ext < 0)
+   {
+    //Alert (" Найден минимум ", i, " баров назад" );
+    isMin = true;
+   } 
+   if (ext > 0)
+   {
+    //Alert (" Найден максимум ", i, " баров назад" );
+    isMax = true;
+   } 
+   if (isMin && isMax)
+   {
+    break;
+   }
+  }
  }
  
  if (bothTits) // если нужны обе титьки для флэта

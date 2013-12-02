@@ -6,9 +6,9 @@
 //|                                                                            |
 //|  13.03.2008  Скрипт для тестирования функции SetOrder().                   |
 //+----------------------------------------------------------------------------+
-#property copyright "Ким Игорь В. aka KimIV"
-#property link  "http://www.kimiv.ru"
-#property show_confirm
+#property copyright "Copyright © 2007, MetaQuotes Software Corp."
+#property link      "http://www.metaquotes.net"
+#property show_inputs
 
 //------- Глобальные переменные -----------------------------------------------+
 bool   gbDisabled    = False;          // Флаг блокировки советника
