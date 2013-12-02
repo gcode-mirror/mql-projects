@@ -29,40 +29,13 @@ double Stochastic_M5 = 0;
 //+------------------------------------------------------------------+
 int init(){
   Alert("Сработала ф-ия init() при запуске");
-  
-  aTimeframe[0,0] = PERIOD_D1; 
-  aTimeframe[0,1] = TakeProfit_1D;
-  aTimeframe[0,2] = StopLoss_1D_min;
-  aTimeframe[0,3] = StopLoss_1D_max;
-  aTimeframe[0,4] = MACD_channel_1D;
-  aTimeframe[0,5] = MinProfit_1D;
-  aTimeframe[0,6] = TrailingStop_1D_min;
-  aTimeframe[0,7] = TrailingStop_1D_max;
-  aTimeframe[0,8] = TrailingStep_1D;
-  aTimeframe[0,9] = PERIOD_H1;
-  
+
   aTimeframe[1,0] = PERIOD_H1;
-  aTimeframe[1,1] = TakeProfit_1H;
-  aTimeframe[1,2] = StopLoss_1H_min;
-  aTimeframe[1,3] = StopLoss_1H_max;
-  aTimeframe[1,4] = MACD_channel_1H;
-  aTimeframe[1,5] = MinProfit_1H;
-  aTimeframe[1,6] = TrailingStop_1H_min;
-  aTimeframe[1,7] = TrailingStop_1H_max;
-  aTimeframe[1,8] = TrailingStep_1H;
-  aTimeframe[1,9] = PERIOD_M5;
+  aTimeframe[1,4] = MACD_channel;
   
   aTimeframe[2,0] = PERIOD_M5;
-  aTimeframe[2,1] = TakeProfit_5M;
-  aTimeframe[2,2] = StopLoss_5M_min;
-  aTimeframe[2,3] = StopLoss_5M_max;
-  aTimeframe[2,4] = MACD_channel_5M;
-  aTimeframe[2,5] = MinProfit_5M;
-  aTimeframe[2,6] = TrailingStop_5M_min;
-  aTimeframe[2,7] = TrailingStop_5M_max;
-  aTimeframe[2,8] = TrailingStep_5M;
-  aTimeframe[2,9] = PERIOD_M5;
-  
+  aTimeframe[2,4] = MACD_channel;
+    
   Stochastic_1H_1 = iStochastic(NULL, PERIOD_H1, Kperiod, Dperiod , slowing ,MODE_SMA,0,MODE_MAIN,1);
   Stochastic_1H_2 = iStochastic(NULL, PERIOD_H1, Kperiod, Dperiod , slowing ,MODE_SMA,0,MODE_MAIN,2);
   
@@ -108,12 +81,6 @@ int start()
 {
  Jr_Timeframe = PERIOD_M5;
  //Elder_Timeframe = aTimeframe[frameIndex, 0];
-     
- TakeProfit = aTimeframe[2, 1];
- StopLoss_min = aTimeframe[2, 2];
- StopLoss_max = aTimeframe[2, 3]; 
- //Jr_MACD_channel = aTimeframe[frameIndex + 1, 4];
- //Elder_MACD_channel = aTimeframe[frameIndex, 4];
      
  MinProfit = aTimeframe[2, 5]; 
  TrailingStop_min = aTimeframe[2, 6];

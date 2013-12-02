@@ -1,8 +1,6 @@
 //+----------------------------------------------------------------------------+
 //|                                                     test_OpenPosition.mq4  |
 //|                                                                            |
-//|                                                    Ким Игорь В. aka KimIV  |
-//|                                                       http://www.kimiv.ru  |
 //|                                                                            |
 //|  17.03.2008  Скрипт для тестирования функции OpenPosition().               |
 //+----------------------------------------------------------------------------+
@@ -21,6 +19,7 @@
 
 //------- Подключение внешних модулей -----------------------------------------+
 #include <stdlib.mqh>                  // Стандартная библиотека
+#include <BasicVariables.mqh>
 #include <DesepticonVariables.mqh>    // Описание переменных 
 #include <AddOnFuctions.mqh> 
 #include <DesepticonOpening.mqh>
@@ -32,12 +31,6 @@ void start() {
   string sy;
   openPlace = "test opening";
   int timeframe = PERIOD_H1;
-  aTimeframe[1,1] = TakeProfit_1H;
-  aTimeframe[1,2] = StopLoss_1H_min;
-  aTimeframe[1,3] = StopLoss_1H_max;
-  TakeProfit = aTimeframe[1, 1];
-  StopLoss_min = aTimeframe[1, 2];
-  StopLoss_max = aTimeframe[1, 3]; 
 //1. Купить 0.1 лота текущего инструмента
 //  OpenPosition(NULL, OP_BUY, 0.1);
 

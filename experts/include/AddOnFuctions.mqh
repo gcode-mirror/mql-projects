@@ -20,6 +20,20 @@ int GreatDouble(double arg1, double arg2)
 }
 
 //+----------------------------------------------------------------------------+
+//|  Версия   : 11.02.2013                                                     |
+//|  Описание : Возвращает значение в зависимости от того, какой дабл больше   |
+//+----------------------------------------------------------------------------+
+//|  Параметры:                                                                |
+//|    arg1 - аргумент 1                                                       |
+//|    arg2 - аргумент 2                                                       |
+//+----------------------------------------------------------------------------+ 
+int LessDouble(double arg1, double arg2)
+{
+ if(NormalizeDouble(arg2 - arg1, 8) > 0) return(1);
+ else if (NormalizeDouble(arg2 - arg1, 8) < 0) return(-1);
+      else return(0); 
+}
+//+----------------------------------------------------------------------------+
 //|  Версия   : 20.11.2012                                                     |
 //|  Описание : возвращает знак значения аргумента                             |
 //+----------------------------------------------------------------------------+
@@ -90,7 +104,6 @@ void assert(string functionName, bool assertion, string description = "")
 }
 
 //+----------------------------------------------------------------------------+
-//|  Автор    : Ким Игорь В. aka KimIV,  http://www.kimiv.ru                   |
 //+----------------------------------------------------------------------------+
 //|  Версия   : 01.09.2005                                                     |
 //|  Описание : Вывод сообщения в коммент и в журнал                           |
@@ -105,7 +118,6 @@ void Message(string m)
 } 
 
 //+----------------------------------------------------------------------------+
-//|  Автор    : Ким Игорь В. aka KimIV,  http://www.kimiv.ru                   |
 //+----------------------------------------------------------------------------+
 //|  Версия   : 01.09.2005                                                     |
 //|  Описание : Возвращает наименование таймфрейма                             |
@@ -132,7 +144,6 @@ string GetNameTF(int TimeFrame=0)
 }
 
 //+----------------------------------------------------------------------------+
-//|  Автор    : Ким Игорь В. aka KimIV,  http://www.kimiv.ru                   |
 //+----------------------------------------------------------------------------+
 //|  Версия   : 01.09.2005                                                     |
 //|  Описание : Возвращает наименование торговой операции                      |
@@ -219,6 +230,113 @@ bool ExistPositions(string sy="", int op=-1, int mn=-1, datetime ot=0) {
   return(False);
 }
 
+//+----------------------------------------------------------------------------+
+//|  Версия   :                                                      |
+//|  Описание : Открывает позицию и возвращает её тикет.                       |
+//+----------------------------------------------------------------------------+
+//|  Параметры:                                                                |
+//|    symb - наименование инструмента   (NULL или "" - текущий символ)        |
+//|    operation - операция                                                    |
+//|    Lots - лот                                                              |
+//|    sl - уровень стоп                                                       |
+//|    tp - уровень тейк                                                       |
+//|    mn - MagicNumber                                                        |
+//+----------------------------------------------------------------------------+
+int OpenPosition(string symb, int operation, int stopLoss = 0, int takeProfit = 0, string openPlace = "", int mn=0, string lsComm="")
+ {
+  Alert("Открываем позицию");
+  color op_color;
+  datetime currentTime, expirationTime;
+  double price, pAsk, pBid, vol, addPrice;
+  int dg, err, it, ticket=0;
+  double sl, tp;
+  
+  lots = GetLots();
+   
+  if (symb=="" || symb=="0") symb=Symbol();
+  if (lsComm=="" || lsComm=="0") lsComm=WindowExpertName()+" "+GetNameTF(Period()) + " " + openPlace;
+  dg=MarketInfo(symb, MODE_DIGITS);
+  vol=MathPow(10.0,dg);
+  addPrice=0.0003*vol;
+
+  switch (operation)
+  {
+   case OP_BUY:
+   {
+    sl = iif (stopLoss > 0, Bid-stopLoss*Point, 0);
+    tp = iif (takeProfit > 0, Ask+takeProfit*Point, 0);
+    op_color = clOpenBuy;
+    break;
+   }
+  
+   case OP_SELL:
+   {
+    sl = iif (stopLoss > 0, Ask+stopLoss*Point, 0);
+    tp = iif (takeProfit > 0, Bid-takeProfit*Point, 0);
+    op_color = clOpenSell;
+    break;
+   }
+  } // close switch
+  
+  for (it=1; it<=NumberOfTry; it++)
+  {
+   if (!IsTesting() && (!IsExpertEnabled() || IsStopped()))
+   {
+     Alert("OpenPosition(): Остановка работы функции");
+     break;
+   }
+   while (!IsTradeAllowed()) Sleep(5000);
+   RefreshRates();
+   pAsk=MarketInfo(symb, MODE_ASK);
+   pBid=MarketInfo(symb, MODE_BID);
+   switch (operation)
+   {
+    case OP_BUY: {price = pAsk; break;}
+    case OP_SELL: {price = pBid; break;}
+   }
+   price=NormalizeDouble(price, dg);
+   currentTime=TimeCurrent();
+   Alert("stopLoss=", sl, " takeProfit =",tp);
+   ticket=OrderSend(symb, operation, lots, price, Slippage, 0, 0, lsComm, mn, 0, op_color);
+   if (ticket > 0)
+   {
+    if (UseSound) PlaySound("expert.wav");
+    if(tp != 0 || sl != 0)
+     if(OrderSelect(ticket, SELECT_BY_TICKET))
+      ModifyOrder(-1, sl, tp);
+    break;
+   }
+   else
+   {
+    err=GetLastError();
+    if (pAsk==0 && pBid==0) Message("Проверьте в Обзоре рынка наличие символа "+symb);
+    // Вывод сообщения об ошибке
+    Print("Error(",err,") opening position: ",ErrorDescription(err),", try ",it);
+    Print("Ask=",pAsk," Bid=",pBid," symb=",symb," Lots=",lots," operation=",GetNameOP(operation),
+          " price=",price," sl=",sl," tp=",tp," mn=",mn);
+    // Блокировка работы советника
+    if (err==2 || err==64 || err==65 || err==133) {
+      gbDisabled=True; break;
+    }
+    // Длительная пауза
+    if (err==4 || err==131 || err==132) {
+      Sleep(1000*300); break;
+    }
+    if (err==128 || err==142 || err==143) {
+      Sleep(1000*66.666);
+      if (ExistPositions(symb, operation, mn, currentTime)) {
+        if (UseSound) PlaySound("expert.wav"); break;
+      }
+    }
+    if (err==140 || err==148 || err==4110 || err==4111) break;
+    if (err==141) Sleep(1000*100);
+    if (err==145) Sleep(1000*17);
+    if (err==146) while (IsTradeContextBusy()) Sleep(1000*11);
+    if (err!=135) Sleep(1000*7.7);
+   }
+  } // close for
+  return(ticket);
+}
 
 //+----------------------------------------------------------------------------+
 //|  Автор    : Ким Игорь В. aka KimIV,  http://www.kimiv.ru                   |
@@ -367,36 +485,4 @@ void DeleteOrders(string symb="", int operation=-1, int magic=-1)
   }
  }
 }
-//+------------------------------------------------------------------+
-//|                                LimitOrderExpirationForTester     |
-//| Описание : Удаление ордеров, ушедших за время экспирации.        |
-//+------------------------------------------------------------------+
-//| Параметры:                                                       |
-//+------------------------------------------------------------------+
-int LimitOrderExpirationForTester()
-{
- int orderType;
- total = OrdersTotal();
- 
- if (total > 0)
- {
-  for (int i=0; i<total; i++)
-  {
-   if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
-   {
-    if (OrderMagicNumber() == _MagicNumber)  
-    {
-     orderType=OrderType();
-     if (orderType==OP_BUYLIMIT || orderType==OP_BUYSTOP || orderType==OP_SELLLIMIT || orderType==OP_SELLSTOP)
-     {
-      if (TimeCurrent() > OrderExpiration())
-      {
-       Alert("Выбран ордер тикет=", OrderTicket()," TimeCurrent=",TimeCurrent()," OrderExpiration=",TimeToStr(OrderExpiration(), TIME_DATE),":",TimeToStr(OrderExpiration(), TIME_MINUTES));
-       OrderDelete(OrderTicket(), clDelete);
-      }
-     }
-    }
-   }
-  }
- }
-}
+

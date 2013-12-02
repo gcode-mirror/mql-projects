@@ -6,6 +6,7 @@
 #property copyright "Copyright 2012, MetaQuotes Software Corp."
 #property link      "http://www.metaquotes.net"
 
+extern int test_extern = 200;
 //+------------------------------------------------------------------+
 //| expert initialization function                                   |
 //+------------------------------------------------------------------+
