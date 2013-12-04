@@ -323,7 +323,7 @@ double BackTest::GetMaxDrawdown (string symbol) //(сейчас дл€ теста вместо балан
   
 bool BackTest::LoadHistoryFromFile(string file_url)
  {
-  return (true);
+
 if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
  {
   FileDelete(file_url);
@@ -341,16 +341,9 @@ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5In
   PrintFormat("%s error: %s opening %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(::GetLastError()), file_url);
   return (false);
  }
-
  _positionsHistory.Clear();                   //очищаем массив
  _positionsHistory.ReadFromFile(file_handle); //загружаем данные из файла 
  
-
- CPosition * pos;
- 
- pos = _positionsHistory.Position(1);
- 
-  Alert("! ѕќ«»÷»я = ",DoubleToString(pos.getPositionPrice()));
  FileClose(file_handle);                      //закрывает файл  
  return (true);
  }  
