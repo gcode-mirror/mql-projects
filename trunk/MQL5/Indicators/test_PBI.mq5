@@ -203,16 +203,16 @@ int OnCalculate(const int rates_total,
      
      if (topTrend.GetExtremumDirection(top_buffer_index) > 0)
      {
-      ExtTopUpArrowBuffer[i-2] = topTrend.GetExtremum(top_buffer_index);
+      ExtTopUpArrowBuffer[i-9] = topTrend.GetExtremum(top_buffer_index);
       PrintFormat("Максимум %s : %d __ %d", TimeToString(start_time+seconds_current*buffer_index),  i, top_buffer_index);
      }
      else if (topTrend.GetExtremumDirection(top_buffer_index) < 0)
      {
-      ExtTopDownArrowBuffer[i-2] = topTrend.GetExtremum(top_buffer_index);
+      ExtTopDownArrowBuffer[i-9] = topTrend.GetExtremum(top_buffer_index);
       PrintFormat("Минимум %s : %d __ %d", TimeToString(start_time+seconds_current*buffer_index), i, top_buffer_index);
      }
 
-     //PrintFormat("%s : current = %d; top = %d; i = %d", TimeToString(TimeCurrent()), buffer_index, top_buffer_index, i);   
+     //PrintFormat("%s : current = %d; %s; top = %d; %s; i = %d", TimeToString(start_time+buffer_index*seconds_current), buffer_index, EnumToString((ENUM_MOVE_TYPE)trend.GetMoveType(buffer_index)), top_buffer_index, EnumToString((ENUM_MOVE_TYPE)topTrend.GetMoveType(top_buffer_index)), i);       
      if(buffer_index < bars) 
      {
       buffer_index++;
