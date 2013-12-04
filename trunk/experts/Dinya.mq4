@@ -36,6 +36,8 @@ double openPrice;
 double currentVolume;
 bool isDayInit = false;
 bool isMonthInit = false; // ключи инициализации массивов цен дня и месяца
+bool dayDeltaChanged;
+bool monthDeltaChanged;
 static double prevDayPrice;
 static double prevMonthPrice;
 static datetime m_last_day_number;
@@ -71,10 +73,11 @@ int init()
    symbol = Symbol();
    startTime = TimeCurrent();
    startHour = TimeHour(TimeCurrent()) + 1; // Стартуем с началом нового часа
+   Print("startHour=", startHour);
    direction = iif(useOrder == OP_BUY, 1, -1);
    m_last_day_number = TimeCurrent() - fastPeriod*60*60;
    m_last_month_number = TimeCurrent() - slowPeriod*24*60*60;   
-    
+
    currentVolume = 0;
    InitDayTrade();
    InitMonthTrade();
@@ -101,10 +104,18 @@ int start()
   {
    InitDayTrade();
    InitMonthTrade();
-   if (isMonthInit && isDayInit)
+   if (isMonthInit)
    {
-    RecountDelta();
+    RecountMonthDelta();
+   }
+   if (isDayInit)
+   {
+    RecountDayDelta();
+   }
+   if(dayDeltaChanged || monthDeltaChanged)
+   {
     double vol = RecountVolume();
+    Print("curVol=", currentVolume, " vol=", vol);
     if (currentVolume != vol)
     {
      if (CorrectOrder(vol - currentVolume))

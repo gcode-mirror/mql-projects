@@ -46,9 +46,8 @@ int LessDouble(double arg1, double arg2)
 //+----------------------------------------------------------------------------+ 
 double iif( bool condition, double ifTrue, double ifFalse )
 {
-    if( condition ) return( ifTrue );
-    
-    return( ifFalse );
+ if( condition ) return( ifTrue );
+ return( ifFalse );
 }
 
 int _deltaFast;     // дельта дл€ расчета объема "дневной" торговли
@@ -71,17 +70,19 @@ void InitDayTrade()
 {
  if (timeToUpdateFastDelta()) // ≈сли случилс€ новый день
  {
-  //Alert("Ќовый день ", TimeDay(m_last_day_number));
+  Print("Ќовый день ", TimeDay(m_last_day_number));
   if (direction * _startDayPrice > direction * Bid)
   {
    _deltaFast = 0;
    isDayInit = false;
+   dayDeltaChanged = true;
   }
   else
   {
    _startDayPrice = Bid;
    _deltaFast = fastDelta;
    isDayInit = true;
+   dayDeltaChanged = true;
   } 
   
   _prevDayPrice = Bid;
@@ -100,43 +101,55 @@ void InitMonthTrade()
 {
  if(isNewMonth())
  {
-  //Alert(" Ќовый мес€ц ", TimeMonth(m_last_month_number));
+  Print(" Ќовый мес€ц ", TimeMonth(m_last_month_number));
   _deltaSlow = slowDelta;
   _startDayPrice = Bid;
   _prevMonthPrice = Bid;
   _slowVol = NormalizeDouble(volume * _deltaSlow * factor, 2);
   isMonthInit = true;
+  monthDeltaChanged = true;
  }
 }
 
 //+------------------------------------------------------------------+
-//| ѕересчет значений дельта                                         |
+//| ѕересчет значений лневной дельта                                 |
 //| INPUT:  no.                                                      |
-//| OUTPUT: no.
+//| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void RecountDelta()
+void RecountDayDelta()
 {
  double currentPrice = Bid;
  if (direction*(_deltaFast - 50) < 50 && GreatDouble(currentPrice, _prevDayPrice + dayStep*Point) == 1) // _dir = 1 : delta < 100; _dir = -1 : delta > 0
  {
   //Print("currentPrice", currentPrice, "> _prevDayPrice - dayStep*Point=", _prevDayPrice + dayStep*Point);
-  //Print("÷ена сделала шаг ¬¬≈–’ внутри дн€, стара€ƒельтаƒн€=", _deltaFast, " нова€ƒельтаƒн€=", _deltaFast + fastDeltaStep);
+  Print("÷ена сделала шаг ¬¬≈–’ внутри дн€, стара€ƒельтаƒн€=", _deltaFast, " нова€ƒельтаƒн€=", _deltaFast + fastDeltaStep);
   _prevDayPrice = currentPrice;
   _deltaFast = _deltaFast + direction*fastDeltaStep;
+  dayDeltaChanged = true;
  }
  if ((direction*_deltaFast + 50) > (direction*50) && LessDouble(currentPrice, _prevDayPrice - dayStep*Point) == 1) // _dir = 1 : delta > 0; _dir = -1 : delta < 100
  {
   //Print("currentPrice", currentPrice, "< _prevDayPrice - dayStep*Point=", _prevDayPrice - dayStep*Point);
-  //Print("÷ена сделала шаг ¬Ќ»« внутри дн€, стара€ƒельтаƒн€=", _deltaFast, " нова€ƒельтаƒн€=", _deltaFast - fastDeltaStep);
+  Print("÷ена сделала шаг ¬Ќ»« внутри дн€, стара€ƒельтаƒн€=", _deltaFast, " нова€ƒельтаƒн€=", _deltaFast - fastDeltaStep);
   _prevDayPrice = currentPrice;
   _deltaFast = _deltaFast - direction*fastDeltaStep;
+  dayDeltaChanged = true;
  }
- 
+}
+//+------------------------------------------------------------------+
+//| ѕересчет значений мес€чной дельта                                |
+//| INPUT:  no.                                                      |
+//| OUTPUT: no.                                                      |
+//| REMARK: no.                                                      |
+//+------------------------------------------------------------------+
+void RecountMonthDelta()
+{
+ double currentPrice = Bid;
  if (direction*(_deltaSlow - 50) < 50 && GreatDouble(currentPrice, _prevMonthPrice + monthStep*Point) == 1)
  {
-   _prevMonthPrice = currentPrice;
-  //Print("÷ена сделала шаг ¬¬≈–’ внутри мес€ца");
+  _prevMonthPrice = currentPrice;
+  Print("÷ена сделала шаг ¬¬≈–’ внутри мес€ца");
   if (direction < 0 && _deltaSlow < slowDelta)
   {
    _deltaSlow = slowDelta;
@@ -145,11 +158,12 @@ void RecountDelta()
   {
    _deltaSlow = _deltaSlow + direction*slowDeltaStep;
   }
+  monthDeltaChanged = true;
  }
  if ((direction*_deltaSlow + 50) > (direction*50) && LessDouble(currentPrice, _prevMonthPrice - monthStep*Point) == 1)
  {
   _prevMonthPrice = currentPrice;
-  //Print("÷ена сделала шаг ¬Ќ»« внутри мес€ца");
+  Print("÷ена сделала шаг ¬Ќ»« внутри мес€ца");
   if (direction > 0 && _deltaSlow > slowDelta)
   {
    _deltaSlow = slowDelta;
@@ -158,6 +172,7 @@ void RecountDelta()
   {
    _deltaSlow = _deltaSlow - direction*slowDeltaStep;
   }
+  monthDeltaChanged = true;
  }
 }
 
@@ -171,6 +186,8 @@ double RecountVolume()
 {
  _slowVol = NormalizeDouble(volume * factor * _deltaSlow, 2);
  _fastVol = NormalizeDouble(_slowVol * _deltaFast * factor * percentage * factor, 2);
+ monthDeltaChanged = false;
+ dayDeltaChanged = false;
  return (_slowVol - _fastVol); 
 }
 
@@ -184,34 +201,86 @@ bool CorrectOrder(double volume)
 {
  if (volume == 0) return(false);
  
- int type;
+ int type, i, count = 0;
  double price;
  int total=OrdersTotal();
- 
- if (volume > 0)
+ for (i = total - 1; i >= 0; i--) // ѕо всем позици€м
  {
-  type = useOrder;
-  price = iif(useOrder == OP_BUY, Ask, Bid);
-  Print("ќткрываем позицию объем= ", volume);
-  OpenPosition(NULL, type, volume, _magic);
-  return (true);
- }
- else
- {
-  price = iif(useOrder == OP_BUY, Bid, Ask);
-  for (int i = total - 1; i >= 0; i--) // ѕо всем позици€м
+  if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
   {
-   if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
+   if (OrderMagicNumber() == _magic)  
    {
-    if (OrderMagicNumber() == _magic)  
-    {
-     ClosePosBySelect(price); // закрываем последнюю открытую позицию
-     return(true);
-    }
+    count++;
    }
   }
  }
- return(false);
+ 
+ if (volume > 0)                                     // ќбъем увеличилс€
+ {
+  if (useOrder == OP_BUY)
+  {
+   price = Ask;
+   type = OP_BUY;
+  }
+  else
+  {
+   price = Bid;
+   type = OP_SELL;
+  }
+  /*
+  if(direction * price > direction * _startDayPrice && count > 0) // цена выше (ниже) стартовой - надо закрыть последнюю открытую
+  {
+   for (i = total - 1; i >= 0; i--) // ѕо всем позици€м
+   {
+    if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
+    {
+     if (OrderMagicNumber() == _magic)  
+     {
+      ClosePosBySelect(price); // закрываем последнюю открытую позицию
+      return(true);
+     }
+    }
+   }
+  }
+  else  */                                            // цена ниже (выше) стартовой - надо добавить объема
+  {
+   Print("ќткрываем позицию объем= ", volume);
+   return(OpenPosition(NULL, type, volume, _magic));
+  }
+ }
+ else // ≈сли объем меньше нул€
+ {
+  if (useOrder == OP_BUY)
+  {
+   price = Bid;
+   type = OP_SELL;
+  }
+  else
+  {
+   price = Ask;
+   type = OP_BUY;
+  }
+
+  //if (direction * price > direction * _startDayPrice)
+  {
+   Print("ќткрываем позицию объем= ", volume);
+   return(OpenPosition(NULL, type, -volume, _magic));
+  }/*
+  else
+  {
+   for (i = total - 1; i >= 0; i--) // ѕо всем позици€м
+   {
+    if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
+    {
+     if (OrderMagicNumber() == _magic)  
+     {
+      ClosePosBySelect(price); // закрываем последнюю открытую позицию
+      return(true);
+     }
+    }
+   }
+  }*/
+ }
 }
 
 //+----------------------------------------------------------------------------+
