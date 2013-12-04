@@ -88,6 +88,15 @@ void InitDayTrade()
   _prevDayPrice = Bid;
   _slowVol = NormalizeDouble(volume * factor * _deltaSlow, 2);
   _fastVol = NormalizeDouble(_slowVol * _deltaFast * factor * percentage * factor, 2);
+  
+  Print("Закрываем все позиции в начале дня");
+  double volume = ClosePositionsWithCalcLots();
+  if (volume > 0)
+  {
+   Print("Объем закрытых позиций = ", volume, "откроем позицию на этот объем");
+   int operation = iif (volume > 0, 0, 1);
+   OpenPosition(symbol, operation, volume, _magic);
+  }
  }
 }
 
@@ -112,7 +121,7 @@ void InitMonthTrade()
 }
 
 //+------------------------------------------------------------------+
-//| Пересчет значений лневной дельта                                 |
+//| Пересчет значений дневной дельта                                 |
 //| INPUT:  no.                                                      |
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
@@ -137,6 +146,7 @@ void RecountDayDelta()
   dayDeltaChanged = true;
  }
 }
+
 //+------------------------------------------------------------------+
 //| Пересчет значений месячной дельта                                |
 //| INPUT:  no.                                                      |
@@ -204,16 +214,6 @@ bool CorrectOrder(double volume)
  int type, i, count = 0;
  double price;
  int total=OrdersTotal();
- for (i = total - 1; i >= 0; i--) // По всем позициям
- {
-  if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
-  {
-   if (OrderMagicNumber() == _magic)  
-   {
-    count++;
-   }
-  }
- }
  
  if (volume > 0)                                     // Объем увеличился
  {
@@ -226,26 +226,6 @@ bool CorrectOrder(double volume)
   {
    price = Bid;
    type = OP_SELL;
-  }
-  /*
-  if(direction * price > direction * _startDayPrice && count > 0) // цена выше (ниже) стартовой - надо закрыть последнюю открытую
-  {
-   for (i = total - 1; i >= 0; i--) // По всем позициям
-   {
-    if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
-    {
-     if (OrderMagicNumber() == _magic)  
-     {
-      ClosePosBySelect(price); // закрываем последнюю открытую позицию
-      return(true);
-     }
-    }
-   }
-  }
-  else  */                                            // цена ниже (выше) стартовой - надо добавить объема
-  {
-   Print("Открываем позицию объем= ", volume);
-   return(OpenPosition(NULL, type, volume, _magic));
   }
  }
  else // Если объем меньше нуля
@@ -260,27 +240,11 @@ bool CorrectOrder(double volume)
    price = Ask;
    type = OP_BUY;
   }
-
-  //if (direction * price > direction * _startDayPrice)
-  {
-   Print("Открываем позицию объем= ", volume);
-   return(OpenPosition(NULL, type, -volume, _magic));
-  }/*
-  else
-  {
-   for (i = total - 1; i >= 0; i--) // По всем позициям
-   {
-    if(OrderSelect(i,SELECT_BY_POS,MODE_TRADES))
-    {
-     if (OrderMagicNumber() == _magic)  
-     {
-      ClosePosBySelect(price); // закрываем последнюю открытую позицию
-      return(true);
-     }
-    }
-   }
-  }*/
  }
+ 
+ Print("Корректируем позицию на объем= ", volume);
+ return(OpenPosition(NULL, type, MathAbs(volume), _magic));
+ 
 }
 
 //+----------------------------------------------------------------------------+
@@ -362,6 +326,7 @@ bool ExistPositions(string sy="", int op=-1, int mn=-1, datetime ot=0) {
   }
   return(False);
 }
+
 //+----------------------------------------------------------------------------+
 //|  Версия   :                                                                |
 //|  Описание : Открывает позицию и возвращает её тикет.                       |
@@ -463,7 +428,7 @@ int OpenPosition(string symb, int operation, double volume, int mn=0, int stopLo
 //+----------------------------------------------------------------------------+
 //|  Автор    : GIA                                                            |
 //+----------------------------------------------------------------------------+
-//|  Версия   : 10.01.2013                                                     |
+//|  Версия   : 04.12.2013                                                     |
 //|  Описание : Удаение одной предварительно выбранной позиции.                |
 //+----------------------------------------------------------------------------+
 //|  Параметры:                                                                |
@@ -521,3 +486,31 @@ void ClosePosBySelect(double pp=-1, string comment = "")
    Print("Некорректная торговая операция. Close ",GetNameOP(OrderType()));
   }
  }
+ 
+ //+---------------------------------------------------------------------------+
+//|  Автор    : GIA                                                            |
+//+----------------------------------------------------------------------------+
+//|  Версия   : 04.12.2013                                                     |
+//|  Описание : Закрытие позиций по рыночной цене                              |
+//+----------------------------------------------------------------------------+
+//+----------------------------------------------------------------------------+
+double ClosePositionsWithCalcLots()
+{
+ int total = OrdersTotal();
+ double lotsTotal;
+ for (int i = total - 1; i >= 0; i--)
+ {
+  if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) 
+  {
+   if (OrderMagicNumber() == _magic)  
+   {
+    if (OrderType() == OP_BUY) lotsTotal+=OrderLots();
+    if (OrderType() == OP_SELL)lotsTotal-=OrderLots(); 
+   }
+   ClosePosBySelect();
+  }
+ }
+ return (lotsTotal);
+}
+
+
