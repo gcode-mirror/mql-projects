@@ -115,7 +115,6 @@ int start()
    if(dayDeltaChanged || monthDeltaChanged)
    {
     double vol = RecountVolume();
-    Print("curVol=", currentVolume, " vol=", vol);
     if (currentVolume != vol)
     {
      if (CorrectOrder(vol - currentVolume))
