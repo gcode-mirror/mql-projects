@@ -321,6 +321,7 @@ bool CPositionArray::ReadFromFile(int handle)
    }
    else
     delete pos;
+   
   }
   Print("Read count: ", this.Total());
   return true;

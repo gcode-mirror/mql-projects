@@ -688,44 +688,56 @@ bool CPosition::ReadFromFile(int handle)
 
  if(handle != INVALID_HANDLE)
  {
-
   if(FileIsEnding(handle)) return false;
-//  Alert("MAGIC = ",FileReadString(handle));
   _magic = StringToInteger(FileReadString(handle));                               //считываем мэджик
-  if(FileIsEnding(handle)) return false;
-  _symbol         = FileReadString(handle);                      //считываем символ
+ // Alert("> MAGIC = ",_magic);  
+  if(FileIsEnding(handle)) return false; 
+   _symbol         = FileReadString(handle);                      //считываем символ
+ // Alert("> SYMBOL = ",_symbol);   
   if(FileIsEnding(handle)) return false;  
   _type           = StringToPositionType(FileReadString(handle));//считываем тип
-  if(FileIsEnding(handle)) return false;  
-  _lots           = FileReadNumber(handle);                      //считываем размер лота
-  if(FileIsEnding(handle)) return false;  
+ // Alert("> TYPE = ",_type);    
+  if(FileIsEnding(handle)) return false;   
+  _lots           = StringToInteger(FileReadString(handle));                      //считываем размер лота
+ // Alert("> LOT = ",_lots);  
+  if(FileIsEnding(handle)) return false;   
   _posTicket      = StringToInteger(FileReadString(handle));                      //считываем тикет позиции
+ // Alert("> POS TICKET = ",_posTicket);  
+  if(FileIsEnding(handle)) return false;   
+  _slTicket       = StringToInteger(FileReadString(handle));                      //считываем тикет стоп лосса  
+ // Alert("> STOP LOSS TICKET = ",_slTicket);  
+  if(FileIsEnding(handle)) return false;    
+  _slPrice        = StringToDouble(FileReadString(handle));                      //считываем цену стоп лосса
+ // Alert("> STOP LOSS PRICE = ",_slPrice);   
+  if(FileIsEnding(handle)) return false;    
+  _sl             = StringToDouble(FileReadString(handle));                      //считываем стоп лосс
+ // Alert("> STOP LOSS = ",_sl); 
   if(FileIsEnding(handle)) return false;  
-  _slTicket       = StringToInteger(FileReadString(handle));                      //считываем тикет стоп лосса
-  if(FileIsEnding(handle)) return false;  
-  _slPrice        = FileReadNumber(handle);                      //считываем цену стоп лосса
-  if(FileIsEnding(handle)) return false;  
-  _sl             = FileReadNumber(handle);                      //считываем стоп лосс
-  if(FileIsEnding(handle)) return false;  
-  _tpPrice        = FileReadNumber(handle);                      //считываем цену тейк профита
-  if(FileIsEnding(handle)) return false;  
-  _trailingStop   = FileReadNumber(handle);                      //Трейлинг стоп
-  if(FileIsEnding(handle)) return false;  
-  _trailingStep   = FileReadNumber(handle);                    //Трейлинг степ
-  if(FileIsEnding(handle)) return false;  
-  _posOpenPrice       = FileReadNumber(handle);                //цена открытия позиции
-  if(FileIsEnding(handle)) return false;  
-  _posClosePrice     = FileReadNumber(handle);                 //цена закрытия позиции
-  if(FileIsEnding(handle)) return false;  
-  _posOpenTime  = FileReadDatetime(handle);                    //время открытия позиции
-  if(FileIsEnding(handle)) return false;  
-  _posCloseTime = FileReadDatetime(handle);                    //время закрытия позиции
-  if(FileIsEnding(handle)) return false;  
-  _posProfit      = FileReadNumber(handle);                      //профит позиции
+  _tpPrice        = StringToDouble(FileReadString(handle));                      //считываем цену тейк профита
+ // Alert("> TAKE PROFIT PRICE = ",_tpPrice); 
+  if(FileIsEnding(handle)) return false;    
+  _trailingStop   = StringToDouble(FileReadString(handle));                      //Трейлинг стоп
+ // Alert("> TRAILING STOP = ",_trailingStop); 
+  if(FileIsEnding(handle)) return false;    
+  _trailingStep   = StringToDouble(FileReadString(handle));                    //Трейлинг степ
+ // Alert("> TRAILING STEP = ",_trailingStep); 
+  if(FileIsEnding(handle)) return false;    
+  _posOpenPrice       = StringToDouble(FileReadString(handle));                //цена открытия позиции
+ // Alert("> POS OPEN PRICE = ",_posOpenPrice); 
+  if(FileIsEnding(handle)) return false;    
+  _posClosePrice     = StringToDouble(FileReadString(handle));                 //цена закрытия позиции
+ // Alert("> POS CLOSE PRICE = ",_posClosePrice); 
+  if(FileIsEnding(handle)) return false;    
+  _posOpenTime  = StringToTime(FileReadString(handle));                    //время открытия позиции
+ // Alert("> POS OPEN TIME = ",_posOpenTime); 
+  if(FileIsEnding(handle)) return false;    
+  _posCloseTime = StringToTime(FileReadString(handle));                    //время закрытия позиции
+ // Alert("> POS CLOSE TIME = ",_posCloseTime); 
+  if(FileIsEnding(handle)) return false;    
+  _posProfit      = StringToDouble(FileReadString(handle));                      //профит позиции
+ // Alert("> POS PROFIT = ",_posProfit); 
   if(FileIsEnding(handle)) return false;  
      FileReadString(handle);                                     //пропуск пустого символа  
-  //log_file.Write(LOG_DEBUG, StringFormat("%s Файл успешно прочитан", MakeFunctionPrefix(__FUNCTION__)));
-  Alert("SWEET HOME ALABAMA SYMBOL = ",_symbol);
   return true;
  }
  
