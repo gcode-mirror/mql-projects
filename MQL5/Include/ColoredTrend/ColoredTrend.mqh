@@ -76,6 +76,9 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
  ArrayResize(  aExtremums, 1024);
  ArrayInitialize(enumMoveType, 0);
  SExtremum zero = {0, 0};
+ ArraySetAsSeries(buffer_Rates, false);
+ ArraySetAsSeries(buffer_TopRates, false);
+ ArraySetAsSeries(buffer_BottomRates, false);
  for(int i = 0; i < 1024; i++)
  {
   aExtremums[i] = zero;
@@ -97,35 +100,60 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
  if (bar != 0) 
  {
   enumMoveType[bar] = enumMoveType[bar - 1];
-  //PrintFormat("enumMoveType[%d] = %s, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
+  PrintFormat("enumMoveType[%d] = %s, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
  }
  
- bool newTrend = isNewTrend(buffer_Rates[3].close);
+  // Проверяем наличие экстремума на текущем баре
+ if (num0 != bar)
+ {
+  aExtremums[bar] = isExtremum(buffer_Rates[0].close, buffer_Rates[1].close, buffer_Rates[2].close, num0);
+  if (aExtremums[bar].direction != 0)
+  {
+   if (aExtremums[bar].direction == aExtremums[num0].direction) // если новый экстремум в том же напрвлении, что старый
+   {
+    aExtremums[num0].direction = 0;
+    num0 = bar;
+   }
+  else
+    {
+    num2 = num1;
+    num1 = num0;
+    num0 = bar;
+   }
+   PrintFormat("bar = %d, экстремумы num0=%d=%.05f, num1=%d=%.05f, num2=%d=%.05f", bar, num0, aExtremums[num0].price, num1, aExtremums[num1].price, num2, aExtremums[num2].price);
+  }
+ }
+
+ 
+ bool newTrend = isNewTrend(buffer_Rates[2].close);
            
  if (newTrend)
  {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения 
-  if (LessDoubles(buffer_Rates[3].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
+  if (LessDoubles(buffer_Rates[2].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
   {
    enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
-   //PrintFormat("bar = %d, начался тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, buffer_Rates[3].close, aExtremums[num0].price);
+   PrintFormat("bar = %d, начался тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, buffer_Rates[2].close, aExtremums[num0].price);
   }
-  if (GreatDoubles(buffer_Rates[3].close, aExtremums[num0].price, digits)) // если текущее закрытие выше последнего экстремума 
+  if (GreatDoubles(buffer_Rates[2].close, aExtremums[num0].price, digits)) // если текущее закрытие выше последнего экстремума 
   {
    enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
-   //PrintFormat("bar = %d, начался тренд вниз, текущее закрытие=%.05f меньше последнего экстремума=%.05f", bar, buffer_Rates[3].close, aExtremums[num0].price);
+   PrintFormat("bar = %d, начался тренд вверх, текущее закрытие=%.05f больше последнего экстремума=%.05f", bar, buffer_Rates[2].close, aExtremums[num0].price);
   }
  }
  
- //Начало коррекции если цена закрытия меньше/больше открытия следующего бара
+ //Начало коррекции вниз если цена закрытия меньше открытия следующего бара
  if ((enumMoveType[bar] == MOVE_TYPE_TREND_UP || enumMoveType[bar] == MOVE_TYPE_TREND_UP_FORBIDEN) && 
-      LessDoubles(buffer_Rates[3].close, buffer_Rates[2].open, digits))
+      LessDoubles(buffer_Rates[2].close, buffer_Rates[1].open, digits))
  {
+  PrintFormat("bar = %d, закончился тренд вверх(началась коррекция вниз), текущее закрытие=%.05f меньше предыдущего открытия=%.05f", bar, buffer_Rates[2].close, buffer_Rates[1].open);
   enumMoveType[bar] = MOVE_TYPE_CORRECTION_DOWN;
   lastOnTrend = num0;
  }
+ //Начало коррекции вверх если цена закрытия больше открытия следующего бара
  if ((enumMoveType[bar] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar] == MOVE_TYPE_TREND_DOWN_FORBIDEN) && 
-      GreatDoubles(buffer_Rates[3].close, buffer_Rates[2].open, digits))
+      GreatDoubles(buffer_Rates[2].close, buffer_Rates[1].open, digits))
  {
+  PrintFormat("bar = %d, закончился тренд вниз(началась коррекция вверх), текущее закрытие=%.05f больше предыдущего открытия=%.05f", bar, buffer_Rates[2].close, buffer_Rates[1].open);
   enumMoveType[bar] = MOVE_TYPE_CORRECTION_UP;
   lastOnTrend = num0;
  }
@@ -133,58 +161,45 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
  //коррекция меняется на тренд вверх/вниз при наступлении условия isCorrectionEnds
  //если последняя ценя меньше/больше последнего экстремуму или на младшем тф "большой" бар
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && 
-      isCorrectionEnds(buffer_Rates[3].close, MOVE_TYPE_CORRECTION_UP))
+      isCorrectionEnds(buffer_Rates[2].close, MOVE_TYPE_CORRECTION_UP))
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
+  PrintFormat("bar = %d, закончилася коррекция вверх(начался тренд вниз), последняя цена=%.05f меньше последнего экстремума=%.05f", bar, buffer_Rates[2].close, aExtremums[lastOnTrend].price);
  }
  
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_DOWN) && 
-      isCorrectionEnds(buffer_Rates[3].close, MOVE_TYPE_CORRECTION_DOWN))
+      isCorrectionEnds(buffer_Rates[2].close, MOVE_TYPE_CORRECTION_DOWN))
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
+  PrintFormat("bar = %d, закончилася коррекция вниз(начался тренд вверх), последняя цена=%.05f больше последнего экстремума=%.05f", bar, buffer_Rates[2].close, aExtremums[lastOnTrend].price);
  }
- // Проверяем наличие экстремума на текущем баре
- aExtremums[bar] =  isExtremum(buffer_Rates[0].close, buffer_Rates[1].close, buffer_Rates[2].close, num0);
- if (aExtremums[bar].direction != 0)
+
+ if ( bar != 0
+   &&(enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_DOWN)
+   &&(aExtremums[bar].direction > 0)
+   &&(
+      LessDoubles(aExtremums[bar].price, aExtremums[num2].price, digits) // если новый максимум меньше предыдущего
+    ||GreatDoubles( MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
+                   ,MathAbs(aExtremums[num2].price -  aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
+                   ,digits)))   
  {
-  if (aExtremums[bar].direction == aExtremums[num0].direction) // если новый экстремум в том же напрвлении, что старый
-  {
-   aExtremums[num0].direction = 0;
-   num0 = bar;
-  }
-  else
-  {
-   num2 = num1;
-   num1 = num0;
-   num0 = bar;
-  }
-  //PrintFormat("bar = %d, экстремумы num0=%d=%.05f, num1=%d=%.05f, num2=%d=%.05f", bar, num0, aExtremums[num0].price, num1, aExtremums[num1].price, num2, aExtremums[num2].price);
-  if ( bar != 0
-    &&(enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_DOWN)
-    &&(aExtremums[bar].direction > 0)
-    &&(
-       LessDoubles(aExtremums[bar].price, aExtremums[num2].price, digits) // если новый максимум меньше предыдущего
-     ||GreatDoubles( MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
-                    ,MathAbs(aExtremums[num2].price -  aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
-                    ,digits)))   
-  {
-   //PrintFormat("bar = %d, начался флэт, новый максимум меньше предыдущего num0 =%.05f < num2=%.05f", bar, aExtremums[num0].price, aExtremums[num2].price);
-   enumMoveType[bar] = MOVE_TYPE_FLAT;
-  }
-  
-  if ( bar != 0
-    &&(enumMoveType[bar - 1] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_UP)
-    &&(aExtremums[bar].direction < 0)
-    &&(
-       GreatDoubles(aExtremums[bar].price, aExtremums[num2].price, digits)
-     ||GreatDoubles( MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
-                    ,MathAbs(aExtremums[num2].price -  aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
-                    ,digits)))  // или новый минимум - больше
-  { 
-   //PrintFormat("bar = %d, начался флэт, новый минимум больше предыдущего num0 =%.05f < num2=%.05f", bar, aExtremums[num0].price, aExtremums[num2].price);
-   enumMoveType[bar] = MOVE_TYPE_FLAT;
-  }
+  PrintFormat("bar = %d, начался флэт, новый максимум меньше предыдущего num0 =%.05f < num2=%.05f или num2-num1=%.05f > num2-num0=%.05f", bar, aExtremums[bar].price, aExtremums[num2].price, (aExtremums[num2].price-aExtremums[num1].price), (aExtremums[num2].price-aExtremums[bar].price));
+  enumMoveType[bar] = MOVE_TYPE_FLAT;
  }
+ 
+ if ( bar != 0
+   &&(enumMoveType[bar - 1] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_UP)
+   &&(aExtremums[bar].direction < 0)
+   &&(
+      GreatDoubles(aExtremums[bar].price, aExtremums[num2].price, digits)
+    ||GreatDoubles( MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
+                   ,MathAbs(aExtremums[num2].price -  aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
+                   ,digits)))  // или новый минимум - больше
+ { 
+  PrintFormat("bar = %d, начался флэт, новый минимум больше предыдущего num0 =%.05f > num2=%.05f или num2-num1=%.05f > num2-num0=%.05f", bar, aExtremums[bar].price, aExtremums[num2].price, (aExtremums[num2].price-aExtremums[num1].price), (aExtremums[num2].price-aExtremums[bar].price));
+  enumMoveType[bar] = MOVE_TYPE_FLAT;
+ }
+
  return 0;
 }
 
