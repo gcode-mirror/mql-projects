@@ -18,15 +18,15 @@
 
  input bool  show_Extr_MN = true;
  input color color_Extr_MN = clrRed;
- input bool  show_Extr_W1 = false;
+ input bool  show_Extr_W1 = true;
  input color color_Extr_W1 = clrOrange;
- input bool  show_Extr_D1 = false;
+ input bool  show_Extr_D1 = true;
  input color color_Extr_D1 = clrYellow;
- input bool  show_Extr_H4 = false;
+ input bool  show_Extr_H4 = true;
  input color color_Extr_H4 = clrBlue;
- input bool  show_Extr_H1 = false;
+ input bool  show_Extr_H1 = true;
  input color color_Extr_H1 = clrAqua;
- input bool  show_Price_D1 = false;
+ input bool  show_Price_D1 = true;
  input color color_Price_D1 = clrDarkKhaki;
 
  CExtremumCalc calcMN(epsilon, depth);
@@ -436,7 +436,7 @@ bool FillATRbuffer()
 void SetInfoTabel()
 {
  int X = 10;
- int Y = 10;
+ int Y = 30;
  RectLabelCreate(0, "Extr_Title", 0, X, Y, 130, 105, clrBlack, BORDER_FLAT, CORNER_LEFT_UPPER, clrWhite, STYLE_SOLID, 1, false, false, false);
  LabelCreate(0,  "Extr_PERIOD_MN", 0, X+65, Y+15, CORNER_LEFT_UPPER, "EXTREMUM MONTH", "Arial Black", 8,  color_Extr_MN, ANCHOR_CENTER, false, false, false);
  LabelCreate(0,  "Extr_PERIOD_W1", 0, X+65, Y+30, CORNER_LEFT_UPPER,  "EXTREMUM WEEK", "Arial Black", 8,  color_Extr_W1, ANCHOR_CENTER, false, false, false);
