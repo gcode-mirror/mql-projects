@@ -85,9 +85,18 @@ void OnTick()
  {
   dyn.InitDayTrade();
   dyn.InitMonthTrade();
-  if (dyn.isInit())
+  
+  if (dyn.isMonthInit())
   {
-   dyn.RecountDelta();
+   dyn.RecountMonthDelta();
+  }
+  if (dyn.isDayInit())
+  {
+   dyn.RecountDayDelta();
+  }
+  
+  if(dyn.isDayDeltaChanged() || dyn.isMonthDeltaChanged())
+  {
    double vol = dyn.RecountVolume();
    if (currentVolume != vol)
    {
