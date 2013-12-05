@@ -70,6 +70,8 @@ public:
  
 //--- Рабочие методы класса
  bool isInit() {return(_isMonthInit && _isDayInit);}  // Инициализация завершна
+ bool isMonthInit() {return(_isMonthInit);}
+ bool isDayInit(){return(_isDayInit);}
  bool timeToUpdateFastDelta();
  bool isNewMonth();
  int isNewDay();

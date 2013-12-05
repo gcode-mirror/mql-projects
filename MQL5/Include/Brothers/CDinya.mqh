@@ -17,6 +17,9 @@
 //+------------------------------------------------------------------+
 class CDinya: public CBrothers
 {
+private:
+ bool _dayDeltaChanged;
+ bool _monthDeltaChanged;
 public:
 //--- Конструкторы
  //void CDinya();
@@ -26,7 +29,10 @@ public:
  void InitDayTrade();
  void InitMonthTrade();
  double RecountVolume();
- void RecountDelta();
+ void RecountDayDelta();
+ void RecountMonthDelta();
+ bool isDayDeltaChanged() {return _dayDeltaChanged;};
+ bool isMonthDeltaChanged() {return _monthDeltaChanged;};
 };
 
 //+------------------------------------------------------------------+
@@ -77,12 +83,14 @@ void CDinya::InitDayTrade()
   {
    _deltaFast = 0;
    _isDayInit = false;
+   _dayDeltaChanged = true;
   }
   else
   {
    _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
    _deltaFast = _deltaFastBase;
    _isDayInit = true;
+   _dayDeltaChanged = true;
   } 
   
   _prevDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
@@ -107,31 +115,43 @@ void CDinya::InitMonthTrade()
   _prevMonthPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
   _slowVol = NormalizeDouble(_volume * _deltaSlow * _factor, 2);
   _isMonthInit = true;
+  _monthDeltaChanged = true;
  }
 }
 
 //+------------------------------------------------------------------+
-//| Пересчет значений дельта                                         |
+//| Пересчет значений дневной дельта                                 |
 //| INPUT:  no.                                                      |
-//| OUTPUT: no.
+//| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CDinya::RecountDelta()
+void CDinya::RecountDayDelta()
 {
  double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
  if (_direction*(_deltaFast - 50) < 50 && GreatDoubles(currentPrice, _prevDayPrice + _dayStep*Point())) // _dir = 1 : delta < 100; _dir = -1 : delta > 0
  {
   _prevDayPrice = currentPrice;
   _deltaFast = _deltaFast + _direction*_fastDeltaStep;
+  _dayDeltaChanged = true;
   //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
  }
  if ((_direction*_deltaFast + 50) > (_direction*50) && LessDoubles(currentPrice, _prevDayPrice - _dayStep*Point())) // _dir = 1 : delta > 0; _dir = -1 : delta < 100
  {
   _prevDayPrice = currentPrice;
   _deltaFast = _deltaFast - _direction*_fastDeltaStep;
+  _dayDeltaChanged = true;
   //PrintFormat("%s Новая дневная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaFast);
  }
- 
+} 
+//+------------------------------------------------------------------+
+//| Пересчет значений месячной дельта                                |
+//| INPUT:  no.                                                      |
+//| OUTPUT: no.                                                      |
+//| REMARK: no.                                                      |
+//+------------------------------------------------------------------+
+void CDinya::RecountMonthDelta()
+{
+ double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
  if (_direction*(_deltaSlow - 50) < 50 && GreatDoubles(currentPrice, _prevMonthPrice + _monthStep*Point()))
  {
    _prevMonthPrice = currentPrice;
@@ -144,6 +164,7 @@ void CDinya::RecountDelta()
   {
    _deltaSlow = _deltaSlow + _direction*_slowDeltaStep;
   }
+  _monthDeltaChanged = true;
   //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
  }
  if ((_direction*_deltaSlow + 50) > (_direction*50) && LessDoubles(currentPrice, _prevMonthPrice - _monthStep*Point()))
@@ -159,6 +180,7 @@ void CDinya::RecountDelta()
    _deltaSlow = _deltaSlow - _direction*_slowDeltaStep;
    //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
   }
+  _monthDeltaChanged = true;
  }
 }
 
@@ -172,7 +194,7 @@ double CDinya::RecountVolume()
 {
  _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
  _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
- //PrintFormat("%s большой объем %.02f, _deltaSlow=%d", MakeFunctionPrefix(__FUNCTION__),  _slowVol, _deltaSlow);
- //PrintFormat("%s малый объем %.02f, _deltaFast=%d", MakeFunctionPrefix(__FUNCTION__), _fastVol, _deltaFast);
+ _monthDeltaChanged = false;
+ _dayDeltaChanged = false;
  return (_slowVol - _fastVol); 
 }
