@@ -81,14 +81,14 @@ bool isNewMonth()
 bool timeToUpdateFastDelta()
 {
  datetime current_time = TimeCurrent();
- //--- Проверяем появление нового месяца: 
+ //--- Проверяем появление нового дня: 
  if (m_last_day_number < current_time - fastPeriod*60*60)  // прошло _fastPeriod часов
  {
-  if (TimeHour(current_time) >= startHour) // Новый день начинается в _startHour часов
-  { 
-   m_last_day_number = current_time; // запоминаем текущий день
-   return(true);
-  }
+  //if (TimeHour(current_time) >= startHour) // Новый день начинается в _startHour часов
+  //{ 
+  m_last_day_number = current_time; // запоминаем текущий день
+  return(true);
+  //}
  }
 
  //--- дошли до этого места - значит день не новый
