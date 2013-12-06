@@ -18,8 +18,10 @@
 class CBrothers
 {
 protected:
- datetime m_last_day_number;   // Номер последнего определенного дня
- datetime m_last_month_number; // Номер последнего определенного месяца
+ datetime _last_time;          // Последнее определенное время отсчета
+ datetime _last_day_of_year;   // Время начала последнего определенного дня 
+ datetime _last_day_of_week;   // Время начала последнего определенного дня недели
+ datetime _last_month_number;  // Номер последнего определенного месяца
  
  string _symbol;                 // Имя инструмента
  ENUM_TIMEFRAMES _period;        // Период графика
@@ -32,6 +34,7 @@ protected:
  double _factor;   // множитель для вычисления текущего объема торгов от дельты
  int _percentage;  // сколько процентов объем дневной торговли может перекрывать от месячной
  int _startHour;   // час начала торговли
+ int _startDayOfWeek; // день недели начала торговли 0 - воскресенье, 6 - суббота
  int _fastPeriod;  // Период инициализации младшей дельта в часах
  int _slowPeriod;  // Период инициализации старшей дельта в днях
  int _fastDeltaStep;   // Величина шага изменения дельты
@@ -56,8 +59,8 @@ public:
 //--- Конструкторы
  void CBrothers(void){};      // Конструктор CBrothers
 //--- Методы доступа к защищенным данным:
- datetime GetLastDay() const {return(m_last_day_number);}      // 18:00 последнего дня
- datetime GetLastMonth() const {return(m_last_month_number);}  // Дата и время определния последнего месяца
+ //datetime GetLastDay() const {return(_last_day_number);}      // 18:00 последнего дня
+ //datetime GetLastMonth() const {return(_last_month_number);}  // Дата и время определния последнего месяца
  string GetComment() const {return(m_comment);}      // Комментарий выполнения
  string GetSymbol() const {return(_symbol);}         // Имя инструмента
  ENUM_TIMEFRAMES GetPeriod() const {return(_period);}          // Период графика
@@ -66,14 +69,15 @@ public:
  void SetSymbol(string symbol) {_symbol = (symbol==NULL || symbol=="") ? Symbol() : symbol; }
  void SetPeriod(ENUM_TIMEFRAMES period) {_period = (period==PERIOD_CURRENT) ? Period() : period; }
  void SetStartHour(int startHour) {_startHour = startHour;}
- void SetStartHour(datetime startHour) {_startHour = (GetHours(startHour) + 1) % 24; Print("_startHour=",_startHour);}
- 
+ void SetStartHour(datetime startTime) {_startHour = (GetHours(startTime) + 1) % 24; Print("_startHour=",_startHour);}
+ void SetStartDayOfWeek(datetime startTime) {_startDayOfWeek = GetDayOfWeek(startTime); Print("_startHour=",_startHour);}
 //--- Рабочие методы класса
  bool isInit() {return(_isMonthInit && _isDayInit);}  // Инициализация завершна
  bool isMonthInit() {return(_isMonthInit);}
  bool isDayInit(){return(_isDayInit);}
  bool timeToUpdateFastDelta();
  bool isNewMonth();
+ bool isNewWeek();
  int isNewDay();
  void InitDayTrade();
  void InitMonthTrade();
@@ -83,6 +87,8 @@ public:
  bool CorrectOrder(double volume);
  int GetHours(datetime date);
  int GetDayOfWeek(datetime date);
+ int GetDayOfYear(datetime date);
+ int GetYear(datetime date);
 };
 /*
 //+------------------------------------------------------------------+
@@ -97,8 +103,8 @@ void CBrothers::CBrothers(int deltaFast, int deltaSlow, int fastDeltaStep, int s
                       _dayStep(dayStep), _monthStep(monthStep), _fastPeriod(fastPeriod), _slowPeriod(slowPeriod),
                       _type(type), _volume(volume), _factor(factor), _percentage(percentage)
   {
-   m_last_day_number = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
-   m_last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
+   _last_day_number = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
+   _last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
    m_comment = "";        // Комментарий выполнения
    _isDayInit = false;
    _isMonthInit = false;
@@ -120,13 +126,10 @@ bool CBrothers::timeToUpdateFastDelta()
  datetime current_time = TimeCurrent();
  
  //--- Проверяем появление нового месяца: 
- if (m_last_day_number < current_time - _fastPeriod*60*60)  // прошло _fastPeriod часов
+ if (_last_time < current_time - _fastPeriod*60*60)  // прошло _fastPeriod часов
  {
-  if (GetHours(current_time) >= _startHour) // Новый месяц начинается в 18 часов
-  { 
-   m_last_day_number = current_time; // запоминаем текущий день
-   return(true);
-  }
+  _last_time = current_time; // запоминаем текущий день
+  return(true);
  }
 
  //--- дошли до этого места - значит день не новый
@@ -146,18 +149,40 @@ int CBrothers::isNewDay()
  
  if(GetHours(current_time) < _startHour)
  {
-  m_last_day_number = current_time;
+  _last_day_of_year = current_time;
   return(-1);
  }
   
- if (GetHours(m_last_day_number) < _startHour && GetHours(current_time) >= _startHour) 
+ if (GetHours(_last_day_of_year) < _startHour && GetHours(current_time) >= _startHour) 
  {
-  m_last_day_number = current_time;
-  return(GetDayOfWeek(m_last_day_number));
+  _last_day_of_year = current_time;
+  return(GetDayOfWeek(_last_day_of_year));
  }
 
  //--- дошли до этого места - значит день не новый
  return(-1);
+}
+
+//+------------------------------------------------------------------+
+//| Запрос на новый день недели.                                     |
+//| INPUT:  no.                                                      |
+//| OUTPUT: true   - если пришло время                               |
+//|         false  - если время не пришло или получили ошибку        |
+//| REMARK: no.                                                      |
+//+------------------------------------------------------------------+
+bool CBrothers::isNewWeek()
+{
+ datetime current_time = TimeCurrent();
+  
+ if (((GetDayOfYear(current_time) > GetDayOfYear(_last_day_of_week)) || (GetYear(current_time) > GetYear(_last_day_of_week)))
+    && GetDayOfWeek(current_time) == _startDayOfWeek && GetHours(current_time) >= _startHour) 
+ {
+  _last_day_of_week = current_time;
+  return(true);
+ }
+
+ //--- дошли до этого места - значит день не новый
+ return(false);
 }
 
 //+------------------------------------------------------------------+
@@ -172,13 +197,10 @@ bool CBrothers::isNewMonth()
  datetime current_time = TimeCurrent();
 
  //--- Проверяем появление нового месяца: 
- if (m_last_month_number < current_time - _slowPeriod*24*60*60)  // прошло _slowPeriod дней
+ if ((_last_month_number < current_time - _slowPeriod*24*60*60) && (GetHours(current_time) >= _startHour))  // прошло _slowPeriod дней
  {
-  if (GetHours(current_time) >= _startHour) // Новый месяц начинается в _startHour часов
-  { 
-   m_last_month_number = current_time; // запоминаем текущий день
-   return(true);
-  }
+  _last_month_number = current_time; // запоминаем текущий день
+  return(true);
  }
  //--- дошли до этого места - значит месяц не новый
  return(false);
@@ -198,7 +220,19 @@ int CBrothers::GetDayOfWeek(datetime date)
  return (_date.day_of_week);
 }
 
-//+------------------------------------------------------------------+
+int CBrothers::GetDayOfYear(datetime date)
+{
+ MqlDateTime _date;
+ TimeToStruct(date, _date);
+ return (_date.day_of_year);
+}
+
+int CBrothers::GetYear(datetime date)
+{
+ MqlDateTime _date;
+ TimeToStruct(date, _date);
+ return (_date.year);
+}//+------------------------------------------------------------------+
 //| Пересчет объемов торга на основании новых дельта                 |
 //| INPUT:  double volume.                                           |
 //| OUTPUT: result of correction - true or false                     |
