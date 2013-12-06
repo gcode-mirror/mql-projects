@@ -61,11 +61,12 @@ int OnInit()
    symbol = Symbol();
    startTime = TimeCurrent();
    
-   dyn.SetStartHour(startTime);
-   
+   //dyn.SetStartHour(startTime);
+   dyn.SetStartHour(15);
+   dyn.SetStartDayOfWeek(startTime);
    currentVolume = 0;
    dyn.InitDayTrade();
-   dyn.InitMonthTrade();
+   dyn.InitWeekTrade();
    
 //---
    return(INIT_SUCCEEDED);
@@ -84,24 +85,23 @@ void OnDeinit(const int reason)
 void OnTick()
  {
   dyn.InitDayTrade();
-  dyn.InitMonthTrade();
+  dyn.InitWeekTrade();
   
   if (dyn.isMonthInit())
   {
-   dyn.RecountMonthDelta();
+   dyn.RecountSlowDelta();
   }
   if (dyn.isDayInit())
   {
-   dyn.RecountDayDelta();
+   dyn.RecountFastDelta();
   }
   
-  if(dyn.isDayDeltaChanged() || dyn.isMonthDeltaChanged())
+  if(dyn.isFastDeltaChanged() || dyn.isSlowDeltaChanged())
   {
    double vol = dyn.RecountVolume();
    if (currentVolume != vol)
    {
-    PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
-    log_file.Write(LOG_DEBUG, StringFormat("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol));
+    //PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
     if (dyn.CorrectOrder(vol - currentVolume))
     {
      currentVolume = vol;

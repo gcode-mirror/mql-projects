@@ -82,8 +82,8 @@ void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDel
    _factor=factor;
    _percentage=percentage;
   
-   m_last_day_number = TimeCurrent() - _fastPeriod*60*60;       // »нициализируем день текущим днем
-   m_last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // »нициализируем мес€ц текущим мес€цем
+   _last_time = TimeCurrent() - _fastPeriod*60*60;       // »нициализируем день текущим днем
+   _last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // »нициализируем мес€ц текущим мес€цем
    m_comment = "";        //  омментарий выполнени€
    
    _isDayInit = false;
@@ -123,7 +123,7 @@ void CSanya::InitMonthTrade()
 {
  if(isNewMonth())
  {
-  PrintFormat("%s Ќовый мес€ц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(m_last_month_number));
+  PrintFormat("%s Ќовый мес€ц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_last_month_number));
   currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
   
   _startDayPrice = 0;
