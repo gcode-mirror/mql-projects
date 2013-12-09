@@ -37,7 +37,7 @@ ENUM_TM_POSITION_TYPE signal;                      // переменная для хранения то
 int OnInit()
 {
  //загружаем хэндл индикатора Tihiro
- //handle = iCustom(symbol, timeFrame, "TihiroIndicator",timeFrame,priceDifferent); 
+ handle = iCustom(symbol, timeFrame, "test_PBI"); 
  //вычисляем торговую ситуацию в самом начале работы эксперта
  
  return(INIT_SUCCEEDED);
