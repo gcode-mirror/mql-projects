@@ -90,16 +90,22 @@ void OnStart()
   {
    string historyFile;
    string backtestFile;
+   bool flag;
    //---- получаем имя файла истории
    historyFile  = GetHistoryFileName ();
    //---- получаем имя файла бэктеста
    backtestFile = GetBackTestFileName ();
-   
    //---- загружаем файл истории
-   if (backtest.LoadHistoryFromFile(historyFile) )
+   flag = backtest.LoadHistoryFromFile(historyFile,time_from,time_to);
+      
+   //---- загружаем файл истории
+   if (flag == true )
    //---- если файл истории удалось прочитать
     {
+    
      //---- то вычисляем параметры бэктеста и сохраняем их в файл
-     backtest.SaveBackTestToFile(backtestFile,symbol,time_from,time_to);
+     backtest.SaveBackTestToFile(backtestFile,symbol);
+    
+     backtest.SaveArray("new_history.csv");
     }
   }

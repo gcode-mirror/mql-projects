@@ -683,7 +683,7 @@ bool CPosition::LosslessTrailing(void)
 /// \param [in] bCreateLineObjects  if true, creates open, sl & tp lines on chart 
 /// \return 				True if successful, false otherwise
 //+------------------------------------------------------------------+
-bool CPosition::ReadFromFile(int handle)
+bool CPosition::ReadFromFile(int  handle)
 {
 
  if(handle != INVALID_HANDLE)
@@ -736,8 +736,7 @@ bool CPosition::ReadFromFile(int handle)
   if(FileIsEnding(handle)) return false;    
   _posProfit      = StringToDouble(FileReadString(handle));                      //профит позиции
  // Alert("> POS PROFIT = ",_posProfit); 
-  if(FileIsEnding(handle)) return false;  
-     FileReadString(handle);                                     //пропуск пустого символа  
+                                //пропуск пустого символа  
   return true;
  }
  
@@ -771,7 +770,7 @@ void CPosition::WriteToFile(int handle)
             _posClosePrice,
             _posOpenTime,
             _posCloseTime,
-            _posProfit
+            DoubleToString(_posProfit,5)
             );
  }
 }

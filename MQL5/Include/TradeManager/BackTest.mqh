@@ -21,6 +21,8 @@ class BackTest
    BackTest() { _positionsHistory = new CPositionArray(); };  //конструктор класса
   ~BackTest() { delete _positionsHistory; };
    //методы бэктеста
+   //метод возвращения индекса позиции в массиве позиций по времени
+   int   GetIndexByDate(datetime dt,bool type);
    //методы вычисления количест трейдов в истории по символу
    uint   GetNTrades(string symbol);     //вычисляет количество трейдов по символу
    uint   GetNSignTrades(string symbol,int sign);  //вычисляет количество выйгрышных трейдов по символу
@@ -41,11 +43,57 @@ class BackTest
    double GetRelDrawdown (string symbol);              //вычисляет относительную просадку баланса
    double GetMaxDrawdown (string symbol);              //вычисляет максимальную просадку баланса
    //прочие системные методы
-   bool LoadHistoryFromFile(string file_url);          //загружает историю позиции из файла
+   bool LoadHistoryFromFile(string file_url,datetime start,datetime finish);          //загружает историю позиции из файла
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
-   bool SaveBackTestToFile (string file_url,string symbol,datetime time_from,datetime time_to); //сохраняет результаты бэктеста
-   
+   bool SaveBackTestToFile (string file_url,string symbol); //сохраняет результаты бэктеста
+   bool SaveArray(string file_url);
+   //дополнительный методы
+   string SignToString (int sign);                     //переводит знак позиции в строку
  };
+
+//+------------------------------------------------------------------+
+//| Возвращает индекс по дате                                        |
+//+------------------------------------------------------------------+
+
+ int BackTest::GetIndexByDate(datetime dt,bool type)
+  {
+   int index;
+   CPosition *pos;
+   switch (type)
+    {
+     //если нужно найти первую позицию, позднее заданной даты
+     case true:
+      index = 0;
+      //проходим по массиву позиций
+      do 
+       {
+        pos = _positionsHistory.Position(index);
+        index++;
+       }
+      while (index < _positionsHistory.Total() && pos.getOpenPosDT() < dt );
+      //если позиция найдена, то вернем её индекс
+      if (index <_positionsHistory.Total())
+       return index;
+     break; 
+     //если нужно найти первую позицию перед заданной датой
+     case false:
+      index = _positionsHistory.Total();
+      //проходим по массиву позиций
+      do 
+       {
+        index--;
+        pos = _positionsHistory.Position(index);
+       }
+      while (index >= 0 && pos.getOpenPosDT() > dt );
+      //если позиция найдена, то вернем её индекс
+      if (index >=  0)
+       return index;     
+     break;
+    }
+   return -1;  //если позиция не найдена
+  } 
+ 
+ 
 //+------------------------------------------------------------------+
 //| Вычисляет количество трейдов по символу                          |
 //+------------------------------------------------------------------+
@@ -321,7 +369,7 @@ double BackTest::GetMaxDrawdown (string symbol) //(сейчас для теста вместо балан
 //| Загружает историю позиций из файла                                |
 //+-------------------------------------------------------------------+   
   
-bool BackTest::LoadHistoryFromFile(string file_url)
+bool BackTest::LoadHistoryFromFile(string file_url,datetime start,datetime finish)
  {
 
 if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
@@ -332,19 +380,26 @@ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5In
  int file_handle;   //файловый хэндл  
  if (!FileIsExist(file_url, FILE_COMMON) ) //проверка существования файла истории 
  {
+
   PrintFormat("%s File %s doesn't exist", MakeFunctionPrefix(__FUNCTION__),file_url);
   return (false);
  }  
  file_handle = FileOpen(file_url, FILE_READ|FILE_COMMON|FILE_CSV|FILE_ANSI, ";");
  if (file_handle == INVALID_HANDLE) //не удалось открыть файл
  {
+  FileClose(file_handle);
   PrintFormat("%s error: %s opening %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(::GetLastError()), file_url);
   return (false);
  }
+ 
+
  _positionsHistory.Clear();                   //очищаем массив
- _positionsHistory.ReadFromFile(file_handle); //загружаем данные из файла 
+ _positionsHistory.ReadFromFile(file_handle,start,finish); //загружаем данные из файла 
+ 
  
  FileClose(file_handle);                      //закрывает файл  
+ 
+
  return (true);
  }  
   
@@ -361,8 +416,12 @@ void BackTest::GetHistoryExtra(CPositionArray *array)
 //| Сохраняет вычисленные параметры бэктеста                          |
 //+-------------------------------------------------------------------+
 
-bool BackTest::SaveBackTestToFile (string file_url,string symbol,datetime time_from,datetime time_to)
+bool BackTest::SaveBackTestToFile (string file_url,string symbol)
  {
+  //индексы start и finish
+  int start = 0;
+  int finish = 0;
+  
   //открываем файл на запись
   int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
   //если не удалось создать файл
@@ -388,23 +447,94 @@ bool BackTest::SaveBackTestToFile (string file_url,string symbol,datetime time_f
   //сохраняем файл параметров вычисления бэктеста
 
  //   Alert("POS PRICE = ",DoubleToString());
-  
+ 
+  //сохраняем строку описания количеств позиций
+  FileWrite(file_handle,
+            "N Trades",
+            "N Win Trades",
+            "N Lose Trades",
+            "Sign of Last Trade"
+           );
+  //строка с количестами позиций
   FileWrite(file_handle,
             n_trades,
             n_win_trades,
             n_lose_trades,
-            sign_last_pos,
+            SignToString(sign_last_pos)
+           );
+  //сохраняем описание макс. и мин. сделок
+  FileWrite(file_handle,
+            "Max Trade",
+            "Min Trade"
+           ); 
+  //макс. и мин. сделки
+  FileWrite(file_handle,
             max_trade,
-            min_trade,
+            min_trade
+           );
+  //средние сделки
+  FileWrite(file_handle,
+            "Average Win Trade",
+            "Average Lose Trade"
+           );
+  //средние сделки
+  FileWrite(file_handle,
             aver_profit_trade,
-            aver_lose_trade,
+            aver_profit_trade
+           );
+  //подряд идущие
+  FileWrite(file_handle,
+            "Max N Win Trades",
+            "Max N Lose Trades",
+            "Max Profit Range",
+            "Max Losing Range"
+           );
+  //подряд идушие
+  FileWrite(file_handle,
             maxPositiveTrades,
             maxNegativeTrades,
             maxProfitRange,
-            maxLoseRange,
+            maxLoseRange
+           );
+  //просадки
+  FileWrite(file_handle,
+            "Max DrawDown"
+           );
+  //просадки
+  FileWrite(file_handle,
             maxDrawDown
-            );
+           );
   //закрываем файл
   FileClose(file_handle);
  return (true);
+ }
+ 
+ bool BackTest::SaveArray(string file_url)
+{
+
+ int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON|FILE_ANSI, ";");
+
+ if(file_handle == INVALID_HANDLE)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), file_url));  
+  return(false);
+ }
+ _positionsHistory.WriteToFile(file_handle);  //сохраняем массив в файл
+
+ FileClose(file_handle);
+ return(true);
+}
+
+//+-------------------------------------------------------------------+
+//| Дополнительные методы                                             |
+//+-------------------------------------------------------------------+
+
+string BackTest::SignToString(int sign)
+ //переводит знак позиции в строку
+ {
+   if (sign == 1)
+    return "positive";
+   if (sign == -1)
+    return "negative";
+   return "no sign";
  }
