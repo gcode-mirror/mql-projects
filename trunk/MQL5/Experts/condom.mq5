@@ -23,7 +23,8 @@ input int TP = 500;
 input double _lot = 1;
 input int historyDepth = 40;
 input ENUM_TIMEFRAMES timeframe = PERIOD_M1;
-input bool trailing = false;
+input bool usualTrailing = true;
+input bool losslessTrailing = false;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
@@ -63,6 +64,12 @@ int OnInit()
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
    
+   if (usualTrailing && losslessTrailing)
+   {
+    PrintFormat("Должен быть выбран только один тип трейлинга");
+    return(INIT_FAILED);
+   }
+
    if (useLimitOrders)
    {
     opBuy = OP_BUYLIMIT;
@@ -169,9 +176,13 @@ void OnTick()
    {
     if (GreatDoubles(MACD_buf[0], levelMACD) || LessDoubles (MACD_buf[0], -levelMACD))
     {
-     if (trailing)
+     if (usualTrailing)
      {
       ctm.DoUsualTrailing();
+     }
+     if (losslessTrailing)
+     {
+      ctm.DoLosslessTrailing();
      }
      return;
     }
@@ -206,9 +217,13 @@ void OnTick()
      }
     }
    }
-   if (trailing)
+   if (usualTrailing)
    {
     ctm.DoUsualTrailing();
+   }
+   if (losslessTrailing)
+   {
+    ctm.DoLosslessTrailing();
    }
    return;   
   }
