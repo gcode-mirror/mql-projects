@@ -156,7 +156,7 @@ int OnCalculate(const int rates_total,
    
    if(NewBarBottom.isNewBar() > 0 || prev_calculated == 0) //isNewBar bottom_tf
    {
-    //PrintFormat("Prev_calc = %d; rates_total = %d", prev_calculated, rates_total);
+    PrintFormat("Prev_calc = %d; rates_total = %d", prev_calculated, rates_total);
     int error = 0;
     for(int i = start_iteration; i < rates_total; i++)
     {
