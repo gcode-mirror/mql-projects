@@ -53,7 +53,7 @@ CColoredTrend *trend,
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int digits;
-int buffer_index = 0;
+//int buffer_index = 0;
 //int top_buffer_index = 0;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -160,7 +160,8 @@ int OnCalculate(const int rates_total,
    {
     PrintFormat("Prev_calc = %d; rates_total = %d", prev_calculated, rates_total);
     int error = 0;
-    for(int i = start_iteration; i < rates_total; i++)
+    
+    for (int i = start_iteration; i < rates_total; i++)
     {
      int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, bars) - top_buffer_index;
      if(start_pos_top < 0) start_pos_top = 0;

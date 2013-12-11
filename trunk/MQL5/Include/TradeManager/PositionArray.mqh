@@ -29,7 +29,8 @@ public:
    string            PersistFilename(){return(m_strPersistFilename);}
    string            PersistFilename(string strFilename);
    int               TicketToIndex(long lTicket);
-   bool              ReadFromFile(int handle,datetime start=0,datetime finish=0);
+   bool              ReadFromFile(int handle);                                 //считывает из файла историю позиций
+   bool              ReadFromFile(int handle,datetime start,datetime finish);  //считывает из файла историю позиций
    bool              WriteToFile(int handle);
    string            SummaryList();
    void              Clear(const long nMagic);      //очищение массива позиций по мэджику
@@ -307,7 +308,30 @@ string CPositionArray::PrintToString()
  return result;
 }
 
-bool CPositionArray::ReadFromFile(int handle,datetime start=0,datetime finish=0)
+bool CPositionArray::ReadFromFile(int handle)
+{
+ uint count =0;
+ if(handle != INVALID_HANDLE)
+ {
+  CPosition *pos;
+  while(!FileIsEnding(handle))
+  {
+   pos = new CPosition();
+   if (pos.ReadFromFile(handle))
+   {
+    Add(pos);
+   }
+   else
+    delete pos;
+   
+  }
+  Print("Read count: ", this.Total());
+  return true;
+ }
+ return false;
+}
+
+bool CPositionArray::ReadFromFile(int handle,datetime start,datetime finish)
 {
  uint count =0;
  if(handle != INVALID_HANDLE)
