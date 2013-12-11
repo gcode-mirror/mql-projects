@@ -770,7 +770,7 @@ void CPosition::WriteToFile(int handle)
             _posClosePrice,
             _posOpenTime,
             _posCloseTime,
-            DoubleToString(_posProfit,5)
+            _posProfit
             );
  }
 }
