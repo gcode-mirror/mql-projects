@@ -106,6 +106,8 @@ void OnDeinit(const int reason)
    ArrayInitialize(ColorCandlesBuffer2, 0);
    ArrayInitialize(ColorCandlesBuffer3, 0);
    ArrayInitialize(ColorCandlesBuffer4, 0);
+   delete topTrend;
+   delete trend;
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -184,24 +186,24 @@ int OnCalculate(const int rates_total,
      if(!show_top) ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
      else
      {
-      PrintFormat("TIME: %s : i = %d; bit = %d; move type = %s", TimeToString(TimeCurrent()), i, top_buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
+      //PrintFormat("TIME: %s : i = %d; bit = %d; move type = %s", TimeToString(TimeCurrent()), i, top_buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
       ColorCandlesColors [i] = topTrend.GetMoveType(top_buffer_index);
      }
      
-     PrintFormat("TIME: %s : buffer_index = %d; top_buffer_index = %d; current_move = %s; top_move = %s", TimeToString(start_time+buffer_index*seconds_current), buffer_index, top_buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+     //PrintFormat("TIME: %s : buffer_index = %d; top_buffer_index = %d; current_move = %s; top_move = %s", TimeToString(start_time+buffer_index*seconds_current), buffer_index, top_buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
 
      if (trend.GetExtremumDirection(buffer_index) > 0)
      {
       ExtUpArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
-      //PrintFormat("Максимум %d __ %d", i, buffer_index);
+      PrintFormat("Максимум %d __ %d", i, buffer_index);
      }
      else if (trend.GetExtremumDirection(buffer_index) < 0)
      {
       ExtDownArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
-      //PrintFormat("Минимум %d __ %d", i, buffer_index);
+      PrintFormat("Минимум %d __ %d", i, buffer_index);
      }
      
-     if (topTrend.GetExtremumDirection(top_buffer_index) > 0)
+    /* if (topTrend.GetExtremumDirection(top_buffer_index) > 0)
      {
       ExtTopUpArrowBuffer[i-9] = topTrend.GetExtremum(top_buffer_index);
       //PrintFormat("Максимум %s : %d __ %d", TimeToString(start_time+seconds_current*buffer_index),  i, top_buffer_index);
@@ -210,9 +212,9 @@ int OnCalculate(const int rates_total,
      {
       ExtTopDownArrowBuffer[i-9] = topTrend.GetExtremum(top_buffer_index);
       //PrintFormat("Минимум %s : %d __ %d", TimeToString(start_time+seconds_current*buffer_index), i, top_buffer_index);
-     }
+     }*/
 
-     PrintFormat("%s : current = %d; %s; top = %d; %s; i = %d", TimeToString(start_time+buffer_index*seconds_current), buffer_index, EnumToString((ENUM_MOVE_TYPE)trend.GetMoveType(buffer_index)), top_buffer_index, EnumToString((ENUM_MOVE_TYPE)topTrend.GetMoveType(top_buffer_index)), i);       
+     //PrintFormat("%s : current = %d; %s; top = %d; %s; i = %d", TimeToString(start_time+buffer_index*seconds_current), buffer_index, EnumToString((ENUM_MOVE_TYPE)trend.GetMoveType(buffer_index)), top_buffer_index, EnumToString((ENUM_MOVE_TYPE)topTrend.GetMoveType(top_buffer_index)), i);       
      if(buffer_index < bars) 
      {
       buffer_index++;
