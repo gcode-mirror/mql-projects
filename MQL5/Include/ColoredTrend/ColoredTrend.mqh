@@ -92,6 +92,11 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 //+------------------------------------------+
 int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
+ if (bar != 0) //потому что иначе в случае когда не получится подгрузить данные бар будет прозрачным!
+ {
+  enumMoveType[bar] = enumMoveType[bar - 1];
+  //PrintFormat("enumMoveType[%d] = %s, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
+ }
  if(FillTimeSeries(TOP_TF, 4, start_pos, buffer_Rates) < 0) return (11); // получим размер заполненного массива
  if(FillTimeSeries(BOTTOM_TF, 4, start_pos, buffer_Rates) < 0) return (12); // получим размер заполненного массива
  if(FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates) < 0) return (13); // получим размер заполненного массива
@@ -110,11 +115,7 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
   PrintFormat("AFTER_EXTREMUMS: %d", ArraySize(aExtremums));
  }
  difToNewExtremum =  buffer_ATR[1] * _percentage_ATR;
- if (bar != 0) 
- {
-  enumMoveType[bar] = enumMoveType[bar - 1];
-  //PrintFormat("enumMoveType[%d] = %s, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
- }
+ 
  
   // Проверяем наличие экстремума на текущем баре
  if (num0 != bar)
