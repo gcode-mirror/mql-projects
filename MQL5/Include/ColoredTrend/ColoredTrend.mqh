@@ -50,13 +50,13 @@ protected:
   bool isNewTrend(double price);
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR);
-  void ~CColoredTrend();
   SExtremum isExtremum(double vol1, double vol2, double vol3, int bar = 0);
   int CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
   ENUM_MOVE_TYPE GetMoveType(int i);
   double GetExtremum(int i);
   int GetExtremumDirection(int i);
   int TrendDirection();
+  void Zeros();
 };
 
 //+-----------------------------------------+
@@ -85,20 +85,6 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
   aExtremums[i] = zero;
  }
  difToTrend = 2;  // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
-}
-
-void CColoredTrend::~CColoredTrend()
-{
- SExtremum zero = {0, 0};
- 
- for(int i = 0; i < ArraySize(aExtremums); i++)
- {
-  aExtremums[i] = zero;
- }
- for(int i = 0; i < ArraySize(enumMoveType); i++)
- {
-  enumMoveType[i] = MOVE_TYPE_UNKNOWN;
- }
 }
 
 //+------------------------------------------+
@@ -431,4 +417,18 @@ bool CColoredTrend::isNewTrend(double price)
   }
  }
  return(newTrend);
+}
+
+void CColoredTrend::Zeros()
+{
+  SExtremum zero = {0, 0};
+ 
+  for(int i = 0; i < ArraySize(aExtremums); i++)
+  {
+   aExtremums[i] = zero;
+  }
+  for(int i = 0; i < ArraySize(enumMoveType); i++)
+  {
+   enumMoveType[i] = MOVE_TYPE_UNKNOWN;
+  }
 }

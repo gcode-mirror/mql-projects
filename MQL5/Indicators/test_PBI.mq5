@@ -106,8 +106,8 @@ void OnDeinit(const int reason)
    ArrayInitialize(ColorCandlesBuffer2, 0);
    ArrayInitialize(ColorCandlesBuffer3, 0);
    ArrayInitialize(ColorCandlesBuffer4, 0);
-   delete topTrend;
-   delete trend;
+   topTrend.Zeros();
+   trend.Zeros();
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -134,9 +134,21 @@ int OnCalculate(const int rates_total,
 
    if(prev_calculated == 0) 
    {
+    buffer_index = 0;
+    top_buffer_index = 0;
     start_index = rates_total - bars;
     start_time = TimeCurrent() - bars*seconds_current;
     start_iteration = rates_total - bars;
+    topTrend.Zeros();
+    trend.Zeros();
+    ArrayInitialize(ExtUpArrowBuffer, 0);
+    ArrayInitialize(ExtDownArrowBuffer, 0);
+    ArrayInitialize(ExtTopUpArrowBuffer, 0);
+    ArrayInitialize(ExtTopDownArrowBuffer, 0);
+    ArrayInitialize(ColorCandlesBuffer1, 0);
+    ArrayInitialize(ColorCandlesBuffer2, 0);
+    ArrayInitialize(ColorCandlesBuffer3, 0);
+    ArrayInitialize(ColorCandlesBuffer4, 0);
    }
    else 
    { 
@@ -155,7 +167,7 @@ int OnCalculate(const int rates_total,
     //PrintFormat("%s : сработал новый бар на старшем", TimeToString(TimeCurrent()));
     top_buffer_index++ ;//+= NewBarTop.isNewBar();
    }
-   
+
    if(NewBarBottom.isNewBar() > 0 || prev_calculated == 0) //isNewBar bottom_tf
    {
     PrintFormat("Prev_calc = %d; rates_total = %d", prev_calculated, rates_total);
@@ -196,12 +208,12 @@ int OnCalculate(const int rates_total,
      if (trend.GetExtremumDirection(buffer_index) > 0)
      {
       ExtUpArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
-      PrintFormat("Максимум %d __ %d", i, buffer_index);
+      //PrintFormat("Максимум %d __ %d", i, buffer_index);
      }
      else if (trend.GetExtremumDirection(buffer_index) < 0)
      {
       ExtDownArrowBuffer[i-2] = trend.GetExtremum(buffer_index);
-      PrintFormat("Минимум %d __ %d", i, buffer_index);
+      //PrintFormat("Минимум %d __ %d", i, buffer_index);
      }
      
     /* if (topTrend.GetExtremumDirection(top_buffer_index) > 0)
@@ -215,7 +227,7 @@ int OnCalculate(const int rates_total,
       //PrintFormat("Минимум %s : %d __ %d", TimeToString(start_time+seconds_current*buffer_index), i, top_buffer_index);
      }*/
 
-     //PrintFormat("%s : current = %d; %s; top = %d; %s; i = %d", TimeToString(start_time+buffer_index*seconds_current), buffer_index, EnumToString((ENUM_MOVE_TYPE)trend.GetMoveType(buffer_index)), top_buffer_index, EnumToString((ENUM_MOVE_TYPE)topTrend.GetMoveType(top_buffer_index)), i);       
+     PrintFormat("%s : current = %d; %s; top = %d; %s; i = %d", TimeToString(start_time+buffer_index*seconds_current), buffer_index, EnumToString((ENUM_MOVE_TYPE)trend.GetMoveType(buffer_index)), top_buffer_index, EnumToString((ENUM_MOVE_TYPE)topTrend.GetMoveType(top_buffer_index)), i);       
      if(buffer_index < bars) 
      {
       buffer_index++;
