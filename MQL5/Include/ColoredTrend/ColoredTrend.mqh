@@ -45,11 +45,12 @@ protected:
   
   int FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlRates &array[]);
   int FillATRBuf(int count, int start_pos);
-  bool isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type);
-  bool isLastBarHuge();
+  bool isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int start_pos);
+  bool isLastBarHuge(int start_pos);
   bool isNewTrend(double price);
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR);
+  void ~CColoredTrend();
   SExtremum isExtremum(double vol1, double vol2, double vol3, int bar = 0);
   int CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
   ENUM_MOVE_TYPE GetMoveType(int i);
@@ -86,16 +87,42 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
  difToTrend = 2;  // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
 }
 
+void CColoredTrend::~CColoredTrend()
+{
+ SExtremum zero = {0, 0};
+ 
+ for(int i = 0; i < ArraySize(aExtremums); i++)
+ {
+  aExtremums[i] = zero;
+ }
+ for(int i = 0; i < ArraySize(enumMoveType); i++)
+ {
+  enumMoveType[i] = MOVE_TYPE_UNKNOWN;
+ }
+}
+
 //+------------------------------------------+
 //| Функция вычисляет тип движения рынка     |
 //+------------------------------------------+
 int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
- if(FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates) < 0) return (10); // получим размер заполненного массива
- if(FillATRBuf(4, start_pos) < 0) return (20);  // заполним массив данными индикатора ATR
+ if(FillTimeSeries(TOP_TF, 4, start_pos, buffer_Rates) < 0) return (11); // получим размер заполненного массива
+ if(FillTimeSeries(BOTTOM_TF, 4, start_pos, buffer_Rates) < 0) return (12); // получим размер заполненного массива
+ if(FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates) < 0) return (13); // получим размер заполненного массива
+ if(FillATRBuf(4, start_pos) < 0) return (2);  // заполним массив данными индикатора ATR
  // Выделим память под массивы цветов и экстремумов
- if(bar == ArraySize(enumMoveType)) ArrayResize (enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
- if(bar == ArraySize(aExtremums)  ) ArrayResize (  aExtremums, ArraySize(  aExtremums)*2, ArraySize(  aExtremums)*2);
+ if(bar == ArraySize(enumMoveType)) 
+ {
+  PrintFormat("BEFORE_MOVETYPE: %d", ArraySize(enumMoveType));
+  ArrayResize (enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
+  PrintFormat("AFTER_MOVETYPE: %d", ArraySize(enumMoveType));
+ }
+ if(bar == ArraySize(aExtremums)  ) 
+ {
+  PrintFormat("BEFORE_EXTREMUMS: %d", ArraySize(aExtremums));
+  ArrayResize (  aExtremums, ArraySize(  aExtremums)*2, ArraySize(  aExtremums)*2);
+  PrintFormat("AFTER_EXTREMUMS: %d", ArraySize(aExtremums));
+ }
  difToNewExtremum =  buffer_ATR[1] * _percentage_ATR;
  if (bar != 0) 
  {
@@ -161,14 +188,14 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
  //коррекция меняется на тренд вверх/вниз при наступлении условия isCorrectionEnds
  //если последняя ценя меньше/больше последнего экстремуму или на младшем тф "большой" бар
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && 
-      isCorrectionEnds(buffer_Rates[2].close, MOVE_TYPE_CORRECTION_UP))
+      isCorrectionEnds(buffer_Rates[2].close, MOVE_TYPE_CORRECTION_UP, start_pos))
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
   //PrintFormat("bar = %d, закончилася коррекция вверх(начался тренд вниз), последняя цена=%.05f меньше последнего экстремума=%.05f", bar, buffer_Rates[2].close, aExtremums[lastOnTrend].price);
  }
  
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_DOWN) && 
-      isCorrectionEnds(buffer_Rates[2].close, MOVE_TYPE_CORRECTION_DOWN))
+      isCorrectionEnds(buffer_Rates[2].close, MOVE_TYPE_CORRECTION_DOWN, start_pos))
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
   //PrintFormat("bar = %d, закончилася коррекция вниз(начался тренд вверх), последняя цена=%.05f больше последнего экстремума=%.05f", bar, buffer_Rates[2].close, aExtremums[lastOnTrend].price);
@@ -298,7 +325,7 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
                              _symbol,
                              copied,
                              count,
-                             EnumToString((ENUM_TIMEFRAMES)_period),
+                             EnumToString((ENUM_TIMEFRAMES)period),
                              GetLastError(),
                              start_pos,
                              count
@@ -350,28 +377,28 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //+----------------------------------------------------+
 //| Функция заполняет массив индикатора ATR из истории |
 //+----------------------------------------------------+
-bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type)
+bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int start_pos)
 {
  bool extremum_condition, 
       bottomTF_condition;
  if (move_type == MOVE_TYPE_CORRECTION_UP)
  {
   extremum_condition = LessDoubles(price, aExtremums[lastOnTrend].price, digits);
-  bottomTF_condition = isLastBarHuge();
+  bottomTF_condition = isLastBarHuge(start_pos);
  }
  if (move_type == MOVE_TYPE_CORRECTION_DOWN)
  {
   extremum_condition = GreatDoubles(price, aExtremums[lastOnTrend].price, digits);
-  bottomTF_condition = isLastBarHuge();
+  bottomTF_condition = isLastBarHuge(start_pos);
  }
  return ((extremum_condition) || (bottomTF_condition));
 }
 
-bool CColoredTrend::isLastBarHuge()
+bool CColoredTrend::isLastBarHuge(int start_pos)
 {
  double sum;
  MqlRates rates[];
- FillTimeSeries(BOTTOM_TF, _depth, 0, rates);
+ FillTimeSeries(BOTTOM_TF, _depth, start_pos, rates);
  for(int i = 0; i < _depth - 1; i++)
  {
   sum = sum + rates[i].high - rates[i].low;  
