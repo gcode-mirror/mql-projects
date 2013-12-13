@@ -91,7 +91,7 @@ void CExpertoscop::GetExpertParams(string fileHandle)
  string word, symbol;
  ENUM_TIMEFRAMES period;
  string fileContain;
- string ch;
+ string ch = " ";
  int count;
  
  // получаем указатель на файл
