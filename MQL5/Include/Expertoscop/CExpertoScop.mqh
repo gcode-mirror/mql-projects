@@ -34,47 +34,65 @@ class CExpertoscop
  {
  
   private:
-   string aFilesHandle[];
+   // массив параметров 
    ExpertoScopParams param[];
-   
+   // длина массива параметров
+   uint   param_length;
    string filename; 
   public:
+   // методы получения параметров запущенных экспертов
+   // ------------------------------------------------
+   // метод получения имени эксперта 
+   string          GetExpertName(uint num){ return (param[num].expert_name ); };
+   // метод получения символа
+   string          GetSymbol(uint num){ return (param[num].symbol); };
+   // метод получения таймфрейма
+   ENUM_TIMEFRAMES GetTimeFrame(uint num){ return (param[num].period); };
+   // метод получения длины массива параметров
+   uint GetParamLength (){ return (param_length); };
    // метод получения всех открытых инструментов - заполняет aFilesHandle хэндлами файлов
-   void FillHandlesArray();
+   void DoExpertoScop();
    // метод получения параметров эксперта
    void GetExpertParams(string fileHandle);
-   //конструктор класса
+   // конструктор класса
    CExpertoscop()
    {
-    //формируем адрес файла
+    // формируем адрес файла
     StringConcatenate(filename, TerminalInfoString(TERMINAL_PATH),"\\profiles\\charts\\default\\");
+    // обнуляем длину массива параметров
+    param_length = 0;
    };
-   //деструктор класса
+   // деструктор класса
    ~CExpertoscop();
  };
 
-// метод получения всех открытых инструментов - заполняет aFilesHandle хэндлами файлов
-void CExpertoscop::FillHandlesArray()
+// метод получения всех открытых инструментов 
+void CExpertoscop::DoExpertoScop()
 {
  int win32_DATA[79];
  //открываем файл 
+ Alert("ХЭНДЛ ПОЛУЧИЛИ");
  int handle = FindFirstFileA(filename+"*.chr", win32_DATA);
+ Alert("HELL");
  if(handle!=-1)
  {
-  ArrayResize(aFilesHandle, 1);
-  aFilesHandle[0] = bufferToString(win32_DATA);
-  GetExpertParams(aFilesHandle[0]);
+
+ // ArrayResize(aFilesHandle, 1);
+ // aFilesHandle[0] = bufferToString(win32_DATA);
+  GetExpertParams(bufferToString(win32_DATA));
   ArrayInitialize(win32_DATA,0);
+  param_length++;
  }
  
  // открываем остальные файлы
  int fileCount = 1;
  while(FindNextFileA(handle, win32_DATA))
  {
-  ArrayResize(aFilesHandle, ++fileCount);
-  aFilesHandle[fileCount - 1] = bufferToString(win32_DATA);
-  GetExpertParams(aFilesHandle[fileCount - 1]);
+  //ArrayResize(aFilesHandle, ++fileCount);
+  //aFilesHandle[fileCount - 1] = bufferToString(win32_DATA);
+  GetExpertParams(bufferToString(win32_DATA));
   ArrayInitialize(win32_DATA,0);
+  param_length++;
  }
  
  if (handle > 0) FindClose(handle);
@@ -164,7 +182,8 @@ void CExpertoscop::GetExpertParams(string fileHandle)
 CExpertoscop::~CExpertoscop(void)
 //деструктор класса
  {
- 
+  //очищаем динамический массив
+  ArrayFree(param);
  }
   
 //+------------------------------------------------------------------+
