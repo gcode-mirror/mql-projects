@@ -102,7 +102,7 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
    if (res) break;
    else
    {
-     log_file.Write(LOG_DEBUG, StringFormat("%s при удалении ордера %d,  возникла ошибка: %s (%d); GetLastError() = %s (%d); Bid = %.06f; Ask = %.06f; Price = %.06f", MakeFunctionPrefix(__FUNCTION__), ticket, ReturnCodeDescription(result_code), result_code, ErrorDescription(GetLastError()), GetLastError(), m_result.bid, m_result.ask, m_result.price));
+     log_file.Write(LOG_DEBUG, StringFormat("%s при удалении ордера %d,  возникла ошибка: %s (%d); GetLastError() = %s (%d); Bid = %.06f; Ask = %.06f; Price = %.06f", MakeFunctionPrefix(__FUNCTION__), ticket, ReturnCodeDescription(result_code), result_code, ErrorDescription(::GetLastError()), ::GetLastError(), m_result.bid, m_result.ask, m_result.price));
    }
    i++;
   }

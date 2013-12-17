@@ -153,7 +153,7 @@ bool CLog::CreateLogFile(datetime dt)
  
  if(filehandle==INVALID_HANDLE)
  {
-  error=GetLastError();
+  error=::GetLastError();
   Print(__FUNCTION__, " Не удалось создать log-файл с именем : ", _current_filename," Ошибка ",error, ".");
   return(false);
  }
@@ -181,7 +181,7 @@ void CLog::DeleteLogFile()
     ResetLastError();
     search_file = _catalog_name+ "\\" + MQL5InfoString(MQL5_PROGRAM_NAME) + "\\" + search_file;
     FileDelete(search_file); 
-    PrintFormat("Файл %s удален! Истек период ожидания.Error = %d",__DATETIME__ , search_file, GetLastError());
+    PrintFormat("Файл %s удален! Истек период ожидания.Error = %d",__DATETIME__ , search_file, ::GetLastError());
    }
   }
   while(FileFindNext(search_handle,search_file));
