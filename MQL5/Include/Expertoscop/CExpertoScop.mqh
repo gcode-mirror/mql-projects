@@ -4,15 +4,17 @@
 //|                                     http://www.rogerssignals.com |
 //+------------------------------------------------------------------+
 #property copyright "GIA"
+
  
 #import "kernel32.dll"
-   int  FindFirstFileA(string path, int& answer[]);
-   bool FindNextFileA(int handle, int& answer[]);
+   int  FindFirstFileW(string path, int& answer[]);
+   bool FindNextFileW(int handle, int& answer[]);
    bool FindClose(int handle);
    int _lopen  (string path, int of);
    int _llseek (int handle, int offset, int origin);
    int _lread  (int handle, string fileContain, int bytes);
    int _lclose (int handle);
+   int GetLastError();
 #import
 
 //+------------------------------------------------------------------+
@@ -34,6 +36,7 @@ class CExpertoscop
  {
  
   private:
+  // string aFilesHandle[];
    // массив параметров 
    ExpertoScopParams param[];
    // длина массива параметров
@@ -49,7 +52,7 @@ class CExpertoscop
    // метод получения таймфрейма
    ENUM_TIMEFRAMES GetTimeFrame(uint num){ return (param[num].period); };
    // метод получения длины массива параметров
-   uint GetParamLength (){ return (param_length); };
+   uint GetParamLength (){ return (/*param_length*/ArraySize(param)); };
    // метод получения всех открытых инструментов - заполняет aFilesHandle хэндлами файлов
    void DoExpertoScop();
    // метод получения параметров эксперта
@@ -61,41 +64,46 @@ class CExpertoscop
     StringConcatenate(filename, TerminalInfoString(TERMINAL_PATH),"\\profiles\\charts\\default\\");
     // обнуляем длину массива параметров
     param_length = 0;
+    
+   int handle = _lopen("D:\\ololo.txt",0);
+   Print("HANDLA = ",handle);
    };
    // деструктор класса
-   ~CExpertoscop();
+   ~CExpertoscop()
+   {
+    // очищаем динамический массив
+    ArrayFree(param);
+   };
  };
 
 // метод получения всех открытых инструментов 
 void CExpertoscop::DoExpertoScop()
 {
  int win32_DATA[79];
- //открываем файл 
- Alert("ХЭНДЛ ПОЛУЧИЛИ");
- int handle = FindFirstFileA(filename+"*.chr", win32_DATA);
- Alert("HELL");
+ int handle;
+ //открываем файл  
+ ArrayInitialize(win32_DATA,0); 
+ handle = FindFirstFileW(filename+"*.chr", win32_DATA);
  if(handle!=-1)
  {
-
- // ArrayResize(aFilesHandle, 1);
+  //ArrayResize(aFilesHandle, 1);
  // aFilesHandle[0] = bufferToString(win32_DATA);
-  GetExpertParams(bufferToString(win32_DATA));
+  GetExpertParams(bufferToString(win32_DATA));  //получаем параметры эксперта из файла
   ArrayInitialize(win32_DATA,0);
-  param_length++;
- }
  
  // открываем остальные файлы
- int fileCount = 1;
- while(FindNextFileA(handle, win32_DATA))
+ while(FindNextFileW(handle, win32_DATA))
  {
-  //ArrayResize(aFilesHandle, ++fileCount);
-  //aFilesHandle[fileCount - 1] = bufferToString(win32_DATA);
+ // ArrayResize(aFilesHandle, ++fileCount);
+ // aFilesHandle[fileCount - 1] = bufferToString(win32_DATA);
+
   GetExpertParams(bufferToString(win32_DATA));
   ArrayInitialize(win32_DATA,0);
-  param_length++;
+
  }
  
  if (handle > 0) FindClose(handle);
+ }
 }
 
 //метод загрузки параметров из файла
@@ -103,7 +111,6 @@ void CExpertoscop::GetExpertParams(string fileHandle)
 {
  bool flag;
  int cnt, pos;
- int expNumber = 0; // номер эксперта в терминале
  //переменная для хранения адреса файла
  
  string word, symbol;
@@ -114,8 +121,14 @@ void CExpertoscop::GetExpertParams(string fileHandle)
  
  // получаем указатель на файл
  int handle = _lopen(filename + fileHandle, 0);   
+ Print("LAST ERR = ",kernel32::GetLastError());
+ Print("ПОЛНЫЙ АДРЕС ФАЙЛА = ",filename+fileHandle);
+ 
+ Print("Ебучий хендл = ",handle);
+ 
  if (handle >= 0)
  {
+  Print("ПОЛУЧИЛИ ХЕНДЛ ФАЙЛА ",filename+fileHandle);
   // устанавливаем указатель в открытом файле
   int result = _llseek(handle, 0, 0);
   if (result < 0) Print("Ошибка установки указателя");
@@ -127,6 +140,7 @@ void CExpertoscop::GetExpertParams(string fileHandle)
   {
    fileContain = fileContain + ch;
    count++;
+   ch = "x";
    result = _lread(handle, ch, 1);
   }
   while (result > 0);
@@ -138,7 +152,7 @@ void CExpertoscop::GetExpertParams(string fileHandle)
  
  pos = 0; flag = false;
  symbol="";
- period="";
+ //period="";
  // по всему содержимому файла
  for(cnt = 0; cnt < StringLen(fileContain); cnt++)
  {
@@ -155,7 +169,7 @@ void CExpertoscop::GetExpertParams(string fileHandle)
    if(StringFind(word, "<expert>") != -1 && cnt != pos && flag)
    {
     
-    ArrayResize(param, ++expNumber);
+    ArrayResize(param, ++param_length);
     // по всему оставшемуся файлу после тега <expert>
     for(cnt = cnt; cnt < StringLen(fileContain); cnt++) 
     {
@@ -165,9 +179,9 @@ void CExpertoscop::GetExpertParams(string fileHandle)
       if(StringSubstr(word, 0, 4) == "name")
       {
        int basa[];
-       param[expNumber - 1].expert_name = StringSubstr(word, 5); // имя эксперта 
-       param[expNumber - 1].symbol = symbol;
-       param[expNumber - 1].period = period;
+       param[param_length - 1].expert_name = StringSubstr(word, 5); // имя эксперта 
+       param[param_length - 1].symbol = symbol;
+       //param[expNumber - 1].period = period;
       }
      }
     }
@@ -177,14 +191,6 @@ void CExpertoscop::GetExpertParams(string fileHandle)
   }
  }
 }
-
-
-CExpertoscop::~CExpertoscop(void)
-//деструктор класса
- {
-  //очищаем динамический массив
-  ArrayFree(param);
- }
   
 //+------------------------------------------------------------------+
 //|  считать текст из буфера                                         |
