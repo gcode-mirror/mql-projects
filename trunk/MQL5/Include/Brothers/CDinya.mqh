@@ -18,8 +18,6 @@
 class CDinya: public CBrothers
 {
 private:
- bool _fastDeltaChanged;
- bool _slowDeltaChanged;
 public:
 //--- Конструкторы
  //void CDinya();
@@ -32,8 +30,6 @@ public:
  double RecountVolume();
  void RecountFastDelta();
  void RecountSlowDelta();
- bool isFastDeltaChanged() {return _fastDeltaChanged;};
- bool isSlowDeltaChanged() {return _slowDeltaChanged;};
 };
 
 //+------------------------------------------------------------------+
@@ -62,13 +58,15 @@ void CDinya::CDinya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDel
    _last_day_of_week = TimeCurrent() - 24*60*60;
    _last_day_of_year = TimeCurrent() - 24*60*60;
    _last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
-   m_comment = "";        // Комментарий выполнения
-   _isDayInit = false;
-   _isMonthInit = false;
+   
+   _comment = "";        // Комментарий выполнения
    _symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
    _period = Period();   // Период графика, по умолчанию период текущего графика
-  _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
-  _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
+   _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
+   _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+
+   _isDayInit = false;
+   _isMonthInit = false;
   }
 
 //+------------------------------------------------------------------+

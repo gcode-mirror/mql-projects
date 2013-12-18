@@ -80,14 +80,18 @@ void OnDeinit(const int reason)
 void OnTick()
  {
   san.InitMonthTrade();
-  san.RecountDelta();
-  double vol = san.RecountVolume();
-  if (currentVolume != vol)
+  san.RecountFastDelta();
+  
+  if(san.isFastDeltaChanged() || san.isSlowDeltaChanged())
   {
-   PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
-   if (san.CorrectOrder(vol - currentVolume))
+   double vol = san.RecountVolume();
+   if (currentVolume != vol)
    {
-    currentVolume = vol;
+    PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
+    if (san.CorrectOrder(vol - currentVolume))
+    {
+     currentVolume = vol;
+    }
    }
   }
  }

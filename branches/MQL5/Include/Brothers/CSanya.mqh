@@ -24,7 +24,7 @@ struct SExtremum
 class CSanya: public CBrothers
 {
 protected:
- double _average;      // выбирается из _averageMax и _averageMinсмотрит с какой стороны от старта текущая цена
+ double _average;      // выбирается из _averageMax и _averageMin смотрит с какой стороны от старта текущая цена
  double _averageMax;   // среднее между максимумом и стартом
  double _averageMin;   // среднее между минимумом и стартом
  double _averageRight; // среднее между первым и вторым экстремумом
@@ -33,8 +33,6 @@ protected:
  double currentPrice, priceAB, priceHL;
  
  SExtremum num0, num1, num2, num3;
- 
- MqlTick tick;
  
  CTradeLine startLine;
  CTradeLine lowLine;
@@ -53,7 +51,8 @@ public:
              
  void InitMonthTrade();
  double RecountVolume();
- void RecountDelta();
+ void RecountFastDelta();
+ void RecountSlowDelta();
  void RecountLevels(SExtremum &extr);
  
  //SExtremum aExtremums[];
@@ -84,7 +83,7 @@ void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDel
   
    _last_time = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
    _last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
-   m_comment = "";        // Комментарий выполнения
+   _comment = "";        // Комментарий выполнения
    
    _isDayInit = false;
    _isMonthInit = false;
@@ -95,14 +94,22 @@ void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDel
    _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
 
    _deltaFast = _deltaFastBase;
+   
+   num0.direction = 0;
+   num0.price = currentPrice;
+   num1.direction = 0;
+   num1.price = currentPrice;
+   num2.direction = 0;
+   num2.price = currentPrice;
+   num3.direction = 0;
+   num3.price = currentPrice;
+   
+   _averageLeft = 0;
+   _averageRight = 0;
    _average = 0;
    _averageMax = 0;
    _averageMin = 0;
-   _averageRight = 0;
-   _averageLeft = 0;
-   _startDayPrice = currentPrice;
-   _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
-   _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
+   _startDayPrice = 0;
    
    startLine.Create(_startDayPrice, "startLine", clrBlue);
    //lowLine.Create(_low, "lowLine");
@@ -132,23 +139,20 @@ void CSanya::InitMonthTrade()
   _averageMin = 0;
   _prevMonthPrice = currentPrice;
   
-  num0.direction = 0;
-  num0.price = currentPrice;
-  num1.direction = 0;
-  num1.price = currentPrice;
-  num2.direction = 0;
-  num2.price = currentPrice;
-  num3.direction = 0;
-  num3.price = currentPrice;
-  _averageLeft = 0;
-  _averageRight = 0;
-  
-  
   _deltaFast = _deltaFastBase;
   _deltaSlow = _deltaSlowBase;
   _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
   _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
-   
+  
+  // Цена начала отсчета
+  if (_averageLeft > 0 && _averageRight > 0)
+  {
+   _startDayPrice = (_averageLeft + _averageRight)/2;
+  }
+  else
+  {
+   _startDayPrice = currentPrice; 
+  }
   startLine.Price(0, _startDayPrice);
   //lowLine.Price(0, _low);
   //highLine.Price(0, _high);
@@ -162,59 +166,44 @@ void CSanya::InitMonthTrade()
 //| OUTPUT: no.
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CSanya::RecountDelta()
+void CSanya::RecountFastDelta()
 {
  SymbolInfoTick(_symbol, tick);
- currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
- SExtremum extr = {0,0};
+ double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
+ SExtremum extr = isExtremum();
 //-----------------------------
 // Если цена пошла вверх...
 //-----------------------------
- if ((_averageMax == 0 && GreatDoubles(currentPrice, _startDayPrice + 2*_dayStep*Point()))                  // Если текущая цена повысилась на 2 шага
-  ||((_averageMin != 0 || _averageMax != 0) && GreatDoubles(currentPrice, num0.price + _dayStep*Point())))  // или сделала шаг от последнего экстремума
+ if (extr.direction != 0)
  {
-  extr.direction = 1;
-  extr.price = currentPrice; 
   RecountLevels(extr);
  }
  
  if (GreatDoubles(currentPrice, _startDayPrice + _countSteps*_dayStep*Point())) // Если цена выросла слишком сильно
  {
-  PrintFormat("цена ушла вверх на %d шагов, переносим цену старта расчетов. ", _countSteps);
-  _startDayPrice = _average;
-  startLine.Price(0, _startDayPrice);
   if (_type == ORDER_TYPE_SELL && _deltaFast < 100) // цена растет, а основное направление - вниз, пора "засейвиться"
   {
    Print("цена растет, а основное направление - вниз, пора \"засейвиться\". Увеличиваем мл. дельта");
    _deltaFast = _deltaFast + _fastDeltaStep;    // увеличим младшую дельта
+   _fastDeltaChanged = true;
   }
  }
  
 //------------------------------
 // Если цена пошла вниз...
 //------------------------------
- if ((_averageMin == 0 && LessDoubles(currentPrice, _startDayPrice - 2*_dayStep*Point()))                  // Если текущая цена понизилась на 2 шага
-  ||((_averageMin != 0 || _averageMax != 0) && LessDoubles(currentPrice, num0.price - _dayStep*Point())))  // или сделала шаг от последнего экстремума
- {
-  extr.direction = -1;
-  extr.price = currentPrice; 
-  RecountLevels(extr);
- } 
  if (LessDoubles(num0.price, _startDayPrice - _countSteps*_dayStep*Point()) && _average != 0) // Если цена упала слишком сильно
  {
-  PrintFormat("цена ушла вниз на %d шагов , переносим цену старта расчетов.", _countSteps);
-  _startDayPrice = _average;
-  startLine.Price(0, _startDayPrice);
   if (_type == ORDER_TYPE_BUY && _deltaFast < 100) // цена падает, а основное направление - вверх, пора "засейвиться"
   {
    Print("цена падает, а основное направление - вверх, пора \"засейвиться\". Увеличиваем мл. дельта");
    _deltaFast = _deltaFast + _fastDeltaStep;    // увеличим младшую дельта
+   _fastDeltaChanged = true;
   }
  }
  
- 
  /*
- priceAB = (_direction == 1) ? tick.ask : tick.bid;
+ priceAB = (_direction == 1) ? tick.ask : tick.bid; 
  if ( _average > 0 &&                               // Если среднее уже вычислено
       _direction*(_average - _startDayPrice) > 0 && // на уровне выше(ниже) стартовой
       _direction*(priceAB - _average) < 0 &&        // цена прошла через среднее вниз(вверх)
@@ -223,8 +212,9 @@ void CSanya::RecountDelta()
  {
   Print("Цена ушла в нашу сторону, развернулась и прошла через среднее - Увеличиваем мл. дельта");
   _deltaFast = _deltaFast + _fastDeltaStep;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
+  _fastDeltaChanged = true;
  }
-
+   
  priceAB = (_direction == 1) ? tick.bid : tick.ask;
  if (_direction*(_average - _startDayPrice) < 0 &&  // Если среднее уже вычислено на уровне ниже(выше) стартовой
      _direction*(priceAB - _average) > 0 &&         // цена прошла через среднее вверх(вниз)
@@ -232,47 +222,55 @@ void CSanya::RecountDelta()
      _deltaFast > 0)                                // мы засейвлены
  {
   Print("Мы сейвились, цена ушла против нас, развернулась и прошла среднее - Уменьшаем мл. дельта.");
-  PrintFormat("dir=%d, start=%.05f, ave=%.05f, price=%.05f, low=%.05f", _direction, _startDayPrice, _average, priceAB, _low);
+  PrintFormat("dir=%d, start=%.05f, ave=%.05f, price=%.05f", _direction, _startDayPrice, _average, priceAB);
   _deltaFast = _deltaFast - _fastDeltaStep;   // уменьшим младшую дельта (цена пошла в нашу сторону - прекращаем сейв)
- }
- 
- priceHL = (_direction == 1) ? _high : _low;               // Если стоим на покупку - выберем High, если на продажу - Low 
- priceAB = (_direction == 1) ? tick.bid : tick.ask;        // Если стоим на покупку - выберем bid, если на продажу - ask
- if (_deltaFast > 0 && _direction*(priceAB - priceHL) > 0) // Покупка: Bid>High , Продажа: Ask<Low
- {
-  PrintFormat("Мы сейвились, но цена снова пошла в нашу сторону - Уменьшаем мл. дельта");
-  _deltaFast = _deltaFast - _fastDeltaStep;   // уменьшим младшую дельта (цена пошла в нашу сторону - прекращаем сейв)
- }
- */
- // Вычисляем старшую дельта
+  _fastDeltaChanged = true;
+ }*/
+}
+
+
+//+------------------------------------------------------------------+
+//| Пересчет значений месячной дельта                                |
+//| INPUT:  no.                                                      |
+//| OUTPUT: no.                                                      |
+//| REMARK: no.                                                      |
+//+------------------------------------------------------------------+
+void CSanya::RecountSlowDelta()
+{
+ double currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+
  if (_direction*(_deltaSlow - 50) < 50 && GreatDoubles(currentPrice, _prevMonthPrice + _monthStep*Point()))
  {
    _prevMonthPrice = currentPrice;
 
-  if (_direction < 0 && _deltaSlow < _deltaSlowBase)
+  if (_direction < 0 && _deltaSlow < _deltaSlowBase) // Если дельта ушла в нашем направлении и начинается откат 
   {
-   _deltaSlow = _deltaSlowBase;
+   _deltaSlow = _deltaSlowBase;                      // - фиксируем часть прибыли
   }
   else
   {
    _deltaSlow = _deltaSlow + _direction*_slowDeltaStep;
   }
+  _slowDeltaChanged = true;
+  //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
  }
+ 
  if ((_direction*_deltaSlow + 50) > (_direction*50) && LessDoubles(currentPrice, _prevMonthPrice - _monthStep*Point()))
  {
   _prevMonthPrice = currentPrice;
   
-  if (_direction > 0 && _deltaSlow > _deltaSlowBase)
+  if (_direction > 0 && _deltaSlow > _deltaSlowBase) // Если дельта ушла в нашем направлении и начинается откат 
   {
-   _deltaSlow = _deltaSlowBase;
+   _deltaSlow = _deltaSlowBase;                      // - фиксируем часть прибыли
   }
   else
   {
    _deltaSlow = _deltaSlow - _direction*_slowDeltaStep;
   }
+  //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
+  _slowDeltaChanged = true;
  }
 }
-
 //+------------------------------------------------------------------+
 //| Пересчет объемов торга на основании новых дельта                 |
 //| INPUT:  no.                                                      |
@@ -283,6 +281,8 @@ double CSanya::RecountVolume()
 {
  _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
  _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
+ _slowDeltaChanged = false;
+ _fastDeltaChanged = false;
  return (_slowVol - _fastVol); 
 }
 
@@ -295,6 +295,7 @@ double CSanya::RecountVolume()
 void CSanya::RecountLevels(SExtremum &extr)
 {
  // Проверяем наличие экстремума 
+ Print("Новый экстремум");
  currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
  if (extr.direction != 0)
  {
@@ -305,7 +306,7 @@ void CSanya::RecountLevels(SExtremum &extr)
   }
   else
   {
-   num3 = num2;
+   //num3 = num2;
    num2 = num1;
    num1 = num0;
    num0 = extr;
@@ -314,15 +315,15 @@ void CSanya::RecountLevels(SExtremum &extr)
                                                                                            num2.direction, num2.price);
   }
   
-  if (num2.direction != 0)
+  if (num1.direction != 0)
   {
-   _averageRight = (num1.price + num2.price)/2;
+   _averageRight = (num0.price + num1.price)/2;
    averageRightLine.Price(0, _averageRight);
    //Print("вычислена правая средняя _averageRight=",_averageRight);
   }
-  if (num3.direction != 0)
+  if (num2.direction != 0)
   {
-   _averageLeft = (num2.price + num3.price)/2;
+   _averageLeft = (num1.price + num2.price)/2;
    averageLeftLine.Price(0, _averageLeft);
    //Print("вычислена левая средняя _averageLeft=",_averageLeft);
   }
@@ -359,25 +360,24 @@ SExtremum CSanya::isExtremum()
 {
  SExtremum result = {0,0};
  currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+ SymbolInfoTick(_symbol, tick);
+ double ask = tick.ask, bid = tick.bid;
  
+ if (((num0.direction == 0) && (GreatDoubles(bid, _startDayPrice + 2*_dayStep*Point(), 5))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
+ || (num0.direction > 0 && (GreatDoubles(bid, num0.price, 5)))
+ || (num0.direction < 0 && (GreatDoubles(bid, num0.price + _dayStep*Point(), 5))))
+ {
+  result.direction = 1;
+  result.price = bid;
+ }
+ 
+ if (((num0.direction == 0) && (LessDoubles(ask, _startDayPrice - 2*_dayStep*Point(), 5))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
+ || (num0.direction > 0 && (LessDoubles(ask, num0.price, 5)))
+ || (num0.direction < 0 && (LessDoubles(ask, num0.price - _dayStep*Point(), 5))))
+ {
+  result.direction = -1;
+  result.price = ask;
+ }
 
- 
- priceAB = (_direction == 1) ? tick.ask : tick.bid;
- if ( _average > 0 &&                               // Если среднее уже вычислено
-      _direction*(_average - _startDayPrice) > 0 && // на уровне выше(ниже) стартовой
-      _direction*(priceAB - _average) < 0 &&        // цена прошла через среднее вниз(вверх)
-      _direction*(priceAB - _startDayPrice) > 0)    // цена выше(ниже) стартовой
- {
-  
- }
- 
- priceAB = (_direction == 1) ? tick.bid : tick.ask;
- if (_direction*(_average - _startDayPrice) < 0 &&  // Если среднее уже вычислено на уровне ниже(выше) стартовой
-     _direction*(priceAB - _average) > 0 &&         // цена прошла через среднее вверх(вниз)
-     _direction*(priceAB - _startDayPrice) < 0)     // цена ниже стартовой
- {
-  
- }
- 
  return(result);
 }
