@@ -5,6 +5,10 @@
 //+------------------------------------------------------------------+
 #property copyright "GIA"
 
+#define OPEN_GENETIC 0x80000000
+#define OPEN_EXISTING 3
+#define FILE_ATTRIBUTE_NORMAL 128
+#define FILE_SHARE_READ_KERNEL 0x00000001
  
 #import "kernel32.dll"
    int  FindFirstFileW(string path, int& answer[]);
@@ -15,7 +19,18 @@
    int _lread  (int handle, string fileContain, int bytes);
    int _lclose (int handle);
    int GetLastError();
+   bool ReadFile (int hFile, double& lpBuffer[], int nNumberOfBytesToRead, int& lpNumberOfBytesRead[], int lpOverlapped);
+   int CreateFileW(
+    string lpFileName,         // pointer to name of the file
+    int dwDesiredAccess,       // access (read-write) mode
+    int dwShareMode,           // share mode
+    int lpSecurityAttributes,  // pointer to security attributes
+    int dwCreationDisposition, // how to create
+    int dwFlagsAndAttributes,  // file attributes
+    int hTemplateFile          // handle to file with attributes to        
+);   
 #import
+
 
 //+------------------------------------------------------------------+
 //| Структура параметров                                             |
@@ -65,14 +80,14 @@ class CExpertoscop
     // обнуляем длину массива параметров
     param_length = 0;
     
-   int handle = _lopen("D:\\ololo.txt",0);
-   Print("HANDLA = ",handle);
+   //Print("HANDLA = ",handle);
    };
    // деструктор класса
    ~CExpertoscop()
    {
     // очищаем динамический массив
     ArrayFree(param);
+    
    };
  };
 
@@ -120,7 +135,8 @@ void CExpertoscop::GetExpertParams(string fileHandle)
  int count;
  
  // получаем указатель на файл
- int handle = _lopen(filename + fileHandle, 0);   
+ //int handle = _lopen(filename + fileHandle, 0);
+ int handle = CreateFileW(filename + fileHandle,OPEN_GENETIC, FILE_SHARE_READ_KERNEL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
  Print("LAST ERR = ",kernel32::GetLastError());
  Print("ПОЛНЫЙ АДРЕС ФАЙЛА = ",filename+fileHandle);
  
