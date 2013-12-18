@@ -18,6 +18,8 @@
 class CBrothers
 {
 protected:
+ MqlTick tick;
+
  datetime _last_time;          // Последнее определенное время отсчета
  datetime _last_day_of_year;   // Время начала последнего определенного дня 
  datetime _last_day_of_week;   // Время начала последнего определенного дня недели
@@ -26,7 +28,7 @@ protected:
  string _symbol;                 // Имя инструмента
  ENUM_TIMEFRAMES _period;        // Период графика
       
- string m_comment;        // Комментарий выполнения
+ string _comment;        // Комментарий выполнения
  
  ENUM_ORDER_TYPE _type; // Основное направление торговли
  int _direction;         // Принимает значения 1 или -1 в зависмости от _type
@@ -55,13 +57,16 @@ protected:
  
  bool _isMonthInit; // ключ инициализации массива цен месяца
  bool _isDayInit;   // ключ инициализации массива цен дня
+ 
+ bool _fastDeltaChanged;
+ bool _slowDeltaChanged;
 public:
 //--- Конструкторы
  void CBrothers(void){};      // Конструктор CBrothers
 //--- Методы доступа к защищенным данным:
  //datetime GetLastDay() const {return(_last_day_number);}      // 18:00 последнего дня
  //datetime GetLastMonth() const {return(_last_month_number);}  // Дата и время определния последнего месяца
- string GetComment() const {return(m_comment);}      // Комментарий выполнения
+ string GetComment() const {return(_comment);}      // Комментарий выполнения
  string GetSymbol() const {return(_symbol);}         // Имя инструмента
  ENUM_TIMEFRAMES GetPeriod() const {return(_period);}          // Период графика
  
@@ -75,6 +80,10 @@ public:
  bool isInit() {return(_isMonthInit && _isDayInit);}  // Инициализация завершна
  bool isMonthInit() {return(_isMonthInit);}
  bool isDayInit(){return(_isDayInit);}
+ 
+ bool isFastDeltaChanged() {return _fastDeltaChanged;};
+ bool isSlowDeltaChanged() {return _slowDeltaChanged;};
+
  bool timeToUpdateFastDelta();
  bool isNewMonth();
  bool isNewWeek();
@@ -82,13 +91,16 @@ public:
  void InitDayTrade();
  void InitMonthTrade();
  void FillArrayWithPrices(ENUM_PERIOD period);
- double RecountVolume();
- void RecountDelta();
  bool CorrectOrder(double volume);
  int GetHours(datetime date);
  int GetDayOfWeek(datetime date);
  int GetDayOfYear(datetime date);
  int GetYear(datetime date);
+ /*
+ virtual double RecountVolume();
+ virtual void RecountFastDelta();
+ virtual void RecountSlowDelta();
+ */
 };
 /*
 //+------------------------------------------------------------------+
