@@ -10,7 +10,8 @@
 #include <TradeManager\BackTest.mqh>    //подключаем библиотеку бэктеста
 #include <StringUtilities.mqh>          //подключаем библиотеку констант
 #include <Charts\Chart.mqh>
-#include <Expertoscop\CExpertoScop.mqh> //подключаем класс экспертоскопа
+//#include <Expertoscop\CExpertoScop.mqh> //подключаем класс экспертоскопа
+#include <Expertoscop\Test.mqh> //подключаем класс экспертоскопа
 
 
 //+------------------------------------------------------------------+
@@ -71,8 +72,7 @@ void OnStart()
     Alert("РАЗМЕР МАССИВА = ",n_experts);
     
     //---- проходим по всем параметрам запущенных экспертов и получаем параметры
-    
-    
+      
     for (index=0;index < n_experts; index++)
      {
       expert_name   = expscop.GetExpertName(index);                 // получаем имя эксперта

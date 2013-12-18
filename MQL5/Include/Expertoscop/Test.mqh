@@ -5,10 +5,6 @@
 //+------------------------------------------------------------------+
 #property copyright "GIA"
 
-#define OPEN_GENETIC 0x80000000
-#define OPEN_EXISTING 3
-#define FILE_ATTRIBUTE_NORMAL 128
-#define FILE_SHARE_READ_KERNEL 0x00000001
  
 #import "kernel32.dll"
    int  FindFirstFileW(string path, int& answer[]);
@@ -18,17 +14,6 @@
    int _llseek (int handle, int offset, int origin);
    int _lread  (int handle, string fileContain, int bytes);
    int _lclose (int handle);
-   int GetLastError();
-   bool ReadFile (int hFile, double& lpBuffer[], int nNumberOfBytesToRead, int& lpNumberOfBytesRead[], int lpOverlapped);
-   int CreateFileW(
-    string lpFileName,         // pointer to name of the file
-    int dwDesiredAccess,       // access (read-write) mode
-    int dwShareMode,           // share mode
-    int lpSecurityAttributes,  // pointer to security attributes
-    int dwCreationDisposition, // how to create
-    int dwFlagsAndAttributes,  // file attributes
-    int hTemplateFile          // handle to file with attributes to        
-);   
 #import
 
 
@@ -51,21 +36,34 @@ class CExpertoscop
  {
  
   private:
-  // string aFilesHandle[];
    // массив параметров 
    ExpertoScopParams param[];
    // длина массива параметров
    uint   param_length;
    string filename; 
   public:
-   // методы получения параметров запущенных экспертов
-   // ------------------------------------------------
+  
+//+------------------------------------------------------------------+
+//| Get методы                                                       |
+//+------------------------------------------------------------------+
+   
    // метод получения имени эксперта 
    string          GetExpertName(uint num){ return (param[num].expert_name ); };
    // метод получения символа
    string          GetSymbol(uint num){ return (param[num].symbol); };
    // метод получения таймфрейма
    ENUM_TIMEFRAMES GetTimeFrame(uint num){ return (param[num].period); };
+
+//+------------------------------------------------------------------+
+//| Методы работы с файлами                                          |
+//+------------------------------------------------------------------+
+   // метод чтения строки из файла (заменяет функцию MQL FileReadString )
+   string          ReadString(int handle); 
+   
+//+------------------------------------------------------------------+
+//| Базовые методы                                                   |
+//+------------------------------------------------------------------+
+   
    // метод получения длины массива параметров
    uint GetParamLength (){ return (/*param_length*/ArraySize(param)); };
    // метод получения всех открытых инструментов - заполняет aFilesHandle хэндлами файлов
@@ -78,32 +76,16 @@ class CExpertoscop
     double ArBuffer[1] = {0}; // Буфер для записи или чтения.
      int    ArOutputByte[1]; 
     // формируем адрес файла
-    StringConcatenate(filename, TerminalInfoString(TERMINAL_PATH),"\\profiles\\charts\\default\\");
+    //StringConcatenate(filename, TerminalInfoString(TERMINAL_PATH),"\\profiles\\charts\\default\\");
+    StringConcatenate(filename,"","C:\\Users\\Илья\\AppData\\Roaming\\MetaQuotes\\Terminal\\Common\\Files\\");    
     // обнуляем длину массива параметров
     param_length = 0;
-    
-    int handle = CreateFileW("D:\\ololo.txt",OPEN_GENETIC, FILE_SHARE_READ_KERNEL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-     
-    
-    
-   if (  ReadFile (handle, ArBuffer, 1, ArOutputByte, NULL) == true)
-   {
-    
-    
-    
-   Print("HANDLA OLOLO = ",handle);
-   
-   Print("CODE = ",ArBuffer[0]);
-  
-   }
-  
    };
    // деструктор класса
    ~CExpertoscop()
    {
     // очищаем динамический массив
     ArrayFree(param);
-    
    };
  };
 
@@ -117,22 +99,14 @@ void CExpertoscop::DoExpertoScop()
  handle = FindFirstFileW(filename+"*.chr", win32_DATA);
  if(handle!=-1)
  {
-  //ArrayResize(aFilesHandle, 1);
- // aFilesHandle[0] = bufferToString(win32_DATA);
   GetExpertParams(bufferToString(win32_DATA));  //получаем параметры эксперта из файла
   ArrayInitialize(win32_DATA,0);
- 
  // открываем остальные файлы
  while(FindNextFileW(handle, win32_DATA))
  {
- // ArrayResize(aFilesHandle, ++fileCount);
- // aFilesHandle[fileCount - 1] = bufferToString(win32_DATA);
-
   GetExpertParams(bufferToString(win32_DATA));
   ArrayInitialize(win32_DATA,0);
-
  }
- 
  if (handle > 0) FindClose(handle);
  }
 }
@@ -143,34 +117,18 @@ void CExpertoscop::GetExpertParams(string fileHandle)
  bool flag;
  int cnt, pos;
  //переменная для хранения адреса файла
- 
  string word, symbol;
  ENUM_TIMEFRAMES period;
- string fileContain;
  string ch = " ";
  int count;
- 
- // получаем указатель на файл
- //int handle = _lopen(filename + fileHandle, 0);
- //int handle = CreateFileW(filename + fileHandle,OPEN_GENETIC, FILE_SHARE_READ_KERNEL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
- //Print("LAST ERR = ",kernel32::GetLastError());
  Print("ПОЛНЫЙ АДРЕС ФАЙЛА = ",filename+fileHandle);
- 
- //Print("Ебучий хендл = ",handle);
-
- 
- int handle=FileOpen(filename + fileHandle,FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT,"");
-  
+ int handle=FileOpen(fileHandle,FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT,"");
+ Alert("FILE HANDLE = ",fileHandle);
  if(handle!=INVALID_HANDLE)
  {
-  Print("ПОЛУЧИЛИ ХЕНДЛ ФАЙЛА ",filename+fileHandle);
-  // устанавливаем указатель в открытом файле
-  //int result = _llseek(handle, 0, 0);
-  
-   FileSeek (handle,0,0);
-  
-  //if (result < 0) Print("Ошибка установки указателя");
-
+  Print("ПОЛУЧИЛИ ХЕНДЛ ФАЙЛА ,УРА",filename+fileHandle);
+  // устанавливаем указатель в открытом файле 
+  FileSeek (handle,0,0);
   fileContain = "";
   count = 0;
   // читаем побайтово из файла
@@ -178,20 +136,15 @@ void CExpertoscop::GetExpertParams(string fileHandle)
   {
    fileContain = fileContain + ch;
    count++;
-   //ch = "x";
-   ch = FileReadString(handle,1);
-   //result = _lread(handle, ch, 1);
-   
+   ch = FileReadString(handle,-1);
+   Print("КАНТ = ",ch);
   }
-  while (handle!=INVALID_HANDLE);
-  //while (result > 0);
-
+  while (/*handle!=INVALID_HANDLE*/count<1);
+  
+  Alert("ФАЙЛ СОДЕРЖИТ = ",fileContain);
   // закрываем файл
-  //result=_lclose (handle);   
-  FileClose(handle);           
-//  if (result<0) Print("Ошибка закрытия файла ",filename);         
+  FileClose(handle);                  
  }
- 
  pos = 0; flag = false;
  symbol="";
  //period="";
