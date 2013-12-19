@@ -69,7 +69,6 @@ void OnStart()
     //---- получаем количество запущенных экспертов
     n_experts = expscop.GetParamLength();
     
-    Alert("РАЗМЕР МАССИВА = ",n_experts);
     
     //---- проходим по всем параметрам запущенных экспертов и получаем параметры
       
@@ -78,9 +77,11 @@ void OnStart()
       expert_name   = expscop.GetExpertName(index);                 // получаем имя эксперта
       expert_symbol = expscop.GetSymbol(index);                     // получаем символ
       expert_period = PeriodToString(expscop.GetTimeFrame(index));  // получаем таймфрейм
-      Alert("ИМЯ ЭКСПЕРТА = ", expert_name);
-      Alert("СИМВОЛ = ", expert_symbol);
-      Alert("ПЕРИОД = ",expert_period);
+      Print("_____________________________");
+      Print("ИМЯ ЭКСПЕРТА = ", expert_name);
+      Print("СИМВОЛ = ", expert_symbol);
+      Print("ПЕРИОД = ",expert_period);
+      Print("_____________________________");      
       //---- получаем имя файла истории
       historyFile   = GetHistoryFileName  (expert_name,expert_symbol,expert_period);
       //---- получаем имя файла бэктеста

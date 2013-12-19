@@ -88,7 +88,7 @@ class Panel
      {
       ObjectSetInteger(_chart_id, _name,OBJPROP_CORNER,_corner);                  // установка угла графика
     //  ObjectSetInteger(_chart_id, _name,OBJPROP_FONTSIZE,_style.font_size);     // установка размера шрифта
-      ObjectSetInteger(_chart_id, _name,OBJPROP_XDISTANCE,_x);                    // установка координаты X
+      ObjectSetInteger(_chart_id, _name,OBJPROP_XDISTANCE,_x);                  // установка координаты X
       ObjectSetInteger(_chart_id, _name,OBJPROP_YDISTANCE,_y);                    // установка координаты Y
       ObjectSetInteger(_chart_id, _name,OBJPROP_XSIZE,_width);                    // установка ширины
       ObjectSetInteger(_chart_id, _name,OBJPROP_YSIZE,_height);                   // установка высоты шапки         

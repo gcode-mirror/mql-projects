@@ -4,11 +4,8 @@
 //|                                     http://www.rogerssignals.com |
 //+------------------------------------------------------------------+
 #property copyright "GIA"
+#include <StringUtilities.mqh>  // подключаем библиотеку констант
 
-#define OPEN_GENETIC 0x80000000
-#define OPEN_EXISTING 3
-#define FILE_ATTRIBUTE_NORMAL 128
-#define FILE_SHARE_READ_KERNEL 0x00000001
  
 #import "kernel32.dll"
    int  FindFirstFileW(string path, int& answer[]);
@@ -18,17 +15,6 @@
    int _llseek (int handle, int offset, int origin);
    int _lread  (int handle, string fileContain, int bytes);
    int _lclose (int handle);
-   int GetLastError();
-   bool ReadFile (int hFile, double& lpBuffer[], int nNumberOfBytesToRead, int& lpNumberOfBytesRead[], int lpOverlapped);
-   int CreateFileW(
-    string lpFileName,         // pointer to name of the file
-    int dwDesiredAccess,       // access (read-write) mode
-    int dwShareMode,           // share mode
-    int lpSecurityAttributes,  // pointer to security attributes
-    int dwCreationDisposition, // how to create
-    int dwFlagsAndAttributes,  // file attributes
-    int hTemplateFile          // handle to file with attributes to        
-);   
 #import
 
 
@@ -51,23 +37,37 @@ class CExpertoscop
  {
  
   private:
-  // string aFilesHandle[];
    // массив параметров 
    ExpertoScopParams param[];
-   // длина массива параметров
-   uint   param_length;
+   // размер массива параметров
+   uint params_size;
    string filename; 
   public:
-   // методы получения параметров запущенных экспертов
-   // ------------------------------------------------
+  
+//+------------------------------------------------------------------+
+//| Get методы                                                       |
+//+------------------------------------------------------------------+
+   
    // метод получения имени эксперта 
    string          GetExpertName(uint num){ return (param[num].expert_name ); };
    // метод получения символа
    string          GetSymbol(uint num){ return (param[num].symbol); };
    // метод получения таймфрейма
    ENUM_TIMEFRAMES GetTimeFrame(uint num){ return (param[num].period); };
+
+//+------------------------------------------------------------------+
+//| Методы работы с файловыми данными                                |
+//+------------------------------------------------------------------+
+   // метод чтения строки из файла (заменяет функцию MQL FileReadString )
+   string          ReadString(int handle); 
+   // метод формирует таймфрейм из считанных из файла данных
+   ENUM_TIMEFRAMES ReturnTimeframe(string period_type,string period_size);
+//+------------------------------------------------------------------+
+//| Базовые методы                                                   |
+//+------------------------------------------------------------------+
+   
    // метод получения длины массива параметров
-   uint GetParamLength (){ return (/*param_length*/ArraySize(param)); };
+   uint GetParamLength (){ return (ArraySize(param)); };
    // метод получения всех открытых инструментов - заполняет aFilesHandle хэндлами файлов
    void DoExpertoScop();
    // метод получения параметров эксперта
@@ -78,34 +78,65 @@ class CExpertoscop
     double ArBuffer[1] = {0}; // Буфер для записи или чтения.
      int    ArOutputByte[1]; 
     // формируем адрес файла
-    StringConcatenate(filename, TerminalInfoString(TERMINAL_PATH),"\\profiles\\charts\\default\\");
+    //StringConcatenate(filename, TerminalInfoString(TERMINAL_PATH),"\\profiles\\charts\\default\\");
+    StringConcatenate(filename,"","C:\\Users\\Илья\\AppData\\Roaming\\MetaQuotes\\Terminal\\Common\\Files\\");    
     // обнуляем длину массива параметров
-    param_length = 0;
-    
-    int handle = CreateFileW("D:\\ololo.txt",OPEN_GENETIC, FILE_SHARE_READ_KERNEL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-     
-    
-    
-   if (  ReadFile (handle, ArBuffer, 1, ArOutputByte, NULL) == true)
-   {
-    
-    
-    
-   Print("HANDLA OLOLO = ",handle);
-   
-   Print("CODE = ",ArBuffer[0]);
-  
-   }
-  
+    params_size = 0;
    };
    // деструктор класса
    ~CExpertoscop()
    {
     // очищаем динамический массив
     ArrayFree(param);
-    
    };
  };
+ 
+
+//+------------------------------------------------------------------+
+//| Методы работы с файловыми данными                                |
+//+------------------------------------------------------------------+ 
+
+// метод формирования таймфрейма из считанных из файла данных
+ENUM_TIMEFRAMES CExpertoscop::ReturnTimeframe(string period_type,string period_size)
+ {
+  ENUM_TIMEFRAMES period=0;
+  //если "минутка"
+  if (period_type == "0")
+   {
+    if (period_size == "1") return PERIOD_M1;
+    if (period_size == "2") return PERIOD_M2;
+    if (period_size == "3") return PERIOD_M3;
+    if (period_size == "4") return PERIOD_M4;
+    if (period_size == "5") return PERIOD_M5;
+    if (period_size == "6") return PERIOD_M6;
+    if (period_size == "10") return PERIOD_M10;
+    if (period_size == "12") return PERIOD_M12;  
+    if (period_size == "15") return PERIOD_M15;
+    if (period_size == "20") return PERIOD_M20;
+    if (period_size == "30") return PERIOD_M30;                               
+   } 
+  //если "часовик"
+  if (period_type == "1")
+   {
+    if (period_size == "1") return PERIOD_H1;
+    if (period_size == "2") return PERIOD_H2;
+    if (period_size == "3") return PERIOD_H3;
+    if (period_size == "4") return PERIOD_H4;
+    if (period_size == "6") return PERIOD_H6;  
+    if (period_size == "8") return PERIOD_H8;    
+    if (period_size == "24") return PERIOD_D1;                                           
+   }    
+  //если "недельник"
+  if (period_type == "2")
+    return PERIOD_W1;
+  if (period_type == "3")
+    return PERIOD_MN1;
+  return period;
+ }
+ 
+//+------------------------------------------------------------------+
+//| Базовые методы                                                   |
+//+------------------------------------------------------------------+
 
 // метод получения всех открытых инструментов 
 void CExpertoscop::DoExpertoScop()
@@ -117,22 +148,14 @@ void CExpertoscop::DoExpertoScop()
  handle = FindFirstFileW(filename+"*.chr", win32_DATA);
  if(handle!=-1)
  {
-  //ArrayResize(aFilesHandle, 1);
- // aFilesHandle[0] = bufferToString(win32_DATA);
   GetExpertParams(bufferToString(win32_DATA));  //получаем параметры эксперта из файла
   ArrayInitialize(win32_DATA,0);
- 
  // открываем остальные файлы
  while(FindNextFileW(handle, win32_DATA))
  {
- // ArrayResize(aFilesHandle, ++fileCount);
- // aFilesHandle[fileCount - 1] = bufferToString(win32_DATA);
-
   GetExpertParams(bufferToString(win32_DATA));
   ArrayInitialize(win32_DATA,0);
-
  }
- 
  if (handle > 0) FindClose(handle);
  }
 }
@@ -140,98 +163,62 @@ void CExpertoscop::DoExpertoScop()
 //метод загрузки параметров из файла
 void CExpertoscop::GetExpertParams(string fileHandle)
 {
- bool flag;
- int cnt, pos;
- //переменная для хранения адреса файла
- 
- string word, symbol;
+ // флаг поиска тэга <expert>
+ bool found_expert = false;
+ // флаг продолжения чтения файла
+ bool read_flag    = true;
+ // переменная для хренения символа
+ string symbol;
+ // тип таймфрейма
+ string period_type;
+ // размер периода
+ string period_size;
+ // период 
  ENUM_TIMEFRAMES period;
- string fileContain;
- string ch = " ";
- int count;
- 
- // получаем указатель на файл
- //int handle = _lopen(filename + fileHandle, 0);
- //int handle = CreateFileW(filename + fileHandle,OPEN_GENETIC, FILE_SHARE_READ_KERNEL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
- //Print("LAST ERR = ",kernel32::GetLastError());
- Print("ПОЛНЫЙ АДРЕС ФАЙЛА = ",filename+fileHandle);
- 
- //Print("Ебучий хендл = ",handle);
-
- 
- int handle=FileOpen(filename + fileHandle,FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT,"");
-  
+ // строка файла
+ string str = " ";
+ int handle=FileOpen(fileHandle,FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT,"");
  if(handle!=INVALID_HANDLE)
  {
-  Print("ПОЛУЧИЛИ ХЕНДЛ ФАЙЛА ",filename+fileHandle);
-  // устанавливаем указатель в открытом файле
-  //int result = _llseek(handle, 0, 0);
-  
-   FileSeek (handle,0,0);
-  
-  //if (result < 0) Print("Ошибка установки указателя");
-
-  fileContain = "";
-  count = 0;
-  // читаем побайтово из файла
+  // устанавливаем указатель в открытом файле 
+  FileSeek (handle,0,0);
+  // читаем строки из файла и обрабатываем их
   do
   {
-   fileContain = fileContain + ch;
-   count++;
-   //ch = "x";
-   ch = FileReadString(handle,1);
-   //result = _lread(handle, ch, 1);
-   
-  }
-  while (handle!=INVALID_HANDLE);
-  //while (result > 0);
-
-  // закрываем файл
-  //result=_lclose (handle);   
-  FileClose(handle);           
-//  if (result<0) Print("Ошибка закрытия файла ",filename);         
- }
- 
- pos = 0; flag = false;
- symbol="";
- //period="";
- // по всему содержимому файла
- for(cnt = 0; cnt < StringLen(fileContain); cnt++)
- {
-  if(StringGetCharacter(fileContain, cnt)==13) // перевод строки (Enter), дошли до конца строки
-  {
-   // берем строку
-   word = StringSubstr(fileContain, pos, cnt - pos); 
-   // Получаем имя символа
-   if(StringFind(word, "symbol=") != -1 && cnt != pos && symbol == "") symbol = StringSubstr(word, 7); 
-   // Получаем период
-   //if(StringFind(word, "period=") != -1 && cnt != pos && period == "") period = StringSubstr(word, 7);  
-   
-   if(StringFind(word, "</window>") != -1 && cnt != pos) flag = true; 
-   if(StringFind(word, "<expert>") != -1 && cnt != pos && flag)
-   {
-    
-    ArrayResize(param, ++param_length);
-    // по всему оставшемуся файлу после тега <expert>
-    for(cnt = cnt; cnt < StringLen(fileContain); cnt++) 
+   // считываем строку
+   str = FileReadString(handle,-1);
+   // проверяем на символ 
+   if (StringFind(str, "symbol=")!=-1) symbol=StringSubstr(str, 7, -1);    
+   // считываем тип таймфрейма
+   if (StringFind(str, "period_type=")!=-1) period_type=StringSubstr(str, 12, -1);    
+   // считываем размер таймфрейма
+   if (StringFind(str, "period_size=")!=-1)
     {
-     if(StringGetCharacter(fileContain, cnt) == 13)
+     period_size=StringSubstr(str, 12, -1);
+     period = ReturnTimeframe(period_type,period_size ); 
+    }         
+   // считываем тэг <expert>
+   if (StringFind(str, "<expert>")!=-1 && found_expert==false)
+     found_expert = true;
+   // считываем имя эксперта
+   if (StringFind(str, "name=")!=-1 && found_expert == true)
      {
-      word = StringSubstr(fileContain, pos, cnt-pos);
-      if(StringSubstr(word, 0, 4) == "name")
-      {
-       int basa[];
-       param[param_length - 1].expert_name = StringSubstr(word, 5); // имя эксперта 
-       param[param_length - 1].symbol = symbol;
-       //param[expNumber - 1].period = period;
-      }
+      //нашли все данные, значит сохраняем их 
+      params_size++; //увеличиваем массив параметров на единицу
+      ArrayResize(param,params_size); //увеличиваем массив на единицу
+      param[params_size-1].expert_name = StringSubstr(str, 5, -1); // сохраняем имя эксперта
+      param[params_size-1].period      = period;                   // сохраняем период
+      param[params_size-1].symbol      = symbol;                   // сохраняем символ
+      read_flag = false; 
      }
-    }
-    break;   
-   }
-   pos=cnt+2;
+      
   }
+  while (!FileIsEnding(handle) && read_flag == true); 
+  
+  // закрываем файл
+  FileClose(handle);                  
  }
+
 }
   
 //+------------------------------------------------------------------+
@@ -253,18 +240,3 @@ string bufferToString(int &fileContain[])
       }
    return (text);
    }  
-//+------------------------------------------------------------------+
-bool DecToBin(int dec)
-   {
-   int ch = 0, x = 3;
-   bool res;
-   dec-=3;
-   while(x > 0)
-      {
-      ch = MathMod(dec,2);
-      dec = MathFloor(dec/2);
-      x--;
-      }
-   if(ch==0)res=false; else res=true;   
-   return(res);
-   }
