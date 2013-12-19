@@ -4,6 +4,7 @@
 //|                                     http://www.rogerssignals.com |
 //+------------------------------------------------------------------+
 #property copyright "GIA"
+#include <StringUtilities.mqh>  // подключаем библиотеку констант
 
  
 #import "kernel32.dll"
@@ -38,8 +39,8 @@ class CExpertoscop
   private:
    // массив параметров 
    ExpertoScopParams param[];
-   // длина массива параметров
-   uint   param_length;
+   // размер массива параметров
+   uint params_size;
    string filename; 
   public:
   
@@ -55,17 +56,18 @@ class CExpertoscop
    ENUM_TIMEFRAMES GetTimeFrame(uint num){ return (param[num].period); };
 
 //+------------------------------------------------------------------+
-//| Методы работы с файлами                                          |
+//| Методы работы с файловыми данными                                |
 //+------------------------------------------------------------------+
    // метод чтения строки из файла (заменяет функцию MQL FileReadString )
    string          ReadString(int handle); 
-   
+   // метод формирует таймфрейм из считанных из файла данных
+   ENUM_TIMEFRAMES ReturnTimeframe(int period_type,int period_size);
 //+------------------------------------------------------------------+
 //| Базовые методы                                                   |
 //+------------------------------------------------------------------+
    
    // метод получения длины массива параметров
-   uint GetParamLength (){ return (/*param_length*/ArraySize(param)); };
+   uint GetParamLength (){ return (ArraySize(param)); };
    // метод получения всех открытых инструментов - заполняет aFilesHandle хэндлами файлов
    void DoExpertoScop();
    // метод получения параметров эксперта
@@ -79,7 +81,7 @@ class CExpertoscop
     //StringConcatenate(filename, TerminalInfoString(TERMINAL_PATH),"\\profiles\\charts\\default\\");
     StringConcatenate(filename,"","C:\\Users\\Илья\\AppData\\Roaming\\MetaQuotes\\Terminal\\Common\\Files\\");    
     // обнуляем длину массива параметров
-    param_length = 0;
+    params_size = 0;
    };
    // деструктор класса
    ~CExpertoscop()
@@ -88,6 +90,33 @@ class CExpertoscop
     ArrayFree(param);
    };
  };
+ 
+
+//+------------------------------------------------------------------+
+//| Методы работы с файловыми данными                                |
+//+------------------------------------------------------------------+ 
+
+// метод формирования таймфрейма из считанных из файла данных
+ENUM_TIMEFRAMES CExpertoscop::ReturnTimeframe(int period_type,int period_size)
+ {
+  ENUM_TIMEFRAMES period=0;
+  //массив первых символов таймфрейма
+  string aPeriod_type[4]=
+   {
+    "M",
+    "H",
+    "W",
+    "MN"
+   };
+  // если "дневник"
+ // if (period_size == 24)
+  // period = StringTo
+  return period;
+ }
+ 
+//+------------------------------------------------------------------+
+//| Базовые методы                                                   |
+//+------------------------------------------------------------------+
 
 // метод получения всех открытых инструментов 
 void CExpertoscop::DoExpertoScop()
@@ -114,13 +143,20 @@ void CExpertoscop::DoExpertoScop()
 //метод загрузки параметров из файла
 void CExpertoscop::GetExpertParams(string fileHandle)
 {
- bool flag;
- int cnt, pos;
- //переменная для хранения адреса файла
- string word, symbol;
+ // флаг поиска тэга <expert>
+ bool found_expert = false;
+ // флаг продолжения чтения файла
+ bool read_flag    = true;
+ // переменная для хренения символа
+ string symbol;
+ // тип таймфрейма
+ string period_type;
+ // размер периода
+ string period_size;
+ // период 
  ENUM_TIMEFRAMES period;
- string ch = " ";
- int count;
+ // строка файла
+ string str = " ";
  Print("ПОЛНЫЙ АДРЕС ФАЙЛА = ",filename+fileHandle);
  int handle=FileOpen(fileHandle,FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT,"");
  Alert("FILE HANDLE = ",fileHandle);
@@ -129,62 +165,43 @@ void CExpertoscop::GetExpertParams(string fileHandle)
   Print("ПОЛУЧИЛИ ХЕНДЛ ФАЙЛА ,УРА",filename+fileHandle);
   // устанавливаем указатель в открытом файле 
   FileSeek (handle,0,0);
-  fileContain = "";
-  count = 0;
-  // читаем побайтово из файла
+  // читаем строки из файла и обрабатываем их
   do
   {
-   fileContain = fileContain + ch;
-   count++;
-   ch = FileReadString(handle,-1);
-   Print("КАНТ = ",ch);
+   // считываем строку
+   str = FileReadString(handle,-1);
+   // проверяем на символ 
+   if (StringFind(str, "symbol=")!=-1) symbol=StringSubstr(str, 7, -1);    
+   // считываем тип таймфрейма
+   if (StringFind(str, "period_type=")!=-1) period_type=StringSubstr(str, 12, -1);    
+   // считываем размер таймфрейма
+   if (StringFind(str, "period_size=")!=-1)
+    {
+     period_size=StringSubstr(str, 12, -1);
+     period = ReturnTimeframe(StringToInteger(period_type),StringToInteger(period_size) ); 
+    }         
+   // считываем тэг <expert>
+   if (StringFind(str, "<expert>")!=-1 && found_expert==false)
+     found_expert = true;
+   // считываем имя эксперта
+   if (StringFind(str, "name=")!=-1 && found_expert == true)
+     {
+      //нашли все данные, значит сохраняем их 
+      params_size++; //увеличиваем массив параметров на единицу
+      ArrayResize(param,params_size); //увеличиваем массив на единицу
+      param[params_size-1].expert_name = StringSubstr(str, 5, -1); // сохраняем имя эксперта
+      param[params_size-1].period      = period;                   // сохраняем период
+      param[params_size-1].symbol      = symbol;                   // сохраняем символ
+      read_flag = false; 
+     }
+      
   }
-  while (/*handle!=INVALID_HANDLE*/count<1);
+  while (!FileIsEnding(handle) && read_flag); 
   
-  Alert("ФАЙЛ СОДЕРЖИТ = ",fileContain);
   // закрываем файл
   FileClose(handle);                  
  }
- pos = 0; flag = false;
- symbol="";
- //period="";
- // по всему содержимому файла
- for(cnt = 0; cnt < StringLen(fileContain); cnt++)
- {
-  if(StringGetCharacter(fileContain, cnt)==13) // перевод строки (Enter), дошли до конца строки
-  {
-   // берем строку
-   word = StringSubstr(fileContain, pos, cnt - pos); 
-   // Получаем имя символа
-   if(StringFind(word, "symbol=") != -1 && cnt != pos && symbol == "") symbol = StringSubstr(word, 7); 
-   // Получаем период
-   //if(StringFind(word, "period=") != -1 && cnt != pos && period == "") period = StringSubstr(word, 7);  
-   
-   if(StringFind(word, "</window>") != -1 && cnt != pos) flag = true; 
-   if(StringFind(word, "<expert>") != -1 && cnt != pos && flag)
-   {
-    
-    ArrayResize(param, ++param_length);
-    // по всему оставшемуся файлу после тега <expert>
-    for(cnt = cnt; cnt < StringLen(fileContain); cnt++) 
-    {
-     if(StringGetCharacter(fileContain, cnt) == 13)
-     {
-      word = StringSubstr(fileContain, pos, cnt-pos);
-      if(StringSubstr(word, 0, 4) == "name")
-      {
-       int basa[];
-       param[param_length - 1].expert_name = StringSubstr(word, 5); // имя эксперта 
-       param[param_length - 1].symbol = symbol;
-       //param[expNumber - 1].period = period;
-      }
-     }
-    }
-    break;   
-   }
-   pos=cnt+2;
-  }
- }
+
 }
   
 //+------------------------------------------------------------------+
