@@ -6,6 +6,11 @@
 #property copyright "GIA"
 #include <StringUtilities.mqh>  // подключаем библиотеку констант
 
+#define OPEN_GENETIC 0x80000000
+#define OPEN_EXISTING 3
+#define FILE_ATTRIBUTE_NORMAL 128
+#define FILE_SHARE_READ_KERNEL 0x00000001
+
  
 #import "kernel32.dll"
    int  FindFirstFileW(string path, int& answer[]);
@@ -15,8 +20,50 @@
    int _llseek (int handle, int offset, int origin);
    int _lread  (int handle, string fileContain, int bytes);
    int _lclose (int handle);
+  bool ReadFile                   // Чтение данных из файла
+       ( int    hFile,                 // handle of file to read
+         string lpBuffer,              // address of buffer that receives data 
+         int    nNumberOfBytesToRead,  // number of bytes to read
+         int&   lpNumberOfBytesRead[], // address of number of bytes read
+         int    lpOverlapped );        // address of structure for data 
+   int CreateFileW(
+    string lpFileName,         // pointer to name of the file
+    int dwDesiredAccess,       // access (read-write) mode
+    int dwShareMode,           // share mode
+    int lpSecurityAttributes,  // pointer to security attributes
+    int dwCreationDisposition, // how to create
+    int dwFlagsAndAttributes,  // file attributes
+    int hTemplateFile          // handle to file with attributes to        
+);   
+  bool CloseHandle                // Закрытие объекта
+       ( int hObject );            
 #import
 
+
+bool RRRR (string nf1) {
+  bool   ret=true;
+  int    h1, nBytesRead[1]={1};
+  string Buffer="__";
+  string str="";
+   int count =0;
+  h1=CreateFileW(nf1, OPEN_GENETIC, FILE_SHARE_READ_KERNEL, 0, OPEN_EXISTING, 128, NULL);
+  if (h1>0) {
+  
+    while (nBytesRead[0]>0) {
+      ReadFile(h1, Buffer, 1, nBytesRead, NULL);
+      if (count<10)
+      {
+        str=str+Buffer;
+        count++;
+      }
+      Buffer="__";
+    }
+  } else ret=false;
+
+  CloseHandle(h1);
+  Print("СТРОЧКА = ",str);
+  return(ret);
+}
 
 //+------------------------------------------------------------------+
 //| Структура параметров                                             |
@@ -61,7 +108,7 @@ class CExpertoscop
    // метод чтения строки из файла (заменяет функцию MQL FileReadString )
    string          ReadString(int handle); 
    // метод формирует таймфрейм из считанных из файла данных
-   ENUM_TIMEFRAMES ReturnTimeframe(int period_type,int period_size);
+   ENUM_TIMEFRAMES ReturnTimeframe(string period_type,string period_size);
 //+------------------------------------------------------------------+
 //| Базовые методы                                                   |
 //+------------------------------------------------------------------+
@@ -82,6 +129,9 @@ class CExpertoscop
     StringConcatenate(filename,"","C:\\Users\\Илья\\AppData\\Roaming\\MetaQuotes\\Terminal\\Common\\Files\\");    
     // обнуляем длину массива параметров
     params_size = 0;
+    
+    RRRR("D:\chart02.chr");
+    //RRRR("D:\ololo.txt"); 
    };
    // деструктор класса
    ~CExpertoscop()
@@ -97,20 +147,40 @@ class CExpertoscop
 //+------------------------------------------------------------------+ 
 
 // метод формирования таймфрейма из считанных из файла данных
-ENUM_TIMEFRAMES CExpertoscop::ReturnTimeframe(int period_type,int period_size)
+ENUM_TIMEFRAMES CExpertoscop::ReturnTimeframe(string period_type,string period_size)
  {
   ENUM_TIMEFRAMES period=0;
-  //массив первых символов таймфрейма
-  string aPeriod_type[4]=
+  //если "минутка"
+  if (period_type == "0")
    {
-    "M",
-    "H",
-    "W",
-    "MN"
-   };
-  // если "дневник"
- // if (period_size == 24)
-  // period = StringTo
+    if (period_size == "1") return PERIOD_M1;
+    if (period_size == "2") return PERIOD_M2;
+    if (period_size == "3") return PERIOD_M3;
+    if (period_size == "4") return PERIOD_M4;
+    if (period_size == "5") return PERIOD_M5;
+    if (period_size == "6") return PERIOD_M6;
+    if (period_size == "10") return PERIOD_M10;
+    if (period_size == "12") return PERIOD_M12;  
+    if (period_size == "15") return PERIOD_M15;
+    if (period_size == "20") return PERIOD_M20;
+    if (period_size == "30") return PERIOD_M30;                               
+   } 
+  //если "часовик"
+  if (period_type == "1")
+   {
+    if (period_size == "1") return PERIOD_H1;
+    if (period_size == "2") return PERIOD_H2;
+    if (period_size == "3") return PERIOD_H3;
+    if (period_size == "4") return PERIOD_H4;
+    if (period_size == "6") return PERIOD_H6;  
+    if (period_size == "8") return PERIOD_H8;    
+    if (period_size == "24") return PERIOD_D1;                                           
+   }    
+  //если "недельник"
+  if (period_type == "2")
+    return PERIOD_W1;
+  if (period_type == "3")
+    return PERIOD_MN1;
   return period;
  }
  
@@ -157,12 +227,9 @@ void CExpertoscop::GetExpertParams(string fileHandle)
  ENUM_TIMEFRAMES period;
  // строка файла
  string str = " ";
- Print("ПОЛНЫЙ АДРЕС ФАЙЛА = ",filename+fileHandle);
  int handle=FileOpen(fileHandle,FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT,"");
- Alert("FILE HANDLE = ",fileHandle);
  if(handle!=INVALID_HANDLE)
  {
-  Print("ПОЛУЧИЛИ ХЕНДЛ ФАЙЛА ,УРА",filename+fileHandle);
   // устанавливаем указатель в открытом файле 
   FileSeek (handle,0,0);
   // читаем строки из файла и обрабатываем их
@@ -178,7 +245,7 @@ void CExpertoscop::GetExpertParams(string fileHandle)
    if (StringFind(str, "period_size=")!=-1)
     {
      period_size=StringSubstr(str, 12, -1);
-     period = ReturnTimeframe(StringToInteger(period_type),StringToInteger(period_size) ); 
+     period = ReturnTimeframe(period_type,period_size ); 
     }         
    // считываем тэг <expert>
    if (StringFind(str, "<expert>")!=-1 && found_expert==false)
@@ -196,7 +263,7 @@ void CExpertoscop::GetExpertParams(string fileHandle)
      }
       
   }
-  while (!FileIsEnding(handle) && read_flag); 
+  while (!FileIsEnding(handle) && read_flag == true); 
   
   // закрываем файл
   FileClose(handle);                  
@@ -223,18 +290,3 @@ string bufferToString(int &fileContain[])
       }
    return (text);
    }  
-//+------------------------------------------------------------------+
-bool DecToBin(int dec)
-   {
-   int ch = 0, x = 3;
-   bool res;
-   dec-=3;
-   while(x > 0)
-      {
-      ch = MathMod(dec,2);
-      dec = MathFloor(dec/2);
-      x--;
-      }
-   if(ch==0)res=false; else res=true;   
-   return(res);
-   }
