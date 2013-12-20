@@ -10,8 +10,7 @@
 #include <TradeManager\BackTest.mqh>    //подключаем библиотеку бэктеста
 #include <StringUtilities.mqh>          //подключаем библиотеку констант
 #include <Charts\Chart.mqh>
-//#include <Expertoscop\CExpertoScop.mqh> //подключаем класс экспертоскопа
-#include <Expertoscop\Test.mqh> //подключаем класс экспертоскопа
+#include <Expertoscop\CExpertoScop.mqh> //подключаем класс экспертоскопа
 
 
 //+------------------------------------------------------------------+

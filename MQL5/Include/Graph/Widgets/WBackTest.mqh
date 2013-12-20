@@ -32,8 +32,9 @@
       // создаем объект панели виджета
       _wBackTest = new Panel(name, caption, x, y, width, height, chart_id, sub_window, corner, z_order);
       // создаем элементы панели
-      _wBackTest.AddElement (PE_LABEL,"label",caption,x+13,y,width,height); // тело панели
-      _wBackTest.AddElement (PE_BUTTON,"all_expt","все эксперты",0,30,width/2,20); // кнопка
+      _wBackTest.AddElement (PE_LABEL,"label",caption,x+13,y,width,height);              // тело панели
+      _wBackTest.AddElement (PE_BUTTON,"close_button","x",width-16,2,13,13);             // кнопка закрытия панели
+      _wBackTest.AddElement (PE_BUTTON,"all_expt","все эксперты",0,30,width/2,20);       // кнопка
       _wBackTest.AddElement (PE_BUTTON,"cur_expt","этот эксперт",width/2,30,width/2,20); // кнопка      
      };
   };
