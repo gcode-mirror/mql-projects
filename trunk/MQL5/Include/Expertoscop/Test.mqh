@@ -6,9 +6,9 @@
 #property copyright "GIA"
 #include <StringUtilities.mqh>  // подключаем библиотеку констант
 
-#define OPEN_GENETIC 0x80000000
-#define OPEN_EXISTING 3
-#define FILE_ATTRIBUTE_NORMAL 128
+#define OPEN_GENETIC           0x80000000
+#define OPEN_EXISTING          3
+#define FILE_ATTRIBUTE_NORMAL  128
 #define FILE_SHARE_READ_KERNEL 0x00000001
 
  
@@ -20,9 +20,9 @@
    int _llseek (int handle, int offset, int origin);
    int _lread  (int handle, string fileContain, int bytes);
    int _lclose (int handle);
-  bool ReadFile                   // Чтение данных из файла
+  bool ReadFile                       // Чтение данных из файла
        ( int    hFile,                 // handle of file to read
-         string lpBuffer,              // address of buffer that receives data 
+         char&   lpBuffer[],              // address of buffer that receives data 
          int    nNumberOfBytesToRead,  // number of bytes to read
          int&   lpNumberOfBytesRead[], // address of number of bytes read
          int    lpOverlapped );        // address of structure for data 
@@ -43,25 +43,29 @@
 bool RRRR (string nf1) {
   bool   ret=true;
   int    h1, nBytesRead[1]={1};
-  string Buffer="__";
-  string str="";
+  string Buffer="_";
+  char   buffer[2]={'_','-'};
+  string str=""; 
+  
    int count =0;
   h1=CreateFileW(nf1, OPEN_GENETIC, FILE_SHARE_READ_KERNEL, 0, OPEN_EXISTING, 128, NULL);
   if (h1>0) {
-  
+ 
     while (nBytesRead[0]>0) {
-      ReadFile(h1, Buffer, 1, nBytesRead, NULL);
-      if (count<10)
-      {
-        str=str+Buffer;
+      ReadFile(h1, buffer, 2, nBytesRead, NULL);
+       if (count < 100)
+        {
+        str=CharToString(buffer[0]);
         count++;
-      }
-      Buffer="__";
+        Print("СИМВОЛ = ",str," КОД = ",buffer[0]);
+       }
+    //  buffer[0]='_';
+    //  buffer[1]='-';
     }
   } else ret=false;
 
   CloseHandle(h1);
-  Print("СТРОЧКА = ",str);
+ // Print("СТРОЧКА = ",str);
   return(ret);
 }
 
@@ -146,6 +150,30 @@ class CExpertoscop
 //| Методы работы с файловыми данными                                |
 //+------------------------------------------------------------------+ 
 
+// метод считываения строки из файла
+
+string CExpertoscop::ReadString(int handle)
+ {
+  int    nBytesRead[1]={1};
+  char   buffer[2]={'_','-'};
+  string str=""; 
+  string ch="";
+  if (handle>0) {
+    // пропускаем пустой символ 
+     ReadFile(handle, buffer, 2, nBytesRead, NULL);
+    // считываем символы, пока не дойдем до конца строки
+    while (nBytesRead[0]>0 && buffer[0]!=13) {
+      // формируем строку
+      str = str + ch;
+      // считываем очередной символ
+      ReadFile(handle, buffer, 2, nBytesRead, NULL);
+      // сохраняем символ
+      ch =  CharToString(buffer[0]);
+    }
+  }
+  return (str);
+ }
+
 // метод формирования таймфрейма из считанных из файла данных
 ENUM_TIMEFRAMES CExpertoscop::ReturnTimeframe(string period_type,string period_size)
  {
@@ -227,24 +255,30 @@ void CExpertoscop::GetExpertParams(string fileHandle)
  ENUM_TIMEFRAMES period;
  // строка файла
  string str = " ";
- int handle=FileOpen(fileHandle,FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT,"");
- if(handle!=INVALID_HANDLE)
+ //int handle=FileOpen(fileHandle,FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT,"");
+ int handle = CreateFileW(filename + fileHandle, OPEN_GENETIC, FILE_SHARE_READ_KERNEL, 0, OPEN_EXISTING, 128, NULL);
+ if(handle > 0)
  {
   // устанавливаем указатель в открытом файле 
-  FileSeek (handle,0,0);
+  //FileSeek (handle,0,0);
   // читаем строки из файла и обрабатываем их
   do
   {
    // считываем строку
-   str = FileReadString(handle,-1);
+   // str = FileReadString(handle,-1);
+   str = ReadString(handle);
+   Print("ЗНАЧЕНИЕ СТРОКИ = ",str);
    // проверяем на символ 
-   if (StringFind(str, "symbol=")!=-1) symbol=StringSubstr(str, 7, -1);    
+   if (StringFind(str, "symbol=")!=-1)      symbol      =  StringSubstr(str, 7, -1);    
    // считываем тип таймфрейма
-   if (StringFind(str, "period_type=")!=-1) period_type=StringSubstr(str, 12, -1);    
+   if (StringFind(str, "period_type=")!=-1) period_type =  StringSubstr(str, 12, -1);    
    // считываем размер таймфрейма
    if (StringFind(str, "period_size=")!=-1)
     {
      period_size=StringSubstr(str, 12, -1);
+     
+     Print ("ТИП ПЕРИОДА = [",StringLen(period_type),"] РАЗМЕР ПЕРИОДА = [",StringLen(period_size),"]");
+     
      period = ReturnTimeframe(period_type,period_size ); 
     }         
    // считываем тэг <expert>
@@ -263,7 +297,7 @@ void CExpertoscop::GetExpertParams(string fileHandle)
      }
       
   }
-  while (!FileIsEnding(handle) && read_flag == true); 
+  while (handle > 0 && read_flag == true); 
   
   // закрываем файл
   FileClose(handle);                  
