@@ -34,7 +34,7 @@ datetime startTime;
 double openPrice;
 double currentVolume;
 
-int fastDelta = 0;   // Младшая дельта
+int fastDelta = 100;   // Младшая дельта
 DELTA_STEP fastDeltaStep = HUNDRED;  // Шаг изменения МЛАДШЕЙ дельты
 
 CSanya san(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, countSteps, type, volume, factor, percentage, fastPeriod, slowPeriod);
@@ -79,7 +79,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
  {
-  san.InitMonthTrade();
+  //san.InitMonthTrade();
   san.RecountFastDelta();
   
   if(san.isFastDeltaChanged() || san.isSlowDeltaChanged())
