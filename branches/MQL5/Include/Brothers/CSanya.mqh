@@ -133,12 +133,6 @@ void CSanya::InitMonthTrade()
   PrintFormat("%s Ќовый мес€ц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_last_month_number));
   currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
   
-  _startDayPrice = 0;
-  _average = 0;
-  _averageMax = 0;
-  _averageMin = 0;
-  _prevMonthPrice = currentPrice;
-  
   _deltaFast = _deltaFastBase;
   _deltaSlow = _deltaSlowBase;
   _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
@@ -202,7 +196,6 @@ void CSanya::RecountFastDelta()
   }
  }
  
- /*
  priceAB = (_direction == 1) ? tick.ask : tick.bid; 
  if ( _average > 0 &&                               // ≈сли среднее уже вычислено
       _direction*(_average - _startDayPrice) > 0 && // на уровне выше(ниже) стартовой
@@ -225,7 +218,7 @@ void CSanya::RecountFastDelta()
   PrintFormat("dir=%d, start=%.05f, ave=%.05f, price=%.05f", _direction, _startDayPrice, _average, priceAB);
   _deltaFast = _deltaFast - _fastDeltaStep;   // уменьшим младшую дельта (цена пошла в нашу сторону - прекращаем сейв)
   _fastDeltaChanged = true;
- }*/
+ }
 }
 
 
@@ -295,55 +288,56 @@ double CSanya::RecountVolume()
 void CSanya::RecountLevels(SExtremum &extr)
 {
  // ѕровер€ем наличие экстремума 
- Print("Ќовый экстремум");
  currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
  if (extr.direction != 0)
  {
   if (extr.direction == num0.direction) // если новый экстремум в том же напрвлении, что старый
   {
-   Print("переносим экстремум дальше");
    num0.price = extr.price;
   }
   else
   {
-   //num3 = num2;
+   num3 = num2;
    num2 = num1;
    num1 = num0;
    num0 = extr;
-   PrintFormat("—двигаем экстремумы num0={%d, %.05f}, num1={%d, %.05f}, num2={%d, %.05f}", num0.direction, num0.price,
+   PrintFormat("—двигаем экстремумы num0={%d, %.05f}, num1={%d, %.05f}, num2={%d, %.05f}, num3={%d, %.05f}",
+                                                                                           num0.direction, num0.price,
                                                                                            num1.direction, num1.price,
-                                                                                           num2.direction, num2.price);
-  }
-  
-  if (num1.direction != 0)
-  {
-   _averageRight = (num0.price + num1.price)/2;
-   averageRightLine.Price(0, _averageRight);
-   //Print("вычислена права€ средн€€ _averageRight=",_averageRight);
-  }
-  if (num2.direction != 0)
-  {
-   _averageLeft = (num1.price + num2.price)/2;
-   averageLeftLine.Price(0, _averageLeft);
-   //Print("вычислена лева€ средн€€ _averageLeft=",_averageLeft);
-  }
-  if (_averageLeft > 0 && _averageRight > 0)
-  {
-   _startDayPrice = (_averageLeft + _averageRight)/2;
-   startLine.Price(0, _startDayPrice);
-   Print("вычислены обе средние - переносим старт StartPrice=",_startDayPrice);
+                                                                                           num2.direction, num2.price,
+                                                                                           num3.direction, num3.price);
+   if (num2.direction != 0)
+   {
+    _averageRight = NormalizeDouble((num1.price + num2.price)/2, 5);
+    averageRightLine.Price(0, _averageRight);
+    //Print("вычислена права€ средн€€ _averageRight=",_averageRight);
+   }
+   if (num3.direction != 0)
+   {
+    _averageLeft = NormalizeDouble((num2.price + num3.price)/2, 5);
+    averageLeftLine.Price(0, _averageLeft);
+    //Print("вычислена лева€ средн€€ _averageLeft=",_averageLeft);
+   }
+   if (_averageLeft > 0 && _averageRight > 0)
+   {
+    _startDayPrice = NormalizeDouble((_averageLeft + _averageRight)/2, 5);
+    startLine.Price(0, _startDayPrice);
+    Print("вычислены обе средние - переносим старт StartPrice=",_startDayPrice);
+   }
   }
   
   if (extr.direction > 0 && GreatDoubles(extr.price, _startDayPrice))
   {
-   _averageMax = (extr.price + _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+   _averageMax = NormalizeDouble((extr.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
    _averageMin = 0;
    averageMaxLine.Price(0, _averageMax);
+   averageMinLine.Price(0, _averageMin);
   }
   if (extr.direction < 0 && LessDoubles(extr.price, _startDayPrice))
   {
-   _averageMin = (extr.price + _startDayPrice)/2;   // вычислим среднее значение между текущей ценой и ценой начала работы
+   _averageMin = NormalizeDouble((extr.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
    _averageMax = 0;
+   averageMaxLine.Price(0, _averageMax);
    averageMinLine.Price(0, _averageMin);
   }
  }
@@ -372,8 +366,8 @@ SExtremum CSanya::isExtremum()
  }
  
  if (((num0.direction == 0) && (LessDoubles(ask, _startDayPrice - 2*_dayStep*Point(), 5))) // ≈сли экстремумов еще нет и есть 2 шага от стартовой цены
- || (num0.direction > 0 && (LessDoubles(ask, num0.price, 5)))
- || (num0.direction < 0 && (LessDoubles(ask, num0.price - _dayStep*Point(), 5))))
+ || (num0.direction < 0 && (LessDoubles(ask, num0.price, 5)))
+ || (num0.direction > 0 && (LessDoubles(ask, num0.price - _dayStep*Point(), 5))))
  {
   result.direction = -1;
   result.price = ask;
