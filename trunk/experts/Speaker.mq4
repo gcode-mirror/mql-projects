@@ -6,119 +6,117 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.metaquotes.net"
 
-
-// константы для функции _lopen
-#define OF_READ               0
-#define OF_WRITE              1
-#define OF_READWRITE          2
-#define OF_SHARE_COMPAT       3
-#define OF_SHARE_DENY_NONE    4
-#define OF_SHARE_DENY_READ    5
-#define OF_SHARE_DENY_WRITE   6
-#define OF_SHARE_EXCLUSIVE    7
- 
- 
 #import "kernel32.dll"
-   int _lopen  (string path, int of);
-   int _lcreat (string path, int attrib);
-   int _llseek (int handle, int offset, int origin);
-   int _lread  (int handle, string buffer, int bytes);
-   int _lwrite (int handle, string buffer, int bytes);
-   int _lclose (int handle);
+  bool CloseHandle                // Закрытие объекта
+       ( int hObject );                // Хэндл объекта
+  int CreateFileA                 // Создание открытие объекта
+      ( string lpFileName,             // Полный путь доступа к объекту
+        int    dwDesiredAccess,        // Тип доступа к объекту
+        int    dwShareMode,            // Флаги общего доступа
+        int    lpSecurityAttributes,   // Описатель безопасности
+        int    dwCreationDisposition,  // Описатель действия
+        int    dwFlagsAndAttributes,   // Флаги аттрибутов
+        int    hTemplateFile );        //
+  bool ReadFile                   // Чтение данных из файла
+       ( int    hFile,                 // handle of file to read
+         string lpBuffer,              // address of buffer that receives data 
+         int    nNumberOfBytesToRead,  // number of bytes to read
+         int&   lpNumberOfBytesRead[], // address of number of bytes read
+         int    lpOverlapped );        // address of structure for data
+  bool WriteFile                  // Запись данных в файл
+       ( int    hFile,                      // handle to file to write to
+         string lpBuffer,                   // pointer to data to write to file
+         int    nNumberOfBytesToWrite,      // number of bytes to write
+         int&   lpNumberOfBytesWritten[],   // pointer to number of bytes written
+         int    lpOverlapped );             // pointer to structure needed for overlapped I/O
 #import
 
-int    deal_type=0;  //тип сделки
-double deal_volume=0; //объем сделки
-double deal_price=0; //цена сделки
-int    start_time;     //самая первая дата при загрузке эксперта
-int    handle = 0;
+// Тип доступа к объекту
+#define GENERIC_READ    0x80000000
+#define GENERIC_WRITE   0x40000000
+#define GENERIC_EXECUTE 0x20000000
+#define GENERIC_ALL     0x10000000
+// Флаги общего доступа
+#define FILE_SHARE_READ   0x00000001
+#define FILE_SHARE_WRITE  0x00000002
+#define FILE_SHARE_DELETE 0x00000004
+// Описатель действия
+#define CREATE_NEW        1
+#define CREATE_ALWAYS     2
+#define OPEN_EXISTING     3
+#define OPEN_ALWAYS       4
+#define TRUNCATE_EXISTING 5
 
+extern string path = "C:\\Users\\Desepticon2\\Desktop\\ГОВОРУН\\";
+extern string filename = "loh.txt";
 
-//+------------------------------------------------------------------+
-//| expert initialization function                                   |
-//+------------------------------------------------------------------+
-int init()
+void start() 
 {
- start_time = TimeCurrent();
- WriteFile("C:\Users\Desepticon2\Desktop\Speaker.txt", "HELLO WORLD!");
- return(0);
-}
-//+------------------------------------------------------------------+
-//| expert deinitialization function                                 |
-//+------------------------------------------------------------------+
-int deinit()
-{
- return(0);
-}
-//+------------------------------------------------------------------+
-//| expert start function                                            |
-//+------------------------------------------------------------------+
-int start()
-{
- 
- return(0);
-}
-//+------------------------------------------------------------------+
+  string full_path = path+filename;
 
-bool CurrentPositionLastDealPrice() //возвращает параметры последней сделки
+  CheckForUpdate(full_path);
+}
+
+//+----------------------------------------------------------------------------+
+//|  Копирование файла без его блокировки на момент чтения                     |
+//|  Параметры:                                                                |
+//|    nf1 - имя файла источника                                               |
+//|    nf2 - имя файла получателя                                              |
+//+----------------------------------------------------------------------------+
+void WriteTo(int handle, string buffer) 
 {
- int    total       = 0;   // Всего сделок в списке выбранной истории
- string deal_symbol = "";  // Символ сделки
- //--- Получим количество сделок в полученном списке
- total = OrdersHistoryTotal();     
- //--- Пройдем по всем сделкам в полученном списке от последней сделки в списке к первой
- for(int i = total-1; i >= 0; i--)
- {
-  OrderSelect(i, SELECT_BY_POS, MODE_HISTORY);
-  deal_symbol = OrderSymbol();
-  //--- Если символ сделки и текущий символ равны, остановим цикл
-  if(deal_symbol == Symbol())
+  int    nBytesRead[1]={1};
+
+  if(handle>0) 
   {
-   deal_type = OrderType();
-   deal_volume = OrderLots();
-   deal_price = OrderClosePrice();              
-   start_time = TimeCurrent();
-   return (true); 
-  }
- }
- return (false);
+    //Print("успех"); 
+    WriteFile(handle, buffer, StringLen(buffer), nBytesRead, NULL);
+  } 
+  else
+   Print("неудача. плохой хэндл для файла Говоруна");
 }
 
-void WriteFile (string path, string buffer) 
+
+
+
+//+------------------------------------------------------------------+
+
+void CheckForUpdate(string nf2)
 {
- int count=StringLen (buffer); 
- int result;
- int handle=_lopen (path,OF_SHARE_DENY_NONE);
- if(handle<0) 
- {
-  handle=_lcreat (path,0);
-  if(handle<0) 
+ //static int total = 0;
+ //if(total != OrdersTotal())
+ //{
+  int total = OrdersTotal();
+  int handle = CreateFileA(nf2, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, 128, NULL);
+  for(int i = 0; i < total; i ++)
   {
-    Print ("Ошибка создания файла ",path);
-    return;
+   WriteTo(handle, OrderToString(i));
   }
-  result=_lclose (handle);
- }
- 
- handle=_lopen (path,OF_WRITE);               
- if(handle<0) 
+  CloseHandle(handle);
+ //}
+}
+
+string OrderToString(int pos)
+{
+ string result = "";
+ if(OrderSelect(pos, SELECT_BY_POS, MODE_TRADES))
  {
-  Print("Ошибка открытия файла ",path); 
-  return;
+  //Print("ok");
+  result = result + OrderSymbol() + "@";
+  if(OrderType() == OP_BUY)result = result + "OP_BUY@";
+  else if(OrderType() == OP_SELL)result = result + "OP_SELL@";
+  else if(OrderType() == OP_BUYLIMIT)result = result + "OP_BUYLIMIT@";
+  else if(OrderType() == OP_BUYSTOP)result = result + "OP_BUYSTOP@";
+  else if(OrderType() == OP_SELLSTOP)result = result + "OP_SELLSTOP@";
+  else if(OrderType() == OP_SELLLIMIT)result = result + "OP_SELLLIMIT@";
+  result = result + OrderLots() + "@";
+  result = result + OrderOpenPrice() + "\r\n";
+  //Alert(result);  
  }
- 
- result=_llseek (handle,0,0);          
- if(result<0) 
+ else
  {
-  Print("Ошибка установки указателя"); 
-  return;
+  //Print("bad");
+  result = "error";
  }
- 
- result=_lwrite (handle,buffer,count); 
- if(result<0)  
-  Print("Ошибка записи в файл ",path," ",count," байт");
-  
- result=_lclose (handle);              
- if(result<0)  
-  Print("Ошибка закрытия файла ",path);
+ return(result);
 }
