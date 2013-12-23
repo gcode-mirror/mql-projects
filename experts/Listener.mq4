@@ -1,100 +1,93 @@
 //+------------------------------------------------------------------+
-//|                                                     Listener.mq4 |
+//|                                                      Speaker.mq4 |
 //|                        Copyright 2013, MetaQuotes Software Corp. |
 //|                                        http://www.metaquotes.net |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.metaquotes.net"
 
-// константы для функции _lopen
-#define OF_READ               0
-#define OF_WRITE              1
-#define OF_READWRITE          2
-#define OF_SHARE_COMPAT       3
-#define OF_SHARE_DENY_NONE    4
-#define OF_SHARE_DENY_READ    5
-#define OF_SHARE_DENY_WRITE   6
-#define OF_SHARE_EXCLUSIVE    7
- 
- 
 #import "kernel32.dll"
-   int _lopen  (string path, int of);
-   int _lcreat (string path, int attrib);
-   int _llseek (int handle, int offset, int origin);
-   int _lread  (int handle, string buffer, int bytes);
-   int _lwrite (int handle, string buffer, int bytes);
-   int _lclose (int handle);
-/*   bool ReadFile (int hFile, double& lpBuffer[], int nNumberOfBytesToRead, int& lpNumberOfBytesRead[], int lpOverlapped);
-   int CreateFileW(string lpFileName,         // pointer to name of the file
-                   int dwDesiredAccess,       // access (read-write) mode
-                   int dwShareMode,           // share mode
-                   int lpSecurityAttributes,  // pointer to security attributes
-                   int dwCreationDisposition, // how to create
-                   int dwFlagsAndAttributes,  // file attributes
-                   int hTemplateFile          // handle to file with attributes to
-                   );*/
+  bool CloseHandle                // Закрытие объекта
+       ( int hObject );                // Хэндл объекта
+  int CreateFileA                 // Создание открытие объекта
+      ( string lpFileName,             // Полный путь доступа к объекту
+        int    dwDesiredAccess,        // Тип доступа к объекту
+        int    dwShareMode,            // Флаги общего доступа
+        int    lpSecurityAttributes,   // Описатель безопасности
+        int    dwCreationDisposition,  // Описатель действия
+        int    dwFlagsAndAttributes,   // Флаги аттрибутов
+        int    hTemplateFile );        //
+  bool ReadFile                   // Чтение данных из файла
+       ( int    hFile,                 // handle of file to read
+         string lpBuffer,              // address of buffer that receives data 
+         int    nNumberOfBytesToRead,  // number of bytes to read
+         int&   lpNumberOfBytesRead[], // address of number of bytes read
+         int    lpOverlapped );        // address of structure for data
+  bool WriteFile                  // Запись данных в файл
+       ( int    hFile,                      // handle to file to write to
+         string lpBuffer,                   // pointer to data to write to file
+         int    nNumberOfBytesToWrite,      // number of bytes to write
+         int&   lpNumberOfBytesWritten[],   // pointer to number of bytes written
+         int    lpOverlapped );             // pointer to structure needed for overlapped I/O
 #import
 
+// Тип доступа к объекту
+#define GENERIC_READ    0x80000000
+#define GENERIC_WRITE   0x40000000
+#define GENERIC_EXECUTE 0x20000000
+#define GENERIC_ALL     0x10000000
+// Флаги общего доступа
+#define FILE_SHARE_READ   0x00000001
+#define FILE_SHARE_WRITE  0x00000002
+#define FILE_SHARE_DELETE 0x00000004
+// Описатель действия
+#define CREATE_NEW        1
+#define CREATE_ALWAYS     2
+#define OPEN_EXISTING     3
+#define OPEN_ALWAYS       4
+#define TRUNCATE_EXISTING 5
 
-int    deal_type=0;         //тип сделки
-double deal_volume=0;       //объем сделки
-double deal_price=0;        //цена сделки
-double date_last_pos;       //дата последней позиции
+extern string path = "C:\\Users\\Desepticon2\\Desktop\\ГОВОРУН\\";
+extern string filename = "loh.txt";
 
+void start() 
+{
+  string full_path = path+filename;
+  
+  ReadFrom(full_path);
+}
 
-//+------------------------------------------------------------------+
-//| expert initialization function                                   |
-//+------------------------------------------------------------------+
-int init()
+//+----------------------------------------------------------------------------+
+//|  Копирование файла без его блокировки на момент чтения                     |
+//|  Параметры:                                                                |
+//|    nf1 - имя файла источника                                               |
+//|    nf2 - имя файла получателя                                              |
+//+----------------------------------------------------------------------------+
+bool ReadFrom(string nf1) 
+{
+  bool   ret=True;
+  int    h1, nBytesRead[1]={1};
+  string Buffer="1";
+  string result_buf = "";
+
+  h1=CreateFileA(nf1, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 128, NULL);
+  if (h1>0) 
   {
-   Alert("Init");
-   date_last_pos=TimeCurrent();
-   Alert(ReadFile("C:\Users\Desepticon2\Desktop\Speaker.txt"));
-   return(0);
+    Print("успех"); 
+    while (nBytesRead[0]>0) 
+    {
+       ReadFile(h1, Buffer, 1, nBytesRead, NULL);
+       if(nBytesRead[0]>0)result_buf = StringConcatenate(result_buf, Buffer);
+       //Print("buffer = ", nBytesRead[0]);
+    }
+  } 
+  else
+  { 
+   ret=False;
+   result_buf = "неудача";
   }
-//+------------------------------------------------------------------+
-//| expert deinitialization function                                 |
-//+------------------------------------------------------------------+
-int deinit()
-  {
-   
-   return(0);
-  }
-//+------------------------------------------------------------------+
-//| expert start function                                            |
-//+------------------------------------------------------------------+
-int start()
-  {
- }
-//+------------------------------------------------------------------+
-
-string ReadFile (string path) 
-  {
-    int handle=_lopen (path,OF_READ);           
-    if(handle<0) 
-      {
-        Print("Ошибка открытия файла ",path); 
-        return ("");
-      }
-    int result=_llseek (handle,0,0);      
-    if(result<0) 
-      {
-        Print("Ошибка установки указателя" ); 
-        return ("");
-      }
-    string buffer="";
-    string char1="x";
-    int count=0;
-    result=_lread (handle,char1,1);
-    while(result>0) 
-      {
-        buffer=buffer+char1;
-        char1="x";
-        count++;
-        result=_lread (handle,char1,1);
-     }
-    result=_lclose (handle);              
-    if(result<0)  
-      Print("Ошибка закрытия файла ",path);
-    return (buffer);
-  }
+  
+  Alert(result_buf);
+  CloseHandle(h1);
+  return(ret);
+}
