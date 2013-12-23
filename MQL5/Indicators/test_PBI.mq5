@@ -227,7 +227,7 @@ int OnCalculate(const int rates_total,
       //PrintFormat("Минимум %s : %d __ %d", TimeToString(start_time+seconds_current*buffer_index), i, top_buffer_index);
      }*/
 
-     PrintFormat("%s : current = %d; %s; top = %d; %s; i = %d", TimeToString(start_time+buffer_index*seconds_current), buffer_index, EnumToString((ENUM_MOVE_TYPE)trend.GetMoveType(buffer_index)), top_buffer_index, EnumToString((ENUM_MOVE_TYPE)topTrend.GetMoveType(top_buffer_index)), i);       
+     //PrintFormat("%s : current = %d; %s; top = %d; %s; i = %d", TimeToString(start_time+buffer_index*seconds_current), buffer_index, EnumToString((ENUM_MOVE_TYPE)trend.GetMoveType(buffer_index)), top_buffer_index, EnumToString((ENUM_MOVE_TYPE)topTrend.GetMoveType(top_buffer_index)), i);       
      if(buffer_index < bars) 
      {
       buffer_index++;
