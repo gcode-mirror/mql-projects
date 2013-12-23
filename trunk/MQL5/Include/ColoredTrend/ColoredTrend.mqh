@@ -73,14 +73,14 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
  //PrintFormat("PERIOD ATR: %s", EnumToString((ENUM_TIMEFRAMES)_period));
  _percentage_ATR = percentage_ATR;
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
- ArrayResize(enumMoveType, 1024);
- ArrayResize(  aExtremums, 1024);
+ ArrayResize(enumMoveType, depth);
+ ArrayResize(  aExtremums, depth);
  ArrayInitialize(enumMoveType, 0);
  SExtremum zero = {0, 0};
  ArraySetAsSeries(buffer_Rates, false);
  ArraySetAsSeries(buffer_TopRates, false);
  ArraySetAsSeries(buffer_BottomRates, false);
- for(int i = 0; i < 1024; i++)
+ for(int i = 0; i < depth; i++)
  {
   aExtremums[i] = zero;
  }
@@ -95,7 +95,7 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
  if (bar != 0) //потому что иначе в случае когда не получится подгрузить данные бар будет прозрачным!
  {
   enumMoveType[bar] = enumMoveType[bar - 1];
-  //PrintFormat("enumMoveType[%d] = %s, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
+  PrintFormat("B: enumMoveType[%d] = %s, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
  }
  if(FillTimeSeries(TOP_TF, 4, start_pos, buffer_Rates) < 0) return (11); // получим размер заполненного массива
  if(FillTimeSeries(BOTTOM_TF, 4, start_pos, buffer_Rates) < 0) return (12); // получим размер заполненного массива
