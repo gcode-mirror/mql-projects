@@ -62,7 +62,7 @@ protected:
  bool _slowDeltaChanged;
 public:
 //--- Конструкторы
- void CBrothers(void){};      // Конструктор CBrothers
+ void CBrothers(void);      // Конструктор CBrothers
 //--- Методы доступа к защищенным данным:
  //datetime GetLastDay() const {return(_last_day_number);}      // 18:00 последнего дня
  //datetime GetLastMonth() const {return(_last_month_number);}  // Дата и время определния последнего месяца
@@ -102,22 +102,21 @@ public:
  virtual void RecountSlowDelta();
  */
 };
-/*
+
 //+------------------------------------------------------------------+
 //| Конструктор CBrothers.                                             |
 //| INPUT:  no.                                                      |
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CBrothers::CBrothers(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep, ENUM_ORDER_TYPE type, int volume, double factor, int percentage, int fastPeriod, int slowPeriod):
-                      _deltaFastBase(deltaFast), _deltaSlowBase(deltaSlow),
-                      _fastDeltaStep(fastDeltaStep), _slowDeltaStep(slowDeltaStep),
-                      _dayStep(dayStep), _monthStep(monthStep), _fastPeriod(fastPeriod), _slowPeriod(slowPeriod),
-                      _type(type), _volume(volume), _factor(factor), _percentage(percentage)
+void CBrothers::CBrothers()
   {
-   _last_day_number = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
+   Print("Конструктор Бразерс");
+   _last_time = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
+   _last_day_of_week = TimeCurrent();
+   _last_day_of_year = TimeCurrent();
    _last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
-   m_comment = "";        // Комментарий выполнения
+   _comment = "";        // Комментарий выполнения
    _isDayInit = false;
    _isMonthInit = false;
    _symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
@@ -125,7 +124,7 @@ void CBrothers::CBrothers(int deltaFast, int deltaSlow, int fastDeltaStep, int s
    _startDayPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
    _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
   }
-*/
+
 //+------------------------------------------------------------------+
 //| Проверка на время обновления младщей дельта                      |
 //| INPUT:  no.                                                      |

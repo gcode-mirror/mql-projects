@@ -27,17 +27,18 @@ input int slowDelta = 30;   // Старшая дельта
 input DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 input int dayStep = 100;     // шаг границы цены в пунктах для дневной торговли
 input int monthStep = 400;  // шаг границы цены в пунктах для месячной торговл 
-input int countSteps = 4;   // количество шагов младшей дельта до переноса точки старта
+input int countStepsToExtremum = 4;   // на сколько шагов точка старта "отстает" от экстремума
+input int countStepsToExitFromStart = 2; // через сколько шагов закроемся при плохом начале со старта
 
 string symbol;
 datetime startTime;
 double openPrice;
 double currentVolume;
 
-int fastDelta = 100;   // Младшая дельта
+int fastDelta = 0;   // Младшая дельта
 DELTA_STEP fastDeltaStep = HUNDRED;  // Шаг изменения МЛАДШЕЙ дельты
 
-CSanya san(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, countSteps, type, volume, factor, percentage, fastPeriod, slowPeriod);
+CSanya san(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, countStepsToExtremum, countStepsToExitFromStart, type, volume, factor, percentage, fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -79,8 +80,8 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
  {
-  //san.InitMonthTrade();
-  san.RecountFastDelta();
+  san.InitMonthTrade();
+  if (san.isMonthInit()) san.RecountFastDelta();
   
   if(san.isFastDeltaChanged() || san.isSlowDeltaChanged())
   {
