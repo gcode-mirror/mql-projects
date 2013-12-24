@@ -38,3 +38,5 @@
       _wBackTest.AddElement (PE_BUTTON,"cur_expt","этот эксперт",width/2,30,width/2,20); // кнопка      
      };
   };
+  
+   

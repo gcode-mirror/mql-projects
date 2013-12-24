@@ -9,10 +9,10 @@
 //+------------------------------------------------------------------+
 //| Эксперт, сохраняющие в файл последнюю сделку и свойства позиции  |
 //+------------------------------------------------------------------+
-long   deal_type=0;  //тип сделки
-double deal_volume=0; //объем сделки
-double deal_price=0; //цена сделки
-long   start_time;     //самая первая дата при загрузке эксперта
+short   deal_type=0;       // тип сделки
+double deal_volume=0;      // объем сделки
+double deal_price=0;       // цена сделки
+datetime   start_time;     // самая первая дата при загрузке эксперта
 
 bool CurrentPositionLastDealPrice() //возвращает параметры последней сделки
 {
@@ -22,7 +22,7 @@ bool CurrentPositionLastDealPrice() //возвращает параметры последней сделки
  if(HistorySelect(start_time,TimeCurrent()))
  {
   //--- Получим количество сделок в полученном списке
-  total = HistoryDealsTotal();     
+  total = HistoryDealsTotal();   
   //--- Пройдем по всем сделкам в полученном списке от последней сделки в списке к первой
   for(int i = total-1; i >= 0; i--)
   {
@@ -33,7 +33,7 @@ bool CurrentPositionLastDealPrice() //возвращает параметры последней сделки
     deal_type = HistoryDealGetInteger(HistoryDealGetTicket(i), DEAL_TYPE);
     deal_volume = HistoryDealGetDouble(HistoryDealGetTicket(i), DEAL_VOLUME);
     deal_price = HistoryDealGetDouble(HistoryDealGetTicket(i), DEAL_PRICE);              
-    start_time = TimeCurrent();
+    //start_time = TimeCurrent();
     return true; 
    }
   }
@@ -45,16 +45,19 @@ bool SavePositionToFile(string file_url)  //сохраняет позицию в файл
 {
  long tmp_time = TimeCurrent();  //сохраняем текущее время
  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_COMMON|FILE_ANSI, "");
+ 
  if(file_handle == INVALID_HANDLE)
  {
   Alert("Не удалось открыть файл для записи сделки");
   return false;
  }
 
+ 
  FileWrite(file_handle, tmp_time ); //сохраняем текущее время
  FileWrite(file_handle, deal_type ); //сохраняем тип сделки    
  FileWrite(file_handle, deal_volume ); //сохраняем объем сделки
  FileWrite(file_handle, deal_price ); //сохраняем цену сделки   
+ 
      
  FileClose(file_handle); //закрываем файл
  return true;
@@ -62,7 +65,8 @@ bool SavePositionToFile(string file_url)  //сохраняет позицию в файл
 
 int OnInit()
 {
- start_time = TimeCurrent();
+
+ start_time = 0;
  return(INIT_SUCCEEDED);
 }
 
@@ -78,6 +82,7 @@ void OnTrade()
 {
  if (CurrentPositionLastDealPrice() )      
  {
+ /*
   if (FileDelete("mask.txt",FILE_COMMON))  //удаляем файл маску
   {
    Print ("Удалили файл-маску");
@@ -86,7 +91,7 @@ void OnTrade()
   {
    Print ("Не удалось удалить файл-маску");
   }
-    
+ */   
   if (SavePositionToFile("speaker.txt")) //сохраняем последнюю сделку в файл
   {
    Print ("Записали позицию в файл");
@@ -95,7 +100,7 @@ void OnTrade()
   {
    Print ("Не удалось сохранить позицию в файл");
   }
-    
+    /*
   int handle;
   if ((handle = FileOpen("mask.txt", FILE_WRITE|FILE_COMMON,"")) == INVALID_HANDLE) //создаем файл маску
   {
@@ -106,5 +111,6 @@ void OnTrade()
    Print ("Удалось создать файл-маску обратно, закрываем файл");
    FileClose(handle);
   }
+   */
  }
 }
