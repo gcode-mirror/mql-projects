@@ -102,8 +102,8 @@ class CExpertoscop
     double ArBuffer[1] = {0}; // Буфер для записи или чтения.
      int    ArOutputByte[1]; 
     // формируем адрес файла
-   // StringConcatenate(filename, TerminalInfoString(TERMINAL_PATH),"\\profiles\\charts\\default\\");
-    StringConcatenate(filename,"","C:\\Users\\Илья\\AppData\\Roaming\\MetaQuotes\\Terminal\\Common\\Files\\");    
+    StringConcatenate(filename, TerminalInfoString(TERMINAL_PATH),"\\profiles\\charts\\default\\");
+   // StringConcatenate(filename,"","D:\\");    
     // обнуляем длину массива параметров
     params_size = 0;
    };
