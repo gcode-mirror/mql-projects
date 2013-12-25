@@ -27,7 +27,6 @@ public:
  void InitDayTrade();
  void InitWeekTrade();
  void InitMonthTrade();
- double RecountVolume();
  void RecountFastDelta();
  void RecountSlowDelta();
 };
@@ -205,19 +204,4 @@ void CDinya::RecountSlowDelta()
   //PrintFormat("%s Новая месячная дельта %d", MakeFunctionPrefix(__FUNCTION__), _deltaSlow);
   _slowDeltaChanged = true;
  }
-}
-
-//+------------------------------------------------------------------+
-//| Пересчет объемов торга на основании новых дельта                 |
-//| INPUT:  no.                                                      |
-//| OUTPUT: no.
-//| REMARK: no.                                                      |
-//+------------------------------------------------------------------+
-double CDinya::RecountVolume()
-{
- _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
- _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
- _slowDeltaChanged = false;
- _fastDeltaChanged = false;
- return (_slowVol - _fastVol); 
 }

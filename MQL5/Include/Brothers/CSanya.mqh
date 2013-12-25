@@ -29,8 +29,9 @@ protected:
  double _averageMin;   // среднее между минимумом и стартом
  double _averageRight; // среднее между первым и вторым экстремумом
  double _averageLeft;  // среднее между первым и нулевым экстремумом
- int _countStepsToExtremum;
- int _countStepsToExitFromStart;
+ int _stepsFromStartToExtremum;
+ int _stepsFromStartToExit;
+ int _stepsFromExtremumToExtremum;
  double currentPrice, priceAB, priceHL;
  
  SExtremum num0, num1, num2, num3;
@@ -48,16 +49,13 @@ public:
 //--- Конструкторы
  //void CSanya();
  void CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
-             , int countStepsToExtremum, int countStepsToExitFromStart
+             , int stepsFromStartToExtremum, int stepsFromStartToExit, int stepsFromExtremumToExtremum
              , ENUM_ORDER_TYPE type ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CSanya
              
  void InitMonthTrade();
- double RecountVolume();
  void RecountFastDelta();
  void RecountSlowDelta();
  void RecountLevels(SExtremum &extr);
- 
- //SExtremum aExtremums[];
 };
 
 //+------------------------------------------------------------------+
@@ -67,24 +65,24 @@ public:
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
 void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
-                    , int countStepsToExtremum, int countStepsToExitFromStart
+                    , int stepsFromStartToExtremum, int stepsFromStartToExit, int stepsFromExtremumToExtremum
                     , ENUM_ORDER_TYPE type ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod)
   {
-   Print("Конструктор Саня");
-   _deltaFastBase=deltaFast;
-   _deltaSlowBase=deltaSlow;
-   _fastDeltaStep=fastDeltaStep;
-   _slowDeltaStep=slowDeltaStep;
-   _dayStep=dayStep;
-   _monthStep=monthStep;
-   _countStepsToExtremum=countStepsToExtremum;
-   _countStepsToExitFromStart=countStepsToExitFromStart;
-   _fastPeriod=fastPeriod;
-   _slowPeriod=slowPeriod;
-   _type=type;
-   _volume=volume;
-   _factor=factor;
-   _percentage=percentage;
+   _deltaFastBase = deltaFast;
+   _deltaSlowBase = deltaSlow;
+   _fastDeltaStep = fastDeltaStep;
+   _slowDeltaStep = slowDeltaStep;
+   _dayStep = dayStep*Point();
+   _monthStep = monthStep;
+   _stepsFromStartToExtremum = stepsFromStartToExtremum;
+   _stepsFromStartToExit = stepsFromStartToExit;
+   _stepsFromExtremumToExtremum = stepsFromExtremumToExtremum;
+   _fastPeriod = fastPeriod;
+   _slowPeriod = slowPeriod;
+   _type = type;
+   _volume = volume;
+   _factor = factor;
+   _percentage = percentage;
   
    _last_time = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
    _last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
@@ -182,17 +180,29 @@ void CSanya::RecountFastDelta()
   bool flag = false;
   if (num0.direction == 0)
   {
-   if (_type == ORDER_TYPE_SELL && GreatDoubles(currentPrice, _startDayPrice + _countStepsToExitFromStart*_dayStep*Point())) // мы продаем, а цена идет вверх
+   if (_type == ORDER_TYPE_SELL && GreatDoubles(currentPrice, _startDayPrice + _stepsFromStartToExit*_dayStep)) // мы продаем, а цена идет вверх
    {
-    PrintFormat("мы продаем, а цена идет вверх и прошла %d шагов", _countStepsToExitFromStart);
+    PrintFormat("мы продаем, а цена пошла вверх от старта и прошла %d шагов", _stepsFromStartToExit);
     flag = true;
    }
-   if (_type == ORDER_TYPE_BUY && LessDoubles(currentPrice, _startDayPrice - _countStepsToExitFromStart*_dayStep*Point()))     // или мы покупаем, а цена идет вниз
+   if (_type == ORDER_TYPE_BUY && LessDoubles(currentPrice, _startDayPrice - _stepsFromStartToExit*_dayStep))  // или мы покупаем, а цена идет вниз
    {
-    PrintFormat("мы покупаем, а цена идет вниз и прошла %d шагов", _countStepsToExitFromStart);
+    PrintFormat("мы покупаем, а цена пошла вниз от старта и прошла %d шагов", _stepsFromStartToExit);
     flag = true;
    }
   }
+  
+  if (_type == ORDER_TYPE_SELL && GreatDoubles(currentPrice, _averageMax + _stepsFromStartToExit*_dayStep))
+  {
+   PrintFormat("мы продаем, а цена идет вверх и прошла %d шагов", _stepsFromStartToExit);
+   flag = true;
+  }
+  if (_type == ORDER_TYPE_BUY && LessDoubles(currentPrice, _startDayPrice - _stepsFromStartToExit*_dayStep))  // или мы покупаем, а цена идет вниз
+  {
+   PrintFormat("мы покупаем, а цена идет вниз и прошла %d шагов", _stepsFromStartToExit);
+   flag = true;
+  }
+  
   if (_average > 0 && _direction*(_average - _startDayPrice) > 0 &&                     // Если среднее уже вычислено на уровне выше(ниже) стартовой
       _direction*(priceAB - _average) < 0 && _direction*(priceAB - _startDayPrice) > 0) // цена прошла через среднее вниз(вверх) цена выше(ниже) стартовой
   {
@@ -220,7 +230,7 @@ void CSanya::RecountFastDelta()
  if (_deltaFast > 0)  // мы засейвлены
  {
   bool flag = false;
-  if (_averageLeft == 0 && GreatDoubles(priceAB, _startDayPrice, 5))
+  if (num0.direction == 0 && GreatDoubles(priceAB, _startDayPrice, 5))
   { 
    Print("Цена со старта ушла против нас, затем развернулась и прошла старт");
    flag = true;
@@ -288,21 +298,6 @@ void CSanya::RecountSlowDelta()
   _slowDeltaChanged = true;
  }
 }
-//+------------------------------------------------------------------+
-//| Пересчет объемов торга на основании новых дельта                 |
-//| INPUT:  no.                                                      |
-//| OUTPUT: no.
-//| REMARK: no.                                                      |
-//+------------------------------------------------------------------+
-double CSanya::RecountVolume()
-{
- _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
- _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
- PrintFormat("%s slowVol = %.05f, fastVol = %.05f", MakeFunctionPrefix(__FUNCTION__), _slowVol, _fastVol);
- _slowDeltaChanged = false;
- _fastDeltaChanged = false;
- return (_slowVol - _fastVol); 
-}
 
 //+------------------------------------------------------------------+
 //| Пересчет цены начала отсчета                                     |
@@ -331,43 +326,64 @@ void CSanya::RecountLevels(SExtremum &extr)
                                                                                            num1.direction, num1.price,
                                                                                            num2.direction, num2.price,
                                                                                            num3.direction, num3.price);
-   if (num1.direction != 0)
+  }
+  
+  // Если экстремум отошел от точки старта больше чем на _countStepsToExtremum шагов, то тащим точку старта
+  if (num0.direction*(num0.price - (_startDayPrice + num0.direction*_stepsFromStartToExtremum*_dayStep)) > 0)
+  {
+   _startDayPrice = num0.price - num0.direction*_stepsFromStartToExtremum*_dayStep;
+   startLine.Price(0, _startDayPrice);
+   //Print("Экстремум очень далеко - переносим старт StartPrice=",_startDayPrice);
+  }
+  
+  // Вычисляем среднее между первым и вторым экстремумами
+  if (num1.direction != 0)
+  {
+   _averageRight = NormalizeDouble((num0.price + num1.price)/2, 5);
+   averageRightLine.Price(0, _averageRight);
+  }
+  
+  // Вычисляем среднее между вторым и третьим экстремумами
+  if (num2.direction != 0)
+  {
+   _averageLeft = NormalizeDouble((num1.price + num2.price)/2, 5);
+   averageLeftLine.Price(0, _averageLeft);
+  }
+  
+  // Если есть оба средних, вычисляем точку старта между ними
+  if (_averageLeft > 0 && _averageRight > 0)
+  {
+   double _newStartDayPrice = NormalizeDouble((_averageLeft + _averageRight)/2, 5);
+   // Если новый старт получился дальше _countStepsToExtremum шагов от экстремума, то ставим его на расстоянии _countStepsToExtremum
+   if (GreatDoubles(num0.direction*(num0.price - _newStartDayPrice), _stepsFromStartToExtremum*_dayStep, 5))
    {
-    _averageRight = NormalizeDouble((num0.price + num1.price)/2, 5);
-    averageRightLine.Price(0, _averageRight);
+    _startDayPrice = num0.price - num0.direction*_stepsFromStartToExtremum*_dayStep;
    }
-   if (num2.direction != 0)
+   // если расстояние меньше, то смотрим разницу; переносим только если разница больше шага
+   else
    {
-    _averageLeft = NormalizeDouble((num1.price + num2.price)/2, 5);
-    averageLeftLine.Price(0, _averageLeft);
-   }
-   if (_averageLeft > 0 && _averageRight > 0)
-   {
-    double _newStartDayPrice = NormalizeDouble((_averageLeft + _averageRight)/2, 5);
-    if (GreatDoubles(num0.direction*(num0.price - _newStartDayPrice), _countStepsToExtremum*_dayStep*Point(), 5))
-    {
-     _newStartDayPrice = _countStepsToExtremum*_dayStep*Point();
-    }
     double dif = MathAbs(_newStartDayPrice - _startDayPrice);
-    if (dif > _dayStep*Point())
+    if (dif > _dayStep)
     {
      _startDayPrice = _newStartDayPrice;
      startLine.Price(0, _startDayPrice);
-     Print("вычислены обе средние - переносим старт StartPrice=",_startDayPrice);
+     //Print("вычислены обе средние - переносим старт StartPrice=",_startDayPrice);
     }
    }
   }
-  
-  if (extr.direction > 0 && GreatDoubles(extr.price, _startDayPrice + 2*_dayStep*Point(), 5))
+    
+  if (extr.direction > 0)
   {
    _averageMax = NormalizeDouble((extr.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
+   if (LessDoubles (_averageMax, _startDayPrice + _dayStep, 5)) _averageMax = 0; 
    _averageMin = 0;
    averageMaxLine.Price(0, _averageMax);
    averageMinLine.Price(0, _averageMin);
   }
-  if (extr.direction < 0 && LessDoubles(extr.price, _startDayPrice - 2*_dayStep*Point(), 5))
+  if (extr.direction < 0)
   {
    _averageMin = NormalizeDouble((extr.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
+   if (GreatDoubles (_averageMin, _startDayPrice - _dayStep, 5)) _averageMin = 0; 
    _averageMax = 0;
    averageMaxLine.Price(0, _averageMax);
    averageMinLine.Price(0, _averageMin);
@@ -389,17 +405,17 @@ SExtremum CSanya::isExtremum()
  SymbolInfoTick(_symbol, tick);
  double ask = tick.ask, bid = tick.bid;
  
- if (((num0.direction == 0) && (GreatDoubles(bid, _startDayPrice + 2*_dayStep*Point(), 5))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
+ if (((num0.direction == 0) && (GreatDoubles(bid, _startDayPrice + 2*_dayStep, 5))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
  || (num0.direction > 0 && (GreatDoubles(bid, num0.price, 5)))
- || (num0.direction < 0 && (GreatDoubles(bid, num0.price + 4*_dayStep*Point(), 5))))
+ || (num0.direction < 0 && (GreatDoubles(bid, num0.price + _stepsFromExtremumToExtremum*_dayStep, 5))))
  {
   result.direction = 1;
   result.price = bid;
  }
  
- if (((num0.direction == 0) && (LessDoubles(ask, _startDayPrice - 2*_dayStep*Point(), 5))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
+ if (((num0.direction == 0) && (LessDoubles(ask, _startDayPrice - 2*_dayStep, 5))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
  || (num0.direction < 0 && (LessDoubles(ask, num0.price, 5)))
- || (num0.direction > 0 && (LessDoubles(ask, num0.price - 4*_dayStep*Point(), 5))))
+ || (num0.direction > 0 && (LessDoubles(ask, num0.price - _stepsFromExtremumToExtremum*_dayStep, 5))))
  {
   result.direction = -1;
   result.price = ask;
