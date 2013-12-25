@@ -27,8 +27,9 @@ input int slowDelta = 30;   // Старшая дельта
 input DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 input int dayStep = 100;     // шаг границы цены в пунктах для дневной торговли
 input int monthStep = 400;  // шаг границы цены в пунктах для месячной торговл 
-input int countStepsToExtremum = 4;   // на сколько шагов точка старта "отстает" от экстремума
-input int countStepsToExitFromStart = 2; // через сколько шагов закроемся при плохом начале со старта
+input int stepsFromStartToExtremum = 4;    // максимальное количество шагов от точки старта до экстремума
+input int stepsFromStartToExit = 2;        // через сколько шагов закроемся после прохода старта не в нашу сторону
+input int stepsFromExtremumToExtremum = 2; // сколько шагов между экстремумами
 
 string symbol;
 datetime startTime;
@@ -38,7 +39,7 @@ double currentVolume;
 int fastDelta = 0;   // Младшая дельта
 DELTA_STEP fastDeltaStep = HUNDRED;  // Шаг изменения МЛАДШЕЙ дельты
 
-CSanya san(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, countStepsToExtremum, countStepsToExitFromStart, type, volume, factor, percentage, fastPeriod, slowPeriod);
+CSanya san(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, stepsFromStartToExtremum, stepsFromStartToExit, stepsFromExtremumToExtremum, type, volume, factor, percentage, fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+

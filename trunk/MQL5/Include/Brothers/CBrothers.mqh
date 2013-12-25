@@ -49,7 +49,7 @@ protected:
  double _fastVol;   // объем дл€ дневной торговли
  double _slowVol;   // объем дл€ мес€чной торговли
  
- int _dayStep;          // шаг границы цены в пунктах дл€ дневной торговли
+ double _dayStep;          // шаг границы цены в пунктах дл€ дневной торговли
  int _monthStep;        // шаг границы цены в пунктах дл€ мес€чной торговли
  double _startDayPrice;   // цена начала торгов текущего дн€
  double _prevDayPrice;   // текущий уровень цены дн€
@@ -91,6 +91,7 @@ public:
  void InitDayTrade();
  void InitMonthTrade();
  void FillArrayWithPrices(ENUM_PERIOD period);
+ double RecountVolume();
  bool CorrectOrder(double volume);
  int GetHours(datetime date);
  int GetDayOfWeek(datetime date);
@@ -243,7 +244,25 @@ int CBrothers::GetYear(datetime date)
  MqlDateTime _date;
  TimeToStruct(date, _date);
  return (_date.year);
-}//+------------------------------------------------------------------+
+}
+
+//+------------------------------------------------------------------+
+//| ѕересчет объемов торга на основании новых дельта                 |
+//| INPUT:  no.                                                      |
+//| OUTPUT: no.
+//| REMARK: no.                                                      |
+//+------------------------------------------------------------------+
+double CBrothers::RecountVolume()
+{
+ _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
+ _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
+ PrintFormat("%s slowVol = %.05f, fastVol = %.05f", MakeFunctionPrefix(__FUNCTION__), _slowVol, _fastVol);
+ _slowDeltaChanged = false;
+ _fastDeltaChanged = false;
+ return (_slowVol - _fastVol); 
+}
+
+//+------------------------------------------------------------------+
 //| ѕересчет объемов торга на основании новых дельта                 |
 //| INPUT:  double volume.                                           |
 //| OUTPUT: result of correction - true or false                     |
