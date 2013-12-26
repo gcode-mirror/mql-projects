@@ -690,10 +690,10 @@ bool CPosition::ReadFromFile(int  handle)
  {
   if(FileIsEnding(handle)) return false;
   _magic = StringToInteger(FileReadString(handle));                               //считываем мэджик
- // Alert("> MAGIC = ",_magic);  
+ // Alert("> MAGIC = ",FileReadString(handle));  
   if(FileIsEnding(handle)) return false; 
    _symbol         = FileReadString(handle);                      //считываем символ
- // Alert("> SYMBOL = ",_symbol);   
+//  Alert("> SYMBOL = ",FileReadString(handle));   
   if(FileIsEnding(handle)) return false;  
   _type           = StringToPositionType(FileReadString(handle));//считываем тип
  // Alert("> TYPE = ",_type);    
