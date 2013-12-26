@@ -105,7 +105,9 @@ class BackTest
    uint count=0; //количество позиций с данным символом   
    for (index=0;index<total;index++)
     {
-     pos = _positionsHistory.Position(index); //получаем указатель на позицию
+    // pos = _positionsHistory.Position(index); //получаем указатель на позицию
+     pos = _positionsHistory.At(index);
+  //   Alert("<SYMBOL> ",pos.getSymbol());
      if (pos.getSymbol() == symbol) //если символ позиции совпадает с переданным 
       {
        count++; //увеличиваем количество посчитанных позиций на единицу
@@ -384,7 +386,7 @@ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5In
   PrintFormat("%s File %s doesn't exist", MakeFunctionPrefix(__FUNCTION__),file_url);
   return (false);
  }  
- file_handle = FileOpen(file_url, FILE_READ|FILE_COMMON|FILE_CSV|FILE_ANSI, ";");
+ file_handle = FileOpen(file_url, FILE_READ|FILE_COMMON|FILE_CSV, ";");
  if (file_handle == INVALID_HANDLE) //не удалось открыть файл
  {
   FileClose(file_handle);
@@ -395,7 +397,6 @@ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5In
 
  _positionsHistory.Clear();                   //очищаем массив
  _positionsHistory.ReadFromFile(file_handle,start,finish); //загружаем данные из файла 
- 
  
  FileClose(file_handle);                      //закрывает файл  
  
@@ -423,7 +424,7 @@ bool BackTest::SaveBackTestToFile (string file_url,string symbol)
   int finish = 0;
   
   //открываем файл на запись
-  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
+  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON|FILE_ANSI, ";");
   //если не удалось создать файл
   if(file_handle == INVALID_HANDLE)
    {
@@ -446,7 +447,7 @@ bool BackTest::SaveBackTestToFile (string file_url,string symbol)
   double  maxDrawDown        =  GetMaxDrawdown(symbol);        //максимальная просадка
   //сохраняем файл параметров вычисления бэктеста
 
- //   Alert("POS PRICE = ",DoubleToString());
+   // Alert("N TRADES = ",GetNTrades(symbol));
  
   //сохраняем строку описания количеств позиций
   FileWrite(file_handle,

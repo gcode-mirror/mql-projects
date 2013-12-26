@@ -333,17 +333,20 @@ bool CPositionArray::ReadFromFile(int handle)
 
 bool CPositionArray::ReadFromFile(int handle,datetime start,datetime finish)
 {
- uint count =0;
  if(handle != INVALID_HANDLE)
  {
+  
   CPosition *pos;
   while(!FileIsEnding(handle))
   {
    pos = new CPosition();
    if (pos.ReadFromFile(handle))
    {
+    
     if (pos.getOpenPosDT() >= start && pos.getOpenPosDT() <= finish)
-    Add(pos);
+     {
+      Add(pos);
+     }
    }
    else
     delete pos;

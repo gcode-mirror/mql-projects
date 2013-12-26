@@ -669,7 +669,7 @@ string CTradeManager::CreateFilename (ENUM_FILENAME filename)
 //+----------------------------------------------------
 bool CTradeManager::SaveArrayToFile(string file_url, CPositionArray *array)
 {
- int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON|FILE_ANSI, ";");
+ int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
  if(file_handle == INVALID_HANDLE)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), file_url));

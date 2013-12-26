@@ -227,20 +227,14 @@ void CExpertoscop::GetExpertParams(string fileHandle)
  string str = " ";
  //int handle=FileOpen(fileHandle,FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT,"");
  int handle = CreateFileW(filename + fileHandle, OPEN_GENETIC, FILE_SHARE_READ_KERNEL, 0, OPEN_EXISTING, 128, NULL);
- 
- Print("ОТКРЫЛИ ФАЙЛ ",fileHandle);
- //Print("ВОТ ТАК ВОТ");
  if(handle > 0)
  {
-  // устанавливаем указатель в открытом файле 
-  //FileSeek (handle,0,0);
   // читаем строки из файла и обрабатываем их
   do
   {
    // считываем строку
    // str = FileReadString(handle,-1);
    str = ReadString(handle);
-   Print("ЗНАЧЕНИЕ СТРОКИ = ",str);
    // проверяем на символ 
    if (StringFind(str, "symbol=")!=-1)      symbol      =  StringSubstr(str, 7, -1);    
    // считываем тип таймфрейма
@@ -249,8 +243,6 @@ void CExpertoscop::GetExpertParams(string fileHandle)
    if (StringFind(str, "period_size=")!=-1)
     {
      period_size=StringSubstr(str, 12, -1);
-     
-     Print ("ТИП ПЕРИОДА = [",StringLen(period_type),"] РАЗМЕР ПЕРИОДА = [",StringLen(period_size),"]");
      
      period = ReturnTimeframe(period_type,period_size ); 
     }         
@@ -268,7 +260,7 @@ void CExpertoscop::GetExpertParams(string fileHandle)
       param[params_size-1].symbol      = symbol;                   // сохраняем символ
       read_flag = false; 
      }
-      
+   if (StringFind(str,"</chart>")!=-1) read_flag = false;  // Костыль Костылыч
   }
   while (handle > 0 && read_flag == true); 
   
