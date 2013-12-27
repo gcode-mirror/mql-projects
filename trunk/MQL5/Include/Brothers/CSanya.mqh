@@ -192,12 +192,12 @@ void CSanya::RecountFastDelta()
    }
   }
   
-  if (_type == ORDER_TYPE_SELL && GreatDoubles(currentPrice, _averageMax + _stepsFromStartToExit*_dayStep))
+  if (_type == ORDER_TYPE_SELL && _averageMax > 0 && GreatDoubles(currentPrice, _averageMax + _stepsFromStartToExit*_dayStep))
   {
    PrintFormat("мы продаем, а цена идет вверх и прошла %d шагов", _stepsFromStartToExit);
    flag = true;
   }
-  if (_type == ORDER_TYPE_BUY && LessDoubles(currentPrice, _startDayPrice - _stepsFromStartToExit*_dayStep))  // или мы покупаем, а цена идет вниз
+  if (_type == ORDER_TYPE_BUY && LessDoubles(currentPrice, _averageMin - _stepsFromStartToExit*_dayStep))  // или мы покупаем, а цена идет вниз
   {
    PrintFormat("мы покупаем, а цена идет вниз и прошла %d шагов", _stepsFromStartToExit);
    flag = true;
@@ -241,12 +241,13 @@ void CSanya::RecountFastDelta()
    Print("Цена определила минимум, развернулась и прошла нижнее среднее");
    flag = true;
   }    
+  /*
   if (_average > 0 && _direction*(_average - _startDayPrice) > 0 &&    // Если среднее уже вычислено на уровне выше(ниже) стартовой
       _direction*(priceAB - _average) > 0 && _direction*(priceAB - num0.price) >= 0)
   {
    Print("Мы сейвились, цена ушла против нас, развернулась и прошла среднее - Уменьшаем мл. дельта.");
    flag = true;
-  }
+  }*/
   if (flag)
   {
    Print("Уменьшаем младшую дельта - прекращаем сейвиться");
