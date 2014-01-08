@@ -9,6 +9,7 @@
 #include "ChartObjectsTradeLines.mqh"
 #include "TradeManagerConfig.mqh"
 #include "CTMTradeFunctions.mqh" //подключаем библиотеку для совершения торговых операций
+#include "GlobalVariable.mqh"
 #include <StringUtilities.mqh>
 #include <CompareDoubles.mqh>
 #include <CLog.mqh>
@@ -22,6 +23,7 @@ private:
    CTMTradeFunctions *trade;
    CConfig config;
    ulong _magic;
+   ulong _ticket;
    ulong _posTicket;
    string _symbol;
    double _lots;
@@ -69,6 +71,7 @@ public:
                 
    ulong    getMagic() {return (_magic);};
    void     setMagic(ulong magic) {_magic = magic;};
+   ulong    getTicket() {return(_ticket);};
    ulong    getPositionTicket() {return(_posTicket);};
    string   getSymbol() {return (_symbol);};
    double   getVolume() {return (_lots);};
@@ -108,13 +111,14 @@ public:
    ENUM_POSITION_STATUS OpenPosition();
    ENUM_STOPLEVEL_STATUS setStopLoss();
    ENUM_STOPLEVEL_STATUS setTakeProfit();
-   bool ModifyPosition();
+   bool ModifyPosition(double lot, int sl, int tp);
    bool CheckTakeProfit();
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();
    ENUM_POSITION_STATUS RemovePendingPosition();
    bool ClosePosition();
    bool UsualTrailing();
    bool LosslessTrailing();
+   long NewTicket();
    bool ReadFromFile (int handle);
    void WriteToFile (int handle);
  };
@@ -356,12 +360,13 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    break;
  }
 
+ NewTicket();
  return(_pos_status);
 }
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-bool CPosition::ModifyPosition()
+bool CPosition::ModifyPosition(double lot, int sl, int tp)
 {
  return(false);
 }
@@ -676,6 +681,19 @@ bool CPosition::LosslessTrailing(void)
  return false;
 }
 
+//+------------------------------------------------------------------+
+/// Increments Config.VirtualOrderTicketGlobalVariable.
+/// \return    Unique long integer
+//+------------------------------------------------------------------+
+long CPosition::NewTicket()
+{
+ CGlobalVariable g_lTicket;
+ g_lTicket.Name(Config.VirtualOrderTicketGlobalVariable);
+ _ticket=g_lTicket.Increment();
+ return(_ticket);
+}
+  
+  
 //+------------------------------------------------------------------+
 /// Reads order line from an open file handle.
 /// File should be FILE_CSV format

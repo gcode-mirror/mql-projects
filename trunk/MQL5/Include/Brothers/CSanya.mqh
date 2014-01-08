@@ -48,9 +48,10 @@ protected:
 public:
 //--- Конструкторы
  //void CSanya();
- void CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
-             , int stepsFromStartToExtremum, int stepsFromStartToExit, int stepsFromExtremumToExtremum
-             , ENUM_ORDER_TYPE type ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod);      // Конструктор CSanya
+ void CSanya(int deltaFast, int deltaSlow, int dayStep, int monthStep
+                    , int stepsFromStartToExtremum, int stepsFromStartToExit, int stepsFromExtremumToExtremum
+                    , ENUM_ORDER_TYPE type ,int volume, int fastDeltaStep = 100, int slowDeltaStep = 10
+                    , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30);  // Конструктор Саня
              
  void InitMonthTrade();
  void RecountFastDelta();
@@ -64,9 +65,10 @@ public:
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDeltaStep, int dayStep, int monthStep
+void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
                     , int stepsFromStartToExtremum, int stepsFromStartToExit, int stepsFromExtremumToExtremum
-                    , ENUM_ORDER_TYPE type ,int volume, double factor, int percentage, int fastPeriod, int slowPeriod)
+                    , ENUM_ORDER_TYPE type ,int volume, int fastDeltaStep, int slowDeltaStep
+                    , int percentage, int fastPeriod, int slowPeriod)
   {
    _deltaFastBase = deltaFast;
    _deltaSlowBase = deltaSlow;
@@ -81,7 +83,7 @@ void CSanya::CSanya(int deltaFast, int deltaSlow, int fastDeltaStep, int slowDel
    _slowPeriod = slowPeriod;
    _type = type;
    _volume = volume;
-   _factor = factor;
+   _factor = 0.01;
    _percentage = percentage;
   
    _last_time = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
@@ -359,6 +361,7 @@ void CSanya::RecountLevels(SExtremum &extr)
    if (GreatDoubles(num0.direction*(num0.price - _newStartDayPrice), _stepsFromStartToExtremum*_dayStep, 5))
    {
     _startDayPrice = num0.price - num0.direction*_stepsFromStartToExtremum*_dayStep;
+    startLine.Price(0, _startDayPrice);
    }
    // если расстояние меньше, то смотрим разницу; переносим только если разница больше шага
    else

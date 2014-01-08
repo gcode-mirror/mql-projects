@@ -19,7 +19,6 @@
 input ulong _magic = 4577;
 input ENUM_ORDER_TYPE type = ORDER_TYPE_BUY; // Основное направление торговли
 input int volume = 10;  // Полный объем торгов
-input double factor = 0.01; // множитель для вычисления текущего объема торгов от дельты
 input int percentage = 70;  // сколько процентов объем дневной торговли может перекрывать от месячно
 input int slowPeriod = 30;  // Период обновления старшей дельта в днях
 input int fastPeriod = 24;  // Период обновления младшей дельта в часах
@@ -34,6 +33,8 @@ string symbol;
 datetime startTime;
 double openPrice;
 double currentVolume;
+
+double factor = 0.01; // множитель для вычисления текущего объема торгов от дельты
 
 CDinya dyn(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, type, volume, factor, percentage, fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+

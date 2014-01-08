@@ -44,20 +44,20 @@ public:
   void ~CTradeManager(void);
   
   bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
-                    int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
+                    int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
   bool OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
-                    int minProfit, int trailingStop, int trailingStep, int priceDifference = 0);
-  void ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action);
-  bool ClosePosition(long ticket, color Color=CLR_NONE);     // Закртыие позиции по тикету
-  bool ClosePosition(int i,color Color=CLR_NONE);            // Закрытие позиции по индексу в массиве позиций
-  bool ClosePosition(string symbol, color Color=CLR_NONE);   // Закрытие позиции по символу 
+                    int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
+  void ModifyPosition(long ticket, double lot, int sl, int tp);
+  bool ClosePosition(long ticket, color Color = CLR_NONE);     // Закртыие позиции по тикету
+  bool ClosePosition(int i, color Color = CLR_NONE);           // Закрытие позиции по индексу в массиве позиций
   void DoUsualTrailing();
   void DoLosslessTrailing();
   bool isMinProfit(string symbol);
   void OnTick();
   void OnTrade(datetime history_start);
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
- 
+  int GetPositionCount(){return (_openPositions.Total() + _positionsToReProcessing.Total());};
+  
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
   long GetHistoryDepth();  //возвращает глубину истории
 };
@@ -65,7 +65,7 @@ public:
 //+---------------------------------
 // Конструктор
 //+---------------------------------
-void CTradeManager::CTradeManager():  _useSound(true), _nameFileSound("expert.wav") 
+void CTradeManager::CTradeManager(): _useSound(true), _nameFileSound("expert.wav") 
 {
  _positionsToReProcessing = new CPositionArray();
  _openPositions           = new CPositionArray();
@@ -112,7 +112,7 @@ void CTradeManager::~CTradeManager(void)
 //| если существует противоположная позиция - она будет закрыта      |
 //+------------------------------------------------------------------+
 bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
-                                 int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
+                                 int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifferense = 0)
 {
  if (_positionsToReProcessing.OrderCount(symbol, _magic) > 0) 
  {
@@ -248,7 +248,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type
 //| если существует противоположная позиция - она будет закрыта      |
 //+------------------------------------------------------------------+
 bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
-                                 int minProfit, int trailingStop, int trailingStep, int priceDifferense = 0)
+                                 int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifferense = 0)
 {
  int i = 0;
  int total = _openPositions.Total();
@@ -301,7 +301,7 @@ void CTradeManager::DoUsualTrailing()
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
   }
  } 
-};
+}
 
 //+------------------------------------------------------------------+ 
 // Функция вычисления параметров трейлинга
@@ -319,12 +319,17 @@ void CTradeManager::DoLosslessTrailing()
    log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
   }
  } 
-};//+------------------------------------------------------------------+ 
+}
+
+//+------------------------------------------------------------------+ 
 // Функция модификации позиции
 //+------------------------------------------------------------------+
-void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
+void CTradeManager::ModifyPosition(long ticket, double lot, int sl, int tp)
 {
-};
+ if (lot > 0){}
+ if (sl > 0){}
+ if (tp > 0){}
+}
 
 //+------------------------------------------------------------------+
 /// Called from EA OnTrade().
@@ -332,7 +337,7 @@ void CTradeManager::ModifyPosition(ENUM_TRADE_REQUEST_ACTIONS trade_action)
 //+------------------------------------------------------------------+
 void CTradeManager::OnTrade(datetime history_start=0)
 {
- //PrintFormat("total=%d",_positionsHistory.Total());
+ 
 }
 
 //+------------------------------------------------------------------+
@@ -519,27 +524,6 @@ bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 {
  int index = _openPositions.TicketToIndex(ticket);
  return ClosePosition(index);
-}
-
-//+------------------------------------------------------------------+
-/// Close all virtual positions on symbol
-/// \param [in] symbol			current symbol
-/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
-/// \return							true if successful, false if not
-//+------------------------------------------------------------------+
-bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
-{
- int total = _openPositions.Total();
- CPosition *pos;
- for (int i = 0; i < total; i++)
- {
-  pos = _openPositions.At(i);
-  if (pos.getSymbol() == symbol)
-  {
-   return(ClosePosition(i));
-  }
- }
- return false;
 }
 
 //+------------------------------------------------------------------+
