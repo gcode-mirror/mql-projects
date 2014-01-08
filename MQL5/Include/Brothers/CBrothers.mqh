@@ -72,7 +72,7 @@ public:
  
 //--- Методы инициализации защищенных данных:  
  void SetSymbol(string symbol) {_symbol = (symbol==NULL || symbol=="") ? Symbol() : symbol; }
- void SetPeriod(ENUM_TIMEFRAMES period) {_period = (period==PERIOD_CURRENT) ? Period() : period; }
+ void SetPeriod(ENUM_TIMEFRAMES period) {_period = period;}
  void SetStartHour(int startHour) {_startHour = startHour;}
  void SetStartHour(datetime startTime) {_startHour = (GetHours(startTime) + 1) % 24; Print("_startHour=",_startHour);}
  void SetStartDayOfWeek(datetime startTime) {_startDayOfWeek = GetDayOfWeek(startTime); Print("_startHour=",_startHour);}

@@ -19,12 +19,7 @@
 input ulong _magic = 4577;
 input ENUM_ORDER_TYPE type = ORDER_TYPE_BUY; // Основное направление торговли
 input int volume = 10;  // Полный объем торгов
-input double factor = 0.01; // множитель для вычисления текущего объема торгов от дельты
-input int percentage = 70;  // сколько процентов объем дневной торговли может перекрывать от месячно
-input int slowPeriod = 30;  // Период обновления старшей дельта в днях
-input int fastPeriod = 24;  // Период обновления младшей дельта в часах
 input int slowDelta = 30;   // Старшая дельта
-input DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 input int dayStep = 100;     // шаг границы цены в пунктах для дневной торговли
 input int monthStep = 400;  // шаг границы цены в пунктах для месячной торговл 
 input int stepsFromStartToExtremum = 4;    // максимальное количество шагов от точки старта до экстремума
@@ -36,10 +31,16 @@ datetime startTime;
 double openPrice;
 double currentVolume;
 
+double factor = 0.01; // множитель для вычисления текущего объема торгов от дельты
+int percentage = 100;  // сколько процентов объем дневной торговли может перекрывать от месячно
+int fastPeriod = 24;  // Период обновления младшей дельта в часах
+int slowPeriod = 30;  // Период обновления старшей дельта в днях
+
 int fastDelta = 0;   // Младшая дельта
 DELTA_STEP fastDeltaStep = HUNDRED;  // Шаг изменения МЛАДШЕЙ дельты
+DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 
-CSanya san(fastDelta, slowDelta, fastDeltaStep, slowDeltaStep, dayStep, monthStep, stepsFromStartToExtremum, stepsFromStartToExit, stepsFromExtremumToExtremum, type, volume, factor, percentage, fastPeriod, slowPeriod);
+CSanya san(fastDelta, slowDelta, dayStep, monthStep, stepsFromStartToExtremum, stepsFromStartToExit, stepsFromExtremumToExtremum, type, volume, fastDeltaStep, slowDeltaStep, percentage, fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+

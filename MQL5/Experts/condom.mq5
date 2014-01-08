@@ -20,7 +20,7 @@
 //input ulong _magic = 1122;
 input int SL = 150;
 input int TP = 500;
-input double _lot = 1;
+input double lot = 1;
 input int historyDepth = 40;
 input ENUM_TIMEFRAMES timeframe = PERIOD_M1;
 input bool usualTrailing = true;
@@ -62,7 +62,7 @@ bool waitForBuy;
 int OnInit()
   {
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
-   history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
+   history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
    
    if (usualTrailing && losslessTrailing)
    {
@@ -198,7 +198,7 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     if (ctm.OpenUniquePosition(symbol, opBuy, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenUniquePosition(symbol, opBuy, lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -210,7 +210,7 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (ctm.OpenUniquePosition(symbol, opSell, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenUniquePosition(symbol, opSell, lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
