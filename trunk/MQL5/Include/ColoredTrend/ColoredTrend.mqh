@@ -92,17 +92,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 //+------------------------------------------+
 int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
- if (bar != 0) //потому что иначе в случае когда не получится подгрузить данные бар будет прозрачным!
- {
-  enumMoveType[bar] = enumMoveType[bar - 1];
-  PrintFormat("B: enumMoveType[%d] = %s, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
- }
- if(FillTimeSeries(TOP_TF, 4, start_pos, buffer_Rates) < 0) return (11); // получим размер заполненного массива
- if(FillTimeSeries(BOTTOM_TF, 4, start_pos, buffer_Rates) < 0) return (12); // получим размер заполненного массива
- if(FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates) < 0) return (13); // получим размер заполненного массива
- if(FillATRBuf(4, start_pos) < 0) return (2);  // заполним массив данными индикатора ATR
- // Выделим память под массивы цветов и экстремумов
- if(bar == ArraySize(enumMoveType)) 
+  if(bar == ArraySize(enumMoveType)) 
  {
   PrintFormat("BEFORE_MOVETYPE: %d", ArraySize(enumMoveType));
   ArrayResize (enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
@@ -114,6 +104,16 @@ int CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topT
   ArrayResize (  aExtremums, ArraySize(  aExtremums)*2, ArraySize(  aExtremums)*2);
   PrintFormat("AFTER_EXTREMUMS: %d", ArraySize(aExtremums));
  }
+ if (bar != 0) //потому что иначе в случае когда не получится подгрузить данные бар будет прозрачным!
+ {
+  enumMoveType[bar] = enumMoveType[bar - 1];
+  PrintFormat("B: enumMoveType[%d] = %s, enumMoveType[%d] = %s", bar, MoveTypeToString(enumMoveType[bar]), bar - 1, MoveTypeToString(enumMoveType[bar - 1]));
+ }
+ if(FillTimeSeries(TOP_TF, 4, start_pos, buffer_Rates) < 0) return (11); // получим размер заполненного массива
+ if(FillTimeSeries(BOTTOM_TF, 4, start_pos, buffer_Rates) < 0) return (12); // получим размер заполненного массива
+ if(FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates) < 0) return (13); // получим размер заполненного массива
+ if(FillATRBuf(4, start_pos) < 0) return (2);  // заполним массив данными индикатора ATR
+ // Выделим память под массивы цветов и экстремумов
  difToNewExtremum =  buffer_ATR[1] * _percentage_ATR;
  
  
