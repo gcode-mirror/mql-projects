@@ -75,9 +75,8 @@ double   order_price    = -1;    //цена ордера
 void start() 
 {
   // формируем адреса выходных файлов
-  full_path_instant = path + file_instant + "_" + Symbol() + ".txt";
+  full_path_instant = StringConcatenate(path, file_instant, "_", Symbol(), ".txt");
   full_path_pending = path + file_pending + "_" + Symbol() + ".txt"; 
-  //int name [8] = {'C', ':', '\\', 'A', '.', 't', 'x', 't'}; 
 /*  if(total_orders != OrdersTotal())
   {
    Print(total_orders, " = ", OrdersTotal());
@@ -89,7 +88,7 @@ void start()
    check = false;
    int file_handle = CreateFileW(full_path_instant, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, 128, NULL); 
    Print("Открыт файл. handle = ", file_handle, " name = ", full_path_instant);   
-   //SaveOrderToFile(file_handle);
+   SaveOrderToFile(file_handle);
    
    CloseHandle(file_handle);
   }
