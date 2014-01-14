@@ -37,6 +37,10 @@ class Panel
   //---- переменные для хренения количества объектов различного класса
   string           _object_name[];    // массив имен созданных объектов
   uint             _n_objects;        // количество объектов 
+  bool             _show_panel;       // флаг отображения панели на графике. true - панель отображена, false - панель скрыта 
+ private:
+  // приватные методы панели
+  void DrawPanel (bool show_panel);   // приватный метод, оторбражающий или скрывающий панель с графика
  public:
   //методы set
   
@@ -60,7 +64,8 @@ class Panel
   _sub_window(sub_window),
   _corner(corner),
   _z_order(z_order),
-  _n_objects(0)
+  _n_objects(0),
+  _show_panel(false)
   {
    bool objectCreated;
    //проверка уникальности имени объекта
@@ -116,6 +121,10 @@ class Panel
 //| Публичные методы класса панели                                    |
 //+-------------------------------------------------------------------+
 
+ //----  скрывает элементы панели
+ void HidePanel ();
+ //----  отображает элементы панели
+ void ShowPanel (); 
  //----  создает объекты 
  void AddElement (PANEL_ELEMENTS elem_type, string elem_name,string caption,uint x,uint y,uint w,uint h);
  //---   перемещает панель на координаты x, y
@@ -126,8 +135,37 @@ class Panel
 //описание методов класса Panel
 
 //+-------------------------------------------------------------------+
+//| Приватные методы класса панели                                    |
+//+-------------------------------------------------------------------+
+
+ void Panel::DrawPanel(bool show_panel)
+  {
+   int index;
+   _show_panel = show_panel;
+   // изменение видимости панели
+   ObjectSetInteger(_chart_id, _name,OBJPROP_HIDDEN,show_panel);
+    for (index=0;index<_n_objects;index++)
+       { 
+        // изменение видимости элементов панели
+        ObjectSetInteger(_chart_id,_object_name[index],OBJPROP_HIDDEN,show_panel);  
+       }
+  }
+
+//+-------------------------------------------------------------------+
 //| Публичные методы класса панели                                    |
 //+-------------------------------------------------------------------+
+
+ void Panel::HidePanel(void)
+  //скрывает элементы панели
+  {
+   DrawPanel(true);
+  }
+  
+ void Panel::ShowPanel(void)
+  //отображает элементы панели
+  {
+   DrawPanel(false);
+  }
 
  void Panel::AddElement(PANEL_ELEMENTS elem_type,string elem_name,string caption,uint x,uint y,uint w,uint h)
   //добавляет элемент с заданным именем
