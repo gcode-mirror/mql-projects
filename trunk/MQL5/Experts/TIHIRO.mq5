@@ -13,6 +13,10 @@
 #include <Graph\Widgets\WBackTest.mqh>
 #include <TradeManager\GetBackTest.mqh>
 
+#import "kernel32.dll"
+int      WinExec(uchar &NameEx[], int dwFlags);
+#import
+
 //+------------------------------------------------------------------+
 //| TIHIRO эксперт                                                   |
 //+------------------------------------------------------------------+
@@ -103,7 +107,10 @@ void OnChartEvent(const int id,
         }
        if (sparam == "backtest_close_button") // кнопка закрытия панели
         {
-         Print("ЗАКРЫТЬ ПАНЕЛЬ");       
+          Print("ЗАКРЫТИЕ ПАНЕЛИ");  
+          uchar val[];
+          StringToCharArray ("mspaint.exe",val);
+          Alert("",WinExec(val, 1));     
         }
     }
   } 

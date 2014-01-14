@@ -54,12 +54,10 @@
 //+------------------------------------------------------------------+
 
 // параметры эксперта
-input string   path          = "D:\\";            // путь к файлам, хранящего информацию о последних ордерах 
-input string   file_history  = "ORDERS_HISTORY";  // часть  имени файла, хранящего историю ордеров
-input string   file_terminal = "ORDERS_TERMINAL"; // часть  имени файла, хранящего текущие ордера
+input string   path          = "D:\\";            // путь к файлу, хранящего информацию о последних ордерах 
+input string   file_speaker  = "SPEAKER";         // часть  имени файла, хранящего историю ордеров
 
-string   full_path_history;                       // полный путь к файлу истории ордеров
-string   full_path_terminal;                      // полный путь к файлу текущим ордеров
+string   full_path_speaker;                       // полный путь к файлу истории ордеров
 
 // переменные для проверки обновления ордеров 
 int      total_orders_history   = 0;              // всего ордеров в истории
@@ -70,11 +68,7 @@ long     order_status   = 0;     //статус ордера
 double   order_volume   = 0;     //объем ордера
 double   take_profit    = 0;     //тейк профит
 double   stop_loss      = 0;     //стоп лосс
-string   comment        = "";    //комментарий к ордеру
-ulong    ticket         = 0;     //тикет 
-// параметры для отложенников
-double   order_price    = -1;    //цена ордера 
-
+ulong    ticket         = 0;     //тикет ордера
 
 //+------------------------------------------------------------------+
 //| Функции спикера                                                  |
@@ -86,7 +80,6 @@ void SaveOrdersFromHistory  (int total)
 {
  bool   openFileFlag = true;  // Флаг открытия файла 
  int    file_handle  = -1;    // хэндл файла  
- Alert("TOTAL = ",total," OLD TOTAL = ",total_orders_history);
   //--- Пройдем по всем ордерам в полученном списке от последнего ордера в списке к последнему ордеру предыдущей итерации
  for(int i = total-1; i >= total_orders_history; i--)
   {
@@ -100,15 +93,16 @@ void SaveOrdersFromHistory  (int total)
         order_volume =  HistoryOrderGetDouble(ticket,ORDER_VOLUME_INITIAL);  // извлекаем объем ордера (лот) 
         take_profit  =  HistoryOrderGetDouble(ticket, ORDER_TP);             // тейк профит ордера
         stop_loss    =  HistoryOrderGetDouble(ticket, ORDER_SL);             // стоп лосс ордера  
-        comment      =  HistoryOrderGetString(ticket, ORDER_COMMENT);        // комментарий к ордеру
         
     // если нашли первый ордер с текущим символом
     if (openFileFlag)               
      {
       // открываем файл на запись
-      file_handle = CreateFileW(full_path_history, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);  
+      file_handle = CreateFileW(full_path_speaker, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);  
       // меняем флаг 
       openFileFlag = false;
+      // сохраняем текущую дату и время в файл
+      WriteTo(file_handle, TimeToString(TimeCurrent(),TIME_DATE|TIME_SECONDS)+"&"); 
      }
     // записываем ордер в файл  
      SaveOrderToFile(file_handle);
@@ -122,50 +116,6 @@ void SaveOrdersFromHistory  (int total)
 }
 
 
-// Проходит по всем последним изменениям в ордерах и сохраняет их в файл 
-
-void SaveOrdersFromTerminal  () 
-{
- bool   openFileFlag = true;  // Флаг открытия файла 
- int    file_handle  = -1;    // хэндл файла  
- int    total        = 0;     // размер буфера ордеров
- total = OrdersTotal();       // получаем размер буфера ордеров
-  //--- Пройдем по всем ордерам в полученном списке от последнего ордера в списке к последнему ордеру предыдущей итерации
- for(int i = total-1; i >= 0; i--)
-  {
-   // извлекаем тикет 
-   ticket = OrderGetTicket(i);
-   // если тикет больше нуля 
-   if (ticket > 0)
-    {
-     // если символ ордера равен текущему символу
-   if (OrderGetString(ORDER_SYMBOL) == _Symbol)
-     {
-        order_type   =  OrderGetInteger(ORDER_TYPE);           // извлекаем тип ордера
-        order_status =  OrderGetInteger(ORDER_STATE);          // извлекаем статус ордера
-        order_volume =  OrderGetDouble(ORDER_VOLUME_INITIAL);  // извлекаем объем ордера (лот) 
-        take_profit  =  OrderGetDouble(ORDER_TP);              // тейк профит ордера
-        stop_loss    =  OrderGetDouble(ORDER_SL);              // стоп лосс ордера  
-        comment      =  OrderGetString(ORDER_COMMENT);         // комментарий к ордеру
-        order_price  =  OrderGetDouble(ORDER_PRICE_OPEN);      // цена, указанная в ордере
-        
-    // если нашли первый ордер с текущим символом
-    if (openFileFlag)               
-     {
-      // открываем файл на запись
-      file_handle = CreateFileW(full_path_terminal, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);  
-      // меняем флаг 
-      openFileFlag = false;
-     }
-    // записываем ордер в файл  
-     SaveOrderToFile(file_handle);
-     } 
-   }
- }
-  // закрываем файл
-  CloseHandle(file_handle);
-}
-
 bool SaveOrderToFile(int handle)  //сохраняет информациб об ордере в файл 
 {
  if(handle < 0 )
@@ -173,16 +123,11 @@ bool SaveOrderToFile(int handle)  //сохраняет информациб об ордере в файл
   Alert("Не удалось записать ордер в файл");
   return false;
  }
- WriteTo(handle, IntegerToString(ticket)+"&");       // сохраняем тикет ордера
  WriteTo(handle, IntegerToString(order_type)+"&");   // сохраняем тип ордера
  WriteTo(handle, IntegerToString(order_status)+"&"); // статус ордера
  WriteTo(handle, DoubleToString(order_volume)+"&");  // сохраняем объем ордера
  WriteTo(handle, DoubleToString(take_profit)+"&");   // сохраняем take profit
  WriteTo(handle, DoubleToString(stop_loss)+"&");     // сохраняем stop loss
- WriteTo(handle, comment+"&");                       // комментарий к ордеру  
- WriteTo(handle, DoubleToString(order_price)+"&");   // получаем цену ордера
- // если использованы отложенники, то цена существует
- 
  return true;
 }
 
@@ -206,9 +151,7 @@ void WriteTo(int handle, string buffer)
 int OnInit()
 {
  // формируем адрес выходного файла ордеров в истории
- full_path_history = path + file_history+"_"+_Symbol+".txt";
- // формируем адрес выходного файла ордеров
- full_path_terminal = path + file_terminal+"_"+_Symbol+".txt"; 
+ full_path_speaker = path + file_speaker+"_"+_Symbol+".txt";
  // сохраняем текущее количество ордеров в истории
  if(HistorySelect(0,TimeCurrent()))
  {
@@ -232,6 +175,4 @@ void OnTrade()
    if (total > total_orders_history)
     SaveOrdersFromHistory (total);  
   }
- // проверка на изменение в списке отложенников
-  SaveOrdersFromTerminal();
 }

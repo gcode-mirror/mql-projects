@@ -15,7 +15,11 @@
    private:
     // поля виджета
     Panel * _wBackTest;  // объект панели бэктеста
+    bool    _showPanel; // флаг отображения панели на графике. true - панель отображена, false - панель скрыта 
    public:
+    // методы графической панели
+    void HidePanel (){_wBackTest.HidePanel();};  // скрывает панель
+    void ShowPanel (){_wBackTest.ShowPanel();};  // отображает панель на графике
     // конструктор класса виджета
     WBackTest (string name,
          string caption,
@@ -26,8 +30,8 @@
          long chart_id,
          int sub_window,
          ENUM_BASE_CORNER corner,
-         long z_order
-         )
+         long z_order)
+         
      { 
       // создаем объект панели виджета
       _wBackTest = new Panel(name, caption, x, y, width, height, chart_id, sub_window, corner, z_order);
