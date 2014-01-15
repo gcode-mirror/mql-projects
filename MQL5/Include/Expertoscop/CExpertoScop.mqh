@@ -135,6 +135,7 @@ string CExpertoscop::ReadString(int handle)
     while (nBytesRead[0]>0 && buffer[0]!=13) {
       // формируем строку
       str = str + ch;
+      Comment(" ");
       // считываем очередной символ
       ReadFile(handle, buffer, 2, nBytesRead, NULL);
       // сохраняем символ
@@ -234,6 +235,7 @@ void CExpertoscop::GetExpertParams(string fileHandle)
   {
    // считываем строку
    // str = FileReadString(handle,-1);
+   Comment("");
    str = ReadString(handle);
    // проверяем на символ 
    if (StringFind(str, "symbol=")!=-1)      symbol      =  StringSubstr(str, 7, -1);    
