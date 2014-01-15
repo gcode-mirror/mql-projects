@@ -4,9 +4,53 @@
 //|                                              http://www.mql5.com |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
-#property link      "http://www.mql5.com"
+#property link      "http://www.mql5.com"//---
+
+
 #include <TradeManager/TradeManagerEnums.mqh>
 #include <TradeManager/PositionArray.mqh>
+
+//+------------------------------------------------------------------+
+//| Импорт WIN API библиотеки                                        |
+//+------------------------------------------------------------------+
+
+#import "kernel32.dll"
+
+  bool CloseHandle                // Закрытие объекта
+       ( int hObject );                  // Хэндл объекта
+       
+  int CreateFileW                 // Создание открытие объекта
+      ( string lpFileName,               // Полный путь доступа к объекту
+        int    dwDesiredAccess,          // Тип доступа к объекту
+        int    dwShareMode,              // Флаги общего доступа
+        int    lpSecurityAttributes,     // Описатель безопасности
+        int    dwCreationDisposition,    // Описатель действия
+        int    dwFlagsAndAttributes,     // Флаги аттрибутов
+        int    hTemplateFile );      
+          
+  bool WriteFile                  // Запись данных в файл
+       ( int    hFile,                   // handle to file to write to
+         char    &dBuffer[],             // pointer to data to write to file
+         int    nNumberOfBytesToWrite,   // number of bytes to write
+         int&   lpNumberOfBytesWritten[],// pointer to number of bytes written
+         int    lpOverlapped );          // pointer to structure needed for overlapped I/O    
+  
+  int  RtlGetLastWin32Error();
+  
+  int  RtlSetLastWin32Error (int dwErrCode);       
+    
+#import
+
+//+------------------------------------------------------------------+
+//| Необходимые константы                                            |
+//+------------------------------------------------------------------+
+
+// Тип доступа к объекту
+#define _GENERIC_WRITE_      0x40000000
+// Флаги общего доступа
+#define _FILE_SHARE_WRITE_   0x00000002
+// Описатель действия
+#define _CREATE_ALWAYS_      2
 
 //+------------------------------------------------------------------+
 //| Класс для работы с бэктестом                                     |
@@ -45,8 +89,10 @@ class BackTest
    //прочие системные методы
    bool LoadHistoryFromFile(string file_url,datetime start,datetime finish);          //загружает историю позиции из файла
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
+ //  void Save
    bool SaveBackTestToFile (string file_url,string symbol); //сохраняет результаты бэктеста
    bool SaveArray(string file_url);
+   void WriteTo (int handle,string buffer);            // сохраняет в файл строку по заданному хэндлу
    //дополнительный методы
    string SignToString (int sign);                     //переводит знак позиции в строку
  };
@@ -422,11 +468,14 @@ bool BackTest::SaveBackTestToFile (string file_url,string symbol)
   //индексы start и finish
   int start = 0;
   int finish = 0;
-  
+  int index;    // счетчки для цикла
+  double current_balance;
+  CPosition *pos;
+  uint total = _positionsHistory.Total();  //всего количество позиций в истории
   //открываем файл на запись
-  int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON|FILE_ANSI, ";");
+  int file_handle =  FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON|FILE_ANSI, ";"); 
   //если не удалось создать файл
-  if(file_handle == INVALID_HANDLE)
+  if(file_handle == INVALID_HANDLE )
    {
     Print("Не возможно создать файл результатов бэктеста");
     return(false);
@@ -445,66 +494,38 @@ bool BackTest::SaveBackTestToFile (string file_url,string symbol)
   double  maxProfitRange     =  GetMaxInARow(symbol,1);        //максимальный профит
   double  maxLoseRange       =  GetMaxInARow(symbol,-1);       //максимальный убыток
   double  maxDrawDown        =  GetMaxDrawdown(symbol);        //максимальная просадка
+  double  absDrawDown        =  0;                             //абсолютная просадка
+  double  relDrawDown        =  0;                             //относительная просадка 
+  
   //сохраняем файл параметров вычисления бэктеста
-
-   // Alert("N TRADES = ",GetNTrades(symbol));
- 
-  //сохраняем строку описания количеств позиций
-  FileWrite(file_handle,
-            "N Trades",
-            "N Win Trades",
-            "N Lose Trades",
-            "Sign of Last Trade"
-           );
-  //строка с количестами позиций
-  FileWrite(file_handle,
-            n_trades,
-            n_win_trades,
-            n_lose_trades,
-            SignToString(sign_last_pos)
-           );
-  //сохраняем описание макс. и мин. сделок
-  FileWrite(file_handle,
-            "Max Trade",
-            "Min Trade"
-           ); 
-  //макс. и мин. сделки
-  FileWrite(file_handle,
-            max_trade,
-            min_trade
-           );
-  //средние сделки
-  FileWrite(file_handle,
-            "Average Win Trade",
-            "Average Lose Trade"
-           );
-  //средние сделки
-  FileWrite(file_handle,
-            aver_profit_trade,
-            aver_profit_trade
-           );
-  //подряд идущие
-  FileWrite(file_handle,
-            "Max N Win Trades",
-            "Max N Lose Trades",
-            "Max Profit Range",
-            "Max Losing Range"
-           );
-  //подряд идушие
-  FileWrite(file_handle,
-            maxPositiveTrades,
-            maxNegativeTrades,
-            maxProfitRange,
-            maxLoseRange
-           );
-  //просадки
-  FileWrite(file_handle,
-            "Max DrawDown"
-           );
-  //просадки
-  FileWrite(file_handle,
-            maxDrawDown
-           );
+  FileWrite(file_handle,n_trades+1); // сохраняем количество позиций + 1 для начального баланса)
+  FileWrite(file_handle,n_win_trades); // сохраняем количество прибыльных позиций
+  FileWrite(file_handle,n_lose_trades); // сохраняем количество убыточных позиций    
+  FileWrite(file_handle,sign_last_pos); // сохраняем знак последней позиции
+  FileWrite(file_handle,max_trade); // сохраняем максимальную прибыльную позицию
+  FileWrite(file_handle,min_trade); // сохраняем минимальную убыточную позицию
+  FileWrite(file_handle,maxProfitRange); // сохраняем максимальную непрерывную прибыль
+  FileWrite(file_handle,maxLoseRange); // сохраняем максимальный непрервный убыток
+  FileWrite(file_handle,maxPositiveTrades); // сохраняем максимальное число непрервных прибыльных позиций
+  FileWrite(file_handle,maxNegativeTrades); // сохраняем максимальное число непрервных убыточных позиций 
+  FileWrite(file_handle,aver_profit_trade); // сохраняем среднее значение прибыльной позиции
+  FileWrite(file_handle,aver_lose_trade); // сохраняем среднее значение убыточной позиции    
+  FileWrite(file_handle,maxDrawDown); // сохраняем максимальную просадку по балансу
+  FileWrite(file_handle,absDrawDown); // сохраняем абсолютную просадку по балансу
+  FileWrite(file_handle,relDrawDown); // сохраняем относительную просадку по балансу
+  //сохраняем точки графиков (баланса, маржи)
+  current_balance = 0;
+  FileWrite(file_handle,current_balance); // сохраняем изначальный баланс
+  for (index=0;index<total;index++)
+   {
+    // получаем указатель на позицию
+    pos = _positionsHistory.Position(index);
+     if (pos.getSymbol() == symbol) //если символ позиции совпадает с переданным 
+      {
+       current_balance = current_balance + pos.getPosProfit(); // вычисляем  баланс в данной точке, прибавляя к балансу прибыль по позиции
+       FileWrite(file_handle,current_balance); // сохраняем вычисленный баланс    
+      }
+   }
   //закрываем файл
   FileClose(file_handle);
  return (true);
