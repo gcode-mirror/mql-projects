@@ -116,6 +116,7 @@ void SaveOrdersFromHistory  (int total)
 }
 
 
+
 bool SaveOrderToFile(int handle)  //сохраняет информациб об ордере в файл 
 {
  if(handle < 0 )
