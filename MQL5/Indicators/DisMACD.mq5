@@ -35,7 +35,7 @@
 //| Вводимые параметры индикатора                                    |
 //+------------------------------------------------------------------+
 
-input short               bars=100;                  // начальное количество баров истории
+input short               bars=1000;                  // начальное количество баров истории
 input short               tale=15;                   // малый хвост для поиска экстремума
 input int                 fast_ema_period=9;         // период быстрой средней
 input int                 slow_ema_period=12;        // период медленной средней
@@ -121,39 +121,72 @@ int OnCalculate(const int rates_total,
       {
        line_buffer[index] = 0;
       }
-     // сохраняем в retCode
-     retCode = divergenceMACD(handleMACD,symbol,timeFrame,0);
-     retCode = 1;
-     if (retCode == 1)  // если найдено расхождение
+     // проходим по всем барам и вычисляем схождения\расхождения
+     for (index=0;index<50000;index++)
       {
-       // Alert("НАШЛИ РАСХОЖДЕНИЕ - Левая точка = ");
-       // сохранение координат точек
-       //pn1.n_bar = index_Price_global_max; 
-       pn1.n_bar = rates_total-11;
-       pn1.price = high[rates_total-11];
-       pn2.n_bar = rates_total-1;
-       pn2.price = high[rates_total-1];
-       // вычисление тангенса
-       tg = GetTan();
-       Alert("ТАНГЕНС = ",tg);
-       //вычисление точек линии
-       for (index=pn1.n_bar;index<pn2.n_bar;index++)
+    //  Alert("STELLA = ",index);
+       retCode = divergenceMACD(handleMACD,symbol,timeFrame,index);
+       if (retCode == 1)
         {
-         line_buffer[index] = GetLineY(index);
-
+         Alert("РАСХОЖДЕНИЕ НАЙДЕНО");
+         pn1.n_bar = index_MACD_local_max;
+         pn1.price = high[index_MACD_local_max];
+         pn2.n_bar = index_MACD_global_max;
+         pn2.price = high[index_MACD_global_max]; 
         }
-       //return(rates_total);
-      }
-     if (retCode == -1) // если найдено схождение 
-      {  
-       // Alert("НАШЛИ СХОЖДЕНИЕ - Правая точка = ");
-       // сохранение координат точек
-              
+       else if (retCode == -1)
+        {
+         Alert("СХОЖДЕНИЕ НАЙДЕНО");        
+         pn1.n_bar = index_MACD_local_min;
+         pn1.price = low[index_MACD_local_min];
+         pn2.n_bar = index_MACD_global_min;
+         pn2.price = low[index_MACD_global_min];        
+        }
        // вычисление тангенса
-       tg = GetTan();       
+       if (retCode != 0)
+       {
+        tg = GetTan();  
+        for (index=pn1.n_bar;index<pn2.n_bar;index++)
+         {
+                   Alert("BLACK HOLE SUN2 = ",index);
+          line_buffer[index] = GetLineY(index);
+         }
+       }  
+                 
       }
-     
-     
+       
+    }
+   else
+    {
+    /*
+     retCode = divergenceMACD(handleMACD,symbol,timeFrame,0);
+       if (retCode == 1)
+        {
+         Alert("РАСХОЖДЕНИЕ НАЙДЕНО");        
+         pn1.n_bar = index_MACD_local_max;
+         pn1.price = high[index_MACD_local_max];
+         pn2.n_bar = index_MACD_global_max;
+         pn2.price = high[index_MACD_global_max]; 
+        }
+       else if (retCode == -1)
+        {
+         Alert("РАСХОЖДЕНИЕ НАЙДЕНО");        
+         pn1.n_bar = index_MACD_local_min;
+         pn1.price = low[index_MACD_local_min];
+         pn2.n_bar = index_MACD_global_min;
+         pn2.price = low[index_MACD_global_min];        
+        }
+       // вычисление тангенса
+       if (retCode)
+       {
+        tg = GetTan();  
+        for (index=pn1.n_bar;index<pn2.n_bar;index++)
+         {
+          Alert("BLACK HOLE SUN = ",index);
+          line_buffer[index] = high[index];//= GetLineY(index);
+         }
+       }
+       */       
     }
     return(rates_total);
   }

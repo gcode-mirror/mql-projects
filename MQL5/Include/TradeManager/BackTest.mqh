@@ -95,6 +95,7 @@ class BackTest
    void WriteTo (int handle,string buffer);            // сохраняет в файл строку по заданному хэндлу
    //дополнительный методы
    string SignToString (int sign);                     //переводит знак позиции в строку
+   //сохраняет строку в файл 
  };
 
 //+------------------------------------------------------------------+
@@ -462,7 +463,7 @@ void BackTest::GetHistoryExtra(CPositionArray *array)
 //+-------------------------------------------------------------------+
 //| Сохраняет вычисленные параметры бэктеста                          |
 //+-------------------------------------------------------------------+
-
+/*
 bool BackTest::SaveBackTestToFile (string file_url,string symbol)
  {
   //индексы start и finish
@@ -530,6 +531,79 @@ bool BackTest::SaveBackTestToFile (string file_url,string symbol)
   FileClose(file_handle);
  return (true);
  }
+ */
+ //+-------------------------------------------------------------------+
+//| Сохраняет вычисленные параметры бэктеста                          |
+//+-------------------------------------------------------------------+
+
+bool BackTest::SaveBackTestToFile (string file_name,string symbol)
+ {
+  //индексы start и finish
+  int start = 0;
+  int finish = 0;
+  int index;    // счетчики для цикла
+  double current_balance;
+  CPosition *pos;
+  uint total = _positionsHistory.Total();  //всего количество позиций в истории
+  //открываем файл на запись
+  //int file_handle =  FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON|FILE_ANSI, ";"); 
+  int file_handle = CreateFileW(file_name, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);  
+  //если не удалось создать файл
+  if(file_handle <= 0 )
+   {
+    Alert("Не возможно создать файл результатов бэктеста");
+    return(false);
+   }
+  //переменные для хранения параметров бэктеста
+  uint    n_trades           =  GetNTrades(symbol);            //количество трейдов 
+  uint    n_win_trades       =  GetNSignTrades(symbol,1);      //количество выйгрышных трейдов
+  uint    n_lose_trades      =  GetNSignTrades(symbol,-1);     //количество выйгрышных трейдов
+  int     sign_last_pos      =  GetSignLastPosition(symbol);   //знак последней позиции
+  double  max_trade          =  GetMaxTrade(symbol,1);         //самый большой трейд по символу
+  double  min_trade          =  GetMaxTrade(symbol,-1);        //самый маленький трейд по символу
+  double  aver_profit_trade  =  GetAverageTrade(symbol,1);     //средний прибыльный трейд 
+  double  aver_lose_trade    =  GetAverageTrade(symbol,-1);    //средний убыточный трейд   
+  uint    maxPositiveTrades  =  GetMaxInARowTrades(symbol,1);  //максимальное количество подряд идущих положительных трейдов
+  uint    maxNegativeTrades  =  GetMaxInARowTrades(symbol,-1); //максимальное количество подряд идущих отрицательных трейдов
+  double  maxProfitRange     =  GetMaxInARow(symbol,1);        //максимальный профит
+  double  maxLoseRange       =  GetMaxInARow(symbol,-1);       //максимальный убыток
+  double  maxDrawDown        =  GetMaxDrawdown(symbol);        //максимальная просадка
+  double  absDrawDown        =  0;                             //абсолютная просадка
+  double  relDrawDown        =  0;                             //относительная просадка 
+  
+  //сохраняем файл параметров вычисления бэктеста
+  WriteTo  (file_handle,IntegerToString(n_trades+1)+" ");
+  WriteTo  (file_handle,IntegerToString(n_win_trades)+" ");
+  WriteTo  (file_handle,IntegerToString(n_lose_trades+1)+" ");
+  WriteTo  (file_handle,IntegerToString(sign_last_pos)+" ");
+  WriteTo  (file_handle,DoubleToString(max_trade)+" ");
+  WriteTo  (file_handle,DoubleToString(min_trade)+" ");   
+  WriteTo  (file_handle,DoubleToString(maxProfitRange)+" "); 
+  WriteTo  (file_handle,DoubleToString(maxLoseRange)+" ");
+  WriteTo  (file_handle,IntegerToString(maxPositiveTrades)+" ");  
+  WriteTo  (file_handle,IntegerToString(maxNegativeTrades)+" ");
+  WriteTo  (file_handle,DoubleToString(aver_profit_trade)+" ");
+  WriteTo  (file_handle,DoubleToString(aver_lose_trade)+" ");    
+  WriteTo  (file_handle,DoubleToString(maxDrawDown)+" ");
+  WriteTo  (file_handle,DoubleToString(absDrawDown)+" ");
+  WriteTo  (file_handle,DoubleToString(relDrawDown)+" ");                                          
+  //сохраняем точки графиков (баланса, маржи)
+  current_balance = 0;
+  WriteTo  (file_handle,DoubleToString(current_balance)+" ");    // сохраняем изначальный баланс  
+  for (index=0;index<total;index++)
+   {
+    // получаем указатель на позицию
+    pos = _positionsHistory.Position(index);
+     if (pos.getSymbol() == symbol) //если символ позиции совпадает с переданным 
+      {
+       current_balance = current_balance + pos.getPosProfit(); // вычисляем  баланс в данной точке, прибавляя к балансу прибыль по позиции
+        WriteTo  (file_handle,DoubleToString(current_balance)+" "); 
+      }
+   }
+  //закрываем файл
+  CloseHandle(file_handle);
+ return (true);
+ }
  
  bool BackTest::SaveArray(string file_url)
 {
@@ -560,3 +634,20 @@ string BackTest::SignToString(int sign)
     return "negative";
    return "no sign";
  }
+ 
+ 
+   // сохраняет строку в файл
+void BackTest::WriteTo(int handle, string buffer) 
+{
+  int    nBytesRead[1]={1};
+  char   buff[]; 
+  StringToCharArray(buffer,buff);
+  if(handle>0) 
+  {
+    Comment(" ");
+    WriteFile(handle, buff, StringLen(buffer), nBytesRead, NULL);
+    
+  } 
+  else
+   Print("неудача. плохой хэндл для файла SPEAKER");
+}
