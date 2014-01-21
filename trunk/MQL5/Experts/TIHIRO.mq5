@@ -43,7 +43,6 @@ ENUM_TM_POSITION_TYPE signal;                      // переменная для хранения то
 int OnInit()
 {
  //загружаем хэндл индикатора Tihiro
- Print("УРА ЕПТЫ БЛЯ");
  handle = iCustom(symbol, timeFrame, "test_PBI"); 
  int han = iCustom(symbol,timeFrame,"WBackTest");
  //вычисляем торговую ситуацию в самом начале работы эксперта
