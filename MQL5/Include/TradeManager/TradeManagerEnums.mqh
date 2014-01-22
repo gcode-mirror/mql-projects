@@ -131,7 +131,26 @@ enum ENUM_FILENAME
    FILENAME_RESCUE,
    FILENAME_HISTORY
   };
+
+//+------------------------------------------------------------------+
+/// Used by CTradeManager::OrderSelect()
+/// Similar to MT4
+//+------------------------------------------------------------------+
+enum ENUM_SELECT_MODE
+  {
+   MODE_TRADES, ///< Select from CVirtualOrdermanager::m_OpenOrders
+   MODE_HISTORY ///< Select from CVirtualOrdermanager::m_OrderHistory
+  };
   
+//+------------------------------------------------------------------+
+/// Used by CTradeManager::OrderSelect()
+/// Similar to MT4
+//+------------------------------------------------------------------+
+enum ENUM_SELECT_TYPE
+  {
+   SELECT_BY_POS,
+   SELECT_BY_TICKET
+  };
 //+------------------------------------------------------------------+
 /// Структура свойств позиций на отыгрыш
 //+------------------------------------------------------------------+

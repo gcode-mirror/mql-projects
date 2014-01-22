@@ -243,13 +243,13 @@ void CSanya::RecountFastDelta()
    Print("Цена определила минимум, развернулась и прошла нижнее среднее");
    flag = true;
   }    
-  /*
+  
   if (_average > 0 && _direction*(_average - _startDayPrice) > 0 &&    // Если среднее уже вычислено на уровне выше(ниже) стартовой
       _direction*(priceAB - _average) > 0 && _direction*(priceAB - num0.price) >= 0)
   {
    Print("Мы сейвились, цена ушла против нас, развернулась и прошла среднее - Уменьшаем мл. дельта.");
    flag = true;
-  }*/
+  }
   if (flag)
   {
    Print("Уменьшаем младшую дельта - прекращаем сейвиться");

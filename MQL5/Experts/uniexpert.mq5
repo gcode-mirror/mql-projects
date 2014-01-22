@@ -34,7 +34,8 @@ input int      StopLoss=150;                          //stop loss
 input double   _lot = 1;                              //размер лота
 input int historyDepth = 40;                          //глубина истории
 input ENUM_TIMEFRAMES timeframe = PERIOD_M1;          //таймфрейм
-input bool trailing = false;                          //трейлинг
+input bool usualTrailing = true;
+input bool losslessTrailing = false;
 input int minProfit = 250;                            //минимальный профит
 input int trailingStop = 150;                         //трейлинг стоп
 input int trailingStep = 5;                           //шаг трейлинга
@@ -75,7 +76,6 @@ int OnInit()
   {
    sym=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
-   ctm.Initialization();  //инициализирует торговую библиотеку
    stopLoss = StopLoss;
  //  takeProfit = TakeProfit;   
    
@@ -125,7 +125,6 @@ int OnInit()
 
 void OnDeinit(const int reason)
   {
-   ctm.Deinitialization();
    cross_ema.DeinitTradeBlock();
    rabbit.DeinitTradeBlock();   
    condom.DeinitTradeBlock();
@@ -155,17 +154,21 @@ void OnTick()
   switch (signal)
   {
    case 1: //сигнал buy
-    ctm.OpenPosition(sym,op_buy,_lot,stopLoss,take_profit,minProfit, trailingStop, trailingStep,priceDifference); //то открываем позицию на покупку
+    ctm.OpenUniquePosition(sym,op_buy,_lot,stopLoss,take_profit,minProfit, trailingStop, trailingStep,priceDifference); //то открываем позицию на покупку
    break;
    case 2://сигнал sell
-    ctm.OpenPosition(sym,op_sell,_lot,stopLoss,take_profit,minProfit, trailingStop, trailingStep,priceDifference); //то открываем позицию на продажу
+    ctm.OpenUniquePosition(sym,op_sell,_lot,stopLoss,take_profit,minProfit, trailingStop, trailingStep,priceDifference); //то открываем позицию на продажу
    break;
   }
        
-  if (trailing)
+   if (usualTrailing)
    {
-    ctm.DoTrailing();
-   } 
+    ctm.DoUsualTrailing();
+   }
+   if (losslessTrailing)
+   {
+    ctm.DoLosslessTrailing();
+   }
   }
 
 void OnTrade()
