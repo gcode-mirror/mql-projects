@@ -57,7 +57,7 @@ CPosition *CPositionArray::AtTicket(long lTicket)
    for(int i=Total()-1;i>=0;i--)
      {
       CPosition *pos=Position(i);
-      if(pos.getPositionTicket()==lTicket)
+      if(pos.getOrderTicket()==lTicket)
         {
          //LogFile.Log(LOG_VERBOSE,__FUNCTION__,StringFormat("(%d) returning valid CPosition",lTicket));
          return(pos);
@@ -200,7 +200,7 @@ int CPositionArray::TicketToIndex(long lTicket)
      {
       CPosition *pos=Position(i);
       //LogFile.Log(LOG_VERBOSE,__FUNCTION__,StringFormat("(%d) looking at open virtual order #%d",lTicket,pos.Ticket()));
-      if(pos.getPositionTicket()==lTicket)
+      if(pos.getOrderTicket()==lTicket)
         {
          //LogFile.Log(LOG_VERBOSE,__FUNCTION__,StringFormat("(%d) returning %d",lTicket,i));
          return(i);
@@ -299,10 +299,10 @@ string CPositionArray::PrintToString()
   StringConcatenate(result, "[", i, "] = {", pos.getMagic(), ", ", pos.getPositionPrice(), ", ", PositionStatusToStr(pos.getPositionStatus()), ", ", GetNameOP(pos.getType()), ",", pos.getStopLossPrice(), ",", pos.getTakeProfitPrice(), ",", pos.getStopLossTicket(), ",", pos.getStopLossStatus(), "}" );
   if(pos.getType() != OP_BUY && pos.getType() != OP_SELL) 
   {
-   if(OrderSelect(pos.getPositionTicket()))
+   if(OrderSelect(pos.getOrderTicket()))
     StringConcatenate(result, result, EnumToString((ENUM_ORDER_STATE)OrderGetInteger(ORDER_STATE)));
    else
-    StringConcatenate(result, result, EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE)));
+    StringConcatenate(result, result, EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE)));
   }
  }
  return result;

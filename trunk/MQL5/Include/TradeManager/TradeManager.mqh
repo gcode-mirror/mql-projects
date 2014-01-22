@@ -43,11 +43,12 @@ public:
   void CTradeManager();
   void ~CTradeManager(void);
   
-  bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
+  bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl = 0, int tp = 0, 
                     int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
   bool OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
                     int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
-  void ModifyPosition(long ticket, double lot, int sl, int tp);
+  void ModifyPosition(long ticket, int sl, int tp);
+  bool PositionChangeSize(string strSymbol, double dblLots);
   bool ClosePosition(long ticket, color Color = CLR_NONE);     // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);           // Закрытие позиции по индексу в массиве позиций
   void DoUsualTrailing();
@@ -57,6 +58,9 @@ public:
   void OnTrade(datetime history_start);
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
   int GetPositionCount(){return (_openPositions.Total() + _positionsToReProcessing.Total());};
+  
+  int GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
+  int GetPositionPointsProfit(string symbol);
   
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
   long GetHistoryDepth();  //возвращает глубину истории
@@ -111,7 +115,7 @@ void CTradeManager::~CTradeManager(void)
 //| если существует такая же позиция - открытия не будет             |
 //| если существует противоположная позиция - она будет закрыта      |
 //+------------------------------------------------------------------+
-bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
+bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0, 
                                  int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifferense = 0)
 {
  if (_positionsToReProcessing.OrderCount(symbol, _magic) > 0) 
@@ -148,20 +152,20 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type
        if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
        {
         ResetLastError();
-        if(OrderSelect(pos.getPositionTicket()))
+        if(OrderSelect(pos.getOrderTicket()))
         {
          ClosePosition(i);
         }
         else
         {
          log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                       , MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()
+                       , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
                        , GetLastError(), ErrorDescription(GetLastError())));
         }
        }
        else
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось выбрать позицию по тикету %d", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()));
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось выбрать позицию по тикету %d", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()));
        }
       }
      }
@@ -187,20 +191,20 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type
        if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
        {
         ResetLastError();
-        if(OrderSelect(pos.getPositionTicket()))
+        if(OrderSelect(pos.getOrderTicket()))
         {
          ClosePosition(i);
         }
         else
         {
          log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                        , MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()
+                        , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
                         , GetLastError(), ErrorDescription(GetLastError())));
         }
        }
        else
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось выбрать позицию по тикету %d", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()));
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось выбрать позицию по тикету %d", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()));
        }
       }
      }
@@ -324,13 +328,34 @@ void CTradeManager::DoLosslessTrailing()
 //+------------------------------------------------------------------+ 
 // Функция модификации позиции
 //+------------------------------------------------------------------+
-void CTradeManager::ModifyPosition(long ticket, double lot, int sl, int tp)
+void CTradeManager::ModifyPosition(long ticket, int sl, int tp)
 {
- if (lot > 0){}
  if (sl > 0){}
  if (tp > 0){}
 }
 
+//+------------------------------------------------------------------+ 
+// Функция изменения объема позиции
+//+------------------------------------------------------------------+
+bool CTradeManager::PositionChangeSize(string symbol, double lots)
+{
+ int i = 0;
+ int total = _openPositions.Total();
+ CPosition *pos;
+
+ if (total > 0)
+ {
+  for (i = total - 1; i >= 0; i--) // перебираем все ордера или позиции 
+  {
+   pos = _openPositions.At(i);
+   if (pos.getSymbol() == symbol)
+   {
+    pos.ChangeSize(lots);
+   }
+  }
+ }
+ return (false);
+}
 //+------------------------------------------------------------------+
 /// Called from EA OnTrade().
 /// Include the folowing in each EA that uses TradeManager
@@ -417,9 +442,9 @@ void CTradeManager::OnTick()
      
   if (pos.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
   {
-   if (!OrderSelect(pos.getPositionTicket())) // Если мы не можем выбрать ее по тикету
+   if (!OrderSelect(pos.getOrderTicket())) // Если мы не можем выбрать ее по тикету
    {
-    long ticket = pos.getPositionTicket();
+    long ticket = pos.getOrderTicket();
     if(!FindHistoryTicket(ticket))            // Попробуем найти этот тикет в истории
     {
      log_file.Write(LOG_DEBUG, StringFormat("%s В массиве историй не найден ордер с тикетом %d", MakeFunctionPrefix(__FUNCTION__), ticket));
@@ -455,7 +480,7 @@ void CTradeManager::OnTick()
       }
       case ORDER_STATE_CANCELED:
       {
-       log_file.Write(LOG_DEBUG, StringFormat("%s ордер отменен %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
+       log_file.Write(LOG_DEBUG, StringFormat("%s ордер отменен %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
        _positionsHistory.Add(_openPositions.Detach(i));
   
        SaveArrayToFile(historyDataFileName,_positionsHistory);       
@@ -463,7 +488,7 @@ void CTradeManager::OnTick()
       }
       case ORDER_STATE_EXPIRED:
       {
-       log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getPositionTicket(), ORDER_STATE))));
+       log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
        _positionsHistory.Add(_openPositions.Detach(i));
 
        SaveArrayToFile(historyDataFileName,_positionsHistory);       
@@ -479,7 +504,7 @@ void CTradeManager::OnTick()
     }
     else
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать ордер по тикету %d из истории", MakeFunctionPrefix(__FUNCTION__), pos.getPositionTicket()));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать ордер по тикету %d из истории", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()));
      log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(GetLastError())));
      string str;
      int total = HistoryOrdersTotal();
@@ -493,26 +518,6 @@ void CTradeManager::OnTick()
   }
  }
 }
-
-//+------------------------------------------------------------------+
-/// returns if minProfit achieved
-//+------------------------------------------------------------------+
-bool CTradeManager::isMinProfit(string symbol)
-{
- int total = _openPositions.Total();
- CPosition *pos;
- for (int i = 0; i < total; i++)
- {
-  pos = _openPositions.At(i);
-  if (pos.getSymbol() == symbol)
-  {
-   return(pos.isMinProfit());
-  }
- }
- return false;
-}
-
-
 
 //+------------------------------------------------------------------+
 /// Close a virtual position by ticket.
@@ -573,6 +578,65 @@ bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
   return(true);
  }
  return(false);
+}
+
+//+------------------------------------------------------------------+
+/// returns if minProfit achieved
+//+------------------------------------------------------------------+
+bool CTradeManager::isMinProfit(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(pos.isMinProfit());
+  }
+ }
+ return false;
+}
+
+//+------------------------------------------------------------------+
+//|  Профит позиции на символе в пунктах                             |
+//+------------------------------------------------------------------+
+int CTradeManager::GetPositionPointsProfit(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(pos.getPositionPointsProfit());
+  }
+ }
+ return(0);
+}
+
+//+------------------------------------------------------------------+
+//|  Профит позиции по тикету или номеру в пунктах                   |
+//+------------------------------------------------------------------+
+int CTradeManager::GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type)
+{
+ CPosition *pos;
+ int profit = 0;
+ switch(type)
+ {
+  case SELECT_BY_POS:
+   pos = _openPositions.At(i);
+   break;
+  case SELECT_BY_TICKET:
+   pos = _openPositions.AtTicket(i);
+   break;
+  default:
+   //LogFile.Log(LOG_PRINT,__FUNCTION__," error: Unknown type ",(string)type);
+   return(profit);
+ }
+ profit = pos.getPositionPointsProfit();
+ return(profit);
 }
 //+------------------------------------------------------------------+
 /// Create magic number

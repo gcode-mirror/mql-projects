@@ -40,7 +40,7 @@
      double _takeProfit;     
     public:
      double GetTakeProfit() { return (_takeProfit); }; //получает значение тейк профита
-     Condom            (string sym,
+     int InitTradeBlock(string sym,
                         ENUM_TIMEFRAMES timeFrame,
                         bool   tradeOnTrend,                        
                         int historyDepth);       //метод инициализации торгового блока
@@ -50,7 +50,7 @@
        
   };
   
-    Condom::Condom             (string sym,   //конструктор класса
+    int Condom::InitTradeBlock             (string sym,   //конструктор класса
                         ENUM_TIMEFRAMES timeFrame,
                         bool   tradeOnTrend,                  
                         int historyDepth)
@@ -77,7 +77,7 @@
    _globalMin = 0;
    _waitForSell = false;
    _waitForBuy = false;
-      
+   return(INIT_SUCCEEDED);
     }
     
   int  Condom::DeinitTradeBlock(void)  //деинициализация торгового блока Condom

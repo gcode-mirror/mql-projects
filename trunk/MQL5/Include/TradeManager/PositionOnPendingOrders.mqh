@@ -23,8 +23,8 @@ private:
    CTMTradeFunctions *trade;
    CConfig config;
    ulong _magic;
-   ulong _ticket;
-   ulong _posTicket;
+   ulong _tmTicket;
+   ulong _orderTicket;
    string _symbol;
    double _lots;
    ulong _slTicket;
@@ -35,6 +35,7 @@ private:
    datetime _posCloseTime; //врем€ завершени€ позиции 
    
    double _posOpenPrice;
+   double _posAveragePrice;
    double _posClosePrice;     //цена, по которой позици€ закрылась
    double   _posProfit;      //прибыль с позиции
    
@@ -53,8 +54,8 @@ private:
    
    ENUM_ORDER_TYPE SLOrderType(int type);
    ENUM_ORDER_TYPE TPOrderType(int type);
-   ENUM_ORDER_TYPE PositionOrderType(int type);
-   
+   ENUM_ORDER_TYPE OrderType(int type);
+   ENUM_POSITION_TYPE PositionType(int type);
 public:
    void CPosition()   // конструктор по умолчанию
    {
@@ -71,15 +72,15 @@ public:
                 
    ulong    getMagic() {return (_magic);};
    void     setMagic(ulong magic) {_magic = magic;};
-   ulong    getTicket() {return(_ticket);};
-   ulong    getPositionTicket() {return(_posTicket);};
+   ulong    getTMTicket() {return(_tmTicket);};
+   ulong    getOrderTicket() {return(_orderTicket);};
    string   getSymbol() {return (_symbol);};
    double   getVolume() {return (_lots);};
    void     setVolume(double lots) {_lots = lots;};
    int      getSL() {return(_sl);};
    int      getTP() {return(_tp);};
    ulong    getStopLossTicket() {return (_slTicket);};
-   double   getPositionPrice() {return(_posOpenPrice);};
+   double   getPositionPrice() {return(_posAveragePrice);};
    double   getStopLossPrice() {return(_slPrice);};
    double   getTakeProfitPrice() {return(_tpPrice);};
    double   getMinProfit() {return(_minProfit);};
@@ -91,7 +92,8 @@ public:
    datetime getClosePosDT() { return (_posCloseTime); };   //получает дату закрыти€ позиции             
    double   getPriceOpen() { return(_posOpenPrice); };           //получает цену открыти€ позиции
    double   getPriceClose() { return(_posClosePrice); };        //получает цену закрыти€ позиции
-   double   getPosProfit() { return(_posProfit); };          //получает прибыль позиции             
+   double   getPosProfit() { return(_posProfit); };          //получает прибыль позиции
+   int      getPositionPointsProfit();             
    bool     isMinProfit();
    
    ENUM_TM_POSITION_TYPE getType() {return (_type);};
@@ -109,9 +111,10 @@ public:
    double TPtype(ENUM_TM_POSITION_TYPE type);        // вычисл€ет уровень тейк-профита в зависимости от типа
 
    ENUM_POSITION_STATUS OpenPosition();
-   ENUM_STOPLEVEL_STATUS setStopLoss();
+   ENUM_STOPLEVEL_STATUS setStopLoss(double lot = 0.0);
    ENUM_STOPLEVEL_STATUS setTakeProfit();
-   bool ModifyPosition(double lot, int sl, int tp);
+   bool ChangeSize(double lot);
+   bool ModifyPosition(int sl, int tp);
    bool CheckTakeProfit();
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();
    ENUM_POSITION_STATUS RemovePendingPosition();
@@ -148,7 +151,8 @@ CPosition::CPosition(CPosition *pos)
  trade = new CTMTradeFunctions();
  
  _magic = pos.getMagic();
- _posTicket = pos.getPositionTicket();
+ _tmTicket = pos.getTMTicket();
+ _orderTicket = pos.getOrderTicket();
  _symbol = pos.getSymbol();
  _lots = pos.getVolume();
  _slTicket = pos.getStopLossTicket();
@@ -197,23 +201,6 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, dou
 }
 
 //+------------------------------------------------------------------+
-//|ѕолучение информации о достижении минимального профита            |
-//+------------------------------------------------------------------+
-bool CPosition::isMinProfit(void)
-{
- UpdateSymbolInfo();
- double ask = SymbInfo.Ask();
- double bid = SymbInfo.Bid();
- double point = SymbInfo.Point();
- 
- if (getType() == OP_BUY && LessDoubles(_posOpenPrice, bid - _minProfit*point))
-  return true;
- if (getType() == OP_SELL && GreatDoubles(_posOpenPrice - ask, _minProfit*point))
-  return true;
-  
- return false;
-} 
-//+------------------------------------------------------------------+
 //|ѕолучение актуальной информации по торговому инструменту          |
 //+------------------------------------------------------------------+
 bool CPosition::UpdateSymbolInfo()
@@ -226,6 +213,41 @@ bool CPosition::UpdateSymbolInfo()
    return(false);
   }  
  
+//+------------------------------------------------------------------+
+//|ѕолучение информации о достижении минимального профита            |
+//+------------------------------------------------------------------+
+bool CPosition::isMinProfit(void)
+{
+ UpdateSymbolInfo();
+ double ask = SymbInfo.Ask();
+ double bid = SymbInfo.Bid();
+ double point = SymbInfo.Point();
+ 
+ if (getType() == OP_BUY && LessDoubles(_posAveragePrice, bid - _minProfit*point))
+  return true;
+ if (getType() == OP_SELL && GreatDoubles(_posAveragePrice - ask, _minProfit*point))
+  return true;
+  
+ return false;
+}
+
+//+------------------------------------------------------------------+
+//|  ѕрофит позиции в пунктах                                        |
+//+------------------------------------------------------------------+
+int CPosition::getPositionPointsProfit()
+{
+ UpdateSymbolInfo();
+ double ask = SymbInfo.Ask();
+ double bid = SymbInfo.Bid();
+ 
+ if (_type == OP_BUY)
+  return (bid - _posAveragePrice);
+ if (_type == OP_SELL)
+  return (_posAveragePrice - ask);
+  
+ return(0);
+}
+
 //+------------------------------------------------------------------+
 //| ¬ычисл€ет уровень открыти€ в зависимости от типа                 |
 //+------------------------------------------------------------------+
@@ -278,13 +300,41 @@ ENUM_ORDER_TYPE CPosition::TPOrderType(int type)
  return(res);
 }
 
+ENUM_POSITION_TYPE CPosition::PositionType(int type)
+{
+ ENUM_POSITION_TYPE res;
+ if(type == 0) res = POSITION_TYPE_BUY;
+ if(type == 1) res = POSITION_TYPE_SELL;
+ return(res);
+}
 
+ENUM_ORDER_TYPE CPosition::OrderType(int type)
+{
+ ENUM_ORDER_TYPE res;
+ switch (type)
+ {
+  case OP_BUYLIMIT:
+   res = ORDER_TYPE_BUY_LIMIT;
+   break;
+  case OP_SELLLIMIT:
+   res = ORDER_TYPE_SELL_LIMIT;
+   break;
+  case OP_BUYSTOP:
+   res = ORDER_TYPE_BUY_STOP;
+   break;
+  case OP_SELLSTOP:
+   res = ORDER_TYPE_SELL_STOP;
+   break;
+ }
+ return(res);
+}
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
 ENUM_POSITION_STATUS CPosition::OpenPosition()
 {
  UpdateSymbolInfo();
  _posOpenPrice = pricetype(_type);
+ _posAveragePrice = pricetype(_type);
  _posOpenTime = TimeCurrent(); //сохран€ем врем€ открыти€ позиции    
  _posProfit = 0;
  
@@ -294,15 +344,13 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    PrintFormat("%s, ќткрываем позицию Ѕай", MakeFunctionPrefix(__FUNCTION__));
    if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _lots, _posOpenPrice))
    {
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыта позици€ %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
+    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыта позици€", MakeFunctionPrefix(__FUNCTION__)));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
-     _posTicket = 0;
      _pos_status = POSITION_STATUS_OPEN;
     }
     else
     {
-     _posTicket = 0;
      _pos_status = POSITION_STATUS_NOT_COMPLETE;
     }
    }
@@ -310,15 +358,13 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_SELL:
    if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _lots, _posOpenPrice))
    {
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыта позици€ %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
+    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыта позици€ ", MakeFunctionPrefix(__FUNCTION__)));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
-     _posTicket = 0;
      _pos_status = POSITION_STATUS_OPEN;   
     }
     else
     {
-     _posTicket = 0;
      _pos_status = POSITION_STATUS_NOT_COMPLETE;
     }
    }
@@ -326,33 +372,33 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
   case OP_BUYLIMIT:
    if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posOpenPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
-    _posTicket = trade.ResultOrder();
+    //_posTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;             
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт ордер %d; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
+    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт отложенный ордер ; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_expiration)));
    }
    break;
   case OP_SELLLIMIT:
    if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posOpenPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
-    _posTicket = trade.ResultOrder();
+    //_posTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт ордер %d; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
+    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт отложенный ордер ; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__),  TimeToString(_expiration)));
    }
    break;
   case OP_BUYSTOP:
    if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posOpenPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
-    _posTicket = trade.ResultOrder();
+    //_posTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;  
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт ордер %d; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
+    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт отложенный ордер ; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__),  TimeToString(_expiration)));
    }
    break;
   case OP_SELLSTOP:
    if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posOpenPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
-    _posTicket = trade.ResultOrder();
+    //_posTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт ордер %d; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), _posTicket, TimeToString(_expiration)));
+    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт отложенный ордер ; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_expiration)));
    }
    break;
   default:
@@ -365,22 +411,58 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
 }
 
 //+------------------------------------------------------------------+
+// Add additional volume to position
 //+------------------------------------------------------------------+
-bool CPosition::ModifyPosition(double lot, int sl, int tp)
+bool CPosition::ChangeSize(double lot)
+{
+ double openPrice = pricetype(_type);
+ ENUM_TM_POSITION_TYPE type = this.getType();
+ if (type == OP_BUY || type == OP_SELL)
+ {
+  if(trade.PositionOpen(_symbol, PositionType(type), lot, openPrice))
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s »зменена позици€ %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket));
+   if (setStopLoss(lot) != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+   {
+    _pos_status = POSITION_STATUS_OPEN;
+   }
+   else
+   {
+    _pos_status = POSITION_STATUS_NOT_COMPLETE;
+   }
+  }
+ }
+ else
+ {
+  if (trade.OrderDelete(_orderTicket))
+  {
+   if (trade.OrderOpen(_symbol, OrderType(getType()), lot, openPrice, ORDER_TIME_SPECIFIED, _expiration))
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s »зменен ордер %d; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, TimeToString(_expiration)));
+   }
+  }
+ }
+ return(false);
+}
+
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+bool CPosition::ModifyPosition(int sl, int tp)
 {
  return(false);
 }
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
+ENUM_STOPLEVEL_STATUS CPosition::setStopLoss(double lot = 0.0)
 {
+ if (lot == 0) lot = _lots;
  ENUM_ORDER_TYPE order_type;
  if (_sl > 0 && _sl_status != STOPLEVEL_STATUS_PLACED)
  {
   _slPrice = SLtype(_type);
   order_type = SLOrderType((int)_type);
-  if (trade.OrderOpen(_symbol, order_type, _lots, _slPrice)) //, sl + stopLevel, sl - stopLevel);
+  if (trade.OrderOpen(_symbol, order_type, lot, _slPrice)) //, sl + stopLevel, sl - stopLevel);
   {
    _slTicket = trade.ResultOrder();
    _sl_status = STOPLEVEL_STATUS_PLACED;
@@ -506,7 +588,7 @@ ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
 {
  if (_pos_status == POSITION_STATUS_PENDING || _pos_status == POSITION_STATUS_NOT_DELETED)
  {
-  if (trade.OrderDelete(_posTicket))
+  if (trade.OrderDelete(_orderTicket))
   {
    _pos_status = POSITION_STATUS_DELETED;
   }
@@ -542,7 +624,7 @@ bool CPosition::ClosePosition()
      _posCloseTime = TimeCurrent();                            //сохран€ем врем€ закрыти€ позиции
      _posProfit = _posClosePrice - _posOpenPrice; 
      _pos_status = POSITION_STATUS_CLOSED;
-     log_file.Write(LOG_DEBUG, StringFormat("%s «акрыта позици€ %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
+     log_file.Write(LOG_DEBUG, StringFormat("%s «акрыта позици€ %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket));
     }
     else
     {
@@ -556,7 +638,7 @@ bool CPosition::ClosePosition()
      _posCloseTime = TimeCurrent();                      //сохран€ем врем€ закрыти€ позиции
      _posProfit = _posOpenPrice - _posClosePrice;
      _pos_status = POSITION_STATUS_CLOSED;
-     log_file.Write(LOG_DEBUG, StringFormat("%s «акрыта позици€ %d", MakeFunctionPrefix(__FUNCTION__), _posTicket));
+     log_file.Write(LOG_DEBUG, StringFormat("%s «акрыта позици€ %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket));
     }
     else
     {
@@ -689,8 +771,8 @@ long CPosition::NewTicket()
 {
  CGlobalVariable g_lTicket;
  g_lTicket.Name(Config.VirtualOrderTicketGlobalVariable);
- _ticket=g_lTicket.Increment();
- return(_ticket);
+ _tmTicket=g_lTicket.Increment();
+ return(_tmTicket);
 }
   
   
@@ -719,7 +801,10 @@ bool CPosition::ReadFromFile(int  handle)
   _lots           = StringToInteger(FileReadString(handle));                      //считываем размер лота
  // Alert("> LOT = ",_lots);  
   if(FileIsEnding(handle)) return false;   
-  _posTicket      = StringToInteger(FileReadString(handle));                      //считываем тикет позиции
+  _tmTicket      = StringToInteger(FileReadString(handle));                      //считываем тикет позиции
+ // Alert("> LOT = ",_lots);  
+  if(FileIsEnding(handle)) return false;   
+  _orderTicket      = StringToInteger(FileReadString(handle));                      //считываем тикет позиции
  // Alert("> POS TICKET = ",_posTicket);  
   if(FileIsEnding(handle)) return false;   
   _slTicket       = StringToInteger(FileReadString(handle));                      //считываем тикет стоп лосса  
@@ -777,7 +862,8 @@ void CPosition::WriteToFile(int handle)
             Symbol(),         
             GetNameOP(_type), 
             _lots,            
-            _posTicket,       
+            _tmTicket, 
+            _orderTicket,      
             _slTicket,        
             _slPrice,         
             _sl,              
