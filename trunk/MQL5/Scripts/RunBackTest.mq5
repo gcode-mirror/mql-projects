@@ -60,30 +60,21 @@
 
 input string   file_catalog = "C:\\_backtest_.dat"; // файл списка url бэктестов
 input string   file_url  = "C:\\";                  // расположение файла истории 
-input string   history_name = "TIHIRO";             // имя файла истории
 input datetime time_from = 0;                       // с какого времени
 input datetime time_to   = 0;                       // по какое время
 
 void OnStart()
   {
 uchar    val[];
-string   backtest_file;
-string   full_url_backtest; 
+string   backtest_file="C:\\BACKTEST.txt";
 bool     flag;             
 int      file_handle;      // хэндл файла списка URL файлов бэктестов
 BackTest backtest;         // объект класса бэктеста
-
-//---- формируем полный адрес файла истории
-full_url_backtest = file_url+"\\"+history_name+".csv";
-Print("URL файла истории = ",full_url_backtest);
 //---- получаем историю позиций из файла 
-flag = backtest.LoadHistoryFromFile(full_url_backtest,time_from,time_to);
+flag = backtest.LoadHistoryFromFile(file_url,time_from,time_to);
 //---- если история благополучно получена
 if (flag)
  {
-// Alert("THAT'S NICE");
-//---- получаем URL результатов бэктеста
-backtest_file = "C:\\"+history_name+".txt";
 //---- открываем файл списка URL адресов бэкстеста
 file_handle = CreateFileW(file_catalog, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
 //---- сохраняем файл бэктеста
@@ -95,7 +86,7 @@ WriteTo(file_handle,backtest_file+" ");
 CloseHandle(file_handle);
 //---- запускаем приложение отображения результатов бэктеста
 //StringToCharArray ("mspaint.exe",val);
-StringToCharArray ("cmd /C start C:\\robo.exe",val);
+StringToCharArray ("cmd /C start C:\\GetBackTest.exe",val);
 WinExec(val, 1);
  }
 else
