@@ -60,6 +60,7 @@ class BackTest
  {
   private:
    CPositionArray *_positionsHistory;        ///массив истории виртуальных позиций
+   double  _balance;    // баланс
   public:
    //конструктор
    BackTest() { _positionsHistory = new CPositionArray(); };  //конструктор класса
@@ -86,6 +87,8 @@ class BackTest
    double GetAbsDrawdown (string symbol);              //вычисляет абсолютную просадку баланса
    double GetRelDrawdown (string symbol);              //вычисляет относительную просадку баланса
    double GetMaxDrawdown (string symbol);              //вычисляет максимальную просадку баланса
+   //метод вычисления конечной прибыли 
+   double GetTotalProfit (string symbol);             
    //прочие системные методы
    bool LoadHistoryFromFile(string file_url,datetime start,datetime finish);          //загружает историю позиции из файла
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
@@ -389,30 +392,40 @@ double BackTest::GetMaxDrawdown (string symbol) //(сейчас для теста вместо балан
    uint total = _positionsHistory.Total();  //размер массива
    double MaxBalance = 0;   //максимальный баланс на текущий момент (вместо нуля потом записать начальный баланс)
    double MaxDrawdown = 0;  //максимальная просадка баланса
-   double balance = 0;          //статус баланса 
   
    CPosition * pos;
+   _balance = 0;
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию 
      if (pos.getSymbol() == symbol) //если символ совпал с передаваемым символом
       {
-       balance = balance + pos.getPosProfit(); //модернизируем текущий баланс
-       if (balance > MaxBalance)  //если баланс превысил текущий максимальный баланс, то перезаписываем его
+       _balance = _balance + pos.getPosProfit(); //модернизируем текущий баланс
+       if (_balance > MaxBalance)  //если баланс превысил текущий максимальный баланс, то перезаписываем его
         {
-          MaxBalance = balance;
+          MaxBalance = _balance;
         }
        else 
         {
-         if ((MaxBalance-balance) > MaxDrawdown) //если обнаружена больше просадка, чем была
+         if ((MaxBalance-_balance) > MaxDrawdown) //если обнаружена больше просадка, чем была
           {
-            MaxDrawdown = MaxBalance-balance;  //то записываем новую просадку баланса
+            MaxDrawdown = MaxBalance-_balance;  //то записываем новую просадку баланса
           }
         }
       }
     }  
    return MaxDrawdown; //возвращаем максимальную просадку по балансу
  }
+ 
+//+-------------------------------------------------------------------+
+//| Возвращает конечный баланс                                        |
+//+-------------------------------------------------------------------+
+
+double BackTest::GetTotalProfit(string symbol)
+ {
+  return _balance;
+ }  
+ 
   
 //+-------------------------------------------------------------------+
 //| Загружает историю позиций из файла                                |
