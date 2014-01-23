@@ -11,7 +11,49 @@
  class TradeBreak 
   {
    private:
-    double _top_profit;  //конечная прибыль эксперта
-    double 
+    double _current_profit;     // текущая прибыль 
+    double _current_drawdown;   // текущая просадка баланса
+    double _min_profit;         // минимально допустимая прибыль
+    double _max_drawdown;       // максимально допустимая просадка
+    CPositionArray *_positionsHistory; //массив позиций, находящихся в истории    
    public:
+    //---- описание системных методов класса 
+    
+    // обноваляет данные о текущей прибыли и просадке
+    // возвращает true, если ни один из параметров не привысил допустимые нормы
+    bool   UpdateData (CPositionArray &positionsHistory[]);
+    // возвращает текущую прибыль
+    double GetCurrentProfit() { return(_current_profit);};
+    // возвращает  текущую просадку по балансу
+    double GetCurrentDrawdown() { return(_current_drawdown); };  
+   TradeBreak (double min_profit,double max_drawdown):
+   _min_profit(min_profit),
+   _max_drawdown(max_drawdown),
+   _current_profit(0),
+   _current_drawdown(0)
+   {
+   }; // консруктор класса 
   };
+  
+  //---- описания методов класса
+  
+  // обновляет данные о текущей прибыли и просадке
+  bool TradeBreak::UpdateData(CPositionArray &positionsHistory[])
+   {
+    int index;  // индекс прохода по циклу
+    int length = positionsHistory.Total(); // длина переданного массива истории
+    CPosition *pos; // указатель на текущую позицию
+    // проходим по всем массиву и вычисляем текущую прибыль
+    for (index = 0; index<length;index++)
+     {
+      // извлекаем указатель на текущую позицию по индексу
+      pos = _positionsHistory[index].At(index);
+      // изменяем текущую прибыль 
+      _current_profit = _current_profit + pos.getPosProfit();
+     }
+     // если текущая прибыль меньше минимально допустимой
+     // или если текущая просадка больше максимально допустимой
+     if (_current_profit < _min_profit || _current_drawdown > _max_drawdown)
+      return false; 
+    return true;
+   }
