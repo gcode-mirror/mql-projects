@@ -10,7 +10,6 @@
 #include <Lib CisNewBar.mqh>               //для проверки формирования нового бара
 #include <TradeManager\TradeManager.mqh>   //подключаем библиотеку TradeManager
 #include <TradeManager\BackTest.mqh>       //бэктест
-#include <Graph\Widgets\WBackTest.mqh>
 #include <TradeManager\GetBackTest.mqh>
 
 #include <TradeManager\TradeBreak.mqh>     //блокатор торговли
@@ -30,7 +29,7 @@ input double            orderVolume = 1;            //размер лота
 input TAKE_PROFIT_MODE  takeprofitMode = TPM_HIGH;  //режим вычисления тейк профита
 input double            takeprofitFactor = 1.0;     //коэффициент тейк профита  
 input int               priceDifferent=10;          //разница цен для поиска экстремумов
-input double            min_profit=-3;               //минимальный уровень прибыли
+input double            min_profit=-0.002;          //минимальный уровень прибыли
 input double            max_drawdown=3;             //максимальный уровень просадки
 //символ
 string symbol=_Symbol;
@@ -48,16 +47,15 @@ bool allow_continue = true;                        // флаг продолжения
 ENUM_TM_POSITION_TYPE signal;                      // переменная для хранения торгового сигнала
 
 datetime  currentTime;                             // текущее время 
-int count=0;                                       // счетчик 
+long depth;                                         // глубина истории позиций
 
 int OnInit()
 {
- //загружаем хэндл индикатора Tihiro
- handle = iCustom(symbol, timeFrame, "test_PBI"); 
- int han = iCustom(symbol,timeFrame,"WBackTest");
+
  //вычисляем торговую ситуацию в самом начале работы эксперта
  //WBackTest * wBackTest = new WBackTest("backtest","ВЫЧИСЛЕНИЕ БЭКТЕСТА",5,12,200,50,0,0,CORNER_LEFT_UPPER,0);
  currentTime = TimeCurrent();
+ depth = ctm.GetHistoryDepth();
  return(INIT_SUCCEEDED);
 }
 
@@ -93,42 +91,20 @@ void OnTick()
   
  void OnTrade()
   {
-    if (count<3)
-      count++;
-    else
-     {
+     // если текущая глубина истории позиций больше предыдущей глубины истории
+     if (ctm.GetHistoryDepth() > depth)
+      {
       if ( tb.UpdateData(ctm.GetPositionHistory(currentTime,TimeCurrent()) ) )
-       Alert("Робот вывалился за параметры");
-      count=0;
-     }
+       {
+      //  Comment("Время тогда = ",TimeToString(currentTime)," время теперь = ",TimeToString(TimeCurrent()) );
+        currentTime = TimeCurrent()+1;
+        depth = ctm.GetHistoryDepth();
+       }
+      else
+       Alert("ОСТАНАВЛИВАЕМ РОБОТА");
+       _StopFlag = true;
+      }
+      
+  Comment (" ТЕКУЩИЙ БАЛАНС = ",tb.GetCurrentProfit()," МИН. ПРОФИТ = ",min_profit);
   }
   
-// метод обработки событий  
-void OnChartEvent(const int id,
-                const long &lparam,
-                const double &dparam,
-                const string &sparam)
-  { 
-   // если нажата кнопка
-   if(id==CHARTEVENT_OBJECT_CLICK)
-    {
-     // обработка типа нажатой кнопки
-
-       if (sparam == "backtest_all_expt")     // кнопка "Все эксперты"
-        {
-         CalculateBackTest (0,TimeCurrent());
-         Alert("ВСЕ ЭКСПЕРТЫ");
-        }
-       if (sparam == "backtest_cur_expt")     // кнопка "Этот эксперт"
-        {
-         Print("ТЕКУЩИЙ ЭКСПЕРТ");       
-        }
-       if (sparam == "backtest_close_button") // кнопка закрытия панели
-        {
-          Print("ЗАКРЫТИЕ ПАНЕЛИ");  
-          uchar val[];
-          StringToCharArray ("mspaint.exe",val);
-          Alert("",WinExec(val, 1));     
-        }
-    }
-  } 
