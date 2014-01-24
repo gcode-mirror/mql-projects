@@ -277,9 +277,20 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
  int index;
- // считываем файл с результатами бэктеста
- ReadFile ("C:\\cool.txt") ;
+ FILE * fp; // хэндл файл списка URL
+ char url[80]; // url файла бэктеста
 
+
+ fp = fopen("C:\\_backtest_.dat","r");
+ if (fp != NULL)
+   {
+    fscanf(fp,"%s",&url);
+   }
+  fclose(fp);
+
+ // считываем файл с результатами бэктеста
+ //ReadFile ("C:\\TIHIRO.dat") ;
+ ReadFile(url);
  // заполняем поля отчетности параметрами из файла
 /*
  int    n_win_pos;      // число выйгрышных позиций
@@ -333,5 +344,20 @@ void MainWindow::on_pushButton_clicked()
 // обновляет отчетность
 void MainWindow::on_pushButton_3_clicked()
 {
+
+    int index;
+    FILE * fp; // хэндл файл списка URL
+    char url[80]; // url файла бэктеста
+
+
+
+    fp = fopen("C:\\_backtest_.dat","r");
+    if (fp != NULL)
+      {
+       fscanf(fp,"%s",&url);
+      }
+     fclose(fp);
     RemovePoints(root);
+    ReadFile(url);
+    this->repaint();
 }
