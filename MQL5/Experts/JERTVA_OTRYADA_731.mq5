@@ -101,8 +101,10 @@ void OnTick()
         depth = ctm.GetHistoryDepth();
        }
       else
-       Alert("ОСТАНАВЛИВАЕМ РОБОТА");
-       _StopFlag = true;
+       {
+        //Alert("ОСТАНАВЛИВАЕМ РОБОТА");
+        allow_continue = false; // не даем роботу возможности больше торговать
+       }
       }
       
   Comment (" ТЕКУЩИЙ БАЛАНС = ",tb.GetCurrentProfit()," МИН. ПРОФИТ = ",min_profit);
