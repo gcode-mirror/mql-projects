@@ -30,6 +30,8 @@ input double            orderVolume = 1;            //размер лота
 input TAKE_PROFIT_MODE  takeprofitMode = TPM_HIGH;  //режим вычисления тейк профита
 input double            takeprofitFactor = 1.0;     //коэффициент тейк профита  
 input int               priceDifferent=10;          //разница цен для поиска экстремумов
+input double            min_profit=-3;               //минимальный уровень прибыли
+input double            max_drawdown=3;             //максимальный уровень просадки
 //символ
 string symbol=_Symbol;
 //таймфрейм
@@ -40,9 +42,13 @@ double point = _Point;
 CTihiro       tihiro(symbol,timeFrame,point,bars,takeprofitMode,takeprofitFactor,priceDifferent); // объект класса CTihiro   
 CisNewBar     isNewBar;                            // для проверки на новый бар
 CTradeManager ctm;                                 // объект класса TradeManager
+TradeBreak  * tb  = new TradeBreak (min_profit,max_drawdown);  // объет класса TradeBreak
 int handle;                                        // хэндл индикатора
 bool allow_continue = true;                        // флаг продолжения 
 ENUM_TM_POSITION_TYPE signal;                      // переменная для хранения торгового сигнала
+
+datetime  currentTime;                             // текущее время 
+int count=0;                                       // счетчик 
 
 int OnInit()
 {
@@ -51,6 +57,7 @@ int OnInit()
  int han = iCustom(symbol,timeFrame,"WBackTest");
  //вычисляем торговую ситуацию в самом начале работы эксперта
  //WBackTest * wBackTest = new WBackTest("backtest","ВЫЧИСЛЕНИЕ БЭКТЕСТА",5,12,200,50,0,0,CORNER_LEFT_UPPER,0);
+ currentTime = TimeCurrent();
  return(INIT_SUCCEEDED);
 }
 
@@ -82,6 +89,18 @@ void OnTick()
         }
       }
     }
+  }
+  
+ void OnTrade()
+  {
+    if (count<3)
+      count++;
+    else
+     {
+      if ( tb.UpdateData(ctm.GetPositionHistory(currentTime,TimeCurrent()) ) )
+       Alert("Робот вывалился за параметры");
+      count=0;
+     }
   }
   
 // метод обработки событий  

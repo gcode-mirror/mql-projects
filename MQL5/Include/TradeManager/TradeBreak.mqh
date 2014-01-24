@@ -70,6 +70,6 @@
      // если текущая прибыль меньше минимально допустимой
      // или если текущая просадка больше максимально допустимой
      if (_current_profit < _min_profit || _current_drawdown > _max_drawdown)
-      return false; 
-    return true;
+      return true; 
+    return false;
    }
