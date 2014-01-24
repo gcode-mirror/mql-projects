@@ -16,7 +16,6 @@
     double _min_profit;         // минимально допустимая прибыль
     double _max_drawdown;       // максимально допустимая просадка
     double _max_balance;        // максимальный баланс
-    CPositionArray *_positionsHistory; //массив позиций, находящихся в истории    
    public:
     //---- описание системных методов класса 
     
@@ -49,7 +48,7 @@
     for (index = 0; index<length;index++)
      {
       // извлекаем указатель на текущую позицию по индексу
-      pos = _positionsHistory.At(index);
+      pos = positionsHistory.At(index);
       // изменяем текущую прибыль 
       _current_profit = _current_profit + pos.getPosProfit();
       //если баланс превысил текущий максимальный баланс
