@@ -45,6 +45,7 @@
     int length = positionsHistory.Total(); // длина переданного массива истории
     CPosition *pos; // указатель на текущую позицию
     // проходим по всем массиву и вычисляем текущую прибыль
+    
     for (index = 0; index<length;index++)
      {
       // извлекаем указатель на текущую позицию по индексу
@@ -70,6 +71,6 @@
      // если текущая прибыль меньше минимально допустимой
      // или если текущая просадка больше максимально допустимой
      if (_current_profit < _min_profit || _current_drawdown > _max_drawdown)
-      return true; 
-    return false;
+      return false; 
+    return true;
    }
