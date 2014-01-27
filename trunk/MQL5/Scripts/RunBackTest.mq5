@@ -85,7 +85,6 @@ WriteTo(file_handle,backtest_file+" ");
 //---- закрываем файл списка URL
 CloseHandle(file_handle);
 //---- запускаем приложение отображения результатов бэктеста
-//StringToCharArray ("mspaint.exe",val);
 StringToCharArray ("cmd /C start C:\\GetBackTest.exe",val);
 WinExec(val, 1);
  }
