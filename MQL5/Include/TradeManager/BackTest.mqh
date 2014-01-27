@@ -584,6 +584,12 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol)
   double  absDrawDown        =  0;                             //абсолютная просадка
   double  relDrawDown        =  0;                             //относительная просадка 
   
+  //сохраняем в файл данные об эксперте , таймфрейме и прочем
+  
+  //WriteTo  (file_handle,file_name+" ");
+  
+  Alert("Колчиество позиций мать его  = ",n_trades);
+  
   //сохраняем файл параметров вычисления бэктеста
   WriteTo  (file_handle,IntegerToString(n_trades+1)+" ");
   WriteTo  (file_handle,IntegerToString(n_win_trades)+" ");
