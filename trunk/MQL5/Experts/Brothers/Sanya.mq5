@@ -32,6 +32,7 @@ double openPrice;
 double currentVolume;
 
 double factor = 0.01; // множитель для вычисления текущего объема торгов от дельты
+int trailingDeltaStep = 30;
 int percentage = 100;  // сколько процентов объем дневной торговли может перекрывать от месячно
 int fastPeriod = 24;  // Период обновления младшей дельта в часах
 int slowPeriod = 30;  // Период обновления старшей дельта в днях
@@ -40,7 +41,7 @@ int fastDelta = 0;   // Младшая дельта
 DELTA_STEP fastDeltaStep = HUNDRED;  // Шаг изменения МЛАДШЕЙ дельты
 DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 
-CSanya san(fastDelta, slowDelta, dayStep, monthStep, stepsFromStartToExtremum, stepsFromStartToExit, stepsFromExtremumToExtremum, type, volume, fastDeltaStep, slowDeltaStep, percentage, fastPeriod, slowPeriod);
+CSanya san(fastDelta, slowDelta, dayStep, monthStep, stepsFromStartToExtremum, stepsFromStartToExit, stepsFromExtremumToExtremum, type, volume, fastDeltaStep, slowDeltaStep, percentage, fastPeriod, slowPeriod, trailingDeltaStep);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
