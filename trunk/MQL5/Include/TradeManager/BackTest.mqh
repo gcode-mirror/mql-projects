@@ -9,6 +9,7 @@
 
 #include <TradeManager/TradeManagerEnums.mqh>
 #include <TradeManager/PositionArray.mqh>
+#include <StringUtilities.mqh> 
 
 //+------------------------------------------------------------------+
 //| Импорт WIN API библиотеки                                        |
@@ -59,8 +60,15 @@
 class BackTest
  {
   private:
-   CPositionArray *_positionsHistory;        ///массив истории виртуальных позиций
-   double  _balance;    // баланс
+   CPositionArray *_positionsHistory; // массив истории виртуальных позиций
+   double  _balance;                  // баланс
+   datetime _start,_finish;           // периоды загрузки истории
+   string   _symbol;                  // символ
+   double   _max_balance;             // максимальный уровень баланса
+   double   _min_balance;             // минимальный уровень баланса
+   double   _deposit;                 // депозит
+   ENUM_TIMEFRAMES _timeFrame;        // таймфрейм
+   string   _expertName;              // имя эксперта   
   public:
    //конструктор
    BackTest() { _positionsHistory = new CPositionArray(); };  //конструктор класса
@@ -93,7 +101,7 @@ class BackTest
    bool LoadHistoryFromFile(string file_url,datetime start,datetime finish);          //загружает историю позиции из файла
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
  //  void Save
-   bool SaveBackTestToFile (string file_url,string symbol); //сохраняет результаты бэктеста
+   bool SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName); //сохраняет результаты бэктеста
    bool SaveArray(string file_url);
    void WriteTo (int handle,string buffer);            // сохраняет в файл строку по заданному хэндлу
    //дополнительный методы
@@ -458,6 +466,9 @@ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5In
  _positionsHistory.Clear();                   //очищаем массив
  _positionsHistory.ReadFromFile(file_handle,start,finish); //загружаем данные из файла 
  
+ _start = start;
+ _finish   = finish;
+ 
  FileClose(file_handle);                      //закрывает файл  
  
 
@@ -549,17 +560,17 @@ bool BackTest::SaveBackTestToFile (string file_url,string symbol)
 //| Сохраняет вычисленные параметры бэктеста                          |
 //+-------------------------------------------------------------------+
 
-bool BackTest::SaveBackTestToFile (string file_name,string symbol)
+bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName)
  {
   //индексы start и finish
   int start = 0;
   int finish = 0;
   int index;    // счетчики для цикла
+  int time_value;
   double current_balance;
   CPosition *pos;
   uint total = _positionsHistory.Total();  //всего количество позиций в истории
   //открываем файл на запись
-  //int file_handle =  FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON|FILE_ANSI, ";"); 
   int file_handle = CreateFileW(file_name, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);  
   //если не удалось создать файл
   if(file_handle <= 0 )
@@ -567,6 +578,10 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol)
     Alert("Не возможно создать файл результатов бэктеста");
     return(false);
    }
+  // сохраняем параметры сохранения отчетности
+  _timeFrame  = timeFrame;
+  _expertName = expertName;
+  _symbol     = symbol;
   //переменные для хранения параметров бэктеста
   uint    n_trades           =  GetNTrades(symbol);            //количество трейдов 
   uint    n_win_trades       =  GetNSignTrades(symbol,1);      //количество выйгрышных трейдов
@@ -586,7 +601,12 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol)
   
   //сохраняем в файл данные об эксперте , таймфрейме и прочем
   
-  //WriteTo  (file_handle,file_name+" ");
+  
+  WriteTo  (file_handle,_expertName+" ");                // сохраняем имя эксперта
+  WriteTo  (file_handle,_symbol+" ");                    // сохраняем символ
+  WriteTo  (file_handle,PeriodToString(_timeFrame)+" "); // сохраняем таймфрейм
+  WriteTo  (file_handle,IntegerToString(_start)+" ");    // сохраняем время начала считывания истории в Unix Time
+  WriteTo  (file_handle,IntegerToString(_finish)+" ");   // сохраняем время конца считывания истории в Unix Time
   
   Alert("Колчиество позиций мать его  = ",n_trades);
   
@@ -608,6 +628,8 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol)
   WriteTo  (file_handle,DoubleToString(relDrawDown)+" ");                                          
   //сохраняем точки графиков (баланса, маржи)
   current_balance = 0;
+  _max_balance = 0;   // обнуляем максимальный баланс
+  _min_balance = 0;   // обнуляем минимальный баланс
   WriteTo  (file_handle,DoubleToString(current_balance)+" ");    // сохраняем изначальный баланс  
   for (index=0;index<total;index++)
    {

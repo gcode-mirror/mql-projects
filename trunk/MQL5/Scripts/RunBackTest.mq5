@@ -78,7 +78,7 @@ if (flag)
 //---- открываем файл списка URL адресов бэкстеста
 file_handle = CreateFileW(file_catalog, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
 //---- сохраняем файл бэктеста
-backtest.SaveBackTestToFile(backtest_file,_Symbol);
+backtest.SaveBackTestToFile(backtest_file,_Symbol,_Period,"TIHIRO");
 //---- сохраняем URL в файл списка URL бэктеста
 Comment("");
 WriteTo(file_handle,backtest_file+" ");

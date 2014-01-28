@@ -141,7 +141,7 @@ void CalculateBackTest (datetime time_from,datetime time_to)
        {
        //---- то вычисляем параметры бэктеста и сохраняем их в файл
        //backtest.SaveBackTestToFile(backtestFile,expert_symbol);
-       backtest.SaveBackTestToFile(backtestFile,expert_symbol);
+       backtest.SaveBackTestToFile(backtestFile,expert_symbol,_Period,"TIHIRO");
        //---- сохраняем URL в файл списка URL бэктеста
        Comment("");
        WriteTo(file_handle,backtestFile+" ");
