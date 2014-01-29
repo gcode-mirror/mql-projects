@@ -70,8 +70,14 @@ class BackTest
    ENUM_TIMEFRAMES _timeFrame;        // таймфрейм
    string   _expertName;              // имя эксперта   
   public:
-   //конструктор
-   BackTest() { _positionsHistory = new CPositionArray(); };  //конструктор класса
+   //конструкторы
+   BackTest() { _positionsHistory = new CPositionArray(); };  
+   BackTest(string file_url,datetime start,datetime finish)
+    { 
+     _positionsHistory = new CPositionArray(); 
+     LoadHistoryFromFile(file_url,start,finish); 
+    }; 
+   // деструктор
   ~BackTest() { delete _positionsHistory; };
    //методы бэктеста
    //метод возвращения индекса позиции в массиве позиций по времени
@@ -98,7 +104,9 @@ class BackTest
    //метод вычисления конечной прибыли 
    double GetTotalProfit (string symbol);  
    //метод вычисляет максимальный и минимальный баланс
-   void   GetBalances (string symbol);           
+   void   GetBalances (string symbol);   
+   //метод сохраняет график баланса
+   void   SaveBalanceToFile (int file_handle);
    //прочие системные методы
    bool LoadHistoryFromFile(string file_url,datetime start,datetime finish);          //загружает историю позиции из файла
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
@@ -460,7 +468,27 @@ void  BackTest::GetBalances(string symbol)
          _min_balance = balance;
       }
     }
+
  } 
+ 
+//+-------------------------------------------------------------------+
+//| Сохраняет в файл отчетности график баланса                        |
+//+-------------------------------------------------------------------+ 
+
+void BackTest::SaveBalanceToFile(int file_handle)
+ {
+  int    total = _positionsHistory.Total();                      // всего количество позиций в истории
+  double current_balance = 0;                                    // текущий баланс
+  CPosition *pos;                                                // указатель на позицию
+  WriteTo  (file_handle,DoubleToString(current_balance)+" ");    // сохраняем изначальный баланс  
+  for (int index=0;index<total;index++)
+   {
+    // получаем указатель на позицию
+    pos = _positionsHistory.Position(index);
+    current_balance = current_balance + pos.getPosProfit(); // вычисляем  баланс в данной точке, прибавляя к балансу прибыль по позиции
+    WriteTo  (file_handle,DoubleToString(current_balance)+" "); 
+   }
+ }
   
 //+-------------------------------------------------------------------+
 //| Загружает историю позиций из файла                                |
@@ -507,79 +535,6 @@ void BackTest::GetHistoryExtra(CPositionArray *array)
  {
   _positionsHistory = array;
  } 
-
-//+-------------------------------------------------------------------+
-//| Сохраняет вычисленные параметры бэктеста                          |
-//+-------------------------------------------------------------------+
-/*
-bool BackTest::SaveBackTestToFile (string file_url,string symbol)
- {
-  //индексы start и finish
-  int start = 0;
-  int finish = 0;
-  int index;    // счетчки для цикла
-  double current_balance;
-  CPosition *pos;
-  uint total = _positionsHistory.Total();  //всего количество позиций в истории
-  //открываем файл на запись
-  int file_handle =  FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON|FILE_ANSI, ";"); 
-  //если не удалось создать файл
-  if(file_handle == INVALID_HANDLE )
-   {
-    Print("Не возможно создать файл результатов бэктеста");
-    return(false);
-   }
-  //переменные для хранения параметров бэктеста
-  uint    n_trades           =  GetNTrades(symbol);            //количество трейдов 
-  uint    n_win_trades       =  GetNSignTrades(symbol,1);      //количество выйгрышных трейдов
-  uint    n_lose_trades      =  GetNSignTrades(symbol,-1);     //количество выйгрышных трейдов
-  int     sign_last_pos      =  GetSignLastPosition(symbol);   //знак последней позиции
-  double  max_trade          =  GetMaxTrade(symbol,1);         //самый большой трейд по символу
-  double  min_trade          =  GetMaxTrade(symbol,-1);        //самый маленький трейд по символу
-  double  aver_profit_trade  =  GetAverageTrade(symbol,1);     //средний прибыльный трейд 
-  double  aver_lose_trade    =  GetAverageTrade(symbol,-1);    //средний убыточный трейд   
-  uint    maxPositiveTrades  =  GetMaxInARowTrades(symbol,1);  //максимальное количество подряд идущих положительных трейдов
-  uint    maxNegativeTrades  =  GetMaxInARowTrades(symbol,-1); //максимальное количество подряд идущих отрицательных трейдов
-  double  maxProfitRange     =  GetMaxInARow(symbol,1);        //максимальный профит
-  double  maxLoseRange       =  GetMaxInARow(symbol,-1);       //максимальный убыток
-  double  maxDrawDown        =  GetMaxDrawdown(symbol);        //максимальная просадка
-  double  absDrawDown        =  0;                             //абсолютная просадка
-  double  relDrawDown        =  0;                             //относительная просадка 
-  
-  //сохраняем файл параметров вычисления бэктеста
-  FileWrite(file_handle,n_trades+1); // сохраняем количество позиций + 1 для начального баланса)
-  FileWrite(file_handle,n_win_trades); // сохраняем количество прибыльных позиций
-  FileWrite(file_handle,n_lose_trades); // сохраняем количество убыточных позиций    
-  FileWrite(file_handle,sign_last_pos); // сохраняем знак последней позиции
-  FileWrite(file_handle,max_trade); // сохраняем максимальную прибыльную позицию
-  FileWrite(file_handle,min_trade); // сохраняем минимальную убыточную позицию
-  FileWrite(file_handle,maxProfitRange); // сохраняем максимальную непрерывную прибыль
-  FileWrite(file_handle,maxLoseRange); // сохраняем максимальный непрервный убыток
-  FileWrite(file_handle,maxPositiveTrades); // сохраняем максимальное число непрервных прибыльных позиций
-  FileWrite(file_handle,maxNegativeTrades); // сохраняем максимальное число непрервных убыточных позиций 
-  FileWrite(file_handle,aver_profit_trade); // сохраняем среднее значение прибыльной позиции
-  FileWrite(file_handle,aver_lose_trade); // сохраняем среднее значение убыточной позиции    
-  FileWrite(file_handle,maxDrawDown); // сохраняем максимальную просадку по балансу
-  FileWrite(file_handle,absDrawDown); // сохраняем абсолютную просадку по балансу
-  FileWrite(file_handle,relDrawDown); // сохраняем относительную просадку по балансу
-  //сохраняем точки графиков (баланса, маржи)
-  current_balance = 0;
-  FileWrite(file_handle,current_balance); // сохраняем изначальный баланс
-  for (index=0;index<total;index++)
-   {
-    // получаем указатель на позицию
-    pos = _positionsHistory.Position(index);
-     if (pos.getSymbol() == symbol) //если символ позиции совпадает с переданным 
-      {
-       current_balance = current_balance + pos.getPosProfit(); // вычисляем  баланс в данной точке, прибавляя к балансу прибыль по позиции
-       FileWrite(file_handle,current_balance); // сохраняем вычисленный баланс    
-      }
-   }
-  //закрываем файл
-  FileClose(file_handle);
- return (true);
- }
- */
  
 //+-------------------------------------------------------------------+
 //| Сохраняет вычисленные параметры бэктеста                          |
@@ -646,20 +601,7 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   WriteTo  (file_handle,DoubleToString(absDrawDown)+" ");
   WriteTo  (file_handle,DoubleToString(relDrawDown)+" ");                                          
   //сохраняем точки графиков (баланса, маржи)
-  current_balance = 0;
-  _max_balance = 0;   // обнуляем максимальный баланс
-  _min_balance = 0;   // обнуляем минимальный баланс
-  WriteTo  (file_handle,DoubleToString(current_balance)+" ");    // сохраняем изначальный баланс  
-  for (int index=0;index<total;index++)
-   {
-    // получаем указатель на позицию
-    pos = _positionsHistory.Position(index);
-     if (pos.getSymbol() == symbol) //если символ позиции совпадает с переданным 
-      {
-       current_balance = current_balance + pos.getPosProfit(); // вычисляем  баланс в данной точке, прибавляя к балансу прибыль по позиции
-        WriteTo  (file_handle,DoubleToString(current_balance)+" "); 
-      }
-   }
+  SaveBalanceToFile(file_handle);
   //закрываем файл
   CloseHandle(file_handle);
  return (true);
