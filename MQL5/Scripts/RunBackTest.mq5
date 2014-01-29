@@ -56,7 +56,7 @@
 // параметры, вводимые пользователем
 
 input string   file_catalog = "C:\\_backtest_.dat"; // файл списка url бэктестов
-input string   file_url  = "";                      // расположение файла истории 
+input string   expert_name  = "";                   // имя эксперта 
 input datetime time_from = 0;                       // с какого времени
 input datetime time_to   = 0;                       // по какое время
 
