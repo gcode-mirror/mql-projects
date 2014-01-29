@@ -8,6 +8,7 @@
 #property version   "1.00"
 #property script_show_inputs 
 #include <TradeManager\BackTest.mqh>    //подключаем библиотеку бэктеста
+#include <StringUtilities.mqh>         
 //+------------------------------------------------------------------+
 //| Скрипт запускает приложение вычисления отчетности                |
 //+------------------------------------------------------------------+
@@ -60,15 +61,43 @@ input string   expert_name  = "";                   // имя эксперта
 input datetime time_from = 0;                       // с какого времени
 input datetime time_to   = 0;                       // по какое время
 
+//---- функция возвращает адрес файла истории
+
+string GetHistoryFileName ()
+ {
+  string str="";
+   str = expert_name + "\\" + "History"+"\\"+expert_name+"_"+_Symbol+"_"+PeriodToString(_Period)+".csv";
+  return str;
+ }
+ 
+//---- функция возвращает адрес файла результатов вычислений бэктеста 
+ 
+string GetBackTestFileName ()
+ {
+  string str="";
+  str = StringFormat("%s_%s_%s[%s,%s].dat", expert_name, _Symbol, PeriodToString(_Period), TimeToString(time_from),TimeToString(time_to));
+  StringReplace(str," ","_");
+  StringReplace(str,":",".");  
+  str = "C:\\"+str;
+  return str;
+ } 
+ 
+
 void OnStart()
 {
  uchar    val[];
- string   backtest_file="C:\\BACKTEST.txt";
+ string   backtest_file;    // файл отчетности
+ string   history_url;      // адрес файла истории
  bool     flag;             
  int      file_handle;      // хэндл файла списка URL файлов бэктестов
  BackTest backtest;         // объект класса бэктеста
+ //---- формируем файл истории
+ history_url = GetHistoryFileName ();
+ //---- формируем файл отчетности 
+ backtest_file = GetBackTestFileName ();
  //---- получаем историю позиций из файла 
- flag = backtest.LoadHistoryFromFile(file_url,time_from,time_to);
+ 
+ flag = backtest.LoadHistoryFromFile(history_url,time_from,time_to);
  //---- если история благополучно получена
  if (flag)
  {
