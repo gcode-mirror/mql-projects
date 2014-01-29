@@ -96,13 +96,14 @@ class BackTest
    double GetRelDrawdown (string symbol);              //вычисляет относительную просадку баланса
    double GetMaxDrawdown (string symbol);              //вычисляет максимальную просадку баланса
    //метод вычисления конечной прибыли 
-   double GetTotalProfit (string symbol);             
+   double GetTotalProfit (string symbol);  
+   //метод вычисляет максимальный и минимальный баланс
+   void   GetBalances (string symbol);           
    //прочие системные методы
    bool LoadHistoryFromFile(string file_url,datetime start,datetime finish);          //загружает историю позиции из файла
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
  //  void Save
    bool SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName); //сохраняет результаты бэктеста
-   bool SaveArray(string file_url);
    void WriteTo (int handle,string buffer);            // сохраняет в файл строку по заданному хэндлу
    //дополнительный методы
    string SignToString (int sign);                     //переводит знак позиции в строку
@@ -434,15 +435,41 @@ double BackTest::GetTotalProfit(string symbol)
   return _balance;
  }  
  
+//+-------------------------------------------------------------------+
+//| Вычисляет максимальный и минимальный балансы                      |
+//+-------------------------------------------------------------------+
+
+void  BackTest::GetBalances(string symbol)
+ {
+   uint index;
+   uint total = _positionsHistory.Total();  //размер массива
+   double balance  = 0;                     //максимальный баланс на текущий момент (вместо нуля потом записать начальный баланс)
+   CPosition * pos;                         //указатель на позицию
+                                            //обнуляем баланс
+   _max_balance = 0;
+   _min_balance = 0;
+   for (index=0;index<total;index++)
+    {
+     pos = _positionsHistory.Position(index); //получаем указатель на позицию 
+     if (pos.getSymbol() == symbol) //если символ совпал с передаваемым символом
+      {
+        balance = balance + pos.getPosProfit(); // модицифируем баланс
+        if (balance > _max_balance)  
+         _max_balance = balance;
+        if (balance < _min_balance)
+         _min_balance = balance;
+      }
+    }
+ } 
   
 //+-------------------------------------------------------------------+
 //| Загружает историю позиций из файла                                |
 //+-------------------------------------------------------------------+   
   
 bool BackTest::LoadHistoryFromFile(string file_url,datetime start,datetime finish)
- {
+{
 
-if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
+ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
  {
   FileDelete(file_url);
   return(true);
@@ -461,7 +488,6 @@ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5In
   PrintFormat("%s error: %s opening %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(::GetLastError()), file_url);
   return (false);
  }
- 
 
  _positionsHistory.Clear();                   //очищаем массив
  _positionsHistory.ReadFromFile(file_handle,start,finish); //загружаем данные из файла 
@@ -470,10 +496,8 @@ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5In
  _finish   = finish;
  
  FileClose(file_handle);                      //закрывает файл  
- 
-
  return (true);
- }  
+}  
   
 //+-------------------------------------------------------------------+
 //| Получает историю позиций извне                                    |
@@ -556,21 +580,16 @@ bool BackTest::SaveBackTestToFile (string file_url,string symbol)
  return (true);
  }
  */
- //+-------------------------------------------------------------------+
+ 
+//+-------------------------------------------------------------------+
 //| Сохраняет вычисленные параметры бэктеста                          |
 //+-------------------------------------------------------------------+
-
 bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName)
  {
-  //индексы start и finish
-  int start = 0;
-  int finish = 0;
-  int index;    // счетчики для цикла
-  int time_value;
   double current_balance;
   CPosition *pos;
   uint total = _positionsHistory.Total();  //всего количество позиций в истории
-  //открываем файл на запись
+  //открываем файл для рез-тов бэктеста на запись
   int file_handle = CreateFileW(file_name, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);  
   //если не удалось создать файл
   if(file_handle <= 0 )
@@ -599,16 +618,16 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   double  absDrawDown        =  0;                             //абсолютная просадка
   double  relDrawDown        =  0;                             //относительная просадка 
   
+  GetBalances(symbol);  // вычисляем максимальный и минимальный баланс
+  
   //сохраняем в файл данные об эксперте , таймфрейме и прочем
-  
-  
-  WriteTo  (file_handle,_expertName+" ");                // сохраняем имя эксперта
-  WriteTo  (file_handle,_symbol+" ");                    // сохраняем символ
-  WriteTo  (file_handle,PeriodToString(_timeFrame)+" "); // сохраняем таймфрейм
-  WriteTo  (file_handle,IntegerToString(_start)+" ");    // сохраняем время начала считывания истории в Unix Time
-  WriteTo  (file_handle,IntegerToString(_finish)+" ");   // сохраняем время конца считывания истории в Unix Time
-  
-  Alert("Колчиество позиций мать его  = ",n_trades);
+  WriteTo  (file_handle,_expertName+" ");                  // сохраняем имя эксперта
+  WriteTo  (file_handle,_symbol+" ");                      // сохраняем символ
+  WriteTo  (file_handle,PeriodToString(_timeFrame)+" ");   // сохраняем таймфрейм
+  WriteTo  (file_handle,IntegerToString(_start)+" ");      // сохраняем время начала считывания истории в Unix Time
+  WriteTo  (file_handle,IntegerToString(_finish)+" ");     // сохраняем время конца считывания истории в Unix Time
+  WriteTo  (file_handle,DoubleToString(_max_balance)+" "); // максимальный баланс
+  WriteTo  (file_handle,DoubleToString(_min_balance)+" "); // минимальный баланс
   
   //сохраняем файл параметров вычисления бэктеста
   WriteTo  (file_handle,IntegerToString(n_trades+1)+" ");
@@ -631,7 +650,7 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   _max_balance = 0;   // обнуляем максимальный баланс
   _min_balance = 0;   // обнуляем минимальный баланс
   WriteTo  (file_handle,DoubleToString(current_balance)+" ");    // сохраняем изначальный баланс  
-  for (index=0;index<total;index++)
+  for (int index=0;index<total;index++)
    {
     // получаем указатель на позицию
     pos = _positionsHistory.Position(index);
@@ -645,22 +664,6 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   CloseHandle(file_handle);
  return (true);
  }
- 
- bool BackTest::SaveArray(string file_url)
-{
-
- int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON|FILE_ANSI, ";");
-
- if(file_handle == INVALID_HANDLE)
- {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), file_url));  
-  return(false);
- }
- _positionsHistory.WriteToFile(file_handle);  //сохраняем массив в файл
-
- FileClose(file_handle);
- return(true);
-}
 
 //+-------------------------------------------------------------------+
 //| Дополнительные методы                                             |

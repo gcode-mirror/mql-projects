@@ -38,9 +38,6 @@
          int    lpOverlapped );          // pointer to structure needed for overlapped I/O    
   
   int  RtlGetLastWin32Error();
-  
-  int  RtlSetLastWin32Error (int dwErrCode);   
-  
   int  WinExec(uchar &NameEx[], int dwFlags);  // запускает приложение BackTest
     
 #import
@@ -59,40 +56,40 @@
 // параметры, вводимые пользователем
 
 input string   file_catalog = "C:\\_backtest_.dat"; // файл списка url бэктестов
-input string   file_url  = "C:\\";                  // расположение файла истории 
+input string   file_url  = "";                      // расположение файла истории 
 input datetime time_from = 0;                       // с какого времени
 input datetime time_to   = 0;                       // по какое время
 
 void OnStart()
-  {
-uchar    val[];
-string   backtest_file="C:\\BACKTEST.txt";
-bool     flag;             
-int      file_handle;      // хэндл файла списка URL файлов бэктестов
-BackTest backtest;         // объект класса бэктеста
-//---- получаем историю позиций из файла 
-flag = backtest.LoadHistoryFromFile(file_url,time_from,time_to);
-//---- если история благополучно получена
-if (flag)
+{
+ uchar    val[];
+ string   backtest_file="C:\\BACKTEST.txt";
+ bool     flag;             
+ int      file_handle;      // хэндл файла списка URL файлов бэктестов
+ BackTest backtest;         // объект класса бэктеста
+ //---- получаем историю позиций из файла 
+ flag = backtest.LoadHistoryFromFile(file_url,time_from,time_to);
+ //---- если история благополучно получена
+ if (flag)
  {
-//---- открываем файл списка URL адресов бэкстеста
-file_handle = CreateFileW(file_catalog, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
-//---- сохраняем файл бэктеста
-backtest.SaveBackTestToFile(backtest_file,_Symbol,_Period,"TIHIRO");
-//---- сохраняем URL в файл списка URL бэктеста
-Comment("");
-WriteTo(file_handle,backtest_file+" ");
-//---- закрываем файл списка URL
-CloseHandle(file_handle);
-//---- запускаем приложение отображения результатов бэктеста
-StringToCharArray ("cmd /C start C:\\GetBackTest.exe",val);
-WinExec(val, 1);
+  //---- открываем файл списка URL адресов бэкстеста
+  file_handle = CreateFileW(file_catalog, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
+  //---- сохраняем файл бэктеста
+  backtest.SaveBackTestToFile(backtest_file,_Symbol,_Period,"TIHIRO");
+  //---- сохраняем URL в файл списка URL бэктеста
+  Comment("");
+  WriteTo(file_handle,backtest_file+" ");
+  //---- закрываем файл списка URL
+  CloseHandle(file_handle);
+  //---- запускаем приложение отображения результатов бэктеста
+  StringToCharArray ("cmd /C start C:\\GetBackTest.exe",val);
+  WinExec(val, 1);
  }
-else
+ else
  {
-  Comment("Не удалось вычислить отчетность");
+  Comment("Не удалось считать историю из файла");
  }
-  }
+}
   
   // сохраняет строку в файл
 void WriteTo(int handle, string buffer) 
