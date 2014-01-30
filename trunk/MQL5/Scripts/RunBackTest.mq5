@@ -56,7 +56,7 @@
 
 // параметры, вводимые пользователем
 
-input string   file_catalog = "C:\\_backtest_.dat"; // файл списка url бэктестов
+input string   file_catalog = "C:\\Taki"; // адрес каталога с программой TAKI
 input string   expert_name  = "";                   // имя эксперта 
 input datetime time_from = 0;                       // с какого времени
 input datetime time_to   = 0;                       // по какое время
@@ -75,19 +75,34 @@ string GetHistoryFileName ()
 string GetBackTestFileName ()
  {
   string str="";
-  str = StringFormat("%s_%s_%s[%s,%s].dat", expert_name, _Symbol, PeriodToString(_Period), TimeToString(time_from),TimeToString(time_to));
+  str = StringFormat("\dat\%s_%s_%s[%s,%s].dat", expert_name, _Symbol, PeriodToString(_Period), TimeToString(time_from),TimeToString(time_to));
   StringReplace(str," ","_");
   StringReplace(str,":",".");  
-  str = "C:\\"+str;
+  str = file_catalog+str;
   return str;
  } 
  
+//---- функция возвращает адрес файла списка URL адресов
+
+string GetBacktestUrlList ()
+ {
+   return file_catalog+"/"+"_backtest_.dat";
+ }
+ 
+//---- функция возвращает адрес приложения TAKI
+
+string GetTAKIUrl ()
+ {
+   return "cmd /C start "+file_catalog+"/"+"TAKI.exe";
+ }
 
 void OnStart()
 {
  uchar    val[];
  string   backtest_file;    // файл отчетности
  string   history_url;      // адрес файла истории
+ string   url_list;         // адрес файла списка url к файлам бэктеста
+ string   url_TAKI;         // адрес TAKI приложения
  bool     flag;             
  int      file_handle;      // хэндл файла списка URL файлов бэктестов
  BackTest backtest;         // объект класса бэктеста
@@ -95,6 +110,10 @@ void OnStart()
  history_url = GetHistoryFileName ();
  //---- формируем файл отчетности 
  backtest_file = GetBackTestFileName ();
+ //---- формируем файл списка url адресов  файлам бэктеста
+ url_list = GetBacktestUrlList ();
+ //---- формируем адреса приложения TAKI
+ url_TAKI = GetTAKIUrl();
  //---- получаем историю позиций из файла 
  
  flag = backtest.LoadHistoryFromFile(history_url,time_from,time_to);
@@ -102,16 +121,16 @@ void OnStart()
  if (flag)
  {
   //---- открываем файл списка URL адресов бэкстеста
-  file_handle = CreateFileW(file_catalog, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
+  file_handle = CreateFileW(url_list, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
   //---- сохраняем файл бэктеста
-  backtest.SaveBackTestToFile(backtest_file,_Symbol,_Period,"TIHIRO");
+  backtest.SaveBackTestToFile(backtest_file,_Symbol,_Period,expert_name);
   //---- сохраняем URL в файл списка URL бэктеста
   Comment("");
   WriteTo(file_handle,backtest_file+" ");
   //---- закрываем файл списка URL
   CloseHandle(file_handle);
   //---- запускаем приложение отображения результатов бэктеста
-  StringToCharArray ("cmd /C start C:\\GetBackTest.exe",val);
+  StringToCharArray ( url_TAKI,val);
   WinExec(val, 1);
  }
  else
