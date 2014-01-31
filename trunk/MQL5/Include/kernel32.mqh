@@ -12,6 +12,12 @@
 
 #import "kernel32.dll"
 
+  int  FindFirstFileW(string path, int& answer[]);   // для поиска первого файла в заданной директории
+   
+  bool FindNextFileW(int handle, int& answer[]);     // для поиска файла в заданной директории
+   
+  bool FindClose(int handle);                        // завершение поиска файлов в директории
+
   bool CloseHandle                // Закрытие объекта
        ( int hObject );                  // Хэндл объекта
        
@@ -52,3 +58,9 @@
 // Описатель действия
 #define _OPEN_EXISTING_      3
 #define _CREATE_ALWAYS_      2
+
+// константы
+#define OPEN_GENETIC           0x80000000
+#define OPEN_EXISTING          3
+#define FILE_ATTRIBUTE_NORMAL  128
+#define FILE_SHARE_READ_KERNEL 0x00000001

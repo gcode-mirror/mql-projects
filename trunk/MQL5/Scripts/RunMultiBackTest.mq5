@@ -8,67 +8,19 @@
 #property version   "1.00"
 #property script_show_inputs 
 #include <TradeManager\BackTest.mqh>    //подключаем библиотеку бэктеста
-#include <StringUtilities.mqh>         
+#include <StringUtilities.mqh>        
+#include <kernel32.mqh>                 //для WIN API функций
+ 
 //+------------------------------------------------------------------+
 //| Скрипт запускает приложение вычисления отчетности                |
 //+------------------------------------------------------------------+
 
-//+------------------------------------------------------------------+
-//| Импорт WIN API библиотеки                                        |
-//+------------------------------------------------------------------+
-
-#import "kernel32.dll"
-
-  bool CloseHandle                // Закрытие объекта
-       ( int hObject );                  // Хэндл объекта
-       
-  int CreateFileW                 // Создание открытие объекта
-      ( string lpFileName,               // Полный путь доступа к объекту
-        int    dwDesiredAccess,          // Тип доступа к объекту
-        int    dwShareMode,              // Флаги общего доступа
-        int    lpSecurityAttributes,     // Описатель безопасности
-        int    dwCreationDisposition,    // Описатель действия
-        int    dwFlagsAndAttributes,     // Флаги аттрибутов
-        int    hTemplateFile );      
-          
-  bool WriteFile                  // Запись данных в файл
-       ( int    hFile,                   // handle to file to write to
-         char    &dBuffer[],             // pointer to data to write to file
-         int    nNumberOfBytesToWrite,   // number of bytes to write
-         int&   lpNumberOfBytesWritten[],// pointer to number of bytes written
-         int    lpOverlapped );          // pointer to structure needed for overlapped I/O    
-  
-  int  RtlGetLastWin32Error();
-  int  WinExec(uchar &NameEx[], int dwFlags);  // запускает приложение BackTest
-    
-#import
-
-//+------------------------------------------------------------------+
-//| Необходимые константы                                            |
-//+------------------------------------------------------------------+
-
-// Тип доступа к объекту
-#define _GENERIC_WRITE_      0x40000000
-// Флаги общего доступа
-#define _FILE_SHARE_WRITE_   0x00000002
-// Описатель действия
-#define _CREATE_ALWAYS_      2
-
 // параметры, вводимые пользователем
 
-input string   file_catalog = "C:\\Taki"; // адрес каталога с программой TAKI
-input string   expert_name  = "";                   // имя эксперта 
-input datetime time_from = 0;                       // с какого времени
-input datetime time_to   = 0;                       // по какое время
-
-//---- функция возвращает адрес файла истории
-
-string GetHistoryFileName ()
- {
-  string str="";
-   str = expert_name + "\\" + "History"+"\\"+expert_name+"_"+_Symbol+"_"+PeriodToString(_Period)+".csv";
-  return str;
- }
+input string   file_catalog = "C:\\Taki";              // адрес каталога с программой TAKI
+input string   catalog_url  = "";                      // адрес каталога с файлами истории
+input datetime time_from    = 0;                       // с какого времени
+input datetime time_to      = 0;                       // по какое время
  
 //---- функция возвращает адрес файла результатов вычислений бэктеста 
  
@@ -105,9 +57,9 @@ void OnStart()
  string   url_TAKI;         // адрес TAKI приложения
  bool     flag;             
  int      file_handle;      // хэндл файла списка URL файлов бэктестов
+ 
  BackTest backtest;         // объект класса бэктеста
- //---- формируем файл истории
- history_url = GetHistoryFileName ();
+
  //---- формируем файл отчетности 
  backtest_file = GetBackTestFileName ();
  //---- формируем файл списка url адресов  файлам бэктеста
@@ -148,8 +100,81 @@ void WriteTo(int handle, string buffer)
   {
     Comment(" ");
     WriteFile(handle, buff, StringLen(buffer), nBytesRead, NULL);
-    
   } 
   else
    Print("неудача. плохой хэндл для файла ");
 }  
+
+
+// метод получения всех файлов истории в каталоге 
+void GetAllCatalog()
+{
+ int win32_DATA[79];
+ int handle;
+ int 
+ //открываем файл  
+ ArrayInitialize(win32_DATA,0); 
+ handle = FindFirstFileW(catalog_url+"*.csv", win32_DATA);
+   //---- открываем файл списка URL адресов бэкстеста
+  file_handle = CreateFileW(url_list, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
+ if(handle!=-1)
+ {
+  CreateBackTestFile(bufferToString(win32_DATA));  // загружаем историю из файла 
+  ArrayInitialize(win32_DATA,0);
+ // открываем остальные файлы
+ while(FindNextFileW(handle, win32_DATA))
+ {
+  CreateBackTestFile(bufferToString(win32_DATA));
+  ArrayInitialize(win32_DATA,0);
+ }
+ if (handle > 0) FindClose(handle);
+ }
+}
+
+// метод обработки файла истории
+
+bool CreateBackTestFile (string fileHandle)
+{
+ bool flag;
+ //---- получаем историю позиций из файла 
+ flag = backtest.LoadHistoryFromFile(fileHandle,time_from,time_to);
+//---- если история благополучно получена
+ if (flag)
+ {
+  //---- открываем файл списка URL адресов бэкстеста
+  file_handle = CreateFileW(url_list, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
+  //---- сохраняем файл бэктеста
+  backtest.SaveBackTestToFile(backtest_file,_Symbol,_Period,expert_name);
+  //---- сохраняем URL в файл списка URL бэктеста
+  Comment("");
+  WriteTo(file_handle,backtest_file+" ");
+  //---- закрываем файл списка URL
+  CloseHandle(file_handle);
+  //---- запускаем приложение отображения результатов бэктеста
+  StringToCharArray ( url_TAKI,val);
+  WinExec(val, 1);
+ }
+ else
+ {
+  Comment("Не удалось считать историю из файла");
+ }
+}
+
+//+------------------------------------------------------------------+
+//|  Переводит int массив в строку                                   |
+//+------------------------------------------------------------------+ 
+string bufferToString(int &fileContain[])
+   {
+   string text="";
+   
+   int pos = 10;
+   for (int i = 0; i < 64; i++)
+      {
+      pos++;
+      int curr = fileContain[pos];
+      text = text + CharToString(curr & 0x000000FF)
+         +CharToString(curr >> 8 & 0x000000FF)
+         +CharToString(curr >> 16 & 0x000000FF)
+         +CharToString(curr >> 24 & 0x000000FF);
+      }
+   return (text);
