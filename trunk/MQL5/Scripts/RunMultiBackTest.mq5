@@ -111,24 +111,36 @@ void GetAllCatalog()
 {
  int win32_DATA[79];
  int handle;
- int 
+ int url_handle;     // хэндл файла, содержащего url адреса результатов бэктеста
+ string file_url;    // url адрес файла
  //открываем файл  
  ArrayInitialize(win32_DATA,0); 
+ //---- ищем первый файл 
  handle = FindFirstFileW(catalog_url+"*.csv", win32_DATA);
-   //---- открываем файл списка URL адресов бэкстеста
-  file_handle = CreateFileW(url_list, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
+ //---- открываем файл списка URL адресов бэкстеста  
+ url_handle  = CreateFileW(GetBacktestUrlList(), _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
+ 
  if(handle!=-1)
  {
-  CreateBackTestFile(bufferToString(win32_DATA));  // загружаем историю из файла 
+  file_url = bufferToString(win32_DATA);
+  //---- если файл считан
+  if (CreateBackTestFile(file_url) )  // загружаем историю из файла 
+   {
+    Comment("");
+    WriteTo(file_handle,backtest_file+" ");
+   }
   ArrayInitialize(win32_DATA,0);
  // открываем остальные файлы
  while(FindNextFileW(handle, win32_DATA))
  {
-  CreateBackTestFile(bufferToString(win32_DATA));
+  file_url = bufferToString(win32_DATA); 
+  CreateBackTestFile(file_url);
   ArrayInitialize(win32_DATA,0);
  }
  if (handle > 0) FindClose(handle);
  }
+ // закрываем файл списка url файлов
+ CloseHandle(url_handle);
 }
 
 // метод обработки файла истории
