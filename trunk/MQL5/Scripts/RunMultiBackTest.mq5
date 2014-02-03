@@ -18,9 +18,26 @@
 // параметры, вводимые пользователем
 
 input string   file_catalog = "C:\\Taki";              // адрес каталога с программой TAKI
-input string   catalog_url  = "";                      // адрес каталога с файлами истории
+input string   catalog_url  = "";                      // адрес каталога с файлами
 input datetime time_from    = 0;                       // с какого времени
 input datetime time_to      = 0;                       // по какое врем€
+
+//---- глобальные переменные и массивы
+
+// массив имен экспертов
+string robotArray[3] =
+ {
+  "condom",
+  "TIHIRO",
+  "FollowWhiteRabbit"
+ };
+
+//---- функци€ возвращает адреса файла истории 
+ 
+string GetFileHistory (int n_robot, string symbol, string timeframe)
+ {
+  return ""+robotArray[n_robot]+"_"+symbol
+ } 
  
 //---- функци€ возвращает адрес файла результатов вычислений бэктеста 
  
@@ -57,15 +74,28 @@ void OnStart()
  string   url_TAKI;         // адрес TAKI приложени€
  bool     flag;             
  int      file_handle;      // хэндл файла списка URL файлов бэктестов
+ int      index;            // переменна€ счетчки дл€ прохода по циклу
+ int      robots_n;         // колчиество роботов
  
- BackTest backtest;         // объект класса бэктеста
+ 
+ BackTest backtest;         // объ€вл€ем объект класса бэктеста
 
  //---- формируем файл отчетности 
  backtest_file = GetBackTestFileName ();
+ 
  //---- формируем файл списка url адресов  файлам бэктеста
  url_list = GetBacktestUrlList ();
  //---- формируем адреса приложени€ TAKI
  url_TAKI = GetTAKIUrl();
+ 
+ //---- перебираем все роботы 
+ 
+ for (index=0;index<robots_n;index++)
+  {
+   
+  } 
+ 
+ 
  //---- получаем историю позиций из файла 
  flag = backtest.LoadHistoryFromFile(history_url,time_from,time_to);
  //---- если истори€ благополучно получена
