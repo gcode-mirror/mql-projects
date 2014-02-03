@@ -56,7 +56,7 @@
 
 // параметры, вводимые пользователем
 
-input string   file_catalog = "C:\\Taki"; // адрес каталога с программой TAKI
+input string   file_catalog = "C:\\BACKTESTER";           // адрес каталога с программой TAKI
 input string   expert_name  = "";                   // имя эксперта 
 input datetime time_from = 0;                       // с какого времени
 input datetime time_to   = 0;                       // по какое время
@@ -86,14 +86,14 @@ string GetBackTestFileName ()
 
 string GetBacktestUrlList ()
  {
-   return file_catalog+"/"+"_backtest_.dat";
+   return "C:\\"+"_backtest_.dat";
  }
  
 //---- функция возвращает адрес приложения TAKI
 
 string GetTAKIUrl ()
  {
-   return "cmd /C start "+file_catalog+"/"+"TAKI.exe";
+   return "cmd /C start "+file_catalog+"/"+"BACKTESTER.exe";
  }
 
 void OnStart()
@@ -124,6 +124,8 @@ void OnStart()
   //---- сохраняем файл бэктеста
   backtest.SaveBackTestToFile(backtest_file,_Symbol,_Period,expert_name);
   //---- сохраняем URL в файл списка URL бэктеста
+  Comment("");
+  WriteTo(file_handle,file_catalog+"\ ");  
   Comment("");
   WriteTo(file_handle,backtest_file+" ");
   //---- закрываем файл списка URL
