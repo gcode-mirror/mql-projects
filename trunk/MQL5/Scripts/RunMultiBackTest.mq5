@@ -18,7 +18,7 @@
 // параметры, вводимые пользователем
 
 input string   file_catalog = "C:\\Taki";              // адрес каталога с программой TAKI
-input string   catalog_url  = "";                      // адрес каталога с файлами
+input string   url_list  = "C:\\";                     // адрес каталога url адресов
 input datetime time_from    = 0;                       // с какого времени
 input datetime time_to      = 0;                       // по какое время
 
@@ -32,19 +32,57 @@ string robotArray[3] =
   "FollowWhiteRabbit"
  };
 
+// массив символов
+
+string symbolArray[6] =
+ {
+  "EURUSD",
+  "GBPUSD",
+  "USDCHF",
+  "USDJPY",
+  "USDCAD",
+  "AUDUSD"
+ };
+ 
+// массив таймфреймов
+ 
+ENUM_TIMEFRAMES periodArray[20] =
+ {
+   PERIOD_M1,
+   PERIOD_M2,
+   PERIOD_M3,
+   PERIOD_M4,
+   PERIOD_M5,
+   PERIOD_M6,
+   PERIOD_M10,
+   PERIOD_M12,
+   PERIOD_M15,
+   PERIOD_M20,
+   PERIOD_M30,
+   PERIOD_H1,
+   PERIOD_H2,
+   PERIOD_H3,
+   PERIOD_H4,
+   PERIOD_H6,
+   PERIOD_H8,
+   PERIOD_D1,
+   PERIOD_W1,
+   PERIOD_MN1 
+ }; 
+
 //---- функция возвращает адреса файла истории 
  
-string GetFileHistory (int n_robot, string symbol, string timeframe)
+string GetFileHistory (int n_robot, int n_symbol, int n_period)
  {
-  return ""+robotArray[n_robot]+"_"+symbol
+  return robotArray[n_robot]+"/"+"History"+"/"+robotArray[n_robot]+"_"+symbolArray[n_symbol]+"_"+PeriodToString(periodArray[n_period])+".csv";
  } 
  
 //---- функция возвращает адрес файла результатов вычислений бэктеста 
  
-string GetBackTestFileName ()
+string GetBackTestFileName (int n_robot, int n_symbol, int n_period)
  {
   string str="";
-  str = StringFormat("\dat\%s_%s_%s[%s,%s].dat", expert_name, _Symbol, PeriodToString(_Period), TimeToString(time_from),TimeToString(time_to));
+  str = StringFormat("\dat\%s_%s_%s[%s,%s].dat", robotArray[n_robot], symbolArray[n_symbol], PeriodToString(periodArray[n_period]), TimeToString(time_from),TimeToString(time_to));
   StringReplace(str," ","_");
   StringReplace(str,":",".");  
   str = file_catalog+str;
@@ -55,7 +93,7 @@ string GetBackTestFileName ()
 
 string GetBacktestUrlList ()
  {
-   return file_catalog+"/"+"_backtest_.dat";
+   return url_list+"/"+"_backtest_.dat";
  }
  
 //---- функция возвращает адрес приложения TAKI
@@ -65,158 +103,97 @@ string GetTAKIUrl ()
    return "cmd /C start "+file_catalog+"/"+"TAKI.exe";
  }
 
+
 void OnStart()
 {
  uchar    val[];
  string   backtest_file;    // файл отчетности
  string   history_url;      // адрес файла истории
- string   url_list;         // адрес файла списка url к файлам бэктеста
+ string   url_backtest;     // адрес файла списка url к файлам бэктеста
  string   url_TAKI;         // адрес TAKI приложения
- bool     flag;             
+ // прочие переменные
  int      file_handle;      // хэндл файла списка URL файлов бэктестов
- int      index;            // переменная счетчки для прохода по циклу
- int      robots_n;         // колчиество роботов
+ int      i_rob,i_sym,i_per;// переменные счетчки для прохода по циклу
+ int      robots_n;         // количество роботов 
+ int      symbols_n;        // количество символов
+ int      period_n;         // количество периодов
+ bool     flag;             // флаг проверки успешной загрузки истории
+ bool     flag_backtest;    // флаг проверки формирования файла отчетности
  
+ // инициализиуем паременные
+ robots_n  = ArraySize(robotArray);
+ symbols_n = ArraySize(symbolArray);
+ period_n  = ArraySize(periodArray);
  
- BackTest backtest;         // объявляем объект класса бэктеста
-
- //---- формируем файл отчетности 
- backtest_file = GetBackTestFileName ();
- 
- //---- формируем файл списка url адресов  файлам бэктеста
- url_list = GetBacktestUrlList ();
- //---- формируем адреса приложения TAKI
- url_TAKI = GetTAKIUrl();
- 
- //---- перебираем все роботы 
- 
- for (index=0;index<robots_n;index++)
-  {
+ //Alert("N_ROBOTS = ",robots_n,);
    
-  } 
+ // формируем основные url адреса файлов
+ url_backtest  = GetBacktestUrlList ();       // сохраняем файл списка url файлов бэктеста
+ url_TAKI      = GetTAKIUrl ();               // сохраняем файл каталога с программой
  
  
- //---- получаем историю позиций из файла 
- flag = backtest.LoadHistoryFromFile(history_url,time_from,time_to);
- //---- если история благополучно получена
- if (flag)
- {
-  //---- открываем файл списка URL адресов бэкстеста
-  file_handle = CreateFileW(url_list, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
-  //---- сохраняем файл бэктеста
-  backtest.SaveBackTestToFile(backtest_file,_Symbol,_Period,expert_name);
-  //---- сохраняем URL в файл списка URL бэктеста
-  Comment("");
-  WriteTo(file_handle,backtest_file+" ");
-  //---- закрываем файл списка URL
-  CloseHandle(file_handle);
-  //---- запускаем приложение отображения результатов бэктеста
-  StringToCharArray ( url_TAKI,val);
-  WinExec(val, 1);
- }
- else
- {
-  Comment("Не удалось считать историю из файла");
- }
-}
-  
-  // сохраняет строку в файл
-void WriteTo(int handle, string buffer) 
-{
-  int    nBytesRead[1]={1};
-  char   buff[]; 
-  StringToCharArray(buffer,buff);
-  if(handle>0) 
+ BackTest backtest;         // объект класса бэктеста
+ // открываем файл списка URL адресов бэктеста
+ file_handle   = CreateFileW(url_backtest, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL); 
+ Comment("");
+ WriteTo(file_handle,file_catalog+"\ ");  
+ // проходим по циклам и формирует файл истории
+ for (i_rob=0;i_rob < robots_n; i_rob ++ )
   {
-    Comment(" ");
-    WriteFile(handle, buff, StringLen(buffer), nBytesRead, NULL);
-  } 
-  else
-   Print("неудача. плохой хэндл для файла ");
-}  
-
-
-// метод получения всех файлов истории в каталоге 
-void GetAllCatalog()
-{
- int win32_DATA[79];
- int handle;
- int url_handle;     // хэндл файла, содержащего url адреса результатов бэктеста
- string file_url;    // url адрес файла
- //открываем файл  
- ArrayInitialize(win32_DATA,0); 
- //---- ищем первый файл 
- handle = FindFirstFileW(catalog_url+"*.csv", win32_DATA);
- //---- открываем файл списка URL адресов бэкстеста  
- url_handle  = CreateFileW(GetBacktestUrlList(), _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
- 
- if(handle!=-1)
- {
-  file_url = bufferToString(win32_DATA);
-  //---- если файл считан
-  if (CreateBackTestFile(file_url) )  // загружаем историю из файла 
-   {
-    Comment("");
-    WriteTo(file_handle,backtest_file+" ");
-   }
-  ArrayInitialize(win32_DATA,0);
- // открываем остальные файлы
- while(FindNextFileW(handle, win32_DATA))
- {
-  file_url = bufferToString(win32_DATA); 
-  CreateBackTestFile(file_url);
-  ArrayInitialize(win32_DATA,0);
- }
- if (handle > 0) FindClose(handle);
- }
- // закрываем файл списка url файлов
- CloseHandle(url_handle);
-}
-
-// метод обработки файла истории
-
-bool CreateBackTestFile (string fileHandle)
-{
- bool flag;
- //---- получаем историю позиций из файла 
- flag = backtest.LoadHistoryFromFile(fileHandle,time_from,time_to);
-//---- если история благополучно получена
- if (flag)
- {
-  //---- открываем файл списка URL адресов бэкстеста
-  file_handle = CreateFileW(url_list, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);
-  //---- сохраняем файл бэктеста
-  backtest.SaveBackTestToFile(backtest_file,_Symbol,_Period,expert_name);
-  //---- сохраняем URL в файл списка URL бэктеста
-  Comment("");
-  WriteTo(file_handle,backtest_file+" ");
-  //---- закрываем файл списка URL
-  CloseHandle(file_handle);
-  //---- запускаем приложение отображения результатов бэктеста
-  StringToCharArray ( url_TAKI,val);
-  WinExec(val, 1);
- }
- else
- {
-  Comment("Не удалось считать историю из файла");
- }
-}
-
-//+------------------------------------------------------------------+
-//|  Переводит int массив в строку                                   |
-//+------------------------------------------------------------------+ 
-string bufferToString(int &fileContain[])
-   {
-   string text="";
-   
-   int pos = 10;
-   for (int i = 0; i < 64; i++)
+     Alert("РОБОТ = ",i_rob);
+   for (i_sym=0;i_sym < symbols_n; i_sym ++)
+    {
+     for (i_per=0;i_per < period_n; i_per ++)
       {
-      pos++;
-      int curr = fileContain[pos];
-      text = text + CharToString(curr & 0x000000FF)
-         +CharToString(curr >> 8 & 0x000000FF)
-         +CharToString(curr >> 16 & 0x000000FF)
-         +CharToString(curr >> 24 & 0x000000FF);
+       
+       // формируем адрес файла истории
+       history_url = GetFileHistory (i_rob,i_sym,i_per);
+      // Alert("ФАЙЛ ИСТОРИИ = ",history_url);
+       // получаем историю позиций из файла 
+       flag = backtest.LoadHistoryFromFile(history_url,time_from,time_to);
+            // Alert("ЦИКЛ ЗАВЕРШЕН [",i_sym,",",i_per,"]");
+       // если файл истории успешно загружен
+       if (flag)
+         {
+         Alert("ЦИКЛИТСЯ [",i_sym,",",i_per,"]");
+          // формируем файл бэктестов
+          backtest_file = GetBackTestFileName (i_rob,i_sym,i_per);
+        //  Alert("BACKTEST = ",backtest_file);
+          // сохраняем файл бэктеста
+          flag_backtest = backtest.SaveBackTestToFile(backtest_file,symbolArray[i_sym],periodArray[i_per],robotArray[i_rob]);
+          Alert("ЦИКЛ ЗАВЕРШЕН [",i_sym,",",i_per,"]");
+          // очищаем файл истории
+         
+          backtest.DeleteHistory();
+          if (flag_backtest)
+           {
+            // сохраняем URL в файл списка URL бэктеста
+            Comment("");
+            WriteTo(file_handle,backtest_file+" ");
+           }
+         }
+        else
+         {
+          Comment("Не удалось считать историю из файла");
+         }         
+        
+        
       }
-   return (text);
+        
+    }
+  
+  }
+  
+  Alert("ВЫШЛИ ИЗ ЦИКЛОВ");
+
+ //закрываем файл списка url
+ CloseHandle(file_handle);
+
+  if (flag_backtest)
+   {
+    // запускаем приложение отображения результатов бэктеста
+    StringToCharArray ( url_TAKI,val);
+    WinExec(val, 1);
+   }  
+
+}

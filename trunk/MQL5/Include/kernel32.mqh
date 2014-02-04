@@ -64,3 +64,43 @@
 #define OPEN_EXISTING          3
 #define FILE_ATTRIBUTE_NORMAL  128
 #define FILE_SHARE_READ_KERNEL 0x00000001
+
+// дополнительные функции
+
+// сохраняет строку в файл
+void WriteTo(int handle, string buffer) 
+{
+  int    nBytesRead[1]={1};
+  char   buff[]; 
+  StringToCharArray(buffer,buff);
+  if(handle>0) 
+  {
+    Comment(" ");
+    WriteFile(handle, buff, StringLen(buffer), nBytesRead, NULL);
+  } 
+  else
+   Print("неудача. плохой хэндл для файла ");
+}  
+
+string   ReadString(int handle)
+ {
+  int    nBytesRead[1]={1};
+  char   buffer[2]={'_','-'};
+  string str=""; 
+  string ch="";
+  if (handle>0) {
+    // пропускаем пустой символ 
+     ReadFile(handle, buffer, 2, nBytesRead, NULL);
+    // считываем символы, пока не дойдем до конца строки
+    while (nBytesRead[0]>0 && buffer[0]!=13) {
+      // формируем строку
+      str = str + ch;
+      Comment(" ");
+      // считываем очередной символ
+      ReadFile(handle, buffer, 2, nBytesRead, NULL);
+      // сохраняем символ
+      ch =  CharToString(buffer[0]);
+    }
+  }
+  return (str);
+ }
