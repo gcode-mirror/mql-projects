@@ -109,6 +109,7 @@ class BackTest
    void   SaveBalanceToFile (int file_handle);
    //прочие системные методы
    bool LoadHistoryFromFile(string file_url,datetime start,datetime finish);          //загружает историю позиции из файла
+   void DeleteHistory ();   // удаляет массив истории 
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
  //  void Save
    bool SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName); //сохраняет результаты бэктеста
@@ -526,6 +527,16 @@ bool BackTest::LoadHistoryFromFile(string file_url,datetime start,datetime finis
  FileClose(file_handle);                      //закрывает файл  
  return (true);
 }  
+  
+//+-------------------------------------------------------------------+
+//| Удаляет массив истории                                            |
+//+-------------------------------------------------------------------+ 
+
+void BackTest::DeleteHistory(void)
+ {
+   // очищаем массив
+   _positionsHistory.Clear();
+ }  
   
 //+-------------------------------------------------------------------+
 //| Получает историю позиций извне                                    |
