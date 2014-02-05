@@ -62,6 +62,7 @@ enum ENUM_POSITION_STATUS
    POSITION_STATUS_CLOSED,
    POSITION_STATUS_DELETED,
    POSITION_STATUS_NOT_DELETED,
+   POSITION_STATUS_NOT_CHANGED,
    POSITION_STATUS_NOT_INITIALISED,
    POSITION_STATUS_NOT_COMPLETE,
    POSITION_STATUS_MUST_BE_REPLAYED, //позиция должна отыграться
@@ -81,6 +82,8 @@ string PositionStatusToStr(ENUM_POSITION_STATUS enumPositionStatus)
       case POSITION_STATUS_PENDING: return("pending");
       case POSITION_STATUS_CLOSED: return("closed");
       case POSITION_STATUS_DELETED: return("deleted");
+      case POSITION_STATUS_NOT_DELETED: return("not deleted");
+      case POSITION_STATUS_NOT_CHANGED: return("not changed");
       case POSITION_STATUS_NOT_INITIALISED: return("not initialised");
       case POSITION_STATUS_NOT_COMPLETE: return("not completed");
       case POSITION_STATUS_MUST_BE_REPLAYED: return("must be replayed");
