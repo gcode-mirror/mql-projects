@@ -388,6 +388,18 @@ void CTradeManager::OnTick()
    }
   }
   
+  if (pos.getPositionStatus() == POSITION_STATUS_NOT_CHANGED)
+  {
+   if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+   {
+    pos.ChangeStopLossVolume();
+   }
+   if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_PLACED);
+   {
+    pos.setStopLoss();
+   }
+  }
+  
   if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Удаляем StopLoss и TakeProfit", MakeFunctionPrefix(__FUNCTION__)));    
@@ -610,7 +622,8 @@ int CTradeManager::GetPositionPointsProfit(string symbol)
   pos = _openPositions.At(i);
   if (pos.getSymbol() == symbol)
   {
-   return(pos.getPositionPointsProfit());
+   int profit = pos.getPositionPointsProfit();
+   return(profit);
   }
  }
  return(0);

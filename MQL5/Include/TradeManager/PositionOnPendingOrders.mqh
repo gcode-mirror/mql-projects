@@ -111,10 +111,11 @@ public:
    double TPtype(ENUM_TM_POSITION_TYPE type);        // вычисляет уровень тейк-профита в зависимости от типа
 
    ENUM_POSITION_STATUS OpenPosition();
-   ENUM_STOPLEVEL_STATUS setStopLoss(double lot = 0.0);
+   ENUM_STOPLEVEL_STATUS setStopLoss();
    ENUM_STOPLEVEL_STATUS setTakeProfit();
    bool ChangeSize(double lot);
    bool ModifyPosition(int sl, int tp);
+   ENUM_STOPLEVEL_STATUS ChangeStopLossVolume();
    bool CheckTakeProfit();
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();
    ENUM_POSITION_STATUS RemovePendingPosition();
@@ -183,8 +184,8 @@ CPosition::CPosition(CPosition *pos)
 //+------------------------------------------------------------------+
 //| Constructor with parameters                                      |
 //+------------------------------------------------------------------+
-CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
-                    ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0)
+CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0
+                    , int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0)
                     : _magic(magic), _symbol(symbol), _type(type), _lots(volume), _minProfit(minProfit), 
                        _trailingStep(trailingStep), _priceDifference(priceDifference), _sl(0), _tp(0)
 {
@@ -239,13 +240,13 @@ int CPosition::getPositionPointsProfit()
  UpdateSymbolInfo();
  double ask = SymbInfo.Ask();
  double bid = SymbInfo.Bid();
- 
+ double result = 0;
  if (_type == OP_BUY)
-  return (bid - _posAveragePrice);
+  result = (bid - _posAveragePrice)/_Point;
  if (_type == OP_SELL)
-  return (_posAveragePrice - ask);
-  
- return(0);
+  result = (_posAveragePrice - ask)/_Point;
+ 
+ return(result);
 }
 
 //+------------------------------------------------------------------+
@@ -346,6 +347,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _orderTicket = 0;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__)));
+    PrintFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
      _pos_status = POSITION_STATUS_OPEN;
@@ -361,6 +363,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _orderTicket = 0;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция ", MakeFunctionPrefix(__FUNCTION__)));
+    PrintFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
      _pos_status = POSITION_STATUS_OPEN;   
@@ -423,14 +426,19 @@ bool CPosition::ChangeSize(double lot)
  {
   if(trade.PositionOpen(_symbol, PositionType(type), lot, openPrice))
   {
+   _lots = _lots + lot;
    log_file.Write(LOG_DEBUG, StringFormat("%s Изменена позиция %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket));
-   if (setStopLoss(lot) != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+   PrintFormat("%s Изменена позиция %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket);
+   if (_sl_status == STOPLEVEL_STATUS_PLACED)
    {
-    _pos_status = POSITION_STATUS_OPEN;
-   }
-   else
-   {
-    _pos_status = POSITION_STATUS_NOT_COMPLETE;
+    if (ChangeStopLossVolume() == STOPLEVEL_STATUS_PLACED)
+    {
+     _pos_status = POSITION_STATUS_OPEN;
+    }
+    else
+    {
+     _pos_status = POSITION_STATUS_NOT_COMPLETE;
+    }
    }
   }
  }
@@ -456,15 +464,14 @@ bool CPosition::ModifyPosition(int sl, int tp)
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
-ENUM_STOPLEVEL_STATUS CPosition::setStopLoss(double lot = 0.0)
+ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
- if (lot == 0) lot = _lots;
  ENUM_ORDER_TYPE order_type;
  if (_sl > 0 && _sl_status != STOPLEVEL_STATUS_PLACED)
  {
   _slPrice = SLtype(_type);
   order_type = SLOrderType((int)_type);
-  if (trade.OrderOpen(_symbol, order_type, lot, _slPrice)) //, sl + stopLevel, sl - stopLevel);
+  if (trade.OrderOpen(_symbol, order_type, _lots, _slPrice)) //, sl + stopLevel, sl - stopLevel);
   {
    _slTicket = trade.ResultOrder();
    _sl_status = STOPLEVEL_STATUS_PLACED;
@@ -496,6 +503,16 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
  return(STOPLEVEL_STATUS_PLACED);
 }
 
+//+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+ENUM_STOPLEVEL_STATUS CPosition::ChangeStopLossVolume()
+{
+ if (RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
+ {
+  setStopLoss();
+ }
+ return (_sl_status);
+}
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+
 bool CPosition::CheckTakeProfit(void)
@@ -539,7 +556,7 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
    else
    {
     _sl_status = STOPLEVEL_STATUS_NOT_DELETED;
-      log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении стоплосса.Error(%d) = %s.Result retcode %d = %s", MakeFunctionPrefix(__FUNCTION__), ::GetLastError(), ErrorDescription(::GetLastError()), trade.ResultRetcode(), trade.ResultRetcodeDescription()));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при удалении стоплосса.Error(%d) = %s.Result retcode %d = %s", MakeFunctionPrefix(__FUNCTION__), ::GetLastError(), ErrorDescription(::GetLastError()), trade.ResultRetcode(), trade.ResultRetcodeDescription()));
    }
   }
   else
@@ -580,9 +597,6 @@ ENUM_STOPLEVEL_STATUS CPosition::RemoveStopLoss()
  }
  return (_sl_status);
 }
-
-//+------------------------------------------------------------------+
-//+------------------------------------------------------------------+
 
 //+------------------------------------------------------------------+
 //+------------------------------------------------------------------+

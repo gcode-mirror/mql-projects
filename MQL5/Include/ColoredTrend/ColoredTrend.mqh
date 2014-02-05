@@ -106,7 +106,6 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
  // Выделим память под массивы цветов и экстремумов
  difToNewExtremum =  buffer_ATR[1] * _percentage_ATR;
  
- 
   // Проверяем наличие экстремума на текущем баре
  if (num0 != bar)
  {
@@ -128,7 +127,6 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
    //PrintFormat("bar = %d, экстремумы num0=%d=%.05f, num1=%d=%.05f, num2=%d=%.05f", bar, num0, aExtremums[num0].price, num1, aExtremums[num1].price, num2, aExtremums[num2].price);
   }
  }
-
  if (num2 > 0)  //аналогично (num0 > 0 && num1 > 0 && num2 > 0) т.к. num2 не определится пока не определятся num0 и num1
  {
  bool newTrend = isNewTrend(buffer_Rates[2].close);
@@ -172,7 +170,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
  }
  
  //коррекция меняется на тренд вверх/вниз при наступлении условия isCorrectionEnds
- //если последняя ценя меньше/больше последнего экстремуму или на младшем тф "большой" бар
+ //если последняя цена меньше/больше последнего экстремум или на младшем тф "большой" бар
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && 
       isCorrectionEnds(buffer_Rates[2].close, MOVE_TYPE_CORRECTION_UP, start_pos))
  {
