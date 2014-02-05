@@ -584,6 +584,8 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   double  absDrawDown        =  0;                             //абсолютная просадка
   double  relDrawDown        =  0;                             //относительная просадка 
   
+    Alert("ВОТ ТАК ВОТ ФАЙЛ ИСТОРИИ = ",file_name);
+  
   GetBalances(symbol);  // вычисляем максимальный и минимальный баланс
   
   //сохраняем в файл данные об эксперте , таймфрейме и прочем
@@ -612,7 +614,10 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   WriteTo  (file_handle,DoubleToString(aver_lose_trade)+" ");    
   WriteTo  (file_handle,DoubleToString(maxDrawDown)+" ");
   WriteTo  (file_handle,DoubleToString(absDrawDown)+" ");
-  WriteTo  (file_handle,DoubleToString(relDrawDown)+" ");                                          
+  WriteTo  (file_handle,DoubleToString(relDrawDown)+" ");   
+  
+
+                                         
   //сохраняем точки графиков (баланса, маржи)
   SaveBalanceToFile(file_handle);
   //закрываем файл

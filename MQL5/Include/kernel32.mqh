@@ -82,6 +82,7 @@ void WriteTo(int handle, string buffer)
    Print("неудача. плохой хэндл для файла ");
 }  
 
+// считывает строку
 string   ReadString(int handle)
  {
   int    nBytesRead[1]={1};
@@ -104,3 +105,21 @@ string   ReadString(int handle)
   }
   return (str);
  }
+ 
+// считать текст из буфера                                         
+string bufferToString(int &fileContain[])
+   {
+   string text="";
+   
+   int pos = 10;
+   for (int i = 0; i < 64; i++)
+      {
+      pos++;
+      int curr = fileContain[pos];
+      text = text + CharToString(curr & 0x000000FF)
+         +CharToString(curr >> 8 & 0x000000FF)
+         +CharToString(curr >> 16 & 0x000000FF)
+         +CharToString(curr >> 24 & 0x000000FF);
+      }
+   return (text);
+   }  

@@ -9,9 +9,7 @@
 
 #define ONEDAY 60*60*24
 #include <CLog.mqh>
-#include <Trigger64/PositionSys.mqh>
-#include <Trigger64/SymbolSys.mqh>
-#include <Trigger64/Graph.mqh>
+
 
 //+------------------------------------------------------------------+
 //| Script program start function                                    |
@@ -42,6 +40,8 @@ void OnStart()
  my_sym.symb.volume_min = 0;
  
   my_sym.GetSymbolProperties("1100100000000");
+ 
+  Alert("",TerminalInfoString(TERMINAL_PATH));
  
   Alert("______________________________________");
   Alert("ask = ",DoubleToString(my_sym.symb.ask));

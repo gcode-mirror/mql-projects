@@ -45,7 +45,8 @@ void OnStart()
   {
    BackTest backtest;          // объект класса бэктеста
    double  drawdown;           // просадка по балансу
-   double  full_profit;        // прибыль 
+   double  full_profit;        // прибыль
+    
    // пытаемся загрузить историю из файла
    
    if (backtest.LoadHistoryFromFile(GetHistoryFileName(),from,to) )

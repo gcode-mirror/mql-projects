@@ -126,6 +126,9 @@ void OnStart()
   //---- сохраняем URL в файл списка URL бэктеста
   Comment("");
   WriteTo(file_handle,file_catalog+"\ ");  
+  //---- сохраняем имя эксперта, символ и периол в виде строки 
+  Comment("");
+  WriteTo(file_handle,expert_name+"-"+_Symbol+"-"+PeriodToString(_Period)+" ");     
   Comment("");
   WriteTo(file_handle,backtest_file+" ");
   //---- закрываем файл списка URL
