@@ -93,22 +93,20 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 //+------------------------------------------+
 bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
- if(bar == 0) 
-  return true; //на "нулевом" баре ничего происходить не будет и данная строчка избавит нас от лишних проверок в дальнейшем
- if(bar == ArraySize(enumMoveType)) 
- {
-  ArrayResize (enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
- }
- if(bar == ArraySize(aExtremums)  ) 
- {
-  ArrayResize (  aExtremums, ArraySize(  aExtremums)*2, ArraySize(  aExtremums)*2);
- }
+ if(bar == 0) //на "нулевом" баре ничего происходить не будет и данная строчка избавит нас от лишних проверок в дальнейшем
+  return true; 
+
+ if(bar == ArraySize(enumMoveType))  // Выделим память под массив экстремумов
+  ArrayResize(enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
+ if(bar == ArraySize(aExtremums))  // Выделим память под массив типов движения
+  ArrayResize(aExtremums, ArraySize(aExtremums)*2, ArraySize(aExtremums)*2);
  
  enumMoveType[bar] = enumMoveType[bar - 1];
   
- if(FillTimeSeries(CURRENT_TF, 4, start_pos,       buffer_Rates) < 0) return false; // получим размер заполненного массива
- if(FillATRBuf(4, start_pos) < 0) return false;  // заполним массив данными индикатора ATR
- // Выделим память под массивы цветов и экстремумов
+ if(FillTimeSeries(CURRENT_TF, 4, start_pos, buffer_Rates) < 0) // получим размер заполненного массива
+  return false; 
+ if(FillATRBuf(4, start_pos) < 0) // заполним массив данными индикатора ATR
+  return false;  
  difToNewExtremum =  buffer_ATR[1] * _percentage_ATR;
  
   // Проверяем наличие экстремума на текущем баре
@@ -123,8 +121,8 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
     aExtremums[num0].direction = 0;
     num0 = bar;
    }
-  else
-    {
+   else
+   {
     num2 = num1;
     num1 = num0;
     num0 = bar;
@@ -132,11 +130,10 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
    //PrintFormat("bar = %d, экстремумы num0=%d=%.05f, num1=%d=%.05f, num2=%d=%.05f", bar, num0, aExtremums[num0].price, num1, aExtremums[num1].price, num2, aExtremums[num2].price);
   }
  }
- if (num2 == 0) 
-   return true; //аналогично (num0 > 0 && num1 > 0 && num2 > 0) т.к. num2 не определится пока не определятся num0 и num1
+ if (num2 == 0) //аналогично (num0 > 0 && num1 > 0 && num2 > 0) т.к. num2 не определится пока не определятся num0 и num1
+   return true; 
    
- bool newTrend = isNewTrend(buffer_Rates[2].close);
-           
+ bool newTrend = isNewTrend(buffer_Rates[2].close);        
  if (newTrend)
  {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения 
   if (LessDoubles(buffer_Rates[2].close, aExtremums[num0].price, digits)) // если текущее закрытие ниже последнего экстремума 
@@ -194,8 +191,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
 
  if ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_DOWN)
    &&(aExtremums[bar].direction > 0)
-   &&(
-      LessDoubles(aExtremums[bar].price, aExtremums[num2].price, digits) // если новый максимум меньше предыдущего
+   &&(LessDoubles(aExtremums[bar].price, aExtremums[num2].price, digits) // если новый максимум меньше предыдущего
     ||GreatDoubles( MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
                    ,MathAbs(aExtremums[num2].price -  aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
                    ,digits)))   
@@ -206,8 +202,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
  
  if ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_UP)
    &&(aExtremums[bar].direction < 0)
-   &&(
-      GreatDoubles(aExtremums[bar].price, aExtremums[num2].price, digits)    // если новый минимум больше предыдущего
+   &&(GreatDoubles(aExtremums[bar].price, aExtremums[num2].price, digits)    // если новый минимум больше предыдущего
     ||GreatDoubles( MathAbs(aExtremums[num2].price - aExtremums[num1].price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
                    ,MathAbs(aExtremums[num2].price -  aExtremums[bar].price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
                    ,digits)))  // или новый минимум - больше
@@ -261,16 +256,16 @@ SExtremum CColoredTrend::isExtremum(double vol1, double vol2, double vol3, int l
  res.direction = 0;
  res.price = vol2;
  if (GreatDoubles(vol1, vol2, digits)
-  && LessDoubles (vol2, vol3, digits)
+  &&  LessDoubles(vol2, vol3, digits)
   && GreatDoubles(aExtremums[last].price, vol2 + difToNewExtremum, 5))
  {
   //PrintFormat("%s : %s MINIMUM %f; %f; %f; ATR = %f", TimeToString(TimeCurrent()), EnumToString((ENUM_TIMEFRAMES)_period), vol1, vol2, vol3, difToNewExtremum/_percentage_ATR);
   res.direction = -1;// минимум в точке vol2
  }
  
- if (LessDoubles(vol1, vol2, digits)
+ if ( LessDoubles(vol1, vol2, digits)
   && GreatDoubles(vol2, vol3, digits)
-  && LessDoubles(aExtremums[last].price, vol2 - difToNewExtremum, 5))
+  &&  LessDoubles(aExtremums[last].price, vol2 - difToNewExtremum, 5))
  {
   //PrintFormat("%s : %s MAXIMUM %f; %f; %f; ATR = %f", TimeToString(TimeCurrent()), EnumToString((ENUM_TIMEFRAMES)_period), vol1, vol2, vol3, difToNewExtremum/_percentage_ATR);
   res.direction = 1;// максимум в точке vol2
