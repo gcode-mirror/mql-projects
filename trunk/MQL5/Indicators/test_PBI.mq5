@@ -97,7 +97,7 @@ int OnInit()
 void OnDeinit(const int reason)
 {
  //--- Первый способ получить код причины деинициализации
-   Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
+   //Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
    ArrayInitialize(ExtUpArrowBuffer, 0);
    ArrayInitialize(ExtDownArrowBuffer, 0);
    ArrayInitialize(ExtTopUpArrowBuffer, 0);
@@ -170,8 +170,8 @@ int OnCalculate(const int rates_total,
 
    if(NewBarBottom.isNewBar() > 0 || prev_calculated == 0) //isNewBar bottom_tf
    {
-    PrintFormat("Prev_calc = %d; rates_total = %d", prev_calculated, rates_total);
-    int error = 0;
+    //PrintFormat("Prev_calc = %d; rates_total = %d", prev_calculated, rates_total);
+    bool error = true;
     
     for (int i = start_iteration; i < rates_total; i++)
     {
@@ -179,14 +179,14 @@ int OnCalculate(const int rates_total,
      if(start_pos_top < 0) start_pos_top = 0;
      
      error = topTrend.CountMoveType(top_buffer_index, start_pos_top);
-     if(error != 0)
+     if(!error)
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP. Error = ", error);
       return(prev_calculated);
      }
 
      error = trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(top_buffer_index));
-     if(error != 0) 
+     if(!error) 
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT. Error = ", error);
       return(prev_calculated);
@@ -196,7 +196,9 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer2[i] = high[i];
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i];
-     if(!show_top) ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
+     
+     if(!show_top) 
+      ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
      else
      {
       //PrintFormat("TIME: %s : i = %d; bit = %d; move type = %s", TimeToString(TimeCurrent()), i, top_buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
@@ -216,7 +218,8 @@ int OnCalculate(const int rates_total,
       //PrintFormat("Минимум %d __ %d", i, buffer_index);
      }
      
-    /* if (topTrend.GetExtremumDirection(top_buffer_index) > 0)
+    /*  Прорисовка экстремумов старшего таймфрейма 
+     if (topTrend.GetExtremumDirection(top_buffer_index) > 0)
      {
       ExtTopUpArrowBuffer[i-9] = topTrend.GetExtremum(top_buffer_index);
       //PrintFormat("Максимум %s : %d __ %d", TimeToString(start_time+seconds_current*buffer_index),  i, top_buffer_index);
