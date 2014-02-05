@@ -60,7 +60,7 @@ string GetTAKIUrl ()
 void OnStart()
 {
  uchar    val[];
- int win32_DATA[79];
+ int      win32_DATA[79];
  string   backtest_file;    // файл отчетности
  string   history_url;      // адрес файла истории
  string   url_backtest;     // адрес файла списка url к файлам бэктеста
@@ -69,13 +69,6 @@ void OnStart()
  int      file_handle;      // хэндл файла списка URL файлов бэктестов
  bool     flag;             // флаг проверки успешной загрузки истории
  bool     flag_backtest;    // флаг проверки формирования файла отчетности
- 
- // инициализиуем паременные
- robots_n  = ArraySize(robotArray);
- symbols_n = ArraySize(symbolArray);
- period_n  = ArraySize(periodArray);
- 
- //Alert("N_ROBOTS = ",robots_n,);
    
  // формируем основные url адреса файлов
  url_backtest  = GetBacktestUrlList ();       // сохраняем файл списка url файлов бэктеста
@@ -91,11 +84,12 @@ void OnStart()
  
  //ищем первый файл истории в заданном каталоге
  ArrayInitialize(win32_DATA,0); 
- handle = FindFirstFileW(filename+"*.chr", win32_DATA);
+ handle = FindFirstFileW(url_list+"*.chr", win32_DATA);
  //если файл успешно найден
  if(handle!=-1)
  {
-  
+  // считываем историю 
+  bufferToString(win32_DATA)
  }
  
  // проходим по циклам и формирует файл истории

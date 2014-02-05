@@ -18,7 +18,7 @@
 // параметры, вводимые пользователем
 
 input string   file_catalog = "C:\\Taki";              // адрес каталога с программой TAKI
-input string   url_list  = "C:\\";                     // адрес каталога url адресов
+ input string   url_list  = "C:\\";                    // адрес каталога url адресов
 input datetime time_from    = 0;                       // с какого времени
 input datetime time_to      = 0;                       // по какое время
 
@@ -31,21 +31,17 @@ string robotArray[3] =
   "TIHIRO",
   "FollowWhiteRabbit"
  };
-
 // массив символов
-
 string symbolArray[6] =
  {
   "EURUSD",
-  "GBPUSD",
+  "GPBUSD",
   "USDCHF",
   "USDJPY",
   "USDCAD",
   "AUDUSD"
  };
- 
-// массив таймфреймов
- 
+// массив периодов
 ENUM_TIMEFRAMES periodArray[20] =
  {
    PERIOD_M1,
@@ -67,12 +63,12 @@ ENUM_TIMEFRAMES periodArray[20] =
    PERIOD_H8,
    PERIOD_D1,
    PERIOD_W1,
-   PERIOD_MN1 
- }; 
+   PERIOD_MN1  
+ };
 
 //---- функция возвращает адреса файла истории 
  
-string GetFileHistory (int n_robot, int n_symbol, int n_period)
+string GetFileHistory (int n_robot,int n_symbol,int n_period)
  {
   return robotArray[n_robot]+"/"+"History"+"/"+robotArray[n_robot]+"_"+symbolArray[n_symbol]+"_"+PeriodToString(periodArray[n_period])+".csv";
  } 
@@ -113,7 +109,7 @@ void OnStart()
  string   url_TAKI;         // адрес TAKI приложения
  // прочие переменные
  int      file_handle;      // хэндл файла списка URL файлов бэктестов
- int      i_rob,i_sym,i_per;// переменные счетчки для прохода по циклу
+ int      i_rob,i_sym,i_per;// переменные-счетчики для прохода по циклам
  int      robots_n;         // количество роботов 
  int      symbols_n;        // количество символов
  int      period_n;         // количество периодов
@@ -122,7 +118,7 @@ void OnStart()
  
  // инициализиуем паременные
  robots_n  = ArraySize(robotArray);
- symbols_n = ArraySize(symbolArray);
+ symbols_n  = ArraySize(symbolArray);
  period_n  = ArraySize(periodArray);
  
  //Alert("N_ROBOTS = ",robots_n,);
@@ -131,16 +127,15 @@ void OnStart()
  url_backtest  = GetBacktestUrlList ();       // сохраняем файл списка url файлов бэктеста
  url_TAKI      = GetTAKIUrl ();               // сохраняем файл каталога с программой
  
- 
  BackTest backtest;         // объект класса бэктеста
  // открываем файл списка URL адресов бэктеста
  file_handle   = CreateFileW(url_backtest, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL); 
  Comment("");
  WriteTo(file_handle,file_catalog+"\ ");  
- // проходим по циклам и формирует файл истории
+ // проходим по всем роботам и ищем файлы истории
  for (i_rob=0;i_rob < robots_n; i_rob ++ )
   {
-     Alert("РОБОТ = ",i_rob);
+  
    for (i_sym=0;i_sym < symbols_n; i_sym ++)
     {
      for (i_per=0;i_per < period_n; i_per ++)
@@ -155,18 +150,20 @@ void OnStart()
        // если файл истории успешно загружен
        if (flag)
          {
-         Alert("ЦИКЛИТСЯ [",i_sym,",",i_per,"]");
+         Alert("ЦИКЛИТСЯ [",i_rob,",",i_sym,",",i_per,"]");
           // формируем файл бэктестов
           backtest_file = GetBackTestFileName (i_rob,i_sym,i_per);
         //  Alert("BACKTEST = ",backtest_file);
           // сохраняем файл бэктеста
           flag_backtest = backtest.SaveBackTestToFile(backtest_file,symbolArray[i_sym],periodArray[i_per],robotArray[i_rob]);
-          Alert("ЦИКЛ ЗАВЕРШЕН [",i_sym,",",i_per,"]");
+          Alert("ЦИКЛ ЗАВЕРШЕН [",i_rob,",",i_sym,",",i_per,"]");
           // очищаем файл истории
-         
           backtest.DeleteHistory();
           if (flag_backtest)
            {
+            //---- сохраняем имя эксперта, символ и периол в виде строки 
+            Comment("");
+            WriteTo(file_handle,robotArray[i_rob]+"-"+symbolArray[i_sym]+"-"+PeriodToString(periodArray[i_per])+" ");                
             // сохраняем URL в файл списка URL бэктеста
             Comment("");
             WriteTo(file_handle,backtest_file+" ");
