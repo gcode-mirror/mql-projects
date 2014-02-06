@@ -56,7 +56,7 @@
 
 // параметры, вводимые пользователем
 
-input string   file_catalog = "C:\\BACKTESTER";           // адрес каталога с программой TAKI
+input string   file_catalog = "C:\\Taki";           // адрес каталога с программой TAKI
 input string   expert_name  = "";                   // имя эксперта 
 input datetime time_from = 0;                       // с какого времени
 input datetime time_to   = 0;                       // по какое время
@@ -93,7 +93,7 @@ string GetBacktestUrlList ()
 
 string GetTAKIUrl ()
  {
-   return "cmd /C start "+file_catalog+"/"+"BACKTESTER.exe";
+   return "cmd /C start "+file_catalog+"/"+"TAKI.exe";
  }
 
 void OnStart()
@@ -127,8 +127,8 @@ void OnStart()
   Comment("");
   WriteTo(file_handle,file_catalog+"\ ");  
   //---- сохраняем имя эксперта, символ и периол в виде строки 
-  Comment("");
-  WriteTo(file_handle,expert_name+"-"+_Symbol+"-"+PeriodToString(_Period)+" ");     
+ // Comment("");
+ // WriteTo(file_handle,expert_name+"-"+_Symbol+"-"+PeriodToString(_Period)+" ");     
   Comment("");
   WriteTo(file_handle,backtest_file+" ");
   //---- закрываем файл списка URL
@@ -142,7 +142,7 @@ void OnStart()
   Comment("Не удалось считать историю из файла");
  }
 }
-  
+  /*
   // сохраняет строку в файл
 void WriteTo(int handle, string buffer) 
 {
@@ -157,4 +157,4 @@ void WriteTo(int handle, string buffer)
   } 
   else
    Print("неудача. плохой хэндл для файла ");
-}  
+}  */

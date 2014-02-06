@@ -10,48 +10,7 @@
 #include <TradeManager/TradeManagerEnums.mqh>
 #include <TradeManager/PositionArray.mqh>
 #include <StringUtilities.mqh> 
-
-//+------------------------------------------------------------------+
-//| Импорт WIN API библиотеки                                        |
-//+------------------------------------------------------------------+
-
-#import "kernel32.dll"
-
-  bool CloseHandle                // Закрытие объекта
-       ( int hObject );                  // Хэндл объекта
-       
-  int CreateFileW                 // Создание открытие объекта
-      ( string lpFileName,               // Полный путь доступа к объекту
-        int    dwDesiredAccess,          // Тип доступа к объекту
-        int    dwShareMode,              // Флаги общего доступа
-        int    lpSecurityAttributes,     // Описатель безопасности
-        int    dwCreationDisposition,    // Описатель действия
-        int    dwFlagsAndAttributes,     // Флаги аттрибутов
-        int    hTemplateFile );      
-          
-  bool WriteFile                  // Запись данных в файл
-       ( int    hFile,                   // handle to file to write to
-         char    &dBuffer[],             // pointer to data to write to file
-         int    nNumberOfBytesToWrite,   // number of bytes to write
-         int&   lpNumberOfBytesWritten[],// pointer to number of bytes written
-         int    lpOverlapped );          // pointer to structure needed for overlapped I/O    
-  
-  int  RtlGetLastWin32Error();
-  
-  int  RtlSetLastWin32Error (int dwErrCode);       
-    
-#import
-
-//+------------------------------------------------------------------+
-//| Необходимые константы                                            |
-//+------------------------------------------------------------------+
-
-// Тип доступа к объекту
-#define _GENERIC_WRITE_      0x40000000
-// Флаги общего доступа
-#define _FILE_SHARE_WRITE_   0x00000002
-// Описатель действия
-#define _CREATE_ALWAYS_      2
+#include <kernel32.mqh>
 
 //+------------------------------------------------------------------+
 //| Класс для работы с бэктестом                                     |
@@ -83,28 +42,28 @@ class BackTest
    //метод возвращения индекса позиции в массиве позиций по времени
    int   GetIndexByDate(datetime dt,bool type);
    //методы вычисления количест трейдов в истории по символу
-   uint   GetNTrades(string symbol);     //вычисляет количество трейдов по символу
-   uint   GetNSignTrades(string symbol,int sign);  //вычисляет количество выйгрышных трейдов по символу
+   uint   GetNTrades();     //вычисляет количество трейдов по символу
+   uint   GetNSignTrades(int sign);  //вычисляет количество выйгрышных трейдов по символу
    //знаки позиций по прибыли
-   int    GetSignLastPosition(string symbol);           //возвращает знак последней позиции 
-   int    GetSignPosition(string symbol,uint index);    //вычисляет знак позиции по индексу 
+   int    GetSignLastPosition();           //возвращает знак последней позиции 
+   int    GetSignPosition(uint index);    //вычисляет знак позиции по индексу 
    //метод вычисления процентных соотношений
    double GetIntegerPercent(uint value1,uint value2);   //метод вычисления процентного соотношения value1 по отношению  к value2
    //методы вычисления максимальных и средних трейдов
-   double GetMaxTrade(string symbol,int sign);          //вычисляет самый большой  трейд по символу
-   double GetAverageTrade(string symbol,int sign);      //вычисляет средний  трейд
+   double GetMaxTrade(int sign);          //вычисляет самый большой  трейд по символу
+   double GetAverageTrade(int sign);      //вычисляет средний  трейд
    //методы вычисления количеств подряд идущих трейдов
-   uint   GetMaxInARowTrades(string symbol,int sign); 
+   uint   GetMaxInARowTrades(int sign); 
    //методы вычисления максимальные непрерывные прибыль и убыток
-   double GetMaxInARow(string symbol,int sign);  
+   double GetMaxInARow(int sign);  
    //методы вычисления просадки баланса
-   double GetAbsDrawdown (string symbol);              //вычисляет абсолютную просадку баланса
-   double GetRelDrawdown (string symbol);              //вычисляет относительную просадку баланса
-   double GetMaxDrawdown (string symbol);              //вычисляет максимальную просадку баланса
+   double GetAbsDrawdown ();              //вычисляет абсолютную просадку баланса
+   double GetRelDrawdown ();              //вычисляет относительную просадку баланса
+   double GetMaxDrawdown ();              //вычисляет максимальную просадку баланса
    //метод вычисления конечной прибыли 
-   double GetTotalProfit (string symbol);  
+   double GetTotalProfit ();  
    //метод вычисляет максимальный и минимальный баланс
-   void   GetBalances (string symbol);   
+   void   GetBalances ();   
    //метод сохраняет график баланса
    void   SaveBalanceToFile (int file_handle);
    //прочие системные методы
@@ -163,30 +122,16 @@ class BackTest
  
  
 //+------------------------------------------------------------------+
-//| Вычисляет количество трейдов по символу                          |
+//| Вычисляет количество позиций в истории                           |
 //+------------------------------------------------------------------+
- uint BackTest::GetNTrades(string symbol)
+ uint BackTest::GetNTrades()
   {
-   uint index;
-   uint total = _positionsHistory.Total();  //размер массива
-   CPosition *pos;
-   uint count=0; //количество позиций с данным символом   
-   for (index=0;index<total;index++)
-    {
-    // pos = _positionsHistory.Position(index); //получаем указатель на позицию
-     pos = _positionsHistory.At(index);
-  //   Alert("<SYMBOL> ",pos.getSymbol());
-     if (pos.getSymbol() == symbol) //если символ позиции совпадает с переданным 
-      {
-       count++; //увеличиваем количество посчитанных позиций на единицу
-      }
-    }
-    return count;
+   return _positionsHistory.Total();  //размер массива
   }
 //+------------------------------------------------------------------+
-//| Вычисляет количество  трейдов по символу                         |
+//| Вычисляет количество позиций по знаку                            |
 //+------------------------------------------------------------------+
-  uint BackTest::GetNSignTrades(string symbol,int sign) // (1) - прибыльные трейды (-1) - убыточные
+  uint BackTest::GetNSignTrades(int sign) // (1) - прибыльные трейды (-1) - убыточные
   {
    uint index;
    uint total = _positionsHistory.Total();  //размер массива
@@ -195,7 +140,7 @@ class BackTest
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию
-     if (pos.getSymbol() == symbol && pos.getPosProfit()*sign > 0) //если символ позиции совпадает с переданным и профит положительный
+     if (pos.getPosProfit()*sign > 0) //если символ позиции совпадает с переданным и профит положительный
       {
        count++; //увеличиваем количество посчитанных позиций на единицу
       }
@@ -203,62 +148,41 @@ class BackTest
     return count;
   }
 
-
 //+------------------------------------------------------------------+
 //| возвращает знак последней позиции                                |  
 //+------------------------------------------------------------------+   
- int  BackTest::GetSignLastPosition(string symbol)
+ int  BackTest::GetSignLastPosition()
   {
    CPosition * pos;
    double profit;
    int index = _positionsHistory.Total()-1;
-   
-   while (index>=0)
-    {
-     pos = _positionsHistory.At(index);
-     if (pos.getSymbol() == symbol)
-      {
-       profit = pos.getPosProfit();
-       if (profit>0)
-        return 1;
-       if (profit<0)
-        return -1;
-       return 0;
-      }
-     index--;
-    }
+   if (index > -1)
+   {
+    pos = _positionsHistory.At(index);
+    profit = pos.getPosProfit();
+    if (profit>0)
+     return 1;
+    if (profit<0)
+     return -1;
+    return 0;
+   }
    return 2;
   }
     
 //+------------------------------------------------------------------+
 //| возвращает знак  позиции по индексу                              |  
 //+------------------------------------------------------------------+   
- int  BackTest::GetSignPosition(string symbol,uint index)
+ int  BackTest::GetSignPosition(uint index)
   {
    CPosition * pos;
-   uint ind = 0;
-   uint pos_index=-1;
    double profit;
-   uint total = _positionsHistory.Total();
-   while (ind<total)
-    {
-     pos = _positionsHistory.Position(ind);
-     if (pos.getSymbol() == symbol)
-      {
-      pos_index++;
-      if (pos_index == index)
-       {
-        profit = pos.getPosProfit();
-        if (profit>0)
-         return 1;
-        if (profit<0)
-         return -1;
-        return 0;
-       }
-      }
-     ind++;
-    }
-   return 2;
+     pos = _positionsHistory.Position(index);
+     profit = pos.getPosProfit();
+      if (profit>0)
+        return 1;
+      if (profit<0)
+        return -1;
+       return 0;
   }
 //+------------------------------------------------------------------+
 //| Вычисляет процентное соотношение value1 к value2                 |
@@ -273,10 +197,10 @@ class BackTest
   }
 
 //+------------------------------------------------------------------+
-//| Вычисляет самый большой  трейд по символу                        |
+//| Вычисляет самую большую по знаку                                 |
 //+------------------------------------------------------------------+    
 
-double BackTest::GetMaxTrade(string symbol,int sign) //sign = 1 - самый большой прибыльный, (-1) - самый большой убыточный
+double BackTest::GetMaxTrade(int sign) //sign = 1 - самый большой прибыльный, (-1) - самый большой убыточный
  {
    uint index;
    uint total = _positionsHistory.Total();  //размер массива
@@ -285,7 +209,7 @@ double BackTest::GetMaxTrade(string symbol,int sign) //sign = 1 - самый большой 
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию 
-     if (pos.getSymbol() == symbol && pos.getPosProfit()*sign > maxTrade)
+     if (pos.getPosProfit()*sign > maxTrade)
       {
        maxTrade = pos.getPosProfit();
       }
@@ -296,10 +220,10 @@ double BackTest::GetMaxTrade(string symbol,int sign) //sign = 1 - самый большой 
 
  
 //+------------------------------------------------------------------+
-//| Вычисляет средний  трейд                                         |
+//| Вычисляет среднюю позицию                                        |
 //+------------------------------------------------------------------+
 
-double BackTest::GetAverageTrade(string symbol,int sign) // (1) - средний выйгрышный, (-1) - средний убыточный
+double BackTest::GetAverageTrade(int sign) // (1) - средний выйгрышный, (-1) - средний убыточный
  {
    uint index;
    uint total = _positionsHistory.Total();    //размер массива
@@ -309,7 +233,7 @@ double BackTest::GetAverageTrade(string symbol,int sign) // (1) - средний выйгры
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию 
-     if (pos.getSymbol() == symbol && pos.getPosProfit()*sign > 0) 
+     if ( pos.getPosProfit()*sign > 0 ) 
       {
        count++; //увеличиваем счетчик позиций на единицу
        tradeSum = tradeSum + pos.getPosProfit(); //к общей сумме прибавляем трейд
@@ -322,10 +246,10 @@ double BackTest::GetAverageTrade(string symbol,int sign) // (1) - средний выйгры
    
  
 //+------------------------------------------------------------------+
-//| Вычисляет макс. количество подряд идущих  трейдов                |
+//| Вычисляет макс. количество подряд идущих позиций по знаку        |
 //+------------------------------------------------------------------+
 
- uint BackTest::GetMaxInARowTrades(string symbol,int sign) //sign 1 - прибыльные трейды, (-1) - убыточные трейды 
+ uint BackTest::GetMaxInARowTrades(int sign) //sign 1 - прибыльные трейды, (-1) - убыточные трейды 
   {
    uint index;
    uint total = _positionsHistory.Total();  //размер массива
@@ -335,9 +259,7 @@ double BackTest::GetAverageTrade(string symbol,int sign) // (1) - средний выйгры
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию 
-     if (pos.getSymbol() == symbol) //если символ совпадает 
-      {
-        if (pos.getPosProfit()*sign > 0) 
+       if (pos.getPosProfit()*sign > 0) 
          {
            count++; //увеличиваем количество
          }
@@ -351,8 +273,7 @@ double BackTest::GetAverageTrade(string symbol,int sign) // (1) - средний выйгры
              }
             count = 0;             //обнуляем счетчик
            }
-         }
-      }
+         }   
     }   
     if (count>max_count)
     {
@@ -366,7 +287,7 @@ double BackTest::GetAverageTrade(string symbol,int sign) // (1) - средний выйгры
 //| Вычисляет максимальную непрерывную прибыль (1) или убыток (-1)   |
 //+------------------------------------------------------------------+
 
- double BackTest::GetMaxInARow(string symbol,int sign)  //sign: 1 - по прибыльным, (-1) - по убыточным
+ double BackTest::GetMaxInARow(int sign)  //sign: 1 - по прибыльным, (-1) - по убыточным
   {
    uint index;
    uint total = _positionsHistory.Total();            //размер массива
@@ -376,8 +297,6 @@ double BackTest::GetAverageTrade(string symbol,int sign) // (1) - средний выйгры
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index);         //получаем указатель на позицию 
-     if (pos.getSymbol() == symbol)                   //если символ совпадает 
-      {
         if (pos.getPosProfit()*sign > 0)              
          {
            tradeSum = tradeSum + pos.getPosProfit();  //прибавляем профит позиции
@@ -393,7 +312,6 @@ double BackTest::GetAverageTrade(string symbol,int sign) // (1) - средний выйгры
             tradeSum = 0;
            }
          }
-      }
     }   
             if (tradeSum*sign > maxTrade*sign)
              maxTrade = tradeSum;
@@ -404,7 +322,7 @@ double BackTest::GetAverageTrade(string symbol,int sign) // (1) - средний выйгры
 //+-------------------------------------------------------------------+
 //| Вычисляет максимальную просадку по балансу                        |
 //+-------------------------------------------------------------------+  
-double BackTest::GetMaxDrawdown (string symbol) //(сейчас для теста вместо баланса - прибыль)
+double BackTest::GetMaxDrawdown () //(сейчас для теста вместо баланса - прибыль)
  {
    uint index;
    uint total = _positionsHistory.Total();  //размер массива
@@ -416,8 +334,6 @@ double BackTest::GetMaxDrawdown (string symbol) //(сейчас для теста вместо балан
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию 
-     if (pos.getSymbol() == symbol) //если символ совпал с передаваемым символом
-      {
        _balance = _balance + pos.getPosProfit(); //модернизируем текущий баланс
        if (_balance > MaxBalance)  //если баланс превысил текущий максимальный баланс, то перезаписываем его
         {
@@ -430,7 +346,6 @@ double BackTest::GetMaxDrawdown (string symbol) //(сейчас для теста вместо балан
             MaxDrawdown = MaxBalance-_balance;  //то записываем новую просадку баланса
           }
         }
-      }
     }  
    return MaxDrawdown; //возвращаем максимальную просадку по балансу
  }
@@ -439,7 +354,7 @@ double BackTest::GetMaxDrawdown (string symbol) //(сейчас для теста вместо балан
 //| Возвращает конечный баланс                                        |
 //+-------------------------------------------------------------------+
 
-double BackTest::GetTotalProfit(string symbol)
+double BackTest::GetTotalProfit()
  {
   return _balance;
  }  
@@ -448,7 +363,7 @@ double BackTest::GetTotalProfit(string symbol)
 //| Вычисляет максимальный и минимальный балансы                      |
 //+-------------------------------------------------------------------+
 
-void  BackTest::GetBalances(string symbol)
+void  BackTest::GetBalances()
  {
    uint index;
    uint total = _positionsHistory.Total();  //размер массива
@@ -460,14 +375,11 @@ void  BackTest::GetBalances(string symbol)
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию 
-     if (pos.getSymbol() == symbol) //если символ совпал с передаваемым символом
-      {
         balance = balance + pos.getPosProfit(); // модицифируем баланс
         if (balance > _max_balance)  
          _max_balance = balance;
         if (balance < _min_balance)
          _min_balance = balance;
-      }
     }
 
  } 
@@ -568,25 +480,23 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   _expertName = expertName;
   _symbol     = symbol;
   //переменные для хранения параметров бэктеста
-  uint    n_trades           =  GetNTrades(symbol);            //количество трейдов 
-  uint    n_win_trades       =  GetNSignTrades(symbol,1);      //количество выйгрышных трейдов
-  uint    n_lose_trades      =  GetNSignTrades(symbol,-1);     //количество выйгрышных трейдов
-  int     sign_last_pos      =  GetSignLastPosition(symbol);   //знак последней позиции
-  double  max_trade          =  GetMaxTrade(symbol,1);         //самый большой трейд по символу
-  double  min_trade          =  GetMaxTrade(symbol,-1);        //самый маленький трейд по символу
-  double  aver_profit_trade  =  GetAverageTrade(symbol,1);     //средний прибыльный трейд 
-  double  aver_lose_trade    =  GetAverageTrade(symbol,-1);    //средний убыточный трейд   
-  uint    maxPositiveTrades  =  GetMaxInARowTrades(symbol,1);  //максимальное количество подряд идущих положительных трейдов
-  uint    maxNegativeTrades  =  GetMaxInARowTrades(symbol,-1); //максимальное количество подряд идущих отрицательных трейдов
-  double  maxProfitRange     =  GetMaxInARow(symbol,1);        //максимальный профит
-  double  maxLoseRange       =  GetMaxInARow(symbol,-1);       //максимальный убыток
-  double  maxDrawDown        =  GetMaxDrawdown(symbol);        //максимальная просадка
+  uint    n_trades           =  GetNTrades();            //количество позиций
+  uint    n_win_trades       =  GetNSignTrades(1);      //количество выйгрышных трейдов
+  uint    n_lose_trades      =  GetNSignTrades(-1);     //количество выйгрышных трейдов
+  int     sign_last_pos      =  GetSignLastPosition();   //знак последней позиции
+  double  max_trade          =  GetMaxTrade(1);         //самый большой трейд по символу
+  double  min_trade          =  GetMaxTrade(-1);        //самый маленький трейд по символу
+  double  aver_profit_trade  =  GetAverageTrade(1);     //средний прибыльный трейд 
+  double  aver_lose_trade    =  GetAverageTrade(-1);    //средний убыточный трейд   
+  uint    maxPositiveTrades  =  GetMaxInARowTrades(1);  //максимальное количество подряд идущих положительных трейдов
+  uint    maxNegativeTrades  =  GetMaxInARowTrades(-1); //максимальное количество подряд идущих отрицательных трейдов
+  double  maxProfitRange     =  GetMaxInARow(1);        //максимальный профит
+  double  maxLoseRange       =  GetMaxInARow(-1);       //максимальный убыток
+  double  maxDrawDown        =  GetMaxDrawdown();        //максимальная просадка
   double  absDrawDown        =  0;                             //абсолютная просадка
   double  relDrawDown        =  0;                             //относительная просадка 
-  
-    Alert("ВОТ ТАК ВОТ ФАЙЛ ИСТОРИИ = ",file_name);
-  
-  GetBalances(symbol);  // вычисляем максимальный и минимальный баланс
+   
+  GetBalances();  // вычисляем максимальный и минимальный баланс
   
   //сохраняем в файл данные об эксперте , таймфрейме и прочем
   WriteTo  (file_handle,_expertName+" ");                  // сохраняем имя эксперта
