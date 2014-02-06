@@ -135,7 +135,6 @@ void OnStart()
  // проходим по всем роботам и ищем файлы истории
  for (i_rob=0;i_rob < robots_n; i_rob ++ )
   {
-  
    for (i_sym=0;i_sym < symbols_n; i_sym ++)
     {
      for (i_per=0;i_per < period_n; i_per ++)

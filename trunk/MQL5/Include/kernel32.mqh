@@ -7,7 +7,7 @@
 #property link      "http://www.mql5.com"
 
 //+------------------------------------------------------------------+
-//| библиотека Kernel32 функций                                      | 
+//| утилита для работы с функциями библиотеки Kernel32 (WIN API)     | 
 //+------------------------------------------------------------------+
 
 #import "kernel32.dll"
@@ -50,14 +50,14 @@
 #import
 
 // Тип доступа к объекту
-#define _GENERIC_READ_       0x80000000
-#define _GENERIC_WRITE_      0x40000000
+#define _GENERIC_READ_         0x80000000
+#define _GENERIC_WRITE_        0x40000000
 // Флаги общего доступа
-#define _FILE_SHARE_READ_    0x00000001
-#define _FILE_SHARE_WRITE_   0x00000002
+#define _FILE_SHARE_READ_      0x00000001
+#define _FILE_SHARE_WRITE_     0x00000002
 // Описатель действия
-#define _OPEN_EXISTING_      3
-#define _CREATE_ALWAYS_      2
+#define _OPEN_EXISTING_        3
+#define _CREATE_ALWAYS_        2
 
 // константы
 #define OPEN_GENETIC           0x80000000
