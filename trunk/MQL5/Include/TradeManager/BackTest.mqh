@@ -7,10 +7,11 @@
 #property link      "http://www.mql5.com"//---
 
 
-#include <TradeManager/TradeManagerEnums.mqh>
+#include <TradeManager/TradeManagerEnums.mqh>  
 #include <TradeManager/PositionArray.mqh>
 #include <StringUtilities.mqh> 
 #include <kernel32.mqh>
+#include <Constants.mqh>  
 
 //+------------------------------------------------------------------+
 //| Класс для работы с бэктестом                                     |
@@ -465,6 +466,7 @@ void BackTest::GetHistoryExtra(CPositionArray *array)
 bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName)
  {
   double current_balance;
+  double sizeOfLot = LOT_EURUSD;      // размер лота
   CPosition *pos;
   uint total = _positionsHistory.Total();  //всего количество позиций в истории
   //открываем файл для рез-тов бэктеста на запись
@@ -480,10 +482,10 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   _expertName = expertName;
   _symbol     = symbol;
   //переменные для хранения параметров бэктеста
-  uint    n_trades           =  GetNTrades();            //количество позиций
+  uint    n_trades           =  GetNTrades();           //количество позиций
   uint    n_win_trades       =  GetNSignTrades(1);      //количество выйгрышных трейдов
   uint    n_lose_trades      =  GetNSignTrades(-1);     //количество выйгрышных трейдов
-  int     sign_last_pos      =  GetSignLastPosition();   //знак последней позиции
+  int     sign_last_pos      =  GetSignLastPosition();  //знак последней позиции
   double  max_trade          =  GetMaxTrade(1);         //самый большой трейд по символу
   double  min_trade          =  GetMaxTrade(-1);        //самый маленький трейд по символу
   double  aver_profit_trade  =  GetAverageTrade(1);     //средний прибыльный трейд 
@@ -492,9 +494,9 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   uint    maxNegativeTrades  =  GetMaxInARowTrades(-1); //максимальное количество подряд идущих отрицательных трейдов
   double  maxProfitRange     =  GetMaxInARow(1);        //максимальный профит
   double  maxLoseRange       =  GetMaxInARow(-1);       //максимальный убыток
-  double  maxDrawDown        =  GetMaxDrawdown();        //максимальная просадка
-  double  absDrawDown        =  0;                             //абсолютная просадка
-  double  relDrawDown        =  0;                             //относительная просадка 
+  double  maxDrawDown        =  GetMaxDrawdown();       //максимальная просадка
+  double  absDrawDown        =  0;                      //абсолютная просадка
+  double  relDrawDown        =  0;                      //относительная просадка 
    
   GetBalances();  // вычисляем максимальный и минимальный баланс
   

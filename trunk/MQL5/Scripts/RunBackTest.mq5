@@ -145,19 +145,3 @@ void OnStart()
   Comment("Не удалось считать историю из файла");
  }
 }
-  /*
-  // сохраняет строку в файл
-void WriteTo(int handle, string buffer) 
-{
-  int    nBytesRead[1]={1};
-  char   buff[]; 
-  StringToCharArray(buffer,buff);
-  if(handle>0) 
-  {
-    Comment(" ");
-    WriteFile(handle, buff, StringLen(buffer), nBytesRead, NULL);
-    
-  } 
-  else
-   Print("неудача. плохой хэндл для файла ");
-}  */
