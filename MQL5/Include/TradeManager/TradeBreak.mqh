@@ -7,7 +7,7 @@
 #property link      "http://www.mql5.com"
 #include <TradeManager\PositionArray.mqh>  // подключаем класс по работе с позициями
 
- // класс блокатора торговли
+ // класс прерывателя торговли
  class TradeBreak 
   {
    private:
