@@ -507,6 +507,7 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   //сохраняем в файл данные об эксперте , таймфрейме и прочем
   WriteTo  (file_handle,_expertName+" ");                  // сохраняем имя эксперта
   WriteTo  (file_handle,_symbol+" ");                      // сохраняем символ
+  WriteTo  (file_handle,IntegerToString(ArraySearchString(symArray,_symbol) )+" ");    // сохраняем символ (код символа)
   WriteTo  (file_handle,PeriodToString(_timeFrame)+" ");   // сохраняем таймфрейм  
   pos = _positionsHistory.Position(_positionsHistory.Total()-1);         //получаем указатель на первую позицию   
   WriteTo  (file_handle,IntegerToString(pos.getOpenPosDT())+" ");      // сохраняем время начала считывания истории в Unix Time
