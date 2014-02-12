@@ -369,14 +369,16 @@ void  BackTest::GetBalances()
    uint index;
    uint total = _positionsHistory.Total();  //размер массива
    double balance  = 0;                     //максимальный баланс на текущий момент (вместо нуля потом записать начальный баланс)
-   CPosition * pos;                         //указатель на позицию
-                                            //обнуляем баланс
+   double sizeOfLot;   
+   CPosition * pos;                         //указатель на позицию                                  
+   //обнуляем баланс
    _max_balance = 0;
    _min_balance = 0;
    for (index=0;index<total;index++)
     {
-     pos = _positionsHistory.Position(index); //получаем указатель на позицию 
-        balance = balance + pos.getPosProfit(); // модицифируем баланс
+     pos = _positionsHistory.Position(index);   //получаем указатель на позицию 
+     sizeOfLot = GetLotBySymbol (_symbol)*pos.getVolume();     
+        balance = balance + pos.getPosProfit()*sizeOfLot; // модицифируем баланс
         if (balance > _max_balance)  
          _max_balance = balance;
         if (balance < _min_balance)
@@ -393,13 +395,15 @@ void BackTest::SaveBalanceToFile(int file_handle)
  {
   int    total = _positionsHistory.Total();                      // всего количество позиций в истории
   double current_balance = 0;                                    // текущий баланс
-  CPosition *pos;                                                // указатель на позицию
+  CPosition *pos;                                                // указатель на позицию  
+  double sizeOfLot;   
   WriteTo  (file_handle,DoubleToString(current_balance)+" ");    // сохраняем изначальный баланс  
   for (int index=0;index<total;index++)
    {
     // получаем указатель на позицию
     pos = _positionsHistory.Position(index);
-    current_balance = current_balance + pos.getPosProfit(); // вычисляем  баланс в данной точке, прибавляя к балансу прибыль по позиции
+    sizeOfLot = GetLotBySymbol (_symbol)*pos.getVolume();
+    current_balance = current_balance + pos.getPosProfit()*sizeOfLot; // вычисляем  баланс в данной точке, прибавляя к балансу прибыль по позиции
     WriteTo  (file_handle,DoubleToString(current_balance)+" "); 
    }
  }
