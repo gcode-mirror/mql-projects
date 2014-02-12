@@ -40,7 +40,7 @@ string robotArray[3] =
 string symbolArray[6] =
  {
   "EURUSD",
-  "GPBUSD",
+  "GBPUSD",
   "USDCHF",
   "USDJPY",
   "USDCAD",
@@ -153,8 +153,6 @@ void OnStart()
           backtest_file = GetBackTestFileName (i_rob,i_sym,i_per);
           // сохраняем файл бэктеста
           flag_backtest = backtest.SaveBackTestToFile(backtest_file,symbolArray[i_sym],periodArray[i_per],robotArray[i_rob]);
-          // очищаем файл истории
-          backtest.DeleteHistory();
           // сохраняем url файла бэктеста в массив url адресов
           ArrayResize(backtest_titles,size_of_url_list+1);   // увеличиваем размер массива наименований на единицу
           ArrayResize(url_list_array,size_of_url_list+1);   // увеличиваем размер массива url адресов на единицу
@@ -165,7 +163,7 @@ void OnStart()
          }
         else
          {
-          Comment("Не удалось считать историю из файла");
+          Comment("Не удалось считать историю из файла = ",history_url);
          }         
         
         

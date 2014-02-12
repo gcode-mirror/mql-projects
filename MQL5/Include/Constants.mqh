@@ -23,7 +23,7 @@ double lotsArray[6] =
 string symArray[6] = 
  {
   "EURUSD",
-  "GPBUSD",
+  "GBPUSD",
   "USDCHF",
   "USDJPY",
   "USDCAD",
