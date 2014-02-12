@@ -515,6 +515,57 @@ void CSanya::RecountLevels(SExtremum &extr)
  priceAB = (_direction == 1) ? tick.bid : tick.ask;
  //if (_deltaFast > 0)
  {
+<<<<<<< .mine
+  case LEVEL_MAXIMUM:
+   if (_type == ORDER_TYPE_BUY && 
+       GreatDoubles(_averageMax, priceAB + _trailingDeltaStep*_dayStep, 5))  // цена прошла ниже(выше) среднего на 1/3 шага
+   {
+    _currentEnterLevel = LEVEL_AVEMAX;
+    //Print("Ќовый уровень входа ", LevelToString(_currentEnterLevel));
+   }
+   //Print("”ровень входа ", LevelToString(_currentEnterLevel));
+   break;
+  case LEVEL_AVEMAX:
+   if (_type == ORDER_TYPE_BUY && 
+       GreatDoubles(_startDayPrice, priceAB + _trailingDeltaStep*_dayStep, 5))  // цена прошла ниже(выше) старта на 1/3 шага
+   {
+    _currentEnterLevel = LEVEL_START;
+    //Print("Ќовый уровень входа ", LevelToString(_currentEnterLevel));
+   }
+   //Print("”ровень входа ", LevelToString(_currentEnterLevel));
+   break;
+  case LEVEL_START:
+   if (_type == ORDER_TYPE_BUY && 
+       GreatDoubles(_averageMin, priceAB + _trailingDeltaStep*_dayStep, 5))  // цена прошла ниже(выше) среднего на 1/3 шага
+   {
+    _currentEnterLevel = LEVEL_AVEMIN;
+    //Print("Ќовый уровень входа ", LevelToString(_currentEnterLevel));
+   }
+   if (_type == ORDER_TYPE_SELL &&
+       LessDoubles(_averageMax, priceAB + _trailingDeltaStep*_dayStep)) 
+   {
+    _currentEnterLevel = LEVEL_AVEMAX;
+    //Print("Ќовый уровень входа ", LevelToString(_currentEnterLevel));
+   }
+   //Print("”ровень входа ", LevelToString(_currentEnterLevel));
+   break;
+  case LEVEL_AVEMIN:
+   if (_type == ORDER_TYPE_SELL && GreatDoubles(priceAB + _trailingDeltaStep*_dayStep, _startDayPrice)) // цена прошла ниже(выше) старта на 1/3 шага
+   {
+    _currentEnterLevel = LEVEL_START;
+    //Print("Ќовый уровень входа ", LevelToString(_currentEnterLevel));
+   }
+   break;
+  case LEVEL_MINIMUM:
+   if (_type == ORDER_TYPE_SELL && 
+       _direction*(_averageMin - priceAB - _trailingDeltaStep*_dayStep) > 0)  // цена прошла ниже(выше) старта на 1/3 шага
+   {
+    _currentEnterLevel = LEVEL_AVEMIN;
+    //Print("Ќовый уровень входа ", LevelToString(_currentEnterLevel));
+   }
+   //Print("”ровень входа ", LevelToString(_currentEnterLevel));
+   break;
+=======
   switch (_currentEnterLevel)
   {
    case LEVEL_MAXIMUM:
@@ -562,6 +613,7 @@ void CSanya::RecountLevels(SExtremum &extr)
     //Print("”ровень входа ", LevelToString(_currentEnterLevel));
     break;
   }
+>>>>>>> .r559
  }
  //-------------------------------------------------
  //-------------------------------------------------
@@ -571,6 +623,14 @@ void CSanya::RecountLevels(SExtremum &extr)
  //-------------------------------------------------
  //if (_deltaFast < 100)
  {
+<<<<<<< .mine
+  case LEVEL_MAXIMUM:
+   if (_type == ORDER_TYPE_SELL && 
+       GreatDoubles(_averageMax, priceAB + _trailingDeltaStep*_dayStep, 5))  // цена прошла ниже(выше) среднего на 1/3 шага
+   {
+    _currentExitLevel = LEVEL_AVEMAX;
+    //Print("Ќовый уровень вџхода ", LevelToString(_currentExitLevel));
+=======
   switch (_currentExitLevel)
   {
    case LEVEL_MAXIMUM:
@@ -624,8 +684,62 @@ void CSanya::RecountLevels(SExtremum &extr)
     }
     //PrintFormat("”ровень вџхода %s _averageMin=%.05f, priceAB=%.05f, ", LevelToString(_currentExitLevel), _averageMin + _trailingDeltaStep*_dayStep, priceAB);
     break;
+>>>>>>> .r559
    }
+<<<<<<< .mine
+   //Print("”ровень вџхода ", LevelToString(_currentExitLevel));
+   break;
+  case LEVEL_AVEMAX:
+   if (_type == ORDER_TYPE_SELL && GreatDoubles(_startDayPrice, priceAB + _trailingDeltaStep*_dayStep, 5))  // цена прошла ниже(выше) старта на 1/3 шага
+   {
+    _currentExitLevel = LEVEL_START;
+    //Print("Ќовый уровень вџхода ", LevelToString(_currentExitLevel));
+   }
+   if (_type == ORDER_TYPE_SELL && GreatDoubles(priceAB, _averageMin, 5))
+   {
+    _currentEnterLevel = LEVEL_START;
+   }
+   //Print("”ровень вџхода ", LevelToString(_currentExitLevel));
+   break;
+  case LEVEL_START:
+   if (_type == ORDER_TYPE_SELL && GreatDoubles(_averageMin, priceAB + _trailingDeltaStep*_dayStep, 5))  // цена прошла ниже(выше) среднего на 1/3 шага
+   {
+    _currentExitLevel = LEVEL_AVEMIN;
+    //Print("Ќовый уровень вџхода ", LevelToString(_currentExitLevel));
+   }
+   if (_type == ORDER_TYPE_BUY && LessDoubles(_averageMax + _trailingDeltaStep*_dayStep, priceAB, 5)) 
+   {
+    _currentExitLevel = LEVEL_AVEMAX;
+    //Print("Ќовый уровень вџхода ", LevelToString(_currentExitLevel));
+   }
+   //Print("”ровень вџхода ", LevelToString(_currentExitLevel));
+   break;
+  case LEVEL_AVEMIN:
+   if (_type == ORDER_TYPE_BUY && LessDoubles(_startDayPrice + _trailingDeltaStep*_dayStep, priceAB, 5))  // цена прошла ниже(выше) старта на 1/3 шага
+   {
+    _currentExitLevel = LEVEL_START;
+    //Print("Ќовый уровень вџхода ", LevelToString(_currentExitLevel));
+   }
+   
+   if (_type == ORDER_TYPE_BUY && LessDoubles(priceAB, _averageMin, 5))
+   {
+    _currentEnterLevel = LEVEL_START;
+   }
+   //Print("”ровень вџхода ", LevelToString(_currentExitLevel));
+   break;
+  case LEVEL_MINIMUM:
+   if (_type == ORDER_TYPE_BUY && 
+       LessDoubles(_averageMin + _trailingDeltaStep*_dayStep, priceAB, 5))  // цена прошла ниже(выше) старта на 1/3 шага
+   {
+    _currentExitLevel = LEVEL_AVEMIN;
+    //Print("Ќовый уровень вџхода ", LevelToString(_currentExitLevel));
+   }
+   //PrintFormat("”ровень вџхода %s _averageMin=%.05f, priceAB=%.05f, ", LevelToString(_currentExitLevel), _averageMin + _trailingDeltaStep*_dayStep, priceAB);
+   break;
+ }
+=======
   }
+>>>>>>> .r559
 }
 
 //+--------------------------------------------------------------------+
