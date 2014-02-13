@@ -29,6 +29,11 @@ private:
   bool SaveArrayToFile(string file_url,CPositionArray *array);
   bool LoadArrayFromFile(string file_url,CPositionArray *array);
   
+  double _current_balance;    // текущая прибыль советника в пунктах
+  double _current_drawdown;   // текущая просадка баланса
+  double _max_drawdown;       // максимально допустимая просадка
+  double _max_balance;        // максимальный баланс
+  
 protected:
   ulong _magic;
   bool _useSound;
@@ -61,7 +66,12 @@ public:
   
   int GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
   int GetPositionPointsProfit(string symbol);
-  
+  double GetCurrentProfit() { return(_current_balance);};      // возвращает текущую прибыль
+  double GetCurrentDrawdown() { return(_current_drawdown); };  // возвращает  текущую просадку по балансу
+  double GetMaxProfit() { return(_max_balance);};      // возвращает текущую прибыль
+  double GetMaxDrawdown() { return(_max_drawdown); };  // возвращает  текущую просадку по балансу
+  void UpdateData(CPositionArray *positionsHistory);
+
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
   long GetHistoryDepth();  //возвращает глубину истории
 };
@@ -651,6 +661,42 @@ int CTradeManager::GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type)
  profit = pos.getPositionPointsProfit();
  return(profit);
 }
+
+
+//+------------------------------------------------------------------+
+//|  Обновляет данные о текущей прибыли и просадке                   |
+//+------------------------------------------------------------------+
+void CTradeManager::UpdateData(CPositionArray *positionsHistory)
+{
+ int index;  // индекс прохода по циклу
+ int length = positionsHistory.Total(); // длина переданного массива истории
+ CPosition *pos; // указатель на текущую позицию
+ // проходим по всем массиву и вычисляем текущую прибыль
+    
+ for (index = 0; index < length; index++)
+ {
+  // извлекаем указатель на текущую позицию по индексу
+  pos = positionsHistory.At(index);
+  // изменяем текущую прибыль 
+  _current_balance = _current_balance + pos.getPosProfit();
+  //если баланс превысил текущий максимальный баланс
+  if (_current_balance > _max_balance)  
+  {
+   // то перезаписываем его
+   _max_balance = _current_balance;
+  }
+  else 
+  {
+   //если обнаружена больше просадка, чем была
+   if ((_max_balance-_current_balance) > _current_drawdown) 
+   {
+    //то записываем новую просадку баланса
+    _current_drawdown = _max_balance-_current_balance;  
+   }
+  }  
+ }
+}
+
 //+------------------------------------------------------------------+
 /// Create magic number
 /// \param [string] str       symbol

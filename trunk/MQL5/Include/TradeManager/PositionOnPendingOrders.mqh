@@ -9,7 +9,7 @@
 #include "ChartObjectsTradeLines.mqh"
 #include "TradeManagerConfig.mqh"
 #include "CTMTradeFunctions.mqh" //подключаем библиотеку для совершения торговых операций
-#include "GlobalVariable.mqh"
+#include <GlobalVariable.mqh>
 #include <StringUtilities.mqh>
 #include <CompareDoubles.mqh>
 #include <CLog.mqh>
