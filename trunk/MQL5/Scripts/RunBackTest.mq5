@@ -8,51 +8,11 @@
 #property version   "1.00"
 #property script_show_inputs 
 #include <TradeManager\BackTest.mqh>    //подключаем библиотеку бэктеста
-#include <StringUtilities.mqh>         
+#include <StringUtilities.mqh>    
+#include <kernel32.mqh>     
 //+------------------------------------------------------------------+
 //| Скрипт запускает приложение вычисления отчетности                |
 //+------------------------------------------------------------------+
-
-//+------------------------------------------------------------------+
-//| Импорт WIN API библиотеки                                        |
-//+------------------------------------------------------------------+
-
-#import "kernel32.dll"
-
-  bool CloseHandle                // Закрытие объекта
-       ( int hObject );                  // Хэндл объекта
-       
-  int CreateFileW                 // Создание открытие объекта
-      ( string lpFileName,               // Полный путь доступа к объекту
-        int    dwDesiredAccess,          // Тип доступа к объекту
-        int    dwShareMode,              // Флаги общего доступа
-        int    lpSecurityAttributes,     // Описатель безопасности
-        int    dwCreationDisposition,    // Описатель действия
-        int    dwFlagsAndAttributes,     // Флаги аттрибутов
-        int    hTemplateFile );      
-          
-  bool WriteFile                  // Запись данных в файл
-       ( int    hFile,                   // handle to file to write to
-         char    &dBuffer[],             // pointer to data to write to file
-         int    nNumberOfBytesToWrite,   // number of bytes to write
-         int&   lpNumberOfBytesWritten[],// pointer to number of bytes written
-         int    lpOverlapped );          // pointer to structure needed for overlapped I/O    
-  
-  int  RtlGetLastWin32Error();
-  int  WinExec(uchar &NameEx[], int dwFlags);  // запускает приложение BackTest
-    
-#import
-
-//+------------------------------------------------------------------+
-//| Необходимые константы                                            |
-//+------------------------------------------------------------------+
-
-// Тип доступа к объекту
-#define _GENERIC_WRITE_      0x40000000
-// Флаги общего доступа
-#define _FILE_SHARE_WRITE_   0x00000002
-// Описатель действия
-#define _CREATE_ALWAYS_      2
 
 // параметры, вводимые пользователем
 

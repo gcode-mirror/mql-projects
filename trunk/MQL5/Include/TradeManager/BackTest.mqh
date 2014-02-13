@@ -254,7 +254,7 @@ double BackTest::GetMaxTrade(int sign) //sign = 1 - самый большой прибыльный, (-
 //| Вычисляет среднюю позицию                                        |
 //+------------------------------------------------------------------+
 
-double BackTest::GetAverageTrade(int sign) // (1) - средний выйгрышный, (-1) - средний убыточный
+double BackTest::GetAverageTrade(int sign) // (1) - средний выйгрышный, (-1) - средний убыточный, (0) - средний по всем
  {
    uint index;
    uint total = _positionsHistory.Total();    //размер массива
@@ -264,12 +264,20 @@ double BackTest::GetAverageTrade(int sign) // (1) - средний выйгрышный, (-1) - с
    for (index=0;index<total;index++)
     {
      pos = _positionsHistory.Position(index); //получаем указатель на позицию 
-     if ( pos.getPosProfit()*sign > 0 ) 
+     if (sign != 0)
       {
-       count++; //увеличиваем счетчик позиций на единицу
-       tradeSum = tradeSum + pos.getPosProfit(); //к общей сумме прибавляем трейд
+       if ( pos.getPosProfit()*sign > 0 ) 
+        {
+         count++; //увеличиваем счетчик позиций на единицу
+         tradeSum = tradeSum + pos.getPosProfit(); //к общей сумме прибавляем трейд
+        }
       }
-    }  
+      else
+      {
+         count++; //увеличиваем счетчик позиций на единицу
+         tradeSum = tradeSum + pos.getPosProfit(); //к общей сумме прибавляем трейд
+      }  
+     }
    if (count)
     return tradeSum/count; //возвращаем среднее
    return -1;
@@ -551,7 +559,7 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   _gross_profit  = _gross_profit * sizeOfLot;
   profitFactor   = _gross_profit / _gross_loss;
   recoveryFactor = _clean_profit / maxDrawDown;
-  mathAwaiting   = 0;
+  mathAwaiting   = GetAverageTrade(0);
   
   
   //сохраняем в файл данные об эксперте , таймфрейме и прочем
