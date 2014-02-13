@@ -21,12 +21,14 @@ class BackTest
  {
   private:
    CPositionArray *_positionsHistory; // массив истории виртуальных позиций
-   double  _balance;                  // баланс
+   double   _balance;                  // баланс
    datetime _start,_finish;           // периоды загрузки истории
    string   _symbol;                  // символ
    double   _max_balance;             // максимальный уровень баланса
    double   _min_balance;             // минимальный уровень баланса
    double   _clean_profit;            // чистая прибыль
+   double   _gross_profit;            // общая прибыль
+   double   _gross_loss;              // общий убыток
    double   _deposit;                 // депозит
    ENUM_TIMEFRAMES _timeFrame;        // таймфрейм
    string   _expertName;              // имя эксперта   
@@ -162,12 +164,19 @@ class BackTest
    int index;
    // выставляем по умолчанию прибыли
    _clean_profit = 0;
+   _gross_profit = 0;
+   _gross_loss   = 0;
    for (index=0;index<length;index++)
     {
      pos = _positionsHistory.At(index);
      // модифицируем чистую прибыль
-     _clean_profit = _clean_profit + pos.getPosProfit();
+     if (pos.getPosProfit()>=0)
+      _gross_profit = _gross_profit + pos.getPosProfit();
+     else
+      _gross_loss   = _gross_loss + pos.getPosProfit();
+     
     }
+    _clean_profit = _gross_profit + _gross_loss;
   } 
 
 //+------------------------------------------------------------------+
@@ -340,23 +349,18 @@ double BackTest::GetAverageTrade(int sign) // (1) - средний выйгрышный, (-1) - с
     return maxTrade; 
   }  
 
+ 
 //+-------------------------------------------------------------------+
 //| Вычисляет абсолютную просадку по балансу                          |
-//+-------------------------------------------------------------------+ 
+//+-------------------------------------------------------------------+
 
 double BackTest::GetAbsDrawdown(void)
  {
-   return 0;
+   if (_min_balance < 0)
+    return _min_balance; 
+   return 0; 
  }
 
-//+-------------------------------------------------------------------+
-//| Вычисляет отностельную просадку по балансу                        |
-//+-------------------------------------------------------------------+ 
-
-double BackTest::GetRelDrawdown(void)
- {
-  return 0;
- }
   
 //+-------------------------------------------------------------------+
 //| Вычисляет максимальную просадку по балансу                        |
@@ -532,10 +536,23 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   double  maxProfitRange     =  GetMaxInARow(1)*sizeOfLot;        //максимальный профит
   double  maxLoseRange       =  GetMaxInARow(-1)*sizeOfLot;       //максимальный убыток
   double  maxDrawDown        =  GetMaxDrawdown()*sizeOfLot;       //максимальная просадка
-  double  absDrawDown        =  0;                                //абсолютная просадка
+  double  absDrawDown        =  GetAbsDrawdown()*sizeOfLot;       //абсолютная просадка
   double  relDrawDown        =  0;                                //относительная просадка 
+  double  profitFactor;                                           //фактор профита
+  double  recoveryFactor;                                         //отношение чистой прибыли к процентной максимальной просадке
+  double  mathAwaiting;                                           //матожидание сделки
    
   GetBalances();  // вычисляем максимальный и минимальный баланс
+  
+  GetProfits ();  // вычисляем прибыли
+  
+  _clean_profit  = _clean_profit * sizeOfLot;
+  _gross_loss    = _gross_loss * sizeOfLot;
+  _gross_profit  = _gross_profit * sizeOfLot;
+  profitFactor   = _gross_profit / _gross_loss;
+  recoveryFactor = _clean_profit / maxDrawDown;
+  mathAwaiting   = 0;
+  
   
   //сохраняем в файл данные об эксперте , таймфрейме и прочем
   WriteTo  (file_handle,_expertName+" ");                  // сохраняем имя эксперта
@@ -565,8 +582,12 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   WriteTo  (file_handle,DoubleToString(maxDrawDown)+" ");
   WriteTo  (file_handle,DoubleToString(absDrawDown)+" ");
   WriteTo  (file_handle,DoubleToString(relDrawDown)+" ");   
-  
-
+  WriteTo  (file_handle,DoubleToString(_clean_profit)+" ");
+  WriteTo  (file_handle,DoubleToString(_gross_profit)+" ");
+  WriteTo  (file_handle,DoubleToString(_gross_loss)+" ");
+  WriteTo  (file_handle,DoubleToString(profitFactor)+" ");
+  WriteTo  (file_handle,DoubleToString(recoveryFactor)+" ");  
+  WriteTo  (file_handle,DoubleToString(mathAwaiting)+" "); 
                                          
   //сохраняем точки графиков (баланса, маржи)
   SaveBalanceToFile(file_handle);
