@@ -58,11 +58,11 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
  
  if(index_Price_global_max > 0 && index_Price_global_max < ALLOW_DEPTH_FOR_PRICE_EXTR)  
  { //если максимум цены принадлежит последним трем барам
-  if(index_STOC_global_max > 0 && isSTOCExtremum(handleSTOC, index_STOC_global_max-1) == 1 && iSTOC_buf[index_STOC_global_max] > top_level)
+  if(index_STOC_global_max > 0 && isSTOCExtremum(handleSTOC, (index_STOC_global_max-1)+startIndex) == 1 && iSTOC_buf[index_STOC_global_max] > top_level)
   { //если максимальное значение стохастика является экстремумом и лежит выше top_level
    for(int i = index_STOC_global_max - 3; i > 0; i--)
    { //идем начиная с глобального экстремума(-3 что бы найденный не совпал с глобальным)
-    if(isSTOCExtremum(handleSTOC, i) == 1 && iSTOC_buf[i+1] < top_level)
+    if(isSTOCExtremum(handleSTOC, i+startIndex) == 1 && iSTOC_buf[i+1] < top_level)
     { //ища локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предидущего бара)
     
      /*Alert("BEGIN: ", date_buf[DEPTH_STOC-1]);
@@ -79,11 +79,11 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
  
  if(index_Price_global_min > 0 && index_Price_global_min < ALLOW_DEPTH_FOR_PRICE_EXTR)
  { //если минимум цены принадлежит последним трем барам
-  if(index_STOC_global_min > 0 && isSTOCExtremum(handleSTOC, index_STOC_global_min-1) == -1 && iSTOC_buf[index_STOC_global_min] < bottom_level)
+  if(index_STOC_global_min > 0 && isSTOCExtremum(handleSTOC, (index_STOC_global_min-1)+startIndex) == -1 && iSTOC_buf[index_STOC_global_min] < bottom_level)
   { //если максимальное значение стохастика является экстремумом и лежит ниже bottom_level
    for(int i = index_STOC_global_min - 3; i > 0; i--)
    { //идем начиная с глобального экстремума(-3 что бы найденный не совпал с глобальным)
-    if(isSTOCExtremum(handleSTOC, i) == -1 && iSTOC_buf[i+1] > bottom_level)
+    if(isSTOCExtremum(handleSTOC, i+startIndex) == -1 && iSTOC_buf[i+1] > bottom_level)
     { //ища локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предидущего бара)
     
      /*Alert("BEGIN: ", date_buf[DEPTH_STOC-1]);
