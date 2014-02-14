@@ -111,7 +111,6 @@ void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
    _deltaSlowBase = deltaSlow;
    
    _deltaFast = _deltaFastBase;
-   Print("_deltaFast=",_deltaFast);
    _deltaSlow = _deltaSlowBase;
    _slowDeltaChanged = true;
 
@@ -158,7 +157,7 @@ void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
    _average = 0;
    _averageMax = 0;
    _averageMin = 0;
-   _startDayPrice = 0;
+   _startDayPrice = currentPrice; 
    if (_type == ORDER_TYPE_BUY)
    {
     _currentEnterLevel = LEVEL_START;
@@ -190,7 +189,7 @@ void CSanya::InitMonthTrade()
  {
   PrintFormat("%s Новый месяц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_last_month_number));
   currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
-  
+  /*
   // Цена начала отсчета
   if (_averageLeft <= 0 && _averageRight <= 0)
   {
@@ -203,7 +202,7 @@ void CSanya::InitMonthTrade()
   //lowLine.Price(0, _low);
   //highLine.Price(0, _high);
   _isMonthInit = true;
-  Print("_deltaFast=",_deltaFast);
+  Print("_deltaFast=",_deltaFast);*/
  }
 }
 
