@@ -256,7 +256,8 @@ double CBrothers::RecountVolume()
 {
  _slowVol = NormalizeDouble(_volume * _factor * _deltaSlow, 2);
  _fastVol = NormalizeDouble(_slowVol * _deltaFast * _factor * _percentage * _factor, 2);
- PrintFormat("%s slowVol = %.05f, fastVol = %.05f", MakeFunctionPrefix(__FUNCTION__), _slowVol, _fastVol);
+ //PrintFormat("%s _volume = %.05f, _factor = %.05f, _deltaSlow = %.05f", MakeFunctionPrefix(__FUNCTION__), _volume, _factor, _deltaSlow);
+ //PrintFormat("%s slowVol = %.05f, fastVol = %.05f", MakeFunctionPrefix(__FUNCTION__), _slowVol, _fastVol);
  _slowDeltaChanged = false;
  _fastDeltaChanged = false;
  return (_slowVol - _fastVol); 

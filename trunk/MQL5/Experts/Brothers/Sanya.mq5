@@ -19,7 +19,7 @@
 input ulong _magic = 4577;
 input ENUM_ORDER_TYPE type = ORDER_TYPE_BUY; // Основное направление торговли
 input int volume = 10;  // Полный объем торгов
-input int slowDelta = 30;   // Старшая дельта
+input int slowDelta = 60;   // Старшая дельта
 input int dayStep = 100;     // шаг границы цены в пунктах для дневной торговли
 input int monthStep = 400;  // шаг границы цены в пунктах для месячной торговл 
 input int stepsFromStartToExtremum = 4;    // максимальное количество шагов от точки старта до экстремума
@@ -37,8 +37,8 @@ int percentage = 100;  // сколько процентов объем дневной торговли может перекры
 int fastPeriod = 24;  // Период обновления младшей дельта в часах
 int slowPeriod = 30;  // Период обновления старшей дельта в днях
 
-int fastDelta = 0;   // Младшая дельта
-DELTA_STEP fastDeltaStep = HUNDRED;  // Шаг изменения МЛАДШЕЙ дельты
+int fastDelta = 100;   // Младшая дельта
+DELTA_STEP fastDeltaStep = FIFTY;  // Шаг изменения МЛАДШЕЙ дельты
 DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 
 CSanya san(fastDelta, slowDelta, dayStep, monthStep, stepsFromStartToExtremum, stepsFromStartToExit, stepsFromExtremumToExtremum, type, volume, fastDeltaStep, slowDeltaStep, percentage, fastPeriod, slowPeriod, trailingDeltaStep);
