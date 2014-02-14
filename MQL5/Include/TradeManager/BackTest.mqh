@@ -365,7 +365,7 @@ double BackTest::GetAverageTrade(int sign) // (1) - средний выйгрышный, (-1) - с
 double BackTest::GetAbsDrawdown(void)
  {
    if (_min_balance < 0)
-    return _min_balance; 
+    return -_min_balance; 
    return 0; 
  }
 
@@ -544,8 +544,7 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   double  maxProfitRange     =  GetMaxInARow(1)*sizeOfLot;        //максимальный профит
   double  maxLoseRange       =  GetMaxInARow(-1)*sizeOfLot;       //максимальный убыток
   double  maxDrawDown        =  GetMaxDrawdown()*sizeOfLot;       //максимальная просадка
-  double  absDrawDown        =  GetAbsDrawdown()*sizeOfLot;       //абсолютная просадка
-  double  relDrawDown        =  0;                                //относительная просадка 
+  double  absDrawDown;                                            //абсолютная просадка
   double  profitFactor;                                           //фактор профита
   double  recoveryFactor;                                         //отношение чистой прибыли к процентной максимальной просадке
   double  mathAwaiting;                                           //матожидание сделки
@@ -559,8 +558,8 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   _gross_profit  = _gross_profit * sizeOfLot;
   profitFactor   = _gross_profit / _gross_loss;
   recoveryFactor = _clean_profit / maxDrawDown;
-  mathAwaiting   = GetAverageTrade(0);
-  
+  mathAwaiting   = GetAverageTrade(0) * sizeOfLot;
+  absDrawDown    = GetAbsDrawdown();
   
   //сохраняем в файл данные об эксперте , таймфрейме и прочем
   WriteTo  (file_handle,_expertName+" ");                  // сохраняем имя эксперта
@@ -589,7 +588,6 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   WriteTo  (file_handle,DoubleToString(aver_lose_trade)+" ");    
   WriteTo  (file_handle,DoubleToString(maxDrawDown)+" ");
   WriteTo  (file_handle,DoubleToString(absDrawDown)+" ");
-  WriteTo  (file_handle,DoubleToString(relDrawDown)+" ");   
   WriteTo  (file_handle,DoubleToString(_clean_profit)+" ");
   WriteTo  (file_handle,DoubleToString(_gross_profit)+" ");
   WriteTo  (file_handle,DoubleToString(_gross_loss)+" ");
