@@ -12,6 +12,18 @@
 #define DEPTH_MACD 100
 #define BORDER_DEPTH_MACD 15
 
+struct PointDiv         //структура для передачи ключевых точек расхождения
+{                       //На графике цены первая точка не важна, поэтому extrPrice1 = extrMACD1
+   datetime extrMACD1;  //т.е. на графике цены нам важена только вторая точка
+   datetime extrMACD2;
+   datetime extrPrice2;
+   double valueMACD1;
+   double valueMACD2;
+   double valuePrice1;
+   double valuePrice2;
+};
+PointDiv null = {0};
+
 /////-------------------------------
 /////-------------------------------
 int isMACDExtremum(int handleMACD, int startIndex, int precision = 6, bool LOG = false)
@@ -49,12 +61,12 @@ int isMACDExtremum(int handleMACD, int startIndex, int precision = 6, bool LOG =
 }
 /////-------------------------------
 /////-------------------------------
-int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, int startIndex = 0)
+int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, int startIndex, PointDiv& div_point)
 {
  
  double iMACD_buf[DEPTH_MACD] = {0};
  double iHigh_buf[DEPTH_MACD] = {0};
- double iLow_buf[DEPTH_MACD] = {0};
+ double iLow_buf[DEPTH_MACD]  = {0};
  datetime date_buf[DEPTH_MACD] = {0};
  int index_MACD_global_max;
  int index_Price_global_max;
@@ -96,7 +108,6 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
   //PrintFormat("%d %s", startIndex, "самая высокая цены находится в последних 15 барах");
   if(isMACDExtremum(handleMACD, startIndex) == 1) //если в текущий момент есть экстремум
   {
-   
    is_extr_exist = false;
    for (i = 0; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
    {
@@ -123,11 +134,19 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
    
    if(LessDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_max]))  //на MACD: экстремум в текущий момент меньше глобального
    {
+    
     /*Alert("BEGIN: ", date_buf[0]);
     Alert(__FUNCTION__, ": Найдено расхождение");
     Alert("index_global_MACD = ", index_MACD_global_max);
     Alert("index_highest_price = ", index_Price_global_max, "; highest_price = ", iHigh_buf[index_Price_global_max]);
     Alert("END: ", date_buf[DEPTH_MACD-1]);  */
+    div_point.extrPrice2 = date_buf[index_Price_global_max];
+    div_point.extrMACD1  = date_buf[index_MACD_global_max];
+    div_point.extrMACD2  = date_buf[0];
+    div_point.valueMACD1  = iMACD_buf[index_MACD_global_max];
+    div_point.valueMACD2  = iMACD_buf[0];
+    div_point.valuePrice1 = iHigh_buf[index_MACD_global_max];
+    div_point.valuePrice2 = iHigh_buf[index_Price_global_max];
     return(1);
    }
   }
@@ -170,6 +189,13 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     Alert("index_global_MACD = ", index_MACD_global_min);
     Alert("index_lowest_price = ", index_Price_global_min, "; lowest_price = ", iLow_buf[index_Price_global_min]);
     Alert("END: ", date_buf[DEPTH_MACD-1]);*/
+    div_point.extrPrice2 = date_buf[index_Price_global_min];
+    div_point.extrMACD1  = date_buf[index_MACD_global_min];
+    div_point.extrMACD2  = date_buf[0];
+    div_point.valueMACD1  = iMACD_buf[index_MACD_global_min];
+    div_point.valueMACD2  = iMACD_buf[0];
+    div_point.valuePrice1 = iLow_buf[index_MACD_global_min];
+    div_point.valuePrice2 = iLow_buf[index_Price_global_min];
     return(-1);
    }
   }
