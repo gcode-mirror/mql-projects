@@ -51,6 +51,7 @@ int isMACDExtremum(int handleMACD, int startIndex, int precision = 6, bool LOG =
 /////-------------------------------
 int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, int startIndex = 0)
 {
+ 
  double iMACD_buf[DEPTH_MACD] = {0};
  double iHigh_buf[DEPTH_MACD] = {0};
  double iLow_buf[DEPTH_MACD] = {0};
@@ -89,15 +90,17 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  index_Price_global_max = ArrayMaximum(iHigh_buf, 0, WHOLE_ARRAY);
  index_Price_global_min = ArrayMinimum(iLow_buf, 0, WHOLE_ARRAY);
 
-
+ //PrintFormat("%d %s / %s", startIndex, TimeToString(date_buf[0]), TimeToString(date_buf[DEPTH_MACD-1]));
  if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_max && index_Price_global_max < DEPTH_MACD)       //самая высокая цены находится в последних 15 барах
  {
-  if(isMACDExtremum(handleMACD, 0) == 1) //если в текущий момент есть экстремум
+  //PrintFormat("%d %s", startIndex, "самая высокая цены находится в последних 15 барах");
+  if(isMACDExtremum(handleMACD, startIndex) == 1) //если в текущий момент есть экстремум
   {
+   
    is_extr_exist = false;
    for (i = 0; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
    {
-    if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)) == 1) 
+    if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == 1) 
     {
      is_extr_exist = true;
      break; 
@@ -124,7 +127,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     Alert(__FUNCTION__, ": Найдено расхождение");
     Alert("index_global_MACD = ", index_MACD_global_max);
     Alert("index_highest_price = ", index_Price_global_max, "; highest_price = ", iHigh_buf[index_Price_global_max]);
-    Alert("END: ", date_buf[DEPTH_MACD-1]);*/  
+    Alert("END: ", date_buf[DEPTH_MACD-1]);  */
     return(1);
    }
   }
@@ -134,12 +137,12 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  
  if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_min && index_Price_global_min < DEPTH_MACD)       //самая низкая цены находится в последних 15 барах
  {
-  if(isMACDExtremum(handleMACD, 0) == -1) //если в текущий момент есть экстремум
+  if(isMACDExtremum(handleMACD, startIndex) == -1) //если в текущий момент есть экстремум
   {
    is_extr_exist = false;
    for (i = 0; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
    {
-    if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)) == -1) 
+    if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == -1) 
     {
      is_extr_exist = true;
      break;
