@@ -14,6 +14,30 @@
 #include <Constants.mqh>  
 
 //+------------------------------------------------------------------+
+//| Константы для работы с бэктестом                                 |
+//+------------------------------------------------------------------+
+
+#define BT_COUNTWINS      0x1     // количество  выйгрышных позиций
+#define BT_COUNTLOSS      0x2     // количество  убыточных позиций
+#define BT_COUNTTOTAL     0x4     // количество позиций всего
+#define BT_MAXWINPOS      0x8     // максимальная прибыльная позиция
+#define BT_MINLOSEPOS     0x10    // минимальная убыточная позиция
+#define BT_MAXPROFIT      0x20    // максимальная непрерывная прибыль
+#define BT_MAXLOSS        0x40    // максимальный непрерывный убыток
+#define BT_MAXCOUNTWIN    0x80    // максимальное количество непрерывных прибыльных позиций
+#define BT_MAXCOUNTLOSE   0x100   // максимальное количество непрерывных убыточных позиций
+#define BT_AVERAGEPROFIT  0x200   // средняя прибыльная позиция
+#define BT_AVERAGELOSS    0x400   // средняя убыточная позиция
+#define BT_CLEANPROFIT    0x800   // чистая прибыль
+#define BT_GROSSPROFIT    0x1000  // общая прибыль 
+#define BT_GROSSLOSS      0x2000  // общий убыток
+#define BT_PROFITFACTOR   0x4000  // фактор прибыльности
+#define BT_RECOVERYFACTOR 0x8000  // фактор востановления
+#define BT_MATHAWAITING   0x10000 // мат ожидание сделки
+#define BT_ABSDRAWDOWN    0x20000 // абсолютная просадка
+#define BT_MAXDRAWDOWN    0x40000 // максимальная просадка
+   
+//+------------------------------------------------------------------+
 //| Класс для работы с бэктестом                                     |
 //+------------------------------------------------------------------+
 
@@ -21,18 +45,57 @@ class BackTest
  {
   private:
    CPositionArray *_positionsHistory; // массив истории виртуальных позиций
+   // системные поля класса отчетности
    double   _balance;                 // баланс
    datetime _start,_finish;           // периоды загрузки истории
    string   _symbol;                  // символ
    double   _max_balance;             // максимальный уровень баланса
    double   _min_balance;             // минимальный уровень баланса
-   double   _clean_profit;            // чистая прибыль
-   double   _gross_profit;            // общая прибыль
-   double   _gross_loss;              // общий убыток
    double   _deposit;                 // депозит
    ENUM_TIMEFRAMES _timeFrame;        // таймфрейм
-   string   _expertName;              // имя эксперта   
+   string   _expertName;              // имя эксперта      
+   // результаты отчетности   
+   int    _countwins;       // количество  выйгрышных позиций
+   int    _countloss;       // количество  убыточных позиций
+   int    _counttotal;      // количество позиций всего
+   double _maxwinpos;       // максимальная прибыльная позиция
+   double _minlosepos;      // минимальная убыточная позиция
+   double _maxprofit;       // максимальная непрерывная прибыль
+   double _maxloss;         // максимальный непрерывный убыток
+   int    _maxcountwin;     // максимальное количество непрерывных прибыльных позиций
+   int    _maxcountlose;    // максимальное количество непрерывных убыточных позиций
+   double _averageprofit;   // средняя прибыльная позиция
+   double _averageloss;     // средняя убыточная позиция
+   double _cleanprofit;     // чистая прибыль
+   double _grossprofit;     // общая прибыль 
+   double _grossloss;       // общий убыток
+   double _profitfactor;    // фактор прибыльности
+   double _recoveryfactor;  // фактор востановления
+   double _mathawaiting;    // мат ожидание сделки
+   double _absdrawdown;     // абсолютная просадка
+   double _maxdrawdown;     // максимальная просадка  
+   
   public:
+   // Get-методы 
+   int    GetCountWins () { return (_countwins); };
+   int    GetCountLoss () { return (_countloss); };
+   int    GetCountTotal() { return (_counttotal);};
+   double GetMaxWinPos() { return (_maxwinpos); };
+   double GetMinLossPos() { return (_minlosepos); };
+   double GetMaxProfit() { return (_maxprofit); };
+   double GetMaxLoss() { return (_maxloss); };   
+   int    GetMaxCountWin () { return (_maxcountwin); };
+   int    GetMaxCountLose () { return (_maxcountlose); };     
+   double GetAverageProfit() { return (_averageprofit); };       
+   double GetAverageLoss() { return (_averageloss); };  
+   double GetCleanProfit() { return (_cleanprofit); };
+   double GetGrossProfit() { return (_grossprofit); };
+   double GetGrossLoss() { return (_grossloss); };
+   double GetProfitFactor() { return (_profitfactor); };
+   double GetRecoveryFactor() { return (_recoveryfactor); };
+   double GetMathAwaiting() { return (_mathawaiting); };
+   double GetAbsDrawdown() { return (_absdrawdown); };
+   double GetMaxDrawDown() { return (_maxdrawdown); };                               
    //конструкторы
    BackTest() { _positionsHistory = new CPositionArray(); };  
    BackTest(string file_url,datetime start,datetime finish)
@@ -43,6 +106,9 @@ class BackTest
    // деструктор
   ~BackTest() { delete _positionsHistory; };
    //методы бэктеста
+   bool  MakeBackTest (long mode);  // метод 
+   
+   
    //метод возвращения индекса позиции в массиве позиций по времени
    int   GetIndexByDate(datetime dt,bool type);
    //методы вычисления количест трейдов в истории по символу
@@ -51,7 +117,6 @@ class BackTest
    //вычисление прибылей
    void GetProfits();           
    //знаки позиций по прибыли
-   int    GetSignLastPosition();           //возвращает знак последней позиции 
    int    GetSignPosition(uint index);    //вычисляет знак позиции по индексу 
    //метод вычисления процентных соотношений
    double GetIntegerPercent(uint value1,uint value2);   //метод вычисления процентного соотношения value1 по отношению  к value2
@@ -77,7 +142,6 @@ class BackTest
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
  //  void Save
    bool SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName); //сохраняет результаты бэктеста
-   void WriteTo (int handle,string buffer);            // сохраняет в файл строку по заданному хэндлу
    //дополнительный методы
    string SignToString (int sign);                     //переводит знак позиции в строку
    //сохраняет строку в файл 
@@ -179,26 +243,6 @@ class BackTest
     _clean_profit = _gross_profit + _gross_loss;
   } 
 
-//+------------------------------------------------------------------+
-//| возвращает знак последней позиции                                |  
-//+------------------------------------------------------------------+   
- int  BackTest::GetSignLastPosition()
-  {
-   CPosition * pos;
-   double profit;
-   int index = _positionsHistory.Total()-1;
-   if (index > -1)
-   {
-    pos = _positionsHistory.At(index);
-    profit = pos.getPosProfit();
-    if (profit>0)
-     return 1;
-    if (profit<0)
-     return -1;
-    return 0;
-   }
-   return 2;
-  }
     
 //+------------------------------------------------------------------+
 //| возвращает знак  позиции по индексу                              |  
@@ -534,8 +578,8 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   uint    n_trades           =  GetNTrades();                     //количество позиций
   uint    n_win_trades       =  GetNSignTrades(1);                //количество выйгрышных трейдов
   uint    n_lose_trades      =  GetNSignTrades(-1);               //количество выйгрышных трейдов
-  int     sign_last_pos      =  GetSignLastPosition();            //знак последней позиции
-  double  max_trade          =  GetMaxTrade(1)*sizeOfLot;         //самый большой трейд по символу
+  int     sign_last_pos      =  GetSignPosition(_positionsHistory.Total()-1); //знак последней позиции
+  double  max_trade          =  GetMaxTrade(1)*sizeOfLot;                     //самый большой трейд по символу
   double  min_trade          =  GetMaxTrade(-1)*sizeOfLot;        //самый маленький трейд по символу
   double  aver_profit_trade  =  GetAverageTrade(1)*sizeOfLot;     //средний прибыльный трейд 
   double  aver_lose_trade    =  GetAverageTrade(-1)*sizeOfLot;    //средний убыточный трейд   
@@ -615,20 +659,3 @@ string BackTest::SignToString(int sign)
     return "negative";
    return "no sign";
  }
- 
- 
-   // сохраняет строку в файл
-void BackTest::WriteTo(int handle, string buffer) 
-{
-  int    nBytesRead[1]={1};
-  char   buff[]; 
-  StringToCharArray(buffer,buff);
-  if(handle>0) 
-  {
-    Comment(" ");
-    WriteFile(handle, buff, StringLen(buffer), nBytesRead, NULL);
-    
-  } 
-  else
-   Print("неудача. плохой хэндл для файла SPEAKER");
-}
