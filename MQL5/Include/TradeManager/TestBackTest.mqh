@@ -106,7 +106,7 @@ class BackTest
    // деструктор
   ~BackTest() { delete _positionsHistory; };
    //методы бэктеста
-   bool  MakeBackTest (long mode);  // метод 
+   bool  MakeBackTest (long mode);  // метод вычислени€ отчетности
    
    
    //метод возвращени€ индекса позиции в массиве позиций по времени
@@ -189,6 +189,23 @@ class BackTest
    return -1;  //если позици€ не найдена
   } 
  
+//+------------------------------------------------------------------+
+//| ћетод вычислени€ отчетности                                      |
+//+------------------------------------------------------------------+ 
+ 
+ bool BackTest::MakeBackTest(long mode)
+  {
+   uint index;
+   uint total = _positionsHistory.Total();  //размер массива
+   uint count=0; //количество позиций с данным символом
+   CPosition * pos;
+   for (index=0;index<total;index++)
+    {
+     pos = _positionsHistory.Position(index); //получаем указатель на позицию     
+   //  if (mode >>
+    }
+   return true;
+  }
  
 //+------------------------------------------------------------------+
 //| ¬ычисл€ет количество позиций в истории                           |
