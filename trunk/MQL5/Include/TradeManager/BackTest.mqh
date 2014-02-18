@@ -224,7 +224,6 @@ class BackTest
    if (value2)
    return 1.0*value1/value2;
    return -1;
-   
   }
 
 //+------------------------------------------------------------------+
@@ -242,10 +241,10 @@ double BackTest::GetMaxTrade(int sign) //sign = 1 - самый большой прибыльный, (-
      pos = _positionsHistory.Position(index); //получаем указатель на позицию 
      if (pos.getPosProfit()*sign > maxTrade)
       {
-       maxTrade = pos.getPosProfit();
+       maxTrade = pos.getPosProfit()*sign;
       }
     }  
-    return maxTrade;
+    return maxTrade*sign;
  }
  
 

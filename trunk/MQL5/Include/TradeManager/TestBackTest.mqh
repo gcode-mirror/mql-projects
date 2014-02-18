@@ -199,10 +199,40 @@ class BackTest
    uint total = _positionsHistory.Total();  //размер массива
    uint count=0; //количество позиций с данным символом
    CPosition * pos;
+   _countwins = 0;   // обнуляем количество выйгрышных позиций
+   _countlose = 0;   // обнуляем количество выйгрышных позиций
+   
+   // обработка не цикличных результатов отчетности 
+   
+   // если требуется посчитать общее количество позиций
+   if ( (mode >> 2) % 2 )
+    {
+     _counttotal = _positionsHistory.Total();
+    }
+   
+   // обработка цикличных параметров результатов 
+   
    for (index=0;index<total;index++)
     {
-     pos = _positionsHistory.Position(index); //получаем указатель на позицию     
-   //  if (mode >>
+     pos = _positionsHistory.Position(index); //получаем указатель на позицию
+     // если требуется посчитать количество выйгрышных позиций      
+     if ( mode % 2 )
+      {
+       if (pos.getPosProfit() > 0)
+        {
+          _countwins ++; 
+        }
+      }
+     // если требуется посчитать количество убыточных позиций
+     if ( (mode >> 1) % 2 ) 
+      {
+       if (pos.getPosProfit() <0)
+        {
+         _countloss ++;
+        }
+      }
+     
+     
     }
    return true;
   }

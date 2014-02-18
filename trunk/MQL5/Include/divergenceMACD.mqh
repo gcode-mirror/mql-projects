@@ -30,7 +30,7 @@ int isMACDExtremum(int handleMACD, int startIndex, int precision = 6, bool LOG =
 { 
  double iMACD_buf[5];
  
- int copied = 0;
+ int copied = 0; 
  for(int attemps = 0; attemps < 25 && (copied = CopyBuffer(handleMACD, 0, startIndex, 5, iMACD_buf)) < 0; attemps++)
  {
   Sleep(100);
