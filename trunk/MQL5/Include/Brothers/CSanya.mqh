@@ -157,6 +157,8 @@ void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
    num2.price = currentPrice;
    num3.direction = 0;
    num3.price = currentPrice;
+   extremumStart.direction = 0;
+   extremumStart.price = currentPrice;
    
    first = true; second = true; third = true;
    
@@ -303,7 +305,19 @@ void CSanya::RecountFastDelta()
    _deltaFast = 100;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
    _fastDeltaChanged = true;
    first = true; second = true; third = true;
-   extremumStart = (num0.direction == _direction) ? num0 : num1;
+   PrintFormat("direction =%d, price=%.05f",extremumStart.direction, extremumStart.price);
+   
+   if (num0.direction == _direction)
+   {
+    extremumStart = num0;
+   }
+   else
+   {
+    extremumStart = num1;
+   }
+   
+   //extremumStart = (num0.direction == _direction) ? num0 : num1;  ///ToDo проверить в чем проблема!!!
+   PrintFormat("direction =%d, price=%.05f",extremumStart.direction, extremumStart.price);
   }
  }
  
