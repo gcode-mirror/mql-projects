@@ -555,8 +555,14 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   _clean_profit  = _clean_profit * sizeOfLot;
   _gross_loss    = _gross_loss * sizeOfLot;
   _gross_profit  = _gross_profit * sizeOfLot;
-  profitFactor   = _gross_profit / _gross_loss;
-  recoveryFactor = _clean_profit / maxDrawDown;
+  if (_gross_loss < 0)
+   {
+    profitFactor   = -_gross_profit / _gross_loss;
+   }
+  if (maxDrawDown)
+   {
+    recoveryFactor = _clean_profit / maxDrawDown;
+   }
   mathAwaiting   = GetAverageTrade(0) * sizeOfLot;
   absDrawDown    = GetAbsDrawdown();
   

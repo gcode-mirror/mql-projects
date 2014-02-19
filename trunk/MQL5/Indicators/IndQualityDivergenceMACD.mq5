@@ -7,8 +7,6 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_chart_window
-//TODO удаление линий на OnDeinit
-//     проверка рабочего состояния!
 
 #include <Lib CisNewBAr.mqh>
 #include <divergenceMACD.mqh>
@@ -19,11 +17,12 @@ input int signal_period = 9;    // период сигнальной EMA MACD
 
 int handleMACD;
 CisNewBar bar;
-//+------------------------------------------------------------------+
-//| Custom indicator initialization function                         |
-//+------------------------------------------------------------------+
+
+
+
 int OnInit()
 {
+ // инициализируем хэндл MACD
  handleMACD = iMACD(NULL, Period(), fast_ema_period, slow_ema_period, signal_period, PRICE_CLOSE); 
  return(INIT_SUCCEEDED);
 }
@@ -32,9 +31,8 @@ void OnDeinit(const int reason)
 {
  IndicatorRelease(handleMACD);
 }
-//+------------------------------------------------------------------+
-//| Custom indicator iteration function                              |
-//+------------------------------------------------------------------+
+
+// пересчитываем новые экстремумы
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
                 const datetime &time[],
