@@ -8,6 +8,7 @@
 #property version   "1.00"
 #property indicator_chart_window
 //TODO удаление линий на OnDeinit
+//     проверка рабочего состояния!
 
 #include <Lib CisNewBAr.mqh>
 #include <divergenceMACD.mqh>
