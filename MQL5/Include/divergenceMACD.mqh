@@ -12,15 +12,16 @@
 #define DEPTH_MACD 100
 #define BORDER_DEPTH_MACD 15
 
-struct PointDiv         //структура дл€ передачи ключевых точек расхождени€
-{                       //Ќа графике цены перва€ точка не важна, поэтому extrPrice1 = extrMACD1
-   datetime extrMACD1;  //т.е. на графике цены нам важена только втора€ точка
-   datetime extrMACD2;
-   datetime extrPrice2;
-   double valueMACD1;
-   double valueMACD2;
-   double valuePrice1;
-   double valuePrice2;
+struct PointDiv        
+{                           
+   datetime timeExtrMACD1;  // врем€ по€влени€ первого экстремума MACD
+   datetime timeExtrMACD2;  // врем€ по€влени€ второго экстремума MACD
+   datetime timeExtrPrice1; // врем€ по€влени€ первого экстремума цен
+   datetime timeExtrPrice2; // врем€ по€влени€ второго экстремума цен
+   double   valueExtrMACD1; // значение первого экстремума MACD
+   double   valueExtrMACD2; // значение второго экстремума MACD
+   double   valueExtrPrice1;// значение первого экстремума по ценам
+   double   valueExtrPrice2;// знечение второго экстремума по ценам
 };
 PointDiv null = {0};
 
@@ -64,14 +65,18 @@ int isMACDExtremum(int handleMACD, int startIndex, int precision = 6, bool LOG =
 int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, int startIndex, PointDiv& div_point)
 {
  
- double iMACD_buf[DEPTH_MACD] = {0};
- double iHigh_buf[DEPTH_MACD] = {0};
- double iLow_buf[DEPTH_MACD]  = {0};
- datetime date_buf[DEPTH_MACD] = {0};
+ double iMACD_buf [DEPTH_MACD]  = {0};
+ double iHigh_buf [DEPTH_MACD]  = {0};
+ double iLow_buf  [DEPTH_MACD]  = {0};
+ datetime date_buf[DEPTH_MACD]  = {0};
+ 
  int index_MACD_global_max;
  int index_Price_global_max;
+ int index_Price_local_max;
  int index_MACD_global_min;
  int index_Price_global_min;
+ int index_Price_local_min;
+ 
  bool under_zero = false;
  bool over_zero = false;
  bool is_extr_exist = false;
@@ -88,9 +93,9 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  {
   Sleep(100);
   copiedMACD = CopyBuffer(handleMACD, 0, startIndex, DEPTH_MACD, iMACD_buf);
-  copiedHigh = CopyHigh(symbol, timeframe, startIndex, DEPTH_MACD, iHigh_buf);
-  copiedLow  = CopyLow (symbol, timeframe, startIndex, DEPTH_MACD, iLow_buf);
-  copiedDate = CopyTime(symbol, timeframe, startIndex, DEPTH_MACD, date_buf); 
+  copiedHigh = CopyHigh(symbol,       timeframe, startIndex, DEPTH_MACD, iHigh_buf);
+  copiedLow  = CopyLow (symbol,       timeframe, startIndex, DEPTH_MACD, iLow_buf);
+  copiedDate = CopyTime(symbol,       timeframe, startIndex, DEPTH_MACD, date_buf); 
  }
  if (copiedMACD != DEPTH_MACD || copiedHigh != DEPTH_MACD || copiedLow != DEPTH_MACD || copiedDate != DEPTH_MACD)
  {
@@ -100,10 +105,11 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  }
  
  index_Price_global_max = ArrayMaximum(iHigh_buf, 0, WHOLE_ARRAY);
- index_Price_global_min = ArrayMinimum(iLow_buf, 0, WHOLE_ARRAY);
+ index_Price_global_min = ArrayMinimum(iLow_buf,  0, WHOLE_ARRAY);
+ 
 
  //PrintFormat("%d %s / %s", startIndex, TimeToString(date_buf[0]), TimeToString(date_buf[DEPTH_MACD-1]));
- if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_max && index_Price_global_max < DEPTH_MACD)       //сама€ высока€ цены находитс€ в последних 15 барах
+ if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_max && index_Price_global_max < (DEPTH_MACD-1)  )       //сама€ высока€ цены находитс€ в последних 15 барах
  {
   //PrintFormat("%d %s", startIndex, "сама€ высока€ цены находитс€ в последних 15 барах");
   if(isMACDExtremum(handleMACD, startIndex) == 1) //если в текущий момент есть экстремум
@@ -134,27 +140,25 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
    
    if(LessDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_max]))  //на MACD: экстремум в текущий момент меньше глобального
    {
-    
-    /*Alert("BEGIN: ", date_buf[0]);
-    Alert(__FUNCTION__, ": Ќайдено расхождение");
-    Alert("index_global_MACD = ", index_MACD_global_max);
-    Alert("index_highest_price = ", index_Price_global_max, "; highest_price = ", iHigh_buf[index_Price_global_max]);
-    Alert("END: ", date_buf[DEPTH_MACD-1]);  */
-    div_point.extrPrice2 = date_buf[index_Price_global_max];
-    div_point.extrMACD1  = date_buf[index_MACD_global_max];
-    div_point.extrMACD2  = date_buf[0];
-    div_point.valueMACD1  = iMACD_buf[index_MACD_global_max];
-    div_point.valueMACD2  = iMACD_buf[0];
-    div_point.valuePrice1 = iHigh_buf[index_MACD_global_max];
-    div_point.valuePrice2 = iHigh_buf[index_Price_global_max];
+    index_Price_local_max    = ArrayMaximum(iHigh_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);
+    if (index_Price_local_max == 0 || index_Price_local_max == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
+     return (0);
+    div_point.timeExtrPrice1 = date_buf[index_Price_local_max];
+    div_point.timeExtrPrice2 = date_buf[index_Price_global_max];    
+    div_point.timeExtrMACD1  = date_buf[index_MACD_global_max];
+    div_point.timeExtrMACD2  = date_buf[0];
+    div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_max];
+    div_point.valueExtrMACD2  = iMACD_buf[0];
+    div_point.valueExtrPrice1 = iHigh_buf[index_Price_local_max];
+    div_point.valueExtrPrice2 = iHigh_buf[index_Price_global_max];
     return(1);
    }
   }
-  else
-   return(0);
+ // else
+ //  return(0);
  }
  
- if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_min && index_Price_global_min < DEPTH_MACD)       //сама€ низка€ цены находитс€ в последних 15 барах
+ if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_min && index_Price_global_min < (DEPTH_MACD-1) )       //сама€ низка€ цены находитс€ в последних 15 барах
  {
   if(isMACDExtremum(handleMACD, startIndex) == -1) //если в текущий момент есть экстремум
   {
@@ -184,23 +188,22 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  
    if(GreatDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_min]))  //на MACD: экстремум в текущий момент меньше глобального
    {
-    /*Alert("BEGIN: ", date_buf[0]);
-    Alert(__FUNCTION__, ": Ќайдено схождение");
-    Alert("index_global_MACD = ", index_MACD_global_min);
-    Alert("index_lowest_price = ", index_Price_global_min, "; lowest_price = ", iLow_buf[index_Price_global_min]);
-    Alert("END: ", date_buf[DEPTH_MACD-1]);*/
-    div_point.extrPrice2 = date_buf[index_Price_global_min];
-    div_point.extrMACD1  = date_buf[index_MACD_global_min];
-    div_point.extrMACD2  = date_buf[0];
-    div_point.valueMACD1  = iMACD_buf[index_MACD_global_min];
-    div_point.valueMACD2  = iMACD_buf[0];
-    div_point.valuePrice1 = iLow_buf[index_MACD_global_min];
-    div_point.valuePrice2 = iLow_buf[index_Price_global_min];
+    index_Price_local_min    = ArrayMinimum(iLow_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);  
+    if (index_Price_local_min == 0 || index_Price_local_min == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
+     return (0);      
+    div_point.timeExtrPrice1 = date_buf[index_Price_local_min];
+    div_point.timeExtrPrice2 = date_buf[index_Price_global_min];    
+    div_point.timeExtrMACD1  = date_buf[index_MACD_global_min];
+    div_point.timeExtrMACD2  = date_buf[0];
+    div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_min];
+    div_point.valueExtrMACD2  = iMACD_buf[0];
+    div_point.valueExtrPrice1 = iLow_buf[index_Price_local_min];
+    div_point.valueExtrPrice2 = iLow_buf[index_Price_global_min];
     return(-1);
    }
   }
-  else
-   return(0);
+ // else
+ //  return(0);
  }
     
  return(0); 
