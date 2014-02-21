@@ -146,11 +146,15 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     div_point.timeExtrPrice1 = date_buf[index_Price_local_max];
     div_point.timeExtrPrice2 = date_buf[index_Price_global_max];    
     div_point.timeExtrMACD1  = date_buf[index_MACD_global_max];
-    div_point.timeExtrMACD2  = date_buf[0];
+    div_point.timeExtrMACD2  = date_buf[DEPTH_MACD-1];
     div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_max];
-    div_point.valueExtrMACD2  = iMACD_buf[0];
+    div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-1];
     div_point.valueExtrPrice1 = iHigh_buf[index_Price_local_max];
     div_point.valueExtrPrice2 = iHigh_buf[index_Price_global_max];
+   /* PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
+                                                                                    TimeToString(div_point.timeExtrPrice2),
+                                                                                    TimeToString(div_point.timeExtrMACD1),
+                                                                                    TimeToString(div_point.timeExtrMACD2));*/
     return(1);
    }
   }
@@ -194,11 +198,15 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     div_point.timeExtrPrice1 = date_buf[index_Price_local_min];
     div_point.timeExtrPrice2 = date_buf[index_Price_global_min];    
     div_point.timeExtrMACD1  = date_buf[index_MACD_global_min];
-    div_point.timeExtrMACD2  = date_buf[0];
+    div_point.timeExtrMACD2  = date_buf[DEPTH_MACD-1];
     div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_min];
-    div_point.valueExtrMACD2  = iMACD_buf[0];
+    div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-1];
     div_point.valueExtrPrice1 = iLow_buf[index_Price_local_min];
     div_point.valueExtrPrice2 = iLow_buf[index_Price_global_min];
+  /*  PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
+                                                                                    TimeToString(div_point.timeExtrPrice2),
+                                                                                    TimeToString(div_point.timeExtrMACD1),
+                                                                                    TimeToString(div_point.timeExtrMACD2));    */
     return(-1);
    }
   }

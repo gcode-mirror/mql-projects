@@ -11,6 +11,19 @@
 
 #define DEPTH_STOC 10
 #define ALLOW_DEPTH_FOR_PRICE_EXTR 3
+
+struct PointDiv        
+{                           
+   datetime timeExtrMACD1;  // время появления первого экстремума MACD
+   datetime timeExtrMACD2;  // время появления второго экстремума MACD
+   datetime timeExtrPrice1; // время появления первого экстремума цен
+   datetime timeExtrPrice2; // время появления второго экстремума цен
+   double   valueExtrMACD1; // значение первого экстремума MACD
+   double   valueExtrMACD2; // значение второго экстремума MACD
+   double   valueExtrPrice1;// значение первого экстремума по ценам
+   double   valueExtrPrice2;// знечение второго экстремума по ценам
+};
+
 int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timeframe, int top_level, int bottom_level, int startIndex = 0)
 {
  double iSTOC_buf[];                         
@@ -71,6 +84,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      Alert("index_cur_extr = ", i, "time = ", date_buf[i]);
      Alert("index_global_price = ", index_Price_global_max, "; time = ", date_buf[index_Price_global_max], "; value = ", iHigh_buf[index_Price_global_max]);
      Alert("END: ", date_buf[0]);*/
+     
      return(1);
     }   
    }
@@ -92,6 +106,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      Alert("index_cur_extr = ", i, "time = ", date_buf[i]);
      Alert("index_global_price = ", index_Price_global_min, "; time = ", date_buf[index_Price_global_min], "; value = ", iHigh_buf[index_Price_global_min]);
      Alert("END: ", date_buf[0]);*/
+     
      return(-1);
     }
    }
