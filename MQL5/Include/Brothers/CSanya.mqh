@@ -12,44 +12,6 @@
 #include <CLog.mqh>
 #include "TradeLines.mqh"
 
-struct SExtremum
-{
- int direction;
- double price;
-};
-
-enum ENUM_LEVELS
-{
- LEVEL_MINIMUM,
- LEVEL_AVEMIN,
- LEVEL_START,
- LEVEL_AVEMAX,
- LEVEL_MAXIMUM
-};
-
-string LevelToString(ENUM_LEVELS level)
-{
- string res;
- switch (level)
- {
-  case LEVEL_MAXIMUM:
-   res = "level maximum";
-   break;
-  case LEVEL_MINIMUM:
-   res = "level minimum";
-   break;
-  case LEVEL_AVEMAX:
-   res = "level ave_max";
-   break;
-  case LEVEL_AVEMIN:
-   res = "level ave_min";
-   break;
-  case LEVEL_START:
-   res = "level start";
-   break;
- }
- return res;
-}
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
 //+------------------------------------------------------------------+
@@ -85,7 +47,7 @@ protected:
  SExtremum isExtremum();
 public:
 //--- Конструкторы
- //void CSanya();
+ void CSanya(){};
  void CSanya(int deltaFast, int deltaSlow, int dayStep, int monthStep
              , int stepsFromStartToExtremum, int stepsFromStartToExit, int stepsFromExtremumToExtremum
              , ENUM_ORDER_TYPE type ,int volume
@@ -430,11 +392,6 @@ void CSanya::RecountLevels(SExtremum &extr)
   {
    //Print("num0.price",num0.price);
    num0.price = extr.price;
-   if (num1.direction == 0)
-   {
-    num1.direction = -num0.direction;
-    num1.price = num0.price + num1.direction*_stepsFromExtremumToExtremum*_dayStep;
-   }
   }
   else
   {
@@ -449,6 +406,11 @@ void CSanya::RecountLevels(SExtremum &extr)
                                                                                            num1.direction, num1.price,
                                                                                            num2.direction, num2.price,
                                                                                            num3.direction, num3.price);
+   if (num1.direction == 0)
+   {
+    num1.direction = -num0.direction;
+    num1.price = num0.price + num1.direction*_stepsFromExtremumToExtremum*_dayStep;
+   }
   }
   
  //-------------------------------------------------
@@ -510,7 +472,11 @@ void CSanya::RecountLevels(SExtremum &extr)
   if (extr.direction > 0)
   {
    _average = NormalizeDouble((extr.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
-   if (GreatDoubles (_average, _startDayPrice + _dayStep, 5)) _averageMax = _average; 
+   if (GreatDoubles (_average, _startDayPrice + _dayStep, 5))
+   {
+    _averageMax = _average; 
+    averageMaxLine.Price(0, _averageMax);
+   }
    if (_type == ORDER_TYPE_BUY)
    {
     _currentEnterLevel = LEVEL_MAXIMUM;
@@ -527,7 +493,11 @@ void CSanya::RecountLevels(SExtremum &extr)
   if (extr.direction < 0)
   {
    _average = NormalizeDouble((extr.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
-   if (LessDoubles (_average, _startDayPrice - _dayStep, 5)) _averageMin = _average; 
+   if (LessDoubles (_average, _startDayPrice - _dayStep, 5))
+   {
+    _averageMin = _average; 
+    averageMinLine.Price(0, _averageMin);
+   }
    if (_type == ORDER_TYPE_BUY)
    {
     _currentEnterLevel = LEVEL_AVEMIN;
@@ -544,7 +514,6 @@ void CSanya::RecountLevels(SExtremum &extr)
  }
  //-------------------------------------------------
  //-------------------------------------------------
- 
  if(num0.direction != 0)
  {     
  //-------------------------------------------------
