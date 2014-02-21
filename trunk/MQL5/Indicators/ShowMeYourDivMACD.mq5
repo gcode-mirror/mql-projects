@@ -6,10 +6,37 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
-#property indicator_chart_window
+#property indicator_separate_window
 #include <Lib CisNewBar.mqh>                  // для проверки формирования нового бара
 #include <divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений MACD
 #include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
+
+ // параметры индикатора
+ 
+//---- всего задействовано 2 буфера
+#property indicator_buffers 2
+//---- использовано 2 графических построений
+#property indicator_plots   2
+
+//---- в качестве индикатора уровней MACD использованы гистограммы
+#property indicator_type1 DRAW_HISTOGRAM
+//---- цвет индикатора
+#property indicator_color1  clrBlue
+//---- толщина линии индикатора
+#property indicator_width1  1
+//---- отображение метки линии индикатора
+#property indicator_label1  "MACD"
+
+//---- в качестве индикатора сигнала MACD использованы линии
+#property indicator_type2 DRAW_LINE
+//---- цвет индикатора
+#property indicator_color2  clrRed
+//---- стиль линии индикатора
+#property indicator_style2  STYLE_DOT
+//---- толщина линии индикатора
+#property indicator_width2  1
+//---- отображение метки линии индикатора
+#property indicator_label2  "SIGNAL"
 
  // перечисление режима загрузки баров истории
  enum BARS_MODE
@@ -17,6 +44,15 @@
   ALL_HISTORY=0, // вся история
   INPUT_BARS     // вводимое количество баром пользователя
  };
+ // массив цветов тренд линий
+ color lineColors[5]=
+  {
+   clrRed,
+   clrBlue,
+   clrYellow,
+   clrGreen,
+   clrGray
+  };
 //+------------------------------------------------------------------+
 //| Вводимые параметры индикатора                                    |
 //+------------------------------------------------------------------+
@@ -38,6 +74,13 @@ long               countTrend;             // счетчик тренд линий
 PointDiv           divergencePoints;       // схождения и расхождения MACD
 CChartObjectTrend  trendLine;              // объект класса трендовой линии
 CisNewBar          isNewBar;               // для проверки формирования нового бара
+
+//+------------------------------------------------------------------+
+//| Буферы индикаторов                                               |
+//+------------------------------------------------------------------+
+
+double bufferMACD[];   // буфер уровней MACD
+double signalMACD[];   // сигнальный буфер MACD
  
 //+------------------------------------------------------------------+
 //| Базовые функции индикатора                                       |
@@ -45,9 +88,12 @@ CisNewBar          isNewBar;               // для проверки формирования нового б
 
 int OnInit()
   {     
+   // связываем индикаторы с буферами 
+   SetIndexBuffer(0,bufferMACD,INDICATOR_DATA);
+   SetIndexBuffer(1,signalMACD,INDICATOR_DATA);   
    // инициализация глобальных  переменных
    first_calculate = true;
-   countTrend = 0;
+   countTrend = 1;
    // загружаем хэндл индикатора MACD
    handleMACD = iMACD(_Symbol, _Period, fast_ema_period,slow_ema_period,signal_period,PRICE_CLOSE);
    return(INIT_SUCCEEDED);
@@ -88,15 +134,26 @@ int OnCalculate(const int rates_total,
          lastBarIndex = bars-101;
         }
        }
+       // загрузим буфер MACD
+       if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
+            CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
+           {
+             // если не удалось загрузить буфера MACD
+             return (0);
+           }    
        for (;lastBarIndex > 0; lastBarIndex--)
         {
           // сканируем историю по хэндлу на наличие расхождений\схождений 
           retCode = divergenceMACD (handleMACD,_Symbol,_Period,lastBarIndex,divergencePoints);
           // если схождение\расхождение обнаружено
           if (retCode)
-           {    
+           {                                     
+            trendLine.Color(lineColors[countTrend % 5] );
             //создаем линию схождения\расхождения                    
-            trendLine.Create(0,"TrendLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
+            trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
+            trendLine.Color(lineColors[countTrend % 5] );         
+            //создаем линию схождения\расхождения на MACD
+            trendLine.Create(0,"MACDLine_"+countTrend,1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);            
             //увеличиваем количество тренд линий
             countTrend++;
            }
@@ -104,17 +161,27 @@ int OnCalculate(const int rates_total,
        first_calculate = false;
      }
     else  // если запуска не первый
-     {
+     { 
+       // загрузим буфер MACD
+       if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
+            CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
+           {
+             // если не удалось загрузить буфера MACD
+             return (0);
+           }                 
        // если сформирован новый бар
        if (isNewBar.isNewBar() > 0)
-        {
+        {        
          // распознаем схождение\расхождение
          retCode = divergenceMACD (handleMACD,_Symbol,_Period,1,divergencePoints);
          // если схождение\расхождение обнаружено
          if (retCode)
-          {          
+          {   
+           trendLine.Color(lineColors[countTrend % 5] );     
            // создаем линию схождения\расхождения              
-           trendLine.Create(0,"TrendLine_"+countTrend,0,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
+           trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
+           //создаем линию схождения\расхождения на MACD
+           trendLine.Create(0,"MACDLine_"+countTrend,1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);    
            // увеличиваем количество тренд линий
            countTrend++;
           }        
