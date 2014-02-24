@@ -191,7 +191,8 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
   return true;
  }
 
- if (isEndTrend() != 0)   
+ if (((enumMoveType[bar - 1] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_UP  ) && isEndTrend() == -1) || 
+     ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP   || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_DOWN) && isEndTrend() == 1))   
  {
   PrintFormat("bar = %d, начался флэт, новое движение меньше удвоенного предыдущего num2-num1=%.05f > num2-num0=%.05f", bar, current_bar.price, num2.price, (num2.price-num1.price), (num2.price-current_bar.price));
   enumMoveType[bar] = MOVE_TYPE_FLAT;
