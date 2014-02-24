@@ -48,6 +48,7 @@ protected:
   bool isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int start_pos);
   bool isLastBarHuge(int start_pos);
   int isNewTrend();
+  int isEndTrend();
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR);
   SExtremum isExtremum(int start_index);
@@ -188,26 +189,9 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
   return true;
  }
 
- if ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_DOWN)
-   &&(current_bar.direction > 0)
-   &&(LessDoubles(current_bar.price, num2.price, digits) // если новый максимум меньше предыдущего
-    ||GreatDoubles( MathAbs(num2.price - num1.price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
-                   ,MathAbs(num2.price - current_bar.price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
-                   ,digits)))   
+ if (isEndTrend() != 0)   
  {
-  PrintFormat("bar = %d, начался флэт, новый максимум меньше предыдущего num0 =%.05f < num2=%.05f или num2-num1=%.05f > num2-num0=%.05f", bar, current_bar.price, num2.price, (num2.price-num1.price), (num2.price-current_bar.price));
-  enumMoveType[bar] = MOVE_TYPE_FLAT;
-  return true;
- }
- 
- if ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_UP)
-   &&(current_bar.direction < 0)
-   &&(GreatDoubles(current_bar.price, num2.price, digits)    // если новый минимум больше предыдущего
-    ||GreatDoubles( MathAbs(num2.price - num1.price) // или РАЗНИЦА между вторым и первым БОЛЬШЕ РАЗНИЦЫ между вторым и нулевым 
-                   ,MathAbs(num2.price - current_bar.price) // разница между максимумами(минимумами) меньше движения (разницы между противоположными)
-                   ,digits)))  // или новый минимум - больше
- { 
-  PrintFormat("bar = %d, начался флэт, новый минимум больше предыдущего num0 =%.05f > num2=%.05f или num2-num1=%.05f > num2-num0=%.05f", bar, current_bar.price, num2.price, (num2.price-num1.price), (num2.price-current_bar.price));
+  PrintFormat("bar = %d, начался флэт, новое движение меньше удвоенного предыдущего num2-num1=%.05f > num2-num0=%.05f", bar, current_bar.price, num2.price, (num2.price-num1.price), (num2.price-current_bar.price));
   enumMoveType[bar] = MOVE_TYPE_FLAT;
   return true;
  }
@@ -377,6 +361,16 @@ int CColoredTrend::isNewTrend()
  if (num1.direction < 0 && LessDoubles((num2.price - num1.price)*difToTrend ,(num0.price - num1.price), digits))
   return(1);
  if (num1.direction > 0 && LessDoubles((num1.price - num2.price)*difToTrend ,(num1.price - num0.price), digits))
+  return(-1);
+  
+ return(0);
+}
+
+int CColoredTrend::isEndTrend()
+{
+ if (num1.direction < 0 && GreatDoubles((num2.price - num1.price)*difToTrend ,(num0.price - num1.price), digits))
+  return(1);
+ if (num1.direction > 0 && GreatDoubles((num1.price - num2.price)*difToTrend ,(num1.price - num0.price), digits))
   return(-1);
   
  return(0);
