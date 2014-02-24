@@ -29,8 +29,8 @@
 //----------------------------------------------------------------
  
 //--- input параметры
-input int      depth = 64;         // сколько свечей показывать
-input double   percentage_ATR = 0.25;
+input int      depth = 1000;         // сколько свечей показывать
+input double   percentage_ATR = 0.5;
 input bool     show_top = false;
 //--- индикаторные буферы
 double         ColorCandlesBuffer1[];
@@ -175,7 +175,13 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer2[i] = high[i];
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i]; 
-     ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
+     
+     if(!show_top) 
+      ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
+     else
+     {
+      ColorCandlesColors [i] = topTrend.GetMoveType(top_buffer_index);
+     }
      
      if(buffer_index < depth)
      {
