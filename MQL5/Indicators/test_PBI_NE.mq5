@@ -134,6 +134,7 @@ int OnCalculate(const int rates_total,
 
    if(prev_calculated == 0) 
    {
+    Print("Первый расчет индикатора");
     buffer_index = 0;
     top_buffer_index = 0;
     start_index = rates_total - depth;
@@ -162,13 +163,13 @@ int OnCalculate(const int rates_total,
      if(!error)
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP. Error = ", error);
-      return(prev_calculated);
+      return(0);
      }
      error = trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(top_buffer_index));
      if(!error) 
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT. Error = ", error);
-      return(prev_calculated);
+      return(0);
      } 
       
      ColorCandlesBuffer1[i] = open[i];

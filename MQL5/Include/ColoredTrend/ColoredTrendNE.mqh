@@ -134,12 +134,14 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos = 0, ENUM_MOVE_TYPE top
  if (newTrend == -1)
  {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения
   PrintFormat("Выполнено условие isNewTrend DOWN на %d баре", bar); 
+  PrintFormat("На старшем ТФ движение %s", MoveTypeToString(topTF_Movement)); 
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
   return true;
  }
  else if (newTrend == 1) // если текущее закрытие выше последнего экстремума 
  {
   PrintFormat("Выполнено условие isNewTrend UP на %d баре", bar);
+  PrintFormat("На старшем ТФ движение %s", MoveTypeToString(topTF_Movement)); 
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
   return true;
  }
@@ -331,19 +333,18 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int
  if (move_type == MOVE_TYPE_CORRECTION_UP)
  {
   extremum_condition = LessDoubles(price, lastOnTrend.price, digits);
-  bottomTF_condition = isLastBarHuge(start_pos);
  }
  if (move_type == MOVE_TYPE_CORRECTION_DOWN)
  {
   extremum_condition = GreatDoubles(price, lastOnTrend.price, digits);
-  bottomTF_condition = isLastBarHuge(start_pos);
  }
+ bottomTF_condition = isLastBarHuge(start_pos);
  return ((extremum_condition) || (bottomTF_condition));
 }
 
 bool CColoredTrend::isLastBarHuge(int start_pos)
 {
- double sum;
+ double sum = 0;
  MqlRates rates[];
  FillTimeSeries(BOTTOM_TF, _depth, start_pos, rates);
  for(int i = 0; i < _depth - 1; i++)
