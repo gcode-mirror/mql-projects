@@ -370,10 +370,9 @@ int CColoredTrend::isNewTrend()
 
 int CColoredTrend::isEndTrend()
 {
- if (num1.direction < 0 && GreatDoubles((num2.price - num1.price)*difToTrend ,(num0.price - num1.price), digits))
+ if (num1.direction < 0 && GreatDoubles((num2.price - num1.price)*difToTrend ,(num0.price - num1.price), digits)||
+    (num1.direction > 0 && GreatDoubles((num1.price - num2.price)*difToTrend ,(num1.price - num0.price), digits)))
   return(1);
- if (num1.direction > 0 && GreatDoubles((num1.price - num2.price)*difToTrend ,(num1.price - num0.price), digits))
-  return(-1);
   
  return(0);
 }
