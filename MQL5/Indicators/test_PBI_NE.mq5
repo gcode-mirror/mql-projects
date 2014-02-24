@@ -128,6 +128,8 @@ int OnCalculate(const int rates_total,
    static datetime start_time;
    static int buffer_index = 0;
    static int top_buffer_index = 0;
+   SExtremum extr_cur = {0, -1};
+   SExtremum extr_top = {0, -1};
    
    int seconds_current = PeriodSeconds(current_timeframe);
    int seconds_top = PeriodSeconds(GetTopTimeframe(current_timeframe));
@@ -159,13 +161,13 @@ int OnCalculate(const int rates_total,
      int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
      if(start_pos_top < 0) start_pos_top = 0;
      
-     error = topTrend.CountMoveType(top_buffer_index, start_pos_top);
+     //error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
      if(!error)
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP. Error = ", error);
       return(0);
      }
-     error = trend.CountMoveType(buffer_index, (rates_total-1) - i, topTrend.GetMoveType(top_buffer_index));
+     error = trend.CountMoveType(buffer_index, (rates_total-1) - i, extr_cur);//, topTrend.GetMoveType(top_buffer_index));
      if(!error) 
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT. Error = ", error);
@@ -177,11 +179,25 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i]; 
      
-     if(!show_top) 
+     if(!show_top)
+     { 
       ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
+      PrintFormat("%d %s", buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
+     }
      else
      {
       ColorCandlesColors [i] = topTrend.GetMoveType(top_buffer_index);
+     }
+     
+     if (extr_cur.direction > 0)
+     {
+      ExtUpArrowBuffer[i] = extr_cur.price + 50*_Point;
+      //PrintFormat("Максимум %d __ %d", i, buffer_index);
+     }
+     else if (extr_cur.direction < 0)
+     {
+      ExtDownArrowBuffer[i] = extr_cur.price - 50*_Point;
+      //PrintFormat("Минимум %d __ %d", i, buffer_index);
      }
      
      if(buffer_index < depth)
