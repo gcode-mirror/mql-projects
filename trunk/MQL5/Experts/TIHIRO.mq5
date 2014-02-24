@@ -11,11 +11,6 @@
 #include <TradeManager\TradeManager.mqh>   //подключаем библиотеку TradeManager
 #include <TradeManager\BackTest.mqh>       //бэктест
 #include <Graph\Widgets\WBackTest.mqh>
-#include <TradeManager\GetBackTest.mqh>
-
-#import "kernel32.dll"
-int      WinExec(uchar &NameEx[], int dwFlags);
-#import
 
 //+------------------------------------------------------------------+
 //| TIHIRO эксперт                                                   |
