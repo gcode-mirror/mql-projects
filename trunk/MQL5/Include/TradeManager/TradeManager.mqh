@@ -34,6 +34,8 @@ private:
   double _max_drawdown;       // максимально допустимая просадка
   double _max_balance;        // максимальный баланс
   
+  int    _historyChanged;     // режим изменения истории (0-не менялось, 1-увеличилась, 2-уменьшилась)
+  
 protected:
   ulong _magic;
   bool _useSound;
@@ -74,6 +76,9 @@ public:
 
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
   long GetHistoryDepth();  //возвращает глубину истории
+  
+  bool IsHistoryChanged ();  // возвращает сигнал изменения истории 
+  
 };
 
 //+---------------------------------
@@ -87,6 +92,8 @@ void CTradeManager::CTradeManager(): _useSound(true), _nameFileSound("expert.wav
  
  _magic = MakeMagic();
  _historyStart = TimeCurrent(); 
+ 
+ _historyChanged = 0;  
  
  rescueDataFileName  = CreateFilename(FILENAME_RESCUE);
  historyDataFileName = CreateFilename(FILENAME_HISTORY);
@@ -372,7 +379,11 @@ bool CTradeManager::PositionChangeSize(string symbol, double lots)
 //+------------------------------------------------------------------+
 void CTradeManager::OnTrade(datetime history_start=0)
 {
- 
+ // возвращаем флаг изменения истории 
+ if (_historyChanged != 0)
+  {
+   _historyChanged = 0;
+  }
 }
 
 //+------------------------------------------------------------------+
@@ -393,6 +404,7 @@ void CTradeManager::OnTick()
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось удалить позицию [%d].Удаляем её из positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
     _positionsHistory.Add(_positionsToReProcessing.Detach(i)); //добавляем удаляемую позицию в массив
+    _historyChanged = 1; // меняем флаг, что история увеличилась
     SaveArrayToFile(historyDataFileName,_positionsHistory);                    
     break;
    }
@@ -504,7 +516,7 @@ void CTradeManager::OnTick()
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s ордер отменен %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
        _positionsHistory.Add(_openPositions.Detach(i));
-  
+       _historyChanged = 1; // меняем флаг, что история увеличилась  
        SaveArrayToFile(historyDataFileName,_positionsHistory);       
        break;
       }
@@ -512,7 +524,7 @@ void CTradeManager::OnTick()
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
        _positionsHistory.Add(_openPositions.Detach(i));
-
+       _historyChanged = 1; // меняем флаг, что история увеличилась
        SaveArrayToFile(historyDataFileName,_positionsHistory);       
        break;
       }
@@ -567,6 +579,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  {
   //Print("Перемещаем позицию в хистори");
   _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
+  _historyChanged = 1; // меняем флаг, что история увеличилась 
   SaveArrayToFile(historyDataFileName,_positionsHistory); 
   SaveArrayToFile(rescueDataFileName,_openPositions);   
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
@@ -596,6 +609,7 @@ bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
   _positionsHistory.Add(_positionsToReProcessing.Detach(i));
+  _historyChanged = 1; // меняем флаг, что история увеличилась  
   SaveArrayToFile(historyDataFileName,_positionsHistory);  
   return(true);
  }
@@ -849,4 +863,11 @@ CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime to
 long CTradeManager::GetHistoryDepth() //возвращает грубину истории
 {
  return _positionsHistory.Total();
+}
+
+bool CTradeManager::IsHistoryChanged(void) //возвращает сигнал изменения истории
+{ 
+ if (_historyChanged!=0)
+  return true;
+ return false;
 }

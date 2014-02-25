@@ -11,15 +11,21 @@
 //| Класс для создания глобальных переменных параметров экспертов    |
 //+------------------------------------------------------------------+
 
+// перечисление режимов торговли эксперта
+enum  TRADE_MODE 
+ {
+  TM_NO_DEALS     = 0,
+  TM_DEAL_DONE    = 1,
+  TM_CANNOT_TRADE = 2
+ };
+
 class CExpertID: public CGlobalVariable 
  {
-  private:
-
   public:
   // публичные методы класса
   bool IsContinue();    // возвращает сигнал о том, стоит ли продолжать торговлю или нет  
   // метод записи информации о том, что были совершены сделки
-  void DealsWere () { IntValue(2); };
+  void DealDone() { IntValue(TM_DEAL_DONE); };
   // конструктор класса переменных параметров эксперта
   CExpertID(string expert_name,string symbol,ENUM_TIMEFRAMES period);   
   // деструктор класса 
@@ -29,7 +35,7 @@ class CExpertID: public CGlobalVariable
  bool CExpertID::IsContinue(void)
   {
    // если тоговать всё еще дозволительно 
-   if ( IntValue() != 0 )
+   if ( IntValue() != TM_CANNOT_TRADE )
     return true;
    return false;
   }
@@ -38,7 +44,7 @@ class CExpertID: public CGlobalVariable
   {
    string var_name = "&"+expert_name+"_"+symbol+"_"+PeriodToString(period); // формируем имя переменной   
    Name(var_name); // сохраняем переменную
-   IntValue(1);    // кладем значение 1 (робот запущен и готов торговать)
+   IntValue(TM_NO_DEALS);    // кладем значение 1 (робот запущен и готов торговать)
   }
   
  // деструктор класса
