@@ -92,7 +92,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 //+-----------------------------------------------------+
 bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
- PrintFormat("Вызов функции CountMoveType. i = %d, start_pos = %d", bar, start_pos);
+ //PrintFormat("Вызов функции CountMoveType. i = %d, start_pos = %d", bar, start_pos);
  if(bar == 0) //на "нулевом" баре ничего происходить не будет и данная строчка избавит нас от лишних проверок в дальнейшем
   return (true); 
 
@@ -184,7 +184,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
       isCorrectionEnds(buffer_Rates[2].close, enumMoveType[bar], start_pos))
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
-  PrintFormat("%s", MoveTypeToString(enumMoveType[bar]));
+  //PrintFormat("%s", MoveTypeToString(enumMoveType[bar]));
   PrintFormat("bar = %d, закончилася коррекция вверх(начался тренд вниз), последняя цена=%.05f меньше последнего экстремума=%.05f", bar, buffer_Rates[2].close, lastOnTrend.price);
   return (true);
  }
@@ -193,7 +193,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
       isCorrectionEnds(buffer_Rates[2].close, enumMoveType[bar], start_pos))
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
-  PrintFormat("%s", MoveTypeToString(enumMoveType[bar]));
+  //PrintFormat("%s", MoveTypeToString(enumMoveType[bar]));
   PrintFormat("bar = %d, закончилася коррекция вниз(начался тренд вверх), последняя цена=%.05f больше последнего экстремума=%.05f", bar, buffer_Rates[2].close, lastOnTrend.price);
   return (true);
  }
@@ -350,7 +350,7 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int
   extremum_condition = GreatDoubles(price, lastOnTrend.price, digits);
   if(isLastBarHuge(start_pos) < 0) bottomTF_condition = true;
   if(extremum_condition) {PrintFormat("%.05f %s DOWN Extremum condition success", price, TimeToString(time_buffer[0]));}
-  if(bottomTF_condition) {PrintFormat("%.05f %s DOWNBottomTF condition success", price, TimeToString(time_buffer[0]));}
+  if(bottomTF_condition) {PrintFormat("%.05f %s DOWN BottomTF condition success", price, TimeToString(time_buffer[0]));}
  }
  
  return ((extremum_condition) || (bottomTF_condition));
@@ -375,10 +375,12 @@ int CColoredTrend::isLastBarHuge(int start_pos)
  {
   if(GreatDoubles(rates[_depth-1].open, rates[_depth-1].close, digits))
   {
+   PrintFormat("open = %.05f, close = %.05f", rates[_depth-1].open, rates[_depth-1].close);
    return(1);
   }
   if(LessDoubles(rates[_depth-1].open, rates[_depth-1].close, digits))
   {
+   PrintFormat("open = %.05f, close = %.05f", rates[_depth-1].open, rates[_depth-1].close);
    return(-1);
   }
   
