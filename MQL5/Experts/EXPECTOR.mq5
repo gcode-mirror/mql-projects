@@ -14,7 +14,7 @@
 
 // вводимые пользователем параметры
 
-input double min_profit   = 10;  // минимальный уровень прибыли
+//input double min_profit   = 10;  // минимальный уровень прибыли
 input double max_drawdown = 10;  // максимальный уровень просадки
 
 // глобальные параменные экспектора
@@ -66,8 +66,6 @@ void OnTick()
            file_history = GetFileHistory(GlobalVariableName(index) );
            // загружаем историю позиций из файла  
            backtest.LoadHistoryFromFile(file_history,time_from,TimeCurrent());
-           // вычисляем текущую прибыль 
-          // current_profit = backtest.GetTotalProfit
            // вычисляем текущую просадку по балансу
            current_drawdown = backtest.GetMaxDrawdown();
            // если параметры привысили допустимые параметры 
@@ -75,6 +73,11 @@ void OnTick()
             {
              // то выставляем переменную в 0, т.е. прерываем торговлю эксперта
              GlobalVariableSet(GlobalVariableName(index),0);
+            }
+           else
+            {
+             // то выставляем переменную в 1
+             GlobalVariableSet(GlobalVariableName(index),1);            
             }
          }
       }  

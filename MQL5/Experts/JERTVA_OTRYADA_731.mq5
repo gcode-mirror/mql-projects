@@ -129,6 +129,8 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   if ( expertID.IsContinue() )
+   {
    ctm.OnTick();
    //переменные для хранения результатов работы с ценовым графиком
    int errLow = 0;                                                   
@@ -207,6 +209,7 @@ void OnTick()
      {
       waitForBuy = false;
       waitForSell = false;
+      expertID.DealsWere(); 
      }
     }
    } 
@@ -219,6 +222,7 @@ void OnTick()
      {
       waitForBuy = false;
       waitForSell = false;
+      expertID.DealsWere();       
      }
     }
    }
@@ -229,6 +233,7 @@ void OnTick()
    if (losslessTrailing)
    {
     ctm.DoLosslessTrailing();
+   }
    }
    return;   
   }

@@ -17,7 +17,9 @@ class CExpertID: public CGlobalVariable
 
   public:
   // публичные методы класса
-  bool IsContinue();    // возвращает сигнал о том, стоит ли продолжать торговлю или нет
+  bool IsContinue();    // возвращает сигнал о том, стоит ли продолжать торговлю или нет  
+  // метод записи информации о том, что были совершены сделки
+  void DealsWere () { IntValue(2); };
   // конструктор класса переменных параметров эксперта
   CExpertID(string expert_name,string symbol,ENUM_TIMEFRAMES period);   
   // деструктор класса 
@@ -31,13 +33,12 @@ class CExpertID: public CGlobalVariable
     return true;
    return false;
   }
- 
  // конструктор класса
  CExpertID::CExpertID(string expert_name,string symbol,ENUM_TIMEFRAMES period)
   {
    string var_name = "&"+expert_name+"_"+symbol+"_"+PeriodToString(period); // формируем имя переменной   
    Name(var_name); // сохраняем переменную
-   IntValue(2);    // кладем значение 1 (робот запущен и готов торговать)
+   IntValue(1);    // кладем значение 1 (робот запущен и готов торговать)
   }
   
  // деструктор класса
