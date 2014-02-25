@@ -182,7 +182,7 @@ int OnCalculate(const int rates_total,
      if(!show_top)
      { 
       ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
-      PrintFormat("%d %s", buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
+      //PrintFormat("%d %s", buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
      }
      else
      {
