@@ -18,13 +18,9 @@
 class CSanya: public CBrothers
 {
 protected:
- double _trailingDeltaStep; // величина отступа от уровня, чтобы он стал действующим
- 
  double _average;      // выбирается из _averageMax и _averageMin смотрит с какой стороны от старта текущая цена
  double _averageMax;   // среднее между максимумом и стартом
  double _averageMin;   // среднее между минимумом и стартом
- //double _averageRight; // среднее между первым и вторым экстремумом
- //double _averageLeft;  // среднее между первым и нулевым экстремумом
  int _minStepsFromStartToExtremum;
  int _maxStepsFromStartToExtremum;
  int _stepsFromStartToExit;
@@ -41,19 +37,16 @@ protected:
  CTradeLine highLine;
  CTradeLine averageMaxLine;
  CTradeLine averageMinLine;
- //CTradeLine averageRightLine;
- //CTradeLine averageLeftLine;
 
  SExtremum isExtremum();
 public:
 //--- Конструкторы
- //void CSanya(){};
  void CSanya(int deltaFast, int deltaSlow, int dayStep, int monthStep
              , int minStepsFromStartToExtremum, int maxStepsFromStartToExtremum, int stepsFromStartToExit
              , ENUM_ORDER_TYPE type ,int volume
              , int firstAdd, int secondAdd, int thirdAdd
              , int fastDeltaStep = 100, int slowDeltaStep = 10
-             , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30, int trailingDeltaStep = 30);  // Конструктор Саня
+             , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30);  // Конструктор Саня
              
  void InitMonthTrade();
  void RecountFastDelta();
@@ -72,7 +65,7 @@ void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
                     , ENUM_ORDER_TYPE type ,int volume
                     , int firstAdd, int secondAdd, int thirdAdd
                     , int fastDeltaStep = 100, int slowDeltaStep = 10
-                    , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30, int trailingDeltaStep = 30)  // Конструктор Саня
+                    , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30)  // Конструктор Саня
   {
    _factor = 0.01;
    _deltaFastBase = deltaFast;
@@ -86,7 +79,6 @@ void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
    _slowDeltaStep = slowDeltaStep;
    _firstAdd = firstAdd; _secondAdd = secondAdd; _thirdAdd = thirdAdd;
    
-   _trailingDeltaStep = trailingDeltaStep*_factor;
    _dayStep = dayStep*Point();
    _monthStep = monthStep;
    _minStepsFromStartToExtremum = minStepsFromStartToExtremum;
@@ -112,15 +104,12 @@ void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
    first = true; second = true; third = true;
    
    _startDayPrice = currentPrice; 
-   //_averageLeft = 0;
-   //_averageRight = 0;
    _average = 0;
    _averageMax = _startDayPrice + _dayStep;
    _averageMin = _startDayPrice - _dayStep;
    
    num0.direction = 0;
    num0.price = currentPrice;
-   //Print("num0.price=",num0.price);
    num1.direction = 0;
    num1.price = currentPrice;
    num2.direction = 0;
@@ -141,10 +130,6 @@ void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
     _currentExitLevel = LEVEL_MAXIMUM;
    }
    startLine.Create(_startDayPrice, "startLine", clrBlue);
-   //lowLine.Create(_low, "lowLine");
-   //highLine.Create(_high, "highLine");
-   //averageRightLine.Create(_averageRight, "aveRightLine", clrRed);
-   //averageLeftLine.Create(_averageLeft, "aveLeftLine", clrRed);
    averageMaxLine.Create(_averageMax, "aveMaxLine", clrAqua);
    averageMinLine.Create(_averageMin, "aveMinLine", clrAqua);
   }
@@ -161,20 +146,6 @@ void CSanya::InitMonthTrade()
  {
   PrintFormat("%s Новый месяц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_last_month_number));
   currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
-  /*
-  // Цена начала отсчета
-  if (_averageLeft <= 0 && _averageRight <= 0)
-  {
-   _startDayPrice = currentPrice; 
-   _deltaFast = 60;
-   _fastDeltaChanged = true;
-   Print("_startDayPrice=",_startDayPrice);
-  }
-  startLine.Price(0, _startDayPrice);
-  //lowLine.Price(0, _low);
-  //highLine.Price(0, _high);
-  _isMonthInit = true;
-  Print("_deltaFast=",_deltaFast);*/
  }
 }
 
@@ -204,7 +175,6 @@ void CSanya::RecountFastDelta()
    {
     PrintFormat("тип сделки %s, цена идет против нас от старта и прошла %d шагов", OrderTypeToString(_type), _stepsFromStartToExit);
     flag = true;
-    //_currentEnterLevel = LEVEL_START;
    }
   }
   if (num0.direction != 0)
