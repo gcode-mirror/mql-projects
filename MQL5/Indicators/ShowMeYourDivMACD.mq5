@@ -8,7 +8,7 @@
 #property version   "1.00"
 #property indicator_separate_window
 #include <Lib CisNewBar.mqh>                  // для проверки формирования нового бара
-#include <divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений MACD
+#include <divergenceMACD.mqh>           // подключаем библиотеку для поиска схождений и расхождений Стохастика
 #include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
 
  // параметры индикатора
@@ -25,7 +25,7 @@
 //---- толщина линии индикатора
 #property indicator_width1  1
 //---- отображение метки линии индикатора
-#property indicator_label1  "MACD"
+#property indicator_label1  ""
 
 //---- в качестве индикатора сигнала MACD использованы линии
 #property indicator_type2 DRAW_LINE

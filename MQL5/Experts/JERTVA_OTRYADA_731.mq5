@@ -56,7 +56,7 @@ double globalMin;
 bool waitForSell;
 bool waitForBuy;
 
-CExpertID * expertID;
+CExpertID *expertID;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -209,7 +209,7 @@ void OnTick()
      {
       waitForBuy = false;
       waitForSell = false;
-      expertID.DealsWere(); 
+      expertID.DealDone(); 
      }
     }
    } 
@@ -222,7 +222,7 @@ void OnTick()
      {
       waitForBuy = false;
       waitForSell = false;
-      expertID.DealsWere();       
+      expertID.DealDone();       
      }
     }
    }
