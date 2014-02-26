@@ -97,6 +97,7 @@ public:
  int GetDayOfWeek(datetime date);
  int GetDayOfYear(datetime date);
  int GetYear(datetime date);
+ ENUM_ORDER_TYPE GetType(){return (_type);};
  /*
  virtual double RecountVolume();
  virtual void RecountFastDelta();

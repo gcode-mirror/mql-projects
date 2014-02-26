@@ -26,9 +26,7 @@ public:
              , int fastDeltaStep = 100, int slowDeltaStep = 10
              , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30);  // Конструктор Саня
              
- void InitMonthTrade();
  void RecountFastDelta();
- void RecountSlowDelta();
  void RecountLevels(SExtremum &extr);
 };
 
@@ -150,7 +148,7 @@ void CSanyaRotate::RecountFastDelta()
      if (_direction*(priceAB - currentExitPrice) <= 0)
      {
       PrintFormat("Цена пробила уровень выхода %s(%.05f), цена=%.05f", LevelToString(_currentExitLevel), currentExitPrice, priceAB);
-      _currentEnterLevel = LEVEL_AVEMAX;
+      _currentExitLevel = LEVEL_AVEMAX;
       flag = true;
      }
      break;
@@ -159,7 +157,7 @@ void CSanyaRotate::RecountFastDelta()
      if (_direction*(priceAB - currentExitPrice) <= 0)
      {
       PrintFormat("Цена пробила уровень выхода %s(%.05f), цена=%.05f", LevelToString(_currentExitLevel), currentExitPrice, priceAB);
-      _currentEnterLevel = (_direction == 1) ? LEVEL_MAXIMUM : LEVEL_START;
+      _currentExitLevel = (_direction == 1) ? LEVEL_MAXIMUM : LEVEL_START;
       flag = true;
      }
      break;
@@ -168,7 +166,7 @@ void CSanyaRotate::RecountFastDelta()
      if (_direction*(priceAB - currentExitPrice) <= 0)
      {
       PrintFormat("Цена пробила уровень выхода %s(%.05f), цена=%.05f", LevelToString(_currentExitLevel), currentExitPrice, priceAB);
-      _currentEnterLevel = (_direction == 1) ? LEVEL_AVEMAX : LEVEL_AVEMIN;
+      _currentExitLevel = (_direction == 1) ? LEVEL_AVEMAX : LEVEL_AVEMIN;
       flag = true;
      }
      break;
@@ -178,7 +176,7 @@ void CSanyaRotate::RecountFastDelta()
      if (_direction*(priceAB - currentExitPrice) <= 0)
      {
       PrintFormat("Цена пробила уровень выхода %s(%.05f), цена=%.05f", LevelToString(_currentExitLevel), currentExitPrice, priceAB);
-      _currentEnterLevel = (_direction == 1) ? LEVEL_START : LEVEL_MINIMUM;
+      _currentExitLevel = (_direction == 1) ? LEVEL_START : LEVEL_MINIMUM;
       flag = true;
      }
      break;
@@ -187,101 +185,29 @@ void CSanyaRotate::RecountFastDelta()
      if (_direction*(priceAB - currentExitPrice) <= 0)
      {
       PrintFormat("Цена пробила уровень выхода %s(%.05f), цена=%.05f", LevelToString(_currentExitLevel), currentExitPrice, priceAB);
-      _currentEnterLevel = LEVEL_AVEMIN;
-      flag = true;
-     }
-     break;
-   }
-  }
-  
-  if (flag)
-  {
-   Print("Увеличиваем младшую дельта - сейвимся");
-   _type = (ENUM_ORDER_TYPE)(_type + MathPow (-1, _type)); // _type = 1 -> 1 + -1^1 = 0; _type = 0 -> 0 + -1^0 = 1
-   _deltaFast = 100 - _deltaFastBase;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
-   _fastDeltaChanged = true;
-   first = true; second = true; third = true;
-  }
- }
- 
- //------------------------------
- // Система входов
- //------------------------------ 
- SymbolInfoTick(_symbol, tick);
- priceAB = (_direction == 1) ? tick.bid : tick.ask;
- if (_deltaFast == 100)  // мы засейвлены
- {
-  bool flag = false;
-  if (num0.direction == 0 && GreatDoubles(priceAB, _startDayPrice, 5))
-  { 
-   Print("Цена со старта ушла против нас, затем развернулась и прошла старт");
-   flag = true;
-   _currentExitLevel = (_type == ORDER_TYPE_BUY) ? LEVEL_AVEMAX : LEVEL_AVEMIN;
-  }
-  
-  if (num0.direction != 0)
-  {
-   double currentEnterPrice;
-   switch (_currentEnterLevel)
-   {
-    case LEVEL_MAXIMUM:
-     currentEnterPrice = (num0.direction > 0) ? num0.price : num1.price;
-     if (_direction*(priceAB - currentEnterPrice) >= 0) // Цена пробила уровень входа
-     {
-      PrintFormat("Цена пробила уровень входа %s=%.05f, цена=%.05f", LevelToString(_currentEnterLevel), currentEnterPrice, priceAB);
-      _currentExitLevel = LEVEL_AVEMAX;
-      flag = true;
-     }
-     break;
-    case LEVEL_AVEMAX:
-     currentEnterPrice = _averageMax;
-     if (_direction*(priceAB - currentEnterPrice) >= 0) // Цена пробила уровень входа
-     {
-      PrintFormat("Цена пробила уровень входа %s=%.05f, цена=%.05f", LevelToString(_currentEnterLevel), currentEnterPrice, priceAB);
-      _currentExitLevel = (_direction == 1) ? LEVEL_START : LEVEL_MAXIMUM;
-      flag = true;
-     }
-     break;
-    case LEVEL_START:
-     currentEnterPrice = _startDayPrice;
-     if (_direction*(priceAB - currentEnterPrice) >= 0) // Цена пробила уровень входа
-     {
-      PrintFormat("Цена пробила уровень входа %s=%.05f, цена=%.05f", LevelToString(_currentEnterLevel), currentEnterPrice, priceAB);
-      _currentExitLevel = (_direction == 1) ? LEVEL_AVEMIN : LEVEL_AVEMAX;
-      flag = true;
-     }
-     break;
-    case LEVEL_AVEMIN:
-     currentEnterPrice = _averageMin;
-     if (_direction*(priceAB - currentEnterPrice) >= 0) // Цена пробила уровень входа
-     {
-      PrintFormat("Цена пробила уровень входа %s=%.05f, цена=%.05f", LevelToString(_currentEnterLevel), currentEnterPrice, priceAB);
-      _currentExitLevel = (_direction == 1) ? LEVEL_MINIMUM : LEVEL_START;
-      flag = true;
-     }
-     break;
-    case LEVEL_MINIMUM:
-     currentEnterPrice = (num0.direction < 0) ? num0.price : num1.price;
-     if (_direction*(priceAB - currentEnterPrice) >= 0) // Цена пробила уровень входа
-     {
-      PrintFormat("Цена пробила уровень входа %s=%.05f, цена=%.05f", LevelToString(_currentEnterLevel), currentEnterPrice, priceAB);
       _currentExitLevel = LEVEL_AVEMIN;
       flag = true;
      }
      break;
    }
   }
+  
   if (flag)
   {
-   Print("Уменьшаем младшую дельта - прекращаем сейвиться ");
-   _deltaFast = 100 - _deltaFastBase;   // уменьшим младшую дельта (цена пошла в нашу сторону - прекращаем сейв)
-   _fastDeltaChanged = true;
+   PrintFormat("%s Переворачиваем направление основного движения", MakeFunctionPrefix(__FUNCTION__));
+   _type = (ENUM_ORDER_TYPE)(_type + MathPow (-1, _type)); // _type = 1 -> 1 + -1^1 = 0; _type = 0 -> 0 + -1^0 = 1
+   _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
+   dealStartPrice = priceAB;
+   //RecountLevels(extr);
+   _deltaFast = 100 - _deltaFastBase;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
+   //_fastDeltaChanged = true;
+   first = true; second = true; third = true;
   }
  }
  
-  //-------------------------
-  // Проверим на доливки
-  //-------------------------
+ //-------------------------
+ // Проверим на доливки
+ //-------------------------
  if (_deltaFast > 0 && _deltaFast < 100)
  { 
   if (LessDoubles(_direction*dealStartPrice + _minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && first)
