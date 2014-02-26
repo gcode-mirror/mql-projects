@@ -29,6 +29,33 @@ string symArray[6] =
   "USDCAD",
   "AUDUSD"
  };
+ 
+// перечисление режимов торговли эксперта
+enum  TRADE_MODE 
+ {
+  TM_NO_DEALS     = 0,
+  TM_DEAL_DONE    = 1,
+  TM_CANNOT_TRADE = 2
+ };
+ 
+// функция перевода TRADE_MODE в int
+
+int  TradeModeToInt (TRADE_MODE tm)
+ {
+  switch (tm)
+   {
+    case TM_NO_DEALS:
+     return 0;
+    break;
+    case TM_DEAL_DONE:
+     return 1;
+    break;
+    case TM_CANNOT_TRADE:
+     return 2;
+    break;
+   }
+  return -1;
+ }  
 
 // функция поиска строки в массиве
 
