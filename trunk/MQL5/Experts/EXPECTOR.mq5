@@ -6,19 +6,11 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
-#include <GlobalVariable.mqh>
+#include <Constants.mqh>
 #include <TradeManager\Backtest.mqh>
 //+------------------------------------------------------------------+
 //| –обот, прерывающий работу запущенных экспертов по просадке       |
 //+------------------------------------------------------------------+
-
-// перечисление режимов торговли эксперта
-enum  TRADE_MODE 
- {
-  TM_NO_DEALS     = 0,
-  TM_DEAL_DONE    = 1,
-  TM_CANNOT_TRADE = 2
- };
 
 // вводимые пользователем параметры
 input double max_drawdown = 1;  // максимальный уровень просадки
@@ -62,7 +54,7 @@ void OnTick()
      if (StringSubstr(GlobalVariableName(index), 0, 1) == "&")
       {      
         // если эксперт записал что-то в историю позиций
-        if (GlobalVariableGet(GlobalVariableName(index)) == TM_DEAL_DONE)
+        if (GlobalVariableGet(GlobalVariableName(index)) == TradeModeToInt(TM_DEAL_DONE) )
          {
            // сформируем им€ файла истории
            file_history = GetFileHistory(GlobalVariableName(index));
@@ -74,12 +66,12 @@ void OnTick()
            if (current_drawdown > max_drawdown)
             {
              // то выставл€ем переменную в CANNOT_TRADE, т.е. прерываем торговлю эксперта
-             GlobalVariableSet(GlobalVariableName(index),TM_CANNOT_TRADE);
+             GlobalVariableSet(GlobalVariableName(index), TradeModeToInt(TM_CANNOT_TRADE) );
             }
            else
             {
              // то выставл€ем переменную в режим "не было новых сделок"
-             GlobalVariableSet(GlobalVariableName(index),TM_NO_DEALS);            
+             GlobalVariableSet(GlobalVariableName(index), TradeModeToInt(TM_NO_DEALS) );            
             }
          }
       }  
