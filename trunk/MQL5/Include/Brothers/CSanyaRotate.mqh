@@ -94,8 +94,8 @@ void CSanyaRotate::CSanyaRotate(int deltaFast, int deltaSlow,  int dayStep, int 
    num2.price = currentPrice;
    num3.direction = 0;
    num3.price = currentPrice;
-   extremumStart.direction = 0;
-   extremumStart.price = currentPrice;
+   
+   dealStartPrice = _startDayPrice;
    
    if (_type == ORDER_TYPE_BUY)
    {
@@ -197,21 +197,10 @@ void CSanyaRotate::RecountFastDelta()
   if (flag)
   {
    Print("Увеличиваем младшую дельта - сейвимся");
-   //_type = (ENUM_ORDER_TYPE)(_type + MathPow (-1, _type)); // _type = 1 -> 1 + -1^1 = 0; _type = 0 -> 0 + -1^0 = 1
-   _deltaFast = 100;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
+   _type = (ENUM_ORDER_TYPE)(_type + MathPow (-1, _type)); // _type = 1 -> 1 + -1^1 = 0; _type = 0 -> 0 + -1^0 = 1
+   _deltaFast = 100 - _deltaFastBase;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
    _fastDeltaChanged = true;
    first = true; second = true; third = true;
-   
-   if (num0.direction == _direction)
-   {
-    extremumStart = num0;
-   }
-   else
-   {
-    extremumStart = num1;
-   }
-   //extremumStart = (num0.direction == _direction) ? num0 : num1;  ///ToDo проверить в чем проблема!!!
-   PrintFormat("direction =%d, price=%.05f",extremumStart.direction, extremumStart.price);
   }
  }
  
@@ -293,23 +282,23 @@ void CSanyaRotate::RecountFastDelta()
   //-------------------------
   // Проверим на доливки
   //-------------------------
- if (extremumStart.direction == _direction && _deltaFast > 0 && _deltaFast < 100)
+ if (_deltaFast > 0 && _deltaFast < 100)
  { 
-  if (LessDoubles(_direction*extremumStart.price + _dayStep, _direction*priceAB) && first)
+  if (LessDoubles(_direction*dealStartPrice + _minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && first)
   {
-   PrintFormat("Первая доливка; Цена(%.05f) прошла на треть шага(%.05f) выше экстремума(%.05f)", priceAB, 0.33*_dayStep, extremumStart.price);
+   PrintFormat("Первая доливка");
    first = false;
    _deltaFast = _deltaFast - _firstAdd;
    _fastDeltaChanged = true;
   }
-  if (LessDoubles(_direction*extremumStart.price + _minStepsFromStartToExtremum*_dayStep/2, _direction*priceAB) && second)
+  if (LessDoubles(_direction*dealStartPrice + 2*_minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && second)
   {
    PrintFormat("Вторая доливка");
    second = false;
    _deltaFast = _deltaFast - _secondAdd;
    _fastDeltaChanged = true;
   }
-  if (LessDoubles(_direction*extremumStart.price + _maxStepsFromStartToExtremum*_dayStep, _direction*priceAB) && third)
+  if (LessDoubles(_direction*dealStartPrice + 4*_minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && third)
   {
    PrintFormat("Третья доливка");
    third = false;
@@ -318,6 +307,7 @@ void CSanyaRotate::RecountFastDelta()
   }
  }
 }
+
 
 //+------------------------------------------------------------------+
 //| Пересчет цены начала отсчета                                     |
@@ -342,7 +332,6 @@ void CSanyaRotate::RecountLevels(SExtremum &extr)
    num2 = num1;
    num1 = num0;
    num0 = extr;
-   extremumStart = extr;
    Print("Новый экстремум");
    if (num1.direction == 0)
    {
