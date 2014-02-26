@@ -192,12 +192,10 @@ int OnCalculate(const int rates_total,
      if (extr_cur.direction > 0)
      {
       ExtUpArrowBuffer[i] = extr_cur.price + 50*_Point;
-      //PrintFormat("Максимум %d __ %d", i, buffer_index);
      }
      else if (extr_cur.direction < 0)
      {
       ExtDownArrowBuffer[i] = extr_cur.price - 50*_Point;
-      //PrintFormat("Минимум %d __ %d", i, buffer_index);
      }
      
      if(buffer_index < depth)
