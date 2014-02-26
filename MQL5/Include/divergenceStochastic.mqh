@@ -86,6 +86,15 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      Alert("index_cur_extr = ", i, "time = ", date_buf[i]);
      Alert("index_global_price = ", index_Price_global_max, "; time = ", date_buf[index_Price_global_max], "; value = ", iHigh_buf[index_Price_global_max]);
      Alert("END: ", date_buf[0]);*/
+
+     div_point.timeExtrPrice1   =  date_buf[index_Price_global_max];
+     div_point.timeExtrPrice2   =  date_buf[i];
+     div_point.timeExtrSTOC1    =  date_buf[index_STOC_global_max];
+     div_point.timeExtrSTOC2    =  date_buf[i];
+     div_point.valueExtrPrice1  =  iHigh_buf[index_Price_global_max];
+     div_point.valueExtrPrice2  =  iHigh_buf[i];
+     div_point.valueExtrSTOC1   =  iSTOC_buf[index_STOC_global_max];
+     div_point.valueExtrSTOC2   =  iSTOC_buf[i];      
      
      return(1);
     }   
@@ -109,15 +118,14 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      Alert("index_global_price = ", index_Price_global_min, "; time = ", date_buf[index_Price_global_min], "; value = ", iHigh_buf[index_Price_global_min]);
      Alert("END: ", date_buf[0]);*/
      
-     div_point.timeExtrPrice1   =  
-     div_point.timeExtrPrice2   = 
-     div_point.timeExtrSTOC1    = 
-     div_point.timeExtrSTOC2    = 
-     div_point.valueExtrPrice1  = 
-     div_point.valueExtrPrice2  = 
-     div_point.valueExtrSTOC1   = 
-     div_point.valueExtrSTOC2   =  
-     
+     div_point.timeExtrPrice1   =  date_buf[index_Price_global_min];
+     div_point.timeExtrPrice2   =  date_buf[i];
+     div_point.timeExtrSTOC1    =  date_buf[index_STOC_global_min];
+     div_point.timeExtrSTOC2    =  date_buf[i];
+     div_point.valueExtrPrice1  =  iLow_buf[index_Price_global_min];
+     div_point.valueExtrPrice2  =  iLow_buf[i];
+     div_point.valueExtrSTOC1   =  iSTOC_buf[index_STOC_global_min];
+     div_point.valueExtrSTOC2   =  iSTOC_buf[i];  
      return(-1);
     }
    }
