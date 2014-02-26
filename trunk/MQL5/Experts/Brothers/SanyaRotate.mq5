@@ -37,6 +37,7 @@ string symbol;
 datetime startTime;
 double openPrice;
 double currentVolume;
+ENUM_ORDER_TYPE currentType;
 
 double factor = 0.01; // множитель для вычисления текущего объема торгов от дельты
 int fastPeriod = 24;  // Период обновления младшей дельта в часах
@@ -47,9 +48,9 @@ int monthStep = 400;   // шаг границы цены в пунктах для месячной торговл
 DELTA_STEP fastDeltaStep = FIFTY;  // Шаг изменения МЛАДШЕЙ дельты
 DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 
-CSanya san(fastDelta, slowDelta, dayStep, monthStep, minStepsFromStartToExtremum, maxStepsFromStartToExtremum, stepsFromStartToExit
-          , type, volume, firstAdd, secondAdd, thirdAdd, fastDeltaStep, slowDeltaStep, percentage
-          , fastPeriod, slowPeriod);
+CSanyaRotate san(fastDelta, slowDelta, dayStep, monthStep, minStepsFromStartToExtremum, maxStepsFromStartToExtremum, stepsFromStartToExit
+                , type, volume, firstAdd, secondAdd, thirdAdd, fastDeltaStep, slowDeltaStep, percentage
+                , fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -83,6 +84,7 @@ int OnInit()
    san.SetStartHour(startTime);
    
    currentVolume = 0;
+   currentType = type;
    //san.InitMonthTrade();
 //---
    return(INIT_SUCCEEDED);
@@ -100,8 +102,6 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
  {
-  //san.InitMonthTrade();
-  //if (san.isMonthInit())
   san.RecountFastDelta();
   
   if(san.isFastDeltaChanged() || san.isSlowDeltaChanged())
@@ -113,7 +113,19 @@ void OnTick()
     if (san.CorrectOrder(vol - currentVolume))
     {
      currentVolume = vol;
+     PrintFormat ("%s currentVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume);
     }
+   }
+  }
+  
+  if (currentType != san.GetType())
+  {
+   double vol = san.RecountVolume();
+   PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
+   if (san.CorrectOrder(vol + currentVolume))
+   {
+    currentVolume = vol;
+    currentType = san.GetType();
    }
   }
  }
