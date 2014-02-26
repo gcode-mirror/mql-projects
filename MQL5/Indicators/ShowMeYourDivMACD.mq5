@@ -21,7 +21,7 @@
 //---- в качестве индикатора уровней MACD использованы гистограммы
 #property indicator_type1 DRAW_HISTOGRAM
 //---- цвет индикатора
-#property indicator_color1  clrBlue
+#property indicator_color1  clrWhite
 //---- толщина линии индикатора
 #property indicator_width1  1
 //---- отображение метки линии индикатора
