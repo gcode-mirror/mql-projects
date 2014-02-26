@@ -6,7 +6,7 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 
-#include "CBrothers.mqh"
+#include "CSanya.mqh"
 #include <CompareDoubles.mqh>
 #include <StringUtilities.mqh>
 #include <CLog.mqh>
@@ -15,34 +15,11 @@
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
 //+------------------------------------------------------------------+
-class CSanya: public CBrothers
+class CSanyaRotate: public CSanya
 {
-protected:
- double _average;      // выбирается из _averageMax и _averageMin смотрит с какой стороны от старта текущая цена
- double _averageMax;   // среднее между максимумом и стартом
- double _averageMin;   // среднее между минимумом и стартом
- int _minStepsFromStartToExtremum;
- int _maxStepsFromStartToExtremum;
- int _stepsFromStartToExit;
- double currentPrice, priceAB, priceHL;
- ENUM_LEVELS _currentEnterLevel; // Текущий уровень входа
- ENUM_LEVELS _currentExitLevel;  // Текущий уровень выхода
- 
- SExtremum num0, num1, num2, num3, extremumStart;
- bool first, second, third;
- int _firstAdd, _secondAdd, _thirdAdd;
- 
- CTradeLine startLine;
- CTradeLine lowLine;
- CTradeLine highLine;
- CTradeLine averageMaxLine;
- CTradeLine averageMinLine;
-
- SExtremum isExtremum();
 public:
 //--- Конструкторы
- void CSanya(){};
- void CSanya(int deltaFast, int deltaSlow, int dayStep, int monthStep
+ void CSanyaRotate(int deltaFast, int deltaSlow, int dayStep, int monthStep
              , int minStepsFromStartToExtremum, int maxStepsFromStartToExtremum, int stepsFromStartToExit
              , ENUM_ORDER_TYPE type ,int volume
              , int firstAdd, int secondAdd, int thirdAdd
@@ -56,12 +33,12 @@ public:
 };
 
 //+------------------------------------------------------------------+
-//| Конструктор CDinya.                                             |
+//| Конструктор CSanyaRotate.                                        |
 //| INPUT:  no.                                                      |
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
+void CSanyaRotate::CSanyaRotate(int deltaFast, int deltaSlow,  int dayStep, int monthStep
                     , int minStepsFromStartToExtremum, int maxStepsFromStartToExtremum, int stepsFromStartToExit
                     , ENUM_ORDER_TYPE type ,int volume
                     , int firstAdd, int secondAdd, int thirdAdd
@@ -136,27 +113,12 @@ void CSanya::CSanya(int deltaFast, int deltaSlow,  int dayStep, int monthStep
   }
 
 //+------------------------------------------------------------------+
-//| Инициализация параметров для торговли с первого месяца           |
-//| INPUT:  no.                                                      |
-//| OUTPUT: no.
-//| REMARK: no.                                                      |
-//+------------------------------------------------------------------+
-void CSanya::InitMonthTrade()
-{
- if(isNewMonth())
- {
-  PrintFormat("%s Новый месяц %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(_last_month_number));
-  currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
- }
-}
-
-//+------------------------------------------------------------------+
 //| Пересчет значений дельта                                         |
 //| INPUT:  no.                                                      |
 //| OUTPUT: no.
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CSanya::RecountFastDelta()
+void CSanyaRotate::RecountFastDelta()
 {
  SymbolInfoTick(_symbol, tick);
  currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
@@ -235,6 +197,7 @@ void CSanya::RecountFastDelta()
   if (flag)
   {
    Print("Увеличиваем младшую дельта - сейвимся");
+   //_type = (ENUM_ORDER_TYPE)(_type + MathPow (-1, _type)); // _type = 1 -> 1 + -1^1 = 0; _type = 0 -> 0 + -1^0 = 1
    _deltaFast = 100;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
    _fastDeltaChanged = true;
    first = true; second = true; third = true;
@@ -362,7 +325,7 @@ void CSanya::RecountFastDelta()
 //| OUTPUT: no.
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CSanya::RecountLevels(SExtremum &extr)
+void CSanyaRotate::RecountLevels(SExtremum &extr)
 {
  // Проверяем наличие экстремума 
  currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
@@ -533,33 +496,4 @@ void CSanya::RecountLevels(SExtremum &extr)
   break;
  }
  }
-}
-
-//+--------------------------------------------------------------------+
-//| Функция возвращает направление и значение экстремума в точке vol2  |
-//+--------------------------------------------------------------------+
-SExtremum CSanya::isExtremum()
-{
- SExtremum result = {0,0};
- currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
- SymbolInfoTick(_symbol, tick);
- double ask = tick.ask, bid = tick.bid;
- 
- if (((num0.direction == 0) && (GreatDoubles(bid, _startDayPrice + 2*_dayStep, 5))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
- || (num0.direction > 0 && (GreatDoubles(bid, num0.price, 5)))
- || (num0.direction < 0 && (GreatDoubles(bid, _startDayPrice + _minStepsFromStartToExtremum*_dayStep, 5))))
- {
-  result.direction = 1;
-  result.price = bid;
- }
- 
- if (((num0.direction == 0) && (LessDoubles(ask, _startDayPrice - 2*_dayStep, 5))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
- || (num0.direction < 0 && (LessDoubles(ask, num0.price, 5)))
- || (num0.direction > 0 && (LessDoubles(ask, _startDayPrice - _minStepsFromStartToExtremum*_dayStep, 5))))
- {
-  result.direction = -1;
-  result.price = ask;
- }
-
- return(result);
 }
