@@ -26,7 +26,7 @@ struct PointDiv
 
 PointDiv null = {0};
 
-int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timeframe, int top_level, int bottom_level, int startIndex = 0)
+int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timeframe, int top_level, int bottom_level, PointDiv& div_point, int startIndex = 0)
 {
  double iSTOC_buf[];                         
  double iHigh_buf[];
@@ -108,6 +108,15 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      Alert("index_cur_extr = ", i, "time = ", date_buf[i]);
      Alert("index_global_price = ", index_Price_global_min, "; time = ", date_buf[index_Price_global_min], "; value = ", iHigh_buf[index_Price_global_min]);
      Alert("END: ", date_buf[0]);*/
+     
+     div_point.timeExtrPrice1   =  
+     div_point.timeExtrPrice2   = 
+     div_point.timeExtrSTOC1    = 
+     div_point.timeExtrSTOC2    = 
+     div_point.valueExtrPrice1  = 
+     div_point.valueExtrPrice2  = 
+     div_point.valueExtrSTOC1   = 
+     div_point.valueExtrSTOC2   =  
      
      return(-1);
     }
