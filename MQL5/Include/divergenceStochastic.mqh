@@ -14,15 +14,17 @@
 
 struct PointDiv        
 {                           
-   datetime timeExtrMACD1;  // время появления первого экстремума MACD
-   datetime timeExtrMACD2;  // время появления второго экстремума MACD
+   datetime timeExtrSTOC1;  // время появления первого экстремума стохастика
+   datetime timeExtrSTOC2;  // время появления второго экстремума стохастика
    datetime timeExtrPrice1; // время появления первого экстремума цен
    datetime timeExtrPrice2; // время появления второго экстремума цен
-   double   valueExtrMACD1; // значение первого экстремума MACD
-   double   valueExtrMACD2; // значение второго экстремума MACD
+   double   valueExtrSTOC1; // значение первого экстремума стохастика
+   double   valueExtrSTOC2; // значение второго экстремума стохастика
    double   valueExtrPrice1;// значение первого экстремума по ценам
    double   valueExtrPrice2;// знечение второго экстремума по ценам
 };
+
+PointDiv null = {0};
 
 int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timeframe, int top_level, int bottom_level, int startIndex = 0)
 {

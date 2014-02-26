@@ -27,7 +27,7 @@ PointDiv null = {0};
 
 /////-------------------------------
 /////-------------------------------
-int isMACDExtremum(int handleMACD, int startIndex, int precision = 6, bool LOG = false)
+int isMACDExtremum(int handleMACD, int startIndex, int precision = 8, bool LOG = false)
 { 
  double iMACD_buf[5];
  
@@ -115,7 +115,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
   if(isMACDExtremum(handleMACD, startIndex) == 1) //если в текущий момент есть экстремум
   {
    is_extr_exist = false;
-   for (i = 0; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума дл€ того что бы MACD_global_max был экстремумом
+   for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума дл€ того что бы MACD_global_max был экстремумом
    {
     if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == 1) 
     {
@@ -126,7 +126,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
    if (!is_extr_exist) 
     return(0);  //если на всей истории начина€ с DEPTH до последних 15 баров не было экстремума
    
-   index_MACD_global_max = ArrayMaximum(iMACD_buf, i, WHOLE_ARRAY);  
+   index_MACD_global_max = ArrayMaximum(iMACD_buf, i-2, WHOLE_ARRAY);  
    for(i = index_MACD_global_max; i < DEPTH_MACD; i++)  //ищем было ли прохождение через 0 и возвращение назад 
    {
     if(iMACD_buf[i] < 0) 
@@ -146,16 +146,16 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     div_point.timeExtrPrice1  = date_buf [index_Price_local_max];
     div_point.timeExtrPrice2  = date_buf [index_Price_global_max];    
     div_point.timeExtrMACD1   = date_buf [index_MACD_global_max];
-    div_point.timeExtrMACD2   = date_buf [DEPTH_MACD-1];
+    div_point.timeExtrMACD2   = date_buf [DEPTH_MACD-3];
     div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_max];
-    div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-1];
+    div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-3];
     div_point.valueExtrPrice1 = iHigh_buf[index_Price_local_max];
     div_point.valueExtrPrice2 = iHigh_buf[index_Price_global_max];
-    PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
+    /*PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
                                                                                     TimeToString(div_point.timeExtrPrice2),
                                                                                     TimeToString(div_point.timeExtrMACD1),
                                                                                     TimeToString(div_point.timeExtrMACD2));
-    return(1);
+   */ return(1);
    }
   }
  // else
@@ -167,7 +167,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
   if(isMACDExtremum(handleMACD, startIndex) == -1) //если в текущий момент есть экстремум
   {
    is_extr_exist = false;
-   for (i = 0; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума дл€ того что бы MACD_global_max был экстремумом
+   for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума дл€ того что бы MACD_global_max был экстремумом
    {
     if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == -1) 
     {
@@ -178,7 +178,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
    if (!is_extr_exist) 
     return(0);  //если на всей истории начина€ с DEPTH до последних 15 баров не было экстремума
  
-   index_MACD_global_min = ArrayMinimum(iMACD_buf, i, WHOLE_ARRAY);  
+   index_MACD_global_min = ArrayMinimum(iMACD_buf, i-2, WHOLE_ARRAY);  
    for(i = index_MACD_global_min; i < DEPTH_MACD; i++)  //ищем было ли прохождение через 0 
    {
     if(iMACD_buf[i] > 0) 
@@ -198,16 +198,16 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     div_point.timeExtrPrice1  = date_buf [index_Price_local_min];
     div_point.timeExtrPrice2  = date_buf [index_Price_global_min];    
     div_point.timeExtrMACD1   = date_buf [index_MACD_global_min];
-    div_point.timeExtrMACD2   = date_buf [DEPTH_MACD-1];
+    div_point.timeExtrMACD2   = date_buf [DEPTH_MACD-3];
     div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_min];
-    div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-1];
+    div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-3];
     div_point.valueExtrPrice1 = iLow_buf [index_Price_local_min];
     div_point.valueExtrPrice2 = iLow_buf [index_Price_global_min];
-    PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
+  /*  PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
                                                                                     TimeToString(div_point.timeExtrPrice2),
                                                                                     TimeToString(div_point.timeExtrMACD1),
                                                                                     TimeToString(div_point.timeExtrMACD2));    
-    return(-1);
+  */  return(-1);
    }
   }
  // else

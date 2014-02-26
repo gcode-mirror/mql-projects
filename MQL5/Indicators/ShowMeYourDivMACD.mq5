@@ -8,7 +8,7 @@
 #property version   "1.00"
 #property indicator_separate_window
 #include <Lib CisNewBar.mqh>                  // для проверки формирования нового бара
-#include <divergenceMACD.mqh>           // подключаем библиотеку для поиска схождений и расхождений Стохастика
+#include <divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений Стохастика
 #include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
 
  // параметры индикатора
@@ -140,14 +140,15 @@ int OnCalculate(const int rates_total,
            {
              // если не удалось загрузить буфера MACD
              return (0);
-           }    
+           }  
+         
        for (;lastBarIndex > 0; lastBarIndex--)
         {
           // сканируем историю по хэндлу на наличие расхождений\схождений 
           retCode = divergenceMACD (handleMACD,_Symbol,_Period,lastBarIndex,divergencePoints);
           // если схождение\расхождение обнаружено
           if (retCode)
-           {                                     
+           {                                          
             trendLine.Color(lineColors[countTrend % 5] );
             //создаем линию схождения\расхождения                    
             trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
@@ -156,6 +157,7 @@ int OnCalculate(const int rates_total,
             trendLine.Create(0,"MACDLine_"+countTrend,1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);            
             //увеличиваем количество тренд линий
             countTrend++;
+        
            }
         }
        first_calculate = false;
@@ -179,11 +181,11 @@ int OnCalculate(const int rates_total,
           {   
            trendLine.Color(lineColors[countTrend % 5] );     
            // создаем линию схождения\расхождения              
-           trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
+           trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
            //создаем линию схождения\расхождения на MACD
            trendLine.Create(0,"MACDLine_"+countTrend,1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);    
            // увеличиваем количество тренд линий
-           countTrend++;
+           countTrend++;         
           }        
         }
      } 
