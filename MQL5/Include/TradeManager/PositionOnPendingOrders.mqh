@@ -56,6 +56,8 @@ private:
    ENUM_ORDER_TYPE TPOrderType(int type);
    ENUM_ORDER_TYPE OrderType(int type);
    ENUM_POSITION_TYPE PositionType(int type);
+   
+   ENUM_STOPLEVEL_STATUS ChangeStopLossVolume();
 public:
    void CPosition()   // конструктор по умолчанию
    {
@@ -115,7 +117,6 @@ public:
    ENUM_STOPLEVEL_STATUS setTakeProfit();
    bool ChangeSize(double lot);
    bool ModifyPosition(int sl, int tp);
-   ENUM_STOPLEVEL_STATUS ChangeStopLossVolume();
    bool CheckTakeProfit();
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();
    ENUM_POSITION_STATUS RemovePendingPosition();
@@ -418,17 +419,19 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
 //+------------------------------------------------------------------+
 // Add additional volume to position
 //+------------------------------------------------------------------+
-bool CPosition::ChangeSize(double lot)
+bool CPosition::ChangeSize(double additionalVolume)
 {
  double openPrice = pricetype(_type);
  ENUM_TM_POSITION_TYPE type = this.getType();
  if (type == OP_BUY || type == OP_SELL)
  {
-  if(trade.PositionOpen(_symbol, PositionType(type), lot, openPrice))
+  if(trade.PositionOpen(_symbol, PositionType(type), MathAbs(additionalVolume), openPrice))
   {
-   _lots = _lots + lot;
+   if (_lots = _lots + additionalVolume < 0) _type = (ENUM_TM_POSITION_TYPE)(_type + MathPow(-1, _type));
+   
    log_file.Write(LOG_DEBUG, StringFormat("%s Изменена позиция %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket));
    PrintFormat("%s Изменена позиция %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket);
+   
    if (_sl_status == STOPLEVEL_STATUS_PLACED)
    {
     if (ChangeStopLossVolume() == STOPLEVEL_STATUS_PLACED)
@@ -446,7 +449,7 @@ bool CPosition::ChangeSize(double lot)
  {
   if (trade.OrderDelete(_orderTicket))
   {
-   if (trade.OrderOpen(_symbol, OrderType(getType()), lot, openPrice, ORDER_TIME_SPECIFIED, _expiration))
+   if (trade.OrderOpen(_symbol, OrderType(getType()), additionalVolume, openPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Изменен ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, TimeToString(_expiration)));
    }

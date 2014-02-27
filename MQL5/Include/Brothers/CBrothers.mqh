@@ -11,13 +11,14 @@
 #include <CompareDoubles.mqh>
 #include <StringUtilities.mqh>
 #include <CLog.mqh>
-
+#include <TradeManager\TradeManager.mqh>
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
 //+------------------------------------------------------------------+
 class CBrothers
 {
 protected:
+ CTradeManager *ctm;
  MqlTick tick;
 
  datetime _last_time;          // Последнее определенное время отсчета
@@ -114,6 +115,7 @@ public:
 void CBrothers::CBrothers()
   {
    Print("Конструктор Бразерс");
+   ctm = new CTradeManager();
    _last_time = TimeCurrent() - _fastPeriod*60*60;       // Инициализируем день текущим днем
    _last_day_of_week = TimeCurrent();
    _last_day_of_year = TimeCurrent();
@@ -272,25 +274,37 @@ double CBrothers::RecountVolume()
 //+------------------------------------------------------------------+
 bool CBrothers::CorrectOrder(double volume)
 {
- if (volume == 0) return(false);
- 
+ bool result = false;
+ if (volume == 0) return(true);
+ /*
  MqlTradeRequest request = {0};
  MqlTradeResult result = {0};
  
  ENUM_ORDER_TYPE type;
  double price;
- 
+ */
+ ENUM_TM_POSITION_TYPE type;
  if (volume > 0)
  {
-  type = _type;
-  price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
+  type = OrderTypeToTMPositionType(_type);
+  //price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
  }
  else
  {
-  type = (ENUM_ORDER_TYPE)(_type + MathPow(-1, _type)); // Если _type= 0, то type =1, если  _type= 1, то type =0
-  price = SymbolInfoDouble(_symbol, SYMBOL_BID);
+  type = OrderTypeToTMPositionType((ENUM_ORDER_TYPE)(_type + MathPow(-1, _type))); // Если _type= 0, то type =1, если  _type= 1, то type =0
+  //price = SymbolInfoDouble(_symbol, SYMBOL_BID);
  }
  
+ if (ctm.GetPositionCount() == 0)
+ {
+  result = ctm.OpenUniquePosition(_symbol, type, MathAbs(volume));
+ }
+ else
+ {
+  result = ctm.PositionChangeSize(_symbol, MathAbs(volume));
+ }
+ return(result);
+ /*
  request.action = TRADE_ACTION_DEAL;
  request.symbol = _symbol;
  request.volume = MathAbs(volume);
@@ -301,5 +315,5 @@ bool CBrothers::CorrectOrder(double volume)
  request.deviation = SymbolInfoInteger(_symbol, SYMBOL_SPREAD); 
  request.type = type;
  request.type_filling = ORDER_FILLING_FOK;
- return (OrderSend(request, result));
+ return (OrderSend(request, result));*/
 }
