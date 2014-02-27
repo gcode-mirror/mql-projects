@@ -18,7 +18,23 @@ enum ENUM_TM_POSITION_TYPE
    OP_SELLSTOP,      //Отложенный ордер SELL STOP
    OP_UNKNOWN       //Для инициализации или ошибка
   };
-
+  
+//+------------------------------------------------------------------+
+/// ENUM_ORDER_TYPE to ENUM_TM_POSITION_TYPE.
+//+------------------------------------------------------------------+
+ENUM_TM_POSITION_TYPE OrderTypeToTMPositionType(ENUM_ORDER_TYPE type)
+{
+ switch (type)
+ {
+  case ORDER_TYPE_BUY        : return(OP_BUY);
+  case ORDER_TYPE_SELL       : return(OP_SELL);
+  case ORDER_TYPE_BUY_LIMIT  : return(OP_BUYLIMIT);
+  case ORDER_TYPE_SELL_LIMIT : return(OP_SELLLIMIT);
+  case ORDER_TYPE_BUY_STOP   : return(OP_BUYSTOP);
+  case ORDER_TYPE_SELL_STOP  : return(OP_SELLSTOP);
+  default          : return(OP_UNKNOWN);
+ }
+}
 //+------------------------------------------------------------------+ 
 // Функция плучения названия операции по ее номеру
 //+------------------------------------------------------------------+

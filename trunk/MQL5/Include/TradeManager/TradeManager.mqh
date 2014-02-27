@@ -55,7 +55,7 @@ public:
   bool OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
                     int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
   void ModifyPosition(long ticket, int sl, int tp);
-  bool PositionChangeSize(string strSymbol, double dblLots);
+  bool PositionChangeSize(string strSymbol, double additionalVolume);
   bool ClosePosition(long ticket, color Color = CLR_NONE);     // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);           // Закрытие позиции по индексу в массиве позиций
   void DoUsualTrailing();
@@ -354,7 +354,7 @@ void CTradeManager::ModifyPosition(long ticket, int sl, int tp)
 //+------------------------------------------------------------------+ 
 // Функция изменения объема позиции
 //+------------------------------------------------------------------+
-bool CTradeManager::PositionChangeSize(string symbol, double lots)
+bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
 {
  int i = 0;
  int total = _openPositions.Total();
@@ -367,7 +367,14 @@ bool CTradeManager::PositionChangeSize(string symbol, double lots)
    pos = _openPositions.At(i);
    if (pos.getSymbol() == symbol)
    {
-    pos.ChangeSize(lots);
+    if (pos.getVolume() + additionalVolume != 0)
+    {
+     pos.ChangeSize(additionalVolume);
+    }
+    else
+    {
+     ClosePosition(i);
+    }
    }
   }
  }
