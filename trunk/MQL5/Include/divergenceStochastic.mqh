@@ -9,8 +9,8 @@
 
 #include <CompareDoubles.mqh>
 
-#define DEPTH_STOC 10
-#define ALLOW_DEPTH_FOR_PRICE_EXTR 3
+//#define DEPTH_STOC 10
+//#define ALLOW_DEPTH_FOR_PRICE_EXTR 3
 
 struct PointDiv        
 {                           
@@ -26,7 +26,7 @@ struct PointDiv
 
 PointDiv null = {0};
 
-int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timeframe, int top_level, int bottom_level, PointDiv& div_point, int startIndex = 0)
+int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timeframe, int top_level, int bottom_level,int DEPTH_STOC,int ALLOW_DEPTH_FOR_PRICE_EXTR, PointDiv& div_point, int startIndex = 0)
 {
  double iSTOC_buf[];                         
  double iHigh_buf[];
@@ -36,6 +36,8 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
  int index_Price_global_max;
  int index_STOC_global_min;
  int index_Price_global_min;
+ int index_Price_local_max;
+ int index_Price_local_min;
  
  ArrayResize(iSTOC_buf, DEPTH_STOC);
  ArrayResize(iHigh_buf, DEPTH_STOC);
@@ -68,6 +70,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
  }
  index_Price_global_max = ArrayMaximum(iHigh_buf, 0, WHOLE_ARRAY);
  index_STOC_global_max =  ArrayMaximum(iSTOC_buf, 0, WHOLE_ARRAY);
+ 
  index_Price_global_min = ArrayMinimum( iLow_buf, 0, WHOLE_ARRAY);
  index_STOC_global_min =  ArrayMinimum(iSTOC_buf, 0, WHOLE_ARRAY);
  
@@ -77,6 +80,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
   { //если максимальное значение стохастика является экстремумом и лежит выше top_level
    for(int i = index_STOC_global_max - 3; i > 0; i--)
    { //идем начиная с глобального экстремума(-3 что бы найденный не совпал с глобальным)
+     // Alert("ЕСТЬ ЭКСТРЕМУМ СТОХАСТИКА РАСХОЖДЕНИЯ - ",iSTOC_buf[i+1]," TOP LEVEL = ",top_level);
     if(isSTOCExtremum(handleSTOC, i+startIndex) == 1 && iSTOC_buf[i+1] < top_level)
     { //ища локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предидущего бара)
     
@@ -86,15 +90,21 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      Alert("index_cur_extr = ", i, "time = ", date_buf[i]);
      Alert("index_global_price = ", index_Price_global_max, "; time = ", date_buf[index_Price_global_max], "; value = ", iHigh_buf[index_Price_global_max]);
      Alert("END: ", date_buf[0]);*/
-
+     
+  //   Alert("НАЙДЕНО РАСХОЖДЕНИЕ");
+    
+     // вычисляем второй экстремум локального максимума стохастика
+     index_Price_local_max      =  ArrayMaximum (iHigh_buf,ALLOW_DEPTH_FOR_PRICE_EXTR,WHOLE_ARRAY);
+     if (index_Price_local_max == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_max == (DEPTH_STOC-1) )
+      return 0;
      div_point.timeExtrPrice1   =  date_buf[index_Price_global_max];
-     div_point.timeExtrPrice2   =  date_buf[i];
+     div_point.timeExtrPrice2   =  date_buf[index_Price_local_max];
      div_point.timeExtrSTOC1    =  date_buf[index_STOC_global_max];
-     div_point.timeExtrSTOC2    =  date_buf[i];
+     div_point.timeExtrSTOC2    =  date_buf[i+1];
      div_point.valueExtrPrice1  =  iHigh_buf[index_Price_global_max];
-     div_point.valueExtrPrice2  =  iHigh_buf[i];
+     div_point.valueExtrPrice2  =  iHigh_buf[index_Price_local_max];
      div_point.valueExtrSTOC1   =  iSTOC_buf[index_STOC_global_max];
-     div_point.valueExtrSTOC2   =  iSTOC_buf[i];      
+     div_point.valueExtrSTOC2   =  iSTOC_buf[i+1];      
      
      return(1);
     }   
@@ -108,6 +118,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
   { //если максимальное значение стохастика является экстремумом и лежит ниже bottom_level
    for(int i = index_STOC_global_min - 3; i > 0; i--)
    { //идем начиная с глобального экстремума(-3 что бы найденный не совпал с глобальным)
+    // Alert("ЕСТЬ ЭКСТРЕМУМ СТОХАСТИКА СХОЖДЕНИЯ - ",iSTOC_buf[i+1]," BOTTOM_LEVEL = ",bottom_level);   
     if(isSTOCExtremum(handleSTOC, i+startIndex) == -1 && iSTOC_buf[i+1] > bottom_level)
     { //ища локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предидущего бара)
     
@@ -118,14 +129,20 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      Alert("index_global_price = ", index_Price_global_min, "; time = ", date_buf[index_Price_global_min], "; value = ", iHigh_buf[index_Price_global_min]);
      Alert("END: ", date_buf[0]);*/
      
+   //  Alert("НАЙДЕНО СХОЖДЕНИЕ");     
+     
+     // вычисляем второй экстремум локального минимума стохастика
+     index_Price_local_min      =  ArrayMinimum (iLow_buf,ALLOW_DEPTH_FOR_PRICE_EXTR,WHOLE_ARRAY);     
+     if (index_Price_local_min == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_min == (DEPTH_STOC-1) )
+      return 0;    
      div_point.timeExtrPrice1   =  date_buf[index_Price_global_min];
-     div_point.timeExtrPrice2   =  date_buf[i];
+     div_point.timeExtrPrice2   =  date_buf[index_Price_local_min];
      div_point.timeExtrSTOC1    =  date_buf[index_STOC_global_min];
-     div_point.timeExtrSTOC2    =  date_buf[i];
+     div_point.timeExtrSTOC2    =  date_buf[i+1];
      div_point.valueExtrPrice1  =  iLow_buf[index_Price_global_min];
-     div_point.valueExtrPrice2  =  iLow_buf[i];
+     div_point.valueExtrPrice2  =  iLow_buf[index_Price_local_min];
      div_point.valueExtrSTOC1   =  iSTOC_buf[index_STOC_global_min];
-     div_point.valueExtrSTOC2   =  iSTOC_buf[i];  
+     div_point.valueExtrSTOC2   =  iSTOC_buf[i+1];  
      return(-1);
     }
    }

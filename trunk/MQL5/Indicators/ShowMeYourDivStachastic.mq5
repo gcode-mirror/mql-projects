@@ -58,14 +58,14 @@
 //+------------------------------------------------------------------+
 //| Вводимые параметры индикатора                                    |
 //+------------------------------------------------------------------+
-input BARS_MODE           bars_mode=ALL_HISTORY;     // режим загрузки истории
-input short               bars=20000;                // начальное количество баров истории (K-период)
-input int                 DPeriod=10;                // D-период (период первичного сглаживания)
-input int                 slowing=10;                // окончательное сглаживание
-input ENUM_MA_METHOD      ma_method=MODE_SMA;        // тип сглаживания
-input ENUM_STO_PRICE      price_field=STO_LOWHIGH;   // способ расчета стохастика           
-input int                 top_level=80;              // верхний уровень 
-input int                 bottom_level=20;           // нижний уровень 
+input BARS_MODE           bars_mode=ALL_HISTORY;        // режим загрузки истории
+input short               bars=20000;                   // начальное количество баров истории (K-период)
+input ENUM_MA_METHOD      ma_method=MODE_SMA;           // тип сглаживания
+input ENUM_STO_PRICE      price_field=STO_LOWHIGH;      // способ расчета стохастика           
+input int                 top_level=80;                 // верхний уровень 
+input int                 bottom_level=20;              // нижний уровень 
+input int                 DEPTH_STOC=10;                // большой хвост буфера 
+input int                 ALLOW_DEPTH_FOR_PRICE_EXTR=3; // малый хвост буфера
 
 
 //+------------------------------------------------------------------+
@@ -81,7 +81,7 @@ PointDiv           divergencePoints;       // схождения и расхождения стохастика
 CChartObjectTrend  trendLine;              // объект класса трендовой линии
 CisNewBar          isNewBar;               // для проверки формирования нового бара
 
-double bufferStoc[];   // буфер стохастика
+double bufferStoc[];    // буфер стохастика 1
 double bufferStoc2[];   // буфер стохастика 2
  
 //+------------------------------------------------------------------+
@@ -97,10 +97,16 @@ int OnInit()
    first_calculate = true;
    countTrend = 1;
    // загружаем хэндл индикатора стохастика
-   handleStoc = iStochastic(_Symbol,_Period,bars,DPeriod,slowing,ma_method,price_field);
+   handleStoc = iStochastic(_Symbol,_Period,5,3,3,ma_method,price_field);
    return(INIT_SUCCEEDED);
   }
 
+void OnDeinit ()
+  {
+    ObjectsDeleteAll(0,0,OBJ_TREND);
+    ObjectsDeleteAll(0,1,OBJ_TREND);   
+  }
+  
 
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
@@ -146,18 +152,23 @@ int OnCalculate(const int rates_total,
        for (;lastBarIndex > 0; lastBarIndex--)
         {
           // сканируем историю по хэндлу на наличие расхождений\схождений 
-          retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,divergencePoints,lastBarIndex);
+          retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,DEPTH_STOC,ALLOW_DEPTH_FOR_PRICE_EXTR,divergencePoints,lastBarIndex);
           // если схождение\расхождение обнаружено
           if (retCode)
            {                                     
-            trendLine.Color(lineColors[countTrend % 5] );
+          //  trendLine.Color(lineColors[countTrend % 5] );
             //создаем линию схождения\расхождения                    
             trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
-            trendLine.Color(lineColors[countTrend % 5] );         
+            
+          //  trendLine.Color(lineColors[countTrend % 5] );         
             //создаем линию схождения\расхождения на стохастике
             trendLine.Create(0,"StocLine_"+countTrend,1,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
             //увеличиваем количество тренд линий
             countTrend++;
+           }
+           else
+           {
+            
            }
         }
        first_calculate = false;
@@ -175,13 +186,14 @@ int OnCalculate(const int rates_total,
        if (isNewBar.isNewBar() > 0)
         {        
          // распознаем схождение\расхождение стохастика
-         retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,divergencePoints,1);         
+         retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,DEPTH_STOC,ALLOW_DEPTH_FOR_PRICE_EXTR,divergencePoints,1);         
          // если схождение\расхождение обнаружено
          if (retCode)
           {   
-           trendLine.Color(lineColors[countTrend % 5] );     
+          // trendLine.Color(lineColors[countTrend % 5] );     
            // создаем линию схождения\расхождения              
            trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
+          // trendLine.Color(lineColors[countTrend % 5] );           
            //создаем линию схождения\расхождения на MACD
            trendLine.Create(0,"StocLine_"+countTrend,1,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);    
            // увеличиваем количество тренд линий
@@ -189,6 +201,6 @@ int OnCalculate(const int rates_total,
           }        
         }
      } 
-    
+       
     return(rates_total);
   }
