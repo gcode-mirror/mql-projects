@@ -287,9 +287,11 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
    period = GetTopTimeframe(_period);
    break;
  }
- //datetime date[1];
- //CopyTime(_symbol, _peroid,);
- copied = CopyRates(_symbol, period, start_pos, count, array); // справа налево от 0 до count-1, всего count элементов
+ datetime date[1];
+ CopyTime(_symbol, _period, start_pos, 1, date);
+ datetime start_date = date[0];
+ datetime end_date = start_date - _depth*PeriodSeconds(_period);
+ copied = CopyRates(_symbol, period, start_date, end_date, array); // справа налево от 0 до count-1, всего count элементов
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
@@ -381,22 +383,23 @@ int CColoredTrend::isLastBarHuge(int start_pos)
  double sum = 0;
  MqlRates rates[];
  FillTimeSeries(BOTTOM_TF, _depth, start_pos, rates);
- for(int i = 0; i < _depth - 1; i++)
+ int size = ArraySize(rates);
+ for(int i = 0; i < size - 1; i++)
  {
   sum = sum + rates[i].high - rates[i].low;  
  }
- double avgBar = sum / _depth;
- double lastBar = MathAbs(rates[_depth-1].open - rates[_depth-1].close);
+ double avgBar = sum / size;
+ double lastBar = MathAbs(rates[size-1].open - rates[size-1].close);
     
  if(GreatDoubles(lastBar, avgBar*2))
  {
-  if(GreatDoubles(rates[_depth-1].open, rates[_depth-1].close, digits))
+  if(GreatDoubles(rates[size-1].open, rates[size-1].close, digits))
   {
    PrintFormat("avgBar = %.05f ; lastBar = %.05f; openLB = %.05f", avgBar, lastBar, rates[_depth-1].open);
    PrintFormat("open = %.05f, close = %.05f", rates[_depth-1].open, rates[_depth-1].close);
    return(1);
   }
-  if(LessDoubles(rates[_depth-1].open, rates[_depth-1].close, digits))
+  if(LessDoubles(rates[size-1].open, rates[size-1].close, digits))
   {
    PrintFormat("avgBar = %.05f ; lastBar = %.05f; openLB = %.05f", avgBar, lastBar, rates[_depth-1].open);
    PrintFormat("open = %.05f, close = %.05f", rates[_depth-1].open, rates[_depth-1].close);
