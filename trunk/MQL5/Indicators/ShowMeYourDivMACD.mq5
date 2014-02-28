@@ -152,6 +152,9 @@ int OnCalculate(const int rates_total,
         {
           // сканируем историю по хэндлу на наличие расхождений\схождений 
           retCode = divergenceMACD (handleMACD,_Symbol,_Period,lastBarIndex,divergencePoints);
+          // если не удалось загрузить буферы MACD)
+          if (retCode == -2)
+           return (0);
           // если схождение\расхождение обнаружено
           if (retCode)
            {                                          

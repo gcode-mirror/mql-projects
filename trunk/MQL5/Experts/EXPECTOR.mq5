@@ -69,6 +69,7 @@ void OnTick()
            // получаем значение текущей прибыли
            current_profit = backtest.GetCleanProfit();
            // если параметры привысили допустимые параметры 
+           Alert("ПРИБЫЛЬ РАВНА = ",current_profit," ПРОСАДКА = ",current_drawdown);
            if (current_drawdown > max_drawdown || current_profit < min_profit)
             {
              // то выставляем переменную в CANNOT_TRADE, т.е. прерываем торговлю эксперта

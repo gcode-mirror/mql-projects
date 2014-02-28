@@ -9,9 +9,6 @@
 
 #include <CompareDoubles.mqh>
 
-//#define DEPTH_STOC 10
-//#define ALLOW_DEPTH_FOR_PRICE_EXTR 3
-
 struct PointDiv        
 {                           
    datetime timeExtrSTOC1;  // время появления первого экстремума стохастика
@@ -26,7 +23,7 @@ struct PointDiv
 
 PointDiv null = {0};
 
-int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timeframe, int top_level, int bottom_level,int DEPTH_STOC,int ALLOW_DEPTH_FOR_PRICE_EXTR, PointDiv& div_point, int startIndex = 0)
+int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timeframe, int top_level, int bottom_level,int DEPTH_STOC,int ALLOW_DEPTH_FOR_PRICE_EXTR, PointDiv& div_point, int startIndex = 0,bool LOG = false)
 {
  double iSTOC_buf[];                         
  double iHigh_buf[];
@@ -65,7 +62,10 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
  }
  if (copiedSTOC != DEPTH_STOC || copiedHigh != DEPTH_STOC || copiedLow != DEPTH_STOC || copiedDate != DEPTH_STOC)
  {
-   Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", GetLastError());
+  if (LOG)
+   {
+    Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", GetLastError());
+   }
    return(0);
  }
  index_Price_global_max = ArrayMaximum(iHigh_buf, 0, WHOLE_ARRAY);
@@ -80,19 +80,8 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
   { //если максимальное значение стохастика является экстремумом и лежит выше top_level
    for(int i = index_STOC_global_max - 3; i > 0; i--)
    { //идем начиная с глобального экстремума(-3 что бы найденный не совпал с глобальным)
-     // Alert("ЕСТЬ ЭКСТРЕМУМ СТОХАСТИКА РАСХОЖДЕНИЯ - ",iSTOC_buf[i+1]," TOP LEVEL = ",top_level);
     if(isSTOCExtremum(handleSTOC, i+startIndex) == 1 && iSTOC_buf[i+1] < top_level)
-    { //ища локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предидущего бара)
-    
-     /*Alert("BEGIN: ", date_buf[DEPTH_STOC-1]);
-     Alert(__FUNCTION__, ": Найдено РАСХОЖДЕНИЕ");
-     Alert("index_global_Stoc = ", index_STOC_global_max, "time = ", date_buf[index_STOC_global_max], "; value = ", iSTOC_buf[index_STOC_global_max]);
-     Alert("index_cur_extr = ", i, "time = ", date_buf[i]);
-     Alert("index_global_price = ", index_Price_global_max, "; time = ", date_buf[index_Price_global_max], "; value = ", iHigh_buf[index_Price_global_max]);
-     Alert("END: ", date_buf[0]);*/
-     
-  //   Alert("НАЙДЕНО РАСХОЖДЕНИЕ");
-    
+    { //ища локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предидущего бара)   
      // вычисляем второй экстремум локального максимума стохастика
      index_Price_local_max      =  ArrayMaximum (iHigh_buf,ALLOW_DEPTH_FOR_PRICE_EXTR,WHOLE_ARRAY);
      if (index_Price_local_max == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_max == (DEPTH_STOC-1) )
@@ -118,19 +107,8 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
   { //если максимальное значение стохастика является экстремумом и лежит ниже bottom_level
    for(int i = index_STOC_global_min - 3; i > 0; i--)
    { //идем начиная с глобального экстремума(-3 что бы найденный не совпал с глобальным)
-    // Alert("ЕСТЬ ЭКСТРЕМУМ СТОХАСТИКА СХОЖДЕНИЯ - ",iSTOC_buf[i+1]," BOTTOM_LEVEL = ",bottom_level);   
     if(isSTOCExtremum(handleSTOC, i+startIndex) == -1 && iSTOC_buf[i+1] > bottom_level)
     { //ища локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предидущего бара)
-    
-     /*Alert("BEGIN: ", date_buf[DEPTH_STOC-1]);
-     Alert(__FUNCTION__, ": Найдено СХОЖДЕНИЕ");
-     Alert("index_global_Stoc = ", index_STOC_global_min, "time = ", date_buf[index_STOC_global_min], "; value = ", iSTOC_buf[index_STOC_global_min]);
-     Alert("index_cur_extr = ", i, "time = ", date_buf[i]);
-     Alert("index_global_price = ", index_Price_global_min, "; time = ", date_buf[index_Price_global_min], "; value = ", iHigh_buf[index_Price_global_min]);
-     Alert("END: ", date_buf[0]);*/
-     
-   //  Alert("НАЙДЕНО СХОЖДЕНИЕ");     
-     
      // вычисляем второй экстремум локального минимума стохастика
      index_Price_local_min      =  ArrayMinimum (iLow_buf,ALLOW_DEPTH_FOR_PRICE_EXTR,WHOLE_ARRAY);     
      if (index_Price_local_min == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_min == (DEPTH_STOC-1) )

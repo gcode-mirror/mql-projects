@@ -62,7 +62,7 @@ int isMACDExtremum(int handleMACD, int startIndex, int precision = 8, bool LOG =
 }
 /////-------------------------------
 /////-------------------------------
-int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, int startIndex, PointDiv& div_point)
+int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, int startIndex, PointDiv& div_point,bool LOG = false)
 {
  
  double iMACD_buf [DEPTH_MACD]  = {0};
@@ -99,9 +99,13 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  }
  if (copiedMACD != DEPTH_MACD || copiedHigh != DEPTH_MACD || copiedLow != DEPTH_MACD || copiedDate != DEPTH_MACD)
  {
-   int err = GetLastError();
-   Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", err);
-   return(0);
+   int err;
+   if (LOG)
+    { 
+     err = GetLastError();
+     Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", err);
+    }
+   return(-2);
  }
  
  index_Price_global_max = ArrayMaximum(iHigh_buf, 0, WHOLE_ARRAY);
