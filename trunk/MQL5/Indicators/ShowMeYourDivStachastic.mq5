@@ -89,7 +89,10 @@ double bufferStoc2[];   // буфер стохастика 2
 //+------------------------------------------------------------------+
 
 int OnInit()
-  {     
+  {
+   // удаляем все графические объекты     
+   ObjectsDeleteAll(0,0,OBJ_TREND);
+   ObjectsDeleteAll(0,1,OBJ_TREND);   
    // связываем индикатор с буфером
    SetIndexBuffer(0,bufferStoc,INDICATOR_DATA);
    SetIndexBuffer(1,bufferStoc2,INDICATOR_DATA);   
@@ -103,8 +106,7 @@ int OnInit()
 
 void OnDeinit ()
   {
-    ObjectsDeleteAll(0,0,OBJ_TREND);
-    ObjectsDeleteAll(0,1,OBJ_TREND);   
+
   }
   
 
