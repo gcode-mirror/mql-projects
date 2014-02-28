@@ -88,6 +88,9 @@ double signalMACD[];   // сигнальный буфер MACD
 
 int OnInit()
   {     
+   // удаляем все графические объекты     
+   ObjectsDeleteAll(0,0,OBJ_TREND);
+   ObjectsDeleteAll(0,1,OBJ_TREND);     
    // связываем индикаторы с буферами 
    SetIndexBuffer(0,bufferMACD,INDICATOR_DATA);
    SetIndexBuffer(1,signalMACD,INDICATOR_DATA);   
@@ -101,8 +104,7 @@ int OnInit()
 
 void OnDeinit()
  {
-    ObjectsDeleteAll(0,0,OBJ_TREND);
-    ObjectsDeleteAll(0,1,OBJ_TREND);  
+
  }
 
 int OnCalculate(const int rates_total,
