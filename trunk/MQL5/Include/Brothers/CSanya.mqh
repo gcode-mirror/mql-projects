@@ -240,9 +240,6 @@ void CSanya::RecountFastDelta()
    _deltaFast = 100;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
    _fastDeltaChanged = true;
    first = true; second = true; third = true;
-   
-   //extremumStart = (num0.direction == _direction) ? num0 : num1;  ///ToDo проверить в чем проблема!!!
-   //PrintFormat("direction =%d, price=%.05f",extremumStart.direction, extremumStart.price);
   }
  }
  

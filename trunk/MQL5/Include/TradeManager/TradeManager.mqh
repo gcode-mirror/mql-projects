@@ -369,11 +369,11 @@ bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
    {
     if (pos.getVolume() + additionalVolume != 0)
     {
-     pos.ChangeSize(additionalVolume);
+     if (pos.ChangeSize(additionalVolume)) return (true);
     }
     else
     {
-     ClosePosition(i);
+     if (ClosePosition(i)) return (true);
     }
    }
   }

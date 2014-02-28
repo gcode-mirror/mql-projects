@@ -122,10 +122,11 @@ void OnTick()
   {
    double vol = san.RecountVolume();
    PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
-   if (san.CorrectOrder(vol + currentVolume))
+   if (san.CorrectOrder(-vol - currentVolume))
    {
     currentVolume = vol;
     currentType = san.GetType();
+    PrintFormat("currentType = %s, san.GetType() = %s", currentType, san.GetType());
    }
   }
  }

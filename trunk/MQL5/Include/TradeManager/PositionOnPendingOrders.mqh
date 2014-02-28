@@ -57,7 +57,6 @@ private:
    ENUM_ORDER_TYPE OrderType(int type);
    ENUM_POSITION_TYPE PositionType(int type);
    
-   ENUM_STOPLEVEL_STATUS ChangeStopLossVolume();
 public:
    void CPosition()   // конструктор по умолчанию
    {
@@ -118,6 +117,7 @@ public:
    bool ChangeSize(double lot);
    bool ModifyPosition(int sl, int tp);
    bool CheckTakeProfit();
+   ENUM_STOPLEVEL_STATUS ChangeStopLossVolume();
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();
    ENUM_POSITION_STATUS RemovePendingPosition();
    bool ClosePosition();
@@ -423,6 +423,7 @@ bool CPosition::ChangeSize(double additionalVolume)
 {
  double openPrice = pricetype(_type);
  ENUM_TM_POSITION_TYPE type = this.getType();
+ if (additionalVolume < 0) type = type + MathPow(-1, type);
  if (type == OP_BUY || type == OP_SELL)
  {
   if(trade.PositionOpen(_symbol, PositionType(type), MathAbs(additionalVolume), openPrice))
@@ -437,11 +438,18 @@ bool CPosition::ChangeSize(double additionalVolume)
     if (ChangeStopLossVolume() == STOPLEVEL_STATUS_PLACED)
     {
      _pos_status = POSITION_STATUS_OPEN;
+     Print("Изменили позицию и стоплосс");
+     return(true);
     }
     else
     {
      _pos_status = POSITION_STATUS_NOT_COMPLETE;
+     return (false);
     }
+   }
+   else
+   {
+    return (true);
    }
   }
  }
@@ -452,6 +460,7 @@ bool CPosition::ChangeSize(double additionalVolume)
    if (trade.OrderOpen(_symbol, OrderType(getType()), additionalVolume, openPrice, ORDER_TIME_SPECIFIED, _expiration))
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Изменен ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, TimeToString(_expiration)));
+    return (true);
    }
   }
  }

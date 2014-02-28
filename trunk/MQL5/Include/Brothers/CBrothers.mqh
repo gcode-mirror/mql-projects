@@ -287,21 +287,26 @@ bool CBrothers::CorrectOrder(double volume)
  if (volume > 0)
  {
   type = OrderTypeToTMPositionType(_type);
+  PrintFormat("Type = %s, TMType = %s", OrderTypeToString(_type), GetNameOP(type));
   //price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
  }
  else
  {
   type = OrderTypeToTMPositionType((ENUM_ORDER_TYPE)(_type + MathPow(-1, _type))); // Если _type= 0, то type =1, если  _type= 1, то type =0
+  PrintFormat("Type = %s, TMType = %s", OrderTypeToString(_type), GetNameOP(type));
   //price = SymbolInfoDouble(_symbol, SYMBOL_BID);
  }
  
  if (ctm.GetPositionCount() == 0)
  {
+  Print("Откроем новую позицию");
   result = ctm.OpenUniquePosition(_symbol, type, MathAbs(volume));
  }
  else
  {
-  result = ctm.PositionChangeSize(_symbol, MathAbs(volume));
+  PrintFormat("Добавим %.02f лота кобъему позиции ", volume);
+  result = ctm.PositionChangeSize(_symbol, volume);
+  Print("result = ", BoolToString(result)); 
  }
  return(result);
  /*
