@@ -369,7 +369,9 @@ bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
    {
     if (pos.getVolume() + additionalVolume != 0)
     {
+     PrintFormat("%s Изменим объем текущей позиции", MakeFunctionPrefix(__FUNCTION__));
      if (pos.ChangeSize(additionalVolume)) return (true);
+     PrintFormat("%s Не удалось изменить объем текущей позиции", MakeFunctionPrefix(__FUNCTION__));
     }
     else
     {

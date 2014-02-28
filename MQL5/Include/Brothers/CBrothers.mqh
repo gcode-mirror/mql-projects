@@ -304,9 +304,9 @@ bool CBrothers::CorrectOrder(double volume)
  }
  else
  {
-  PrintFormat("Добавим %.02f лота кобъему позиции ", volume);
+  PrintFormat("%s Добавим %.02f лота к объему позиции", MakeFunctionPrefix(__FUNCTION__), volume);
   result = ctm.PositionChangeSize(_symbol, volume);
-  Print("result = ", BoolToString(result)); 
+  PrintFormat("%s result = %s", MakeFunctionPrefix(__FUNCTION__), BoolToString(result)); 
  }
  return(result);
  /*
