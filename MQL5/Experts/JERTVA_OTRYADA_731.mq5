@@ -209,7 +209,11 @@ void OnTick()
      {
       waitForBuy = false;
       waitForSell = false;
-      expertID.DealDone(); 
+      // если история изменилась
+      if (ctm.IsHistoryChanged())
+       {
+        expertID.DealDone(); 
+       }
      }
     }
    } 
@@ -222,7 +226,11 @@ void OnTick()
      {
       waitForBuy = false;
       waitForSell = false;
-      expertID.DealDone();       
+      // если история изменилась
+      if (ctm.IsHistoryChanged())
+       {      
+        expertID.DealDone();       
+       }
      }
     }
    }

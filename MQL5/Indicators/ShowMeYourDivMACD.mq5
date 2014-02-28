@@ -148,7 +148,6 @@ int OnCalculate(const int rates_total,
              // если не удалось загрузить буфера MACD
              return (0);
            }  
-         
        for (;lastBarIndex > 0; lastBarIndex--)
         {
           // сканируем историю по хэндлу на наличие расхождений\схождений 
@@ -176,6 +175,7 @@ int OnCalculate(const int rates_total,
             CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
            {
              // если не удалось загрузить буфера MACD
+             Alert("такие дела");
              return (0);
            }                 
        // если сформирован новый бар
