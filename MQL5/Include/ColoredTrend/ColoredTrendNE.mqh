@@ -124,6 +124,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
    num1 = num0;
    num0 = current_bar;
   }
+  PrintFormat("%s ATR = %.05f;  num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", TimeToString(time_buffer[0]), difToNewExtremum, num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price); 
  }
  
  if (num2.direction == 0 && num2.price == -1) //аналогично (num0 > 0 && num1 > 0 && num2 > 0) т.к. num2 не определится пока не определятся num0 и num1
@@ -132,7 +133,6 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
   return (true); 
  } 
   
- PrintFormat("%s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price); 
  int newTrend = isNewTrend();        
  if (newTrend == -1)
  {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения
@@ -287,11 +287,16 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
    period = GetTopTimeframe(_period);
    break;
  }
- datetime date[1];
- CopyTime(_symbol, _period, start_pos, 1, date);
- datetime start_date = date[0];
- datetime end_date = start_date - _depth*PeriodSeconds(_period);
- copied = CopyRates(_symbol, period, start_date, end_date, array); // справа налево от 0 до count-1, всего count элементов
+ if(tfType == BOTTOM_TF)
+ { 
+  datetime date[1];
+  CopyTime(_symbol, _period, start_pos, 1, date);
+  datetime start_date = date[0];
+  datetime end_date = start_date - _depth*PeriodSeconds(_period);
+  copied = CopyRates(_symbol, period, start_date, end_date, array); // справа налево от 0 до count-1, всего count элементов
+ }
+ else
+  copied = CopyRates(_symbol, period, start_pos, count, array); // справа налево от 0 до count-1, всего count элементов
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
