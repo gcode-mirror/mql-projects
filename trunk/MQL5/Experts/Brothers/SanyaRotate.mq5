@@ -126,7 +126,7 @@ void OnTick()
    {
     currentVolume = vol;
     currentType = san.GetType();
-    PrintFormat("currentType = %s, san.GetType() = %s", currentType, san.GetType());
+    PrintFormat("%s currentType = %s, san.GetType() = %s", MakeFunctionPrefix(__FUNCTION__), OrderTypeToString(currentType), OrderTypeToString(san.GetType()));
    }
   }
  }
