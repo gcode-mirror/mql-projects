@@ -155,6 +155,9 @@ int OnCalculate(const int rates_total,
         {
           // сканируем историю по хэндлу на наличие расхождений\схождений 
           retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,DEPTH_STOC,ALLOW_DEPTH_FOR_PRICE_EXTR,divergencePoints,lastBarIndex);
+          // если не удалось загрузить буфер
+          if (retCode == -2)
+           return (0);
           // если схождение\расхождение обнаружено
           if (retCode)
            {                                     
@@ -167,10 +170,6 @@ int OnCalculate(const int rates_total,
             trendLine.Create(0,"StocLine_"+countTrend,1,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
             //увеличиваем количество тренд линий
             countTrend++;
-           }
-           else
-           {
-            return (0);
            }
         }
        first_calculate = false;
