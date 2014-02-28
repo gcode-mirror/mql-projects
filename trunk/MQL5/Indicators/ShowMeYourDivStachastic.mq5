@@ -170,7 +170,7 @@ int OnCalculate(const int rates_total,
            }
            else
            {
-            
+            return (0);
            }
         }
        first_calculate = false;
@@ -200,7 +200,7 @@ int OnCalculate(const int rates_total,
            trendLine.Create(0,"StocLine_"+countTrend,1,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);    
            // увеличиваем количество тренд линий
            countTrend++;
-          }        
+          }      
         }
      } 
        

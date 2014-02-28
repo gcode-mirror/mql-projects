@@ -100,7 +100,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  if (copiedMACD != DEPTH_MACD || copiedHigh != DEPTH_MACD || copiedLow != DEPTH_MACD || copiedDate != DEPTH_MACD)
  {
    int err = GetLastError();
-   Alert(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", err);
+   Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", err);
    return(0);
  }
  
