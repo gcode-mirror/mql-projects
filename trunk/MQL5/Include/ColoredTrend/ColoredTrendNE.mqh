@@ -19,6 +19,7 @@ protected:
   string _symbol;
   ENUM_TIMEFRAMES _period;
   ENUM_MOVE_TYPE enumMoveType[];
+  ENUM_MOVE_TYPE previous_move_type;
   int digits;
   SExtremum num0, 
             num1, 
@@ -58,7 +59,8 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
                    _symbol(symbol),
                    _period(period),
                    _depth(depth),
-                   _percentage_ATR(percentage_ATR)
+                   _percentage_ATR(percentage_ATR),
+                   previous_move_type(MOVE_TYPE_UNKNOWN)
 {
  num0.direction = 0;
  num1.direction = 0;
@@ -96,7 +98,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
   return (false);  
  
  CopyTime(_symbol, _period, start_pos, 1, time_buffer);  
- enumMoveType[bar] = enumMoveType[bar - 1];
+ enumMoveType[bar] = previous_move_type;
  difToNewExtremum = buffer_ATR[0] * _percentage_ATR;
  SExtremum current_bar = {0, -1};
  
@@ -132,6 +134,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
   //PrintFormat("%s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price);
   //PrintFormat("На старшем ТФ движение %s", MoveTypeToString(topTF_Movement)); 
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
+  previous_move_type = enumMoveType[bar];
   return (true);
  }
  else if (newTrend == 1 && enumMoveType[bar] != MOVE_TYPE_TREND_UP_FORBIDEN && enumMoveType[bar] != MOVE_TYPE_TREND_UP) // если текущее закрытие выше последнего экстремума 
@@ -140,6 +143,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
   //PrintFormat("%s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price);
   //PrintFormat("На старшем ТФ движение %s", MoveTypeToString(topTF_Movement)); 
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
+  previous_move_type = enumMoveType[bar];
   return (true);
  }
  else 
@@ -149,6 +153,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
    PrintFormat("%s Предыдущее движение не было определено. Сейчас FLAT", TimeToString(time_buffer[0]));
    //PrintFormat("%s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price);
    enumMoveType[bar] = MOVE_TYPE_FLAT;
+   previous_move_type = enumMoveType[bar];
    return (true);
   }
  }
@@ -164,6 +169,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
    lastOnTrend = num0; 
   else 
    lastOnTrend = num1;
+  previous_move_type = enumMoveType[bar];
   return (true);
  }
  //Начало коррекции вверх если цена закрытия больше открытия предыдущего бара
@@ -177,6 +183,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
    lastOnTrend = num0; 
   else 
    lastOnTrend = num1;
+  previous_move_type = enumMoveType[bar];
   return (true);
  }
  
@@ -191,6 +198,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
   //PrintFormat("%s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price);
   //PrintFormat("%s", MoveTypeToString(enumMoveType[bar]));
   PrintFormat("bar = %d, закончилася коррекция вверх(начался тренд вниз), последняя цена=%.05f меньше последнего экстремума=%.05f", bar, buffer_Rates[2].close, lastOnTrend.price);
+  previous_move_type = enumMoveType[bar];
   return (true);
  }
  
@@ -203,6 +211,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
   //PrintFormat("%s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price);
   //PrintFormat("%s", MoveTypeToString(enumMoveType[bar]));
   PrintFormat("bar = %d, закончилася коррекция вниз(начался тренд вверх), последняя цена=%.05f больше последнего экстремума=%.05f", bar, buffer_Rates[2].close, lastOnTrend.price);
+  previous_move_type = enumMoveType[bar];
   return (true);
  }
 
@@ -213,6 +222,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
   if(num1.direction > 0) PrintFormat("%s bar = %d, начался флэт, новое движение меньше удвоенного предыдущего num1-num2=%.05f*2 > num0-num1=%.05f",  TimeToString(time_buffer[0]), bar, (num1.price-num2.price), (num1.price-num0.price));
   //PrintFormat("%s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price);
   enumMoveType[bar] = MOVE_TYPE_FLAT;
+  previous_move_type = enumMoveType[bar];
   return (true);
  }
  
