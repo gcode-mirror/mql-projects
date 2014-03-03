@@ -30,8 +30,10 @@
  
 //--- input параметры
 input int      depth = 1000;         // сколько свечей показывать
-input double   percentage_ATR = 0.5;
+input double   percentage_ATR = 2;   
 input bool     show_top = false;
+input double   difToTrend = 1.5;
+input int      ATR_ma_period = 12; 
 //--- индикаторные буферы
 double         ColorCandlesBuffer1[];
 double         ColorCandlesBuffer2[];
@@ -68,8 +70,8 @@ int OnInit()
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    PrintFormat("TOP = %s, BOTTOM = %s", EnumToString((ENUM_TIMEFRAMES)NewBarTop.GetPeriod()), EnumToString((ENUM_TIMEFRAMES)NewBarBottom.GetPeriod()));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth, percentage_ATR);
-   trend    = new CColoredTrend(symbol,                  current_timeframe, depth, percentage_ATR);
+   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth, percentage_ATR, difToTrend, ATR_ma_period);
+   trend    = new CColoredTrend(symbol,                  current_timeframe, depth, percentage_ATR, difToTrend, ATR_ma_period);
 //--- indicator buffers mapping
    SetIndexBuffer(0,ColorCandlesBuffer1,INDICATOR_DATA);
    SetIndexBuffer(1,ColorCandlesBuffer2,INDICATOR_DATA);
