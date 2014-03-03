@@ -161,20 +161,28 @@ int OnCalculate(const int rates_total,
     start_iteration = start_index + buffer_index - 1;//prev_calculated-1;
    }
    
+   
    bool error = true;
-    for(int i =  start_iteration; i < rates_total;  i++)    
-    {
-     //PrintFormat("buffer_index = %d; top_buffer_index = %d", buffer_index, top_buffer_index);
-     int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
-     int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
-     if(start_pos_top < 0) start_pos_top = 0;
-     
-     error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
+   
+   for(int i = 0; i < (rates_total-start_iteration)/(seconds_top/seconds_current);i++)
+   {
+     error = topTrend.CountMoveType(i, (int)((rates_total-start_iteration)/(seconds_top/seconds_current)-i), extr_top);
+     //PrintFormat("top_buffer_index = %d, start_pos_top = %d, extr_top = {%d;%.05f}", top_buffer_index, start_pos_top, extr_top.direction, extr_top.price);
      if(!error)
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
       return(0);
      }
+   }
+   
+    for(int i =  start_iteration; i < rates_total;  i++)    
+    {
+     PrintFormat("start_iteration = %d; rates_total = %d, bi = %d, tbi = %d", start_iteration, rates_total, buffer_index, top_buffer_index);
+     int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
+     int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
+     if(start_pos_top < 0) start_pos_top = 0;
+     
+     
      error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
      if(!error) 
      {
@@ -191,6 +199,12 @@ int OnCalculate(const int rates_total,
      if(!show_top)
      { 
       ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
+     }
+     else
+     {
+      ColorCandlesColors [i] = topTrend.GetMoveType(top_buffer_index);
+     }
+
       if (extr_cur.direction > 0)
       {
        ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
@@ -201,22 +215,6 @@ int OnCalculate(const int rates_total,
        ExtDownArrowBuffer[i] = extr_cur.price;// - 50*_Point;
        extr_cur.direction = 0;
       }
-     }
-     else
-     {
-      ColorCandlesColors [i] = topTrend.GetMoveType(top_buffer_index);
-      if (extr_top.direction > 0)
-      {
-       ExtTopUpArrowBuffer[i] = extr_top.price;// + 50*_Point;
-       extr_top.direction = 0;
-      }
-      else if (extr_top.direction < 0)
-      {
-       ExtTopDownArrowBuffer[i] = extr_top.price;// - 50*_Point;
-       extr_top.direction = 0;
-      }
-     }
-
      
      if(buffer_index < depth)
      {
