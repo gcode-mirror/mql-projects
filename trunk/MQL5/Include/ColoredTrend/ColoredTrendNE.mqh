@@ -43,7 +43,7 @@ protected:
   int isNewTrend();
   int isEndTrend();
 public:
-  void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR);
+  void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif, int ATR_ma_period);
   SExtremum isExtremum(int start_index);
   bool FindExtremumInHistory(int depth);
   bool CountMoveType(int bar, int start_pos, SExtremum& extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
@@ -55,12 +55,13 @@ public:
 //+-----------------------------------------+
 //| Конструктор                             |
 //+-----------------------------------------+
-void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR) : 
+void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif, int ATR_ma_period) : 
                    _symbol(symbol),
                    _period(period),
                    _depth(depth),
                    _percentage_ATR(percentage_ATR),
-                   previous_move_type(MOVE_TYPE_UNKNOWN)
+                   previous_move_type(MOVE_TYPE_UNKNOWN),
+                   difToTrend(dif)
 {
  num0.direction = 0;
  num1.direction = 0;
@@ -73,11 +74,10 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
  CopyRates(_symbol, _period, _depth, 1, buffer);
  CopyTime(_symbol, _period, _depth, 1, time_buffer);
  _startDayPrice = buffer[0].close;
- ATR_handle = iATR(_symbol, _period, 100);
+ ATR_handle = iATR(_symbol, _period, ATR_ma_period);
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  ArrayResize(enumMoveType, depth);
  ArrayInitialize(enumMoveType, 0);
- difToTrend = 2;  // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
 }
 
 //+-----------------------------------------------------+
@@ -215,8 +215,8 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, E
   return (true);
  }
 
- if (((enumMoveType[bar - 1] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_DOWN  ) && isEndTrend() == 1) || 
-     ((enumMoveType[bar - 1] == MOVE_TYPE_TREND_UP   || enumMoveType[bar - 1] == MOVE_TYPE_CORRECTION_UP) && isEndTrend() == -1))   
+ if (((previous_move_type == MOVE_TYPE_TREND_DOWN || previous_move_type == MOVE_TYPE_CORRECTION_DOWN  ) && isEndTrend() == 1) || 
+     ((previous_move_type == MOVE_TYPE_TREND_UP   || previous_move_type == MOVE_TYPE_CORRECTION_UP) && isEndTrend() == -1))   
  {
   if(num1.direction < 0) PrintFormat("%s bar = %d, начался флэт, новое движение меньше удвоенного предыдущего num2-num1=%.05f*2 > num0-num1=%.05f",  TimeToString(time_buffer[0]), bar, (num2.price-num1.price), (num0.price-num1.price));
   if(num1.direction > 0) PrintFormat("%s bar = %d, начался флэт, новое движение меньше удвоенного предыдущего num1-num2=%.05f*2 > num0-num1=%.05f",  TimeToString(time_buffer[0]), bar, (num1.price-num2.price), (num1.price-num0.price));
@@ -282,11 +282,9 @@ SExtremum CColoredTrend::isExtremum(int start_index)
 //+-------------------------------------------------+
 int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlRates &array[])
 {
- //--- счетчик попыток
- int attempts = 0;
 //--- сколько скопировано
  int copied = 0;
-//--- делаем 25 попыток получить таймсерию по нужному символу
+ int result_size = count;
  ENUM_TIMEFRAMES period;
  switch (tfType)
  {
@@ -307,11 +305,12 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
   datetime start_date = date[0];
   datetime end_date = start_date - _depth*PeriodSeconds(_period);
   copied = CopyRates(_symbol, period, start_date, end_date, array); // справа налево от 0 до count-1, всего count элементов
+  result_size = (PeriodSeconds(_period)/(PeriodSeconds(period)))*(count-1);
  }
  else
   copied = CopyRates(_symbol, period, start_pos, count, array); // справа налево от 0 до count-1, всего count элементов
 //--- если не удалось скопировать достаточное количество баров
- if(copied != count)
+ if(copied < count)
  {
   string comm = StringFormat("Для символа %s получено %d баров из %d затребованных Rates. Period = %s. Error = %d | start = %d count = %d",
                              _symbol,
@@ -338,15 +337,12 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
   Print("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
  }
  //--- счетчик попыток
-   int attempts = 0;
+ int attempts = 0;
 //--- сколько скопировано
-   int copied = 0;
+ int copied = 0;
 //--- делаем 25 попыток получить таймсерию по нужному символу
- while(attempts < 250 && (copied = CopyBuffer(ATR_handle, 0, start_pos, count, buffer_ATR)) < 0) // справа налево от 0 до count, всего count элементов
- {
-  Sleep(100);
-  attempts++;
- }
+ copied = CopyBuffer(ATR_handle, 0, start_pos, count, buffer_ATR);
+
 //--- если не удалось скопировать достаточное количество баров
  if(copied != count)
  {
