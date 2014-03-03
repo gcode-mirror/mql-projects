@@ -54,32 +54,34 @@ void OnTick()
     {
      // если обнаружена переменная-флаг какого либо эксперта
      if (StringSubstr(GlobalVariableName(index), 0, 1) == "&")
-      {      
+      {    
         // если эксперт записал что-то в историю позиций
         if (GlobalVariableGet(GlobalVariableName(index)) == TradeModeToInt(TM_DEAL_DONE) )
          {
            // сформируем имя файла истории
            file_history = GetFileHistory(GlobalVariableName(index));
            // загружаем историю позиций из файла  
-           backtest.LoadHistoryFromFile(file_history,time_from,TimeCurrent());
-           // вычисляем текущую просадку по балансу
-           current_drawdown = backtest.GetMaxDrawdown();
-           // вычисляем текущую прибыль
-           backtest.GetProfits();
-           // получаем значение текущей прибыли
-           current_profit = backtest.GetCleanProfit();
-           // если параметры привысили допустимые параметры 
-           Alert("ПРИБЫЛЬ РАВНА = ",current_profit," ПРОСАДКА = ",current_drawdown);
-           if (current_drawdown > max_drawdown || current_profit < min_profit)
-            {
+           if ( backtest.LoadHistoryFromFile(file_history,time_from,TimeCurrent()) )
+            {// если история позиций успешна загрузилась
+            // вычисляем текущую просадку по балансу
+            current_drawdown = backtest.GetMaxDrawdown();
+            // вычисляем текущую прибыль
+            backtest.GetProfits();
+            // получаем значение текущей прибыли
+            current_profit = backtest.GetCleanProfit();
+            // если параметры привысили допустимые параметры 
+            Alert("ПРИБЫЛЬ РАВНА = ",current_profit," ПРОСАДКА = ",current_drawdown);
+            if (current_drawdown > max_drawdown || current_profit < min_profit)
+             {
              // то выставляем переменную в CANNOT_TRADE, т.е. прерываем торговлю эксперта
              GlobalVariableSet(GlobalVariableName(index), TradeModeToInt(TM_CANNOT_TRADE) );
-            }
-           else
-            {
+             }
+            else
+             {
              // то выставляем переменную в режим "не было новых сделок"
              GlobalVariableSet(GlobalVariableName(index), TradeModeToInt(TM_NO_DEALS) );            
-            }
+             }
+             }
          }
       }  
     } 
