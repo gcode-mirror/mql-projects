@@ -10,7 +10,7 @@
 #include <CompareDoubles.mqh>
 #include "ColoredTrendUtilities.mqh"
 
-#define PRINT true
+#define PRINT false
 #define AMOUNT_OF_PRICE 2
 
 //+------------------------------------------------------------------+
