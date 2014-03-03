@@ -23,7 +23,7 @@
 // параметры, вводимые пользователем
 
 input BARS_MODE mode      = INPUT_BARS; // режим загрузки баров
-input int depth           = 2000;       // глубина истории
+input int depth           = 1000;       // глубина истории
 input int bars_ahead      = 10;         // количество баров рассчета актуальности
 input int fast_ema_period = 12;         // период быстрой средней MACD
 input int slow_ema_period = 26;         // период медленной средней MACD
@@ -115,33 +115,35 @@ void OnStart()
    // пробегаем по всем барам истории и проверяем на сигнал схождения\расхождения (с начала истории к концу)
    for(int index=lastBarIndex;index>bars_ahead;index--)
     {
+     Comment("____________________________");
+     Comment("ПРОГРЕСС ВЫЧИСЛЕНИЯ: ",MathRound(100*(1.0*(lastBarIndex-bars_ahead-index)/(lastBarIndex-bars_ahead)))+"%");
      // вычисляем схождение\расхождение
      switch ( divergenceMACD (handleMACD,_Symbol,_Period,index,divergencePoints) )
       {
-       // если найдено схождение
+       // если найдено расхождение
        case 1:
         GetMaxMin(index+1); // находим максимум и минимум цен
         // если схождение валидно
         if ( (localMax - buffer_close[index]) > (buffer_close[index] - localMin) )
          {
-          countConvPos ++; // увеличиваем счетчик положительных схождений
+          countDivPos ++; // увеличиваем счетчик положительных схождений
          }
         else
          {
-          countConvNeg ++; // иначе увеличиваем счетчик отрицательных схождений
+          countDivNeg ++; // иначе увеличиваем счетчик отрицательных схождений
          }
        break;
-       // если найдено расхождение
+       // если найдено схождение
        case -1:
         GetMaxMin(index+1); // находим максимум и минимум цен
         // если расхождение валидно
         if ( (localMax - buffer_close[index]) < (buffer_close[index] - localMin) )
          {
-          countDivPos ++; // увеличиваем счетчик положительных расхождений
+          countConvPos ++; // увеличиваем счетчик положительных расхождений
          }
         else
          {
-          countDivNeg ++; // иначе увеличиваем счетчик отрицательных расхождений
+          countConvNeg ++; // иначе увеличиваем счетчик отрицательных расхождений
          }       
        break;
       }
