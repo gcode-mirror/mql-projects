@@ -8,6 +8,7 @@
 #property version   "1.00"
 
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
+#include <CExpertID.mqh> 
 
 input int step = 100;
 input int countSteps = 4;
@@ -28,6 +29,10 @@ CTradeManager ctm();
 double aDeg[4] = {0.7, 0.5, 0.3, 0.1};
 double aUpg[4] = {0.1, 0.3, 0.5, 0.7};
 
+datetime history_start;
+
+CExpertID *expertID;
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -36,7 +41,8 @@ int OnInit()
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    MathSrand(TimeLocal());
    count = 0;
-   //history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
+   history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
+   expertID = new CExpertID("condom",symbol,_Period);   
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -44,13 +50,16 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   
+      delete expertID;
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
   {
+  if ( expertID.IsContinue() )
+   {
+   
    ctm.OnTick();
    if (ctm.GetPositionCount() == 0)
    {
@@ -61,6 +70,13 @@ void OnTick()
     rnd = (double)MathRand()/32767;
     ENUM_TM_POSITION_TYPE operation = GreatDoubles(rnd, 0.5, 5) ? 1 : 0;
     ctm.OpenUniquePosition(symbol, operation, lot, step, 0, step, step, step);
+    
+     if (ctm.IsHistoryChanged())
+          {      
+           expertID.DealDone();       
+           Alert("Сделка совершена");
+          }
+    
    }
    
    if (ctm.GetPositionCount() > 0)
@@ -72,6 +88,11 @@ void OnTick()
      {
       ctm.PositionChangeSize(symbol, 1);
       count++;
+       if (ctm.IsHistoryChanged())
+          {      
+           expertID.DealDone();       
+           Alert("Сделка совершена");
+          }
      }
     }
     if (degradelot) 
@@ -80,6 +101,11 @@ void OnTick()
      {
       ctm.PositionChangeSize(symbol, aDeg[count]);
       count++;
+       if (ctm.IsHistoryChanged())
+          {      
+           expertID.DealDone();       
+           Alert("Сделка совершена");
+          }
      }
     }
     if (upgradelot) 
@@ -88,9 +114,21 @@ void OnTick()
      {
       ctm.PositionChangeSize(symbol, aUpg[count]);
       count++;
+       if (ctm.IsHistoryChanged())
+          {      
+           expertID.DealDone();       
+           Alert("Сделка совершена");
+          }
      }
     }
     ctm.DoUsualTrailing();
    }
+   
+   }
   }
 //+------------------------------------------------------------------+
+void OnTrade()
+  {
+   ctm.OnTrade(history_start);
+  }
+
