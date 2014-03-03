@@ -8,8 +8,8 @@
 #property version   "1.00"
  
 #property indicator_chart_window
-#property indicator_buffers 9
-#property indicator_plots   5
+#property indicator_buffers 7
+#property indicator_plots   3
 //--- plot ColorCandles
 #property indicator_label1  "ColoredTrend"
 #property indicator_type1   DRAW_COLOR_CANDLES
@@ -30,10 +30,13 @@
  
 //--- input параметры
 input int      depth = 1000;         // сколько свечей показывать
-input double   percentage_ATR = 2;   
 input bool     show_top = false;
-input double   difToTrend = 1.5;
-input int      ATR_ma_period = 12; 
+input double   percentage_ATR_cur = 2;   
+input double   difToTrend_cur = 1.5;
+input int      ATR_ma_period_cur = 12;
+input double   percentage_ATR_top = 2;   
+input double   difToTrend_top = 1.5;
+input int      ATR_ma_period_top = 12; 
 //--- индикаторные буферы
 double         ColorCandlesBuffer1[];
 double         ColorCandlesBuffer2[];
@@ -42,8 +45,6 @@ double         ColorCandlesBuffer4[];
 double         ColorCandlesColors[];
 double         ExtUpArrowBuffer[];
 double         ExtDownArrowBuffer[];
-double         ExtTopUpArrowBuffer[];
-double         ExtTopDownArrowBuffer[];
 
 
 CisNewBar NewBarBottom,
@@ -70,8 +71,8 @@ int OnInit()
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    PrintFormat("TOP = %s, BOTTOM = %s", EnumToString((ENUM_TIMEFRAMES)NewBarTop.GetPeriod()), EnumToString((ENUM_TIMEFRAMES)NewBarBottom.GetPeriod()));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth, percentage_ATR, difToTrend, ATR_ma_period);
-   trend    = new CColoredTrend(symbol,                  current_timeframe, depth, percentage_ATR, difToTrend, ATR_ma_period);
+   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth, percentage_ATR_top, difToTrend_top, ATR_ma_period_top);
+   trend    = new CColoredTrend(symbol,                  current_timeframe, depth, percentage_ATR_cur, difToTrend_cur, ATR_ma_period_cur);
 //--- indicator buffers mapping
    SetIndexBuffer(0,ColorCandlesBuffer1,INDICATOR_DATA);
    SetIndexBuffer(1,ColorCandlesBuffer2,INDICATOR_DATA);
@@ -80,13 +81,10 @@ int OnInit()
    SetIndexBuffer(4,ColorCandlesColors,INDICATOR_COLOR_INDEX);
    SetIndexBuffer(5, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6, ExtDownArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(7, ExtTopUpArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(8, ExtTopDownArrowBuffer, INDICATOR_DATA);
+
    
    PlotIndexSetInteger(1, PLOT_ARROW, 218);
    PlotIndexSetInteger(2, PLOT_ARROW, 217);
-   PlotIndexSetInteger(3, PLOT_ARROW, 201);
-   PlotIndexSetInteger(4, PLOT_ARROW, 200);
    
    ArraySetAsSeries(ColorCandlesBuffer1, false);
    ArraySetAsSeries(ColorCandlesBuffer2, false);
@@ -102,8 +100,6 @@ void OnDeinit(const int reason)
    //Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
    ArrayInitialize(ExtUpArrowBuffer, 0);
    ArrayInitialize(ExtDownArrowBuffer, 0);
-   ArrayInitialize(ExtTopUpArrowBuffer, 0);
-   ArrayInitialize(ExtTopDownArrowBuffer, 0);
    ArrayInitialize(ColorCandlesBuffer1, 0);
    ArrayInitialize(ColorCandlesBuffer2, 0);
    ArrayInitialize(ColorCandlesBuffer3, 0);
@@ -160,6 +156,7 @@ int OnCalculate(const int rates_total,
    bool error = true;
     for(int i =  start_iteration; i < rates_total;  i++)    
     {
+     PrintFormat("buffer_index = %d; top_buffer_index = %d", buffer_index, top_buffer_index);
      int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
      int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
      if(start_pos_top < 0) start_pos_top = 0;
@@ -167,13 +164,13 @@ int OnCalculate(const int rates_total,
      error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
      if(!error)
      {
-      Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP. Error = ", error);
+      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
       return(0);
      }
      error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
      if(!error) 
      {
-      Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT. Error = ", error);
+      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON CURRENT TIMEFRAME");
       return(0);
      } 
       
@@ -195,10 +192,12 @@ int OnCalculate(const int rates_total,
      if (extr_cur.direction > 0)
      {
       ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
+      extr_cur.direction = 0;
      }
      else if (extr_cur.direction < 0)
      {
       ExtDownArrowBuffer[i] = extr_cur.price;// - 50*_Point;
+      extr_cur.direction = 0;
      }
      
      if(buffer_index < depth)
