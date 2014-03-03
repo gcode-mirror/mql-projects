@@ -127,8 +127,14 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
+
+bool t_flag = true;
 void OnTick()
   {
+     static CisNewBar isNewBar(symbol, timeframe);
+     
+
+   
    if ( expertID.IsContinue() )
    {
    ctm.OnTick();
@@ -138,7 +144,39 @@ void OnTick()
    int errClose = 0;
    int errMACD = 0;
    
-   static CisNewBar isNewBar(symbol, timeframe);
+
+if(isNewBar.isNewBar() > 0)
+    {
+ 
+     if (t_flag)
+      {
+       if (ctm.OpenUniquePosition(symbol, opBuy, lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference) )
+        {
+           Alert("OLOLO BUY");
+         // если история изменилась
+         if (ctm.IsHistoryChanged())
+          {      
+           expertID.DealDone();       
+           Alert("Сделка совершена");
+          }
+               t_flag = !t_flag;
+        }
+      }    
+      else
+       {
+          Alert("OLOLO SELL");
+        ctm.OpenUniquePosition(symbol, opSell, lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference);
+        // если история изменилась
+        if (ctm.IsHistoryChanged())
+         {      
+          expertID.DealDone();   
+           Alert("Сделка совершена");              
+         }
+              t_flag = !t_flag;
+       }
+
+    }
+
    
    if(isNewBar.isNewBar() > 0)
    {
