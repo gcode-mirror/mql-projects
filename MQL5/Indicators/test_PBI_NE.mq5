@@ -159,6 +159,7 @@ int OnCalculate(const int rates_total,
     for(int i =  start_iteration; i < rates_total;  i++)    
     {
      int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
+     int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
      if(start_pos_top < 0) start_pos_top = 0;
      
      error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
@@ -167,7 +168,7 @@ int OnCalculate(const int rates_total,
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE TOP. Error = ", error);
       return(0);
      }
-     error = trend.CountMoveType(buffer_index, (rates_total-1) - i, extr_cur, topTrend.GetMoveType(top_buffer_index));
+     error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
      if(!error) 
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR BECAUSE CURRENT. Error = ", error);
