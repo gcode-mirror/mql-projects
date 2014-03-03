@@ -8,8 +8,8 @@
 #property version   "1.00"
  
 #property indicator_chart_window
-#property indicator_buffers 7
-#property indicator_plots   3
+#property indicator_buffers 9
+#property indicator_plots   5
 //--- plot ColorCandles
 #property indicator_label1  "ColoredTrend"
 #property indicator_type1   DRAW_COLOR_CANDLES
@@ -45,6 +45,8 @@ double         ColorCandlesBuffer4[];
 double         ColorCandlesColors[];
 double         ExtUpArrowBuffer[];
 double         ExtDownArrowBuffer[];
+double         ExtTopUpArrowBuffer[];
+double         ExtTopDownArrowBuffer[];
 
 
 CisNewBar NewBarBottom,
@@ -81,10 +83,14 @@ int OnInit()
    SetIndexBuffer(4,ColorCandlesColors,INDICATOR_COLOR_INDEX);
    SetIndexBuffer(5, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6, ExtDownArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(7, ExtTopUpArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(8, ExtTopDownArrowBuffer, INDICATOR_DATA);
 
    
    PlotIndexSetInteger(1, PLOT_ARROW, 218);
    PlotIndexSetInteger(2, PLOT_ARROW, 217);
+   PlotIndexSetInteger(3, PLOT_ARROW, 201);
+   PlotIndexSetInteger(4, PLOT_ARROW, 200);
    
    ArraySetAsSeries(ColorCandlesBuffer1, false);
    ArraySetAsSeries(ColorCandlesBuffer2, false);
@@ -100,6 +106,8 @@ void OnDeinit(const int reason)
    //Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
    ArrayInitialize(ExtUpArrowBuffer, 0);
    ArrayInitialize(ExtDownArrowBuffer, 0);
+   ArrayInitialize(ExtTopUpArrowBuffer, 0);
+   ArrayInitialize(ExtTopDownArrowBuffer, 0);   
    ArrayInitialize(ColorCandlesBuffer1, 0);
    ArrayInitialize(ColorCandlesBuffer2, 0);
    ArrayInitialize(ColorCandlesBuffer3, 0);
@@ -156,7 +164,7 @@ int OnCalculate(const int rates_total,
    bool error = true;
     for(int i =  start_iteration; i < rates_total;  i++)    
     {
-     PrintFormat("buffer_index = %d; top_buffer_index = %d", buffer_index, top_buffer_index);
+     //PrintFormat("buffer_index = %d; top_buffer_index = %d", buffer_index, top_buffer_index);
      int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
      int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
      if(start_pos_top < 0) start_pos_top = 0;
@@ -179,26 +187,36 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i]; 
      
+     //PrintFormat("%s current:%d %s; top: %d %s", TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
      if(!show_top)
      { 
       ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
-      //PrintFormat("%d %s", buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)));
+      if (extr_cur.direction > 0)
+      {
+       ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
+       extr_cur.direction = 0;
+      }
+      else if (extr_cur.direction < 0)
+      {
+       ExtDownArrowBuffer[i] = extr_cur.price;// - 50*_Point;
+       extr_cur.direction = 0;
+      }
      }
      else
      {
       ColorCandlesColors [i] = topTrend.GetMoveType(top_buffer_index);
+      if (extr_top.direction > 0)
+      {
+       ExtTopUpArrowBuffer[i] = extr_top.price;// + 50*_Point;
+       extr_top.direction = 0;
+      }
+      else if (extr_top.direction < 0)
+      {
+       ExtTopDownArrowBuffer[i] = extr_top.price;// - 50*_Point;
+       extr_top.direction = 0;
+      }
      }
-     
-     if (extr_cur.direction > 0)
-     {
-      ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
-      extr_cur.direction = 0;
-     }
-     else if (extr_cur.direction < 0)
-     {
-      ExtDownArrowBuffer[i] = extr_cur.price;// - 50*_Point;
-      extr_cur.direction = 0;
-     }
+
      
      if(buffer_index < depth)
      {
