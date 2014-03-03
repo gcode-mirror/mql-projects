@@ -13,12 +13,21 @@
 //| Скрипт тестировщик актуальности расхождения MACD                 |
 //+------------------------------------------------------------------+
 
+ // перечисление режима загрузки баров истории
+ enum BARS_MODE
+ {
+  ALL_HISTORY=0, // вся история
+  INPUT_BARS     // вводимое количество баром пользователя
+ };
+
 // параметры, вводимые пользователем
 
-input int bars_ahead      = 10;    // количество баров вперед после сигнала для проверки актуальности  
-input int fast_ema_period = 12;    // период быстрой средней MACD
-input int slow_ema_period = 26;    // период медленной средней MACD
-input int signal_period   = 9;     // период усреднения разности MACD 
+input BARS_MODE mode      = INPUT_BARS; // режим загрузки баров
+input int depth           = 2000;       // глубина истории
+input int bars_ahead      = 10;         // количество баров рассчета актуальности
+input int fast_ema_period = 12;         // период быстрой средней MACD
+input int slow_ema_period = 26;         // период медленной средней MACD
+input int signal_period   = 9;          // период усреднения разности MACD 
 
 // переменные для хранения количества акутальный и не актуальных сигналов
 
@@ -69,36 +78,41 @@ input int signal_period   = 9;     // период усреднения разности MACD
 void OnStart()
   {
    // присвоение значений переменных
-   int      countBars = Bars(_Symbol,_Period); // всего баров истории
+   int      countBars;
    ArraySetAsSeries(buffer_high , true); // индексация как в таймсерии
    ArraySetAsSeries(buffer_low  , true); // индексация как в таймсерии
    ArraySetAsSeries(buffer_close, true); // индексация как в таймсерии
-   // 0) - вычисление индекса первого бара
+   // вычисление количества баров
+   if (mode == ALL_HISTORY)
+    countBars =    Bars(_Symbol,_Period); // всего баров истории
+   else
+    countBars =    depth;
+   // вычисление индекса первого бара
    lastBarIndex  = countBars - 101;
    if (lastBarIndex <= bars_ahead)
     {
      Alert("Неправильньное соотношение глубины рассчета и количества баров истории");
      return;
     }
-   // 1) - загружаем бары истории
+   // загружаем бары истории
    copiedHigh   = CopyHigh(_Symbol, _Period, 0, countBars, buffer_high);   
    copiedLow    = CopyLow(_Symbol, _Period, 0, countBars, buffer_low);   
    copiedClose  = CopyClose(_Symbol, _Period, 0, countBars, buffer_close);
-   // 2) - проверка правильности загрузки баров
+   // проверка правильности загрузки баров
    if ( copiedClose < countBars || copiedHigh < countBars || copiedLow < countBars)
     { // если не удалось прогрузить все бары истории
      Alert("Не удалось прогрузить все бары истории");
      return;
     }
-   // 3) - если удалось загрузить, то подключаем хэндл MACD
+   // если удалось загрузить, то подключаем хэндл MACD
    handleMACD = iMACD(_Symbol, _Period, fast_ema_period,slow_ema_period,signal_period,PRICE_CLOSE); 
-   // 4) - проверка валидности хэдла MACD
+   // проверка валидности хэдла MACD
    if (handleMACD <= 0)
     {
      Alert("Не удалось загрузить хэндл MACD");
      return;
     }  
-   // 5) - пробегаем по всем барам истории и проверяем на сигнал схождения\расхождения (с начала истории к концу)
+   // пробегаем по всем барам истории и проверяем на сигнал схождения\расхождения (с начала истории к концу)
    for(int index=lastBarIndex;index>bars_ahead;index--)
     {
      // вычисляем схождение\расхождение
