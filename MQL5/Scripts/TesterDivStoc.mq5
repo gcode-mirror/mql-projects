@@ -71,9 +71,11 @@ input int                 ALLOW_DEPTH_FOR_PRICE_EXTR=3; // малый хвост буфера
   localMin = buffer_low[index];
   for (count=1;count<=bars_ahead;count++)
    {
-    if (buffer_high[index-count] > localMax)
+   // if (buffer_high[index-count] > localMax)
+    if (GreatDoubles (buffer_high[index-count], localMax ) )
      localMax = buffer_high[index-count];
-    if (buffer_low[index-count] < localMin)
+   // if (buffer_low[index-count] < localMin)
+    if (LessDoubles (buffer_low[index-count], localMin) )
      localMin = buffer_low[index-count];
    }
  }
@@ -127,7 +129,8 @@ void OnStart()
        case 1:
         GetMaxMin(index+1); // находим максимум и минимум цен
         // если схождение валидно
-        if ( (localMax - buffer_close[index]) > (buffer_close[index] - localMin) )
+      //  if ( (localMax - buffer_close[index]) > (buffer_close[index] - localMin) )
+        if ( GreatDoubles ( (localMax - buffer_close[index]), (buffer_close[index] - localMin) ) )
          {
           countDivPos ++; // увеличиваем счетчик положительных схождений
          }
@@ -140,7 +143,8 @@ void OnStart()
        case -1:
         GetMaxMin(index+1); // находим максимум и минимум цен
         // если расхождение валидно
-        if ( (localMax - buffer_close[index]) < (buffer_close[index] - localMin) )
+     //   if ( (localMax - buffer_close[index]) < (buffer_close[index] - localMin) )
+        if ( LessDoubles ( (localMax - buffer_close[index]), (buffer_close[index] - localMin) ) )
          {
           countConvPos ++; // увеличиваем счетчик положительных расхождений
          }
