@@ -20,7 +20,8 @@ class CExpertID: public CGlobalVariable
   // метод записи информации о том, что были совершены сделки
   void DealDone() { IntValue( TradeModeToInt(TM_DEAL_DONE) ); };
   // конструктор класса переменных параметров эксперта
-  CExpertID(string expert_name,string symbol,ENUM_TIMEFRAMES period);   
+  CExpertID(string expert_name,string symbol,ENUM_TIMEFRAMES period); 
+  CExpertID();   
   // деструктор класса 
  ~CExpertID();
  };
@@ -36,6 +37,13 @@ class CExpertID: public CGlobalVariable
  CExpertID::CExpertID(string expert_name,string symbol,ENUM_TIMEFRAMES period)
   {
    string var_name = "&"+expert_name+"_"+symbol+"_"+PeriodToString(period); // формируем имя переменной   
+   Name(var_name); // сохраняем переменную
+   IntValue( TradeModeToInt(TM_NO_DEALS) );    // кладем значение 1 (робот запущен и готов торговать)
+  }
+ // конструктор класса с текущими настройками
+ CExpertID::CExpertID(void)
+  {
+   string var_name = "&"+MQL5InfoString(MQL5_PROGRAM_NAME)+"_"+_Symbol+"_"+PeriodToString(_Period); // формируем имя переменной   
    Name(var_name); // сохраняем переменную
    IntValue( TradeModeToInt(TM_NO_DEALS) );    // кладем значение 1 (робот запущен и готов торговать)
   }
