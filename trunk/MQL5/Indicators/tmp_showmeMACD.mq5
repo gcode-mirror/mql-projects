@@ -11,7 +11,6 @@
 #include <divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений Стохастика
 #include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
 #include <CompareDoubles.mqh>                 // для проверки соотношения  цен
-#include <kernel32.mqh>                       // библиотека kernel32
 
 // параметры индикатора
  
@@ -64,7 +63,7 @@ input int                 fast_ema_period=12;        // период быстрой средней M
 input int                 slow_ema_period=26;        // период медленной средней MACD
 input int                 signal_period=9;           // период усреднения разности MACD
 input int                 depth=10;                  // грубина рассчета актуальности
-input string              file_url;                  // url адрес файла статистики 
+input string              file_url="STAT.txt";       // url адрес файла статистики 
 
 
 //+------------------------------------------------------------------+
@@ -92,6 +91,8 @@ double signalMACD[];   // сигнальный буфер MACD
  int countDivPos  = 0;       // количество положительный сигналов расхождения
  int countDivNeg  = 0;       // количество негативных сигналов расхождения 
  
+ 
+ 
 // временные параменные для хранения локальных минимумов и максимумов
  double localMax;
  double localMin;
@@ -106,11 +107,11 @@ double signalMACD[];   // сигнальный буфер MACD
 int OnInit()
   {     
    // создает файл статистики 
-   file_handle = CreateFileW(file_url, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL); 
-   if(file_handle <= 0 )
+   file_handle = FileOpen(file_url, FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+   if (file_handle == INVALID_HANDLE) //не удалось открыть файл
     {
-     Alert("Не возможно создать файл результатов бэктеста");
-     return(INIT_FAILED);
+     Alert("Ошибка открытия файла");
+     return (INIT_FAILED);
     }
    // удаляем все графические объекты     
    ObjectsDeleteAll(0,0,OBJ_TREND);
@@ -236,6 +237,17 @@ int OnCalculate(const int rates_total,
     Alert("Актуальных схождений: ",countConvPos);
     Alert("Всего схождений: ",countConvPos+countConvNeg);
     Alert("Результаты поиска схождений\расхождений:");
+    
+    // сохраняем в файл статистики количественные значения всех схождений \ расхождений
+          
+   FileWriteString(file_handle,"\nгодных схождений: "+IntegerToString(countConvPos) );   
+   FileWriteString(file_handle,"\nне годных схождений: "+IntegerToString(countConvNeg) );
+   FileWriteString(file_handle,"\nвсего схождений: "+IntegerToString(countConvNeg+countConvPos) );  
+   FileWriteString(file_handle,"\nгодных расхождений: "+IntegerToString(countDivPos) );   
+   FileWriteString(file_handle,"\nне годных расхождений: "+IntegerToString(countDivNeg) );
+   FileWriteString(file_handle,"\nвсего расхождений: "+IntegerToString(countDivNeg+countDivPos) );                      
+      
+    FileClose(file_handle);          //закрывает файл статистики
         
        first_calculate = false;
      }
