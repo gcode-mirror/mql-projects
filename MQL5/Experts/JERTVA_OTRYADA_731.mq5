@@ -66,7 +66,8 @@ int OnInit()
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
    
-   expertID = new CExpertID("condom",symbol,_Period);
+  // expertID = new CExpertID("condom",symbol,_Period);
+   expertID = new CExpertID();
    
    if (usualTrailing && losslessTrailing)
    {
