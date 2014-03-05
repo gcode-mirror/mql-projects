@@ -8,8 +8,8 @@
 #property version   "1.00"
  
 #property indicator_chart_window
-#property indicator_buffers 9
-#property indicator_plots   5
+#property indicator_buffers 7
+#property indicator_plots   3
 //--- plot ColorCandles
 #property indicator_label1  "ColoredTrend"
 #property indicator_type1   DRAW_COLOR_CANDLES
@@ -17,8 +17,6 @@
 
 #property indicator_type2   DRAW_ARROW
 #property indicator_type3   DRAW_ARROW
-#property indicator_type4   DRAW_ARROW
-#property indicator_type5   DRAW_ARROW
 
 //----------------------------------------------------------------
 #include <Arrays/ArrayObj.mqh>
@@ -45,8 +43,6 @@ double         ColorCandlesBuffer4[];
 double         ColorCandlesColors[];
 double         ExtUpArrowBuffer[];
 double         ExtDownArrowBuffer[];
-double         ExtTopUpArrowBuffer[];
-double         ExtTopDownArrowBuffer[];
 
 
 CisNewBar NewBarBottom,
@@ -71,7 +67,7 @@ int OnInit()
    NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
    NewBarCurrent.SetLastBarTime(current_timeframe);
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
-   PrintFormat("TOP = %s, BOTTOM = %s", EnumToString((ENUM_TIMEFRAMES)NewBarTop.GetPeriod()), EnumToString((ENUM_TIMEFRAMES)NewBarBottom.GetPeriod()));
+   //PrintFormat("TOP = %s, BOTTOM = %s", EnumToString((ENUM_TIMEFRAMES)NewBarTop.GetPeriod()), EnumToString((ENUM_TIMEFRAMES)NewBarBottom.GetPeriod()));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
    topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth, percentage_ATR_top, difToTrend_top, ATR_ma_period_top);
    trend    = new CColoredTrend(symbol,                  current_timeframe, depth, percentage_ATR_cur, difToTrend_cur, ATR_ma_period_cur);
@@ -83,14 +79,10 @@ int OnInit()
    SetIndexBuffer(4,ColorCandlesColors,INDICATOR_COLOR_INDEX);
    SetIndexBuffer(5, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6, ExtDownArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(7, ExtTopUpArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(8, ExtTopDownArrowBuffer, INDICATOR_DATA);
 
    
    PlotIndexSetInteger(1, PLOT_ARROW, 218);
    PlotIndexSetInteger(2, PLOT_ARROW, 217);
-   PlotIndexSetInteger(3, PLOT_ARROW, 201);
-   PlotIndexSetInteger(4, PLOT_ARROW, 200);
    
    ArraySetAsSeries(ColorCandlesBuffer1, false);
    ArraySetAsSeries(ColorCandlesBuffer2, false);
@@ -105,9 +97,7 @@ void OnDeinit(const int reason)
  //--- Первый способ получить код причины деинициализации
    //Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
    ArrayInitialize(ExtUpArrowBuffer, 0);
-   ArrayInitialize(ExtDownArrowBuffer, 0);
-   ArrayInitialize(ExtTopUpArrowBuffer, 0);
-   ArrayInitialize(ExtTopDownArrowBuffer, 0);   
+   ArrayInitialize(ExtDownArrowBuffer, 0); 
    ArrayInitialize(ColorCandlesBuffer1, 0);
    ArrayInitialize(ColorCandlesBuffer2, 0);
    ArrayInitialize(ColorCandlesBuffer3, 0);
@@ -161,7 +151,6 @@ int OnCalculate(const int rates_total,
     start_iteration = start_index + buffer_index - 1;//prev_calculated-1;
    }
    
-   
    bool error = true;
    
    for(int i = 0; i < (rates_total-start_iteration)/(seconds_top/seconds_current);i++)
@@ -177,7 +166,7 @@ int OnCalculate(const int rates_total,
    
     for(int i =  start_iteration; i < rates_total;  i++)    
     {
-     PrintFormat("start_iteration = %d; rates_total = %d, bi = %d, tbi = %d", start_iteration, rates_total, buffer_index, top_buffer_index);
+     //PrintFormat("start_iteration = %d; rates_total = %d, bi = %d, tbi = %d", start_iteration, rates_total, buffer_index, top_buffer_index);
      int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
      int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
      if(start_pos_top < 0) start_pos_top = 0;
@@ -205,16 +194,16 @@ int OnCalculate(const int rates_total,
       ColorCandlesColors [i + 2] = topTrend.GetMoveType(top_buffer_index);
      }
 
-      if (extr_cur.direction > 0)
-      {
-       ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
-       extr_cur.direction = 0;
-      }
-      else if (extr_cur.direction < 0)
-      {
-       ExtDownArrowBuffer[i] = extr_cur.price;// - 50*_Point;
-       extr_cur.direction = 0;
-      }
+     if (extr_cur.direction > 0)
+     {
+      ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
+      extr_cur.direction = 0;
+     }
+     else if (extr_cur.direction < 0)
+     {
+      ExtDownArrowBuffer[i] = extr_cur.price;// - 50*_Point;
+      extr_cur.direction = 0;
+     }
      
      if(buffer_index < depth)
      {
@@ -235,7 +224,6 @@ int OnCalculate(const int rates_total,
    
    return(rates_total);
   }
-  
   
   int GetNumberOfTopBarsInCurrentBars(ENUM_TIMEFRAMES timeframe, int current_bars)
   {
