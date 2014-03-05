@@ -44,6 +44,7 @@ class CLog
 
  public:
   CLog();
+  CLog(ENUM_OUTPUT output_type, ENUM_LOGLEVEL level, int limit_size, string catalog_name, int expiration_time);
  ~CLog();
   bool Check();
   void Write(ENUM_LOGLEVEL level, string str);
@@ -72,6 +73,18 @@ CLog::CLog()
  _limit_size = 50;          
  _catalog_name = "Log";   
  _expiration_time = 365;
+ CreateLogFile(TimeCurrent());
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+CLog::CLog(ENUM_OUTPUT output_type, ENUM_LOGLEVEL level, int limit_size, string catalog_name, int expiration_time)
+{
+ _output_type = output_type;
+ _level = level;         
+ _limit_size = limit_size;          
+ _catalog_name = catalog_name;   
+ _expiration_time = expiration_time;
  CreateLogFile(TimeCurrent());
 }
 //+------------------------------------------------------------------+
