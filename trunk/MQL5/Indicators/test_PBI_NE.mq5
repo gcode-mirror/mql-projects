@@ -95,7 +95,7 @@ int OnInit()
 void OnDeinit(const int reason)
 {
  //--- Первый способ получить код причины деинициализации
-   //Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
+   Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
    ArrayInitialize(ExtUpArrowBuffer, 0);
    ArrayInitialize(ExtDownArrowBuffer, 0); 
    ArrayInitialize(ColorCandlesBuffer1, 0);
