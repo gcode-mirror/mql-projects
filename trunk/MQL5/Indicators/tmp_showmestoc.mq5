@@ -68,6 +68,7 @@ input int                 bottom_level=20;              // нижний уровень
 input int                 DEPTH_STOC=10;                // большой хвост буфера 
 input int                 ALLOW_DEPTH_FOR_PRICE_EXTR=3; // малый хвост буфера
 input int                 depth=10;                     // глубина вычисления актуальности
+input string              file_url="STAT_STOC.txt";     // url адрес файла статистики 
 
 
 //+------------------------------------------------------------------+
@@ -90,6 +91,13 @@ int countConvPos = 0;                      // количество положительных сигналов 
 int countConvNeg = 0;                      // количество негативный сигналов схождения
 int countDivPos  = 0;                      // количество положительный сигналов расхождения
 int countDivNeg  = 0;                      // количество негативных сигналов расхождения 
+
+double averConvPos = 0;      // среднее актуальное схождение
+double averConvNeg = 0;      // среднее не актуальное схождение
+double averDivPos  = 0;      // среднее актуальное расхождение
+double averDivNeg  = 0;      // среднее не актуальное расхождение
+double averPos     = 0;      // средний актуальный сигнал
+double averNeg     = 0;      // средний не актуальный сигнал   
  
 // временные параменные для хранения локальных минимумов и максимумов
  double localMax;
@@ -99,12 +107,22 @@ int countDivNeg  = 0;                      // количество негативных сигналов рас
 
 int count;
 
+// хэндл файла статистики схождений \ расхождений 
+ int file_handle;   
+
 //+------------------------------------------------------------------+
 //| Базовые функции индикатора                                       |
 //+------------------------------------------------------------------+
 
 int OnInit()
   {
+   // создает файл статистики 
+   file_handle = FileOpen(file_url, FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+   if (file_handle == INVALID_HANDLE) //не удалось открыть файл
+    {
+     Alert("Ошибка открытия файла");
+     return (INIT_FAILED);
+    }  
    // удаляем все графические объекты     
    ObjectsDeleteAll(0,0,OBJ_TREND);
    ObjectsDeleteAll(0,1,OBJ_TREND);   
@@ -198,29 +216,98 @@ int OnCalculate(const int rates_total,
              
             if (retCode == 1)
              {
+               FileWriteString(file_handle,"\n "+TimeToString(time[lastBarIndex])+" (расхождение): " );   
+               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(localMax - close[lastBarIndex])+" убыток: "+DoubleToString(close[lastBarIndex]-localMin));    
                if ( GreatDoubles ( (localMax - close[lastBarIndex]), (close[lastBarIndex] - localMin) ) )
                  {
+               
+                   averDivPos  = averDivPos + localMax - close[lastBarIndex];
+                   averPos     = averPos + localMax - close[lastBarIndex]; 
                    countDivPos ++; // увеличиваем счетчик положительных схождений
                  }
                else
                  {
+                   averDivNeg  = averDivNeg + localMin - close[lastBarIndex];  
+                   averNeg     = averNeg + localMin - close[lastBarIndex]; 
                    countDivNeg ++; // иначе увеличиваем счетчик отрицательных схождений
                  }
              }
             if (retCode == -1)
              {
+               FileWriteString(file_handle,"\n "+TimeToString(time[lastBarIndex])+" (схождение): " );   
+               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(localMax - close[lastBarIndex])+" убыток: "+DoubleToString(close[lastBarIndex]-localMin));                
                if (LessDoubles ( (localMax - close[lastBarIndex]), (close[lastBarIndex] - localMin) ) )
                  {
+                  averConvPos = averConvPos + localMax - close[lastBarIndex];
+                  averPos     = averPos + localMax - close[lastBarIndex];  
                   countConvPos ++; // увеличиваем счетчик положительных расхождений
                  }
                else
                  {
+                  averConvNeg = averConvNeg + localMin - close[lastBarIndex];  
+                  averNeg     = averNeg + localMin - close[lastBarIndex];
                   countConvNeg ++; // иначе увеличиваем счетчик отрицательных расхождений
                  }   
              }            
             
            }
         }
+        
+           // вычисление средних значений
+   if (countConvNeg > 0)
+    averConvNeg = averConvNeg / countConvNeg;
+   if (countConvPos > 0) 
+    averConvPos = averConvPos / countConvPos;
+   if (countDivNeg > 0)
+    averDivNeg  = averDivNeg  / countDivNeg;
+   if (countDivPos > 0)
+    averDivPos  = averDivPos  / countDivPos;
+   if (countConvNeg > 0 || countDivNeg > 0)
+    averNeg     = averNeg     / (countConvNeg + countDivNeg);
+   if (countConvPos > 0 || countDivPos > 0)
+    averPos     = averPos     / (countConvPos + countDivPos);    
+        
+    Alert("________________________________________");
+    Alert("Средний не актуальный: ",averNeg);
+    Alert("Средний актуальный: ",averPos);
+    Alert("Среднее не актуальное расхождение: ",averDivNeg);
+    Alert("Среднее актуальное расхождение: ",averDivPos); 
+    Alert("Среднее не актуальное схождение: ",averConvNeg);
+    Alert("Среднее актуальное схождение: ",averConvPos);           
+    Alert("Не актуальных расхождений: ",countDivNeg);
+    Alert("Актуальных расхождений: ",countDivPos);
+    Alert("Всего расхождений: ",countDivPos+countDivNeg);
+    Alert("Не актуальных схождений: ",countConvNeg);
+    Alert("Актуальных схождений: ",countConvPos);
+    Alert("Всего схождений: ",countConvPos+countConvNeg);
+    Alert("Результаты поиска схождений\расхождений:");
+    
+    // сохраняем в файл статистики количественные значения всех схождений \ расхождений
+ 
+   FileWriteString(file_handle,"\n\nГодных схождений: "+IntegerToString(countConvPos) );   
+   FileWriteString(file_handle,"\nНе годных схождений: "+IntegerToString(countConvNeg) );
+   FileWriteString(file_handle,"\nВсего схождений: "+IntegerToString(countConvNeg+countConvPos) );  
+   FileWriteString(file_handle,"\nГодных расхождений: "+IntegerToString(countDivPos) );   
+   FileWriteString(file_handle,"\nНе годных расхождений: "+IntegerToString(countDivNeg) );
+   FileWriteString(file_handle,"\nВсего расхождений: "+IntegerToString(countDivNeg+countDivPos) ); 
+    
+   FileWriteString(file_handle,"\nСреднее актуальное схождение: "+DoubleToString(averConvPos,_Digits));  
+   FileWriteString(file_handle,"\nСреднее не актуальное схождение: "+DoubleToString(averConvNeg,_Digits));
+   FileWriteString(file_handle,"\nСреднее актуальное расхождение: "+DoubleToString(averDivPos,_Digits)); 
+   FileWriteString(file_handle,"\nСреднее не актуальное расхождение: "+DoubleToString(averDivNeg,_Digits));
+   FileWriteString(file_handle,"\nСредний актуальный: "+DoubleToString(averPos,_Digits));            
+   FileWriteString(file_handle,"\nСредний не актуальный: "+DoubleToString(averNeg,_Digits));
+   if (GreatDoubles(averNeg,0))
+    FileWriteString(file_handle,"\nОтношение средних прибыли к убытку: "+DoubleToString(averPos/averNeg,_Digits));     
+   if (GreatDoubles(averDivNeg,0))  
+    FileWriteString(file_handle,"\nОтношение средних прибыли к убытку расхождений: "+DoubleToString(averDivPos/averDivNeg,_Digits));         
+   if (GreatDoubles(averConvNeg,0))
+    FileWriteString(file_handle,"\nОтношение средних прибыли к убытку схождений: "+DoubleToString(averConvPos/averConvNeg,_Digits)); 
+     
+                      
+      
+    FileClose(file_handle);          //закрывает файл статистики
+        
        first_calculate = false;
      }
     else  // если запуска не первый
