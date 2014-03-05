@@ -202,7 +202,7 @@ int OnCalculate(const int rates_total,
      }
      else
      {
-      ColorCandlesColors [i] = topTrend.GetMoveType(top_buffer_index);
+      ColorCandlesColors [i + 2] = topTrend.GetMoveType(top_buffer_index);
      }
 
       if (extr_cur.direction > 0)

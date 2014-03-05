@@ -49,7 +49,7 @@ public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif, int ATR_ma_period);
   SExtremum isExtremum(int start_index);
   bool FindExtremumInHistory(int depth);
-  bool CountMoveType(int bar, int start_pos, SExtremum& extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
+  bool CountMoveType(int bar, int start_pos, SExtremum &extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
   ENUM_MOVE_TYPE GetMoveType(int i);
   int TrendDirection();
   void Zeros();
@@ -86,7 +86,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 //+--------------------------------------+
 //| ‘ункци€ вычисл€ет тип движени€ рынка |
 //+--------------------------------------+
-bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum& extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
+bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
  if(bar == 0) //на "нулевом" баре ничего происходить не будет и данна€ строчка избавит нас от лишних проверок в дальнейшем
   return (true); 
