@@ -15,7 +15,7 @@
 
 // вводимые пользователем параметры
 input double max_drawdown = 1;  // максимальный уровень просадки
-input double min_profit   = 1;  // минимально допустимая текущая прибыль 
+input double min_profit   = 0.0001;  // минимально допустимая текущая прибыль 
 
 // глобальные параменные экспектора
 datetime time_from;             // время, с которого начать считывать историю из файла
@@ -64,6 +64,9 @@ void OnTick()
            if ( backtest.LoadHistoryFromFile(file_history,time_from,TimeCurrent()) )
             {// если история позиций успешна загрузилась
             // вычисляем текущую просадку по балансу
+            
+            Alert("TOTAL = ",backtest.GetNTrades());
+            
             current_drawdown = backtest.GetMaxDrawdown();
             // вычисляем текущую прибыль
             backtest.GetProfits();
