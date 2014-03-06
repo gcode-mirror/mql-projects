@@ -16,22 +16,20 @@
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
-input ulong _magic = 4577;
-input ENUM_ORDER_TYPE type = ORDER_TYPE_BUY; // Основное направление торговли
-input int fastDelta = 12;    //  Начальная младшая дельта
+input ENUM_ORDER_TYPE type = ORDER_TYPE_BUY; // Начальное направление торговли
+
+input int volume = 10;      // Полный объем торгов
+input int slowDelta = 60;   // Старшая дельта (процент от полного объема)
+input double ko = 2;        // Коэффициент доливки
+
+input int percentage = 100;  // сколько процентов объем дневной торговли может перекрывать от месячно
+
 input int dayStep = 100;     // шаг границы цены в пунктах для дневной торговли
 input int minStepsFromStartToExtremum = 2;    // минимальное количество шагов от точки старта до экстремума
 input int maxStepsFromStartToExtremum = 4;    // максимальное количество шагов от точки старта до экстремума
 input int stepsFromStartToExit = 2;           // через сколько шагов закроемся после прохода старта не в нашу сторону
 
-input int firstAdd = 20;    //  Процент первой доливки
-input int secondAdd = 28;   //  Процент второй доливки
-input int thirdAdd = 40;    //  Процент третьей доливки
-
-input int volume = 10;      // Полный объем торгов
-input int slowDelta = 60;   // Старшая дельта
-
-input int percentage = 100;  // сколько процентов объем дневной торговли может перекрывать от месячно
+input int maxSpread = 30;
 
 string symbol;
 datetime startTime;
@@ -48,20 +46,20 @@ int monthStep = 400;   // шаг границы цены в пунктах для месячной торговл
 DELTA_STEP fastDeltaStep = FIFTY;  // Шаг изменения МЛАДШЕЙ дельты
 DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 
-CSanyaRotate san(fastDelta, slowDelta, dayStep, monthStep, minStepsFromStartToExtremum, maxStepsFromStartToExtremum, stepsFromStartToExit
-                , type, volume, firstAdd, secondAdd, thirdAdd, fastDeltaStep, slowDeltaStep, percentage
-                , fastPeriod, slowPeriod);
+CSanyaRotate *san;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
 //---
-   if (fastDelta + firstAdd + secondAdd + thirdAdd != 100)
-   {
-    Print("Сумма доливок и начального входа долдна быть равна 100");
-    return(INIT_FAILED);
-   }
+   int fastDelta, firstAdd, secondAdd, thirdAdd;
+   
+   fastDelta = 100 / (1 + ko + ko*ko + ko*ko*ko);
+   firstAdd = fastDelta * ko;
+   secondAdd = firstAdd * ko;
+   thirdAdd = 100 - secondAdd - firstAdd - fastDelta;
+   
    if (type != ORDER_TYPE_BUY && type != ORDER_TYPE_SELL)
    {
     Print("Основное направлени торговли должно быть ORDER_TYPE_BUY или ORDER_TYPE_SELL");
@@ -77,6 +75,11 @@ int OnInit()
     Print("Минимальное количество шагов не должно быть больше максимального");
     return(INIT_FAILED);
    }
+   
+   san = new CSanyaRotate(fastDelta, slowDelta, dayStep, monthStep, minStepsFromStartToExtremum, maxStepsFromStartToExtremum, stepsFromStartToExit
+                , type, volume, firstAdd, secondAdd, thirdAdd, fastDeltaStep, slowDeltaStep, percentage
+                , fastPeriod, slowPeriod);
+                
    symbol = Symbol();
    startTime = TimeCurrent();
    san.SetSymbol(symbol);
@@ -95,7 +98,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
 //---
-   
+   delete san;
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -104,16 +107,25 @@ void OnTick()
  {
   san.RecountFastDelta();
   
+  int spread = SymbolInfoInteger(symbol, SYMBOL_SPREAD);
+  
   if(san.isFastDeltaChanged() || san.isSlowDeltaChanged())
   {
    double vol = san.RecountVolume();
    if (currentVolume != vol)
    {
     PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
-    if (san.CorrectOrder(vol - currentVolume))
+    if (spread < maxSpread)
     {
-     currentVolume = vol;
-     PrintFormat ("%s currentVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume);
+     if (san.CorrectOrder(vol - currentVolume))
+     {
+      currentVolume = vol;
+      PrintFormat ("%s currentVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume);
+     }
+    }
+    else
+    {
+     Print("Большой спред!!!!!");
     }
    }
   }
@@ -122,11 +134,18 @@ void OnTick()
   {
    double vol = san.RecountVolume();
    PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
-   if (san.CorrectOrder(-vol - currentVolume))
+   if (spread < maxSpread)
    {
-    currentVolume = vol;
-    currentType = san.GetType();
-    PrintFormat("%s currentType = %s, san.GetType() = %s", MakeFunctionPrefix(__FUNCTION__), OrderTypeToString(currentType), OrderTypeToString(san.GetType()));
+    if (san.CorrectOrder(-vol - currentVolume))
+    {
+     currentVolume = vol;
+     currentType = san.GetType();
+     PrintFormat("%s currentType = %s, san.GetType() = %s", MakeFunctionPrefix(__FUNCTION__), OrderTypeToString(currentType), OrderTypeToString(san.GetType()));
+    }
+   }
+   else
+   {
+    Print("Большой спред!!!!!");
    }
   }
  }
