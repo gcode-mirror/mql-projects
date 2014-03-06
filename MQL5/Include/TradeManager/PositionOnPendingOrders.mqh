@@ -103,6 +103,7 @@ public:
    void     setStopLossStatus(ENUM_STOPLEVEL_STATUS status) {_sl_status = status;};
    ENUM_STOPLEVEL_STATUS setStopLoss();
    ENUM_STOPLEVEL_STATUS setTakeProfit();
+   void setType(ENUM_TM_POSITION_TYPE type) {_type = type;};
    void     setVolume(double lots) {_lots = lots;}; 
  
    bool     ChangeSize(double lot);
