@@ -287,13 +287,13 @@ bool CBrothers::CorrectOrder(double volume)
  if (volume > 0)
  {
   type = OrderTypeToTMPositionType(_type);
-  PrintFormat("Type = %s, TMType = %s", OrderTypeToString(_type), GetNameOP(type));
+  //PrintFormat("%s Type = %s, TMType = %s", OrderTypeToString(_type), GetNameOP(type));
   //price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
  }
  else
  {
   type = OrderTypeToTMPositionType((ENUM_ORDER_TYPE)(_type + MathPow(-1, _type))); // Если _type= 0, то type =1, если  _type= 1, то type =0
-  PrintFormat("Type = %s, TMType = %s", OrderTypeToString(_type), GetNameOP(type));
+  //PrintFormat("%s Type = %s, TMType = %s", OrderTypeToString(_type), GetNameOP(type));
   //price = SymbolInfoDouble(_symbol, SYMBOL_BID);
  }
  
@@ -306,7 +306,6 @@ bool CBrothers::CorrectOrder(double volume)
  {
   PrintFormat("%s Добавим %.02f лота к объему позиции", MakeFunctionPrefix(__FUNCTION__), volume);
   result = ctm.PositionChangeSize(_symbol, volume);
-  PrintFormat("%s result = %s", MakeFunctionPrefix(__FUNCTION__), BoolToString(result)); 
  }
  return(result);
  /*
