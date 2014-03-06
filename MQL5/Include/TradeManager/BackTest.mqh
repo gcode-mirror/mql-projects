@@ -594,10 +594,10 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   WriteTo  (file_handle,IntegerToString(n_win_trades)+" ");
   WriteTo  (file_handle,IntegerToString(n_lose_trades+1)+" ");
   WriteTo  (file_handle,IntegerToString(sign_last_pos)+" ");
-  WriteTo  (file_handle,DoubleToString(max_trade)+" ");
-  WriteTo  (file_handle,DoubleToString(min_trade)+" ");   
-  WriteTo  (file_handle,DoubleToString(maxProfitRange)+" "); 
-  WriteTo  (file_handle,DoubleToString(maxLoseRange)+" ");
+  WriteTo  (file_handle,DoubleToString (max_trade)+" ");
+  WriteTo  (file_handle,DoubleToString (min_trade)+" ");   
+  WriteTo  (file_handle,DoubleToString (maxProfitRange)+" "); 
+  WriteTo  (file_handle,DoubleToString (maxLoseRange)+" ");
   WriteTo  (file_handle,IntegerToString(maxPositiveTrades)+" ");  
   WriteTo  (file_handle,IntegerToString(maxNegativeTrades)+" ");
   WriteTo  (file_handle,DoubleToString(aver_profit_trade)+" ");
