@@ -56,6 +56,7 @@ public:
                     int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
   void ModifyPosition(long ticket, int sl, int tp);
   bool PositionChangeSize(string strSymbol, double additionalVolume);
+  bool ClosePosition(string symbol, color Color=CLR_NONE);      // Закртыие позиции по символу
   bool ClosePosition(long ticket, color Color = CLR_NONE);     // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);           // Закрытие позиции по индексу в массиве позиций
   void DoUsualTrailing();
@@ -560,6 +561,33 @@ void CTradeManager::OnTick()
    }
   }
  }
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual position by symbol.
+/// \param [in] ticket			Open virtual order ticket
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
+{
+ int i = 0;
+ int total = _openPositions.Total();
+ CPosition *pos;
+
+ if (total > 0)
+ {
+  for (i = total - 1; i >= 0; i--) // перебираем все ордера или позиции 
+  {
+   pos = _openPositions.At(i);
+   if (pos.getSymbol() == symbol)
+   {
+    if (ClosePosition(i)) return (true);
+    else return (false);
+   }
+  }
+ }
+ return (true);
 }
 
 //+------------------------------------------------------------------+

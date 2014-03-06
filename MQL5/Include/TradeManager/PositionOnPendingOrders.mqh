@@ -281,13 +281,20 @@ bool CPosition::ChangeSize(double additionalVolume)
  
  if (type == OP_BUY || type == OP_SELL)
  {
+  //PrintFormat("%s Текущий тип = %s, Отправляем ордер типа = %s, объем ордера = %.02f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(this.getType()), GetNameOP(type), additionalVolume);
   if(trade.PositionOpen(_symbol, PositionType(type), MathAbs(additionalVolume), openPrice))
   {
-   
-   if (_lots = _lots + additionalVolume < 0) _type = (ENUM_TM_POSITION_TYPE)(_type + MathPow(-1, _type));
+   _lots = _lots + additionalVolume;
+   //PrintFormat("%s новый объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _lots);
+   if (_lots < 0)
+   {
+    _type = (ENUM_TM_POSITION_TYPE)(_type + MathPow(-1, _type));
+    _lots = -_lots;
+    //PrintFormat("%s Позиция была перевернута, новый тип = %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(this.getType()));
+   }
    
    log_file.Write(LOG_DEBUG, StringFormat("%s Изменена позиция %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket));
-   PrintFormat("%s Изменена позиция %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket);
+   PrintFormat("%s Изменена позиция %d, текущий тип = %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, GetNameOP(this.getType()));
    
    if (_sl_status == STOPLEVEL_STATUS_PLACED)
    {

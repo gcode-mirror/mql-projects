@@ -114,28 +114,32 @@ void OnTick()
    double vol = san.RecountVolume();
    if (currentVolume != vol)
    {
-    PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
+    //PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
     if (spread < maxSpread)
     {
+     PrintFormat("%s spread = %d, maxSpread = %d", MakeFunctionPrefix(__FUNCTION__), spread, maxSpread);
      if (san.CorrectOrder(vol - currentVolume))
      {
       currentVolume = vol;
       PrintFormat ("%s currentVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume);
      }
     }
+    /*
     else
     {
      Print("Большой спред!!!!!");
     }
+    */
    }
   }
   
   if (currentType != san.GetType())
   {
    double vol = san.RecountVolume();
-   PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
+   //PrintFormat ("%s currentVol=%f, recountVol=%f", MakeFunctionPrefix(__FUNCTION__), currentVolume, vol);
    if (spread < maxSpread)
    {
+    PrintFormat("%s spread = %d, maxSpread = %d", MakeFunctionPrefix(__FUNCTION__), spread, maxSpread);
     if (san.CorrectOrder(-vol - currentVolume))
     {
      currentVolume = vol;
@@ -143,10 +147,12 @@ void OnTick()
      PrintFormat("%s currentType = %s, san.GetType() = %s", MakeFunctionPrefix(__FUNCTION__), OrderTypeToString(currentType), OrderTypeToString(san.GetType()));
     }
    }
+   /*
    else
    {
     Print("Большой спред!!!!!");
    }
+   */
   }
  }
 //+------------------------------------------------------------------+
