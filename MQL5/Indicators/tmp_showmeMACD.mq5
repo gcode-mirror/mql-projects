@@ -198,46 +198,48 @@ int OnCalculate(const int rates_total,
             //увеличиваем количество тренд линий
             countTrend++;
             
-            localMax = high[lastBarIndex];
-            localMin = low[lastBarIndex];
+            localMax = high[rates_total-1-lastBarIndex];
+            localMin = low[rates_total-1-lastBarIndex];
             for (count=1;count<=depth;count++)
              {
-              if (high[lastBarIndex-count] > localMax)
-               localMax = high[lastBarIndex-count];
-              if (low[lastBarIndex-count] < localMin)
-               localMin = low[lastBarIndex-count];
+           //   if (high[rates_total-1-lastBarIndex+count] > localMax)
+              if (GreatDoubles (high[rates_total-1-lastBarIndex+count],localMax)
+               localMax = high[rates_total-1-lastBarIndex+count];
+            //  if (low[lastBarIndex-count] < localMin)
+              if (LessDoubles (low[rates_total-1-lastBarIndex+count],localMin)
+               localMin = low[rates_total-1-lastBarIndex+count];
              } 
             if (retCode == 1)
              {
-               FileWriteString(file_handle,"\n "+TimeToString(time[lastBarIndex])+" (расхождение): " );   
-               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(localMax - close[lastBarIndex])+" убыток: "+DoubleToString(close[lastBarIndex]-localMin));                            
-               if ( GreatDoubles ( (localMax - close[lastBarIndex]), (close[lastBarIndex] - localMin) ) )
+               FileWriteString(file_handle,"\n "+TimeToString(time[rates_total-2-lastBarIndex])+" (расхождение): " );   
+               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(close[rates_total-2-lastBarIndex]-localMin)+" убыток: "+DoubleToString(localMax - close[rates_total-2-lastBarIndex]));                            
+               if ( LessDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
                  {
-                   averDivPos = averDivPos + localMax - close[lastBarIndex];
-                   averPos     = averPos + localMax - close[lastBarIndex]; 
+                   averDivPos  = averDivPos + close[rates_total-2-lastBarIndex+count] - localMin;
+                   averPos     = averPos + close[rates_total-2-lastBarIndex+count] - localMin;
                    countDivPos ++; // увеличиваем счетчик положительных схождений
                  }
                else
                  {
-                   averDivNeg = averDivNeg + localMin - close[lastBarIndex];  
-                   averNeg     = averNeg + localMin - close[lastBarIndex];                 
+                   averDivNeg = averDivNeg + close[rates_total-2-lastBarIndex] - localMax;  
+                   averNeg     = averNeg + close[rates_total-2-lastBarIndex] - localMax;                 
                    countDivNeg ++; // иначе увеличиваем счетчик отрицательных схождений
                  }
              }
             if (retCode == -1)
              {
-               FileWriteString(file_handle,"\n "+TimeToString(time[lastBarIndex])+" (схождение): " );   
-               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(localMax - close[lastBarIndex])+" убыток: "+DoubleToString(close[lastBarIndex]-localMin));                
-               if (LessDoubles ( (localMax - close[lastBarIndex]), (close[lastBarIndex] - localMin) ) )
+               FileWriteString(file_handle,"\n "+TimeToString(time[rates_total-2-lastBarIndex])+" (схождение): " );   
+               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(localMax - close[rates_total-2-lastBarIndex])+" убыток: "+DoubleToString(close[rates_total-2-lastBarIndex]-localMin));                
+               if (LessDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
                  {
-                  averConvPos = averConvPos + localMax - close[lastBarIndex];
-                  averPos     = averPos + localMax - close[lastBarIndex];
+                  averConvPos = averConvPos + localMax - close[rates_total-2-lastBarIndex];
+                  averPos     = averPos + localMax - close[rates_total-2-lastBarIndex];
                   countConvPos ++; // увеличиваем счетчик положительных расхождений
                  }
                else
                  {
-                  averConvNeg = averConvNeg + localMin - close[lastBarIndex];  
-                  averNeg     = averNeg + localMin - close[lastBarIndex];
+                  averConvNeg = averConvNeg + localMin - close[rates_total-2-lastBarIndex];  
+                  averNeg     = averNeg + localMin - close[rates_total-2-lastBarIndex];
                   countConvNeg ++; // иначе увеличиваем счетчик отрицательных расхождений
                  }   
              }
@@ -258,22 +260,7 @@ int OnCalculate(const int rates_total,
     averNeg     = averNeg     / (countConvNeg + countDivNeg);
    if (countConvPos > 0 || countDivPos > 0)
     averPos     = averPos     / (countConvPos + countDivPos);    
-        
-    Alert("________________________________________");
-    Alert("Средний не актуальный: ",averNeg);
-    Alert("Средний актуальный: ",averPos);
-    Alert("Среднее не актуальное расхождение: ",averDivNeg);
-    Alert("Среднее актуальное расхождение: ",averDivPos); 
-    Alert("Среднее не актуальное схождение: ",averConvNeg);
-    Alert("Среднее актуальное схождение: ",averConvPos);           
-    Alert("Не актуальных расхождений: ",countDivNeg);
-    Alert("Актуальных расхождений: ",countDivPos);
-    Alert("Всего расхождений: ",countDivPos+countDivNeg);
-    Alert("Не актуальных схождений: ",countConvNeg);
-    Alert("Актуальных схождений: ",countConvPos);
-    Alert("Всего схождений: ",countConvPos+countConvNeg);
-    Alert("Результаты поиска схождений\расхождений:");
-    
+            
     // сохраняем в файл статистики количественные значения всех схождений \ расхождений
  
    FileWriteString(file_handle,"\n\nГодных схождений: "+IntegerToString(countConvPos) );   
