@@ -71,31 +71,31 @@ public:
    void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
                 ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
 // GET   
-   datetime getClosePosDT() { return (_posCloseTime); };   //получает дату закрытия позиции
-   datetime getExpiration() {return (_expiration);};             
-   ulong    getMagic() {return (_magic);};
-   double   getMinProfit() {return(_minProfit);};
-   datetime getOpenPosDT() { return (_posOpenTime); };     //получает дату открытия позиции
-   ulong    getOrderTicket() {return(_orderTicket);};
-   double   getPositionPrice() {return(_posAveragePrice);};
+   datetime getClosePosDT()      {return (_posCloseTime);};   //получает дату закрытия позиции
+   datetime getExpiration()      {return (_expiration);};             
+   ulong    getMagic()           {return (_magic);};
+   double   getMinProfit()       {return(_minProfit);};
+   datetime getOpenPosDT()       {return (_posOpenTime);};     //получает дату открытия позиции
+   ulong    getOrderTicket()     {return(_orderTicket);};
+   double   getPositionPrice()   {return(_posAveragePrice);};
    int      getPositionPointsProfit();
    ENUM_POSITION_STATUS getPositionStatus() {return (_pos_status);};
    double   getPosProfit();                                 //получает прибыль позиции  
    double   getPriceDifference() {return(_priceDifference);};
-   double   getPriceOpen() { return(_posOpenPrice); };     //получает цену открытия позиции
-   double   getPriceClose() { return(_posClosePrice); };   //получает цену закрытия позиции
-   int      getSL() {return(_sl);};
-   double   getStopLossPrice() {return(_slPrice);};
+   double   getPriceOpen()       {return(_posOpenPrice);};     //получает цену открытия позиции
+   double   getPriceClose()      {return(_posClosePrice);};   //получает цену закрытия позиции
+   int      getSL()              {return(_sl);};
+   double   getStopLossPrice()   {return(_slPrice);};
    ENUM_STOPLEVEL_STATUS getStopLossStatus() {return (_sl_status);};
-   ulong    getStopLossTicket() {return (_slTicket);};
-   string   getSymbol() {return (_symbol);};
+   ulong    getStopLossTicket()  {return (_slTicket);};
+   string   getSymbol()          {return (_symbol);};
    double   getTakeProfitPrice() {return(_tpPrice);};
-   ulong    getTMTicket() {return(_tmTicket);};
-   int      getTP() {return(_tp);};
-   double   getTrailingStop() {return(_trailingStop);};
-   double   getTrailingStep() {return(_trailingStep);};
+   ulong    getTMTicket()        {return(_tmTicket);};
+   int      getTP()              {return(_tp);};
+   double   getTrailingStop()    {return(_trailingStop);};
+   double   getTrailingStep()    {return(_trailingStep);};
    ENUM_TM_POSITION_TYPE getType() {return (_type);};
-   double   getVolume() {return (_lots);};
+   double   getVolume()          {return (_lots);};
    
 // SET
    void     setMagic(ulong magic) {_magic = magic;};
@@ -103,7 +103,7 @@ public:
    void     setStopLossStatus(ENUM_STOPLEVEL_STATUS status) {_sl_status = status;};
    ENUM_STOPLEVEL_STATUS setStopLoss();
    ENUM_STOPLEVEL_STATUS setTakeProfit();
-   void setType(ENUM_TM_POSITION_TYPE type) {_type = type;};
+   void     setType(ENUM_TM_POSITION_TYPE type) {_type = type;};
    void     setVolume(double lots) {_lots = lots;}; 
  
    bool     ChangeSize(double lot);

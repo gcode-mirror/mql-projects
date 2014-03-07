@@ -22,20 +22,18 @@ int error = 0;
 class CTradeManager
 {
 private:
-  bool CloseReProcessingPosition(int i,color Color=CLR_NONE);
-  long MakeMagic(string strSymbol = "");
-  string CreateFilename(ENUM_FILENAME filename);
-  
-  bool SaveArrayToFile(string file_url,CPositionArray *array);
-  bool LoadArrayFromFile(string file_url,CPositionArray *array);
-  
   double _current_balance;    // текущая прибыль советника в пунктах
   double _current_drawdown;   // текущая просадка баланса
   double _max_drawdown;       // максимально допустимая просадка
   double _max_balance;        // максимальный баланс
   
   int    _historyChanged;     // режим изменения истории (0-не менялось, 1-увеличилась, 2-уменьшилась)
-  
+
+  bool   CloseReProcessingPosition(int i,color Color=CLR_NONE);
+  string CreateFilename(ENUM_FILENAME filename);
+  long   MakeMagic(string strSymbol = "");
+  bool   LoadArrayFromFile(string file_url,CPositionArray *array);
+  bool   SaveArrayToFile(string file_url,CPositionArray *array);  
 protected:
   ulong _magic;
   bool _useSound;
@@ -50,42 +48,44 @@ public:
   void CTradeManager();
   void ~CTradeManager(void);
   
-  bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl = 0, int tp = 0, 
-                    int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
-  bool OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
-                    int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
-  void ModifyPosition(long ticket, int sl, int tp);
-  bool PositionChangeSize(string strSymbol, double additionalVolume);
-  bool ClosePosition(string symbol, color Color=CLR_NONE);      // Закртыие позиции по символу
-  bool ClosePosition(long ticket, color Color = CLR_NONE);     // Закртыие позиции по тикету
-  bool ClosePosition(int i, color Color = CLR_NONE);           // Закрытие позиции по индексу в массиве позиций
+  void OnTick();
+  void OnTrade(datetime history_start);
+  
+  // GET
+  double GetCurrentDrawdown() {return(_current_drawdown); };  // возвращает  текущую просадку по балансу  
+  double GetCurrentProfit()   {return(_current_balance);};    // возвращает текущую прибыль
+  long   GetHistoryDepth();                                   //возвращает глубину истории
+  double GetMaxDrawdown()     {return(_max_drawdown); };      // возвращает  текущую просадку по балансу
+  double GetMaxProfit()       {return(_max_balance);};        // возвращает текущую прибыль
+  int    GetPositionCount()   {return (_openPositions.Total() + _positionsToReProcessing.Total());};  
+  CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
+  int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
+  int    GetPositionPointsProfit(string symbol);
+  ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
+
+  bool ClosePosition(string symbol, color Color=CLR_NONE);    // Закртыие позиции по символу
+  bool ClosePosition(long ticket, color Color = CLR_NONE);    // Закртыие позиции по тикету
+  bool ClosePosition(int i, color Color = CLR_NONE);          // Закрытие позиции по индексу в массиве позиций
   void DoUsualTrailing();
   void DoLosslessTrailing();
   bool isMinProfit(string symbol);
-  void OnTick();
-  void OnTrade(datetime history_start);
-  ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
-  int GetPositionCount(){return (_openPositions.Total() + _positionsToReProcessing.Total());};
-  
-  int GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
-  int GetPositionPointsProfit(string symbol);
-  double GetCurrentProfit() { return(_current_balance);};      // возвращает текущую прибыль
-  double GetCurrentDrawdown() { return(_current_drawdown); };  // возвращает  текущую просадку по балансу
-  double GetMaxProfit() { return(_max_balance);};      // возвращает текущую прибыль
-  double GetMaxDrawdown() { return(_max_drawdown); };  // возвращает  текущую просадку по балансу
+  bool IsHistoryChanged ();                                   // возвращает сигнал изменения истории 
+  void ModifyPosition(long ticket, int sl, int tp);
+  bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl = 0, int tp = 0, 
+                          int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
+  bool OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
+                          int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
+  bool PositionChangeSize(string strSymbol, double additionalVolume);
   void UpdateData(CPositionArray *positionsHistory);
-
-  CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
-  long GetHistoryDepth();  //возвращает глубину истории
-  
-  bool IsHistoryChanged ();  // возвращает сигнал изменения истории 
   
 };
 
 //+---------------------------------
 // Конструктор
 //+---------------------------------
-void CTradeManager::CTradeManager(): _useSound(true), _nameFileSound("expert.wav") 
+void CTradeManager::CTradeManager(): 
+                    _useSound(true), 
+                    _nameFileSound("expert.wav") 
 {
  _positionsToReProcessing = new CPositionArray();
  _openPositions           = new CPositionArray();
@@ -127,6 +127,404 @@ void CTradeManager::~CTradeManager(void)
  log_file.Write(LOG_DEBUG, StringFormat("%s Процесс деинициализации завершен.", MakeFunctionPrefix(__FUNCTION__)));
  FileDelete(rescueDataFileName, FILE_COMMON);
 };
+
+//+------------------------------------------------------------------+
+/// Called from EA OnTick().
+/// Actions virtual positions 
+/// Include the folowing in each EA that uses TradeManage
+//+------------------------------------------------------------------+
+void CTradeManager::OnTick()
+{
+//--- Сначала обработаем незавершенные позиции
+ int total = _positionsToReProcessing.Total();
+ for(int i = total - 1; i>=0; i--) // по массиву позиций на доработку
+ {
+  CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее тикету
+  if (pos.getPositionStatus() == POSITION_STATUS_NOT_DELETED)
+  {
+   if (pos.RemovePendingPosition() == POSITION_STATUS_DELETED)
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Получилось удалить позицию [%d].Удаляем её из positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
+    _positionsHistory.Add(_positionsToReProcessing.Detach(i)); //добавляем удаляемую позицию в массив
+    _historyChanged = 1; // меняем флаг, что история увеличилась
+    SaveArrayToFile(historyDataFileName,_positionsHistory);                    
+    break;
+   }
+  }
+  
+  if (pos.getPositionStatus() == POSITION_STATUS_NOT_CHANGED)
+  {
+   if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+   {
+    pos.ChangeStopLossVolume();
+   }
+   if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_PLACED);
+   {
+    pos.setStopLoss();
+   }
+  }
+  
+  if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Удаляем StopLoss и TakeProfit", MakeFunctionPrefix(__FUNCTION__)));    
+   CloseReProcessingPosition(i);
+   break;
+  }
+  
+  if (pos.getPositionStatus() == POSITION_STATUS_NOT_COMPLETE)
+  {
+   if (pos.setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && pos.setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и TakeProfit у позиции [%d].Перемещаем её из positionsToReProcessing в openPositions.", MakeFunctionPrefix(__FUNCTION__), i));    
+    pos.setPositionStatus(POSITION_STATUS_OPEN);
+    
+    _openPositions.Add(_positionsToReProcessing.Detach(i));    
+    SaveArrayToFile(rescueDataFileName,_openPositions);    
+   }
+  }
+ } 
+
+//--- Подгружаем историю
+ if(!HistorySelect(_historyStart, TimeCurrent()))
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать историю с %s по %s", MakeFunctionPrefix(__FUNCTION__), _historyStart, TimeCurrent())); 
+  return;
+ }
+
+//--- Если история подгрузилась, работаем с текущими позициями  
+ total = _openPositions.Total();
+ CPosition *pos;
+//--- по массиву НАШИХ позиций
+ for(int i = total - 1; i >= 0; i--) 
+ {
+  pos = _openPositions.At(i);   // выберем позицию по ее индексу
+  ENUM_TM_POSITION_TYPE type = pos.getType();
+  
+  if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING && pos.getStopLossStatus() != STOPLEVEL_STATUS_NOT_DEFINED) // Если мы не можем выбрать стоп по его тикету, значит он сработал
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+   pos.setPositionStatus(POSITION_STATUS_CLOSED);
+   ClosePosition(i);
+   break;                          
+  }
+  
+  if (pos.CheckTakeProfit())    //проверяем условие выполнения TP
+  {
+   //log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()));
+   PrintFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice());
+   ClosePosition(i);
+   break;             
+  }
+     
+  if (pos.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
+  {
+   if (!OrderSelect(pos.getOrderTicket())) // Если мы не можем выбрать ее по тикету
+   {
+    long ticket = pos.getOrderTicket();
+    if(!FindHistoryTicket(ticket))            // Попробуем найти этот тикет в истории
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s В массиве историй не найден ордер с тикетом %d", MakeFunctionPrefix(__FUNCTION__), ticket));
+     return;
+    }
+    
+    long state;
+    if (HistoryOrderGetInteger(ticket, ORDER_STATE, state)) // Получим статус ордера из истории
+    {
+     switch (state)
+     {
+      case ORDER_STATE_FILLED:
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
+       
+       if (pos.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
+        || pos.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
+       {
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
+        pos.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
+        _positionsToReProcessing.Add(_openPositions.Detach(i)); 
+        break;
+       }
+       
+       log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Изменяем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
+       pos.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
+       if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP) pos.setType(OP_BUY);
+       if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP) pos.setType(OP_SELL);
+       log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+       
+       SaveArrayToFile(rescueDataFileName,_openPositions);       
+       break;
+      }
+      case ORDER_STATE_CANCELED:
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s ордер отменен %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
+       _positionsHistory.Add(_openPositions.Detach(i));
+       _historyChanged = 1; // меняем флаг, что история увеличилась  
+       SaveArrayToFile(historyDataFileName,_positionsHistory);       
+       break;
+      }
+      case ORDER_STATE_EXPIRED:
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
+       _positionsHistory.Add(_openPositions.Detach(i));
+       _historyChanged = 1; // меняем флаг, что история увеличилась
+       SaveArrayToFile(historyDataFileName,_positionsHistory);       
+       break;
+      }
+      
+      default:
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s Плохой статус оредера при перемещении в историю: %s; тикет ордера: %d", MakeFunctionPrefix(__FUNCTION__), EnumToString((ENUM_ORDER_STATE)state), ticket));
+       break;
+      }
+     }
+    }
+    else
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать ордер по тикету %d из истории", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()));
+     log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(GetLastError())));
+     string str;
+     int total = HistoryOrdersTotal();
+     for(int i = total-1; i >= 0; i--)
+     {
+      str += HistoryOrderGetTicket(i) + " ";
+     }
+     log_file.Write(LOG_DEBUG, StringFormat("%s Тикеты ордеров из истории: %s", MakeFunctionPrefix(__FUNCTION__), str));
+    } 
+   }
+  }
+ }
+}
+
+//+------------------------------------------------------------------+
+/// Called from EA OnTrade().
+/// Include the folowing in each EA that uses TradeManager
+//+------------------------------------------------------------------+
+void CTradeManager::OnTrade(datetime history_start=0)
+{
+ // возвращаем флаг изменения истории 
+ if (_historyChanged != 0)
+  {
+   _historyChanged = 0;
+  }
+}
+
+//+----------------------------------------------------
+//| Возвращает грубину истории
+//+----------------------------------------------------
+long CTradeManager::GetHistoryDepth() 
+{
+ return _positionsHistory.Total();
+}
+
+//+----------------------------------------------------
+//  методы для работы с Replay Position
+//+----------------------------------------------------
+CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime toDate = 0)
+{
+ CPositionArray *resultArray;
+ resultArray = new CPositionArray(); 
+ CPosition *pos;
+ datetime posTime;
+ int total = _positionsHistory.Total();
+ //Print("historyTotal=", _positionsHistory.Total());
+ if (toDate == 0) toDate = TimeCurrent();
+ 
+ for(int i = 0; i < total; i++)
+ {
+  pos = _positionsHistory.At(i);
+  posTime = pos.getClosePosDT();
+  //PrintFormat("posCloseDate=%s, fromDate=%s, toDate=%s", TimeToString(posTime), TimeToString(fromDate), TimeToString(toDate));
+  if (posTime < fromDate) continue;   // Позиции с ранней датой - пропускаем
+  if (posTime > toDate) break;        // Добрались до позиций с поздней датой - выходим
+  
+  resultArray.Add(pos);               // Заполняем массив позициями с датой закрытия в нужном диапазоне
+ }
+ //Print("resultTotal=", resultArray.Total());
+ return resultArray;
+} 
+
+//+------------------------------------------------------------------+
+//|  Профит позиции на символе в пунктах                             |
+//+------------------------------------------------------------------+
+int CTradeManager::GetPositionPointsProfit(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   int profit = pos.getPositionPointsProfit();
+   return(profit);
+  }
+ }
+ return(0);
+}
+
+//+------------------------------------------------------------------+
+/// Return current position type
+/// \param [long] ticket       number of ticket to search
+/// \return                    true if successful, false if not
+//+------------------------------------------------------------------+
+ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(pos.getType());
+  }
+ }
+ return OP_UNKNOWN;
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual position by symbol.
+/// \param [in] ticket			Open virtual order ticket
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
+{
+ int i = 0;
+ int total = _openPositions.Total();
+ CPosition *pos;
+
+ if (total > 0)
+ {
+  for (i = total - 1; i >= 0; i--) // перебираем все ордера или позиции 
+  {
+   pos = _openPositions.At(i);
+   if (pos.getSymbol() == symbol)
+   {
+    if (ClosePosition(i)) return (true);
+    else return (false);
+   }
+  }
+ }
+ return (true);
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual position by ticket.
+/// \param [in] ticket			Open virtual order ticket
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
+{
+ int index = _openPositions.TicketToIndex(ticket);
+ return ClosePosition(index);
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual position by index.
+/// \param [in] i			      pos index in array of positions
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
+{
+ CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
+ //PrintFormat("%s получаем из массива указатель на позицию по ее индексу", MakeFunctionPrefix(__FUNCTION__));
+ if (pos.ClosePosition())
+ {
+  //Print("Перемещаем позицию в хистори");
+  _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
+  _historyChanged = 1; // меняем флаг, что история увеличилась 
+  SaveArrayToFile(historyDataFileName,_positionsHistory); 
+  SaveArrayToFile(rescueDataFileName,_openPositions);   
+  log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+  PrintFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i);
+  return(true);
+ }
+ else
+ {
+  error = GetLastError();
+  _positionsToReProcessing.Add(_openPositions.Detach(i));
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось удалить позицию [%d]. Позиция перемещена в массив positionsToReProcessing.Error{%d} = %s"
+                                        , MakeFunctionPrefix(__FUNCTION__), i, error, ErrorDescription(error)));
+ }
+ return(false);
+}
+
+//+------------------------------------------------------------------+ 
+// Функция вычисления параметров трейлинга
+//+------------------------------------------------------------------+
+void CTradeManager::DoUsualTrailing()
+{
+ int total = _openPositions.Total();
+//--- пройдем в цикле по всем ордерам
+ for(int i = 0; i < total; i++)
+ {
+  CPosition *pos = _openPositions.At(i);
+  if(pos.UsualTrailing())
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Изменился SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+  }
+ } 
+}
+
+//+------------------------------------------------------------------+ 
+// Функция вычисления параметров трейлинга
+//+------------------------------------------------------------------+
+void CTradeManager::DoLosslessTrailing()
+{
+ int total = _openPositions.Total();
+//--- пройдем в цикле по всем ордерам
+ for(int i = 0; i < total; i++)
+ {
+  CPosition *pos = _openPositions.At(i);
+  if(pos.UsualTrailing())
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Изменился SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+  }
+ } 
+}
+
+//+------------------------------------------------------------------+
+/// returns if minProfit achieved
+//+------------------------------------------------------------------+
+bool CTradeManager::isMinProfit(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(pos.isMinProfit());
+  }
+ }
+ return false;
+}
+
+//+------------------------------------------------------------------+
+//| Возвращает сигнал изменения истории
+//+------------------------------------------------------------------+
+bool CTradeManager::IsHistoryChanged(void) 
+{ 
+ if (_historyChanged!=0)
+  return true;
+ return false;
+}
+
+//+------------------------------------------------------------------+ 
+// Функция модификации позиции
+//+------------------------------------------------------------------+
+void CTradeManager::ModifyPosition(long ticket, int sl, int tp)
+{
+ if (sl > 0){}
+ if (tp > 0){}
+}
+
 
 //+------------------------------------------------------------------+
 //| Открывает единственную позицию                                   |
@@ -308,51 +706,6 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
 }
 
 //+------------------------------------------------------------------+ 
-// Функция вычисления параметров трейлинга
-//+------------------------------------------------------------------+
-void CTradeManager::DoUsualTrailing()
-{
- int total = _openPositions.Total();
-//--- пройдем в цикле по всем ордерам
- for(int i = 0; i < total; i++)
- {
-  CPosition *pos = _openPositions.At(i);
-  if(pos.UsualTrailing())
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Изменился SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-  }
- } 
-}
-
-//+------------------------------------------------------------------+ 
-// Функция вычисления параметров трейлинга
-//+------------------------------------------------------------------+
-void CTradeManager::DoLosslessTrailing()
-{
- int total = _openPositions.Total();
-//--- пройдем в цикле по всем ордерам
- for(int i = 0; i < total; i++)
- {
-  CPosition *pos = _openPositions.At(i);
-  if(pos.UsualTrailing())
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Изменился SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-  }
- } 
-}
-
-//+------------------------------------------------------------------+ 
-// Функция модификации позиции
-//+------------------------------------------------------------------+
-void CTradeManager::ModifyPosition(long ticket, int sl, int tp)
-{
- if (sl > 0){}
- if (tp > 0){}
-}
-
-//+------------------------------------------------------------------+ 
 // Функция изменения объема позиции
 //+------------------------------------------------------------------+
 bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
@@ -383,336 +736,6 @@ bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
  }
  return (false);
 }
-//+------------------------------------------------------------------+
-/// Called from EA OnTrade().
-/// Include the folowing in each EA that uses TradeManager
-//+------------------------------------------------------------------+
-void CTradeManager::OnTrade(datetime history_start=0)
-{
- // возвращаем флаг изменения истории 
- if (_historyChanged != 0)
-  {
-   _historyChanged = 0;
-  }
-}
-
-//+------------------------------------------------------------------+
-/// Called from EA OnTick().
-/// Actions virtual positions 
-/// Include the folowing in each EA that uses TradeManage
-//+------------------------------------------------------------------+
-void CTradeManager::OnTick()
-{
-//--- Сначала обработаем незавершенные позиции
- int total = _positionsToReProcessing.Total();
- for(int i = total - 1; i>=0; i--) // по массиву позиций на доработку
- {
-  CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее тикету
-  if (pos.getPositionStatus() == POSITION_STATUS_NOT_DELETED)
-  {
-   if (pos.RemovePendingPosition() == POSITION_STATUS_DELETED)
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Получилось удалить позицию [%d].Удаляем её из positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
-    _positionsHistory.Add(_positionsToReProcessing.Detach(i)); //добавляем удаляемую позицию в массив
-    _historyChanged = 1; // меняем флаг, что история увеличилась
-    SaveArrayToFile(historyDataFileName,_positionsHistory);                    
-    break;
-   }
-  }
-  
-  if (pos.getPositionStatus() == POSITION_STATUS_NOT_CHANGED)
-  {
-   if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
-   {
-    pos.ChangeStopLossVolume();
-   }
-   if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_PLACED);
-   {
-    pos.setStopLoss();
-   }
-  }
-  
-  if (pos.getStopLossStatus() == STOPLEVEL_STATUS_NOT_DELETED)
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Удаляем StopLoss и TakeProfit", MakeFunctionPrefix(__FUNCTION__)));    
-   CloseReProcessingPosition(i);
-   break;
-  }
-  
-  if (pos.getPositionStatus() == POSITION_STATUS_NOT_COMPLETE)
-  {
-   if (pos.setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && pos.setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и TakeProfit у позиции [%d].Перемещаем её из positionsToReProcessing в openPositions.", MakeFunctionPrefix(__FUNCTION__), i));    
-    pos.setPositionStatus(POSITION_STATUS_OPEN);
-    
-    _openPositions.Add(_positionsToReProcessing.Detach(i));    
-    SaveArrayToFile(rescueDataFileName,_openPositions);    
-   }
-  }
- } 
-
-//--- Подгружаем историю
- if(!HistorySelect(_historyStart, TimeCurrent()))
- {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать историю с %s по %s", MakeFunctionPrefix(__FUNCTION__), _historyStart, TimeCurrent())); 
-  return;
- }
-
-//--- Если история подгрузилась, работаем с текущими позициями  
- total = _openPositions.Total();
- CPosition *pos;
-//--- по массиву НАШИХ позиций
- for(int i = total - 1; i >= 0; i--) 
- {
-  pos = _openPositions.At(i);   // выберем позицию по ее индексу
-  ENUM_TM_POSITION_TYPE type = pos.getType();
-  
-  if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING && pos.getStopLossStatus() != STOPLEVEL_STATUS_NOT_DEFINED) // Если мы не можем выбрать стоп по его тикету, значит он сработал
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-   pos.setPositionStatus(POSITION_STATUS_CLOSED);
-   ClosePosition(i);
-   break;                          
-  }
-  
-  if (pos.CheckTakeProfit())    //проверяем условие выполнения TP
-  {
-   //log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()));
-   PrintFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice());
-   ClosePosition(i);
-   break;             
-  }
-     
-  if (pos.getPositionStatus() == POSITION_STATUS_PENDING) // Если это позиция отложенным ордером...
-  {
-   if (!OrderSelect(pos.getOrderTicket())) // Если мы не можем выбрать ее по тикету
-   {
-    long ticket = pos.getOrderTicket();
-    if(!FindHistoryTicket(ticket))            // Попробуем найти этот тикет в истории
-    {
-     log_file.Write(LOG_DEBUG, StringFormat("%s В массиве историй не найден ордер с тикетом %d", MakeFunctionPrefix(__FUNCTION__), ticket));
-     return;
-    }
-    
-    long state;
-    if (HistoryOrderGetInteger(ticket, ORDER_STATE, state)) // Получим статус ордера из истории
-    {
-     switch (state)
-     {
-      case ORDER_STATE_FILLED:
-      {
-       log_file.Write(LOG_DEBUG, StringFormat("%s Сработала позиция являющаяся отложенным ордером.Пытаемся установить StopLoss и TakeProfit.", MakeFunctionPrefix(__FUNCTION__)));
-       
-       if (pos.setStopLoss() == STOPLEVEL_STATUS_NOT_PLACED
-        || pos.setTakeProfit() == STOPLEVEL_STATUS_NOT_PLACED )  // попробуем установить стоплосс и тейкпрофит
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось установить StopLoss и/или TakeProfit. Перемещаем позицию [%d] в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));                  
-        pos.setPositionStatus(POSITION_STATUS_NOT_COMPLETE);  // если не получилось, запомним, чтобы повторить позднее
-        _positionsToReProcessing.Add(_openPositions.Detach(i)); 
-        break;
-       }
-       
-       log_file.Write(LOG_DEBUG, StringFormat("%s Получилось установить StopLoss и/или TakeProfit. Изменяем позицию [%d] в openPositions.", MakeFunctionPrefix(__FUNCTION__)));
-       pos.setPositionStatus(POSITION_STATUS_OPEN); // позиция открылась, стоп и тейк установлены
-       if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP) pos.setType(OP_BUY);
-       if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP) pos.setType(OP_SELL);
-       log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-       
-       SaveArrayToFile(rescueDataFileName,_openPositions);       
-       break;
-      }
-      case ORDER_STATE_CANCELED:
-      {
-       log_file.Write(LOG_DEBUG, StringFormat("%s ордер отменен %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
-       _positionsHistory.Add(_openPositions.Detach(i));
-       _historyChanged = 1; // меняем флаг, что история увеличилась  
-       SaveArrayToFile(historyDataFileName,_positionsHistory);       
-       break;
-      }
-      case ORDER_STATE_EXPIRED:
-      {
-       log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
-       _positionsHistory.Add(_openPositions.Detach(i));
-       _historyChanged = 1; // меняем флаг, что история увеличилась
-       SaveArrayToFile(historyDataFileName,_positionsHistory);       
-       break;
-      }
-      
-      default:
-      {
-       log_file.Write(LOG_DEBUG, StringFormat("%s Плохой статус оредера при перемещении в историю: %s; тикет ордера: %d", MakeFunctionPrefix(__FUNCTION__), EnumToString((ENUM_ORDER_STATE)state), ticket));
-       break;
-      }
-     }
-    }
-    else
-    {
-     log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать ордер по тикету %d из истории", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()));
-     log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(GetLastError())));
-     string str;
-     int total = HistoryOrdersTotal();
-     for(int i = total-1; i >= 0; i--)
-     {
-      str += HistoryOrderGetTicket(i) + " ";
-     }
-     log_file.Write(LOG_DEBUG, StringFormat("%s Тикеты ордеров из истории: %s", MakeFunctionPrefix(__FUNCTION__), str));
-    } 
-   }
-  }
- }
-}
-
-//+------------------------------------------------------------------+
-/// Close a virtual position by symbol.
-/// \param [in] ticket			Open virtual order ticket
-/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
-/// \return							true if successful, false if not
-//+------------------------------------------------------------------+
-bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
-{
- int i = 0;
- int total = _openPositions.Total();
- CPosition *pos;
-
- if (total > 0)
- {
-  for (i = total - 1; i >= 0; i--) // перебираем все ордера или позиции 
-  {
-   pos = _openPositions.At(i);
-   if (pos.getSymbol() == symbol)
-   {
-    if (ClosePosition(i)) return (true);
-    else return (false);
-   }
-  }
- }
- return (true);
-}
-
-//+------------------------------------------------------------------+
-/// Close a virtual position by ticket.
-/// \param [in] ticket			Open virtual order ticket
-/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
-/// \return							true if successful, false if not
-//+------------------------------------------------------------------+
-bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
-{
- int index = _openPositions.TicketToIndex(ticket);
- return ClosePosition(index);
-}
-
-//+------------------------------------------------------------------+
-/// Close a virtual position by index.
-/// \param [in] i			      pos index in array of positions
-/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
-/// \return							true if successful, false if not
-//+------------------------------------------------------------------+
-bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
-{
- CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
- //PrintFormat("%s получаем из массива указатель на позицию по ее индексу", MakeFunctionPrefix(__FUNCTION__));
- if (pos.ClosePosition())
- {
-  //Print("Перемещаем позицию в хистори");
-  _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
-  _historyChanged = 1; // меняем флаг, что история увеличилась 
-  SaveArrayToFile(historyDataFileName,_positionsHistory); 
-  SaveArrayToFile(rescueDataFileName,_openPositions);   
-  log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-  PrintFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i);
-  return(true);
- }
- else
- {
-  error = GetLastError();
-  _positionsToReProcessing.Add(_openPositions.Detach(i));
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось удалить позицию [%d]. Позиция перемещена в массив positionsToReProcessing.Error{%d} = %s"
-                                        , MakeFunctionPrefix(__FUNCTION__), i, error, ErrorDescription(error)));
- }
- return(false);
-}
-
-//+------------------------------------------------------------------+
-/// Delete a virtual pos from "not_deleted".
-/// \param [in] i			      pos index in array of positions
-/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
-/// \return							true if successful, false if not
-//+------------------------------------------------------------------+
-bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
-{
- CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее индексу
- if (pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
- {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Удалили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
-  _positionsHistory.Add(_positionsToReProcessing.Detach(i));
-  _historyChanged = 1; // меняем флаг, что история увеличилась  
-  SaveArrayToFile(historyDataFileName,_positionsHistory);  
-  return(true);
- }
- return(false);
-}
-
-//+------------------------------------------------------------------+
-/// returns if minProfit achieved
-//+------------------------------------------------------------------+
-bool CTradeManager::isMinProfit(string symbol)
-{
- int total = _openPositions.Total();
- CPosition *pos;
- for (int i = 0; i < total; i++)
- {
-  pos = _openPositions.At(i);
-  if (pos.getSymbol() == symbol)
-  {
-   return(pos.isMinProfit());
-  }
- }
- return false;
-}
-
-//+------------------------------------------------------------------+
-//|  Профит позиции на символе в пунктах                             |
-//+------------------------------------------------------------------+
-int CTradeManager::GetPositionPointsProfit(string symbol)
-{
- int total = _openPositions.Total();
- CPosition *pos;
- for (int i = 0; i < total; i++)
- {
-  pos = _openPositions.At(i);
-  if (pos.getSymbol() == symbol)
-  {
-   int profit = pos.getPositionPointsProfit();
-   return(profit);
-  }
- }
- return(0);
-}
-
-//+------------------------------------------------------------------+
-//|  Профит позиции по тикету или номеру в пунктах                   |
-//+------------------------------------------------------------------+
-int CTradeManager::GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type)
-{
- CPosition *pos;
- int profit = 0;
- switch(type)
- {
-  case SELECT_BY_POS:
-   pos = _openPositions.At(i);
-   break;
-  case SELECT_BY_TICKET:
-   pos = _openPositions.AtTicket(i);
-   break;
-  default:
-   //LogFile.Log(LOG_PRINT,__FUNCTION__," error: Unknown type ",(string)type);
-   return(profit);
- }
- profit = pos.getPositionPointsProfit();
- return(profit);
-}
-
 
 //+------------------------------------------------------------------+
 //|  Обновляет данные о текущей прибыли и просадке                   |
@@ -748,56 +771,27 @@ void CTradeManager::UpdateData(CPositionArray *positionsHistory)
  }
 }
 
-//+------------------------------------------------------------------+
-/// Create magic number
-/// \param [string] str       symbol
-/// \return							generated magic number
-//+------------------------------------------------------------------+
-long CTradeManager::MakeMagic(string strSymbol = "")
-{
- if(strSymbol == "") strSymbol = Symbol();
- string s = strSymbol + PeriodToString(Period()) + MQL5InfoString(MQL5_PROGRAM_NAME);
- ulong ulHash = 5381;
- for(int i = StringLen(s) - 1; i >= 0; i--)
- {
-  ulHash = ((ulHash<<5) + ulHash) + StringGetCharacter(s,i);
- }
- return MathAbs((long)ulHash);
-}
+//---------------PRIVATE-----------------------------
+
 
 //+------------------------------------------------------------------+
-/// Search for ticket in History
-/// \param [long] ticket       number of ticket to search
-/// \return                    true if successful, false if not
+/// Delete a virtual pos from "not_deleted".
+/// \param [in] i			      pos index in array of positions
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
 //+------------------------------------------------------------------+
-bool FindHistoryTicket(long ticket)
+bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
 {
- int total = HistoryOrdersTotal();
- for(int i = 0; i < total; i++)
+ CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее индексу
+ if (pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
  {
-  if(ticket == HistoryOrderGetTicket(i)) return true;  
+  log_file.Write(LOG_DEBUG, StringFormat("%s Удалили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
+  _positionsHistory.Add(_positionsToReProcessing.Detach(i));
+  _historyChanged = 1; // меняем флаг, что история увеличилась  
+  SaveArrayToFile(historyDataFileName,_positionsHistory);  
+  return(true);
  }
- return false;
-}
-
-//+------------------------------------------------------------------+
-/// Return current position type
-/// \param [long] ticket       number of ticket to search
-/// \return                    true if successful, false if not
-//+------------------------------------------------------------------+
-ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
-{
- int total = _openPositions.Total();
- CPosition *pos;
- for (int i = 0; i < total; i++)
- {
-  pos = _openPositions.At(i);
-  if (pos.getSymbol() == symbol)
-  {
-   return(pos.getType());
-  }
- }
- return OP_UNKNOWN;
+ return(false);
 }
 
 //+------------------------------------------------------------------+
@@ -822,22 +816,6 @@ string CTradeManager::CreateFilename (ENUM_FILENAME filename)
  return(result);
 }
 
-//+----------------------------------------------------
-//  Сохранение в файл массива позиций                 |
-//+----------------------------------------------------
-bool CTradeManager::SaveArrayToFile(string file_url, CPositionArray *array)
-{
- int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
- if(file_handle == INVALID_HANDLE)
- {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), file_url));
-  return(false);
- }
- array.WriteToFile(file_handle);  //сохраняем массив в файл
- FileClose(file_handle);
- return(true);
-}
- 
 //+----------------------------------------------------
 //  Загрузка из файла массива позиций                 
 //+----------------------------------------------------
@@ -866,45 +844,64 @@ bool CTradeManager::LoadArrayFromFile(string file_url,CPositionArray *array)
  array.ReadFromFile(file_handle); //загружаем данные из файла 
  FileClose(file_handle);          //закрывает файл  
  return (true);
- } 
-
-//+----------------------------------------------------
-//  методы для работы с Replay Position
-//+----------------------------------------------------
-CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime toDate = 0)
-{
- CPositionArray *resultArray;
- resultArray = new CPositionArray(); 
- CPosition *pos;
- datetime posTime;
- int total = _positionsHistory.Total();
- //Print("historyTotal=", _positionsHistory.Total());
- if (toDate == 0) toDate = TimeCurrent();
- 
- for(int i = 0; i < total; i++)
- {
-  pos = _positionsHistory.At(i);
-  posTime = pos.getClosePosDT();
-  //PrintFormat("posCloseDate=%s, fromDate=%s, toDate=%s", TimeToString(posTime), TimeToString(fromDate), TimeToString(toDate));
-  if (posTime < fromDate) continue;   // Позиции с ранней датой - пропускаем
-  if (posTime > toDate) break;        // Добрались до позиций с поздней датой - выходим
-  
-  resultArray.Add(pos);               // Заполняем массив позициями с датой закрытия в нужном диапазоне
- }
- //Print("resultTotal=", resultArray.Total());
- return resultArray;
 } 
 
-//+----------------------------------------------------
-//+----------------------------------------------------
-long CTradeManager::GetHistoryDepth() //возвращает грубину истории
+//+------------------------------------------------------------------+
+/// Create magic number
+/// \param [string] str       symbol
+/// \return							generated magic number
+//+------------------------------------------------------------------+
+long CTradeManager::MakeMagic(string strSymbol = "")
 {
- return _positionsHistory.Total();
+ if(strSymbol == "") strSymbol = Symbol();
+ string s = strSymbol + PeriodToString(Period()) + MQL5InfoString(MQL5_PROGRAM_NAME);
+ ulong ulHash = 5381;
+ for(int i = StringLen(s) - 1; i >= 0; i--)
+ {
+  ulHash = ((ulHash<<5) + ulHash) + StringGetCharacter(s,i);
+ }
+ return MathAbs((long)ulHash);
 }
 
-bool CTradeManager::IsHistoryChanged(void) //возвращает сигнал изменения истории
-{ 
- if (_historyChanged!=0)
-  return true;
+//+----------------------------------------------------
+//  Сохранение в файл массива позиций                 |
+//+----------------------------------------------------
+bool CTradeManager::SaveArrayToFile(string file_url, CPositionArray *array)
+{
+ int file_handle = FileOpen(file_url, FILE_WRITE|FILE_CSV|FILE_COMMON, ";");
+ if(file_handle == INVALID_HANDLE)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось открыть файл: %s", MakeFunctionPrefix(__FUNCTION__), file_url));
+  return(false);
+ }
+ array.WriteToFile(file_handle);  //сохраняем массив в файл
+ FileClose(file_handle);
+ return(true);
+}
+
+//  LOCAL
+
+//+------------------------------------------------------------------+
+/// Search for ticket in History
+/// \param [long] ticket       number of ticket to search
+/// \return                    true if successful, false if not
+//+------------------------------------------------------------------+
+bool FindHistoryTicket(long ticket)
+{
+ int total = HistoryOrdersTotal();
+ for(int i = 0; i < total; i++)
+ {
+  if(ticket == HistoryOrderGetTicket(i)) return true;  
+ }
  return false;
 }
+
+
+
+
+
+
+
+
+
+
