@@ -12,7 +12,7 @@
 #include "ColoredTrendUtilities.mqh"
 
 #define AMOUNT_OF_PRICE 2
-CLog log_output(OUT_COMMENT, LOG_MAIN, 50, "PBI", 30);
+CLog log_output(OUT_COMMENT, LOG_NONE, 50, "PBI", 30);
 
 //+------------------------------------------------------------------+
 //| ¬спомогательный класс дл€ индикатора ColoredTrend                |
