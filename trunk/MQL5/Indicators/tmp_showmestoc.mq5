@@ -272,20 +272,6 @@ int OnCalculate(const int rates_total,
    if (countConvPos > 0 || countDivPos > 0)
     averPos     = averPos     / (countConvPos + countDivPos);    
         
-    Alert("________________________________________");
-    Alert("Средний не актуальный: ",averNeg);
-    Alert("Средний актуальный: ",averPos);
-    Alert("Среднее не актуальное расхождение: ",averDivNeg);
-    Alert("Среднее актуальное расхождение: ",averDivPos); 
-    Alert("Среднее не актуальное схождение: ",averConvNeg);
-    Alert("Среднее актуальное схождение: ",averConvPos);           
-    Alert("Не актуальных расхождений: ",countDivNeg);
-    Alert("Актуальных расхождений: ",countDivPos);
-    Alert("Всего расхождений: ",countDivPos+countDivNeg);
-    Alert("Не актуальных схождений: ",countConvNeg);
-    Alert("Актуальных схождений: ",countConvPos);
-    Alert("Всего схождений: ",countConvPos+countConvNeg);
-    Alert("Результаты поиска схождений\расхождений:");
     
     // сохраняем в файл статистики количественные значения всех схождений \ расхождений
  
