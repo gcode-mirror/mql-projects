@@ -19,6 +19,7 @@ struct PointDiv
    double   valueExtrSTOC2; // значение второго экстремума стохастика
    double   valueExtrPrice1;// значение первого экстремума по ценам
    double   valueExtrPrice2;// знечение второго экстремума по ценам
+   double   closePrice;     // цена закрытия бара, на котором возник сигнал расхождения\схождения
 };
 
 PointDiv null = {0};

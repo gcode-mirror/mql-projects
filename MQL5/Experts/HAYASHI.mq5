@@ -10,7 +10,7 @@
 #include <CompareDoubles.mqh>             // дл€ сравнени€ вещественных чисел
 #include <Lib CisNewBar.mqh>              // дл€ формировани€ нового бара
 
-input double lot             = 1;  // размер лота
+input double lot             = 10;  // размер лота
 input double priceDifference = 10; // разница цен в пунктах
 
 //+------------------------------------------------------------------+
@@ -36,6 +36,7 @@ void OnTick()
   {
     static CisNewBar isNewBar(_Symbol, _Period);   // дл€ проверки формировани€ нового бара
     double currentPrice;                           // текуща€ цена
+    double spread;                                 // спред
     // если сформирован новый бар
     if(isNewBar.isNewBar() > 0)
      {
@@ -58,7 +59,9 @@ void OnTick()
        if (openedPosition == true)
         { // если была открыта позици€
           currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID); // получаем текущую цену
-          if ((currentPrice - openPrice) > 0.0001)
+          spread = SymbolInfoDouble(_Symbol,SYMBOL_ASK) - currentPrice; // вычисл€ем уровень спреда
+          Comment ("—ѕ–≈ƒ = ",spread);
+          if ((currentPrice - openPrice) > spread)
            { // если текуща€ цена превысила цену открыти€
              
              ctm.ClosePosition(_Symbol); // закрываем позицию
