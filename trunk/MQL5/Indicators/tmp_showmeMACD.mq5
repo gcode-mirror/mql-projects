@@ -202,17 +202,16 @@ int OnCalculate(const int rates_total,
             localMin = low[rates_total-1-lastBarIndex];
             for (count=1;count<=depth;count++)
              {
-           //   if (high[rates_total-1-lastBarIndex+count] > localMax)
-              if (GreatDoubles (high[rates_total-1-lastBarIndex+count],localMax)
+              if (GreatDoubles (high[rates_total-1-lastBarIndex+count],localMax) )
                localMax = high[rates_total-1-lastBarIndex+count];
-            //  if (low[lastBarIndex-count] < localMin)
-              if (LessDoubles (low[rates_total-1-lastBarIndex+count],localMin)
+              if (LessDoubles (low[rates_total-1-lastBarIndex+count],localMin) )
                localMin = low[rates_total-1-lastBarIndex+count];
              } 
             if (retCode == 1)
              {
                FileWriteString(file_handle,"\n "+TimeToString(time[rates_total-2-lastBarIndex])+" (расхождение): " );   
                FileWriteString(file_handle,"\nприбыль: "+DoubleToString(close[rates_total-2-lastBarIndex]-localMin)+" убыток: "+DoubleToString(localMax - close[rates_total-2-lastBarIndex]));                            
+          
                if ( LessDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
                  {
                    averDivPos  = averDivPos + close[rates_total-2-lastBarIndex+count] - localMin;
@@ -228,9 +227,10 @@ int OnCalculate(const int rates_total,
              }
             if (retCode == -1)
              {
+             
                FileWriteString(file_handle,"\n "+TimeToString(time[rates_total-2-lastBarIndex])+" (схождение): " );   
                FileWriteString(file_handle,"\nприбыль: "+DoubleToString(localMax - close[rates_total-2-lastBarIndex])+" убыток: "+DoubleToString(close[rates_total-2-lastBarIndex]-localMin));                
-               if (LessDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
+               if (GreatDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
                  {
                   averConvPos = averConvPos + localMax - close[rates_total-2-lastBarIndex];
                   averPos     = averPos + localMax - close[rates_total-2-lastBarIndex];

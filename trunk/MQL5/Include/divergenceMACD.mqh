@@ -22,6 +22,7 @@ struct PointDiv
    double   valueExtrMACD2; // значение второго экстремума MACD
    double   valueExtrPrice1;// значение первого экстремума по ценам
    double   valueExtrPrice2;// знечение второго экстремума по ценам
+   double   closePrice;     // цена закрытия бара (на котором возник сигнал схождения\расхождения)
 };
 PointDiv null = {0};
 
