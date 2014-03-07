@@ -127,7 +127,7 @@ void CSanyaRotate::RecountFastDelta()
  // Система выходов
  //------------------------------
  priceAB = (_direction == 1) ? tick.ask : tick.bid; 
- if (_deltaFast < 100) // мы еще не "засейвилсь"
+ if (_deltaFast != 100) // мы еще не "засейвилсь"
  {
   bool flag = false;
   if (num0.direction == 0)
@@ -200,7 +200,7 @@ void CSanyaRotate::RecountFastDelta()
    dealStartPrice = priceAB;
    //RecountLevels(extr);
    _deltaFast = 100 - _deltaFastBase;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
-   //_fastDeltaChanged = true;
+   _fastDeltaChanged = true;
    first = true; second = true; third = true;
   }
  }

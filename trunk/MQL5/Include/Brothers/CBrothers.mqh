@@ -276,25 +276,15 @@ bool CBrothers::CorrectOrder(double volume)
 {
  bool result = false;
  if (volume == 0) return(true);
- /*
- MqlTradeRequest request = {0};
- MqlTradeResult result = {0};
  
- ENUM_ORDER_TYPE type;
- double price;
- */
  ENUM_TM_POSITION_TYPE type;
  if (volume > 0)
  {
   type = OrderTypeToTMPositionType(_type);
-  //PrintFormat("%s Type = %s, TMType = %s", OrderTypeToString(_type), GetNameOP(type));
-  //price = SymbolInfoDouble(_symbol, SYMBOL_ASK);
  }
  else
  {
   type = OrderTypeToTMPositionType((ENUM_ORDER_TYPE)(_type + MathPow(-1, _type))); // Если _type= 0, то type =1, если  _type= 1, то type =0
-  //PrintFormat("%s Type = %s, TMType = %s", OrderTypeToString(_type), GetNameOP(type));
-  //price = SymbolInfoDouble(_symbol, SYMBOL_BID);
  }
  
  if (ctm.GetPositionCount() == 0)
@@ -308,16 +298,4 @@ bool CBrothers::CorrectOrder(double volume)
   result = ctm.PositionChangeSize(_symbol, volume);
  }
  return(result);
- /*
- request.action = TRADE_ACTION_DEAL;
- request.symbol = _symbol;
- request.volume = MathAbs(volume);
- log_file.Write(LOG_DEBUG, StringFormat("%s operation=%s, volume=%f", MakeFunctionPrefix(__FUNCTION__), EnumToString(type), MathAbs(volume)));
- request.price = price;
- request.sl = 0;
- request.tp = 0;
- request.deviation = SymbolInfoInteger(_symbol, SYMBOL_SPREAD); 
- request.type = type;
- request.type_filling = ORDER_FILLING_FOK;
- return (OrderSend(request, result));*/
 }
