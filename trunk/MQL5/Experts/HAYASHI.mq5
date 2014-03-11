@@ -21,6 +21,7 @@ CTradeManager ctm();
 bool   openedPosition = false;  // флаг окрытия позиции
 double openPrice;               // цена открытия
 
+
 int OnInit()
   {
    return(INIT_SUCCEEDED);
