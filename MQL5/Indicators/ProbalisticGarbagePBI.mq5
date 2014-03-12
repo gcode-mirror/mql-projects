@@ -9,8 +9,8 @@
 #property indicator_chart_window
 
 #property indicator_chart_window
-#property indicator_buffers 7
-#property indicator_plots   3
+#property indicator_buffers 5
+#property indicator_plots   1
 //--- plot ColorCandles
 #property indicator_label1  "ColoredTrend"
 #property indicator_type1   DRAW_COLOR_CANDLES
@@ -29,7 +29,7 @@
  
 //------------------INPUT-PARAMETRS------------------------------
 input int      depth = 1000;         // сколько свечей показывать
-input bool     show_top = false;
+//input bool     show_top = false;
 input double   percentage_ATR_cur = 2;   
 input double   difToTrend_cur = 1.5;
 input int      ATR_ma_period_cur = 12;
@@ -42,15 +42,21 @@ double ColorCandlesBuffer2[];
 double ColorCandlesBuffer3[];
 double ColorCandlesBuffer4[];
 double ColorCandlesColors[];
-double ExtUpArrowBuffer[];
-double ExtDownArrowBuffer[];
 //-------------------GLOBAL-VARIABLES-----------------------------
-int countTCFnormal  = 0;  //TREND->CORRECTION->FLAT->TREND
-int countTCFinverse = 0;  //TREND->CORRECTION->FLAT->TREND_inverse
-int countTCnormal   = 0;  //TREND->CORRECTION->TREND_inverse
-int countTCinverse  = 0;  //TREND->CORRECTION->TREND_inverse
-int countTFnormal   = 0;  //TREND->FLAT->TREND_inverse
-int countTFinverse  = 0;  //TREND->FLAT->TREND_inverse
+double countTCFnormal    = 0;  //TREND->CORRECTION->FLAT->TREND
+double countTCFinverse   = 0;  //TREND->CORRECTION->FLAT->TREND_inverse
+double countTFCFnormal   = 0;  //TREND_FORBIDDEN->CORRECTION->FLAT->TREND
+double countTFCFinverse  = 0;  //TREND_FORBIDDEN->CORRECTION->FLAT->TREND_inverse
+
+double countTCnormal     = 0;  //TREND->CORRECTION->TREND
+double countTCinverse    = 0;  //TREND->CORRECTION->TREND_inverse
+double countTFCnormal    = 0;  //TREND_FORBIDDEN->CORRECTION->TREND
+double countTFCinverse   = 0;  //TREND_FORBIDDEN->CORRECTION->TREND_inverse
+
+double countTFnormal     = 0;  //TREND->FLAT->TREND
+double countTFinverse    = 0;  //TREND->FLAT->TREND_inverse
+double countTFFnormal    = 0;  //TREND_FORBIDDEN->FLAT->TREND
+double countTFFinverse   = 0;  //TREND_FORBIDDEN->FLAT->TREND_inverse
 
 
 CisNewBar NewBarBottom,
@@ -83,12 +89,6 @@ int OnInit()
    SetIndexBuffer(2,ColorCandlesBuffer3,INDICATOR_DATA);
    SetIndexBuffer(3,ColorCandlesBuffer4,INDICATOR_DATA);
    SetIndexBuffer(4,ColorCandlesColors,INDICATOR_COLOR_INDEX);
-   SetIndexBuffer(5, ExtUpArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(6, ExtDownArrowBuffer, INDICATOR_DATA);
-
-   
-   PlotIndexSetInteger(1, PLOT_ARROW, 218);
-   PlotIndexSetInteger(2, PLOT_ARROW, 217);
    
    ArraySetAsSeries(ColorCandlesBuffer1, false);
    ArraySetAsSeries(ColorCandlesBuffer2, false);
@@ -102,9 +102,9 @@ void OnDeinit(const int reason)
 {
  //--- Первый способ получить код причины деинициализации
    Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
-   SavePorabolistic("statictic_PBI.txt");
-   ArrayInitialize(ExtUpArrowBuffer, 0);
-   ArrayInitialize(ExtDownArrowBuffer, 0); 
+   MqlDateTime mdt;
+   TimeToStruct(TimeCurrent(),mdt);
+   SavePorabolistic(StringFormat("statictic_PBI_%d%02d%02d.txt", mdt.year,mdt.mon,mdt.day));
    ArrayInitialize(ColorCandlesBuffer1, 0);
    ArrayInitialize(ColorCandlesBuffer2, 0);
    ArrayInitialize(ColorCandlesBuffer3, 0);
@@ -252,7 +252,7 @@ void CalculateProbalistic (ENUM_MOVE_TYPE type)
  if(count == 3)    // Модель TREND->FLAT->TREND OR TREND_inverse
                    // Модель TREND->CORRECTION->TREND OR TREND_inverse
  {
-  if(combination[0] == MOVE_TYPE_TREND_UP || combination[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
+  if(combination[0] == MOVE_TYPE_TREND_UP)
   {
    if(combination[1] == MOVE_TYPE_CORRECTION_DOWN)
    {
@@ -281,7 +281,7 @@ void CalculateProbalistic (ENUM_MOVE_TYPE type)
     }
    }
   }
-  else if(combination[0] == MOVE_TYPE_TREND_DOWN || combination[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+  else if(combination[0] == MOVE_TYPE_TREND_DOWN)
   {
    if(combination[1] == MOVE_TYPE_CORRECTION_UP)
    {
@@ -311,11 +311,71 @@ void CalculateProbalistic (ENUM_MOVE_TYPE type)
    }
   }
   
+  //-----------------------FORBIDEN-------------------------------------------------
+  if(combination[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
+  {
+   if(combination[1] == MOVE_TYPE_CORRECTION_DOWN)
+   {
+    if(combination[2] == MOVE_TYPE_TREND_UP || combination[2] == MOVE_TYPE_TREND_UP_FORBIDEN)
+    {
+     countTFCnormal++;
+     count = 0;
+    }
+    else if(combination[2] == MOVE_TYPE_TREND_DOWN || combination[2] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+    {
+     countTFCinverse++;
+     count = 0;
+    }
+   }
+   else if(combination[1] == MOVE_TYPE_FLAT)
+   {
+    if(combination[2] == MOVE_TYPE_TREND_UP || combination[2] == MOVE_TYPE_TREND_UP_FORBIDEN)
+    {
+     countTFFnormal++;
+     count = 0;
+    }
+    else if(combination[2] == MOVE_TYPE_TREND_DOWN || combination[2] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+    {
+     countTFFinverse++;
+     count = 0;
+    }
+   }
+  }
+  else if(combination[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+  {
+   if(combination[1] == MOVE_TYPE_CORRECTION_UP)
+   {
+    if(combination[2] == MOVE_TYPE_TREND_DOWN || combination[2] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+    {
+     countTFCnormal++;
+     count = 0;
+    }
+    else if(combination[2] == MOVE_TYPE_TREND_UP || combination[2] == MOVE_TYPE_TREND_UP_FORBIDEN)
+    {
+     countTFCinverse++;
+     count = 0;
+    }
+   }
+   else if(combination[1] == MOVE_TYPE_FLAT)
+   {
+    if(combination[2] == MOVE_TYPE_TREND_DOWN || combination[2] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+    {
+     countTFFnormal++;
+     count = 0;
+    }
+    else if(combination[2] == MOVE_TYPE_TREND_UP || combination[2] == MOVE_TYPE_TREND_UP_FORBIDEN)
+    {
+     countTFFinverse++;
+     count = 0;
+    }
+   }
+  }
+  
  }
  
  if(count == 4) // Модель TREND->CORRECTION->FLAT->TREND OR TREND_inverse
  {
-  if((combination[0] == MOVE_TYPE_TREND_UP || combination[0] == MOVE_TYPE_TREND_UP_FORBIDEN) && combination[1] == MOVE_TYPE_CORRECTION_DOWN && combination[2] == MOVE_TYPE_FLAT)
+  if(combination[0] == MOVE_TYPE_TREND_UP && combination[1] == MOVE_TYPE_CORRECTION_DOWN && combination[2] == MOVE_TYPE_FLAT)
   {
    if(combination[3] == MOVE_TYPE_TREND_UP || combination[3] == MOVE_TYPE_TREND_UP_FORBIDEN)
    {
@@ -326,7 +386,7 @@ void CalculateProbalistic (ENUM_MOVE_TYPE type)
     countTCFinverse++;
    }
   }
-  else if((combination[0] == MOVE_TYPE_TREND_DOWN || combination[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN) && combination[1] == MOVE_TYPE_CORRECTION_UP && combination[2] == MOVE_TYPE_FLAT)
+  else if(combination[0] == MOVE_TYPE_TREND_DOWN && combination[1] == MOVE_TYPE_CORRECTION_UP && combination[2] == MOVE_TYPE_FLAT)
   {
    if(combination[3] == MOVE_TYPE_TREND_DOWN || combination[3] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
    {
@@ -335,6 +395,29 @@ void CalculateProbalistic (ENUM_MOVE_TYPE type)
    else if(combination[3] == MOVE_TYPE_TREND_UP || combination[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
    {
     countTCFinverse++;
+   }
+  }
+//-----------------------------------------------FORBIDEN--------------------------------------
+  if(combination[0] == MOVE_TYPE_TREND_UP_FORBIDEN && combination[1] == MOVE_TYPE_CORRECTION_DOWN && combination[2] == MOVE_TYPE_FLAT)
+  {
+   if(combination[3] == MOVE_TYPE_TREND_UP || combination[3] == MOVE_TYPE_TREND_UP_FORBIDEN)
+   {
+    countTFCFnormal++;
+   }
+   else if(combination[3] == MOVE_TYPE_TREND_DOWN || combination[3] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+   {
+    countTFCFinverse++;
+   }
+  }
+  else if(combination[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN && combination[1] == MOVE_TYPE_CORRECTION_UP && combination[2] == MOVE_TYPE_FLAT)
+  {
+   if(combination[3] == MOVE_TYPE_TREND_DOWN || combination[3] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+   {
+    countTFCFnormal++;
+   }
+   else if(combination[3] == MOVE_TYPE_TREND_UP || combination[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
+   {
+    countTFCFinverse++;
    }
   }
   count = 0;
@@ -363,10 +446,19 @@ void SavePorabolistic(string filename)
  //FileWriteString(file_handle, StringFormat("    TOP TF: percentage ATR = %.03f, ATR ma period = %d, dif to trend = %.03f\r\n", percentage_ATR_top, ATR_ma_period_top, difToTrend_top));
  FileWriteString(file_handle, "Ситуации развития тренда: \r\n");
  FileWriteString(file_handle, StringFormat("TREND->CORRECTION->FLAT->TREND = %d; TREND->CORRECTION->FLAT->TREND(inverse) = %d\r\n", countTCFnormal, countTCFinverse));
+ FileWriteString(file_handle, StringFormat("TREND_FORBIDEN->CORRECTION->FLAT->TREND = %d; TREND_FORBIDEN->CORRECTION->FLAT->TREND(inverse) = %d\r\n\r\n", countTFCFnormal, countTFCFinverse));
  FileWriteString(file_handle, StringFormat("TREND->CORRECTION->TREND = %d; TREND->CORRECTION->TREND(inverse) = %d\r\n", countTCnormal, countTCinverse));
+ FileWriteString(file_handle, StringFormat("TREND_FORBIDEN->CORRECTION->TREND = %d; TREND_FORBIDEN->CORRECTION->TREND(inverse) = %d\r\n\r\n", countTFCnormal, countTFCinverse));
  FileWriteString(file_handle, StringFormat("TREND->FLAT->TREND = %d; TREND->FLAT->TREND(inverse) = %d\r\n", countTFnormal, countTFinverse));
- FileWriteString(file_handle, StringFormat("Выход из модели TFCT в ту же сторону происходит в %f % и в %f % случаев в обратную\r\n", 100*(countTCFnormal)/(countTCFnormal+countTCFinverse), 100*(countTCFinverse)/(countTCFnormal+countTCFinverse)));
- FileWriteString(file_handle, StringFormat("Выход из модели TCT в ту же сторону происходит в %f % и в %f % случаев в обратную\r\n", 100*(countTCnormal)/(countTCnormal+countTCinverse), 100*(countTCinverse)/(countTCnormal+countTCinverse)));
- FileWriteString(file_handle, StringFormat("Выход из модели TFT в ту же сторону происходит в %f % и в %f % случаев в обратную\r\n", 100*(countTFnormal)/(countTFnormal+countTFinverse), 100*(countTFinverse)/(countTFnormal+countTFinverse)));
+ FileWriteString(file_handle, StringFormat("TREND_FORBIDEN->FLAT->TREND = %d; TREND_FORBIDEN->FLAT->TREND(inverse) = %d\r\n\r\n", countTFFnormal, countTFFinverse)); 
+ FileWriteString(file_handle, "Процентное соотношение ОБЫЧНЫЙ тренд:\r\n");
+ FileWriteString(file_handle, StringFormat("Выход из модели TCFT в ту же сторону происходит в %.02f % и в %.02f случаев в обратную\r\n", 100*(countTCFnormal)/(countTCFnormal+countTCFinverse+countTFCFnormal+countTFCFinverse), 100*(countTCFinverse)/(countTCFnormal+countTCFinverse+countTFCFnormal+countTFCFinverse)));
+ FileWriteString(file_handle, StringFormat("Выход из модели TCT в ту же сторону происходит в %.02f % и в %.02f случаев в обратную\r\n",  100*(countTCnormal)/(countTCnormal+countTCinverse+countTFCnormal+countTFCinverse),      100*(countTCinverse)/(countTCnormal+countTCinverse+countTFCnormal+countTFCinverse)));
+ FileWriteString(file_handle, StringFormat("Выход из модели TFT в ту же сторону происходит в %.02f % и в %.02f случаев в обратную\r\n",  100*(countTFnormal)/(countTFnormal+countTFinverse+countTFFnormal+countTFFinverse),      100*(countTFinverse)/(countTFnormal+countTFinverse+countTFFnormal+countTFFinverse)));
+ FileWriteString(file_handle, "Процентное соотношение ЗАПРЕЩЕННЫЙ тренд:\r\n");
+ FileWriteString(file_handle, StringFormat("Выход из модели TFCFT в ту же сторону происходит в %.02f % и в %.02f случаев в обратную\r\n", 100*(countTFCFnormal)/(countTCFnormal+countTCFinverse+countTFCFnormal+countTFCFinverse), 100*(countTFCFinverse)/(countTCFnormal+countTCFinverse+countTFCFnormal+countTFCFinverse)));
+ FileWriteString(file_handle, StringFormat("Выход из модели TFCT в ту же сторону происходит в %.02f % и в %.02f случаев в обратную\r\n",  100*(countTFCnormal)/(countTCnormal+countTCinverse+countTFCnormal+countTFCinverse),      100*(countTFCinverse)/(countTCnormal+countTCinverse+countTFCnormal+countTFCinverse)));
+ FileWriteString(file_handle, StringFormat("Выход из модели TFFT в ту же сторону происходит в %.02f % и в %.02f случаев в обратную\r\n",  100*(countTFFnormal)/(countTFnormal+countTFinverse+countTFFnormal+countTFFinverse),      100*(countTFFinverse)/(countTFnormal+countTFinverse+countTFFnormal+countTFFinverse)));
+
  FileClose(file_handle); 
 }
