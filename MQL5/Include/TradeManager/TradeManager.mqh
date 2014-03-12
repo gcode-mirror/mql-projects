@@ -51,10 +51,7 @@ protected:
 public:
   void CTradeManager();
   void ~CTradeManager(void);
-  
-  void OnTick();
-  void OnTrade(datetime history_start);
-  
+    
   // GET
   double GetCurrentDrawdown() {return(_current_drawdown); };  // возвращает  текущую просадку по балансу  
   double GetCurrentProfit()   {return(_current_balance);};    // возвращает текущую прибыль
@@ -71,15 +68,17 @@ public:
   bool ClosePosition(long ticket, color Color = CLR_NONE);    // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);          // Закрытие позиции по индексу в массиве позиций
   bool isMinProfit(string symbol);
-  bool isHistoryChanged ();                                   // возвращает сигнал изменения истории 
+  bool isHistoryChanged() {return (_historyChanged);};                                   // возвращает сигнал изменения истории 
   void ModifyPosition(long ticket, int sl, int tp);
+  void OnTick();
+  void OnTrade(datetime history_start);
   bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl = 0, int tp = 0, 
                           int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
   bool OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
                           int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
   bool PositionChangeSize(string strSymbol, double additionalVolume);
+  bool PositionSelect(long index, ENUM_SELECT_TYPE type, ENUM_SELECT_MODE pool = MODE_TRADES);
   void UpdateData(CPositionArray *positionsHistory);
-  
 };
 
 //+---------------------------------
@@ -129,6 +128,177 @@ void CTradeManager::~CTradeManager(void)
  log_file.Write(LOG_DEBUG, StringFormat("%s Процесс деинициализации завершен.", MakeFunctionPrefix(__FUNCTION__)));
  FileDelete(rescueDataFileName, FILE_COMMON);
 };
+
+//+----------------------------------------------------
+//| Возвращает грубину истории
+//+----------------------------------------------------
+long CTradeManager::GetHistoryDepth() 
+{
+ return _positionsHistory.Total();
+}
+
+//+----------------------------------------------------
+//  методы для работы с Replay Position
+//+----------------------------------------------------
+CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime toDate = 0)
+{
+ CPositionArray *resultArray;
+ resultArray = new CPositionArray(); 
+ CPosition *pos;
+ datetime posTime;
+ int total = _positionsHistory.Total();
+ //Print("historyTotal=", _positionsHistory.Total());
+ if (toDate == 0) toDate = TimeCurrent();
+ 
+ for(int i = 0; i < total; i++)
+ {
+  pos = _positionsHistory.At(i);
+  posTime = pos.getClosePosDT();
+  //PrintFormat("posCloseDate=%s, fromDate=%s, toDate=%s", TimeToString(posTime), TimeToString(fromDate), TimeToString(toDate));
+  if (posTime < fromDate) continue;   // Позиции с ранней датой - пропускаем
+  if (posTime > toDate) break;        // Добрались до позиций с поздней датой - выходим
+  
+  resultArray.Add(pos);               // Заполняем массив позициями с датой закрытия в нужном диапазоне
+ }
+ //Print("resultTotal=", resultArray.Total());
+ return resultArray;
+} 
+
+//+------------------------------------------------------------------+
+//|  Профит позиции на символе в пунктах                             |
+//+------------------------------------------------------------------+
+int CTradeManager::GetPositionPointsProfit(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   int profit = pos.getPositionPointsProfit();
+   return(profit);
+  }
+ }
+ return(0);
+}
+
+//+------------------------------------------------------------------+
+/// Return current position type
+/// \param [long] ticket       number of ticket to search
+/// \return                    true if successful, false if not
+//+------------------------------------------------------------------+
+ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(pos.getType());
+  }
+ }
+ return OP_UNKNOWN;
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual position by symbol.
+/// \param [in] ticket			Open virtual order ticket
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
+{
+ int i = 0;
+ int total = _openPositions.Total();
+ CPosition *pos;
+
+ if (total > 0)
+ {
+  for (i = total - 1; i >= 0; i--) // перебираем все ордера или позиции 
+  {
+   pos = _openPositions.At(i);
+   if (pos.getSymbol() == symbol)
+   {
+    if (ClosePosition(i)) return (true);
+    else return (false);
+   }
+  }
+ }
+ return (true);
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual position by ticket.
+/// \param [in] ticket			Open virtual order ticket
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
+{
+ int index = _openPositions.TicketToIndex(ticket);
+ return ClosePosition(index);
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual position by index.
+/// \param [in] i			      pos index in array of positions
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
+{
+ CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
+ //PrintFormat("%s получаем из массива указатель на позицию по ее индексу", MakeFunctionPrefix(__FUNCTION__));
+ if (pos.ClosePosition())
+ {
+  //Print("Перемещаем позицию в хистори");
+  _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
+  _historyChanged = true; // меняем флаг, что история увеличилась 
+  SaveArrayToFile(historyDataFileName,_positionsHistory); 
+  SaveArrayToFile(rescueDataFileName,_openPositions);   
+  log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+  PrintFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i);
+  return(true);
+ }
+ else
+ {
+  error = GetLastError();
+  _positionsToReProcessing.Add(_openPositions.Detach(i));
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось удалить позицию [%d]. Позиция перемещена в массив positionsToReProcessing.Error{%d} = %s"
+                                        , MakeFunctionPrefix(__FUNCTION__), i, error, ErrorDescription(error)));
+ }
+ return(false);
+}
+
+//+------------------------------------------------------------------+
+/// returns if minProfit achieved
+//+------------------------------------------------------------------+
+bool CTradeManager::isMinProfit(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(pos.isMinProfit());
+  }
+ }
+ return false;
+}
+
+//+------------------------------------------------------------------+ 
+// Функция модификации позиции
+//+------------------------------------------------------------------+
+void CTradeManager::ModifyPosition(long ticket, int sl, int tp)
+{
+ if (sl > 0){}
+ if (tp > 0){}
+}
 
 //+------------------------------------------------------------------+
 /// Called from EA OnTick().
@@ -309,186 +479,6 @@ void CTradeManager::OnTrade(datetime history_start=0)
    _historyChanged = false;
   }
 }
-
-//+----------------------------------------------------
-//| Возвращает грубину истории
-//+----------------------------------------------------
-long CTradeManager::GetHistoryDepth() 
-{
- return _positionsHistory.Total();
-}
-
-//+----------------------------------------------------
-//  методы для работы с Replay Position
-//+----------------------------------------------------
-CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime toDate = 0)
-{
- CPositionArray *resultArray;
- resultArray = new CPositionArray(); 
- CPosition *pos;
- datetime posTime;
- int total = _positionsHistory.Total();
- //Print("historyTotal=", _positionsHistory.Total());
- if (toDate == 0) toDate = TimeCurrent();
- 
- for(int i = 0; i < total; i++)
- {
-  pos = _positionsHistory.At(i);
-  posTime = pos.getClosePosDT();
-  //PrintFormat("posCloseDate=%s, fromDate=%s, toDate=%s", TimeToString(posTime), TimeToString(fromDate), TimeToString(toDate));
-  if (posTime < fromDate) continue;   // Позиции с ранней датой - пропускаем
-  if (posTime > toDate) break;        // Добрались до позиций с поздней датой - выходим
-  
-  resultArray.Add(pos);               // Заполняем массив позициями с датой закрытия в нужном диапазоне
- }
- //Print("resultTotal=", resultArray.Total());
- return resultArray;
-} 
-
-//+------------------------------------------------------------------+
-//|  Профит позиции на символе в пунктах                             |
-//+------------------------------------------------------------------+
-int CTradeManager::GetPositionPointsProfit(string symbol)
-{
- int total = _openPositions.Total();
- CPosition *pos;
- for (int i = 0; i < total; i++)
- {
-  pos = _openPositions.At(i);
-  if (pos.getSymbol() == symbol)
-  {
-   int profit = pos.getPositionPointsProfit();
-   return(profit);
-  }
- }
- return(0);
-}
-
-//+------------------------------------------------------------------+
-/// Return current position type
-/// \param [long] ticket       number of ticket to search
-/// \return                    true if successful, false if not
-//+------------------------------------------------------------------+
-ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
-{
- int total = _openPositions.Total();
- CPosition *pos;
- for (int i = 0; i < total; i++)
- {
-  pos = _openPositions.At(i);
-  if (pos.getSymbol() == symbol)
-  {
-   return(pos.getType());
-  }
- }
- return OP_UNKNOWN;
-}
-
-//+------------------------------------------------------------------+
-/// Close a virtual position by symbol.
-/// \param [in] ticket			Open virtual order ticket
-/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
-/// \return							true if successful, false if not
-//+------------------------------------------------------------------+
-bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
-{
- int i = 0;
- int total = _openPositions.Total();
- CPosition *pos;
-
- if (total > 0)
- {
-  for (i = total - 1; i >= 0; i--) // перебираем все ордера или позиции 
-  {
-   pos = _openPositions.At(i);
-   if (pos.getSymbol() == symbol)
-   {
-    if (ClosePosition(i)) return (true);
-    else return (false);
-   }
-  }
- }
- return (true);
-}
-
-//+------------------------------------------------------------------+
-/// Close a virtual position by ticket.
-/// \param [in] ticket			Open virtual order ticket
-/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
-/// \return							true if successful, false if not
-//+------------------------------------------------------------------+
-bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
-{
- int index = _openPositions.TicketToIndex(ticket);
- return ClosePosition(index);
-}
-
-//+------------------------------------------------------------------+
-/// Close a virtual position by index.
-/// \param [in] i			      pos index in array of positions
-/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
-/// \return							true if successful, false if not
-//+------------------------------------------------------------------+
-bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
-{
- CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
- //PrintFormat("%s получаем из массива указатель на позицию по ее индексу", MakeFunctionPrefix(__FUNCTION__));
- if (pos.ClosePosition())
- {
-  //Print("Перемещаем позицию в хистори");
-  _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
-  _historyChanged = true; // меняем флаг, что история увеличилась 
-  SaveArrayToFile(historyDataFileName,_positionsHistory); 
-  SaveArrayToFile(rescueDataFileName,_openPositions);   
-  log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-  PrintFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i);
-  return(true);
- }
- else
- {
-  error = GetLastError();
-  _positionsToReProcessing.Add(_openPositions.Detach(i));
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось удалить позицию [%d]. Позиция перемещена в массив positionsToReProcessing.Error{%d} = %s"
-                                        , MakeFunctionPrefix(__FUNCTION__), i, error, ErrorDescription(error)));
- }
- return(false);
-}
-
-//+------------------------------------------------------------------+
-/// returns if minProfit achieved
-//+------------------------------------------------------------------+
-bool CTradeManager::isMinProfit(string symbol)
-{
- int total = _openPositions.Total();
- CPosition *pos;
- for (int i = 0; i < total; i++)
- {
-  pos = _openPositions.At(i);
-  if (pos.getSymbol() == symbol)
-  {
-   return(pos.isMinProfit());
-  }
- }
- return false;
-}
-
-//+------------------------------------------------------------------+
-//| Возвращает сигнал изменения истории
-//+------------------------------------------------------------------+
-bool CTradeManager::isHistoryChanged(void) 
-{ 
- return _historyChanged;
-}
-
-//+------------------------------------------------------------------+ 
-// Функция модификации позиции
-//+------------------------------------------------------------------+
-void CTradeManager::ModifyPosition(long ticket, int sl, int tp)
-{
- if (sl > 0){}
- if (tp > 0){}
-}
-
 
 //+------------------------------------------------------------------+
 //| Открывает единственную позицию                                   |
@@ -699,6 +689,43 @@ bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
   }
  }
  return (false);
+}
+
+//+------------------------------------------------------------------+
+/// Select an open virtual position.
+/// \param [in] i			Either index or ticket
+/// \param [in] type		Either SELECT_BY_POS or SELECT_BY_TICKET		
+/// \param [in] pool		Either MODE_TRADES (default) or MODE_HISTORY
+/// \return					True if successful, false otherwise
+//+------------------------------------------------------------------+
+bool CTradeManager::PositionSelect(long index, ENUM_SELECT_TYPE type, ENUM_SELECT_MODE pool = MODE_TRADES)
+{
+ switch(type)
+ {
+  case SELECT_BY_POS:
+   switch(pool)
+   {
+    case MODE_TRADES: _SelectedPosition = _openPositions.At((int)index); return(true);
+    case MODE_HISTORY: _SelectedPosition = _positionsHistory.At((int)index); return(true);
+    default:
+     log_file.Write(LOG_DEBUG, StringFormat("%s error: Unknown pool id %s", MakeFunctionPrefix(__FUNCTION__),(string)pool));
+     return(false);
+   }
+   break;
+  case SELECT_BY_TICKET:
+   switch(pool)
+   {
+    case MODE_TRADES: _SelectedPosition = _openPositions.AtTicket(index); return(true);
+    case MODE_HISTORY: _SelectedPosition = _positionsHistory.AtTicket(index); return(true);
+    default:
+     log_file.Write(LOG_DEBUG, StringFormat("%s error: Unknown pool id %s", MakeFunctionPrefix(__FUNCTION__),(string)pool));
+     return(false);
+   }
+   break;
+  default:
+     log_file.Write(LOG_DEBUG, StringFormat("%s error: Unknown type %s", MakeFunctionPrefix(__FUNCTION__),(string)type));
+   return(false);
+ }
 }
 
 //+------------------------------------------------------------------+
