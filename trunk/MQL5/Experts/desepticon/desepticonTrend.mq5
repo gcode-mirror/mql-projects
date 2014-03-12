@@ -276,7 +276,7 @@ void OnTick()
  
  if (useTrailing)
  {
-  tradeManager.DoTrailing();
+  //tradeManager.DoTrailing();
  }
 }
 //+------------------------------------------------------------------+

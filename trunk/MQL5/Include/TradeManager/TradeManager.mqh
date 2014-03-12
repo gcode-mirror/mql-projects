@@ -26,14 +26,18 @@ private:
   double _current_drawdown;   // текущая просадка баланса
   double _max_drawdown;       // максимально допустимая просадка
   double _max_balance;        // максимальный баланс
+  CPosition *_SelectedPosition;
   
-  int    _historyChanged;     // режим изменения истории (0-не менялось, 1-увеличилась, 2-уменьшилась)
+  bool   _historyChanged;     // флаг изменения истории
 
   bool   CloseReProcessingPosition(int i,color Color=CLR_NONE);
   string CreateFilename(ENUM_FILENAME filename);
+  bool   FindHistoryTicket(long ticket);
   long   MakeMagic(string strSymbol = "");
   bool   LoadArrayFromFile(string file_url,CPositionArray *array);
   bool   SaveArrayToFile(string file_url,CPositionArray *array);  
+  bool   ValidSelectedPosition();
+  
 protected:
   ulong _magic;
   bool _useSound;
@@ -43,7 +47,7 @@ protected:
   CPositionArray *_positionsToReProcessing; ///массив позиций, находящихся в процессе
   CPositionArray *_openPositions;           ///массив текущих открытых позиций
   CPositionArray *_positionsHistory;        ///массив истории виртуальных позиций
-    
+  
 public:
   void CTradeManager();
   void ~CTradeManager(void);
@@ -62,14 +66,12 @@ public:
   int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
   int    GetPositionPointsProfit(string symbol);
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
-
+  
   bool ClosePosition(string symbol, color Color=CLR_NONE);    // Закртыие позиции по символу
   bool ClosePosition(long ticket, color Color = CLR_NONE);    // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);          // Закрытие позиции по индексу в массиве позиций
-  void DoUsualTrailing();
-  void DoLosslessTrailing();
   bool isMinProfit(string symbol);
-  bool IsHistoryChanged ();                                   // возвращает сигнал изменения истории 
+  bool isHistoryChanged ();                                   // возвращает сигнал изменения истории 
   void ModifyPosition(long ticket, int sl, int tp);
   bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl = 0, int tp = 0, 
                           int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
@@ -94,7 +96,7 @@ void CTradeManager::CTradeManager():
  _magic = MakeMagic();
  _historyStart = TimeCurrent(); 
  
- _historyChanged = 0;  
+ _historyChanged = false;  
  
  rescueDataFileName  = CreateFilename(FILENAME_RESCUE);
  historyDataFileName = CreateFilename(FILENAME_HISTORY);
@@ -146,7 +148,7 @@ void CTradeManager::OnTick()
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Получилось удалить позицию [%d].Удаляем её из positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__), i));
     _positionsHistory.Add(_positionsToReProcessing.Detach(i)); //добавляем удаляемую позицию в массив
-    _historyChanged = 1; // меняем флаг, что история увеличилась
+    _historyChanged = true; // меняем флаг, что история увеличилась
     SaveArrayToFile(historyDataFileName,_positionsHistory);                    
     break;
    }
@@ -258,7 +260,7 @@ void CTradeManager::OnTick()
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s ордер отменен %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
        _positionsHistory.Add(_openPositions.Detach(i));
-       _historyChanged = 1; // меняем флаг, что история увеличилась  
+       _historyChanged = true; // меняем флаг, что история увеличилась  
        SaveArrayToFile(historyDataFileName,_positionsHistory);       
        break;
       }
@@ -266,7 +268,7 @@ void CTradeManager::OnTick()
       {
        log_file.Write(LOG_DEBUG, StringFormat("%s прошло время ожидания %d STATE = %s", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket(), EnumToString((ENUM_ORDER_STATE)HistoryOrderGetInteger(pos.getOrderTicket(), ORDER_STATE))));
        _positionsHistory.Add(_openPositions.Detach(i));
-       _historyChanged = 1; // меняем флаг, что история увеличилась
+       _historyChanged = true; // меняем флаг, что история увеличилась
        SaveArrayToFile(historyDataFileName,_positionsHistory);       
        break;
       }
@@ -302,9 +304,9 @@ void CTradeManager::OnTick()
 void CTradeManager::OnTrade(datetime history_start=0)
 {
  // возвращаем флаг изменения истории 
- if (_historyChanged != 0)
+ if (_historyChanged)
   {
-   _historyChanged = 0;
+   _historyChanged = false;
   }
 }
 
@@ -435,7 +437,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  {
   //Print("Перемещаем позицию в хистори");
   _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
-  _historyChanged = 1; // меняем флаг, что история увеличилась 
+  _historyChanged = true; // меняем флаг, что история увеличилась 
   SaveArrayToFile(historyDataFileName,_positionsHistory); 
   SaveArrayToFile(rescueDataFileName,_openPositions);   
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
@@ -450,42 +452,6 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
                                         , MakeFunctionPrefix(__FUNCTION__), i, error, ErrorDescription(error)));
  }
  return(false);
-}
-
-//+------------------------------------------------------------------+ 
-// Функция вычисления параметров трейлинга
-//+------------------------------------------------------------------+
-void CTradeManager::DoUsualTrailing()
-{
- int total = _openPositions.Total();
-//--- пройдем в цикле по всем ордерам
- for(int i = 0; i < total; i++)
- {
-  CPosition *pos = _openPositions.At(i);
-  if(pos.UsualTrailing())
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Изменился SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-  }
- } 
-}
-
-//+------------------------------------------------------------------+ 
-// Функция вычисления параметров трейлинга
-//+------------------------------------------------------------------+
-void CTradeManager::DoLosslessTrailing()
-{
- int total = _openPositions.Total();
-//--- пройдем в цикле по всем ордерам
- for(int i = 0; i < total; i++)
- {
-  CPosition *pos = _openPositions.At(i);
-  if(pos.UsualTrailing())
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s Изменился SL позиции [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-   log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-  }
- } 
 }
 
 //+------------------------------------------------------------------+
@@ -509,11 +475,9 @@ bool CTradeManager::isMinProfit(string symbol)
 //+------------------------------------------------------------------+
 //| Возвращает сигнал изменения истории
 //+------------------------------------------------------------------+
-bool CTradeManager::IsHistoryChanged(void) 
+bool CTradeManager::isHistoryChanged(void) 
 { 
- if (_historyChanged!=0)
-  return true;
- return false;
+ return _historyChanged;
 }
 
 //+------------------------------------------------------------------+ 
@@ -879,21 +843,35 @@ bool CTradeManager::SaveArrayToFile(string file_url, CPositionArray *array)
  return(true);
 }
 
-//  LOCAL
+//+----------------------------------------------------
+// Checks that the selected position pointer is valid
+//+----------------------------------------------------
+bool CTradeManager::ValidSelectedPosition()
+{
+ if(CheckPointer(_SelectedPosition)==POINTER_INVALID)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Error: _SelectedPosition pointer is not valid", MakeFunctionPrefix(__FUNCTION__)));
+  return(false);
+ }
+ else
+ {
+  return(true);
+ }
+}
 
 //+------------------------------------------------------------------+
 /// Search for ticket in History
 /// \param [long] ticket       number of ticket to search
 /// \return                    true if successful, false if not
 //+------------------------------------------------------------------+
-bool FindHistoryTicket(long ticket)
+bool CTradeManager::FindHistoryTicket(long ticket)
 {
  int total = HistoryOrdersTotal();
  for(int i = 0; i < total; i++)
  {
-  if(ticket == HistoryOrderGetTicket(i)) return true;  
+  if(ticket == HistoryOrderGetTicket(i)) return (true);  
  }
- return false;
+ return (false);
 }
 
 
