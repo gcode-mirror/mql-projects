@@ -9,8 +9,8 @@
 
 #include <Lib CisNewBar.mqh>
 #include <TradeManager/TradeManager.mqh>
-#include <divergenceStochastic.mqh>
-#include <divergenceMACD.mqh>
+#include <Divergence\divergenceStochastic.mqh>
+#include <Divergence\divergenceMACD.mqh>
 //------------------INPUT---------------------------------------
 //параметры desepticonCorrection
 input ENUM_TIMEFRAMES eldTF = PERIOD_H1;
@@ -29,6 +29,8 @@ input int    dPeriod = 3;          // D-период стохастика
 input int    slow  = 3;            // Сглаживание стохастика. Возможные значения от 1 до 3.
 input int    top_level = 80;       // Top-level стохастка
 input int    bottom_level = 20;    // Bottom-level стохастика
+input int    DEPTH = 100;
+input int    ALLOW_DEPTH_FOR_PRICE_EXTR = 25;
 
 //параметры сделок  
 input double orderVolume = 0.1;         // Объём сделки
@@ -220,16 +222,16 @@ void OnTick()
 
  if (useTrailing)
  {
-  tradeManager.DoTrailing();
+  //tradeManager.DoTrailing();
  }  
 }
 //+------------------------------------------------------------------+
 int ConditionForBuy()
 {
- if(divergenceMACD(handleMACDEld, Symbol(), eldTF) == 1) return(100);
- if(divergenceMACD( handleMACDJr, Symbol(),  jrTF) == 1) return(50);
- if(divergenceSTOC(handleSTOCEld, Symbol(), eldTF, top_level, bottom_level) == 1) return(100);
- if(divergenceSTOC( handleSTOCJr, Symbol(),  jrTF, top_level, bottom_level) == 1) return(50);
+ if(divergenceMACD(handleMACDEld, Symbol(), eldTF, nullMACD) == 1) return(100);
+ if(divergenceMACD( handleMACDJr, Symbol(),  jrTF, nullMACD) == 1) return(50);
+ if(divergenceSTOC(handleSTOCEld, Symbol(), eldTF, top_level, bottom_level, DEPTH, ALLOW_DEPTH_FOR_PRICE_EXTR, nullSTOC) == 1) return(100);
+ if(divergenceSTOC( handleSTOCJr, Symbol(),  jrTF, top_level, bottom_level, DEPTH, ALLOW_DEPTH_FOR_PRICE_EXTR, nullSTOC) == 1) return(50);
  
  int copiedSTOC = -1;
  int copiedEMAfastJr = -1;
@@ -258,10 +260,10 @@ int ConditionForBuy()
 ///
 int ConditionForSell()
 {
- if(divergenceMACD(handleMACDEld, Symbol(), eldTF) == -1) return(100);
- if(divergenceMACD( handleMACDJr, Symbol(),  jrTF) == -1) return(50);
- if(divergenceSTOC(handleSTOCEld, Symbol(), eldTF, top_level, bottom_level) == -1) return(100);
- if(divergenceSTOC( handleSTOCJr, Symbol(),  jrTF, top_level, bottom_level) == -1) return(50);
+ if(divergenceMACD(handleMACDEld, Symbol(), eldTF, nullMACD) == -1) return(100);
+ if(divergenceMACD( handleMACDJr, Symbol(),  jrTF, nullMACD) == -1) return(50);
+ if(divergenceSTOC(handleSTOCEld, Symbol(), eldTF, top_level, bottom_level, DEPTH, ALLOW_DEPTH_FOR_PRICE_EXTR, nullSTOC) == -1) return(100);
+ if(divergenceSTOC( handleSTOCJr, Symbol(),  jrTF, top_level, bottom_level, DEPTH, ALLOW_DEPTH_FOR_PRICE_EXTR, nullSTOC) == -1) return(50);
  
  int copiedSTOC = -1;
  int copiedEMAfastJr = -1;

@@ -24,6 +24,8 @@ input int    dPeriod = 3;          // D-период стохастика
 input int    slow  = 3;            // Сглаживание стохастика. Возможные значения от 1 до 3.
 input int    top_level = 80;       // Top-level стохастка
 input int    bottom_level = 20;    // Bottom-level стохастика
+input int    DEPTH = 100;          // глубина поиска расхождения
+input int    ALLOW_DEPTH_FOR_PRICE_EXTR = 25; //допустимая глубина для экстремума цены
 
 //параметры сделок  
 input double orderVolume = 0.1;         // Объём сделки
@@ -209,7 +211,7 @@ void OnTick()
   } 
  } // end newBar
   
-  order_direction = divergenceSTOC(handleSTO, Symbol(), eldTF, top_level, bottom_level);
+  order_direction = divergenceSTOC(handleSTO, Symbol(), eldTF, top_level, bottom_level, DEPTH, ALLOW_DEPTH_FOR_PRICE_EXTR, null);
  if (bufferTrend[0] == 7)               //Если направление тренда FLAT  
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s ФЛЭТ", MakeFunctionPrefix(__FUNCTION__)));   
