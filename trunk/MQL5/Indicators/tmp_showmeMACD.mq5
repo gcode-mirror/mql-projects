@@ -198,7 +198,7 @@ int OnCalculate(const int rates_total,
             //увеличиваем количество тренд линий
             countTrend++;
             
-            localMax = high[rates_total-1-lastBarIndex];
+            localMax = high[rates_total-1-divergencePoints.divconvIndex];
             localMin = low[rates_total-1-lastBarIndex];
             for (count=1;count<=depth;count++)
              {
