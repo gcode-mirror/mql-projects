@@ -159,6 +159,17 @@ int OnCalculate(const int rates_total,
    }
    
    bool error = true;
+   
+   for(int i = 0; i < (rates_total-start_iteration)/(seconds_top/seconds_current);i++)
+   {
+     error = topTrend.CountMoveType(i, (int)((rates_total-start_iteration)/(seconds_top/seconds_current)-i), extr_top);
+     //PrintFormat("top_buffer_index = %d, start_pos_top = %d, extr_top = {%d;%.05f}", top_buffer_index, start_pos_top, extr_top.direction, extr_top.price);
+     if(!error)
+     {
+      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
+      return(0);
+     }
+   }
      
    for(int i =  start_iteration; i < rates_total;  i++)    
    {
@@ -167,7 +178,7 @@ int OnCalculate(const int rates_total,
     int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
     if(start_pos_top < 0) start_pos_top = 0;
        
-    error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur);//, topTrend.GetMoveType(top_buffer_index));
+    error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
     if(!error) 
     {
      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON CURRENT TIMEFRAME");
@@ -241,16 +252,16 @@ void CalculateProbalistic (ENUM_MOVE_TYPE type)
  if(count == 3)    // Модель TREND->FLAT->TREND OR TREND_inverse
                    // Модель TREND->CORRECTION->TREND OR TREND_inverse
  {
-  if(combination[0] == MOVE_TYPE_TREND_UP)
+  if(combination[0] == MOVE_TYPE_TREND_UP || combination[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
   {
    if(combination[1] == MOVE_TYPE_CORRECTION_DOWN)
    {
-    if(combination[2] == MOVE_TYPE_TREND_UP)
+    if(combination[2] == MOVE_TYPE_TREND_UP || combination[2] == MOVE_TYPE_TREND_UP_FORBIDEN)
     {
      countTCnormal++;
      count = 0;
     }
-    else if(combination[2] == MOVE_TYPE_TREND_DOWN)
+    else if(combination[2] == MOVE_TYPE_TREND_DOWN || combination[2] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
     {
      countTCinverse++;
      count = 0;
@@ -258,28 +269,28 @@ void CalculateProbalistic (ENUM_MOVE_TYPE type)
    }
    else if(combination[1] == MOVE_TYPE_FLAT)
    {
-    if(combination[2] == MOVE_TYPE_TREND_UP)
+    if(combination[2] == MOVE_TYPE_TREND_UP || combination[2] == MOVE_TYPE_TREND_UP_FORBIDEN)
     {
      countTFnormal++;
      count = 0;
     }
-    else if(combination[2] == MOVE_TYPE_TREND_DOWN)
+    else if(combination[2] == MOVE_TYPE_TREND_DOWN || combination[2] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
     {
      countTFinverse++;
      count = 0;
     }
    }
   }
-  else if(combination[0] == MOVE_TYPE_TREND_DOWN)
+  else if(combination[0] == MOVE_TYPE_TREND_DOWN || combination[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
   {
    if(combination[1] == MOVE_TYPE_CORRECTION_UP)
    {
-    if(combination[2] == MOVE_TYPE_TREND_DOWN)
+    if(combination[2] == MOVE_TYPE_TREND_DOWN || combination[2] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
     {
      countTCnormal++;
      count = 0;
     }
-    else if(combination[2] == MOVE_TYPE_TREND_UP)
+    else if(combination[2] == MOVE_TYPE_TREND_UP || combination[2] == MOVE_TYPE_TREND_UP_FORBIDEN)
     {
      countTCinverse++;
      count = 0;
@@ -287,12 +298,12 @@ void CalculateProbalistic (ENUM_MOVE_TYPE type)
    }
    else if(combination[1] == MOVE_TYPE_FLAT)
    {
-    if(combination[2] == MOVE_TYPE_TREND_DOWN)
+    if(combination[2] == MOVE_TYPE_TREND_DOWN || combination[2] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
     {
      countTFnormal++;
      count = 0;
     }
-    else if(combination[2] == MOVE_TYPE_TREND_UP)
+    else if(combination[2] == MOVE_TYPE_TREND_UP || combination[2] == MOVE_TYPE_TREND_UP_FORBIDEN)
     {
      countTFinverse++;
      count = 0;
@@ -304,24 +315,24 @@ void CalculateProbalistic (ENUM_MOVE_TYPE type)
  
  if(count == 4) // Модель TREND->CORRECTION->FLAT->TREND OR TREND_inverse
  {
-  if(combination[0] == MOVE_TYPE_TREND_UP && combination[1] == MOVE_TYPE_CORRECTION_DOWN && combination[2] == MOVE_TYPE_FLAT)
+  if((combination[0] == MOVE_TYPE_TREND_UP || combination[0] == MOVE_TYPE_TREND_UP_FORBIDEN) && combination[1] == MOVE_TYPE_CORRECTION_DOWN && combination[2] == MOVE_TYPE_FLAT)
   {
-   if(combination[3] == MOVE_TYPE_TREND_UP)
+   if(combination[3] == MOVE_TYPE_TREND_UP || combination[3] == MOVE_TYPE_TREND_UP_FORBIDEN)
    {
     countTCFnormal++;
    }
-   else if(combination[3] == MOVE_TYPE_TREND_DOWN)
+   else if(combination[3] == MOVE_TYPE_TREND_DOWN || combination[3] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
    {
     countTCFinverse++;
    }
   }
-  else if(combination[0] == MOVE_TYPE_TREND_DOWN && combination[1] == MOVE_TYPE_CORRECTION_UP && combination[2] == MOVE_TYPE_FLAT)
+  else if((combination[0] == MOVE_TYPE_TREND_DOWN || combination[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN) && combination[1] == MOVE_TYPE_CORRECTION_UP && combination[2] == MOVE_TYPE_FLAT)
   {
-   if(combination[3] == MOVE_TYPE_TREND_DOWN)
+   if(combination[3] == MOVE_TYPE_TREND_DOWN || combination[3] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
    {
     countTCFnormal++;
    }
-   else if(combination[3] == MOVE_TYPE_TREND_UP)
+   else if(combination[3] == MOVE_TYPE_TREND_UP || combination[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
    {
     countTCFinverse++;
    }
@@ -349,7 +360,7 @@ void SavePorabolistic(string filename)
  FileWriteString(file_handle, StringFormat("%s %s %s %s\r\n", __FILE__, EnumToString(Period()), Symbol(), TimeToString(TimeCurrent())));
  FileWriteString(file_handle, StringFormat("Parametrs: depth = %d\r\n", depth));
  FileWriteString(file_handle, StringFormat("CURRENT TF: percentage ATR = %.03f, ATR ma period = %d, dif to trend = %.03f\r\n", percentage_ATR_cur, ATR_ma_period_cur, difToTrend_cur));
- FileWriteString(file_handle, StringFormat("    TOP TF: percentage ATR = %.03f, ATR ma period = %d, dif to trend = %.03f\r\n", percentage_ATR_top, ATR_ma_period_top, difToTrend_top));
+ //FileWriteString(file_handle, StringFormat("    TOP TF: percentage ATR = %.03f, ATR ma period = %d, dif to trend = %.03f\r\n", percentage_ATR_top, ATR_ma_period_top, difToTrend_top));
  FileWriteString(file_handle, "Ситуации развития тренда: \r\n");
  FileWriteString(file_handle, StringFormat("TREND->CORRECTION->FLAT->TREND = %d; TREND->CORRECTION->FLAT->TREND(inverse) = %d\r\n", countTCFnormal, countTCFinverse));
  FileWriteString(file_handle, StringFormat("TREND->CORRECTION->TREND = %d; TREND->CORRECTION->TREND(inverse) = %d\r\n", countTCnormal, countTCinverse));

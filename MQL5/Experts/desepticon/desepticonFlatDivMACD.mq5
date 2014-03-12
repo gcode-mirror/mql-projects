@@ -200,7 +200,7 @@ void OnTick()
   }
   //order_direction = divergenceMACD(handleMACD, Symbol(), eldTF); 
  } // end newBar 
-  order_direction = divergenceMACD(handleMACD, Symbol(), eldTF); 
+  order_direction = divergenceMACD(handleMACD, Symbol(), eldTF, 0, null); 
  if (bufferTrend[0] == 7)               //Если направление тренда FLAT  
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s ФЛЭТ", MakeFunctionPrefix(__FUNCTION__)));   
@@ -228,7 +228,7 @@ void OnTick()
  
  if (useTrailing)
  {
-  tradeManager.DoTrailing();
+  //tradeManager.DoTrailing();
  }
 } // close OnTick
 
