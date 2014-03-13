@@ -22,8 +22,6 @@ struct PointDiv
    double   valueExtrMACD2; // значение второго экстремума MACD
    double   valueExtrPrice1;// значение первого экстремума по ценам
    double   valueExtrPrice2;// знечение второго экстремума по ценам
-   double   closePrice;     // цена закрытия бара (на котором возник сигнал схождения\расхождения)
-   int      divconvIndex;   // индекс возникновения схождения\расхождения
 };
 PointDiv null = {0};
 
@@ -71,7 +69,6 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  double iHigh_buf [DEPTH_MACD]  = {0};
  double iLow_buf  [DEPTH_MACD]  = {0};
  datetime date_buf[DEPTH_MACD]  = {0};
- double iClose_buf[DEPTH_MACD]  = {0};
  
  int index_MACD_global_max;
  int index_Price_global_max;
@@ -89,7 +86,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  int copiedHigh  = -1;
  int copiedLow   = -1;
  int copiedDate  = -1;
- int copiedClose = -1;
+
  for(int attemps = 0; attemps < 25 && copiedMACD < 0
                                    && copiedHigh < 0
                                    && copiedLow  < 0
@@ -100,9 +97,9 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
   copiedHigh  = CopyHigh(symbol,       timeframe, startIndex, DEPTH_MACD, iHigh_buf);
   copiedLow   = CopyLow (symbol,       timeframe, startIndex, DEPTH_MACD, iLow_buf);
   copiedDate  = CopyTime(symbol,       timeframe, startIndex, DEPTH_MACD, date_buf); 
-  copiedClose = CopyClose(symbol,      timeframe, startIndex, DEPTH_MACD, iClose_buf);
+
  }
- if (copiedMACD != DEPTH_MACD || copiedHigh != DEPTH_MACD || copiedLow != DEPTH_MACD || copiedDate != DEPTH_MACD || copiedClose != DEPTH_MACD)
+ if (copiedMACD != DEPTH_MACD || copiedHigh != DEPTH_MACD || copiedLow != DEPTH_MACD || copiedDate != DEPTH_MACD )
  {
    int err;
    if (LOG)
@@ -160,8 +157,6 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-3];
     div_point.valueExtrPrice1 = iHigh_buf[index_Price_local_max];
     div_point.valueExtrPrice2 = iHigh_buf[index_Price_global_max];
-    div_point.closePrice      = iClose_buf[index_Price_global_max];
-    div_point.divconvIndex    = index_Price_global_max;
     /*PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
                                                                                     TimeToString(div_point.timeExtrPrice2),
                                                                                     TimeToString(div_point.timeExtrMACD1),
@@ -214,8 +209,6 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-3];
     div_point.valueExtrPrice1 = iLow_buf [index_Price_local_min];
     div_point.valueExtrPrice2 = iLow_buf [index_Price_global_min];
-    div_point.closePrice      = iClose_buf[index_Price_global_min];
-    div_point.divconvIndex    = index_Price_global_min;
   /*  PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
                                                                                     TimeToString(div_point.timeExtrPrice2),
                                                                                     TimeToString(div_point.timeExtrMACD1),
