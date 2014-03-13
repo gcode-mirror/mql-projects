@@ -654,10 +654,10 @@ bool CPosition::ReadFromFile(int  handle)
   _tpPrice        = StringToDouble(FileReadString(handle));                      //считываем цену тейк профита
  // Alert("> TAKE PROFIT PRICE = ",_tpPrice); 
   if(FileIsEnding(handle)) return false;    
-  _trailingStop   = StringToDouble(FileReadString(handle));                      //Трейлинг стоп
+  _trailingStop   = StringToInteger(FileReadString(handle));                      //Трейлинг стоп
  // Alert("> TRAILING STOP = ",_trailingStop); 
   if(FileIsEnding(handle)) return false;    
-  _trailingStep   = StringToDouble(FileReadString(handle));                    //Трейлинг степ
+  _trailingStep   = StringToInteger(FileReadString(handle));                    //Трейлинг степ
  // Alert("> TRAILING STEP = ",_trailingStep); 
   if(FileIsEnding(handle)) return false;    
   _posOpenPrice       = StringToDouble(FileReadString(handle));                //цена открытия позиции

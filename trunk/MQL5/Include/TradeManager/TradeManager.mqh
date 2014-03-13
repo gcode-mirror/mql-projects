@@ -62,14 +62,17 @@ public:
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
   int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
   int    GetPositionPointsProfit(string symbol);
+  ENUM_TM_POSITION_TYPE GetPositionType();
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
   
   bool ClosePosition(string symbol, color Color=CLR_NONE);    // Закртыие позиции по символу
   bool ClosePosition(long ticket, color Color = CLR_NONE);    // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);          // Закрытие позиции по индексу в массиве позиций
+  bool isMinProfit();
   bool isMinProfit(string symbol);
-  bool isHistoryChanged() {return (_historyChanged);};                                   // возвращает сигнал изменения истории 
-  void ModifyPosition(long ticket, int sl, int tp);
+  bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменения истории 
+  void ModifyPosition(int sl = 0, int tp = 0);                        // Изменяет заранее выбранную позицию
+  void ModifyPosition(double sl = 0, double tp = 0);                        // Изменяет заранее выбранную позицию
   void OnTick();
   void OnTrade(datetime history_start);
   bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl = 0, int tp = 0, 
@@ -188,6 +191,18 @@ int CTradeManager::GetPositionPointsProfit(string symbol)
 /// \param [long] ticket       number of ticket to search
 /// \return                    true if successful, false if not
 //+------------------------------------------------------------------+
+ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType()
+{
+ if (ValidSelectedPosition())
+  return(_SelectedPosition.getType());
+ return (OP_UNKNOWN);
+}
+
+//+------------------------------------------------------------------+
+/// Return current position type
+/// \param [long] ticket       number of ticket to search
+/// \return                    true if successful, false if not
+//+------------------------------------------------------------------+
 ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
 {
  int total = _openPositions.Total();
@@ -276,6 +291,16 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
 //+------------------------------------------------------------------+
 /// returns if minProfit achieved
 //+------------------------------------------------------------------+
+bool CTradeManager::isMinProfit()
+{
+ if (ValidSelectedPosition())
+  return(_SelectedPosition.isMinProfit());
+ return (false);
+}
+
+//+------------------------------------------------------------------+
+/// returns if minProfit achieved 
+//+------------------------------------------------------------------+
 bool CTradeManager::isMinProfit(string symbol)
 {
  int total = _openPositions.Total();
@@ -294,7 +319,16 @@ bool CTradeManager::isMinProfit(string symbol)
 //+------------------------------------------------------------------+ 
 // Функция модификации позиции
 //+------------------------------------------------------------------+
-void CTradeManager::ModifyPosition(long ticket, int sl, int tp)
+void CTradeManager::ModifyPosition(int sl = 0, int tp = 0)
+{
+ if (sl > 0){}
+ if (tp > 0){}
+}
+
+//+------------------------------------------------------------------+ 
+// Функция модификации позиции
+//+------------------------------------------------------------------+
+void CTradeManager::ModifyPosition(double sl = 0, double tp = 0)
 {
  if (sl > 0){}
  if (tp > 0){}
@@ -402,7 +436,7 @@ void CTradeManager::OnTick()
     long state;
     if (HistoryOrderGetInteger(ticket, ORDER_STATE, state)) // Получим статус ордера из истории
     {
-     switch (state)
+     switch ((int)state)
      {
       case ORDER_STATE_FILLED:
       {
@@ -455,10 +489,10 @@ void CTradeManager::OnTick()
      log_file.Write(LOG_DEBUG, StringFormat("%s Не получилось выбрать ордер по тикету %d из истории", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()));
      log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(GetLastError())));
      string str;
-     int total = HistoryOrdersTotal();
-     for(int i = total-1; i >= 0; i--)
+     int historyTotal = HistoryOrdersTotal();
+     for(int j = historyTotal - 1; j >= 0; j--)
      {
-      str += HistoryOrderGetTicket(i) + " ";
+      str += HistoryOrderGetTicket(j) + " ";
      }
      log_file.Write(LOG_DEBUG, StringFormat("%s Тикеты ордеров из истории: %s", MakeFunctionPrefix(__FUNCTION__), str));
     } 
