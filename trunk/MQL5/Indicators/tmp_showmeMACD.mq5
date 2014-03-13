@@ -198,48 +198,49 @@ int OnCalculate(const int rates_total,
             //увеличиваем количество тренд линий
             countTrend++;
             
-            localMax = high[rates_total-1-divergencePoints.divconvIndex];
-            localMin = low[rates_total-1-lastBarIndex];
+            localMax = high[rates_total-2-lastBarIndex];
+            localMin = low[rates_total-2-lastBarIndex];
+            
             for (count=1;count<=depth;count++)
              {
-              if (GreatDoubles (high[rates_total-1-lastBarIndex+count],localMax) )
-               localMax = high[rates_total-1-lastBarIndex+count];
-              if (LessDoubles (low[rates_total-1-lastBarIndex+count],localMin) )
-               localMin = low[rates_total-1-lastBarIndex+count];
+              if (GreatDoubles (high[rates_total-2-lastBarIndex+count],localMax) )
+               localMax = high[rates_total-2-lastBarIndex+count];
+              if (LessDoubles (low[rates_total-2-lastBarIndex+count],localMin) )
+               localMin = low[rates_total-2-lastBarIndex+count];
              } 
             if (retCode == 1)
              {
-               FileWriteString(file_handle,"\n "+TimeToString(time[rates_total-2-lastBarIndex])+" (расхождение): " );   
-               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(close[rates_total-2-lastBarIndex]-localMin)+" убыток: "+DoubleToString(localMax - close[rates_total-2-lastBarIndex]));                            
+               FileWriteString(file_handle,"\n "+TimeToString(time[rates_total-3-lastBarIndex])+" (расхождение): " );   
+               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(close[rates_total-3-lastBarIndex]-localMin)+" убыток: "+DoubleToString(localMax - close[rates_total-3-lastBarIndex])+"\n");                            
           
-               if ( LessDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
+               if ( LessDoubles ( (localMax - close[rates_total-3-lastBarIndex]), (close[rates_total-3-lastBarIndex] - localMin) ) )
                  {
-                   averDivPos  = averDivPos + close[rates_total-2-lastBarIndex+count] - localMin;
-                   averPos     = averPos + close[rates_total-2-lastBarIndex+count] - localMin;
+                   averDivPos  = averDivPos + close[rates_total-3-lastBarIndex+count] - localMin;
+                   averPos     = averPos + close[rates_total-3-lastBarIndex+count] - localMin;
                    countDivPos ++; // увеличиваем счетчик положительных схождений
                  }
                else
                  {
-                   averDivNeg = averDivNeg + close[rates_total-2-lastBarIndex] - localMax;  
-                   averNeg     = averNeg + close[rates_total-2-lastBarIndex] - localMax;                 
+                   averDivNeg = averDivNeg + close[rates_total-3-lastBarIndex] - localMax;  
+                   averNeg     = averNeg + close[rates_total-3-lastBarIndex] - localMax;                 
                    countDivNeg ++; // иначе увеличиваем счетчик отрицательных схождений
                  }
              }
             if (retCode == -1)
              {
              
-               FileWriteString(file_handle,"\n "+TimeToString(time[rates_total-2-lastBarIndex])+" (схождение): " );   
-               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(localMax - close[rates_total-2-lastBarIndex])+" убыток: "+DoubleToString(close[rates_total-2-lastBarIndex]-localMin));                
-               if (GreatDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
+               FileWriteString(file_handle,"\n "+TimeToString(time[rates_total-3-lastBarIndex])+" (схождение): " );   
+               FileWriteString(file_handle,"\nприбыль: "+DoubleToString(localMax - close[rates_total-3-lastBarIndex])+" убыток: "+DoubleToString(close[rates_total-3-lastBarIndex]-localMin)+"\n");                
+               if (GreatDoubles ( (localMax - close[rates_total-3-lastBarIndex]), (close[rates_total-3-lastBarIndex] - localMin) ) )
                  {
-                  averConvPos = averConvPos + localMax - close[rates_total-2-lastBarIndex];
-                  averPos     = averPos + localMax - close[rates_total-2-lastBarIndex];
+                  averConvPos = averConvPos + localMax - close[rates_total-3-lastBarIndex];
+                  averPos     = averPos + localMax - close[rates_total-3-lastBarIndex];
                   countConvPos ++; // увеличиваем счетчик положительных расхождений
                  }
                else
                  {
-                  averConvNeg = averConvNeg + localMin - close[rates_total-2-lastBarIndex];  
-                  averNeg     = averNeg + localMin - close[rates_total-2-lastBarIndex];
+                  averConvNeg = averConvNeg + localMin - close[rates_total-3-lastBarIndex];  
+                  averNeg     = averNeg + localMin - close[rates_total-3-lastBarIndex];
                   countConvNeg ++; // иначе увеличиваем счетчик отрицательных расхождений
                  }   
              }

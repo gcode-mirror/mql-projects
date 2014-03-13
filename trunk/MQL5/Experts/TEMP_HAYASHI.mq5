@@ -116,7 +116,7 @@ void OnTick()
                 else
                  {
                   ModifyLot (false); // ставим лот в изначальное состоние
-                  count_long = 0;
+                //  count_long = 0;
                  }
                 count_long ++;   // увеличиваем длину серии
               }
