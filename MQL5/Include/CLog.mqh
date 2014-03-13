@@ -37,7 +37,7 @@ class CLog
  private:
   ENUM_OUTPUT _output_type;    // тип вывода информации
   ENUM_LOGLEVEL _level;          // уровень логирования
-  int _limit_size;               // предельный размер log-файла в Mb
+  uint _limit_size;               // предельный размер log-файла в Mb
   string _catalog_name;          // имя каталога для хранения логов
   int _expiration_time;          // время жизни лога в днях
   string _current_filename;
