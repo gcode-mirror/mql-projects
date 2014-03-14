@@ -28,13 +28,19 @@ bool   was_a_part = false;      // флаг подсчета серии
 int    count_long = 0;          // счетчик длины серии
 double current_lot = lot;       // текущий лот
 
-int    startPeriod  = 12;             // врем€ в часах - начало волатильности
-int    finishPeriod = 15;            // врем€ в часах - конец волатильности
+int    startPeriod  = 12;       // врем€ в часах - начало волатильности
+int    finishPeriod = 15;       // врем€ в часах - конец волатильности
 
 MqlDateTime timeStr;            // структура времени дл€ хранени€ текущего времени
+int    handlePBI;               // хэндл индикатора-расскраски
 
 int OnInit()
   {
+   // пытаемс€ загрузить хэндл индикатора-расскраски
+   handlePBI = iCustom (_Symbol,_Period,"test_PBI_NE");
+   // если хэндл не действителен 
+   if ( handlePBI == INVALID_HANDLE)
+    return (INIT_FAILED);  // то возвращаем неудачную инициализацию
    return(INIT_SUCCEEDED);
   }
 
@@ -57,10 +63,7 @@ void OnTick()
        { // если до этого момента еще не была открыта позици€
          
          TimeCurrent(timeStr);  // получаем текущее врем€
-         // если сейчас не ночное врем€ суток
-          
-          Comment("“≈ ”ў≈≈ ¬–≈ћя = ",timeStr.hour);
-          
+         // если сейчас не ночное врем€ суток 
          if ( timeStr.hour >= startPeriod && timeStr.hour <= finishPeriod)
           {
          if (ctm.OpenUniquePosition(_Symbol, OP_BUY, current_lot) ) // пытаемс€ открытьс€ на BUY 
