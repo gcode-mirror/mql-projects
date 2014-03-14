@@ -40,6 +40,7 @@ private:
    double _posProfit;         //прибыль с позиции
    
    int _sl, _tp;  // Стоп и Тейк в пунктах
+   ENUM_TRAILING_TYPE _trailingType;
    int _minProfit, _trailingStop, _trailingStep; // параметры трейла в пунктах
    ENUM_TM_POSITION_TYPE _type;
    datetime _expiration;
@@ -66,15 +67,18 @@ public:
     _sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
    };  
    
+   // Конструктор копирования
    void CPosition(CPosition *pos);
+   // Конструктор для отыгрыша позиций
    void CPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume, double profit, double priceOpen, double priceClose);
-   void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume
-                ,int sl = 0, int tp = 0, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
+   // Конструктор с параметрами
+   void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0
+                ,ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
 // GET   
    datetime getClosePosDT()      {return (_posCloseTime);};   //получает дату закрытия позиции
    datetime getExpiration()      {return (_expiration);};             
    ulong    getMagic()           {return (_magic);};
-   double   getMinProfit()       {return(_minProfit);};
+   int   getMinProfit()       {return(_minProfit);};
    datetime getOpenPosDT()       {return (_posOpenTime);};     //получает дату открытия позиции
    ulong    getOrderTicket()     {return(_orderTicket);};
    double   getPositionPrice()   {return(_posAveragePrice);};
@@ -92,8 +96,9 @@ public:
    double   getTakeProfitPrice() {return(_tpPrice);};
    ulong    getTMTicket()        {return(_tmTicket);};
    int      getTP()              {return(_tp);};
-   double   getTrailingStop()    {return(_trailingStop);};
-   double   getTrailingStep()    {return(_trailingStep);};
+   int   getTrailingStop()    {return(_trailingStop);};
+   int   getTrailingStep()    {return(_trailingStep);};
+   ENUM_TRAILING_TYPE getTrailingType() {return(_trailingType);};
    ENUM_TM_POSITION_TYPE getType() {return (_type);};
    double   getVolume()          {return (_lots);};
    
@@ -111,7 +116,6 @@ public:
    bool     CheckTakeProfit();
    bool     ClosePosition();
    bool     isMinProfit();
-   bool     LosslessTrailing();
    bool     ModifyPosition(int sl, int tp);
    long     NewTicket();
    ENUM_POSITION_STATUS OpenPosition();
@@ -122,7 +126,6 @@ public:
    double   SLtype(ENUM_TM_POSITION_TYPE type);        // вычисляет уровень стоп-лосса в зависимости от типа
    double   TPtype(ENUM_TM_POSITION_TYPE type);        // вычисляет уровень тейк-профита в зависимости от типа
    bool     UpdateSymbolInfo();        // Получение актуальной информации по торговому инструменту 
-   bool     UsualTrailing();
    void     WriteToFile (int handle);
    
  };
@@ -173,6 +176,7 @@ CPosition::CPosition(CPosition *pos)
  _minProfit = pos.getMinProfit();
  _trailingStop = pos.getTrailingStop();
  _trailingStep = pos.getTrailingStep(); // параметры трейла в пунктах
+ _trailingType = pos.getTrailingType();
  _type = pos.getType();
  _expiration = pos.getExpiration();
  _priceDifference = pos.getPriceDifference();
@@ -185,9 +189,11 @@ CPosition::CPosition(CPosition *pos)
 //| Constructor with parameters                                      |
 //+------------------------------------------------------------------+
 CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0
+                    ,ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE
                     , int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0)
-                    : _magic(magic), _symbol(symbol), _type(type), _lots(volume), _minProfit(minProfit), 
-                       _trailingStep(trailingStep), _priceDifference(priceDifference), _sl(0), _tp(0)
+                    : _magic(magic), _symbol(symbol), _type(type), _lots(volume), _sl(0), _tp(0)
+                      , _trailingType(trailingType)
+                      , _minProfit(minProfit), _trailingStep(trailingStep), _priceDifference(priceDifference)
 {
 //--- initialize trade functions class
  //Print("Конструктор с параметрами");
@@ -438,56 +444,11 @@ bool CPosition::isMinProfit(void)
  
  if (getType() == OP_BUY && LessDoubles(_posAveragePrice, bid - _minProfit*point))
   return true;
- if (getType() == OP_SELL && GreatDoubles(_posAveragePrice - ask, _minProfit*point))
+ if (getType() == OP_SELL && GreatDoubles(_posAveragePrice, ask + _minProfit*point))
   return true;
   
  return false;
 }
-
-//+------------------------------------------------------------------+
-// Трейлинг с выходом на безубыток
-//+------------------------------------------------------------------+
-bool CPosition::LosslessTrailing(void)
-{
- if (_minProfit > 0 && _trailingStop > 0 && _trailingStep > 0)
- {
-  UpdateSymbolInfo();
-  double price;
-  int direction;
-  if (getType() == OP_BUY)
-  {
-   price = SymbInfo.Bid();
-   direction = -1;
-  }
-  else if (getType() == OP_SELL)
-       {
-        price = SymbInfo.Ask();
-        direction = 1; 
-       }
-       else return true;
-  
-  double point = SymbInfo.Point();
-  int digits = SymbInfo.Digits();
-  double newSL = 0;
- 
-  if (GreatDoubles(direction*_posOpenPrice, direction*price + _minProfit*point)) // Если достигнут минпрофит 
-  {
-   newSL = _posOpenPrice*point;                                                  // переносим СЛ в безубыток 
-  }
-  if (isMinProfit() && GreatDoubles(direction*_slPrice, direction*price + (_trailingStop+_trailingStep-1)*point) || _slPrice == 0)
-  {
-   newSL = NormalizeDouble(price + direction*_trailingStop*point, digits);
-  }
- 
-  if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
-  {
-   _slPrice = newSL;
-   return true;
-  } 
- }
- return false;
-}
-
 
 //+------------------------------------------------------------------+
 //| EMPTY
@@ -798,48 +759,6 @@ bool CPosition::UpdateSymbolInfo()
  }
  return(false);
 }
-
-//+------------------------------------------------------------------+
-// Обычный трейлинг
-//+------------------------------------------------------------------+
-bool CPosition::UsualTrailing(void)
-{
- if (_minProfit > 0 && _trailingStop > 0 && _trailingStep > 0)
- {
-  UpdateSymbolInfo();
-  double ask = SymbInfo.Ask();
-  double bid = SymbInfo.Bid();
-  double point = SymbInfo.Point();
-  int digits = SymbInfo.Digits();
-  double newSL = 0;
- 
-  if (getType() == OP_BUY &&
-      LessDoubles(_posOpenPrice, bid - _minProfit*point) &&
-      (LessDoubles(_slPrice, bid - (_trailingStop+_trailingStep-1)*point) || _slPrice == 0))
-  {
-   newSL = NormalizeDouble(bid - _trailingStop*point, digits);
-   if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
-   {
-    _slPrice = newSL;
-    return true;
-   }
-  }
- 
-  if (getType() == OP_SELL &&
-      GreatDoubles(_posOpenPrice, ask + _minProfit*point) &&
-      (GreatDoubles(_slPrice, ask + (_trailingStop+_trailingStep-1)*point) || _slPrice == 0))
-  {
-   newSL = NormalizeDouble(ask + _trailingStop*point, digits);
-   if (trade.OrderModify(_slTicket, newSL, 0, 0, ORDER_TIME_GTC, 0))
-   {
-    _slPrice = newSL;
-    return true;
-   }
-  }
- }
- return false;
-}
-
 
 //+------------------------------------------------------------------+
 /// Writes order as a line to an open file handle.

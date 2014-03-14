@@ -162,6 +162,17 @@ enum ENUM_SELECT_MODE
   };
   
 //+------------------------------------------------------------------+
+/// Position trailing types
+//+------------------------------------------------------------------+
+enum ENUM_TRAILING_TYPE
+  {
+   TRAILING_TYPE_NONE,
+   TRAILING_TYPE_USUAL,
+   TRAILING_TYPE_LOSSLESS,
+   TRAILING_TYPE_PBI
+  };
+  
+//+------------------------------------------------------------------+
 /// Used by CTradeManager::OrderSelect()
 /// Similar to MT4
 //+------------------------------------------------------------------+
@@ -170,6 +181,7 @@ enum ENUM_SELECT_TYPE
    SELECT_BY_POS,
    SELECT_BY_TICKET
   };
+  
 //+------------------------------------------------------------------+
 /// Структура свойств позиций на отыгрыш
 //+------------------------------------------------------------------+
@@ -183,3 +195,4 @@ class ReplayPos
   ENUM_POSITION_STATUS status; //статус позиции
   ENUM_TM_POSITION_TYPE type;  //тип позиции
 };
+
