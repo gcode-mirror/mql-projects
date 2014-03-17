@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                           DRAW_COLOR_CANDLES.mq5 |
+//|                                                    PBI_SHARP.mq5 |
 //|                        Copyright 2011, MetaQuotes Software Corp. |
 //|                                              http://www.mql5.com |
 //+------------------------------------------------------------------+
@@ -28,7 +28,6 @@
  
 //--- input параметры
 input int      depth = 1000;         // сколько свечей показывать
-input bool     show_top = false;
 input double   percentage_ATR_cur = 2;   
 input double   difToTrend_cur = 1.5;
 input int      ATR_ma_period_cur = 12;
@@ -45,7 +44,7 @@ double         ExtUpArrowBuffer[];
 double         ExtDownArrowBuffer[];
 
 
-CisNewBar NewBarBottom,
+CisNewBar //NewBarBottom,
           NewBarCurrent, 
           NewBarTop;
 
@@ -53,9 +52,8 @@ CColoredTrend *trend,
               *topTrend;
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
-int digits;
-//int buffer_index = 0;
-//int top_buffer_index = 0;
+int  digits;
+bool show_top = false;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -64,7 +62,7 @@ int OnInit()
    Print("Init");
    symbol = Symbol();
    current_timeframe = Period();
-   NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
+   //NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
    NewBarCurrent.SetLastBarTime(current_timeframe);
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    //PrintFormat("TOP = %s, BOTTOM = %s", EnumToString((ENUM_TIMEFRAMES)NewBarTop.GetPeriod()), EnumToString((ENUM_TIMEFRAMES)NewBarBottom.GetPeriod()));
