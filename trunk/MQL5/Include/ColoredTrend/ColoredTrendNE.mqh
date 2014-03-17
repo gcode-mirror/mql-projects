@@ -12,6 +12,8 @@
 #include "ColoredTrendUtilities.mqh"
 
 #define AMOUNT_OF_PRICE 2
+#define AMOUNT_BARS_FOR_HUGE 150
+
 CLog log_output(OUT_COMMENT, LOG_NONE, 50, "PBI", 30);
 
 //+------------------------------------------------------------------+
@@ -388,7 +390,7 @@ int CColoredTrend::isLastBarHuge(int start_pos)
  if(_period == PERIOD_M1) return(0);
  double sum = 0;
  MqlRates rates[];
- FillTimeSeries(BOTTOM_TF, _depth, start_pos, rates);
+ FillTimeSeries(BOTTOM_TF, AMOUNT_BARS_FOR_HUGE, start_pos, rates);
  int size = ArraySize(rates);
  for(int i = 0; i < size - 1; i++)
  {

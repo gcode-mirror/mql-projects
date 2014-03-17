@@ -47,6 +47,8 @@ int monthStep = 400;   // шаг границы цены в пунктах для месячной торговл
 DELTA_STEP fastDeltaStep = FIFTY;  // Шаг изменения МЛАДШЕЙ дельты
 DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 
+CGlobalVariable g_volume;
+
 CSanya san(fastDelta, slowDelta, dayStep, monthStep, minStepsFromStartToExtremum, maxStepsFromStartToExtremum, stepsFromStartToExit
           , type, volume, firstAdd, secondAdd, thirdAdd, fastDeltaStep, slowDeltaStep, percentage
           , fastPeriod, slowPeriod);
@@ -81,6 +83,8 @@ int OnInit()
    san.SetSymbol(symbol);
    san.SetPeriod(Period());
    san.SetStartHour(startTime);
+   g_volume.Name("VOLUME");
+   g_volume.IntValue(70);
    
    currentVolume = 0;
    //san.InitMonthTrade();
@@ -103,6 +107,11 @@ void OnTick()
   //san.InitMonthTrade();
   //if (san.isMonthInit())
   san.RecountFastDelta();
+  
+  if(g_volume.IntValue() == 0)
+  {
+   ;
+  } 
   
   if(san.isFastDeltaChanged() || san.isSlowDeltaChanged())
   {

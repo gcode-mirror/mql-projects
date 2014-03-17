@@ -43,7 +43,8 @@ input bool   useLimitOrders = false;    // Использовать Limit ордера
 input int    limitPriceDifference = 50; // Разнциа для Limit ордеров
 input bool   useStopOrders = false;     // Использовать Stop ордера
 input int    stopPriceDifference = 50;  // Разнциа для Stop ордеров
-input bool   useTrailing = false;       // Использовать трейлинг
+
+input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL;
 input bool   useJrEMAExit = false;      // будем ли выходить по ЕМА
 input int    posLifeTime = 10;          // время ожидания сделки в барах
 input int    deltaEMAtoEMA = 5;         // необходимая разница для разворота EMA
@@ -211,19 +212,14 @@ void OnTick()
   if (ConditionForBuy() > ConditionForSell())
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
-   tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+   tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
   }
   if (ConditionForSell() > ConditionForBuy())
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
-   tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, minProfit, trStop, trStep, priceDifference);
+   tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
   }
- }
-
- if (useTrailing)
- {
-  //tradeManager.DoTrailing();
- }  
+ } 
 }
 //+------------------------------------------------------------------+
 int ConditionForBuy()
