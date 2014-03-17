@@ -23,8 +23,7 @@ input int TP = 500;
 input double lot = 1;
 input int historyDepth = 40;
 input ENUM_TIMEFRAMES timeframe = PERIOD_M1;
-input bool usualTrailing = true;
-input bool losslessTrailing = false;
+input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
@@ -63,13 +62,7 @@ int OnInit()
   {
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
-   
-   if (usualTrailing && losslessTrailing)
-   {
-    PrintFormat("Должен быть выбран только один тип трейлинга");
-    return(INIT_FAILED);
-   }
-
+         
    if (useLimitOrders)
    {
     opBuy = OP_BUYLIMIT;
@@ -172,22 +165,6 @@ void OnTick()
     }
    }
    
-   if (tradeOnTrend)
-   {
-    if (GreatDoubles(MACD_buf[0], levelMACD) || LessDoubles (MACD_buf[0], -levelMACD))
-    {
-     if (usualTrailing)
-     {
-      ctm.DoUsualTrailing();
-     }
-     if (losslessTrailing)
-     {
-      ctm.DoLosslessTrailing();
-     }
-     return;
-    }
-   }
-      
    if(!SymbolInfoTick(Symbol(),tick))
    {
     Alert("SymbolInfoTick() failed, error = ",GetLastError());
@@ -198,7 +175,7 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     if (ctm.OpenUniquePosition(symbol, opBuy, lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenUniquePosition(symbol, opBuy, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -210,20 +187,12 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (ctm.OpenUniquePosition(symbol, opSell, lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenUniquePosition(symbol, opSell, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
      }
     }
-   }
-   if (usualTrailing)
-   {
-    ctm.DoUsualTrailing();
-   }
-   if (losslessTrailing)
-   {
-    ctm.DoLosslessTrailing();
    }
    return;   
   }
