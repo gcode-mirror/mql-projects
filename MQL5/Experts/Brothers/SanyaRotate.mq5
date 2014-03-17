@@ -45,6 +45,7 @@ int monthStep = 400;   // шаг границы цены в пунктах для месячной торговл
 DELTA_STEP fastDeltaStep = FIFTY;  // Шаг изменения МЛАДШЕЙ дельты
 DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 
+CGlobalVariable hand_control;
 CSanyaRotate *san;
 double vol = 0;
 //+------------------------------------------------------------------+
@@ -59,6 +60,9 @@ int OnInit()
    firstAdd = fastDelta * ko;
    secondAdd = firstAdd * ko;
    thirdAdd = 100 - secondAdd - firstAdd - fastDelta;
+   
+   hand_control.Name("FAST DELTA SANYSA");
+   hand_control.IntValue(fastDelta);
    
    if (type != ORDER_TYPE_BUY && type != ORDER_TYPE_SELL)
    {
@@ -106,6 +110,7 @@ void OnDeinit(const int reason)
 void OnTick()
  {
   san.RecountFastDelta();
+  //hand_control.IntValue();   присваиваем fast_delta
   
   int spread = SymbolInfoInteger(symbol, SYMBOL_SPREAD);
   

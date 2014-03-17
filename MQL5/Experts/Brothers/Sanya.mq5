@@ -108,11 +108,6 @@ void OnTick()
   //if (san.isMonthInit())
   san.RecountFastDelta();
   
-  if(g_volume.IntValue() == 0)
-  {
-   ;
-  } 
-  
   if(san.isFastDeltaChanged() || san.isSlowDeltaChanged())
   {
    double vol = san.RecountVolume();
