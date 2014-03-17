@@ -30,8 +30,7 @@ input double _lot = 1;
 input int historyDepth = 40;
 input double supremacyPercent = 0.2;
 input double profitPercent = 0.5; 
-input bool usualTrailing = true;
-input bool losslessTrailing = false;
+input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
@@ -60,12 +59,6 @@ int OnInit()
   {
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
-   
-   if (usualTrailing && losslessTrailing)
-   {
-    PrintFormat("Должен быть выбран только один тип трейлинга");
-    return(INIT_FAILED);
-   }
    
    switch (pending_orders_type)  //вычисление priceDifference
    {
@@ -162,18 +155,10 @@ void OnTick()
      }
      takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
     
-     ctm.OpenUniquePosition(symbol, pos_type, _lot, SL, takeProfit, minProfit, trailingStop, trailingStep, priceDifference);
+     ctm.OpenUniquePosition(symbol, pos_type, _lot, SL, takeProfit, trailingType, minProfit, trailingStop, trailingStep, priceDifference);
     }
    }
-   
-   if (usualTrailing)
-   {
-    ctm.DoUsualTrailing();
-   }
-   if (losslessTrailing)
-   {
-    ctm.DoLosslessTrailing();
-   }
+ 
    return;   
   }
 //+------------------------------------------------------------------+

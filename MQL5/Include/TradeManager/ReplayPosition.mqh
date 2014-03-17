@@ -24,10 +24,11 @@ class ReplayPosition
   int ATR_handle, errATR;
   double ATR_buf[];
   double _ATRforReplay, _ATRforTrailing;
+  ENUM_TRAILING_TYPE _trailingType;
   
   datetime prevDate;  // дата последнего получени€ истории
  public: 
-  void ReplayPosition(string symbol, ENUM_TIMEFRAMES period, int ATRforReplay, int ATRforTrailing);
+  void ReplayPosition(string symbol, ENUM_TIMEFRAMES period, int ATRforReplay, int ATRforTrailing, ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL);
   void ~ReplayPosition();
   
   void OnTrade();
@@ -38,8 +39,10 @@ class ReplayPosition
 //+------------------------------------------------------------------+
 //|  онструктор                                                      |
 //+------------------------------------------------------------------+
-void ReplayPosition::ReplayPosition(string symbol, ENUM_TIMEFRAMES period, int ATRforReplay, int ATRforTrailing)
-                    : _ATRforReplay(ATRforReplay/100), _ATRforTrailing(ATRforTrailing/100)
+void ReplayPosition::ReplayPosition(string symbol, ENUM_TIMEFRAMES period, int ATRforReplay, int ATRforTrailing, ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL)
+                    : _ATRforReplay(ATRforReplay/100), 
+                      _ATRforTrailing(ATRforTrailing/100),
+                      _trailingType(trailingType)
 {
  if (period < PERIOD_H1) period = PERIOD_H1;
  ATR_handle = iATR(symbol, period, 100);
@@ -233,7 +236,7 @@ void ReplayPosition::CustomPosition()
     sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL), (profit/_Point));
     int trailParam = ATR_buf[0]*_ATRforTrailing/_Point;
     
-    if (ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, trailParam, trailParam, trailParam)) //открываем позицию
+    if (ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, _trailingType, trailParam, trailParam, trailParam)) //открываем позицию
     {
      PrintFormat("ќткрыли позицию дл€ отыгрыша type=%s, profit=%.05f, sl=%d, tp=%d", GetNameOP(pos.getType()), NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
      pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);
@@ -246,5 +249,4 @@ void ReplayPosition::CustomPosition()
    }      
   }
  }
- ctm.DoUsualTrailing();
 }

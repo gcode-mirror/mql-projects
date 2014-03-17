@@ -12,7 +12,7 @@
 #define DEPTH_MACD 100
 #define BORDER_DEPTH_MACD 15
 
-struct PointDiv        
+struct PointDivMACD        
 {                           
    datetime timeExtrMACD1;  // время появления первого экстремума MACD
    datetime timeExtrMACD2;  // время появления второго экстремума MACD
@@ -23,7 +23,7 @@ struct PointDiv
    double   valueExtrPrice1;// значение первого экстремума по ценам
    double   valueExtrPrice2;// знечение второго экстремума по ценам
 };
-PointDiv null = {0};
+PointDivMACD nullMACD = {0};
 
 /////-------------------------------
 /////-------------------------------
@@ -62,7 +62,7 @@ int isMACDExtremum(int handleMACD, int startIndex, int precision = 8, bool LOG =
 }
 /////-------------------------------
 /////-------------------------------
-int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, int startIndex, PointDiv& div_point,bool LOG = false)
+int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, int startIndex, PointDivMACD& div_point,bool LOG = false)
 {
  
  double iMACD_buf [DEPTH_MACD]  = {0};

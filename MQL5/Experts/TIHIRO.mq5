@@ -93,7 +93,7 @@ void OnChartEvent(const int id,
 
        if (sparam == "backtest_all_expt")     // кнопка "Все эксперты"
         {
-         CalculateBackTest (0,TimeCurrent());
+         //CalculateBackTest (0,TimeCurrent());
          Alert("ВСЕ ЭКСПЕРТЫ");
         }
        if (sparam == "backtest_cur_expt")     // кнопка "Этот эксперт"
