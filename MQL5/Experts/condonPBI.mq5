@@ -11,10 +11,12 @@
 //+------------------------------------------------------------------+
 #include  <CompareDoubles.mqh>
 #include  <Lib CisNewBar.mqh>
-#include  <TradeManager\TradeManager.mqh>          //подключаем библиотеку для совершения торговых операций
+#include  <TradeManager\TradeManager.mqh>            // подключаем библиотеку для совершения торговых операций
 #include  <CLog.mqh> 
-//#include  <Graph\Graph.mqh>                        //подключаем графическую библиотеку
-#include  <ColoredTrend\ColoredTrendUtilities.mqh> //загружаем бибилиотеку цветов
+//#include  <Graph\Graph.mqh>                        // подключаем графическую библиотеку
+#include  <ColoredTrend\ColoredTrendUtilities.mqh>   // загружаем бибилиотеку цветов
+
+
 
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
@@ -53,6 +55,8 @@ double globalMin;
 bool waitForSell;
 bool waitForBuy;
 
+ENUM_TRAILING_TYPE  trailingType;
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -90,6 +94,12 @@ int OnInit()
      return(-1);                                                  //завершаем работу с ошибкой
     }
    }
+   
+   if (trailing)
+    trailingType = TRAILING_TYPE_USUAL;
+   else
+    trailingType = TRAILING_TYPE_NONE;
+   
    //устанавливаем индексацию для массивов ХХХ_buf
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
@@ -174,7 +184,7 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     if (ctm.OpenUniquePosition(symbol, opBuy, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenUniquePosition(symbol, opBuy, _lot, SL, TP,trailingType, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -186,7 +196,7 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (ctm.OpenUniquePosition(symbol, opSell, _lot, SL, TP, minProfit, trailingStop, trailingStep, priceDifference))
+     if (ctm.OpenUniquePosition(symbol, opSell, _lot, SL, TP,trailingType, minProfit, trailingStop, trailingStep, priceDifference))
      {
       waitForBuy = false;
       waitForSell = false;
@@ -195,10 +205,7 @@ void OnTick()
    }
   }
    
-   if (trailing)
-   {
-    ctm.DoUsualTrailing();
-   }
+
    return;   
   }
 
