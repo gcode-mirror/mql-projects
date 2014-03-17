@@ -44,7 +44,7 @@ datetime history_start;
 CTradeManager ctm();
 MqlTick tick;
 
-int handleMACD;
+int handleMACD, handlePBI;
 double MACD_buf[1], high_buf[], low_buf[], close_buf[2];
 ENUM_TM_POSITION_TYPE opBuy, opSell;
 int priceDifference;
