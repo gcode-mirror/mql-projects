@@ -63,22 +63,7 @@ int OnInit()
    aUpg[1] = volume * secondAdd * 0.01;
    aUpg[2] = volume * firstAdd * 0.01;
    aUpg[3] = volume * startVol * 0.01;
-   
-   for (int i = 0; i < 4; i++)
-   {
-    PrintFormat("aDeg[%d] = %.02f, aUpg[%d] = %.02f", i, aDeg[i], i, aUpg[i]);
-   }
-   
-   if(trailingType == TRAILING_TYPE_PBI)
-   {
-    handle_PBI = iCustom(symbol, timeframe, "test_PBI_NE", 1000, 2, 1.5, 12, 2, 1.5, 12);
-    if(handle_PBI == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
-    {
-     Print("Не удалось получить хендл Price Based Indicator");               //если хендл не получен, то выводим сообщение в лог об ошибке
-     return(-1);                                                  //завершаем работу с ошибкой
-    }
-   }
-   
+         
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+

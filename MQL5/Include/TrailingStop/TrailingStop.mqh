@@ -19,6 +19,7 @@ class CTrailingStop
   {
 private:
    CSymbolInfo SymbInfo;
+   int handle_PBI;
    
    double LosslessTrailing(int _minProfit, int _trailingStop, int _trailingStep);
    bool UpdateSymbolInfo(string symbol);
@@ -38,6 +39,12 @@ public:
 //+------------------------------------------------------------------+
 CTrailingStop::CTrailingStop()
   {
+   handle_PBI = iCustom(symbol, timeframe, "test_PBI_NE", 1000, 2, 1.5, 12, 2, 1.5, 12);
+   if(handle_PBI == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
+   {
+    Print("Не удалось получить хендл Price Based Indicator");               //если хендл не получен, то выводим сообщение в лог об ошибке
+    return(-1);                                                  //завершаем работу с ошибкой
+   }
   }
 //+------------------------------------------------------------------+
 //|                                                                  |
