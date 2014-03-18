@@ -34,7 +34,8 @@ string robotArray[3] =
  {
   "condom",
   "TIHIRO",
-  "FollowWhiteRabbit"
+  "HAYASHI",
+  "HAYASHI"
  };
 // массив символов
 string symbolArray[6] =

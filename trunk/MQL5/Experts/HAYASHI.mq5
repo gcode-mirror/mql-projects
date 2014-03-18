@@ -15,6 +15,8 @@ input double lot             = 0.1;  // изначальный размер лота
 input double max_lot         = 1;    // максимальный размер лота
 input double lot_diff        = 0.1;  // единица изменения лота
 input double aver            = 8;    // среднее длина серии
+input int    n_spreads       = 1;    // количество спреда
+input ENUM_TIMEFRAMES  timeFrame = PERIOD_M1; // период
 
 //+------------------------------------------------------------------+
 //| Эксперт Хаяcи                                                    |
@@ -35,12 +37,13 @@ int    handlePBI;               // хэндл индикатора-расскраски
 
 double bufferPBI[];             // буфер индикатора-расскраски 
 
+bool   replay = true;           // отыгрыша позиции
 
 
 int OnInit()
   {
    // пытаемся загрузить хэндл индикатора-расскраски
-   handlePBI = iCustom (_Symbol,_Period,"test_PBI_NE");
+   handlePBI = iCustom (_Symbol,timeFrame,"test_PBI_NE");
    // если хэндл не действителен 
    if ( handlePBI == INVALID_HANDLE)
     return (INIT_FAILED);  // то возвращаем неудачную инициализацию
@@ -54,7 +57,7 @@ void OnDeinit(const int reason)
 
 void OnTick()
   { 
-    static CisNewBar isNewBar(_Symbol, _Period);   // для проверки формирования нового бара
+    static CisNewBar isNewBar(_Symbol, timeFrame);   // для проверки формирования нового бара
     double currentPrice;                           // текущая цена
     double spread;                                 // спред
     
@@ -71,16 +74,15 @@ void OnTick()
          return;
          
          // если сейчас не ночное время суток 
-         if ( timeStr.hour >= startPeriod && timeStr.hour <= finishPeriod &&  ( bufferPBI[0] == 7 || bufferPBI[0] == 2 || bufferPBI[0] == 1) )
-          {
-         if (ctm.OpenUniquePosition(_Symbol, OP_BUY, current_lot) ) // пытаемся открыться на BUY 
+      //   if ( timeStr.hour >= startPeriod && timeStr.hour <= finishPeriod &&  ( /*bufferPBI[0] == 7||*/  bufferPBI[0] == 3 || bufferPBI[0] == 4) )
+         if (ctm.OpenUniquePosition(_Symbol, OP_SELL, current_lot) ) // пытаемся открыться на BUY 
            {
            //  Comment("ТЕКУЩИЙ ЛОТ = "+current_lot);
              openPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK); // сохраняем цену открытия позиции
              openedPosition = true;                            // флаг открытия позиции выставляем в true
              was_a_part     = true;                            // открыли новую позицию, значит можно начать подсчет длины серии
            }
-          }  
+          
        }
       else
        {
@@ -97,19 +99,31 @@ void OnTick()
         { // если была открыта позиция
          
           currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID); // получаем текущую цену
-          spread = SymbolInfoDouble(_Symbol,SYMBOL_ASK) - currentPrice; // вычисляем уровень спреда
+          spread =   SymbolInfoDouble(_Symbol,SYMBOL_ASK) - currentPrice; // вычисляем уровень спреда
          
-          if ((currentPrice - openPrice) < spread)
+          if ( (currentPrice - openPrice) > spread && replay == false)
+           {
+              ctm.ClosePosition(_Symbol);              // закрываем позицию
+             openedPosition = false;                  // выставляем флаг открытия позиции в false
+             count_long ++;                           // увеличиваем длину серии
+             replay = true;           
+             Comment("В первом состоянии");
+           }
+       
+           if ( (openPrice - currentPrice) >  spread && replay == true)
            { // если текущая цена превысила цену открытия
              
-             ctm.ClosePosition(_Symbol); // закрываем позицию
-             openedPosition = false;     // выставляем флаг открытия позиции в false
-             count_long ++;              // увеличиваем длину серии
-             if ( (current_lot+lot_diff) < max_lot)  // если лот не превысил допустимые нормы
-                current_lot = current_lot + lot_diff; // увеличиваем лот
+             ctm.ClosePosition(_Symbol);              // закрываем позицию
+             openedPosition = false;                  // выставляем флаг открытия позиции в false
+             count_long ++;                           // увеличиваем длину серии
+              if (was_a_part == true) replay = false; 
+                        Comment("Во втором состоянии");  
+           //  if ( (current_lot+lot_diff) < max_lot)   // если лот не превысил допустимые нормы
+           //     current_lot = current_lot + lot_diff; // увеличиваем лот
              
               
            }
+           
         }
      }
   }

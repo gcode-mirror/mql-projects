@@ -86,7 +86,7 @@ int OnInit()
    
    if (tradeOnTrend)
    {    
-    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", 5, 50, false); //загружаем хэндл индикатора PriceBasedIndicator  
+    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator"); //загружаем хэндл индикатора PriceBasedIndicator  
     
     if(handle_PBI == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
     {
