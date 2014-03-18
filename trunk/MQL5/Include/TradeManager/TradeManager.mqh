@@ -312,7 +312,7 @@ bool CTradeManager::DoTrailing()
     _trailingStop.LosslessTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
     break;
    case TRAILING_TYPE_PBI :
-    _trailingStop.PBITrailing();  
+    _trailingStop.PBITrailing(pos.getSymbol(), PERIOD_H1);  
     break;
    case TRAILING_TYPE_NONE :
    default:

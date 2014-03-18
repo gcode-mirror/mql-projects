@@ -19,7 +19,9 @@ class CTrailingStop
   {
 private:
    CSymbolInfo SymbInfo;
+   
    int handle_PBI;
+   double PBI_buf[];
    
    double LosslessTrailing(int _minProfit, int _trailingStop, int _trailingStep);
    bool UpdateSymbolInfo(string symbol);
@@ -32,19 +34,13 @@ public:
                        
    double LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl
                        , int _minProfit, int _trailingStop, int _trailingStep);
-   double PBITrailing();                    
+   double PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe);                    
   };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 CTrailingStop::CTrailingStop()
   {
-   handle_PBI = iCustom(symbol, timeframe, "test_PBI_NE", 1000, 2, 1.5, 12, 2, 1.5, 12);
-   if(handle_PBI == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
-   {
-    Print("Не удалось получить хендл Price Based Indicator");               //если хендл не получен, то выводим сообщение в лог об ошибке
-    return(-1);                                                  //завершаем работу с ошибкой
-   }
   }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -126,8 +122,22 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
  return (newSL);
 }
 
-double CTrailingStop::PBITrailing()
+double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe)
 {
+ handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", 1000, 2, 1.5, 12, 2, 1.5, 12);
+ if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+ {
+  Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+ }
+ 
+ int errPBI = CopyBuffer(handle_PBI, 4, 0, 1000, PBI_buf);
+ if(errPBI < 0)
+ {
+  Alert("Не удалось скопировать данные из индикаторного буфера"); 
+  return(0.0); 
+ }
+
+ 
  return(0.0);
 };
 //+------------------------------------------------------------------+
