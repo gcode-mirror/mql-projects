@@ -158,7 +158,7 @@ int OnCalculate(const int rates_total,
    
    bool error = true;
    
-   for(int i = 0; i < (rates_total-start_iteration)/(seconds_top/seconds_current);i++)
+   for(int i = 0; i < (rates_total-start_iteration)/(seconds_top/seconds_current); i++)
    {
      error = topTrend.CountMoveType(i, (int)((rates_total-start_iteration)/(seconds_top/seconds_current)-i), extr_top);
      //PrintFormat("top_buffer_index = %d, start_pos_top = %d, extr_top = {%d;%.05f}", top_buffer_index, start_pos_top, extr_top.direction, extr_top.price);
@@ -169,9 +169,9 @@ int OnCalculate(const int rates_total,
       Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
       return(0);
      }
-     PrintFormat("Calculate TOP TF; i = %d", i);
+     if(top_buffer_index < (depth)/(seconds_top/seconds_current)) top_buffer_index++;
    }
-  
+   
    for(int i =  start_iteration; i < rates_total;  i++)    
    {
     //PrintFormat("start_iteration = %d; rates_total = %d, bi = %d, tbi = %d", start_iteration, rates_total, buffer_index, top_buffer_index);
@@ -186,7 +186,7 @@ int OnCalculate(const int rates_total,
      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON CURRENT TIMEFRAME");
      return(0);
     } 
-      
+     
     ColorCandlesBuffer1[i] = open[i];
     ColorCandlesBuffer2[i] = high[i];
     ColorCandlesBuffer3[i] = low[i];
@@ -201,8 +201,7 @@ int OnCalculate(const int rates_total,
     {
      ColorCandlesColors[i + 2] = topTrend.GetMoveType(top_buffer_index);
     }
-
-    if (extr_cur.direction > 0)
+     if (extr_cur.direction > 0)
     {
      ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
      extr_cur.direction = 0;
@@ -216,9 +215,10 @@ int OnCalculate(const int rates_total,
     if(buffer_index < depth)
     {
      buffer_index++;
+     //top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
     }
    }
-   
+  
    if(NewBarCurrent.isNewBar() > 0 && prev_calculated != 0)
    {
     buffer_index++;
@@ -228,10 +228,12 @@ int OnCalculate(const int rates_total,
    {
     top_buffer_index++;
    }
-   
+  
    return(rates_total);
   }
   
+//------------------------------------
+//------------------------------------
   int GetNumberOfTopBarsInCurrentBars(ENUM_TIMEFRAMES timeframe, int current_bars)
   {
    return ((current_bars*PeriodSeconds(timeframe))/PeriodSeconds(GetTopTimeframe(timeframe)));
