@@ -78,10 +78,12 @@ public:
   void ModifyPosition(double sl = 0, double tp = 0);                        // »змен€ет заранее выбранную позицию
   void OnTick();
   void OnTrade(datetime history_start);
-  bool OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl = 0, int tp = 0, 
+  bool OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
+                          ENUM_TM_POSITION_TYPE type,double volume ,int sl = 0, int tp = 0, 
                           ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, 
                           int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
-  bool OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
+  bool OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe,
+                         ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
                          ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, 
                          int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
   bool PositionChangeSize(string strSymbol, double additionalVolume);
@@ -135,7 +137,7 @@ void CTradeManager::~CTradeManager(void)
  delete _positionsToReProcessing;
  delete _openPositions;
  delete _positionsHistory;
- log_file.Write(LOG_DEBUG, StringFormat("%s ѕроцесс деинициализации завершен.", MakeFunctionPrefix(__FUNCTION__)));
+ //log_file.Write(LOG_DEBUG, StringFormat("%s ѕроцесс деинициализации завершен.", MakeFunctionPrefix(__FUNCTION__)));
  FileDelete(rescueDataFileName, FILE_COMMON);
 };
 
@@ -281,7 +283,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
   _historyChanged = true; // мен€ем флаг, что истори€ увеличилась 
   SaveArrayToFile(historyDataFileName,_positionsHistory); 
   SaveArrayToFile(rescueDataFileName,_openPositions);   
-  log_file.Write(LOG_DEBUG, StringFormat("%s ”далена позици€ [%d]", MakeFunctionPrefix(__FUNCTION__), i));
+  //log_file.Write(LOG_DEBUG, StringFormat("%s ”далена позици€ [%d]", MakeFunctionPrefix(__FUNCTION__), i));
   PrintFormat("%s ”далена позици€ [%d]", MakeFunctionPrefix(__FUNCTION__), i);
   return(true);
  }
@@ -298,6 +300,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
 bool CTradeManager::DoTrailing()
 {
  int total = _openPositions.Total();
+ double sl;
  CPosition *pos;
 //--- по массиву открытых позиций
  for(int i = total - 1; i >= 0; i--) 
@@ -306,18 +309,19 @@ bool CTradeManager::DoTrailing()
   switch(pos.getTrailingType())
   {
    case TRAILING_TYPE_USUAL :
-    _trailingStop.UsualTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
+    sl =  _trailingStop.UsualTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
     break;
    case TRAILING_TYPE_LOSSLESS :
-    _trailingStop.LosslessTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
+    sl = _trailingStop.LosslessTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
     break;
    case TRAILING_TYPE_PBI :
-    _trailingStop.PBITrailing(pos.getSymbol(), PERIOD_H1);  
+    sl = _trailingStop.PBITrailing(pos.getSymbol(), pos.getPeriod(), pos.getType(), pos.getStopLossPrice(), pos.getHandlePBI());  
     break;
    case TRAILING_TYPE_NONE :
    default:
     break;
   }
+  if (sl > 0) pos.ModifyPosition(sl, 0);
  }
  return (true);
 }
@@ -427,7 +431,7 @@ void CTradeManager::OnTick()
 //--- ѕодгружаем историю
  if(!HistorySelect(_historyStart, TimeCurrent()))
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Ќе получилось выбрать историю с %s по %s", MakeFunctionPrefix(__FUNCTION__), _historyStart, TimeCurrent())); 
+  //log_file.Write(LOG_DEBUG, StringFormat("%s Ќе получилось выбрать историю с %s по %s", MakeFunctionPrefix(__FUNCTION__), _historyStart, TimeCurrent())); 
   return;
  }
 
@@ -553,7 +557,8 @@ void CTradeManager::OnTrade(datetime history_start=0)
 //| если существует така€ же позици€ - открыти€ не будет             |
 //| если существует противоположна€ позици€ - она будет закрыта      |
 //+------------------------------------------------------------------+
-bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0,
+bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
+                                 ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0,
                                  ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, 
                                  int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifferense = 0)
 {
@@ -660,7 +665,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
   PrintFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__));
-  pos = new CPosition(_magic, symbol, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, priceDifferense);
+  pos = new CPosition(_magic, symbol, timeframe, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, priceDifferense);
   ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
   {
@@ -690,7 +695,8 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TM_POSITION_TYPE type
 //| если существует така€ же позици€ - открыти€ не будет             |
 //| если существует противоположна€ позици€ - она будет закрыта      |
 //+------------------------------------------------------------------+
-bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
+bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe,
+                                      ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
                                       ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, 
                                       int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifferense = 0)
 {
@@ -704,7 +710,7 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TM_POSITION_TYPE type,
                             , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total); 
  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // –аспечатка всех позиций из массива _openPositions
  
- pos = new CPosition(_magic, symbol, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, priceDifferense);
+ pos = new CPosition(_magic, symbol, timeframe, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, priceDifferense);
  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
  //Print("openingResult=", PositionStatusToStr(openingResult));
  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
@@ -833,7 +839,6 @@ void CTradeManager::UpdateData(CPositionArray *positionsHistory)
 }
 
 //---------------PRIVATE-----------------------------
-
 
 //+------------------------------------------------------------------+
 /// Delete a virtual pos from "not_deleted".

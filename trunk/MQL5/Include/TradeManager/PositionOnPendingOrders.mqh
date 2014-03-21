@@ -26,6 +26,7 @@ private:
    ulong _tmTicket;
    ulong _orderTicket;
    string _symbol;
+   ENUM_TIMEFRAMES _period;
    double _lots;
    ulong _slTicket;
    double _slPrice; // цена установки стопа
@@ -42,6 +43,7 @@ private:
    int _sl, _tp;  // Стоп и Тейк в пунктах
    ENUM_TRAILING_TYPE _trailingType;
    int _minProfit, _trailingStop, _trailingStep; // параметры трейла в пунктах
+   int _handle_PBI;
    ENUM_TM_POSITION_TYPE _type;
    datetime _expiration;
    int      _priceDifference;
@@ -70,17 +72,23 @@ public:
    // Конструктор копирования
    void CPosition(CPosition *pos);
    // Конструктор для отыгрыша позиций
-   void CPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume, double profit, double priceOpen, double priceClose);
+   void CPosition(string symbol, ENUM_TIMEFRAMES period
+                 , ENUM_TM_POSITION_TYPE type, double volume
+                 , double profit, double priceOpen, double priceClose);
    // Конструктор с параметрами
-   void CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0
-                ,ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
+   void CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period
+                    ,ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0
+                    ,ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE
+                    ,int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
 // GET   
    datetime getClosePosDT()      {return (_posCloseTime);};   //получает дату закрытия позиции
-   datetime getExpiration()      {return (_expiration);};             
+   datetime getExpiration()      {return (_expiration);};      
+   int      getHandlePBI()       {return (_handle_PBI);}; 
    ulong    getMagic()           {return (_magic);};
-   int   getMinProfit()       {return(_minProfit);};
+   int   getMinProfit()          {return(_minProfit);};
    datetime getOpenPosDT()       {return (_posOpenTime);};     //получает дату открытия позиции
    ulong    getOrderTicket()     {return(_orderTicket);};
+   ENUM_TIMEFRAMES getPeriod()   {return(_period);};
    double   getPositionPrice()   {return(_posAveragePrice);};
    int      getPositionPointsProfit();
    ENUM_POSITION_STATUS getPositionStatus() {return (_pos_status);};
@@ -96,8 +104,8 @@ public:
    double   getTakeProfitPrice() {return(_tpPrice);};
    ulong    getTMTicket()        {return(_tmTicket);};
    int      getTP()              {return(_tp);};
-   int   getTrailingStop()    {return(_trailingStop);};
-   int   getTrailingStep()    {return(_trailingStep);};
+   int      getTrailingStop()    {return(_trailingStop);};
+   int      getTrailingStep()    {return(_trailingStep);};
    ENUM_TRAILING_TYPE getTrailingType() {return(_trailingType);};
    ENUM_TM_POSITION_TYPE getType() {return (_type);};
    double   getVolume()          {return (_lots);};
@@ -116,7 +124,7 @@ public:
    bool     CheckTakeProfit();
    bool     ClosePosition();
    bool     isMinProfit();
-   bool     ModifyPosition(int sl, int tp);
+   bool     ModifyPosition(double sl, int tp);
    long     NewTicket();
    ENUM_POSITION_STATUS OpenPosition();
    double   pricetype(ENUM_TM_POSITION_TYPE type);     // вычисляет уровень открытия в зависимости от типа 
@@ -133,11 +141,12 @@ public:
 //+------------------------------------------------------------------+
 //| Constructor for replay positions                                 |
 //+------------------------------------------------------------------+
-CPosition::CPosition(string symbol, ENUM_TM_POSITION_TYPE type, double volume, double profit, double priceOpen, double priceClose)
+CPosition::CPosition(string symbol, ENUM_TIMEFRAMES period, ENUM_TM_POSITION_TYPE type, double volume, double profit, double priceOpen, double priceClose)
 {
   //Print("Конструктор с параметрами для реплея");
  trade = new CTMTradeFunctions();
  _symbol = symbol;
+ _period = period;
  _type = type;
  _lots = volume;
  _posProfit = profit;
@@ -158,6 +167,7 @@ CPosition::CPosition(CPosition *pos)
  _tmTicket = pos.getTMTicket();
  _orderTicket = pos.getOrderTicket();
  _symbol = pos.getSymbol();
+ _period = pos.getPeriod();
  _lots = pos.getVolume();
  _slTicket = pos.getStopLossTicket();
  _slPrice = pos.getStopLossPrice(); // цена установки стопа
@@ -177,6 +187,7 @@ CPosition::CPosition(CPosition *pos)
  _trailingStop = pos.getTrailingStop();
  _trailingStep = pos.getTrailingStep(); // параметры трейла в пунктах
  _trailingType = pos.getTrailingType();
+ _handle_PBI = pos.getHandlePBI();
  _type = pos.getType();
  _expiration = pos.getExpiration();
  _priceDifference = pos.getPriceDifference();
@@ -188,10 +199,11 @@ CPosition::CPosition(CPosition *pos)
 //+------------------------------------------------------------------+
 //| Constructor with parameters                                      |
 //+------------------------------------------------------------------+
-CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0
+CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period
+                    ,ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0
                     ,ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE
-                    , int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0)
-                    : _magic(magic), _symbol(symbol), _type(type), _lots(volume), _sl(0), _tp(0)
+                    ,int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0)
+                    : _magic(magic), _symbol(symbol), _period(period), _type(type), _lots(volume), _sl(0), _tp(0)
                       , _trailingType(trailingType)
                       , _minProfit(minProfit), _trailingStep(trailingStep), _priceDifference(priceDifference)
 {
@@ -205,6 +217,15 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TM_POSITION_TYPE type, dou
  trade = new CTMTradeFunctions();
  _pos_status = POSITION_STATUS_NOT_INITIALISED;
  _sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
+ 
+ if (_trailingType == TRAILING_TYPE_PBI)
+ {
+  _handle_PBI = iCustom(_symbol, _period, "PriceBasedIndicator", 100, 2, 1.5, 12, 2, 1.5, 12);
+  if(_handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+  {
+   Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+  }
+ }
 }
 
 //+------------------------------------------------------------------+
@@ -453,8 +474,18 @@ bool CPosition::isMinProfit(void)
 //+------------------------------------------------------------------+
 //| EMPTY
 //+------------------------------------------------------------------+
-bool CPosition::ModifyPosition(int sl, int tp)
+bool CPosition::ModifyPosition(double sl, int tp)
 {
+ if (trade.StopOrderModify(_slTicket, sl))
+ {
+  _slPrice = sl;
+  PrintFormat("%s Изменили СтопЛосс, новый стоплосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice);
+  return (true);
+ }
+ else
+ {
+  PrintFormat("%s Не удалось изменить СтопЛосс",MakeFunctionPrefix(__FUNCTION__));
+ }
  return(false);
 }
 

@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                            ColoredTrendEnums.mq5 |
+//|                                        ColoredTrendUtilities.mqh |
 //|                        Copyright 2013, MetaQuotes Software Corp. |
 //|                                              http://www.mql5.com |
 //+------------------------------------------------------------------+

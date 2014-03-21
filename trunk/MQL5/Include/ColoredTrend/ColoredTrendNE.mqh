@@ -10,9 +10,10 @@
 #include <CLog.mqh>
 #include <CompareDoubles.mqh>
 #include "ColoredTrendUtilities.mqh"
+#include <StringUtilities.mqh>
 
 #define AMOUNT_OF_PRICE 2
-#define AMOUNT_BARS_FOR_HUGE 150
+#define AMOUNT_BARS_FOR_HUGE 100
 
 CLog log_output(OUT_COMMENT, LOG_NONE, 50, "PBI", 30);
 
@@ -84,7 +85,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  ArrayResize(enumMoveType, depth);
  ArrayInitialize(enumMoveType, 0);
- log_output.Write(LOG_DEBUG, StringFormat("%s Сработал конструктор класса CColoredTrend", EnumToString(_period)));
+ log_output.Write(LOG_DEBUG, StringFormat("%s Конструктор класса CColoredTrend", EnumToString(_period)));
 }
 
 //+--------------------------------------+
@@ -123,29 +124,29 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
    num1 = num0;
    num0 = current_bar;
   } 
-  log_output.Write(LOG_DEBUG, StringFormat("%s %s ATR = %.05f;  num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", EnumToString(_period), TimeToString(time_buffer[0]), difToNewExtremum, num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price));
+  //log_output.Write(LOG_DEBUG, StringFormat("%s %s ATR = %.05f;  num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", EnumToString(_period), TimeToString(time_buffer[0]), difToNewExtremum, num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price));
   newTrend = isNewTrend();        
  }
  
  // Проверка на наличие 3х экстремумов. Выход если нет трех экстремумов
  if (num2.direction == 0 && num2.price == -1) //аналогично (num0 > 0 && num1 > 0 && num2 > 0) т.к. num2 не определится пока не определятся num0 и num1
  {
-  log_output.Write(LOG_MAIN, StringFormat("%s %s Не высчитано 3 экстремума. i = %d; start_pos = %d; num0 = {%d, %f}; num1 = {%d, %f}; num2 = {%d, %f};", EnumToString(_period), TimeToString(time_buffer[0]), bar, start_pos, num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price));
+  //log_output.Write(LOG_MAIN, StringFormat("%s %s Не высчитано 3 экстремума. i = %d; start_pos = %d; num0 = {%d, %f}; num1 = {%d, %f}; num2 = {%d, %f};", EnumToString(_period), TimeToString(time_buffer[0]), bar, start_pos, num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price));
   return (true); 
  } 
   
  if (newTrend == -1 && enumMoveType[bar] != MOVE_TYPE_TREND_DOWN_FORBIDEN && enumMoveType[bar] != MOVE_TYPE_TREND_DOWN)
  {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения
-  log_output.Write(LOG_MAIN, StringFormat("%s %s Выполнено условие isNewTrend DOWN на %d баре. Текущее движение = %s", EnumToString(_period), TimeToString(time_buffer[0]), bar, MoveTypeToString(enumMoveType[bar])));
-  log_output.Write(LOG_DEBUG, StringFormat("%s %s На старшем ТФ движение %s", EnumToString(_period), TimeToString(time_buffer[0]), MoveTypeToString(topTF_Movement))); 
+  //log_output.Write(LOG_MAIN, StringFormat("%s %s Выполнено условие isNewTrend DOWN на %d баре. Текущее движение = %s", EnumToString(_period), TimeToString(time_buffer[0]), bar, MoveTypeToString(enumMoveType[bar])));
+  //log_output.Write(LOG_DEBUG, StringFormat("%s %s На старшем ТФ движение %s", EnumToString(_period), TimeToString(time_buffer[0]), MoveTypeToString(topTF_Movement))); 
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
   previous_move_type = enumMoveType[bar];
   return (true);
  }
  else if (newTrend == 1 && enumMoveType[bar] != MOVE_TYPE_TREND_UP_FORBIDEN && enumMoveType[bar] != MOVE_TYPE_TREND_UP) // если текущее закрытие выше последнего экстремума 
  {
-  log_output.Write(LOG_MAIN, StringFormat("%s %s Выполнено условие isNewTrend UP на %d баре. Текущее движение = %s", EnumToString(_period), TimeToString(time_buffer[0]), bar, MoveTypeToString(enumMoveType[bar])));
-  log_output.Write(LOG_DEBUG, StringFormat("%s %s На старшем ТФ движение %s", EnumToString(_period), TimeToString(time_buffer[0]), MoveTypeToString(topTF_Movement))); 
+  //log_output.Write(LOG_MAIN, StringFormat("%s %s Выполнено условие isNewTrend UP на %d баре. Текущее движение = %s", EnumToString(_period), TimeToString(time_buffer[0]), bar, MoveTypeToString(enumMoveType[bar])));
+  //log_output.Write(LOG_DEBUG, StringFormat("%s %s На старшем ТФ движение %s", EnumToString(_period), TimeToString(time_buffer[0]), MoveTypeToString(topTF_Movement))); 
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
   previous_move_type = enumMoveType[bar];
   return (true);
@@ -154,7 +155,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
  {
   if(enumMoveType[bar] == MOVE_TYPE_UNKNOWN)
   {
-   log_output.Write(LOG_MAIN, StringFormat("%s %s Предыдущее движение не было определено. Сейчас FLAT", EnumToString(_period), TimeToString(time_buffer[0])));
+   //log_output.Write(LOG_MAIN, StringFormat("%s %s Предыдущее движение не было определено. Сейчас FLAT", EnumToString(_period), TimeToString(time_buffer[0])));
    enumMoveType[bar] = MOVE_TYPE_FLAT;
    previous_move_type = enumMoveType[bar];
    return (true);
@@ -165,7 +166,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
  if ((enumMoveType[bar] == MOVE_TYPE_TREND_UP || enumMoveType[bar] == MOVE_TYPE_TREND_UP_FORBIDEN) && 
       LessDoubles(buffer_Rates[AMOUNT_OF_PRICE-1].close, buffer_Rates[AMOUNT_OF_PRICE-1].open, digits))
  {
-  log_output.Write(LOG_MAIN, StringFormat("%s %s bar = %d, закончился тренд вверх(началась коррекция вниз), текущее закрытие=%.05f; текущее открытия=%.05f", EnumToString(_period), TimeToString(time_buffer[0]), bar, buffer_Rates[AMOUNT_OF_PRICE-1].close, buffer_Rates[AMOUNT_OF_PRICE-1].open));
+  //log_output.Write(LOG_MAIN, StringFormat("%s %s bar = %d, закончился тренд вверх(началась коррекция вниз), текущее закрытие=%.05f; текущее открытия=%.05f", EnumToString(_period), TimeToString(time_buffer[0]), bar, buffer_Rates[AMOUNT_OF_PRICE-1].close, buffer_Rates[AMOUNT_OF_PRICE-1].open));
   enumMoveType[bar] = MOVE_TYPE_CORRECTION_DOWN;
   if (num0.direction > 0) 
    lastOnTrend = num0; 
@@ -195,7 +196,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
   log_output.Write(LOG_MAIN, StringFormat("%s %s bar = %d, закончилася коррекция вверх(начался тренд вниз), последняя цена=%.05f меньше последнего экстремума=%.05f", EnumToString(_period), TimeToString(time_buffer[0]), bar, buffer_Rates[AMOUNT_OF_PRICE-1].close, lastOnTrend.price));
-  log_output.Write(LOG_DEBUG, StringFormat("%s %s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", EnumToString(_period), TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price));
+  //log_output.Write(LOG_DEBUG, StringFormat("%s %s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", EnumToString(_period), TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price));
   previous_move_type = enumMoveType[bar];
   return (true);
  }
@@ -205,7 +206,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
   log_output.Write(LOG_MAIN, StringFormat("%s %s bar = %d, закончилася коррекция вниз(начался тренд вверх), последняя цена=%.05f больше последнего экстремума=%.05f", EnumToString(_period), TimeToString(time_buffer[0]), bar, buffer_Rates[AMOUNT_OF_PRICE-1].close, lastOnTrend.price));
-  log_output.Write(LOG_DEBUG, StringFormat("%s %s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", EnumToString(_period), TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price));
+  //log_output.Write(LOG_DEBUG, StringFormat("%s %s num0 = {%d, %.05f}; num1 = {%d, %.05f}; num2 = {%d, %.05f};", EnumToString(_period), TimeToString(time_buffer[0]), num0.direction, num0.price, num1.direction, num1.price, num2.direction, num2.price));
   previous_move_type = enumMoveType[bar];
   return (true);
  }
@@ -305,7 +306,7 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
  else
   copied = CopyRates(_symbol, period, start_pos, count, array); // справа налево от 0 до count-1, всего count элементов
 //--- если не удалось скопировать достаточное количество баров
- if(copied < count)
+ if(copied < result_size)
  {
   string comm = StringFormat("Для символа %s получено %d баров из %d затребованных Rates. Period = %s. Error = %d | start = %d count = %d",
                              _symbol,
@@ -341,7 +342,8 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //--- если не удалось скопировать достаточное количество баров
  if(copied < count)
  {
-  string comm = StringFormat("Для символа %s получено %d баров из %d затребованных ATR. Period = %s.  Error = %d | start = %d count = %d bars_calculated = %d",
+  string comm = StringFormat("%s Для символа %s получено %d баров из %d затребованных ATR. Period = %s.  Error = %d | start = %d count = %d bars_calculated = %d",
+                             MakeFunctionPrefix(__FUNCTION__),
                              _symbol,
                              copied,
                              count,
@@ -368,15 +370,15 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int
  {
   extremum_condition = LessDoubles(price, lastOnTrend.price, digits);
   if(isLastBarHuge(start_pos) > 0) bottomTF_condition = true;
-  if(extremum_condition) log_output.Write(LOG_DEBUG, StringFormat("%s %s %.05f %s UP Extremum condition success: %.05f < %.05f", EnumToString(_period), TimeToString(time_buffer[0]), price, TimeToString(time_buffer[0]), price, lastOnTrend.price));
-  if(bottomTF_condition) log_output.Write(LOG_DEBUG, StringFormat("%s %s %.05f %s UP BottomTF condition success", EnumToString(_period), TimeToString(time_buffer[0]), price, TimeToString(time_buffer[0])));
+  //if(extremum_condition) log_output.Write(LOG_DEBUG, StringFormat("%s %s %.05f %s UP Extremum condition success: %.05f < %.05f", EnumToString(_period), TimeToString(time_buffer[0]), price, TimeToString(time_buffer[0]), price, lastOnTrend.price));
+  //if(bottomTF_condition) log_output.Write(LOG_DEBUG, StringFormat("%s %s %.05f %s UP BottomTF condition success", EnumToString(_period), TimeToString(time_buffer[0]), price, TimeToString(time_buffer[0])));
  }
  if (move_type == MOVE_TYPE_CORRECTION_DOWN)
  {
   extremum_condition = GreatDoubles(price, lastOnTrend.price, digits);
   if(isLastBarHuge(start_pos) < 0) bottomTF_condition = true;
-  if(extremum_condition) log_output.Write(LOG_DEBUG, StringFormat("%s %s %.05f %s DOWN Extremum condition success: %.05f > %.05f", EnumToString(_period), TimeToString(time_buffer[0]), price, TimeToString(time_buffer[0]), price, lastOnTrend.price));
-  if(bottomTF_condition) log_output.Write(LOG_DEBUG, StringFormat("%s %s %.05f %s DOWN BottomTF condition success", EnumToString(_period), TimeToString(time_buffer[0]), price, TimeToString(time_buffer[0])));
+  //if(extremum_condition) log_output.Write(LOG_DEBUG, StringFormat("%s %s %.05f %s DOWN Extremum condition success: %.05f > %.05f", EnumToString(_period), TimeToString(time_buffer[0]), price, TimeToString(time_buffer[0]), price, lastOnTrend.price));
+  //if(bottomTF_condition) log_output.Write(LOG_DEBUG, StringFormat("%s %s %.05f %s DOWN BottomTF condition success", EnumToString(_period), TimeToString(time_buffer[0]), price, TimeToString(time_buffer[0])));
  }
  
  return ((extremum_condition) || (bottomTF_condition));

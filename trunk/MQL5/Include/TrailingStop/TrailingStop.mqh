@@ -10,7 +10,9 @@
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <TradeManager\TradeManagerEnums.mqh>
+#include <ColoredTrend\ColoredTrendUtilities.mqh>
 #include <CompareDoubles.mqh>
+#include <StringUtilities.mqh>
 
 //+------------------------------------------------------------------+
 //| Класс для управления стоп-лоссом                                 |
@@ -19,12 +21,10 @@ class CTrailingStop
   {
 private:
    CSymbolInfo SymbInfo;
-   
-   int handle_PBI;
-   double PBI_buf[];
-   
-   double LosslessTrailing(int _minProfit, int _trailingStop, int _trailingStep);
    bool UpdateSymbolInfo(string symbol);
+   
+   double PBI_colors[], PBI_Extrems[];
+   
 public:
    CTrailingStop();
    ~CTrailingStop();
@@ -34,13 +34,15 @@ public:
                        
    double LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl
                        , int _minProfit, int _trailingStop, int _trailingStep);
-   double PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe);                    
+   double PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI);                    
   };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 CTrailingStop::CTrailingStop()
   {
+   ArraySetAsSeries(PBI_colors, true);
+   ArraySetAsSeries(PBI_Extrems, true);
   }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -69,6 +71,7 @@ double CTrailingStop::UsualTrailing(string symbol, ENUM_TM_POSITION_TYPE type, d
       LessDoubles(openPrice, bid - minProfit*point) &&
       (LessDoubles(sl, bid - (trailingStop+trailingStep-1)*point) || sl == 0))
   {
+   Print("UsualTrailing");
    newSL = NormalizeDouble(bid - trailingStop*point, digits);
   }
  
@@ -76,6 +79,7 @@ double CTrailingStop::UsualTrailing(string symbol, ENUM_TM_POSITION_TYPE type, d
       GreatDoubles(openPrice, ask + minProfit*point) &&
       (GreatDoubles(sl, ask + (trailingStop+trailingStep-1)*point) || sl == 0))
   {
+   Print("UsualTrailing");
    newSL = NormalizeDouble(ask + trailingStop*point, digits);
   }
  }
@@ -122,22 +126,54 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
  return (newSL);
 }
 
-double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe)
+//+------------------------------------------------------------------+
+// Трейлинг по индикатору PBI
+//+------------------------------------------------------------------+
+double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI)
 {
- handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", 1000, 2, 1.5, 12, 2, 1.5, 12);
- if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+ int errcolors = CopyBuffer(handle_PBI, 4, 0, 100, PBI_colors);
+ int errextrems, direction;
+ if (type == OP_SELL)
  {
-  Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+  //Print("PBI_Trailing, позиция СЕЛЛ, тип движения ", PBI_colors[0]);
+  errextrems = CopyBuffer(handle_PBI, 5, 0, 100, PBI_Extrems); // Копируем максимумы
+  direction = 1;
  }
- 
- int errPBI = CopyBuffer(handle_PBI, 4, 0, 1000, PBI_buf);
- if(errPBI < 0)
+ if (type == OP_BUY)
+ {
+  //Print("PBI_Trailing, позиция БАЙ, тип движения ", PBI_colors[0]);
+  errextrems = CopyBuffer(handle_PBI, 6, 0, 1000, PBI_Extrems); // Копируем минимумы
+  direction = -1;
+ }
+ if(errcolors < 0 || errextrems < 0)
  {
   Alert("Не удалось скопировать данные из индикаторного буфера"); 
   return(0.0); 
  }
 
+ double newExtr = 0;
+ if (PBI_colors[0] == 1 || PBI_colors[0] == 2 || PBI_colors[0] == 3 || PBI_colors[0] == 4)
+ {
+  //Print("Текущее движение ", MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]));
+  for (int index = 0; index < 1000; index++)
+  { 
+   if (PBI_Extrems[index] > 0)
+   {
+    if (PBI_colors[index] == 5 || PBI_colors[index] == 6 || PBI_colors[index] == 7)
+    {
+     newExtr = PBI_Extrems[index];
+     //Print("последний экстремум ", newExtr);
+     break;
+    } 
+   }
+  }
+ }
  
+ if (newExtr > 0 && GreatDoubles(direction * sl, direction * newExtr, 5))
+ {
+  PrintFormat("%s oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), sl, newExtr);
+  return (newExtr);
+ }
  return(0.0);
 };
 //+------------------------------------------------------------------+
