@@ -59,7 +59,7 @@ bool show_top = false;
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   Print("Init");
+   PrintFormat("%s Init", MakeFunctionPrefix(__FUNCTION__));
    symbol = Symbol();
    current_timeframe = Period();
    //NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
@@ -78,6 +78,12 @@ int OnInit()
    SetIndexBuffer(5, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6, ExtDownArrowBuffer, INDICATOR_DATA);
 
+   ArrayInitialize(ExtUpArrowBuffer, 0);
+   ArrayInitialize(ExtDownArrowBuffer, 0); 
+   ArrayInitialize(ColorCandlesBuffer1, 0);
+   ArrayInitialize(ColorCandlesBuffer2, 0);
+   ArrayInitialize(ColorCandlesBuffer3, 0);
+   ArrayInitialize(ColorCandlesBuffer4, 0);
    
    PlotIndexSetInteger(1, PLOT_ARROW, 218);
    PlotIndexSetInteger(2, PLOT_ARROW, 217);
@@ -94,12 +100,13 @@ void OnDeinit(const int reason)
 {
  //--- Первый способ получить код причины деинициализации
    Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
-   ArrayInitialize(ExtUpArrowBuffer, 0);
-   ArrayInitialize(ExtDownArrowBuffer, 0); 
-   ArrayInitialize(ColorCandlesBuffer1, 0);
-   ArrayInitialize(ColorCandlesBuffer2, 0);
-   ArrayInitialize(ColorCandlesBuffer3, 0);
-   ArrayInitialize(ColorCandlesBuffer4, 0);
+   
+   ArrayFree(ExtUpArrowBuffer);
+   ArrayFree(ExtDownArrowBuffer); 
+   ArrayFree(ColorCandlesBuffer1);
+   ArrayFree(ColorCandlesBuffer2);
+   ArrayFree(ColorCandlesBuffer3);
+   ArrayFree(ColorCandlesBuffer4);
    topTrend.Zeros();
    trend.Zeros();
 }
@@ -130,7 +137,7 @@ int OnCalculate(const int rates_total,
 
    if(prev_calculated == 0) 
    {
-    Print("Первый расчет индикатора");
+    PrintFormat("%s Первый расчет индикатора", MakeFunctionPrefix(__FUNCTION__));
     buffer_index = 0;
     top_buffer_index = 0;
     start_index = rates_total - depth;
