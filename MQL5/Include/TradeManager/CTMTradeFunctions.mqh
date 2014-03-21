@@ -24,6 +24,7 @@ class CTMTradeFunctions : public CTrade
   bool OrderOpen(const string symbol,const ENUM_ORDER_TYPE type, const double volume, const double price,
                  const ENUM_ORDER_TYPE_TIME type_time=ORDER_TIME_GTC,const datetime expiration=0,const string comment="");
   bool OrderDelete(const ulong ticket);
+  bool StopOrderModify(const ulong ticket, const double sl = 0.0);
   bool PositionOpen(const string symbol,const ENUM_POSITION_TYPE type,const double volume,
                     const double price,const double sl = 0.0,const double tp = 0.0,const string comment = "");
   bool PositionClose(const string symbol, const ENUM_POSITION_TYPE type, const double volume, const ulong deviation=ULONG_MAX);
@@ -42,11 +43,7 @@ bool CTMTradeFunctions::OrderOpen(const string symbol, const ENUM_ORDER_TYPE typ
   return(false);
  }
  
- if (OrderOpen(symbol,type,volume,0.0,price,sl,tp,type_time,expiration,comment))
- {
-  return(true);
- }
- return(false);
+ return (OrderOpen(symbol,type,volume,0.0,price,sl,tp,type_time,expiration,comment));
 }
 //+------------------------------------------------------------------+
 //| Удаление отложника                                               |
@@ -111,6 +108,27 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
   return(res);
 }
 
+bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.0)
+{
+ if (sl > 0)
+ {
+  if (OrderSelect(ticket))
+  {
+   //double openPrice = OrderGetDouble(ORDER_PRICE_OPEN);
+   //double currentPrice = 
+  }
+  if (OrderModify(ticket, sl, 0, 0, ORDER_TIME_GTC, 0))
+  {
+   PrintFormat("%s Новый стоплосс = %.05f",MakeFunctionPrefix(__FUNCTION__), sl);
+   return (true);
+  }
+  else
+  {
+   PrintFormat("%s Не удалось изменить стоплосс",MakeFunctionPrefix(__FUNCTION__));
+  }
+ }
+ return(false);
+}
 //+-------------------------------------------------------------------------+
 //| Открытие CTM-позиции                                                    |
 //+-------------------------------------------------------------------------+

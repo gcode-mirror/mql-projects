@@ -16,6 +16,7 @@
 //+------------------------------------------------------------------+
 class ReplayPosition
 { 
+ #define PERIOD PERIOD_H1;
  private:
   CTradeManager ctm;  //торговый класс 
   CPositionArray aPositionsToReplay;         // массив убыточных позиций на отыгрыш
@@ -172,7 +173,7 @@ void ReplayPosition::setArrayToReplay(CPositionArray *array)
 CPosition* ReplayPosition::CreatePositionToReplay(string symbol, ENUM_TM_POSITION_TYPE type, double volume, double priceOpen, double priceClose, double profit)
 {
  CPosition *posToAdd;
- posToAdd = new CPosition(symbol, type, volume, priceOpen, priceClose, profit);
+ posToAdd = new CPosition(symbol, PERIOD_H1, type, volume, priceOpen, priceClose, profit);
  posToAdd.setPositionStatus(POSITION_STATUS_MUST_BE_REPLAYED);
  return posToAdd;
 }
@@ -236,7 +237,7 @@ void ReplayPosition::CustomPosition()
     sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL), (profit/_Point));
     int trailParam = ATR_buf[0]*_ATRforTrailing/_Point;
     
-    if (ctm.OpenMultiPosition(symbol, pos.getType(), pos.getVolume(), sl, tp, _trailingType, trailParam, trailParam, trailParam)) //открываем позицию
+    if (ctm.OpenMultiPosition(symbol, PERIOD_H1, pos.getType(), pos.getVolume(), sl, tp, _trailingType, trailParam, trailParam, trailParam)) //открываем позицию
     {
      PrintFormat("Открыли позицию для отыгрыша type=%s, profit=%.05f, sl=%d, tp=%d", GetNameOP(pos.getType()), NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp);
      pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);

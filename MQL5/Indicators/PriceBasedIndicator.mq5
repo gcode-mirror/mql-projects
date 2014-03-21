@@ -185,11 +185,11 @@ int OnCalculate(const int rates_total,
      //PrintFormat("%s current:%d %s; top: %d %s", TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
      if(!show_top)
      { 
-      ColorCandlesColors [i] = trend.GetMoveType(buffer_index);
+      ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
      }
      else
      {
-      ColorCandlesColors [i + 2] = topTrend.GetMoveType(top_buffer_index);
+      ColorCandlesColors[i + 2] = topTrend.GetMoveType(top_buffer_index);
      }
 
      if (extr_cur.direction > 0)

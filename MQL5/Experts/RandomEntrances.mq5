@@ -49,6 +49,8 @@ int OnInit()
    count = 0;
    history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
    
+   //handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", 1000, 2, 1.5, 12, 2, 1.5, 12);
+   
    startVol = 100 / (1 + ko + ko*ko + ko*ko*ko);
    firstAdd = startVol * ko;
    secondAdd = firstAdd * ko;
@@ -63,6 +65,11 @@ int OnInit()
    aUpg[1] = volume * secondAdd * 0.01;
    aUpg[2] = volume * firstAdd * 0.01;
    aUpg[3] = volume * startVol * 0.01;
+   
+   for (int i = 0; i < 4; i++)
+   {
+    PrintFormat("aUpg[%d] = %.02f", i, aUpg[i]);
+   }
          
    return(INIT_SUCCEEDED);
   }
@@ -78,6 +85,7 @@ void OnDeinit(const int reason)
 void OnTick()
  {
   ctm.OnTick();
+  ctm.DoTrailing();
   if (ctm.GetPositionCount() == 0)
   {
    if (allatonce) lot = 5;
@@ -87,7 +95,7 @@ void OnTick()
    count = 1;
    rnd = (double)MathRand()/32767;
    ENUM_TM_POSITION_TYPE operation = GreatDoubles(rnd, 0.5, 5) ? 1 : 0;
-   ctm.OpenUniquePosition(symbol, operation, lot, step, 0, trailingType, step, step, step);   
+   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, step, 0, trailingType, step, step, step);   
   }
    
   if (ctm.GetPositionCount() > 0)
@@ -98,17 +106,21 @@ void OnTick()
     if (stepbystep)
     {
      lot = 1;
+     ctm.PositionChangeSize(symbol, lot);
+     count++;
     }
     if (degradelot)
     {
      lot = aDeg[count];
+     ctm.PositionChangeSize(symbol, lot);
+     count++;
     }
     if (upgradelot)
     {
      lot = aUpg[count];
+     ctm.PositionChangeSize(symbol, lot);
+     count++;
     }
-    ctm.PositionChangeSize(symbol, lot);
-    count++;
    }
   }
  }
