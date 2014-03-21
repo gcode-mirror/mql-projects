@@ -44,8 +44,7 @@ double         ExtUpArrowBuffer[];
 double         ExtDownArrowBuffer[];
 
 
-CisNewBar //NewBarBottom,
-          NewBarCurrent, 
+CisNewBar NewBarCurrent, 
           NewBarTop;
 
 CColoredTrend *trend, 
@@ -53,7 +52,7 @@ CColoredTrend *trend,
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int  digits;
-bool show_top = false;
+input bool show_top = false;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -62,24 +61,22 @@ int OnInit()
    PrintFormat("%s Init", MakeFunctionPrefix(__FUNCTION__));
    symbol = Symbol();
    current_timeframe = Period();
-   //NewBarBottom.SetPeriod(GetBottomTimeframe(current_timeframe));
-   NewBarCurrent.SetLastBarTime(current_timeframe);
+   NewBarCurrent.SetPeriod(current_timeframe);
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
-   //PrintFormat("TOP = %s, BOTTOM = %s", EnumToString((ENUM_TIMEFRAMES)NewBarTop.GetPeriod()), EnumToString((ENUM_TIMEFRAMES)NewBarBottom.GetPeriod()));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
    topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth, percentage_ATR_top, difToTrend_top, ATR_ma_period_top);
    trend    = new CColoredTrend(symbol,                  current_timeframe, depth, percentage_ATR_cur, difToTrend_cur, ATR_ma_period_cur);
 //--- indicator buffers mapping
-   SetIndexBuffer(0,ColorCandlesBuffer1,INDICATOR_DATA);
-   SetIndexBuffer(1,ColorCandlesBuffer2,INDICATOR_DATA);
-   SetIndexBuffer(2,ColorCandlesBuffer3,INDICATOR_DATA);
-   SetIndexBuffer(3,ColorCandlesBuffer4,INDICATOR_DATA);
-   SetIndexBuffer(4,ColorCandlesColors,INDICATOR_COLOR_INDEX);
-   SetIndexBuffer(5, ExtUpArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(6, ExtDownArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
+   SetIndexBuffer(1, ColorCandlesBuffer2, INDICATOR_DATA);
+   SetIndexBuffer(2, ColorCandlesBuffer3, INDICATOR_DATA);
+   SetIndexBuffer(3, ColorCandlesBuffer4, INDICATOR_DATA);
+   SetIndexBuffer(4,  ColorCandlesColors, INDICATOR_COLOR_INDEX);
+   SetIndexBuffer(5,    ExtUpArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(6,  ExtDownArrowBuffer, INDICATOR_DATA);
 
-   ArrayInitialize(ExtUpArrowBuffer, 0);
-   ArrayInitialize(ExtDownArrowBuffer, 0); 
+   ArrayInitialize(   ExtUpArrowBuffer, 0);
+   ArrayInitialize( ExtDownArrowBuffer, 0); 
    ArrayInitialize(ColorCandlesBuffer1, 0);
    ArrayInitialize(ColorCandlesBuffer2, 0);
    ArrayInitialize(ColorCandlesBuffer3, 0);
@@ -92,6 +89,7 @@ int OnInit()
    ArraySetAsSeries(ColorCandlesBuffer2, false);
    ArraySetAsSeries(ColorCandlesBuffer3, false);
    ArraySetAsSeries(ColorCandlesBuffer4, false);
+   ArraySetAsSeries( ColorCandlesColors, false);   
 
    return(INIT_SUCCEEDED);
   }
@@ -100,15 +98,13 @@ void OnDeinit(const int reason)
 {
  //--- Первый способ получить код причины деинициализации
    Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
-   /*
+   ArrayFree(ExtUpArrowBuffer);
+   ArrayFree(ExtDownArrowBuffer);
    ArrayFree(ColorCandlesBuffer1);
    ArrayFree(ColorCandlesBuffer2);
    ArrayFree(ColorCandlesBuffer3);
    ArrayFree(ColorCandlesBuffer4);
    ArrayFree(ColorCandlesColors);
-   ArrayFree(ExtUpArrowBuffer);
-   ArrayFree(ExtDownArrowBuffer); 
-   */
    delete topTrend;
    delete trend;
 }
@@ -133,56 +129,51 @@ int OnCalculate(const int rates_total,
    static int top_buffer_index = 0;
    SExtremum extr_cur = {0, -1};
    SExtremum extr_top = {0, -1};
+   bool error = true;
    
    int seconds_current = PeriodSeconds(current_timeframe);
-   int seconds_top = PeriodSeconds(GetTopTimeframe(current_timeframe));
+   int     seconds_top = PeriodSeconds(GetTopTimeframe(current_timeframe));
 
    if(prev_calculated == 0) 
    {
     PrintFormat("%s Первый расчет индикатора", MakeFunctionPrefix(__FUNCTION__));
-    buffer_index = 0;
-    top_buffer_index = 0;
     start_index = rates_total - depth;
     start_time = TimeCurrent() - depth*seconds_current;
     start_iteration = rates_total - depth;
-    topTrend.Zeros();
-    trend.Zeros();
     ArrayInitialize(ColorCandlesBuffer1, 0);
     ArrayInitialize(ColorCandlesBuffer2, 0);
     ArrayInitialize(ColorCandlesBuffer3, 0);
     ArrayInitialize(ColorCandlesBuffer4, 0);
+    ArrayInitialize(ColorCandlesColors , 0);
    }
    else 
    { 
-    //buffer_index = prev_calculated - start_index;
-    start_iteration = start_index + buffer_index - 1;//prev_calculated-1;
+    start_iteration = start_index + buffer_index - 1;
    }
-   
-   bool error = true;
    
    for(int i = 0; i < (double)(rates_total-start_iteration)/(seconds_top/seconds_current); i++)
    {
     int start_pos_top = (top_buffer_index < GetNumberOfTopBarsInCurrentBars(current_timeframe, depth)) 
-                      ? (rates_total-start_iteration)/(seconds_top/seconds_current) - i - 1
+                      ? (rates_total-start_iteration)/(seconds_top/seconds_current)-1 - i
                       : 0;
-    
+                      
     error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
-    //PrintFormat("top_buffer_index = %d, start_pos_top = %d, extr_top = {%d;%.05f}", top_buffer_index, start_pos_top, extr_top.direction, extr_top.price);
-    //top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
+    PrintFormat("i = %d; top_buffer_index = %d; start_pos_top = %d; move type top = %s", i, top_buffer_index, start_pos_top, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
     if(!error)
     {
      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
      return(0);
     }
-    if(top_buffer_index < (depth)/(seconds_top/seconds_current)) top_buffer_index++;
+
+    if(top_buffer_index < (depth)/(seconds_top/seconds_current)) 
+    {
+     top_buffer_index++;
+    }
    }
    
-   for(int i =  start_iteration; i < rates_total;  i++)    
+   for(int i = start_iteration; i < rates_total;  i++)    
    {
-    //PrintFormat("start_iteration = %d; rates_total = %d, bi = %d, tbi = %d", start_iteration, rates_total, buffer_index, top_buffer_index);
     int start_pos_cur = (buffer_index < depth) ? (rates_total - 1) - i : 0; 
-    
-    //if(top_buffer_index > 100) PrintFormat(" i < %.02f, !!!! rates_total = %d, start_iteration = %d seconds_top = %d seconds_current = %d",(double)(rates_total-start_iteration)/(seconds_top/seconds_current), rates_total, start_iteration, seconds_top, seconds_current);
     error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
     if(!error) 
     {
@@ -202,8 +193,7 @@ int OnCalculate(const int rates_total,
     }
     else
     {
-    
-     ColorCandlesColors[i + 2] = topTrend.GetMoveType(top_buffer_index);
+     ColorCandlesColors[i] = topTrend.GetMoveType(top_buffer_index);
     }
      if (extr_cur.direction > 0)
     {
@@ -219,7 +209,7 @@ int OnCalculate(const int rates_total,
     if(buffer_index < depth)
     {
      buffer_index++;
-     //top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
+     top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
     }
    }
   
