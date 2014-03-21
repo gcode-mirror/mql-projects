@@ -15,7 +15,7 @@
 #define AMOUNT_OF_PRICE 2
 #define AMOUNT_BARS_FOR_HUGE 100
 
-CLog log_output(OUT_COMMENT, LOG_MAIN, 50, "PBI", 30);
+CLog log_output(OUT_COMMENT, LOG_NONE, 50, "PBI", 30);
 
 //+------------------------------------------------------------------+
 //| ¬спомогательный класс дл€ индикатора ColoredTrend                |
@@ -234,7 +234,6 @@ ENUM_MOVE_TYPE CColoredTrend::GetMoveType(int i)
  {
   Alert(StringFormat("%s i = %d; period = %s; ArraySize = %d", MakeFunctionPrefix(__FUNCTION__), i, EnumToString((ENUM_TIMEFRAMES)_period), ArraySize(enumMoveType)));
  }
- if(i < _depth) PrintFormat("%s i = %d; move type = %s", MakeFunctionPrefix(__FUNCTION__), i, MoveTypeToString(enumMoveType[i]));
  return(enumMoveType[i]);
 }
 //+--------------------------------------------------------------------+
