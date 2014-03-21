@@ -100,15 +100,17 @@ void OnDeinit(const int reason)
 {
  //--- Первый способ получить код причины деинициализации
    Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
-   
-   ArrayFree(ExtUpArrowBuffer);
-   ArrayFree(ExtDownArrowBuffer); 
+   /*
    ArrayFree(ColorCandlesBuffer1);
    ArrayFree(ColorCandlesBuffer2);
    ArrayFree(ColorCandlesBuffer3);
    ArrayFree(ColorCandlesBuffer4);
-   topTrend.Zeros();
-   trend.Zeros();
+   ArrayFree(ColorCandlesColors);
+   ArrayFree(ExtUpArrowBuffer);
+   ArrayFree(ExtDownArrowBuffer); 
+   */
+   delete topTrend;
+   delete trend;
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -158,28 +160,29 @@ int OnCalculate(const int rates_total,
    
    bool error = true;
    
-   for(int i = 0; i < (rates_total-start_iteration)/(seconds_top/seconds_current); i++)
+   for(int i = 0; i < (double)(rates_total-start_iteration)/(seconds_top/seconds_current); i++)
    {
-     error = topTrend.CountMoveType(i, (int)((rates_total-start_iteration)/(seconds_top/seconds_current)-i), extr_top);
-     //PrintFormat("top_buffer_index = %d, start_pos_top = %d, extr_top = {%d;%.05f}", top_buffer_index, start_pos_top, extr_top.direction, extr_top.price);
-     //top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
-     top_buffer_index++;
-     if(!error)
-     {
-      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
-      return(0);
-     }
-     if(top_buffer_index < (depth)/(seconds_top/seconds_current)) top_buffer_index++;
+    int start_pos_top = (top_buffer_index < GetNumberOfTopBarsInCurrentBars(current_timeframe, depth)) 
+                      ? (rates_total-start_iteration)/(seconds_top/seconds_current) - i - 1
+                      : 0;
+    
+    error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
+    //PrintFormat("top_buffer_index = %d, start_pos_top = %d, extr_top = {%d;%.05f}", top_buffer_index, start_pos_top, extr_top.direction, extr_top.price);
+    //top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
+    if(!error)
+    {
+     Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
+     return(0);
+    }
+    if(top_buffer_index < (depth)/(seconds_top/seconds_current)) top_buffer_index++;
    }
    
    for(int i =  start_iteration; i < rates_total;  i++)    
    {
     //PrintFormat("start_iteration = %d; rates_total = %d, bi = %d, tbi = %d", start_iteration, rates_total, buffer_index, top_buffer_index);
-    int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
-    int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
-    if(start_pos_top < 0) start_pos_top = 0;
+    int start_pos_cur = (buffer_index < depth) ? (rates_total - 1) - i : 0; 
     
-    
+    //if(top_buffer_index > 100) PrintFormat(" i < %.02f, !!!! rates_total = %d, start_iteration = %d seconds_top = %d seconds_current = %d",(double)(rates_total-start_iteration)/(seconds_top/seconds_current), rates_total, start_iteration, seconds_top, seconds_current);
     error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
     if(!error) 
     {
@@ -199,6 +202,7 @@ int OnCalculate(const int rates_total,
     }
     else
     {
+    
      ColorCandlesColors[i + 2] = topTrend.GetMoveType(top_buffer_index);
     }
      if (extr_cur.direction > 0)

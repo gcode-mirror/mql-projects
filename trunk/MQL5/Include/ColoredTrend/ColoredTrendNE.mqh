@@ -233,9 +233,9 @@ ENUM_MOVE_TYPE CColoredTrend::GetMoveType(int i)
  if(i < 0 || i >= ArraySize(enumMoveType))
  {
   Alert(StringFormat("%s i = %d; period = %s; ArraySize = %d", MakeFunctionPrefix(__FUNCTION__), i, EnumToString((ENUM_TIMEFRAMES)_period), ArraySize(enumMoveType)));
-  return(enumMoveType[i]);
+  return(MOVE_TYPE_UNKNOWN);
  }
- return(MOVE_TYPE_UNKNOWN);
+ return(enumMoveType[i]);
 }
 //+--------------------------------------------------------------------+
 //| Функция возвращает направление и значение экстремума в данной точке|
@@ -303,7 +303,8 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
 //--- если не удалось скопировать достаточное количество баров
  if(copied < count)
  {
-  string comm = StringFormat("Для символа %s получено %d баров из %d затребованных Rates. Period = %s. Error = %d | start = %d count = %d",
+  string comm = StringFormat("%s Для символа %s получено %d баров из %d затребованных Rates. Period = %s. Error = %d | start = %d count = %d",
+                             MakeFunctionPrefix(__FUNCTION__),
                              _symbol,
                              copied,
                              count,
