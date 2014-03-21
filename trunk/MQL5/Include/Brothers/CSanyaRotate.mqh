@@ -125,7 +125,6 @@ void CSanyaRotate::RecountFastDelta()
  currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
  SExtremum extr = isExtremum();
  RecountLevels(extr);
- hand_control.IntValue(_deltaFast);
  //------------------------------
  // Система выходов
  //------------------------------
@@ -235,6 +234,8 @@ void CSanyaRotate::RecountFastDelta()
    _fastDeltaChanged = true;
   }
  }
+ 
+ hand_control.IntValue(_deltaFast);
 }
 
 

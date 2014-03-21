@@ -138,7 +138,8 @@ void CTradeManager::~CTradeManager(void)
  delete _openPositions;
  delete _positionsHistory;
  //log_file.Write(LOG_DEBUG, StringFormat("%s Процесс деинициализации завершен.", MakeFunctionPrefix(__FUNCTION__)));
- FileDelete(rescueDataFileName, FILE_COMMON);
+ if(!FileDelete(rescueDataFileName, FILE_COMMON))
+  Alert(StringFormat("Не удалось удалить rescue-файл: %s", rescueDataFileName));
 };
 
 //+----------------------------------------------------

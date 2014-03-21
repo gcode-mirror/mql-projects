@@ -162,60 +162,62 @@ int OnCalculate(const int rates_total,
    {
      error = topTrend.CountMoveType(i, (int)((rates_total-start_iteration)/(seconds_top/seconds_current)-i), extr_top);
      //PrintFormat("top_buffer_index = %d, start_pos_top = %d, extr_top = {%d;%.05f}", top_buffer_index, start_pos_top, extr_top.direction, extr_top.price);
+     //top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
+     top_buffer_index++;
      if(!error)
      {
       Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
       return(0);
      }
+     PrintFormat("Calculate TOP TF; i = %d", i);
    }
-   
-    for(int i =  start_iteration; i < rates_total;  i++)    
+  
+   for(int i =  start_iteration; i < rates_total;  i++)    
+   {
+    //PrintFormat("start_iteration = %d; rates_total = %d, bi = %d, tbi = %d", start_iteration, rates_total, buffer_index, top_buffer_index);
+    int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
+    int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
+    if(start_pos_top < 0) start_pos_top = 0;
+    
+    
+    error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
+    if(!error) 
     {
-     //PrintFormat("start_iteration = %d; rates_total = %d, bi = %d, tbi = %d", start_iteration, rates_total, buffer_index, top_buffer_index);
-     int start_pos_top = GetNumberOfTopBarsInCurrentBars(current_timeframe, depth) - top_buffer_index;
-     int start_pos_cur = (buffer_index < depth) ? (rates_total-1) - i : 0; 
-     if(start_pos_top < 0) start_pos_top = 0;
-     
-     
-     error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
-     if(!error) 
-     {
-      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON CURRENT TIMEFRAME");
-      return(0);
-     } 
+     Print("YOU NEED TO WAIT FOR THE NEXT BAR ON CURRENT TIMEFRAME");
+     return(0);
+    } 
       
-     ColorCandlesBuffer1[i] = open[i];
-     ColorCandlesBuffer2[i] = high[i];
-     ColorCandlesBuffer3[i] = low[i];
-     ColorCandlesBuffer4[i] = close[i]; 
-     
-     //PrintFormat("%s current:%d %s; top: %d %s", TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
-     if(!show_top)
-     { 
-      ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
-     }
-     else
-     {
-      ColorCandlesColors[i + 2] = topTrend.GetMoveType(top_buffer_index);
-     }
-
-     if (extr_cur.direction > 0)
-     {
-      ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
-      extr_cur.direction = 0;
-     }
-     else if (extr_cur.direction < 0)
-     {
-      ExtDownArrowBuffer[i] = extr_cur.price;// - 50*_Point;
-      extr_cur.direction = 0;
-     }
-     
-     if(buffer_index < depth)
-     {
-      buffer_index++;
-      top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
-     }
+    ColorCandlesBuffer1[i] = open[i];
+    ColorCandlesBuffer2[i] = high[i];
+    ColorCandlesBuffer3[i] = low[i];
+    ColorCandlesBuffer4[i] = close[i]; 
+    
+    //PrintFormat("%s current:%d %s; top: %d %s", TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+    if(!show_top)
+    { 
+     ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
     }
+    else
+    {
+     ColorCandlesColors[i + 2] = topTrend.GetMoveType(top_buffer_index);
+    }
+
+    if (extr_cur.direction > 0)
+    {
+     ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
+     extr_cur.direction = 0;
+    }
+    else if (extr_cur.direction < 0)
+    {
+     ExtDownArrowBuffer[i] = extr_cur.price;// - 50*_Point;
+     extr_cur.direction = 0;
+    }
+    
+    if(buffer_index < depth)
+    {
+     buffer_index++;
+    }
+   }
    
    if(NewBarCurrent.isNewBar() > 0 && prev_calculated != 0)
    {

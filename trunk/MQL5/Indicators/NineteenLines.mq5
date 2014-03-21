@@ -16,17 +16,17 @@
  input int period_ATR = 100;      //Период ATR
  input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR 
 
- input bool  show_Extr_MN = true;
+ input bool  show_Extr_MN  = true;
  input color color_Extr_MN = clrRed;
- input bool  show_Extr_W1 = true;
+ input bool  show_Extr_W1  = true;
  input color color_Extr_W1 = clrOrange;
- input bool  show_Extr_D1 = true;
+ input bool  show_Extr_D1  = true;
  input color color_Extr_D1 = clrYellow;
- input bool  show_Extr_H4 = true;
+ input bool  show_Extr_H4  = true;
  input color color_Extr_H4 = clrBlue;
- input bool  show_Extr_H1 = true;
+ input bool  show_Extr_H1  = true;
  input color color_Extr_H1 = clrAqua;
- input bool  show_Price_D1 = true;
+ input bool  show_Price_D1  = true;
  input color color_Price_D1 = clrDarkKhaki;
 
  CExtremumCalc calcMN(epsilon, depth);
@@ -41,6 +41,7 @@
  SExtremum estructH4[3];
  SExtremum estructH1[3];
  SExtremum pstructD1[4];
+ 
  CisNewBar barMN(Symbol(), PERIOD_MN1);
  CisNewBar barW1(Symbol(), PERIOD_W1);
  CisNewBar barD1(Symbol(), PERIOD_D1);
