@@ -224,13 +224,18 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
  
  return (true);
 }
-
+ 
 //+----------------------------------------------------+
 //| Функция получает значние из массива типов движения |
 //+----------------------------------------------------+
 ENUM_MOVE_TYPE CColoredTrend::GetMoveType(int i)
 {
- return (enumMoveType[i]);
+ if(i < 0 || i >= ArraySize(enumMoveType))
+ {
+  Alert(StringFormat("%s i = %d; period = %s; ArraySize = %d", MakeFunctionPrefix(__FUNCTION__), i, EnumToString((ENUM_TIMEFRAMES)_period), ArraySize(enumMoveType)));
+  return(enumMoveType[i]);
+ }
+ return(MOVE_TYPE_UNKNOWN);
 }
 //+--------------------------------------------------------------------+
 //| Функция возвращает направление и значение экстремума в данной точке|
@@ -280,7 +285,6 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
 {
 //--- сколько скопировано
  int copied = 0;
- int result_size = count;
  ENUM_TIMEFRAMES period;
  switch (tfType)
  {
@@ -294,19 +298,10 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlR
    period = GetTopTimeframe(_period);
    break;
  }
- if(tfType == BOTTOM_TF)
- { 
-  datetime date[1];
-  CopyTime(_symbol, _period, start_pos, 1, date);
-  datetime start_date = date[0];
-  datetime end_date = start_date - _depth*PeriodSeconds(_period);
-  copied = CopyRates(_symbol, period, start_date, end_date, array); // справа налево от 0 до count-1, всего count элементов
-  result_size = (PeriodSeconds(_period)/(PeriodSeconds(period)))*(count-1);
- }
- else
-  copied = CopyRates(_symbol, period, start_pos, count, array); // справа налево от 0 до count-1, всего count элементов
+ 
+ copied = CopyRates(_symbol, period, start_pos, count, array); // справа налево от 0 до count-1, всего count элементов
 //--- если не удалось скопировать достаточное количество баров
- if(copied < result_size)
+ if(copied < count)
  {
   string comm = StringFormat("Для символа %s получено %d баров из %d затребованных Rates. Period = %s. Error = %d | start = %d count = %d",
                              _symbol,
