@@ -142,7 +142,7 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
  if (type == OP_BUY)
  {
   //Print("PBI_Trailing, позиция БАЙ, тип движения ", PBI_colors[0]);
-  errextrems = CopyBuffer(handle_PBI, 6, 0, 1000, PBI_Extrems); // Копируем минимумы
+  errextrems = CopyBuffer(handle_PBI, 6, 0, 100, PBI_Extrems); // Копируем минимумы
   direction = -1;
  }
  if(errcolors < 0 || errextrems < 0)
