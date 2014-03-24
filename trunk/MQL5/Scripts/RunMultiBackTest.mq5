@@ -30,7 +30,7 @@ string backtest_titles[];
 string url_list_array[];
 
 // массив имен экспертов
-string robotArray[3] =
+string robotArray[4] =
  {
   "condom",
   "TIHIRO",
@@ -152,11 +152,12 @@ void OnStart()
          {
           // формируем файл бэктестов
           backtest_file = GetBackTestFileName (i_rob,i_sym,i_per);
+          Alert("Файл бэктеста = ",backtest_file);
           // сохраняем файл бэктеста
           flag_backtest = backtest.SaveBackTestToFile(backtest_file,symbolArray[i_sym],periodArray[i_per],robotArray[i_rob]);
           // сохраняем url файла бэктеста в массив url адресов
           ArrayResize(backtest_titles,size_of_url_list+1);   // увеличиваем размер массива наименований на единицу
-          ArrayResize(url_list_array,size_of_url_list+1);   // увеличиваем размер массива url адресов на единицу
+          ArrayResize(url_list_array,size_of_url_list+1);    // увеличиваем размер массива url адресов на единицу
           backtest_titles[size_of_url_list] = robotArray[i_rob]+"-"+symbolArray[i_sym]+"-"+PeriodToString(periodArray[i_per]);           
           url_list_array[size_of_url_list]  = backtest_file; // сохраняем url адреса файла бэктеста
           // увеличиваем счетчик url адресов бэктеста на единицу

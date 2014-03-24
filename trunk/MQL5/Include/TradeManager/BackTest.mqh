@@ -75,7 +75,8 @@ class BackTest
    //метод сохраняет график баланса
    void   SaveBalanceToFile (int file_handle);
    //прочие системные методы
-   bool LoadHistoryFromFile(string file_url,datetime start,datetime finish);          //загружает историю позиции из файла
+   void SortHistoryArray(); // сортирует массив истории по возрастанию даты и времени закрытия позиции
+   bool LoadHistoryFromFile(string file_url,datetime start,datetime finish,bool clear=true);          //загружает историю позиции из файла
    void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
  //  void Save
    bool SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName); //сохраняет результаты бэктеста
@@ -467,12 +468,41 @@ void BackTest::SaveBalanceToFile(int file_handle)
     WriteTo  (file_handle,DoubleToString(current_balance)+" "); 
    }
  }
+ 
+//+-------------------------------------------------------------------+
+//| Сортирует историю позиций по возрастанию даты и времени           |
+//+-------------------------------------------------------------------+
+
+void BackTest::SortHistoryArray(void)
+ {
+   int index_x,index_y;                    // счетчики прохода по циклам
+   int length = _positionsHistory.Total(); // количество позиций в истории
+   CPosition *pos_x,*pos_y;                // указатели на позицию
+   CPosition tmp_pos;                      // временное значение позиции
+   // сортировка установкой
+   for (index_y=0;index_y<length;index_y) 
+    {
+     // получаем позицию по индексу index_y
+     pos_y = _positionsHistory.Position(index_y);
+     for (index_x=0;index_x<length;index_x++)
+      {
+        // получаем позицию по индексу index_x
+        pos_x = _positionsHistory.Position(index_x);
+        // если время закрытия текущей позиции раньше, чем предыдущее
+        if (pos_x.getClosePosDT < pos_y.getClosePosDT)
+         {
+          // то меняем позиции местами
+          _positionsHistory.S
+         }
+      }
+    }
+ }  
   
 //+-------------------------------------------------------------------+
 //| Загружает историю позиций из файла                                |
 //+-------------------------------------------------------------------+   
   
-bool BackTest::LoadHistoryFromFile(string file_url,datetime start,datetime finish)
+bool BackTest::LoadHistoryFromFile(string file_url,datetime start,datetime finish,bool clear=true)
 {
 
  if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
@@ -495,6 +525,7 @@ bool BackTest::LoadHistoryFromFile(string file_url,datetime start,datetime finis
   return (false);
  }
 
+ if (clear == true)  // если нужно очистить файл истории перед загрузкой
  _positionsHistory.Clear();                   //очищаем массив
  _positionsHistory.ReadFromFile(file_handle,start,finish); //загружаем данные из файла 
  
@@ -600,16 +631,16 @@ bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAME
   WriteTo  (file_handle,DoubleToString (maxLoseRange)+" ");
   WriteTo  (file_handle,IntegerToString(maxPositiveTrades)+" ");  
   WriteTo  (file_handle,IntegerToString(maxNegativeTrades)+" ");
-  WriteTo  (file_handle,DoubleToString(aver_profit_trade)+" ");
-  WriteTo  (file_handle,DoubleToString(aver_lose_trade)+" ");    
-  WriteTo  (file_handle,DoubleToString(maxDrawDown)+" ");
-  WriteTo  (file_handle,DoubleToString(absDrawDown)+" ");
-  WriteTo  (file_handle,DoubleToString(_clean_profit)+" ");
-  WriteTo  (file_handle,DoubleToString(_gross_profit)+" ");
-  WriteTo  (file_handle,DoubleToString(_gross_loss)+" ");
-  WriteTo  (file_handle,DoubleToString(profitFactor)+" ");
-  WriteTo  (file_handle,DoubleToString(recoveryFactor)+" ");  
-  WriteTo  (file_handle,DoubleToString(mathAwaiting)+" "); 
+  WriteTo  (file_handle,DoubleToString (aver_profit_trade)+" ");
+  WriteTo  (file_handle,DoubleToString (aver_lose_trade)+" ");    
+  WriteTo  (file_handle,DoubleToString (maxDrawDown)+" ");
+  WriteTo  (file_handle,DoubleToString (absDrawDown)+" ");
+  WriteTo  (file_handle,DoubleToString (_clean_profit)+" ");
+  WriteTo  (file_handle,DoubleToString (_gross_profit)+" ");
+  WriteTo  (file_handle,DoubleToString (_gross_loss)+" ");
+  WriteTo  (file_handle,DoubleToString (profitFactor)+" ");
+  WriteTo  (file_handle,DoubleToString (recoveryFactor)+" ");  
+  WriteTo  (file_handle,DoubleToString (mathAwaiting)+" "); 
                                          
   //сохраняем точки графиков (баланса, маржи)
   SaveBalanceToFile(file_handle);
