@@ -473,12 +473,22 @@ void BackTest::SaveBalanceToFile(int file_handle)
 //| —ортирует историю позиций по возрастанию даты и времени           |
 //+-------------------------------------------------------------------+
 
-void BackTest::SortHistoryArray(void)
+void BackTest::SortHistoryArray(void)  // сейчас сохран€етотсортированное значение баланса в файл
  {
    int index_x,index_y;                    // счетчики прохода по циклам
    int length = _positionsHistory.Total(); // количество позиций в истории
    CPosition *pos_x,*pos_y;                // указатели на позицию
-   CPosition tmp_pos;                      // временное значение позиции
+   CPosition *tmp_pos;                     // временное значение позиции
+   double    currentBalance = 0;           // текущее значение баланса 
+   int file_handle;                        // хэндл файла баланса
+   // открываем файл на запись совместного баланса
+   file_handle = FileOpen("BALANCE.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " ");
+    if (list_handle == INVALID_HANDLE)
+     {
+      Alert("Ќе удалось открыть файл со списком файлов истории");
+      return;
+     }   
+    
    // сортировка установкой
    for (index_y=0;index_y<length;index_y) 
     {
@@ -489,12 +499,14 @@ void BackTest::SortHistoryArray(void)
         // получаем позицию по индексу index_x
         pos_x = _positionsHistory.Position(index_x);
         // если врем€ закрыти€ текущей позиции раньше, чем предыдущее
-        if (pos_x.getClosePosDT < pos_y.getClosePosDT)
+        if (pos_x.getClosePosDT() < pos_y.getClosePosDT())
          {
-          // то мен€ем позиции местами
-          _positionsHistory.S
+          // то выставл€ем временный указатель на текущий элемент
+          tmp_pos = pos_x;
+          
          }
       }
+     currentBalance = currentBalance + tmp_pos.getPosProfit();  // модифицируем баланс
     }
  }  
   
