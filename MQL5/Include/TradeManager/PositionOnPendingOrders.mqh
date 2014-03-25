@@ -267,10 +267,10 @@ double CPosition::getPosProfit()
  switch(_type)
  {
   case OP_BUY:
-   _posProfit = (_posAveragePrice - ask) * _lots;
+   _posProfit = (ask - _posAveragePrice) * _lots;
    break;
   case OP_SELL:
-   _posProfit = (bid - _posAveragePrice) * _lots;
+   _posProfit = (_posAveragePrice - bid) * _lots;
    break;
   case OP_BUYLIMIT:
   case OP_BUYSTOP:
