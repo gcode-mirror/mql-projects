@@ -8,17 +8,11 @@
 #property version   "1.00"
 
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
-#include <CExpertID.mqh> 
 
 input int step = 100;
 input int countSteps = 4;
 input int volume = 5;
-input double ko = 2;        // Коэффициент доливки
-
-input bool allatonce = false;  // Открываемся сразу 5 лотом
-input bool stepbystep = true;  // Долив равными долями
-input bool degradelot = false; // Долив уменьш. долями 
-input bool upgradelot = false; // Долив увелич. долями
+input double ko = 2;        // ko=0-весь объем, ko=1-равные доли, ko>1-увелич.доли, k0<1-уменьш.доли 
 
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL;
 //input bool stepbypart = false; // 
@@ -29,9 +23,7 @@ int count;
 double lot;
 double rnd;
 ENUM_TM_POSITION_TYPE opBuy, opSell;
-int startVol, firstAdd, secondAdd, thirdAdd;
-double aDeg[4];
-double aUpg[4];
+double aDeg[], aKo[];
 int profit;
 CTradeManager ctm();
 
@@ -45,30 +37,42 @@ int OnInit()
   {
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    timeframe = Period();
-   MathSrand(TimeLocal());
+   MathSrand((int)TimeLocal());
    count = 0;
    history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
    
-   //handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", 1000, 2, 1.5, 12, 2, 1.5, 12);
-   
-   startVol = 100 / (1 + ko + ko*ko + ko*ko*ko);
-   firstAdd = startVol * ko;
-   secondAdd = firstAdd * ko;
-   thirdAdd = 100 - secondAdd - firstAdd - startVol;
-   
-   aDeg[0] = volume * startVol * 0.01;
-   aDeg[1] = volume * firstAdd * 0.01;
-   aDeg[2] = volume * secondAdd * 0.01;
-   aDeg[3] = volume * thirdAdd * 0.01;
-   
-   aUpg[0] = volume * thirdAdd * 0.01;
-   aUpg[1] = volume * secondAdd * 0.01;
-   aUpg[2] = volume * firstAdd * 0.01;
-   aUpg[3] = volume * startVol * 0.01;
-   
-   for (int i = 0; i < 4; i++)
+   if (trailingType == TRAILING_TYPE_PBI)
    {
-    PrintFormat("aUpg[%d] = %.02f", i, aUpg[i]);
+    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", 100, 2, 1.5, 12, 2, 1.5, 12);
+    if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+    {
+     Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+    }
+   }
+   ArrayResize(aDeg, countSteps);
+   ArrayResize(aKo, countSteps);
+   
+   double k = 0, sum = 0;
+   for (int i = 0; i < countSteps; i++)
+   {
+    k = k + MathPow(ko, i);
+   }
+   aKo[0] = 100 / k;
+   for (int i = 1; i < countSteps - 1; i++)
+   {
+    aKo[i] = aKo[i - 1] * ko;
+    sum = sum + aKo[i];
+   }
+   aKo[countSteps - 1] = 100 - sum;
+      
+   for (int i = 0; i < countSteps; i++)
+   {
+    aDeg[i] = NormalizeDouble(volume * aKo[i] * 0.01, 2);
+   }
+        
+   for (int i = 0; i < countSteps; i++)
+   {
+    PrintFormat("aDeg[%d] = %.02f", i, aDeg[i]);
    }
          
    return(INIT_SUCCEEDED);
@@ -88,14 +92,11 @@ void OnTick()
   ctm.DoTrailing();
   if (ctm.GetPositionCount() == 0)
   {
-   if (allatonce) lot = 5;
-   if (stepbystep) lot = 1;
-   if (degradelot) lot = aDeg[0];
-   if (upgradelot) lot = aUpg[0];
+   lot = aDeg[0];
    count = 1;
    rnd = (double)MathRand()/32767;
-   ENUM_TM_POSITION_TYPE operation = GreatDoubles(rnd, 0.5, 5) ? 1 : 0;
-   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, step, 0, trailingType, step, step, step);   
+   ENUM_TM_POSITION_TYPE operation = GreatDoubles(rnd, 0.5, 5) ? OP_SELL : OP_BUY;
+   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, step, 0, trailingType, step, step, step, handle_PBI);   
   }
    
   if (ctm.GetPositionCount() > 0)
@@ -103,24 +104,9 @@ void OnTick()
    profit = ctm.GetPositionPointsProfit(symbol);
    if (profit > step && count < countSteps) 
    {
-    if (stepbystep)
-    {
-     lot = 1;
-     ctm.PositionChangeSize(symbol, lot);
-     count++;
-    }
-    if (degradelot)
-    {
-     lot = aDeg[count];
-     ctm.PositionChangeSize(symbol, lot);
-     count++;
-    }
-    if (upgradelot)
-    {
-     lot = aUpg[count];
-     ctm.PositionChangeSize(symbol, lot);
-     count++;
-    }
+    lot = aDeg[count];
+    if (lot > 0) ctm.PositionChangeSize(symbol, lot);
+    count++;
    }
   }
  }

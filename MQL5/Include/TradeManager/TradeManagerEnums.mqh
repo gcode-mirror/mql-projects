@@ -65,7 +65,7 @@ ENUM_TM_POSITION_TYPE StringToPositionType(string posType)
    if(posType == "Sell Limit") return(OP_SELLLIMIT);
    if(posType == "Buy Stop") return(OP_BUYSTOP);
    if(posType == "Sell Stop") return(OP_SELLSTOP);   
-   return("Error: unknown position type " + posType);
+   return(OP_UNKNOWN);
   }
 
 //+------------------------------------------------------------------+
