@@ -112,7 +112,6 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
 {
  if (sl > 0)
  {
-  double currentPrice;
   if (OrderSelect(ticket))
   {
    string symbol = OrderGetString(ORDER_SYMBOL);
