@@ -253,8 +253,23 @@ int CPosition::getPositionPointsProfit()
 double CPosition::getPosProfit()
 {
  UpdateSymbolInfo();
- double currentPrice = PriceByType(_type);
- _posProfit = _posAveragePrice * _lots;
+ double ask = SymbInfo.Ask();
+ double bid = SymbInfo.Bid();
+ switch(_type)
+ {
+  case OP_BUY:
+   _posProfit = (_posAveragePrice - ask) * _lots;
+   break;
+  case OP_SELL:
+   _posProfit = (bid - _posAveragePrice) * _lots;
+   break;
+  case OP_BUYLIMIT:
+  case OP_BUYSTOP:
+  case OP_SELLLIMIT:
+  case OP_SELLSTOP:
+   _posProfit = 0;
+   break;
+ }
  return(_posProfit);
 }
 
