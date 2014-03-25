@@ -8,6 +8,7 @@
 
 
 #include <TradeManager/TradeManagerEnums.mqh>  
+#include <CompareDoubles.mqh>
 #include <TradeManager/PositionArray.mqh>
 #include <StringUtilities.mqh> 
 #include <kernel32.mqh>
@@ -439,11 +440,13 @@ void  BackTest::GetBalances()
     {
      pos = _positionsHistory.Position(index);   //получаем указатель на позицию 
      sizeOfLot = GetLotBySymbol (_symbol)*pos.getVolume();     
+
         balance = balance + pos.getPosProfit()*sizeOfLot; // модицифируем баланс
-        if (balance > _max_balance)  
+        if (GreatDoubles(balance,_max_balance) )
          _max_balance = balance;
-        if (balance < _min_balance)
+        if (LessDoubles (balance, _min_balance) )
          _min_balance = balance;
+        
     }
 
  } 
@@ -472,7 +475,7 @@ void BackTest::SaveBalanceToFile(int file_handle)
 //+-------------------------------------------------------------------+
 //| —ортирует историю позиций по возрастанию даты и времени           |
 //+-------------------------------------------------------------------+
-
+/*
 void BackTest::SortHistoryArray(void)  // сейчас сохран€етотсортированное значение баланса в файл
  {
    int index_x,index_y;                    // счетчики прохода по циклам
@@ -481,6 +484,7 @@ void BackTest::SortHistoryArray(void)  // сейчас сохран€етотсортированное значен
    CPosition *tmp_pos;                     // временное значение позиции
    double    currentBalance = 0;           // текущее значение баланса 
    int file_handle;                        // хэндл файла баланса
+   
    // открываем файл на запись совместного баланса
    file_handle = FileOpen("BALANCE.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " ");
     if (list_handle == INVALID_HANDLE)
@@ -504,12 +508,71 @@ void BackTest::SortHistoryArray(void)  // сейчас сохран€етотсортированное значен
           // то выставл€ем временный указатель на текущий элемент
           tmp_pos = pos_x;
           
+          
          }
       }
      currentBalance = currentBalance + tmp_pos.getPosProfit();  // модифицируем баланс
     }
  }  
+  */
   
+void  BackTest::SortHistoryArray(void)
+ {
+   double   profitArray[]; // динамический массив профитов
+   datetime timeArray[];   // массив времени закрыти€ позиций 
+   int index;              // индекс прохода по массиву истории
+   int i_x,i_y;            // индексы прохода по циклам сортировки
+   CPosition *pos;         // указатель на позицию
+   int length;             // длина массива истории
+   datetime tmpTime;       // временна€ переменна€ дл€ обмена временем
+   double      tmpValue;      // временна€ переменна€ дл€ обмена значени€ми
+   int file_handle;        // хэндл файла баланса   
+   double  curBalance = 0; // текущий баланс
+   
+   // вычисл€ем длину массива истории
+   length = _positionsHistory.Total();
+   // формируем массив профитов
+   for (index=0;index<length;index++)
+    {
+     pos = _positionsHistory.Position(index);  // извлекаем указатель на позицию в массиве по индексу
+     ArrayResize(profitArray,index+1);         // увеличиваем размер массива профитов на единицу
+     ArrayResize(timeArray,index+1);           // увеличиваем размер массива времени закрыти€ позиций
+     profitArray[index] = pos.getPosProfit();  // сохран€ем профит позиции
+     timeArray[index]   = pos.getClosePosDT(); // сохран€ем врем€ закрыти€ позиции в массив
+    }
+   // открываем файл на запись совместного баланса
+   file_handle = FileOpen("BALANCE.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " ");
+    if (file_handle == INVALID_HANDLE)
+     {
+      Alert("Ќе удалось открыть файл со списком файлов истории");
+      return;
+     } 
+   // сохран€ем           
+   FileWrite(file_handle,"0"); 
+   // сортируем массив профитов 
+   for (i_y=0;i_y < length; i_y++)
+    {
+      for(i_x=i_y;i_x < length; i_x++)
+       {
+         // если врем€ закрыти€ текущей позиции раньше, чем врем€ последнй найденной ранней позиции 
+         if (timeArray[i_x] < timeArray[i_y])
+          {
+            tmpTime          = timeArray[i_y];
+            tmpValue         = profitArray[i_y];
+            timeArray[i_y]   = timeArray[i_x];
+            profitArray[i_y] = profitArray[i_x];
+            timeArray[i_x]   = tmpTime;
+            profitArray[i_x] = tmpValue;
+          }
+       }
+      //модифицируем текущий баланс
+      curBalance = curBalance + profitArray[i_y];
+      // сохран€ем текущий баланс в файл
+    //  FileWrite(file_handle,""+DoubleToString(profitArray[i_y]) );
+      FileWrite(file_handle,""+DoubleToString(curBalance));       
+    }
+    FileClose(file_handle); // закрываем файл
+ }
 //+-------------------------------------------------------------------+
 //| «агружает историю позиций из файла                                |
 //+-------------------------------------------------------------------+   
