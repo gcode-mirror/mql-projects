@@ -279,6 +279,7 @@ double CPosition::getPosProfit()
    _posProfit = 0;
    break;
  }
+
  return(_posProfit);
 }
 
@@ -661,52 +662,52 @@ bool CPosition::ReadFromFile(int  handle)
   _magic = StringToInteger(FileReadString(handle));                               //считываем мэджик
  // Alert("> MAGIC = ",FileReadString(handle));  
   if(FileIsEnding(handle)) return false; 
-   _symbol         = FileReadString(handle);                      //считываем символ
+   _symbol         = FileReadString(handle);                                      //считываем символ
 //  Alert("> SYMBOL = ",FileReadString(handle));   
   if(FileIsEnding(handle)) return false;  
-  _type           = StringToPositionType(FileReadString(handle));//считываем тип
+  _type           = StringToPositionType(FileReadString(handle));                 //считываем тип
  // Alert("> TYPE = ",_type);    
   if(FileIsEnding(handle)) return false;   
-  _lots           = StringToDouble(FileReadString(handle));                      //считываем размер лота
+  _lots           = StringToDouble(FileReadString(handle));                       //считываем размер лота
  // Alert("> LOT = ",_lots);  
   if(FileIsEnding(handle)) return false;   
-  _tmTicket      = StringToInteger(FileReadString(handle));                      //считываем тикет позиции
+  _tmTicket      = StringToInteger(FileReadString(handle));                       //считываем тикет позиции
  // Alert("> LOT = ",_lots);  
   if(FileIsEnding(handle)) return false;   
-  _orderTicket      = StringToInteger(FileReadString(handle));                      //считываем тикет позиции
+  _orderTicket      = StringToInteger(FileReadString(handle));                    //считываем тикет позиции
  // Alert("> POS TICKET = ",_posTicket);  
   if(FileIsEnding(handle)) return false;   
   _slTicket       = StringToInteger(FileReadString(handle));                      //считываем тикет стоп лосса  
  // Alert("> STOP LOSS TICKET = ",_slTicket);  
   if(FileIsEnding(handle)) return false;    
-  _slPrice        = StringToDouble(FileReadString(handle));                      //считываем цену стоп лосса
+  _slPrice        = StringToDouble(FileReadString(handle));                       //считываем цену стоп лосса
  // Alert("> STOP LOSS PRICE = ",_slPrice);   
   if(FileIsEnding(handle)) return false;    
   _sl             = StringToInteger(FileReadString(handle));                      //считываем стоп лосс
  // Alert("> STOP LOSS = ",_sl); 
   if(FileIsEnding(handle)) return false;  
-  _tpPrice        = StringToDouble(FileReadString(handle));                      //считываем цену тейк профита
+  _tpPrice        = StringToDouble(FileReadString(handle));                       //считываем цену тейк профита
  // Alert("> TAKE PROFIT PRICE = ",_tpPrice); 
   if(FileIsEnding(handle)) return false;    
   _trailingStop   = StringToInteger(FileReadString(handle));                      //“рейлинг стоп
  // Alert("> TRAILING STOP = ",_trailingStop); 
   if(FileIsEnding(handle)) return false;    
-  _trailingStep   = StringToInteger(FileReadString(handle));                    //“рейлинг степ
+  _trailingStep   = StringToInteger(FileReadString(handle));                      //“рейлинг степ
  // Alert("> TRAILING STEP = ",_trailingStep); 
   if(FileIsEnding(handle)) return false;    
-  _posOpenPrice       = StringToDouble(FileReadString(handle));                //цена открыти€ позиции
+  _posOpenPrice       = StringToDouble(FileReadString(handle));                   //цена открыти€ позиции
  // Alert("> POS OPEN PRICE = ",_posOpenPrice); 
   if(FileIsEnding(handle)) return false;    
-  _posClosePrice     = StringToDouble(FileReadString(handle));                 //цена закрыти€ позиции
+  _posClosePrice     = StringToDouble(FileReadString(handle));                    //цена закрыти€ позиции
  // Alert("> POS CLOSE PRICE = ",_posClosePrice); 
   if(FileIsEnding(handle)) return false;    
-  _posOpenTime  = StringToTime(FileReadString(handle));                    //врем€ открыти€ позиции
+  _posOpenTime  = StringToTime(FileReadString(handle));                           //врем€ открыти€ позиции
  // Alert("> POS OPEN TIME = ",_posOpenTime); 
   if(FileIsEnding(handle)) return false;    
-  _posCloseTime = StringToTime(FileReadString(handle));                    //врем€ закрыти€ позиции
+  _posCloseTime = StringToTime(FileReadString(handle));                           //врем€ закрыти€ позиции
  // Alert("> POS CLOSE TIME = ",_posCloseTime); 
   if(FileIsEnding(handle)) return false;    
-  _posProfit      = StringToDouble(FileReadString(handle));                      //профит позиции
+  _posAveragePrice      = StringToDouble(FileReadString(handle));                 //средн€€ цена позиции
  // Alert("> POS PROFIT = ",_posProfit); 
                                 //пропуск пустого символа  
   return true;
@@ -860,8 +861,9 @@ void CPosition::WriteToFile(int handle)
             _posClosePrice,
             _posOpenTime,
             _posCloseTime,
-            _posProfit
+            _posAveragePrice
             );
+           // Alert("POS AVER PRICE = ",_posAveragePrice);
  }
 }  
 

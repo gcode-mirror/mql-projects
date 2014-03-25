@@ -18,6 +18,35 @@ input double aver            = 8;    // среднее длина серии
 input int    n_spreads       = 1;    // количество спреда
 input ENUM_TIMEFRAMES  timeFrame = PERIOD_M1; // период
 
+  ///--------------------------------------------
+  ///------------------------------------------ /
+  ///                                        / /
+  ///                                       / /
+  ///                JAPAN                 / /
+  ///              JAPANJAPAN             / /
+  ///            JAPANJAPANJAPA          / /
+  ///           JAPANJAPANJAPANJ        / /
+  ///           JAPANJAPANJAPANJ        \ \ 
+  ///            JAPANJAPANJAPA          \ \
+  ///              JAPANJAPAN             \ \
+  ///                JAPAN                 \ \
+  ///                                       \ \
+  ///                                        \ \
+  ///-----------------------------------------  \
+  ///--------------------------------------------
+  ///
+  ///
+  ///
+  ///
+  ///
+  ///
+  ///
+  ///
+  ///
+  
+  
+
+
 //+------------------------------------------------------------------+
 //| Эксперт Хаяcи                                                    |
 //+------------------------------------------------------------------+
@@ -75,7 +104,7 @@ void OnTick()
          
          // если сейчас не ночное время суток 
       //   if ( timeStr.hour >= startPeriod && timeStr.hour <= finishPeriod &&  ( /*bufferPBI[0] == 7||*/  bufferPBI[0] == 3 || bufferPBI[0] == 4) )
-         if (ctm.OpenUniquePosition(_Symbol, OP_SELL, current_lot) ) // пытаемся открыться на BUY 
+         if (ctm.OpenUniquePosition(_Symbol,_Period, OP_SELL, current_lot) ) // пытаемся открыться на BUY 
            {
            //  Comment("ТЕКУЩИЙ ЛОТ = "+current_lot);
              openPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK); // сохраняем цену открытия позиции
