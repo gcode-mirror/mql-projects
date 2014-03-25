@@ -85,7 +85,7 @@ public:
    datetime getExpiration()      {return (_expiration);};      
    int      getHandlePBI()       {return (_handle_PBI);}; 
    ulong    getMagic()           {return (_magic);};
-   int   getMinProfit()          {return(_minProfit);};
+   int      getMinProfit()       {return(_minProfit);};
    datetime getOpenPosDT()       {return (_posOpenTime);};     //получает дату открытия позиции
    ulong    getOrderTicket()     {return(_orderTicket);};
    ENUM_TIMEFRAMES getPeriod()   {return(_period);};
@@ -126,8 +126,9 @@ public:
    bool     ClosePosition();
    bool     isMinProfit();
    bool     ModifyPosition(double sl, int tp);
-   ulong     NewTicket();
+   ulong    NewTicket();
    ENUM_POSITION_STATUS OpenPosition();
+   double   OpenPriceByType(ENUM_TM_POSITION_TYPE type);     // вычисляет уровень открытия в зависимости от типа 
    double   PriceByType(ENUM_TM_POSITION_TYPE type);     // вычисляет уровень открытия в зависимости от типа 
    bool     ReadFromFile (int handle);
    ENUM_POSITION_STATUS  RemovePendingPosition();
@@ -251,6 +252,8 @@ int CPosition::getPositionPointsProfit()
 //+------------------------------------------------------------------+
 double CPosition::getPosProfit()
 {
+ UpdateSymbolInfo();
+ double currentPrice = PriceByType(_type);
  _posProfit = _posAveragePrice * _lots;
  return(_posProfit);
 }
@@ -304,7 +307,7 @@ bool CPosition::ChangeSize(double additionalVolume)
 {
  ENUM_TM_POSITION_TYPE type = this.getType();
  if (additionalVolume < 0) type = type + MathPow(-1, type);
- double openPrice = PriceByType(type);
+ double openPrice = OpenPriceByType(type);
  _posAveragePrice = (_lots*_posOpenPrice + additionalVolume*openPrice)/(_lots + additionalVolume);
  
  if (type == OP_BUY || type == OP_SELL)
@@ -508,8 +511,8 @@ ulong CPosition::NewTicket()
 ENUM_POSITION_STATUS CPosition::OpenPosition()
 {
  UpdateSymbolInfo();
- _posOpenPrice = PriceByType(_type);
- _posAveragePrice = PriceByType(_type);
+ _posOpenPrice = OpenPriceByType(_type);
+ _posAveragePrice = OpenPriceByType(_type);
  _posOpenTime = TimeCurrent(); //сохраняем время открытия позиции    
  _posProfit = 0;
  
@@ -592,7 +595,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
 //+------------------------------------------------------------------+
 //| Вычисляет уровень открытия в зависимости от типа                 |
 //+------------------------------------------------------------------+
-double CPosition::PriceByType(ENUM_TM_POSITION_TYPE type)
+double CPosition::OpenPriceByType(ENUM_TM_POSITION_TYPE type)
 {
  UpdateSymbolInfo();
  double ask = SymbInfo.Ask();
@@ -602,6 +605,20 @@ double CPosition::PriceByType(ENUM_TM_POSITION_TYPE type)
  if(type == OP_SELL) return(bid);
  if(type == OP_BUYLIMIT  || type == OP_SELLSTOP) return(bid - _priceDifference*point);
  if(type == OP_SELLLIMIT || type == OP_BUYSTOP)  return(ask + _priceDifference*point);
+ return(-1);
+}
+
+//+------------------------------------------------------------------+
+//| Вычисляет уровень открытия в зависимости от типа                 |
+//+------------------------------------------------------------------+
+double CPosition::PriceByType(ENUM_TM_POSITION_TYPE type)
+{
+ UpdateSymbolInfo();
+ double ask = SymbInfo.Ask();
+ double bid = SymbInfo.Bid();
+ double point = SymbInfo.Point();
+ if(type == OP_BUY || type == OP_SELLLIMIT || type == OP_BUYSTOP) return(ask);
+ if(type == OP_SELL || type == OP_BUYLIMIT  || type == OP_SELLSTOP) return(bid);
  return(-1);
 }
 
