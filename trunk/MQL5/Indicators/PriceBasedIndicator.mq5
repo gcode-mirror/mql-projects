@@ -140,6 +140,8 @@ int OnCalculate(const int rates_total,
     start_index = rates_total - depth;
     start_time = TimeCurrent() - depth*seconds_current;
     start_iteration = rates_total - depth;
+    trend.Zeros();
+    topTrend.Zeros();
     ArrayInitialize(ColorCandlesBuffer1, 0);
     ArrayInitialize(ColorCandlesBuffer2, 0);
     ArrayInitialize(ColorCandlesBuffer3, 0);
@@ -208,7 +210,7 @@ int OnCalculate(const int rates_total,
      extr_cur.direction = 0;
     }
     
-    if(buffer_index < depth)
+    if(buffer_index < depth)  // Вычисления только для истории
     {
      buffer_index++;
      top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;

@@ -8,7 +8,7 @@
 
 #include <StringUtilities.mqh>
 #include <Trade\Trade.mqh>
-#include <Trade\SymbolInfo.mqh>
+//#include <Trade\SymbolInfo.mqh>
 #include <CompareDoubles.mqh>
 #include <CLog.mqh>
 
@@ -112,12 +112,25 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
 {
  if (sl > 0)
  {
+  double currentPrice;
   if (OrderSelect(ticket))
   {
-   //double openPrice = OrderGetDouble(ORDER_PRICE_OPEN);
-   //double currentPrice = 
+   string symbol = OrderGetString(ORDER_SYMBOL);
+   ENUM_ORDER_TYPE type = (ENUM_ORDER_TYPE)OrderGetInteger(ORDER_TYPE);
+   switch(type)
+   {
+    case ORDER_TYPE_BUY_STOP:
+     //currentPrice = SymbolInfoDouble(symbol, );
+    break;
+    case ORDER_TYPE_SELL_STOP:
+    
+    break; 
+    default:
+    break;
+   }
   }
-  if (OrderModify(ticket, sl, 0, 0, ORDER_TIME_GTC, 0))
+   
+  if(OrderModify(ticket, sl, 0, 0, ORDER_TIME_GTC, 0))
   {
    PrintFormat("%s Новый стоплосс = %.05f",MakeFunctionPrefix(__FUNCTION__), sl);
    return (true);

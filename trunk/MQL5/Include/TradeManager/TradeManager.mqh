@@ -81,11 +81,11 @@ public:
   bool OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
                           ENUM_TM_POSITION_TYPE type,double volume ,int sl = 0, int tp = 0, 
                           ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, 
-                          int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
+                          int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int handlePBI = 0, int priceDifference = 0);
   bool OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe,
                          ENUM_TM_POSITION_TYPE type,double volume ,int sl, int tp, 
                          ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, 
-                         int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifference = 0);
+                         int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int handlePBI = 0, int priceDifference = 0);
   bool PositionChangeSize(string strSymbol, double additionalVolume);
   bool PositionSelect(long index, ENUM_SELECT_TYPE type, ENUM_SELECT_MODE pool = MODE_TRADES);
   void UpdateData(CPositionArray *positionsHistory);
@@ -561,7 +561,7 @@ void CTradeManager::OnTrade(datetime history_start=0)
 bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
                                  ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0,
                                  ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, 
-                                 int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifferense = 0)
+                                 int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int handlePBI = 0, int priceDifferense = 0)
 {
  if (_positionsToReProcessing.OrderCount(symbol, _magic) > 0) 
  {
@@ -666,7 +666,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
   PrintFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__));
-  pos = new CPosition(_magic, symbol, timeframe, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, priceDifferense);
+  pos = new CPosition(_magic, symbol, timeframe, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handlePBI, priceDifferense);
   ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
   {
@@ -699,7 +699,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
 bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe,
                                       ENUM_TM_POSITION_TYPE type, double volume,int sl, int tp, 
                                       ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE, 
-                                      int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int priceDifferense = 0)
+                                      int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int handlePBI = 0, int priceDifferense = 0)
 {
  int i = 0;
  int total = _openPositions.Total();
@@ -711,7 +711,7 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe,
                             , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total); 
  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
  
- pos = new CPosition(_magic, symbol, timeframe, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, priceDifferense);
+ pos = new CPosition(_magic, symbol, timeframe, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handlePBI, priceDifferense);
  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
  //Print("openingResult=", PositionStatusToStr(openingResult));
  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
