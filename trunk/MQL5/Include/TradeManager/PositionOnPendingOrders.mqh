@@ -252,9 +252,18 @@ int CPosition::getPositionPointsProfit()
 //+------------------------------------------------------------------+
 double CPosition::getPosProfit()
 {
- UpdateSymbolInfo();
- double ask = SymbInfo.Ask();
- double bid = SymbInfo.Bid();
+ double ask = 0, bid = 0;
+ if (_posClosePrice > 0)
+ { 
+  ask = _posClosePrice;
+  bid = _posClosePrice;
+ }
+ else
+ {
+  UpdateSymbolInfo();
+  ask = SymbInfo.Ask();
+  bid = SymbInfo.Bid();
+ }
  switch(_type)
  {
   case OP_BUY:
