@@ -15,6 +15,8 @@
 #define AMOUNT_OF_PRICE 2
 #define AMOUNT_BARS_FOR_HUGE 100
 
+#define ATR_PERIOD 30
+#define ATR_TIMEFRAME PERIOD_H4
 //CLog log_output(OUT_COMMENT, LOG_NONE, 50, "PBI", 30);
 
 //+------------------------------------------------------------------+
@@ -50,7 +52,7 @@ protected:
   int isNewTrend();
   int isEndTrend();
 public:
-  void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif, int ATR_ma_period);
+  void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif);
   SExtremum isExtremum(int start_index);
   bool FindExtremumInHistory(int depth);
   bool CountMoveType(int bar, int start_pos, SExtremum &extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
@@ -62,7 +64,7 @@ public:
 //+-----------------------------------------+
 //| Конструктор                             |
 //+-----------------------------------------+
-void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif, int ATR_ma_period) : 
+void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif) : 
                    _symbol(symbol),
                    _period(period),
                    _depth(depth),
@@ -81,7 +83,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
  CopyRates(_symbol, _period, _depth, 1, buffer);
  CopyTime(_symbol, _period, _depth, 1, time_buffer);
  _startDayPrice = buffer[0].close;
- ATR_handle = iATR(_symbol, _period, ATR_ma_period);
+ ATR_handle = iATR(_symbol, ATR_TIMEFRAME, ATR_PERIOD);
  digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  ArrayResize(enumMoveType, depth);
  Zeros();
