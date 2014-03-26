@@ -9,6 +9,8 @@
 
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 
+#define DEPTH_PBI 100
+
 input int step = 100;
 input int countSteps = 4;
 input int volume = 5;
@@ -16,6 +18,9 @@ input double ko = 2;        // ko=0-весь объем, ko=1-равные доли, ko>1-увелич.до
 
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL;
 //input bool stepbypart = false; // 
+input double   percentage_ATR_cur = 2;   
+input double   difToTrend_cur = 1.5;
+input int      ATR_ma_period_cur = 12;
 
 string symbol;
 ENUM_TIMEFRAMES timeframe;
@@ -43,7 +48,7 @@ int OnInit()
    
    if (trailingType == TRAILING_TYPE_PBI)
    {
-    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", 100, 2, 1.5, 12, 2, 1.5, 12);
+    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", DEPTH_PBI, percentage_ATR_cur, difToTrend_cur, 2, 1.5);
     if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
     {
      Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке

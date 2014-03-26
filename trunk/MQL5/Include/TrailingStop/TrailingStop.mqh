@@ -14,6 +14,8 @@
 #include <CompareDoubles.mqh>
 #include <StringUtilities.mqh>
 
+#define DEPTH_PBI 100
+
 //+------------------------------------------------------------------+
 //| Класс для управления стоп-лоссом                                 |
 //+------------------------------------------------------------------+
@@ -131,18 +133,18 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
 //+------------------------------------------------------------------+
 double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI)
 {
- int errcolors = CopyBuffer(handle_PBI, 4, 0, 100, PBI_colors);
+ int errcolors = CopyBuffer(handle_PBI, 4, 0, DEPTH_PBI, PBI_colors);
  int errextrems, direction;
  if (type == OP_SELL)
  {
   //Print("PBI_Trailing, позиция СЕЛЛ, тип движения ", PBI_colors[0]);
-  errextrems = CopyBuffer(handle_PBI, 5, 0, 100, PBI_Extrems); // Копируем максимумы
+  errextrems = CopyBuffer(handle_PBI, 5, 0, DEPTH_PBI, PBI_Extrems); // Копируем максимумы
   direction = 1;
  }
  if (type == OP_BUY)
  {
   //Print("PBI_Trailing, позиция БАЙ, тип движения ", PBI_colors[0]);
-  errextrems = CopyBuffer(handle_PBI, 6, 0, 100, PBI_Extrems); // Копируем минимумы
+  errextrems = CopyBuffer(handle_PBI, 6, 0, DEPTH_PBI, PBI_Extrems); // Копируем минимумы
   direction = -1;
  }
  if(errcolors < 0 || errextrems < 0)
@@ -155,7 +157,7 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
  if (PBI_colors[0] == 1 || PBI_colors[0] == 2 || PBI_colors[0] == 3 || PBI_colors[0] == 4)
  {
   //Print("Текущее движение ", MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]));
-  for (int index = 0; index < 1000; index++)
+  for (int index = 0; index < DEPTH_PBI; index++)
   { 
    if (PBI_Extrems[index] > 0)
    {
