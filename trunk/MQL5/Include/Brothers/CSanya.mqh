@@ -6,7 +6,7 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 
-#include "CBrothers.mqh"
+#include <Brothers\CBrothers.mqh>
 #include <CompareDoubles.mqh>
 #include <StringUtilities.mqh>
 #include <CLog.mqh>

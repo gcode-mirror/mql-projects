@@ -10,7 +10,6 @@
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
 #include <TradeManager\TradeManagerEnums.mqh>
-#include <ColoredTrend\ColoredTrendUtilities.mqh>
 #include <CompareDoubles.mqh>
 #include <StringUtilities.mqh>
 

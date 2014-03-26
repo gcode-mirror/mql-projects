@@ -7,9 +7,10 @@
 #property link      "http://www.saita.net"
 #property version   "1.00"
 
-#include "BroUtilities.mqh"
+#include <Brothers\BroUtilities.mqh>
 #include <CompareDoubles.mqh>
 #include <StringUtilities.mqh>
+#include <GlobalVariable.mqh>
 #include <CLog.mqh>
 #include <TradeManager\TradeManager.mqh>
 //+------------------------------------------------------------------+
@@ -291,7 +292,7 @@ bool CBrothers::CorrectOrder(double volume)
  if (ctm.GetPositionCount() == 0)
  {
   Print("Откроем новую позицию");
-  result = ctm.OpenUniquePosition(_symbol, type, MathAbs(volume));
+  result = ctm.OpenUniquePosition(_symbol, _period, type, MathAbs(volume));
  }
  else
  {
