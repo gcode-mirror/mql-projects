@@ -17,6 +17,8 @@
 //+------------------------------------------------------------------+
 class CSanyaRotate: public CSanya
 {
+private:
+ bool _beep;
 public:
 //--- Конструкторы
  void CSanyaRotate(int deltaFast, int deltaSlow, int dayStep, int monthStep
@@ -25,7 +27,8 @@ public:
              , int firstAdd, int secondAdd, int thirdAdd
              , int fastDeltaStep = 100, int slowDeltaStep = 10
              , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30);  // Конструктор Саня
-             
+ 
+ bool getBeep(){return(_beep);};            
  void RecountFastDelta();
  void RecountLevels(SExtremum &extr);
 };
@@ -73,6 +76,7 @@ void CSanyaRotate::CSanyaRotate(int deltaFast, int deltaSlow,  int dayStep, int 
    _last_month_number = TimeCurrent() - _slowPeriod*24*60*60;    // Инициализируем месяц текущим месяцем
    _comment = "";        // Комментарий выполнения
    
+   _beep = false;
    _isDayInit = false;
    _isMonthInit = false;
    _symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
@@ -204,6 +208,7 @@ void CSanyaRotate::RecountFastDelta()
    _deltaFast = 100 - _deltaFastBase;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
    _fastDeltaChanged = true;
    first = true; second = true; third = true;
+   _beep = false;
   }
  }
  
@@ -232,6 +237,7 @@ void CSanyaRotate::RecountFastDelta()
    third = false;
    _deltaFast = _deltaFast - _thirdAdd;
    _fastDeltaChanged = true;
+   _beep = true;
   }
  }
  

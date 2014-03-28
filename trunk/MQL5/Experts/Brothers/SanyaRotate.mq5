@@ -16,6 +16,7 @@
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
+input string sound = "AHOOGA.WAV";
 input ENUM_ORDER_TYPE type = ORDER_TYPE_BUY; // Начальное направление торговли
 
 input int volume = 10;      // Полный объем торгов
@@ -105,6 +106,11 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
  {
+  if (san.getBeep())
+  {
+   PlaySound(sound);
+   //Print("");
+  }
   san.RecountFastDelta();
   
   int spread = SymbolInfoInteger(symbol, SYMBOL_SPREAD);
