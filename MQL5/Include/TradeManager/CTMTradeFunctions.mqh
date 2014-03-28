@@ -64,7 +64,6 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
   
   while (i <= tryNumber)
   {
-   //log_file.Write(LOG_DEBUG, StringFormat("%s Current action:", MakeFunctionPrefix(__FUNCTION__), m_request.action));
    res = false;
    if(OrderCheck(m_request,m_check_result)==true)
    {
@@ -103,13 +102,12 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
    }
    i++;
   }
-  
-  //log_file.Write(LOG_DEBUG, StringFormat("%s ticket = %d  %s ", MakeFunctionPrefix(__FUNCTION__), ticket, BoolToString(res)));
   return(res);
 }
 
 bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.0)
 {
+ double currentPrice = 0;
  if (sl > 0)
  {
   if (OrderSelect(ticket))
@@ -119,16 +117,22 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
    switch(type)
    {
     case ORDER_TYPE_BUY_STOP:
-     //currentPrice = SymbolInfoDouble(symbol, );
+     currentPrice = SymbolInfoDouble(symbol, SYMBOL_ASK);
     break;
     case ORDER_TYPE_SELL_STOP:
-    
-    break; 
-    default:
+     currentPrice = SymbolInfoDouble(symbol, SYMBOL_BID);
     break;
+    default:
+     PrintFormat("Неверный тип столлосса %s", OrderTypeToString(type));
+     return(false);
    }
   }
-   
+  else
+  {
+   PrintFormat("Невозможно выбрать ордер по тикету %d", ticket);
+   return(false);
+  } 
+  
   if(OrderModify(ticket, sl, 0, 0, ORDER_TIME_GTC, 0))
   {
    PrintFormat("%s Новый стоплосс = %.05f",MakeFunctionPrefix(__FUNCTION__), sl);
