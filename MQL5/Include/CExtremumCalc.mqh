@@ -28,7 +28,7 @@ class CExtremumCalc
  CExtremumCalc(int e, int depth);
 ~CExtremumCalc();
  SExtremum isExtremum(double vol1,double vol2,double vol3);
- void FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf);
+ void FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf, datetime start_time = __DATETIME__);
  void ZeroArray();
  int NumberOfExtr();
  SExtremum getExtr(int index);
@@ -76,15 +76,15 @@ SExtremum CExtremumCalc::isExtremum(double vol1,double vol2,double vol3)
 }
 
 
-void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf)
+void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf, datetime start_time = __DATETIME__)
 {
  double price [];
  int copiedPrice = -1;
  for(int attempts = 0; attempts < 25 && copiedPrice < 0; attempts++)
  {
-  copiedPrice = CopyClose(symbol, tf, 0, _depth + 1, price);
+  copiedPrice = CopyClose(symbol, tf, start_time, _depth + 1, price);
  }
- if (copiedPrice != _depth + 1) 
+ if (copiedPrice < _depth + 1) 
  {
   Alert(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", GetLastError());
   if(GetLastError() == 4401) 
