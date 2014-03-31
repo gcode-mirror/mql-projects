@@ -105,7 +105,7 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf, dateti
   _extr_array[i].direction = isExtremum(price[i+1], price[i], price[i-1]).direction;
   if(_extr_array[i].direction != 0)
   {
-   Print(StringFormat("%s i = %d; price[i+1] = %f, price[i] = %f, price[i-1] = %f", TimeToString(time[i]), i,  price[i+1], price[i], price[i-1]));//, EnumToString(_extr_array[i].direction)));
+   //Print(StringFormat("%s i = %d; price[i+1] = %f, price[i] = %f, price[i-1] = %f", TimeToString(time[i]), i,  price[i+1], price[i], price[i-1]));//, EnumToString(_extr_array[i].direction)));
    //Alert( i, " ", _last, " ", time[i], " ", EnumToString((DIRECTION)_extr_array[i].direction));
    if(_last == -1)
    {
