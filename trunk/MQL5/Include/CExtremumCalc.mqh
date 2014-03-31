@@ -18,7 +18,7 @@ struct SExtremum
 class CExtremumCalc
 {
  private:
- SExtremum _extr_array[];
+ SExtremum  _extr_array[];
  int _last;
  int _epsilon;
  int _depth;
@@ -91,8 +91,8 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf, dateti
    Alert(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
   return;
  }
- //datetime time [];
- //CopyTime(symbol, tf, 0, _depth + 1, time);
+ datetime time [];
+ CopyTime(symbol, tf, start_time, _depth + 1, time);
 
  if(!ArrayGetAsSeries(price)) ArraySetAsSeries(price, true);
  if(!ArrayGetAsSeries(_extr_array)) ArraySetAsSeries(_extr_array, true);
@@ -103,9 +103,9 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf, dateti
  for(int i = _depth-1; i > 1; i--)
  {  
   _extr_array[i].direction = isExtremum(price[i+1], price[i], price[i-1]).direction;
-  //Print(StringFormat("%s i = %d; price[i+1] = %f, price[i] = %f, price[i-1] = %f, dir = %s", TimeToString(time[i]), i,  price[i+1], price[i], price[i-1], EnumToString((DIRECTION)_extr_array[i].direction)));
   if(_extr_array[i].direction != 0)
   {
+   Print(StringFormat("%s i = %d; price[i+1] = %f, price[i] = %f, price[i-1] = %f", TimeToString(time[i]), i,  price[i+1], price[i], price[i-1]));//, EnumToString(_extr_array[i].direction)));
    //Alert( i, " ", _last, " ", time[i], " ", EnumToString((DIRECTION)_extr_array[i].direction));
    if(_last == -1)
    {

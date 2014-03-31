@@ -21,7 +21,6 @@ class CBrothers
 protected:
  CTradeManager *ctm;
  MqlTick tick;
- CGlobalVariable hand_control;
  
  datetime _last_time;          // Последнее определенное время отсчета
  datetime _last_day_of_year;   // Время начала последнего определенного дня 

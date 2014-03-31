@@ -11,8 +11,8 @@
 #include <CExtremumCalc.mqh>
 #include <Lib CisNewBar.mqh>
 
-input datetime start_time = __DATE__;
-input datetime end_time = __DATE__;
+input datetime start_time = D'2014.03.10';
+input datetime end_time =   D'2014.03.20';
 
  enum LevelType
  {
@@ -33,7 +33,7 @@ input datetime end_time = __DATE__;
  SExtremum estruct[3];
  
  string symbol = Symbol();
- ENUM_TIMEFRAMES period = Period();
+ ENUM_TIMEFRAMES period_current = Period();
  int handle_ATR;
  double buffer_ATR [];
  
@@ -56,8 +56,8 @@ input datetime end_time = __DATE__;
 //+------------------------------------------------------------------+
 void OnStart()
 {
- handle_ATR = iATR(symbol, period, period_ATR);
- int copied = CopyRates(symbol, period, start_time, end_time, buffer_rates);
+ handle_ATR = iATR(symbol, period_current, period_ATR);
+ int copied = CopyRates(symbol, period_current, start_time, end_time, buffer_rates);
  FillATRbuffer();
  datetime start_pos_time = start_time;
  int factor = PeriodSeconds(GetTFbyLevel(level))/PeriodSeconds();
@@ -65,14 +65,15 @@ void OnStart()
  {
   if(MathMod(i, factor) == 0)  //симул€ци€ по€влени€ нового бара на тайфреме дл€ которого вычисленны уровни
   {
-   FillThreeExtr(symbol, period, calc, estruct, buffer_ATR, start_pos_time);
+   FillThreeExtr(symbol, GetTFbyLevel(level), calc, estruct, buffer_ATR, start_pos_time);
+   PrintFormat("%s one = %f; two = %f; three = %f", TimeToString(start_pos_time), estruct[0].price, estruct[1].price, estruct[2].price);
    start_pos_time += PeriodSeconds(GetTFbyLevel(level));
   }
   CalcStatistic(buffer_rates[i]);
  }
  
- Alert(StringFormat("DUU = %.0f; DUD = %.0f; UDU = %.0f; UDD = %.0f", count_DUU, count_DUD, count_UDU, count_UDD));
- PrintFormat("level1 = %f; level2 = %f; level3 = %f", estruct[0].price, estruct[1].price, estruct[2].price);  
+ PrintFormat("%s start time = %s; end time = %s", __FUNCTION__, TimeToString(start_time), TimeToString(end_time));
+ PrintFormat("%s DUU = %.0f; DUD = %.0f; UDU = %.0f; UDD = %.0f", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
 }
 //+------------------------------------------------------------------+
 void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, SExtremum &resArray[], double &buffer_ATR[], datetime start_pos_time)
