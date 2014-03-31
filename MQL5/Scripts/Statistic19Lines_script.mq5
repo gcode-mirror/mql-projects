@@ -24,7 +24,7 @@ input datetime end_time =   D'2014.03.20';
  };
  
  input int epsilon = 25;          //Погрешность для поиска экстремумов
- input int depth = 50;            //Глубина поиска трех экстремумов
+ input int depth = 25;            //Глубина поиска трех экстремумов
  input int period_ATR = 100;      //Период ATR
  input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR 
 
@@ -34,6 +34,7 @@ input datetime end_time =   D'2014.03.20';
  
  string symbol = Symbol();
  ENUM_TIMEFRAMES period_current = Period();
+ ENUM_TIMEFRAMES period_level;
  int handle_ATR;
  double buffer_ATR [];
  
@@ -56,24 +57,27 @@ input datetime end_time =   D'2014.03.20';
 //+------------------------------------------------------------------+
 void OnStart()
 {
- handle_ATR = iATR(symbol, period_current, period_ATR);
+ PrintFormat("BEGIN");
+ period_level = GetTFbyLevel(level);
+ handle_ATR = iATR(symbol, period_level, period_ATR);
  int copied = CopyRates(symbol, period_current, start_time, end_time, buffer_rates);
  FillATRbuffer();
  datetime start_pos_time = start_time;
- int factor = PeriodSeconds(GetTFbyLevel(level))/PeriodSeconds();
- for(int i = 0; i < copied ;i++)
- {
+ int factor = PeriodSeconds(period_level)/PeriodSeconds();
+ for(int i = 0; i < copied-1;i++)
+ {  
   if(MathMod(i, factor) == 0)  //симуляция появления нового бара на тайфреме для которого вычисленны уровни
   {
-   FillThreeExtr(symbol, GetTFbyLevel(level), calc, estruct, buffer_ATR, start_pos_time);
-   PrintFormat("%s one = %f; two = %f; three = %f", TimeToString(start_pos_time), estruct[0].price, estruct[1].price, estruct[2].price);
-   start_pos_time += PeriodSeconds(GetTFbyLevel(level));
+   FillThreeExtr(symbol, period_level, calc, estruct, buffer_ATR, start_pos_time);
+   //PrintFormat("%s one = %f; two = %f; three = %f", TimeToString(start_pos_time), estruct[0].price, estruct[1].price, estruct[2].price);
+   start_pos_time += PeriodSeconds(period_level);
+   //PrintFormat("%s DUU = %.0f; DUD = %.0f; UDU = %.0f; UDD = %.0f", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
   }
   CalcStatistic(buffer_rates[i]);
  }
  
- PrintFormat("%s start time = %s; end time = %s", __FUNCTION__, TimeToString(start_time), TimeToString(end_time));
- PrintFormat("%s DUU = %.0f; DUD = %.0f; UDU = %.0f; UDD = %.0f", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
+ //PrintFormat("%s END start time = %s; end time = %s; copied = %d", __FUNCTION__, TimeToString(start_time), TimeToString(end_time), copied);
+ PrintFormat("%s END DUU = %.0f; DUD = %.0f; UDU = %.0f; UDD = %.0f", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
 }
 //+------------------------------------------------------------------+
 void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, SExtremum &resArray[], double &buffer_ATR[], datetime start_pos_time)
@@ -130,12 +134,13 @@ ENUM_TIMEFRAMES GetTFbyLevel(LevelType lt)
 
 void CalcStatistic (MqlRates &price)
 {
+ bool print = false;
 //---------------ПЕРВЫЙ-УРОВЕНЬ------------------------------------
 //проверка первого уровня на прохождение ценой снизу вверх DOWN-UP 
  if(!level_one_DU && price.open < estruct[0].price - estruct[0].channel && price.close > estruct[0].price - estruct[0].channel)
  {
   level_one_DU = true;
-  //PrintFormat("DU НОВОЕ Цена зашла в коридор уровня снизу вверх");
+  if(print)PrintFormat("DU НОВОЕ Цена зашла в коридор уровня снизу вверх");
  }
  if(level_one_DU)
  {
@@ -143,13 +148,13 @@ void CalcStatistic (MqlRates &price)
   {
    count_DUU++;
    level_one_DU = false;
-   //PrintFormat("DU Цена вышла из коридора уровня сверху");
+   if(print)PrintFormat("DU Цена вышла из коридора уровня сверху");
   }
   else if(price.open > estruct[0].price - estruct[0].channel && price.close < estruct[0].price - estruct[0].channel)
   {
    count_DUD++;
    level_one_DU = false;
-   //PrintFormat("DU Цена вышла из коридора уровня снизу");
+   if(print)PrintFormat("DU Цена вышла из коридора уровня снизу");
   }
  }
  
@@ -157,7 +162,7 @@ void CalcStatistic (MqlRates &price)
  if(!level_one_UD && price.open > estruct[0].price + estruct[0].channel && price.close < estruct[0].price + estruct[0].channel)
  {
   level_one_UD = true;
-  //PrintFormat("UD НОВОЕ Цена зашла в коридор уровня сверху вниз");
+  if(print)PrintFormat("UD НОВОЕ Цена зашла в коридор уровня сверху вниз");
  }
  if(level_one_UD)
  {
@@ -165,13 +170,13 @@ void CalcStatistic (MqlRates &price)
   {
    count_UDU++;
    level_one_UD = false;
-   //PrintFormat("UD Цена вышла из коридора уровня сверху");
+   if(print)PrintFormat("UD Цена вышла из коридора уровня сверху");
   }
   else if(price.open > estruct[0].price - estruct[0].channel && price.close < estruct[0].price - estruct[0].channel)
   {
    count_UDD++;
    level_one_UD = false;
-   //PrintFormat("UD Цена вышла из коридора уровня снизу");
+   if(print)PrintFormat("UD Цена вышла из коридора уровня снизу");
   } 
  }
 
@@ -180,7 +185,7 @@ void CalcStatistic (MqlRates &price)
  if(!level_two_DU && price.open < estruct[1].price - estruct[1].channel && price.close > estruct[1].price - estruct[1].channel)
  {
   level_two_DU = true;
-  //PrintFormat("DU НОВОЕ Цена зашла в коридор уровня снизу вверх");
+  if(print)PrintFormat("DU НОВОЕ Цена зашла в коридор уровня снизу вверх");
  }
  if(level_two_DU)
  {
@@ -188,13 +193,13 @@ void CalcStatistic (MqlRates &price)
   {
    count_DUU++;
    level_two_DU = false;
-   //PrintFormat("DU Цена вышла из коридора уровня сверху");
+   if(print)PrintFormat("DU Цена вышла из коридора уровня сверху");
   }
   else if(price.open > estruct[1].price - estruct[1].channel && price.close < estruct[1].price - estruct[1].channel)
   {
    count_DUD++;
    level_two_DU = false;
-   //PrintFormat("DU Цена вышла из коридора уровня снизу");
+   if(print)PrintFormat("DU Цена вышла из коридора уровня снизу");
   }
  }
  
@@ -202,7 +207,7 @@ void CalcStatistic (MqlRates &price)
  if(!level_two_UD && price.open > estruct[1].price + estruct[1].channel && price.close < estruct[1].price + estruct[1].channel)
  {
   level_two_UD = true;
-  //PrintFormat("UD НОВОЕ Цена зашла в коридор уровня сверху вниз");
+  if(print)PrintFormat("UD НОВОЕ Цена зашла в коридор уровня сверху вниз");
  }
  if(level_two_UD)
  {
@@ -210,13 +215,13 @@ void CalcStatistic (MqlRates &price)
   {
    count_UDU++;
    level_two_UD = false;
-   //PrintFormat("UD Цена вышла из коридора уровня сверху");
+   if(print)PrintFormat("UD Цена вышла из коридора уровня сверху");
   }
   else if(price.open > estruct[1].price - estruct[1].channel && price.close < estruct[1].price - estruct[1].channel)
   {
    count_UDD++;
    level_two_UD = false;
-   //PrintFormat("UD Цена вышла из коридора уровня снизу");
+   if(print)PrintFormat("UD Цена вышла из коридора уровня снизу");
   } 
  }
 
@@ -225,7 +230,7 @@ void CalcStatistic (MqlRates &price)
  if(!level_three_DU && price.open < estruct[2].price - estruct[2].channel && price.close > estruct[2].price - estruct[2].channel)
  {
   level_three_DU = true;
-  //PrintFormat("DU НОВОЕ Цена зашла в коридор уровня снизу вверх");
+  if(print)PrintFormat("DU НОВОЕ Цена зашла в коридор уровня снизу вверх");
  }
  if(level_three_DU)
  {
@@ -233,13 +238,13 @@ void CalcStatistic (MqlRates &price)
   {
    count_DUU++;
    level_three_DU = false;
-   //PrintFormat("DU Цена вышла из коридора уровня сверху");
+   if(print)PrintFormat("DU Цена вышла из коридора уровня сверху");
   }
   else if(price.open > estruct[2].price - estruct[2].channel && price.close < estruct[2].price - estruct[2].channel)
   {
    count_DUD++;
    level_three_DU = false;
-   //PrintFormat("DU Цена вышла из коридора уровня снизу");
+   if(print)PrintFormat("DU Цена вышла из коридора уровня снизу");
   }
  }
  
@@ -247,7 +252,7 @@ void CalcStatistic (MqlRates &price)
  if(!level_three_UD && price.open > estruct[2].price + estruct[2].channel && price.close < estruct[2].price + estruct[2].channel)
  {
   level_three_UD = true;
-  //PrintFormat("UD НОВОЕ Цена зашла в коридор уровня сверху вниз");
+  if(print)PrintFormat("UD НОВОЕ Цена зашла в коридор уровня сверху вниз");
  }
  if(level_three_UD)
  {
@@ -255,13 +260,13 @@ void CalcStatistic (MqlRates &price)
   {
    count_UDU++;
    level_three_UD = false;
-   //PrintFormat("UD Цена вышла из коридора уровня сверху");
+   if(print)PrintFormat("UD Цена вышла из коридора уровня сверху");
   }
   else if(price.open > estruct[2].price - estruct[2].channel && price.close < estruct[2].price - estruct[2].channel)
   {
    count_UDD++;
    level_three_UD = false;
-   //PrintFormat("UD Цена вышла из коридора уровня снизу");
+   if(print)PrintFormat("UD Цена вышла из коридора уровня снизу");
   } 
  }
 }

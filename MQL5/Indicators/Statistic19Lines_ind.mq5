@@ -21,7 +21,7 @@
  };
  
  input int epsilon = 25;          //Погрешность для поиска экстремумов
- input int depth = 50;            //Глубина поиска трех экстремумов
+ input int depth = 25;            //Глубина поиска трех экстремумов
  input int period_ATR = 100;      //Период ATR
  input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR 
 
@@ -36,7 +36,8 @@
  CisNewBar NewBarCurr (Symbol(), Period());
 
  string symbol = Symbol();
- ENUM_TIMEFRAMES period;
+ ENUM_TIMEFRAMES period_current = Period();
+ ENUM_TIMEFRAMES period_level;
  int handle_ATR;
  double buffer_ATR [];
  
@@ -47,10 +48,10 @@
  bool level_three_UD = false;
  bool level_three_DU = false;
  
- double count_DUU = 0;
- double count_DUD = 0;
- double count_UDD = 0;
- double count_UDU = 0;
+ int count_DUU = 0;
+ int count_DUD = 0;
+ int count_UDD = 0;
+ int count_UDU = 0;
  
  bool first = true;
  //+------------------------------------------------------------------+
@@ -58,10 +59,10 @@
 //+------------------------------------------------------------------+
 int OnInit()
 {
- period = GetTFbyLevel(level);
+ period_level = GetTFbyLevel(level);
  if(depth < 10) return(INIT_PARAMETERS_INCORRECT);
- handle_ATR = iATR(symbol, period, period_ATR);
- NewBarLevel.SetPeriod(period);
+ handle_ATR = iATR(symbol, period_level, period_ATR);
+ NewBarLevel.SetPeriod(period_level);
 
  //SetInfoTabel();
 
@@ -71,13 +72,14 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
- PrintFormat("DUU = %f; DUD = %f; UDU = %f; UDD = %f", count_DUU, count_DUD, count_UDU, count_UDD);
+ PrintFormat("DUU = %d; DUD = %d; UDU = %d; UDD = %d", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
  //SavePorabolistic("STATISTIC_19LINES.txt");
  IndicatorRelease(handle_ATR);
  ArrayFree(buffer_ATR);
  //DeleteExtrLines(GetTFbyLevel(level));
  //DeleteInfoTabel();
 }
+
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
@@ -99,21 +101,21 @@ int OnCalculate(const int rates_total,
    {
     if(first)
     {
-     FillThreeExtr(symbol, period, calc, estruct, buffer_ATR, TimeCurrent());
+     FillThreeExtr(symbol, period_level, calc, estruct, buffer_ATR, TimeCurrent());
      PrintFormat("%s one = %f; two = %f; three = %f", TimeToString(TimeCurrent()), estruct[0].price, estruct[1].price, estruct[2].price);
-     CreateExtrLines(estruct, period, color_level);
+     CreateExtrLines(estruct, period_level, color_level);
      first = false;
     }//end first
     
     if(NewBarLevel.isNewBar() > 0)
     {
-      FillThreeExtr(symbol, period, calc, estruct, buffer_ATR, TimeCurrent());
+      FillThreeExtr(symbol, period_level, calc, estruct, buffer_ATR, TimeCurrent());
       PrintFormat("%s one = %f; two = %f; three = %f", TimeToString(TimeCurrent()), estruct[0].price, estruct[1].price, estruct[2].price);
-      MoveExtrLines(estruct, period);
+      MoveExtrLines(estruct, period_level);
+      PrintFormat("DUU = %d; DUD = %d; UDU = %d; UDD = %d", count_DUU, count_DUD, count_UDU, count_UDD);
     }
     if(NewBarCurr.isNewBar() > 0)
     {
-     //PrintFormat("DUU = %f; DUD = %f; UDU = %f; UDD = %f", count_DUU, count_DUD, count_UDU, count_UDD);
      CalcStatistic();
     }
     
@@ -121,6 +123,7 @@ int OnCalculate(const int rates_total,
 //--- return value of prev_calculated for next call
    return(rates_total);
   }
+  
 //+------------------------------------------------------------------+
 bool HLineCreate(const long            chart_ID=0,        // ID графика
                  const string          name="HLine",      // имя линии
