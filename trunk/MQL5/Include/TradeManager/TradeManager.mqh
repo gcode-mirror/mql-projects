@@ -120,6 +120,7 @@ void CTradeManager::CTradeManager():
 void CTradeManager::~CTradeManager(void)
 {
  log_file.Write(LOG_DEBUG, StringFormat("%s Запущен процесс деинициализации.", MakeFunctionPrefix(__FUNCTION__)));
+ PrintFormat( "%s Запущен процесс деинициализации.", MakeFunctionPrefix(__FUNCTION__));
  int size = _openPositions.Total();
  int attempts = 0;
  while (attempts < 25)

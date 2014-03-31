@@ -118,18 +118,28 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
    {
     case ORDER_TYPE_BUY_STOP:
      currentPrice = SymbolInfoDouble(symbol, SYMBOL_ASK);
+     if (LessDoubles(sl, currentPrice))
+     {
+      PrintFormat("%s Ордер БайСтоп не может быть ниже текущей цены", MakeFunctionPrefix(__FUNCTION__));
+      return(false);
+     }
     break;
     case ORDER_TYPE_SELL_STOP:
      currentPrice = SymbolInfoDouble(symbol, SYMBOL_BID);
+     if (GreatDoubles(sl, currentPrice))
+     {
+      PrintFormat("%s Ордер СеллСтоп не может быть выше текущей цены", MakeFunctionPrefix(__FUNCTION__));
+      return(false);
+     }
     break;
     default:
-     PrintFormat("Неверный тип столлосса %s", OrderTypeToString(type));
+     PrintFormat("%s Неверный тип столлосса %s", MakeFunctionPrefix(__FUNCTION__), OrderTypeToString(type));
      return(false);
    }
   }
   else
   {
-   PrintFormat("Невозможно выбрать ордер по тикету %d", ticket);
+   PrintFormat("%s Невозможно выбрать ордер по тикету %d", MakeFunctionPrefix(__FUNCTION__), ticket);
    return(false);
   } 
   

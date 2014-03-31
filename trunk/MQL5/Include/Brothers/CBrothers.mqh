@@ -66,6 +66,7 @@ protected:
 public:
 //--- Конструкторы
  void CBrothers(void);      // Конструктор CBrothers
+ void ~CBrothers(void);
 //--- Методы доступа к защищенным данным:
  //datetime GetLastDay() const {return(_last_day_number);}      // 18:00 последнего дня
  //datetime GetLastMonth() const {return(_last_month_number);}  // Дата и время определния последнего месяца
@@ -131,6 +132,10 @@ void CBrothers::CBrothers()
    _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
   }
 
+void CBrothers::~CBrothers(void)
+  {
+   delete ctm;
+  }
 //+------------------------------------------------------------------+
 //| Проверка на время обновления младщей дельта                      |
 //| INPUT:  no.                                                      |
