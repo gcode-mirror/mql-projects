@@ -47,6 +47,7 @@ DELTA_STEP fastDeltaStep = FIFTY;  // Шаг изменения МЛАДШЕЙ дельты
 DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 
 CSanyaRotate *san;
+Button *close_button;
 double vol = 0;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -54,6 +55,7 @@ double vol = 0;
 int OnInit()
   {
 //---
+   close_button = new Button ("close_button", "KILL", 10, 10, 40, 40, 0, 0, CORNER_LEFT_UPPER, 0);
    int fastDelta, firstAdd, secondAdd, thirdAdd;
    
    fastDelta = 100 / (1 + ko + ko*ko + ko*ko*ko);
@@ -143,3 +145,20 @@ void OnTick()
   } 
  }
 //+------------------------------------------------------------------+
+
+
+void OnChartEvent(const int id,         // идентификатор события  
+                  const long& lparam,   // параметр события типа long
+                  const double& dparam, // параметр события типа double
+                  const string& sparam  // параметр события типа string
+                 )
+{
+ if(id == CHARTEVENT_OBJECT_CLICK)
+ {
+  if (sparam == "close_button")     // кнопка "Кнопка закрытия позиции вручную"
+  {
+   san.SetHandControl(100);
+   ObjectSetInteger(0, "close_button", OBJPROP_STATE, false);  
+  }
+ }
+}

@@ -11,6 +11,7 @@
 #include <StringUtilities.mqh>
 #include <CLog.mqh>
 #include "TradeLines.mqh"
+#include <Graph\Objects\Button.mqh>
 
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
@@ -18,6 +19,7 @@
 class CSanyaRotate: public CSanya
 {
 private:
+ int hand_control;
  bool _beep;
 public:
 //--- Конструкторы
@@ -28,7 +30,8 @@ public:
              , int fastDeltaStep = 100, int slowDeltaStep = 10
              , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30);  // Конструктор Саня
  
- bool getBeep(){return(_beep);};            
+ bool getBeep() {return(_beep);};
+ void SetHandControl(int value) {hand_control = value;};            
  void RecountFastDelta();
  void RecountLevels(SExtremum &extr);
 };
@@ -47,13 +50,12 @@ void CSanyaRotate::CSanyaRotate(int deltaFast, int deltaSlow,  int dayStep, int 
                     , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30)  // Конструктор Саня
   {
   
-   hand_control.Name("SANYA ROTATE FAST DELTA");
    _factor = 0.01;
    _deltaFastBase = deltaFast;
    _deltaSlowBase = deltaSlow;
    
    _deltaFast = 100 - _deltaFastBase;
-   hand_control.IntValue(_deltaFast);
+   hand_control = _deltaFast;
    _deltaSlow = _deltaSlowBase;
    _slowDeltaChanged = true;
 
@@ -198,7 +200,7 @@ void CSanyaRotate::RecountFastDelta()
    }
   }
   
-  if (flag || hand_control.IntValue() == 100)
+  if (flag || hand_control == 100)
   {
    PrintFormat("%s Переворачиваем направление основного движения", MakeFunctionPrefix(__FUNCTION__));
    _type = (ENUM_ORDER_TYPE)(_type + MathPow (-1, _type)); // _type = 1 -> 1 + -1^1 = 0; _type = 0 -> 0 + -1^0 = 1
@@ -241,7 +243,7 @@ void CSanyaRotate::RecountFastDelta()
   }
  }
  
- hand_control.IntValue(_deltaFast);
+ hand_control = _deltaFast;
 }
 
 

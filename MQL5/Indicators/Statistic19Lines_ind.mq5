@@ -71,6 +71,7 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
+ PrintFormat("DUU = %f; DUD = %f; UDU = %f; UDD = %f", count_DUU, count_DUD, count_UDU, count_UDD);
  //SavePorabolistic("STATISTIC_19LINES.txt");
  IndicatorRelease(handle_ATR);
  ArrayFree(buffer_ATR);
@@ -98,14 +99,16 @@ int OnCalculate(const int rates_total,
    {
     if(first)
     {
-      FillThreeExtr(symbol, period, calc, estruct, buffer_ATR);
-      CreateExtrLines(estruct, period, color_level);
-      first = false;
+     FillThreeExtr(symbol, period, calc, estruct, buffer_ATR, TimeCurrent());
+     PrintFormat("%s one = %f; two = %f; three = %f", TimeToString(TimeCurrent()), estruct[0].price, estruct[1].price, estruct[2].price);
+     CreateExtrLines(estruct, period, color_level);
+     first = false;
     }//end first
     
     if(NewBarLevel.isNewBar() > 0)
     {
-      FillThreeExtr(symbol, period, calc, estruct, buffer_ATR);
+      FillThreeExtr(symbol, period, calc, estruct, buffer_ATR, TimeCurrent());
+      PrintFormat("%s one = %f; two = %f; three = %f", TimeToString(TimeCurrent()), estruct[0].price, estruct[1].price, estruct[2].price);
       MoveExtrLines(estruct, period);
     }
     if(NewBarCurr.isNewBar() > 0)
@@ -186,9 +189,9 @@ bool HLineDelete(const long   chart_ID=0,   // ID графика
  return(true);
 }
 
-void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, SExtremum &resArray[], double &buffer_ATR[])
+void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, SExtremum &resArray[], double &buffer_ATR[], datetime start_pos_time)
 {
- extrcalc.FillExtremumsArray(symbol, tf);
+ extrcalc.FillExtremumsArray(symbol, tf, start_pos_time);
  if (extrcalc.NumberOfExtr() < 3)
  {
   Alert(__FUNCTION__, "Не удалось рассчитать три экстремума на таймфрейме ", EnumToString((ENUM_TIMEFRAMES)tf));
