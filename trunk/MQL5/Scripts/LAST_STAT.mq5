@@ -15,12 +15,11 @@
 //+------------------------------------------------------------------+
 
 
-input datetime  start_time = 0;    // время начала загрузки истории
+input datetime  start_time  = 0;   // время начала загрузки истории
 input datetime  finish_time = 0;   // время завершения загрузки истории
 
 MqlRates rates_array[];  // динамический массив котировок
 
-long   countBars;        // количество баров
 int    copiedRates;      
 
 // массив символов
@@ -68,12 +67,19 @@ void OnStart()
      int file_handle;        // хэндл файла статистики
 
      
-     double averCountA      = 0;   // среднее количество прибыльных ситуаций 1-го типа
-     double averCountB      = 0;   // среднее количество прибльынх ситуаций 2-го типа
-     double averCountLoss   = 0;   // среднее количество убыточных ситуаций
-     double averWinSpreads  = 0;   // среднее количество выйгрышей в спредах
-     double averLossSpreads = 0;   // среднее количество убытков в спредах
-         
+     double countA      = 0;       // среднее количество убыточных ситуаций 1-го типа
+     double countB      = 0;       // среднее количество убыточных ситуаций 2-го типа
+     double countWin    = 0;       // среднее количество прибыльных ситуаций
+     double averLossSpreads = 0;   // средний размер убытков в спредах
+     double averWinSpreads  = 0;   // среднее размер прибыли в спредах
+     double spreadsLoss     = 0;   // проигрыш по спредам
+     
+     double win;                   // суммарная прибыль
+     double lose;                  // сумммарный убыток
+     double percent;               // отношение прибыли к убыли
+     
+     int countCount = 0;
+     
       // создает файл статистики 
       file_handle = FileOpen("TAKIE_DELA.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " ");
       if (file_handle == INVALID_HANDLE) //не удалось открыть файл
@@ -81,54 +87,44 @@ void OnStart()
          Alert("Ошибка открытия файла");
          return;
         }  
-   
+         
     for (i_spread = 1; i_spread <= 50; i_spread++)
      {
-
      n_stat  = 0;
-     
-
-     
      for (i_sym=0;i_sym<6;i_sym++)
       { 
        for (i_per=0;i_per<20;i_per++)
-        {
-          // сохраняем количество баров
-          countBars = Bars(symbolArray[i_sym],periodArray[i_per],start_time,finish_time);  
-         /// Alert("КОЛИЧЕСТВО БАРОВ = ",countBars);       
+        {     
           // очищаем массив
           ArrayFree(rates_array);
-          // загружаем бары     
-          copiedRates  = CopyRates(symbolArray[i_sym], periodArray[i_per],start_time, finish_time, rates_array);
-          if ( copiedRates < countBars)
-           { // если не удалось прогрузить все бары истории
-            Alert("Не удалось прогрузить все бары истории");
-            return;
-           }   
-           
           
-          for (index=0;index<countBars;index++)
+          // загружаем бары         
+          copiedRates  = CopyRates(symbolArray[i_sym], periodArray[i_per],start_time, finish_time, rates_array);
+  
+          spreadsLoss = 0;  // обнуляем количество проигранных спредов
+          
+          for (index=0;index<copiedRates;index++)
            {
-              
-             // Comment("ЦЕНА = ",rates_array[index].open+i_spread*rates_array[index].spread*_Point);
               if (GreatDoubles(rates_array[index].high, rates_array[index].open+i_spread*rates_array[index].spread*_Point) )
-               {
-                averCountA = averCountA + 1;  // увеличиваем количество прибыльных     
+               {          
+                countA  = countA  + 1;  // увеличиваем количество убыточных 
+                spreadsLoss = spreadsLoss + rates_array[index].spread*_Point; // увеличиваем убыток на спред
                }
               else
                {
-                if (GreatDoubles(rates_array[index].close, rates_array[index].open+rates_array[index].spread*_Point) )
+                if (GreatDoubles(rates_array[index].close, rates_array[index].open) )
                  {
-                  averCountB = averCountB + 1; // увеличиваем количество прибыльных
+                  countB = countB + 1; // увеличиваем количество убыточных
+                  spreadsLoss = spreadsLoss + rates_array[index].spread*_Point;  // увеличиваем убыток в спредах
                   if (rates_array[index].spread > 0)
-                   averWinSpreads = averWinSpreads + (rates_array[index].close-rates_array[index].open+rates_array[index].spread*_Point)/(rates_array[index].spread*_Point);
-                 
+                   averLossSpreads = averLossSpreads + (rates_array[index].close-rates_array[index].open/*+rates_array[index].spread*_Point*/)/(rates_array[index].spread*_Point);      
                  }
-                if (LessDoubles(rates_array[index].close, rates_array[index].open+rates_array[index].spread*_Point)  )
+                if (LessDoubles(rates_array[index].close, rates_array[index].open)  )
                  {
-                  averCountLoss = averCountLoss + 1;     // увеличиваем количество убыточных
+                  countWin = countWin + 1;     // увеличиваем количество прибыльных
+                  spreadsLoss = spreadsLoss + rates_array[index].spread*_Point;  // увеличиваем убыток в спредах            
                   if (rates_array[index].spread > 0)
-                    averLossSpreads = averLossSpreads + (rates_array[index].open+rates_array[index].spread*_Point - rates_array[index].close)/(rates_array[index].spread*_Point);                 
+                    averWinSpreads = averWinSpreads + (rates_array[index].open/*+rates_array[index].spread*_Point*/ - rates_array[index].close)/(rates_array[index].spread*_Point);                 
                  }
                } 
                
@@ -136,20 +132,28 @@ void OnStart()
                           
            }  
            
-           averCountA = averCountA*i_spread;  // получаем количество выиграных спредов
-           averCountB = averCountA + averWinSpreads; // прибыль суммарная
-           if (averLossSpreads > 0)
-            averLossSpreads =  averLossSpreads / averCountB; // получаем соотношение прибыли к убытку
+           
+            
+           win             = averWinSpreads;  // прибыльная часть сделок
+           
+           lose            = countA*i_spread + spreadsLoss + averLossSpreads;   // убыточная часть
+            
+            
+           Comment("Соотношение: ",countCount,"/6000");
+           countCount++;
+           if (lose > 0)
+            percent =  win / lose; // получаем соотношение прибыли к убытку
            
 if (GreatOrEqualDoubles(averLossSpreads,1.5) )
  {           
   FileWriteString(file_handle,"["+symbolArray[i_sym]+","+PeriodToString(periodArray[i_per])+"]\n");
   FileWriteString(file_handle,"SPREAD = "+i_spread+"\n");       
-  FileWriteString(file_handle,"Отношение прибыль к убытку: "+DoubleToString(averLossSpreads) + "\n\n");   
+  FileWriteString(file_handle,"Отношение прибыль к убытку: "+DoubleToString(percent) + "\n\n");   
  }
-     averCountA = 0;
-     averCountB = 0;
-     averCountLoss = 0;
+     // обнуляем счетчики
+     countA = 0;
+     countB = 0;
+     countWin = 0;
      averLossSpreads = 0;
      averWinSpreads  = 0;         
            
@@ -159,44 +163,7 @@ if (GreatOrEqualDoubles(averLossSpreads,1.5) )
     
         }
         
-        /*
-         if (n_stat > 0)
-           {
-            averCountA = 1.0*averCountA / n_stat;
-            
-           }
-         else
-           averCountA = 0;
-         if (n_stat > 0)
-           {
-            averCountB = 1.0*averCountB / n_stat;
-            if (averCountB > 0)
-             averWinSpreads = averWinSpreads / averCountB;
-           }
-         else
-           averCountB = 0;
-         if (n_stat > 0)
-           {
-            averCountLoss = averCountLoss / n_stat;
-             if (averCountLoss > 0)
-              averLossSpreads = averLossSpreads / averCountLoss;
-           }
-         else
-           averCountLoss = 0;      
-                         
-
-        FileWriteString(file_handle,"Спред = "+IntegerToString(i_spread)+"\n");
-        FileWriteString(file_handle,"Cреднее количество выйгрышей A: "+DoubleToString(averCountA,0)+"\n");
-        FileWriteString(file_handle,"Cреднее количество выйгрышей B: "+DoubleToString(averCountB,0)+"\n");
-        FileWriteString(file_handle,"Cреднее количество убытков: "+DoubleToString(averCountLoss,0)+"\n");
-        FileWriteString(file_handle,"Среднее кол-во спредов прибыли: "+DoubleToString(averWinSpreads,0)+"\n");
-        FileWriteString(file_handle,"Среднее кол-во спредов убытка: "+DoubleToString(averLossSpreads,0)+"\n");  
-        FileWriteString(file_handle,"Средняя прибыль в спредах A: "+DoubleToString(averCountA*i_spread,0)+"\n");
-        FileWriteString(file_handle,"Средняя прибыль в спредах B: "+DoubleToString(averCountB*averWinSpreads,0)+"\n");
-        FileWriteString(file_handle,"Средний убыток в спредах: "+DoubleToString(averCountLoss*averLossSpreads,0)+"\n");
-        FileWriteString(file_handle,"Отношение прибыль к убытку: "+DoubleToString( (averCountA*i_spread+averCountB*averWinSpreads)/(averCountLoss*averLossSpreads)) + "\n\n");              
-             
-   */
+       
       
       }   
    
