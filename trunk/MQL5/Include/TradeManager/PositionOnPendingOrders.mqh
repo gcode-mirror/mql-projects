@@ -80,6 +80,7 @@ public:
                     ,ENUM_TM_POSITION_TYPE type, double volume, int sl = 0, int tp = 0
                     ,ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE
                     ,int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int handlePBI = 0, int priceDifference = 0);
+   void ~CPosition() {delete trade;}
 // GET   
    datetime getClosePosDT()      {return (_posCloseTime);};   //получает дату закрытия позиции
    datetime getExpiration()      {return (_expiration);};      
@@ -659,35 +660,53 @@ bool CPosition::ReadFromFile(int  handle)
  if(handle != INVALID_HANDLE)
  {
   if(FileIsEnding(handle)) return false;
-  _magic = StringToInteger(FileReadString(handle));                               //считываем мэджик
+  _magic          = StringToInteger(FileReadString(handle));                               //считываем мэджик
  // Alert("> MAGIC = ",FileReadString(handle));  
   if(FileIsEnding(handle)) return false; 
-   _symbol         = FileReadString(handle);                                      //считываем символ
+   _symbol        = FileReadString(handle);                                      //считываем символ
 //  Alert("> SYMBOL = ",FileReadString(handle));   
   if(FileIsEnding(handle)) return false;  
   _type           = StringToPositionType(FileReadString(handle));                 //считываем тип
  // Alert("> TYPE = ",_type);    
   if(FileIsEnding(handle)) return false;   
   _lots           = StringToDouble(FileReadString(handle));                       //считываем размер лота
+ // Alert("> LOT = ",_lots);
+  if(FileIsEnding(handle)) return false;   
+  _pos_status     = StringToPositionStatus(FileReadString(handle));               //считываем статус позиции
+ // Alert("> POS STATUS = ",_pos_status);  
+  if(FileIsEnding(handle)) return false;   
+  _tmTicket       = StringToInteger(FileReadString(handle));                      //считываем тикет позиции
  // Alert("> LOT = ",_lots);  
   if(FileIsEnding(handle)) return false;   
-  _tmTicket      = StringToInteger(FileReadString(handle));                       //считываем тикет позиции
- // Alert("> LOT = ",_lots);  
+  _orderTicket     = StringToInteger(FileReadString(handle));                     //считываем тикет позиции
+ // Alert("> POS TICKET = ",_posTicket);
   if(FileIsEnding(handle)) return false;   
-  _orderTicket      = StringToInteger(FileReadString(handle));                    //считываем тикет позиции
- // Alert("> POS TICKET = ",_posTicket);  
+  _sl_status       = StringToStoplevelStatus(FileReadString(handle));               //считываем статус стоп левела 
+  // Alert("> Stoplevel STATUS = ",_pos_status);  
   if(FileIsEnding(handle)) return false;   
   _slTicket       = StringToInteger(FileReadString(handle));                      //считываем тикет стоп лосса  
  // Alert("> STOP LOSS TICKET = ",_slTicket);  
   if(FileIsEnding(handle)) return false;    
   _slPrice        = StringToDouble(FileReadString(handle));                       //считываем цену стоп лосса
- // Alert("> STOP LOSS PRICE = ",_slPrice);   
+ // Alert("> STOP LOSS PRICE = ",_slPrice);
+  if(FileIsEnding(handle)) return false;    
+  _slType         = StringToOrderType(FileReadString(handle));                    //считываем тип стоп лосса
+ // Alert("> STOP LOSS PRICE = ",_slPrice);    
   if(FileIsEnding(handle)) return false;    
   _sl             = StringToInteger(FileReadString(handle));                      //считываем стоп лосс
  // Alert("> STOP LOSS = ",_sl); 
-  if(FileIsEnding(handle)) return false;  
+ if(FileIsEnding(handle)) return false;    
+  _tp             = StringToInteger(FileReadString(handle));                      //считываем тейк профит
+ // Alert("> STOP LOSS = ",_sl);
+ if(FileIsEnding(handle)) return false;  
   _tpPrice        = StringToDouble(FileReadString(handle));                       //считываем цену тейк профита
- // Alert("> TAKE PROFIT PRICE = ",_tpPrice); 
+ // Alert("> TAKE PROFIT PRICE = ",_tpPrice);  
+ if(FileIsEnding(handle)) return false;  
+  _trailingType   = StringToTrailingType(FileReadString(handle));                 //считываем тип трейлинга
+ // Alert("> Trailing type = ",_trailingType);
+ if(FileIsEnding(handle)) return false;    
+ _minProfit       = StringToInteger(FileReadString(handle));                      //Мин профит
+ // Alert("> TRAILING STOP = ",_trailingStop);  
   if(FileIsEnding(handle)) return false;    
   _trailingStop   = StringToInteger(FileReadString(handle));                      //Трейлинг стоп
  // Alert("> TRAILING STOP = ",_trailingStop); 
@@ -708,7 +727,10 @@ bool CPosition::ReadFromFile(int  handle)
  // Alert("> POS CLOSE TIME = ",_posCloseTime); 
   if(FileIsEnding(handle)) return false;    
   _posAveragePrice      = StringToDouble(FileReadString(handle));                 //средняя цена позиции
- // Alert("> POS PROFIT = ",_posProfit); 
+ // Alert("> POS PROFIT = ",_posProfit);
+ if(FileIsEnding(handle)) return false;    
+  _priceDifference      = StringToInteger(FileReadString(handle));                //разница между позицией и отложенником
+ // Alert("> POS CLOSE TIME = ",_posCloseTime); 
                                 //пропуск пустого символа  
   return true;
  }
@@ -850,18 +872,25 @@ void CPosition::WriteToFile(int handle)
             GetNameOP(_type), 
             _lots,            
             _tmTicket, 
-            _orderTicket,      
+            _orderTicket,
+            PositionStatusToStr(_pos_status),      
             _slTicket,        
-            _slPrice,         
-            _sl,              
-            _tpPrice,         
+            _slPrice,
+            EnumToString(_slType),
+            StoplevelStatusToStr(_sl_status),         
+            _sl,
+            _tp,              
+            _tpPrice,
+            GetNameTrailing(_trailingType),
+            _minProfit,         
             _trailingStop,   
             _trailingStep,    
             _posOpenPrice,
             _posClosePrice,
             _posOpenTime,
             _posCloseTime,
-            _posAveragePrice
+            _posAveragePrice,
+            _priceDifference
             );
            // Alert("POS AVER PRICE = ",_posAveragePrice);
  }
