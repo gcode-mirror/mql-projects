@@ -35,6 +35,19 @@ ENUM_TM_POSITION_TYPE OrderTypeToTMPositionType(ENUM_ORDER_TYPE type)
   default          : return(OP_UNKNOWN);
  }
 }
+
+//+------------------------------------------------------------------+
+/// string to ENUM_ORDER_TYPE
+//+------------------------------------------------------------------+
+ENUM_ORDER_TYPE StringToOrderType(string str)
+{
+ ENUM_ORDER_TYPE result;
+ if(str == "ORDER_TYPE_BUY_LIMIT" )result = ORDER_TYPE_BUY_LIMIT;
+ if(str == "ORDER_TYPE_SELL_LIMIT")result = ORDER_TYPE_SELL_LIMIT;
+ if(str == "ORDER_TYPE_BUY_STOP"  )result = ORDER_TYPE_BUY_STOP;
+ if(str == "ORDER_TYPE_SELL_STOP" )result = ORDER_TYPE_SELL_STOP;
+ return(result);
+}
 //+------------------------------------------------------------------+ 
 // Функция плучения названия операции по ее номеру
 //+------------------------------------------------------------------+
@@ -112,9 +125,9 @@ string PositionStatusToStr(ENUM_POSITION_STATUS enumPositionStatus)
 //+------------------------------------------------------------------+
 ENUM_POSITION_STATUS StringToPositionStatus(string posStatus)
   {
-   if(posStatus=="open") return(POSITION_STATUS_OPEN);
+   if(posStatus=="open")   return(POSITION_STATUS_OPEN);
    if(posStatus=="closed") return(POSITION_STATUS_CLOSED);
-   if(posStatus=="deleted") return(POSITION_STATUS_DELETED);
+   if(posStatus=="deleted")return(POSITION_STATUS_DELETED);
    return(POSITION_STATUS_NOT_INITIALISED);
   }
   
@@ -145,6 +158,35 @@ enum ENUM_STOPLEVEL_STATUS
    STOPLEVEL_STATUS_NOT_DELETED
   };
   
+//+------------------------------------------------------------------+
+/// Returns string description of ENUM_STOPLEVEL_STATUS.                                                                 
+/// \param [in]   ENUM_POSITION_STATUS enumVirtualOrderStatus
+/// \return       string description of enumVirtualOrderType
+//+------------------------------------------------------------------+
+string StoplevelStatusToStr(ENUM_STOPLEVEL_STATUS enumStoplevelStatus)
+  {
+   switch(enumStoplevelStatus)
+     {
+      case STOPLEVEL_STATUS_NOT_DEFINED: return("not definned");
+      case STOPLEVEL_STATUS_PLACED     : return("placed");
+      case STOPLEVEL_STATUS_NOT_PLACED : return("not placed");
+      case STOPLEVEL_STATUS_DELETED    : return("deleted");
+      case STOPLEVEL_STATUS_NOT_DELETED: return("not deleted");           
+      default: return("Error: unknown virtual order status "+(string)enumStoplevelStatus);
+     }
+  }
+  
+ENUM_STOPLEVEL_STATUS StringToStoplevelStatus(string str)
+{
+  if(str == "not definned") return(STOPLEVEL_STATUS_NOT_DEFINED);
+  if(str == "placed"      ) return(STOPLEVEL_STATUS_PLACED);
+  if(str == "not placed"  ) return(STOPLEVEL_STATUS_NOT_PLACED);
+  if(str == "deleted"     ) return(STOPLEVEL_STATUS_DELETED);
+  if(str == "not deleted" ) return(STOPLEVEL_STATUS_NOT_DELETED);
+  
+  return(STOPLEVEL_STATUS_NOT_DEFINED);           
+}
+  
 enum ENUM_FILENAME
   {
    FILENAME_RESCUE,
@@ -171,6 +213,33 @@ enum ENUM_TRAILING_TYPE
    TRAILING_TYPE_LOSSLESS,
    TRAILING_TYPE_PBI
   };
+
+//+------------------------------------------------------------------+ 
+// Функция плучения названия типа трейлинга по его номеру
+//+------------------------------------------------------------------+
+string GetNameTrailing(ENUM_TRAILING_TYPE type)
+{
+ switch (type)
+ {
+  case TRAILING_TYPE_NONE    : return("NONE");
+  case TRAILING_TYPE_USUAL   : return("USUAL");
+  case TRAILING_TYPE_LOSSLESS: return("LOSSLESS");
+  case TRAILING_TYPE_PBI     : return("PBI");
+  default                    : return("Unknown trailing type");
+ }
+};
+
+//+------------------------------------------------------------------+ 
+// Функция плучения типа трейлинга по его названию
+//+------------------------------------------------------------------+
+ENUM_TRAILING_TYPE StringToTrailingType(string str)
+{
+ if(str == "NONE"    ) return(TRAILING_TYPE_NONE);
+ if(str == "USUAL"   ) return(TRAILING_TYPE_USUAL);
+ if(str == "LOSSLESS") return(TRAILING_TYPE_LOSSLESS);
+ if(str == "PBI"     ) return(TRAILING_TYPE_PBI);
+ return(TRAILING_TYPE_NONE);
+};
   
 //+------------------------------------------------------------------+
 /// Used by CTradeManager::OrderSelect()

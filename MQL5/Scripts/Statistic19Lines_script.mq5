@@ -10,9 +10,10 @@
 
 #include <CExtremumCalc.mqh>
 #include <Lib CisNewBar.mqh>
+#include <CheckHistory.mqh>
 
-input datetime start_time = D'2014.03.10';
-input datetime end_time =   D'2014.03.20';
+input datetime start_time = D'2007.01.01';
+input datetime end_time =   D'2013.12.31';
 
  enum LevelType
  {
@@ -24,11 +25,11 @@ input datetime end_time =   D'2014.03.20';
  };
  
  input int epsilon = 25;          //Погрешность для поиска экстремумов
- input int depth = 25;            //Глубина поиска трех экстремумов
+ input int depth = 50;            //Глубина поиска трех экстремумов
  input int period_ATR = 100;      //Период ATR
  input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR 
 
- input LevelType level  = EXTR_H4;
+ input LevelType level = EXTR_H4;
  CExtremumCalc calc(epsilon, depth);
  SExtremum estruct[3];
  
@@ -59,15 +60,20 @@ void OnStart()
 {
  PrintFormat("BEGIN");
  period_level = GetTFbyLevel(level);
+ PrintFormat("start time: %s ; end time: %s", TimeToString(start_time), TimeToString(end_time));
+ PrintFormat("level tf: %s", EnumToString(period_level));
  handle_ATR = iATR(symbol, period_level, period_ATR);
  int copied = CopyRates(symbol, period_current, start_time, end_time, buffer_rates);
  FillATRbuffer();
  datetime start_pos_time = start_time;
  int factor = PeriodSeconds(period_level)/PeriodSeconds();
+ PrintFormat("copied: %d", copied);
  for(int i = 0; i < copied-1;i++)
- {  
+ {
+  //PrintFormat("i = %d", i);  
   if(MathMod(i, factor) == 0)  //симуляция появления нового бара на тайфреме для которого вычисленны уровни
   {
+   //PrintFormat("i = %d", i);
    FillThreeExtr(symbol, period_level, calc, estruct, buffer_ATR, start_pos_time);
    //PrintFormat("%s one = %f; two = %f; three = %f", TimeToString(start_pos_time), estruct[0].price, estruct[1].price, estruct[2].price);
    start_pos_time += PeriodSeconds(period_level);
@@ -77,7 +83,7 @@ void OnStart()
  }
  
  //PrintFormat("%s END start time = %s; end time = %s; copied = %d", __FUNCTION__, TimeToString(start_time), TimeToString(end_time), copied);
- PrintFormat("%s END DUU = %.0f; DUD = %.0f; UDU = %.0f; UDD = %.0f", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
+ PrintFormat("%s END вошла снизу вврех вышла вверх = %.0f; вошла снизу вврех вышла вниз = %.0f; вошла сверху вниз вышла вверх = %.0f; вошла сверху вниз вышла вниз = %.0f", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
 }
 //+------------------------------------------------------------------+
 void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, SExtremum &resArray[], double &buffer_ATR[], datetime start_pos_time)
@@ -126,7 +132,7 @@ ENUM_TIMEFRAMES GetTFbyLevel(LevelType lt)
  if(lt == EXTR_W1) result = PERIOD_W1;
  if(lt == EXTR_D1) result = PERIOD_D1;
  if(lt == EXTR_H4) result = PERIOD_H4;
- if(lt == EXTR_H1) result = PERIOD_H4;
+ if(lt == EXTR_H1) result = PERIOD_H1;
  
  return(result);
 }
