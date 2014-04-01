@@ -519,43 +519,52 @@ void BackTest::SortHistoryArray(void)  // сейчас сохраняетотсортированное значен
 void  BackTest::SortHistoryArray(void)
  {
    double   profitArray[]; // динамический массив профитов
-   datetime timeArray[];   // массив времени закрытия позиций 
+   ulong timeArray[];      // массив времени закрытия позиций 
    int index;              // индекс прохода по массиву истории
    int i_x,i_y;            // индексы прохода по циклам сортировки
    CPosition *pos;         // указатель на позицию
    int length;             // длина массива истории
    datetime tmpTime;       // временная переменная для обмена временем
-   double      tmpValue;      // временная переменная для обмена значениями
+   double      tmpValue;   // временная переменная для обмена значениями
    int file_handle;        // хэндл файла баланса   
    double  curBalance = 0; // текущий баланс
    
+   file_handle = FileOpen("DEALS2.txt",FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT, " "); // открываем файл на чтение массивов из файла
+    if (file_handle == INVALID_HANDLE)
+     {
+      Alert("Не удалось открыть файл со списком файлов истории");
+      return;
+     } 
+   index=0;  // количество считанных элементов
+   while (! FileIsEnding(file_handle) )  // считываем файл до конца файла
+    {
+     ArrayResize(profitArray,index+1);                  // увеличиваем размер массива профитов на единицу
+     ArrayResize(timeArray,index+1);                    // увеличиваем размер массива времени закрытия позиций  
+     profitArray[index] = StringToDouble(FileReadString(file_handle)); 
+     timeArray[index] = StringToInteger(FileReadString(file_handle));    
+
+     index++; // увеличиваем счетчик элементов массивов на единицу  
+     
+    }   
+   
+   FileClose(file_handle); // закрываем файл 
    // вычисляем длину массива истории
    length = _positionsHistory.Total();
-   // формируем массив профитов
-   for (index=0;index<length;index++)
-    {
-     pos = _positionsHistory.Position(index);  // извлекаем указатель на позицию в массиве по индексу
-     ArrayResize(profitArray,index+1);         // увеличиваем размер массива профитов на единицу
-     ArrayResize(timeArray,index+1);           // увеличиваем размер массива времени закрытия позиций
-     profitArray[index] = pos.getPosProfit();  // сохраняем профит позиции
-     timeArray[index]   = pos.getClosePosDT(); // сохраняем время закрытия позиции в массив
-    }
+   
    // открываем файл на запись совместного баланса
    file_handle = FileOpen("BALANCE.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " ");
     if (file_handle == INVALID_HANDLE)
      {
       Alert("Не удалось открыть файл со списком файлов истории");
       return;
-     } 
-   // сохраняем           
-   FileWrite(file_handle,"0"); 
+     }           
    // сортируем массив профитов 
-   for (i_y=0;i_y < length; i_y++)
+   for (i_y=0;i_y < index; i_y++)
     {
-      for(i_x=i_y;i_x < length; i_x++)
+      for(i_x=i_y;i_x < index; i_x++)
        {
          // если время закрытия текущей позиции раньше, чем время последнй найденной ранней позиции 
-         if (timeArray[i_x] < timeArray[i_y])
+         if (timeArray[i_x]  < timeArray[i_y])
           {
             tmpTime          = timeArray[i_y];
             tmpValue         = profitArray[i_y];
@@ -565,10 +574,9 @@ void  BackTest::SortHistoryArray(void)
             profitArray[i_x] = tmpValue;
           }
        }
-      //модифицируем текущий баланс
-      curBalance = curBalance + profitArray[i_y];
+
       // сохраняем текущий баланс в файл
-    //  FileWrite(file_handle,""+DoubleToString(profitArray[i_y]) );
+      curBalance = curBalance + profitArray[i_y];
       FileWrite(file_handle,""+DoubleToString(curBalance));       
     }
     FileClose(file_handle); // закрываем файл

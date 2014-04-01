@@ -52,6 +52,9 @@ double vol = 0;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
+
+
+
 int OnInit()
   {
 //---
@@ -62,6 +65,8 @@ int OnInit()
    firstAdd = fastDelta * ko;
    secondAdd = firstAdd * ko;
    thirdAdd = 100 - secondAdd - firstAdd - fastDelta;
+   
+
    
    if (type != ORDER_TYPE_BUY && type != ORDER_TYPE_SELL)
    {
@@ -100,7 +105,26 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-//---
+   int file_handle;
+   int index;
+   int total;
+   ulong ticket;
+   double cur_profit = 0;
+   file_handle = FileOpen("DEALS.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " "); 
+   HistorySelect(startTime,TimeCurrent());
+   total = HistoryDealsTotal();   
+   for (index=1;index<total;index++)
+    { 
+     ticket       =    HistoryDealGetTicket(index);
+     cur_profit   =    HistoryDealGetDouble(ticket,DEAL_PROFIT);
+     FileWrite (file_handle,DoubleToString(cur_profit) );
+     FileWrite (file_handle,IntegerToString(HistoryDealGetInteger(ticket,DEAL_TIME)) );
+     
+    }
+
+
+
+   FileClose(file_handle);
    delete san;
   }
 //+------------------------------------------------------------------+
@@ -143,6 +167,7 @@ void OnTick()
     }
    }
   } 
+
  }
 //+------------------------------------------------------------------+
 
