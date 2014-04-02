@@ -19,7 +19,6 @@
 #property indicator_type3   DRAW_ARROW
 
 //----------------------------------------------------------------
-#include <Arrays/ArrayObj.mqh>
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBar.mqh>
 #include <ColoredTrend/ColoredTrendNE.mqh>

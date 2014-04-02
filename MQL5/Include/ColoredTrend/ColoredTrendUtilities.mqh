@@ -92,7 +92,11 @@ ENUM_TIMEFRAMES GetTopTimeframe(ENUM_TIMEFRAMES timeframe)
       case PERIOD_D1: return(PERIOD_W1);
       case PERIOD_W1: return(PERIOD_MN1);
       case PERIOD_MN1: return(PERIOD_MN1);
-      default: return("Error: unknown period "+(string)timeframe);
+      default: 
+      {
+       Alert(StringFormat("Error: unknown period %s", (string)timeframe));
+       return(PERIOD_MN1);
+      }
  }
 }
 
@@ -120,7 +124,11 @@ ENUM_TIMEFRAMES GetBottomTimeframe(ENUM_TIMEFRAMES timeframe)
       case PERIOD_D1: return(PERIOD_H4);
       case PERIOD_W1: return(PERIOD_D1);
       case PERIOD_MN1: return(PERIOD_W1);
-      default: return("Error: unknown period "+(string)timeframe);
+      default: 
+      {
+       Alert(StringFormat("Error: unknown period %s", (string)timeframe));
+       return(PERIOD_M1);
+      }
  }
 }
 
@@ -148,6 +156,10 @@ int GetMaPeriodForATR(ENUM_TIMEFRAMES timeframe)
       case PERIOD_D1: return(10);
       case PERIOD_W1: return(8);
       case PERIOD_MN1: return(8);
-      default: return("Error: unknown period "+(string)timeframe);
+      default: 
+      {
+       Alert(StringFormat("Error: unknown period %s", (string)timeframe));
+       return(100);
+      }
  }
 }
