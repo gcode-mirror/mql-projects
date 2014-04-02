@@ -1,0 +1,88 @@
+//+------------------------------------------------------------------+
+//|                                                     MEGATRON.mq5 |
+//|                        Copyright 2013, MetaQuotes Software Corp. |
+//|                                              http://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2013, MetaQuotes Software Corp."
+#property link      "http://www.mql5.com"
+#property version   "1.00"
+//+------------------------------------------------------------------+
+//| Эксперт МЕГАТРОН - объединенный дисептикон                       |
+//+------------------------------------------------------------------+
+
+//-------- подключение библиотек
+
+#include <Lib CisNewBar.mqh>
+#include <TradeManager/TradeManager.mqh>
+
+//-------- входные параметры
+
+// параметры таймфреймов
+input ENUM_TIMEFRAMES eldTF = PERIOD_H1;
+input ENUM_TIMEFRAMES jrTF = PERIOD_M5;                                
+
+//параметры Stochastic 
+input int    kPeriod = 5;                                              // К-период стохастика
+input int    dPeriod = 3;                                              // D-период стохастика
+input int    slow  = 3;                                                // Сглаживание стохастика. Возможные значения от 1 до 3.
+input int    top_level = 80;                                           // Top-level стохастка
+input int    bottom_level = 20;                                        // Bottom-level стохастика
+input int    DEPTH = 100;                                              // глубина поиска расхождения
+input int    ALLOW_DEPTH_FOR_PRICE_EXTR = 25;                          // допустимая глубина для экстремума цены
+
+//параметры MACD
+input int fast_EMA_period = 12;                                        // быстрый период EMA для MACD
+input int slow_EMA_period = 26;                                        // медленный период EMA для MACD
+input int signal_period = 9;                                           // период сигнальной линии для MACD
+
+//параметры для EMA
+input int    periodEMAfastJr = 15;                                     // период быстрой   EMA
+input int    periodEMAslowJr = 9;                                      // период медленной EMA
+
+//параметры сделок  
+input double orderVolume = 0.1;                                        // Объём сделки
+input int    slOrder = 100;                                            // Stop Loss
+input int    tpOrder = 100;                                            // Take Profit
+input int    trStop = 100;                                             // Trailing Stop
+input int    trStep = 100;                                             // Trailing Step
+input int    minProfit = 250;                                          // Minimal Profit 
+input bool   useLimitOrders = false;                                   // Использовать Limit ордера
+input int    limitPriceDifference = 50;                                // Разнциа для Limit ордеров
+input bool   useStopOrders = false;                                    // Использовать Stop ордера
+input int    stopPriceDifference = 50;                                 // Разнциа для Stop ордеров
+
+input        ENUM_TRAILING_TYPE  trailingType = TRAILING_TYPE_USUAL;   // тип трейлинга
+input bool   useJrEMAExit = false;                                     // будем ли выходить по ЕМА
+input int    posLifeTime = 10;                                         // время ожидания сделки в барах
+input int    deltaPriceToEMA = 7;                                      // допустимая разница между ценой и EMA для пересечения
+input int    deltaEMAtoEMA = 5;                                        // необходимая разница для разворота EMA
+input int    waitAfterDiv = 4;                                         // ожидание сделки после расхождения (в барах)
+//параметры PriceBased indicator
+input int    historyDepth = 40;                                        // глубина истории для расчета
+input int    bars=30;                                                  // сколько свечей показывать
+
+
+//+------------------------------------------------------------------+
+//| функция иницициализации                                          |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+   
+   return(INIT_SUCCEEDED);
+  }
+//+------------------------------------------------------------------+
+//| функция деиницициализации                                        |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+
+   
+  }
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+  {
+
+   
+  }
