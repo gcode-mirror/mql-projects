@@ -67,7 +67,9 @@ input int    bars=30;                                                  // скольк
 EMA_PARAMS    ema_params;     // параметры EMA
 MACD_PARAMS   macd_params;    // параметры MACD
 STOC_PARAMS   stoc_params;    // параметры стохастика
+PBI_PARAMS    pbi_params;     // параметры PriceBased indicator
 DEAL_PARAMS   deal_params;    // параметры сделок
+BASE_PARAMS   base_params;    // базовые параметры
 
 
 // глобальные объекты
@@ -81,9 +83,7 @@ POINTSYS      *pointsys;     // указатель на объект класса бальной системы
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   //------- выделяем память под динамические объекты
-   ctm      = new CTradeManager(); // выделяем память под объект класса TradeManager
-   megatron = new DISEPTICON();    // выделяем память под объект класса Дисептикона
+
    //------- заполняем структуры данных 
    
    // заполняем парметры EMA
@@ -117,7 +117,9 @@ int OnInit()
    deal_params.useStopOrders              = useStopOrders;
    //////////////////////////////////////////////////////////////
    
-  
+   //------- выделяем память под динамические объекты
+   ctm      = new CTradeManager(); // выделяем память под объект класса TradeManager
+   pointsys = new POINTSYS();      // выделяем память под объект класса бальной системы  
    
    return(INIT_SUCCEEDED);
   }
@@ -128,12 +130,16 @@ void OnDeinit(const int reason)
   {
    // очищаем память, выделенную под динамические объекты
    delete ctm;      // удаляем объект класса торговой библиотеки
-   delete megatron; // удаляем объект класса Дисептикона
+   delete pointsys; // удаляем объект класса Дисептикона
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   
+   // пробуем обновить буферы
+   if ( pointsys.UpLoad() == true )
+    {
+      
+    } 
   }
