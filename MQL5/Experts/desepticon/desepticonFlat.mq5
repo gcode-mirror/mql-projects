@@ -19,11 +19,11 @@ input ENUM_TIMEFRAMES jrTF = PERIOD_M5;
 input int    periodEMAfastJr = 15;
 input int    periodEMAslowJr = 9;
 //параметры Stochastic 
-input int    kPeriod = 5;          // К-период стохастика
-input int    dPeriod = 3;          // D-период стохастика
-input int    slow  = 3;            // Сглаживание стохастика. Возможные значения от 1 до 3.
-input int    top_level = 80;       // Top-level стохастка
-input int    bottom_level = 20;    // Bottom-level стохастика
+input int    kPeriod = 5;               // К-период стохастика
+input int    dPeriod = 3;               // D-период стохастика
+input int    slow  = 3;                 // Сглаживание стохастика. Возможные значения от 1 до 3.
+input int    top_level = 80;            // Top-level стохастка
+input int    bottom_level = 20;         // Bottom-level стохастика
 //параметры сделок  
 input double orderVolume = 0.1;         // Объём сделки
 input int    slOrder = 100;             // Stop Loss
@@ -47,7 +47,7 @@ input int    historyDepth = 40;    // глубина истории для расчета
 input int    bars=30;              // сколько свечей показывать
 //------------------GLOBAL--------------------------------------
 int handleTrend;            // хэндл PriceBased indicator
-int handleEMA3Eld;             // хэндл EMA 3 дневного TF
+int handleEMA3Eld;          // хэндл EMA 3 дневного TF
 int handleEMAfastJr;        // хэндл EMA fast старшего таймфрейма
 int handleEMAslowJr;        // хэндл EMA fast младшего таймфрейма
 int handleSTOCEld;          // хэндл Stochastic старшего таймфрейма
