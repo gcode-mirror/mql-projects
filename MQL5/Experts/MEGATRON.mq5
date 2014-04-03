@@ -14,7 +14,7 @@
 
 #include <Lib CisNewBar.mqh>                // для проверки формирования нового бара
 #include <TradeManager/TradeManager.mqh>    // торговая библиотека
-#include <DISEPTICON/DISEPTICON.mqh>        // класс Дисептикона
+#include <POINTSYS/POINTSYS.mqh>            // класс бальной системы
 
 //-------- входные параметры
 
@@ -73,7 +73,7 @@ DEAL_PARAMS   deal_params;    // параметры сделок
 // глобальные объекты
 
 CTradeManager *ctm;          // указатель на объект класса TradeManager
-DISEPTICON    *megatron;     // указатель на объект класса Дисептикона
+POINTSYS      *pointsys;     // указатель на объект класса бальной системы
 
 
 //+------------------------------------------------------------------+
@@ -135,6 +135,5 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
-
    
   }
