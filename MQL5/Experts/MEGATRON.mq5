@@ -62,10 +62,18 @@ input int    waitAfterDiv = 4;                                         // ожидан
 input int    historyDepth = 40;                                        // глубина истории для расчета
 input int    bars=30;                                                  // сколько свечей показывать
 
+// объявление структур данных
+
+EMA_PARAMS    ema_params;     // параметры EMA
+MACD_PARAMS   macd_params;    // параметры MACD
+STOC_PARAMS   stoc_params;    // параметры стохастика
+DEAL_PARAMS   deal_params;    // параметры сделок
+
+
 // глобальные объекты
 
-CTradeManager *ctm;      // указатель на объект класса TradeManager
-DISEPTICON    *megatron; // указатель на объект класса Дисептикона
+CTradeManager *ctm;          // указатель на объект класса TradeManager
+DISEPTICON    *megatron;     // указатель на объект класса Дисептикона
 
 
 //+------------------------------------------------------------------+
@@ -73,10 +81,43 @@ DISEPTICON    *megatron; // указатель на объект класса Дисептикона
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   // выделяем память под динамические объекты
+   //------- выделяем память под динамические объекты
    ctm      = new CTradeManager(); // выделяем память под объект класса TradeManager
    megatron = new DISEPTICON();    // выделяем память под объект класса Дисептикона
+   //------- заполняем структуры данных 
    
+   // заполняем парметры EMA
+   
+   // заполняем параметры MACD
+   macd_params.fast_EMA_period            = fast_EMA_period; 
+   macd_params.signal_period              = signal_period;
+   macd_params.slow_EMA_period            = slow_EMA_period;
+   ///////////////////////////////////////////////////////////////
+   
+   // заполняем параметры Стохастика
+   stoc_params.ALLOW_DEPTH_FOR_PRICE_EXTR = ALLOW_DEPTH_FOR_PRICE_EXTR;
+   stoc_params.DEPTH                      = DEPTH;
+   stoc_params.bottom_level               = bottom_level;
+   stoc_params.dPeriod                    = dPeriod;
+   stoc_params.kPeriod                    = kPeriod;
+   stoc_params.slow                       = slow;
+   stoc_params.top_level                  = top_level;
+   //////////////////////////////////////////////////////////////
+   
+   // заполняем параметры сделок
+   deal_params.limitPriceDifference       = limitPriceDifference;
+   deal_params.minProfit                  = minProfit;
+   deal_params.orderVolume                = orderVolume;
+   deal_params.slOrder                    = slOrder;
+   deal_params.stopPriceDifference        = stopPriceDifference;
+   deal_params.tpOrder                    = tpOrder;
+   deal_params.trStep                     = trStep;
+   deal_params.trStop                     = trStop;
+   deal_params.useLimitOrders             = useLimitOrders;
+   deal_params.useStopOrders              = useStopOrders;
+   //////////////////////////////////////////////////////////////
+   
+  
    
    return(INIT_SUCCEEDED);
   }

@@ -9,14 +9,15 @@
 // подключение библиотек
 
 #include <TradeManager/TradeManager.mqh>    // торговая библиотека
+#include "STRUCTS.mqh"                      // библиотека структур данных для получения сигналов
 
 // класс Дисептикона
 class DISEPTICON
  { 
   private:
    // приватные методы класса Дисептикона
-   ENUM_TIMEFRAMES eldTF = PERIOD_H1;
-   ENUM_TIMEFRAMES jrTF  = PERIOD_M5;      
+   ENUM_TIMEFRAMES eldTF;
+   ENUM_TIMEFRAMES jrTF;      
    
    
   public:
