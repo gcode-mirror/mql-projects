@@ -6,15 +6,22 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 
+// подключение библиотек
+
+#include <TradeManager/TradeManager.mqh>    // торговая библиотека
+
 // класс Дисептикона
 class DISEPTICON
  { 
   private:
    // приватные методы класса Дисептикона
+   ENUM_TIMEFRAMES eldTF = PERIOD_H1;
+   ENUM_TIMEFRAMES jrTF  = PERIOD_M5;      
    
-  
+   
   public:
   // методы 
+  
   // конструкторы и дестрикторы класса Дисептикона
   DISEPTICON (); // конструктор класса
  ~DISEPTICON (); // деструктор класса 
