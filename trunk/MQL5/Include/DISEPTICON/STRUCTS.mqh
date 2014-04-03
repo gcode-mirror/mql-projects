@@ -11,17 +11,62 @@
 
 // структура EMA
 
+struct EMA_PARAMS
+ {
+ 
+ };
+ 
+// структура MACD
+
+struct MACD_PARAMS
+ {
+  int    fast_EMA_period;            // быстрый период EMA для MACD
+  int    slow_EMA_period;            // медленный период EMA для MACD
+  int    signal_period;              // период сигнальной линии для MACD 
+ };
+
+// структура параметров Стохастика
+
+struct STOC_PARAMS
+ {
+  int    kPeriod;                    // К-период стохастика
+  int    dPeriod;                    // D-период стохастика
+  int    slow;                       // Сглаживание стохастика. Возможные значения от 1 до 3.
+  int    top_level;                  // Top-level стохастка
+  int    bottom_level;               // Bottom-level стохастика
+  int    DEPTH;                      // глубина поиска расхождения
+  int    ALLOW_DEPTH_FOR_PRICE_EXTR; // допустимая глубина для экстремума цены
+ };
+ 
+// структура параметров PriceBasedIndicator
+struct PBI_PARAMS
+ {
+  int    historyDepth;               // глубина истории для расчета
+  int    bars;                       // сколько свечей показывать
+ };
 // структура сделок
 struct DEAL_PARAMS
  {
-  double orderVolume = 0.1;         // Объём сделки
-  int    slOrder = 100;             // Stop Loss
-  int    tpOrder = 100;             // Take Profit
-  int    trStop = 100;              // Trailing Stop
-  int    trStep = 100;              // Trailing Step
-  int    minProfit = 250;           // Minimal Profit 
-  bool   useLimitOrders = false;    // Использовать Limit ордера
-  int    limitPriceDifference = 50; // Разнциа для Limit ордеров
-  bool   useStopOrders = false;     // Использовать Stop ордера
-  int    stopPriceDifference = 50;  // Разнциа для Stop ордеров 
+  double orderVolume;                // Объём сделки
+  int    slOrder;                    // Stop Loss
+  int    tpOrder;                    // Take Profit
+  int    trStop;                     // Trailing Stop
+  int    trStep;                     // Trailing Step
+  int    minProfit;                  // Minimal Profit 
+  bool   useLimitOrders;             // Использовать Limit ордера
+  int    limitPriceDifference;       // Разнциа для Limit ордеров
+  bool   useStopOrders;              // Использовать Stop ордера
+  int    stopPriceDifference;        // Разнциа для Stop ордеров 
+ };
+ 
+// структура базовых настроек
+struct BASE_PARAMS
+ {
+  ENUM_TIMEFRAMES eldTF;             //
+  ENUM_TIMEFRAMES jrTF;              //
+  bool   useJrEMAExit;               // будем ли выходить по ЕМА
+  int    posLifeTime;                // время ожидания сделки в барах
+  int    deltaPriceToEMA;            // допустимая разница между ценой и EMA для пересечения
+  int    deltaEMAtoEMA;              // необходимая разница для разворота EMA
+  int    waitAfterDiv;               // ожидание сделки после расхождения (в барах)
  };
