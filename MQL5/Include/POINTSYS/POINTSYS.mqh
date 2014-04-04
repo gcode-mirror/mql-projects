@@ -8,9 +8,10 @@
 
 // подключение библиотек
 
-#include <TradeManager/TradeManager.mqh>    // торговая библиотека
-#include <Lib CisNewBar.mqh>                // для проверки формирования нового бара
-#include "STRUCTS.mqh"                      // библиотека структур данных для получения сигналов
+#include <TradeManager/TradeManager.mqh>             // торговая библиотека
+#include <ColoredTrend/ColoredTrendUtilities.mqh>    // для констант PriceBased indicator   
+#include <Lib CisNewBar.mqh>                         // для проверки формирования нового бара
+#include "STRUCTS.mqh"                               // библиотека структур данных для получения сигналов
 
 // класс Дисептикона
 class POINTSYS
@@ -50,15 +51,16 @@ class POINTSYS
    
   public:
   // методы получения торговых сигналов на основе бальной системы
-  bool  UpLoad();   // метод загрузки (обновления) буферов в класс
+  bool  UpLoad();                  // метод загрузки (обновления) буферов в класс
+  ENUM_MOVE_TYPE GetMovingType();  // для получения типа движения 
   // конструкторы и дестрикторы класса Дисептикона
-  POINTSYS ();      // конструктор класса
+  POINTSYS (DEAL_PARAMS &deal_params,BASE_PARAMS &base_params,EMA_PARAMS &ema_params,MACD_PARAMS &macd_params,STOC_PARAMS &stoc_params,PBI_PARAMS &pbi_params);      // конструктор класса
  ~POINTSYS ();      // деструктор класса 
  };
  
  // кодирование методов класса больной системы
  
- bool POINTSYS::UpLoad(void)   // метож загрузки (обновления) буферов в класс
+ bool POINTSYS::UpLoad(void)   // метод загрузки (обновления) буферов в класс
   {
     int copiedPBI=-1;
     int copiedSTOCEld=-1;
@@ -74,7 +76,7 @@ class POINTSYS
                                              || copiedEMAslowJr < 0
                                              || copiedEMA3Eld   < 0 ); attempts++) //Копируем данные индикаторов
            {
-            copiedPBI     =       CopyBuffer( _handlePBI,       4, 1, 1, _bufferPBI);
+            copiedPBI       =     CopyBuffer( _handlePBI,       4, 1, 1, _bufferPBI);
             copiedSTOCEld   =     CopyBuffer( _handleSTOCEld,   0, 1, 2, _bufferSTOCEld);
             copiedEMAfastJr =     CopyBuffer( _handleEMAfastJr, 0, 1, 2, _bufferEMAfastJr);
             copiedEMAslowJr =     CopyBuffer( _handleEMAslowJr, 0, 1, 2, _bufferEMAslowJr);
@@ -86,13 +88,46 @@ class POINTSYS
       }
    return false;
   }
+  
+ // для получения типа движения
+ 
+ ENUM_MOVE_TYPE POINTSYS::GetMovingType(void)
+  {
+
+   if (_bufferPBI[0] == 1)
+    return MOVE_TYPE_TREND_UP;            // Тренд вверх - синий
+   if (_bufferPBI[0] == 1)
+    return MOVE_TYPE_TREND_UP_FORBIDEN;   // Тренд вверх, запрещенный верхним ТФ - фиолетовый
+   if (_bufferPBI[0] == 1)
+    return MOVE_TYPE_TREND_DOWN;          // Тренд вниз - красный
+   if (_bufferPBI[0] == 1) 
+    return MOVE_TYPE_TREND_DOWN_FORBIDEN; // Тренд вниз, запрещенный верхним ТФ - коричневый
+   if (_bufferPBI[0] == 1)  
+    return MOVE_TYPE_CORRECTION_UP;       // Коррекция вверх, корректируется тренд вниз - розовый
+   if (_bufferPBI[0] == 1)  
+    return MOVE_TYPE_CORRECTION_DOWN;     // Коррекция вниз, корректируется тренд вверх - голубой
+   if (_bufferPBI[0] == 1)  
+    return MOVE_TYPE_FLAT;                // Флэт - желтый
+    
+   return MOVE_TYPE_UNKNOWN;              // неизвестное движение
+  }
  
  // кодирование конструктора и деструктора
  
  // конструктор класса Дисептикона
- POINTSYS::POINTSYS(void)
+ POINTSYS::POINTSYS(DEAL_PARAMS &deal_params,BASE_PARAMS &base_params,EMA_PARAMS &ema_params,MACD_PARAMS &macd_params,STOC_PARAMS &stoc_params,PBI_PARAMS &pbi_params)
   {
    //---------инициализируем параметры, буферы, индикаторы и прочее
+   
+   ////// сохраняем внешние параметры
+   _deal_params = deal_params;
+   _base_params = base_params;
+   _ema_params  = ema_params;
+   _macd_params = macd_params;
+   _stoc_params = stoc_params;
+   _pbi_params  = pbi_params;
+   
+   Alert("проверяем top_level = ",_stoc_params.top_level);
    
    ////// инициализаруем индикаторы
    _handlePBI       = iCustom(_Symbol, _base_params.eldTF, "PriceBasedIndicator", _pbi_params.historyDepth, _pbi_params.bars);
