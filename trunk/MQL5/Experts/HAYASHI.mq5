@@ -63,6 +63,8 @@ bool   openedPosition = false;  // флаг окрытия позиции
 double openPrice;               // цена открытия
 string symb;
 
+    static CisNewBar isNewBar(symb, per);   // для проверки формирования нового бара
+
 MqlDateTime timeStr;            // структура времени для хранения текущего времени
 
 int OnInit()
@@ -98,7 +100,7 @@ void OnDeinit(const int reason)
 
 void OnTick()
   { 
-    static CisNewBar isNewBar(symb, per);   // для проверки формирования нового бара
+
     double currentPrice;                           // текущая цена
     double spread;                                 // спред
     

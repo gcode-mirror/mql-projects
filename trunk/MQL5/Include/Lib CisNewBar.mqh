@@ -178,8 +178,8 @@ int CisNewBar::isNewBar()
    if(!isNewBar(newbar_time)) return(0);
    
    //---Уточним количество новых баров:
-   m_new_bars=Bars(m_symbol, m_period, lastbar_time, newbar_time) - 1;
-
+  // m_new_bars=Bars(m_symbol, m_period, lastbar_time, newbar_time) - 1;
+   m_new_bars=1;
    //--- дошли до этого места - значит появился новый бар(ы), вернем их количество:
    return(m_new_bars);
   }
