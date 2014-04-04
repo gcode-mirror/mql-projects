@@ -210,7 +210,7 @@ void OnTick()
    if(LessDoubles(bid, bufferEMA3Eld[0] + deltaPriceToEMA*point))
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
-    tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    tradeManager.OpenUniquePosition(Symbol(),_Period,opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
     wait = 0;
    }
   }
@@ -220,7 +220,7 @@ void OnTick()
    if(GreatDoubles(ask, bufferEMA3Eld[0] - deltaPriceToEMA*point))
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
-    tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    tradeManager.OpenUniquePosition(Symbol(),_Period, opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
     wait = 0;
    }
   }

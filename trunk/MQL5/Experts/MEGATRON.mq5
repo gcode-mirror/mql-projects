@@ -87,7 +87,8 @@ int OnInit()
    //------- заполняем структуры данных 
    
    // заполняем парметры EMA
-   
+   ema_params.periodEMAfastJr             = periodEMAfastJr;
+   ema_params.periodEMAslowJr             = periodEMAslowJr;
    // заполняем параметры MACD
    macd_params.fast_EMA_period            = fast_EMA_period; 
    macd_params.signal_period              = signal_period;
@@ -104,6 +105,11 @@ int OnInit()
    stoc_params.top_level                  = top_level;
    //////////////////////////////////////////////////////////////
    
+   // заполняем параметры PriceBased indicator
+   pbi_params.bars                        = bars;
+   pbi_params.historyDepth                = historyDepth;
+   //////////////////////////////////////////////////////////////
+   
    // заполняем параметры сделок
    deal_params.limitPriceDifference       = limitPriceDifference;
    deal_params.minProfit                  = minProfit;
@@ -117,9 +123,17 @@ int OnInit()
    deal_params.useStopOrders              = useStopOrders;
    //////////////////////////////////////////////////////////////
    
+   // заполняем базовые параметры
+   base_params.deltaEMAtoEMA              = deltaEMAtoEMA;
+   base_params.deltaPriceToEMA            = deltaPriceToEMA;
+   base_params.eldTF                      = eldTF;
+   base_params.jrTF                       = jrTF;
+   base_params.posLifeTime                = posLifeTime;
+   base_params.useJrEMAExit               = useJrEMAExit;
+   base_params.waitAfterDiv               = waitAfterDiv;
    //------- выделяем память под динамические объекты
    ctm      = new CTradeManager(); // выделяем память под объект класса TradeManager
-   pointsys = new POINTSYS();      // выделяем память под объект класса бальной системы  
+   pointsys = new POINTSYS(deal_params,base_params,ema_params,macd_params,stoc_params,pbi_params);      // выделяем память под объект класса бальной системы  
    
    return(INIT_SUCCEEDED);
   }
@@ -135,11 +149,29 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
+int count_bars = 0;
+
 void OnTick()
   {
    // пробуем обновить буферы
    if ( pointsys.UpLoad() == true )
     {
-      
+      // проверяем текущее ценовое движение 
+      switch ( pointsys.GetMovingType() )
+       {
+        case MOVE_TYPE_CORRECTION_UP:          // на коррекции
+        case MOVE_TYPE_CORRECTION_DOWN:
+        
+        break;
+        case MOVE_TYPE_FLAT:                   // на флэте
+        
+        break;
+        case MOVE_TYPE_TREND_DOWN:            // на тренде
+        case MOVE_TYPE_TREND_DOWN_FORBIDEN:
+        case MOVE_TYPE_TREND_UP:
+        case MOVE_TYPE_TREND_UP_FORBIDEN:
+        
+        break;
+       }
     } 
   }
