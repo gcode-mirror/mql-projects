@@ -131,7 +131,7 @@ int OnInit()
    base_params.waitAfterDiv               = waitAfterDiv;
    //------- выделяем память под динамические объекты
    ctm      = new CTradeManager(); // выделяем память под объект класса TradeManager
-   pointsys = new POINTSYS();      // выделяем память под объект класса бальной системы  
+   pointsys = new POINTSYS(deal_params,base_params,ema_params,macd_params,stoc_params,pbi_params);      // выделяем память под объект класса бальной системы  
    
    return(INIT_SUCCEEDED);
   }
