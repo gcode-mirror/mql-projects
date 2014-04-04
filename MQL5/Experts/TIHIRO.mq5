@@ -10,7 +10,6 @@
 #include <Lib CisNewBar.mqh>               //для проверки формирования нового бара
 #include <TradeManager\TradeManager.mqh>   //подключаем библиотеку TradeManager
 #include <TradeManager\BackTest.mqh>       //бэктест
-#include <Graph\Widgets\WBackTest.mqh>
 
 //+------------------------------------------------------------------+
 //| TIHIRO эксперт                                                   |
@@ -39,7 +38,7 @@ ENUM_TM_POSITION_TYPE signal;                      // переменная для хранения то
 int OnInit()
 {
  //загружаем хэндл индикатора Tihiro
- handle = iCustom(symbol, timeFrame, "test_PBI"); 
+ handle  = iCustom(symbol, timeFrame, "test_PBI"); 
  int han = iCustom(symbol,timeFrame,"WBackTest");
  //вычисляем торговую ситуацию в самом начале работы эксперта
  //WBackTest * wBackTest = new WBackTest("backtest","ВЫЧИСЛЕНИЕ БЭКТЕСТА",5,12,200,50,0,0,CORNER_LEFT_UPPER,0);

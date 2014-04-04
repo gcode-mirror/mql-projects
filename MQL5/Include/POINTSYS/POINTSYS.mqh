@@ -8,10 +8,9 @@
 
 // подключение библиотек
 
-#include <TradeManager/TradeManager.mqh>             // торговая библиотека
-#include <ColoredTrend/ColoredTrendUtilities.mqh>    // для констант PriceBased indicator   
-#include <Lib CisNewBar.mqh>                         // для проверки формирования нового бара
-#include "STRUCTS.mqh"                               // библиотека структур данных для получения сигналов
+#include <TradeManager/TradeManager.mqh>    // торговая библиотека
+#include <Lib CisNewBar.mqh>                // для проверки формирования нового бара
+#include "STRUCTS.mqh"                      // библиотека структур данных для получения сигналов
 
 // класс Дисептикона
 class POINTSYS
@@ -51,6 +50,8 @@ class POINTSYS
    
   public:
   // методы получения торговых сигналов на основе бальной системы
+    //int  GetFlat
+  // системные методы
   bool  UpLoad();                  // метод загрузки (обновления) буферов в класс
   ENUM_MOVE_TYPE GetMovingType();  // для получения типа движения 
   // конструкторы и дестрикторы класса Дисептикона
@@ -60,7 +61,7 @@ class POINTSYS
  
  // кодирование методов класса больной системы
  
- bool POINTSYS::UpLoad(void)   // метод загрузки (обновления) буферов в класс
+ bool POINTSYS::UpLoad(void)   // метож загрузки (обновления) буферов в класс
   {
     int copiedPBI=-1;
     int copiedSTOCEld=-1;
@@ -76,24 +77,30 @@ class POINTSYS
                                              || copiedEMAslowJr < 0
                                              || copiedEMA3Eld   < 0 ); attempts++) //Копируем данные индикаторов
            {
-            copiedPBI       =     CopyBuffer( _handlePBI,       4, 1, 1, _bufferPBI);
+            copiedPBI     =       CopyBuffer( _handlePBI,       4, 1, 1, _bufferPBI);
             copiedSTOCEld   =     CopyBuffer( _handleSTOCEld,   0, 1, 2, _bufferSTOCEld);
             copiedEMAfastJr =     CopyBuffer( _handleEMAfastJr, 0, 1, 2, _bufferEMAfastJr);
             copiedEMAslowJr =     CopyBuffer( _handleEMAslowJr, 0, 1, 2, _bufferEMAslowJr);
             copiedEMA3Eld   =     CopyBuffer( _handleEMA3Eld,   0, 0, 1, _bufferEMA3Eld);
            }  
-        if (attempts < 25)
-         return true;
-        
+ if (    copiedPBI != 1 ||   copiedSTOCEld != 2 ||  copiedEMA3Eld != 1 ||
+      copiedEMAfastJr != 2 || copiedEMAslowJr != 2 )   //Копируем данные индикаторов
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка заполнения буфера.Error(%d) = %s" 
+                                          , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
+   return false;
+  }
+ else
+  {
+  Alert("Значение в раскраске = ",_bufferPBI[0]);
+  return true;
+   }     
       }
    return false;
   }
-  
- // для получения типа движения
  
  ENUM_MOVE_TYPE POINTSYS::GetMovingType(void)
   {
-
    if (_bufferPBI[0] == 1)
     return MOVE_TYPE_TREND_UP;            // Тренд вверх - синий
    if (_bufferPBI[0] == 1)
@@ -130,6 +137,14 @@ class POINTSYS
    Alert("проверяем top_level = ",_stoc_params.top_level);
    
    ////// инициализаруем индикаторы
+ // кодирование конструктора и деструктора
+ 
+ // конструктор класса Дисептикона
+ POINTSYS::POINTSYS(void)
+  {
+   //---------инициализируем параметры, буферы, индикаторы и прочее
+   
+   ////// сохраняем внешние параметры   ////// инициализаруем индикаторы
    _handlePBI       = iCustom(_Symbol, _base_params.eldTF, "PriceBasedIndicator", _pbi_params.historyDepth, _pbi_params.bars);
    _handleSTOCEld   = iStochastic(NULL, _base_params.eldTF, _stoc_params.kPeriod, _stoc_params.dPeriod, _stoc_params.slow, MODE_SMA, STO_CLOSECLOSE);
    _handleEMAfastJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAfastJr, 0, MODE_EMA, PRICE_CLOSE);

@@ -18,11 +18,11 @@
 
 //-------- входные параметры
 
-// параметры таймфреймов
+sinput string time_string="";                                          // параметры таймфреймов
 input ENUM_TIMEFRAMES eldTF = PERIOD_H1;
 input ENUM_TIMEFRAMES jrTF = PERIOD_M5;                                
 
-//параметры Stochastic 
+sinput string stoc_string="";                                          // параметры Stochastic 
 input int    kPeriod = 5;                                              // К-период стохастика
 input int    dPeriod = 3;                                              // D-период стохастика
 input int    slow  = 3;                                                // Сглаживание стохастика. Возможные значения от 1 до 3.
@@ -31,16 +31,20 @@ input int    bottom_level = 20;                                        // Bottom
 input int    DEPTH = 100;                                              // глубина поиска расхождения
 input int    ALLOW_DEPTH_FOR_PRICE_EXTR = 25;                          // допустимая глубина для экстремума цены
 
-//параметры MACD
+sinput string macd_string="";                                          // параметры MACD
 input int fast_EMA_period = 12;                                        // быстрый период EMA для MACD
 input int slow_EMA_period = 26;                                        // медленный период EMA для MACD
 input int signal_period = 9;                                           // период сигнальной линии для MACD
 
-//параметры для EMA
+sinput string ema_string="";                                           // параметры для EMA
 input int    periodEMAfastJr = 15;                                     // период быстрой   EMA
 input int    periodEMAslowJr = 9;                                      // период медленной EMA
 
-//параметры сделок  
+sinput string pbi_string ="";                                          // параметры PriceBased indicator
+input int    historyDepth = 40;                                        // глубина истории для расчета
+input int    bars=30;                                                  // сколько свечей показывать
+
+sinput string deal_string="";                                          // параметры сделок  
 input double orderVolume = 0.1;                                        // Объём сделки
 input int    slOrder = 100;                                            // Stop Loss
 input int    tpOrder = 100;                                            // Take Profit
@@ -52,15 +56,15 @@ input int    limitPriceDifference = 50;                                // Разнци
 input bool   useStopOrders = false;                                    // Использовать Stop ордера
 input int    stopPriceDifference = 50;                                 // Разнциа для Stop ордеров
 
+sinput string base_string ="";                                         // базовые параметры робота
 input        ENUM_TRAILING_TYPE  trailingType = TRAILING_TYPE_USUAL;   // тип трейлинга
 input bool   useJrEMAExit = false;                                     // будем ли выходить по ЕМА
 input int    posLifeTime = 10;                                         // время ожидания сделки в барах
 input int    deltaPriceToEMA = 7;                                      // допустимая разница между ценой и EMA для пересечения
 input int    deltaEMAtoEMA = 5;                                        // необходимая разница для разворота EMA
 input int    waitAfterDiv = 4;                                         // ожидание сделки после расхождения (в барах)
-//параметры PriceBased indicator
-input int    historyDepth = 40;                                        // глубина истории для расчета
-input int    bars=30;                                                  // сколько свечей показывать
+
+
 
 // объявление структур данных
 
@@ -87,8 +91,7 @@ int OnInit()
    //------- заполняем структуры данных 
    
    // заполняем парметры EMA
-   ema_params.periodEMAfastJr             = periodEMAfastJr;
-   ema_params.periodEMAslowJr             = periodEMAslowJr;
+   
    // заполняем параметры MACD
    macd_params.fast_EMA_period            = fast_EMA_period; 
    macd_params.signal_period              = signal_period;
@@ -103,11 +106,6 @@ int OnInit()
    stoc_params.kPeriod                    = kPeriod;
    stoc_params.slow                       = slow;
    stoc_params.top_level                  = top_level;
-   //////////////////////////////////////////////////////////////
-   
-   // заполняем параметры PriceBased indicator
-   pbi_params.bars                        = bars;
-   pbi_params.historyDepth                = historyDepth;
    //////////////////////////////////////////////////////////////
    
    // заполняем параметры сделок
@@ -133,7 +131,7 @@ int OnInit()
    base_params.waitAfterDiv               = waitAfterDiv;
    //------- выделяем память под динамические объекты
    ctm      = new CTradeManager(); // выделяем память под объект класса TradeManager
-   pointsys = new POINTSYS(deal_params,base_params,ema_params,macd_params,stoc_params,pbi_params);      // выделяем память под объект класса бальной системы  
+   pointsys = new POINTSYS();      // выделяем память под объект класса бальной системы  
    
    return(INIT_SUCCEEDED);
   }
@@ -149,15 +147,14 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
-int count_bars = 0;
-
 void OnTick()
   {
    // пробуем обновить буферы
    if ( pointsys.UpLoad() == true )
     {
       // проверяем текущее ценовое движение 
-      switch ( pointsys.GetMovingType() )
+      Comment("ДВИЖЕНИЕ: ",MoveTypeToString(pointsys.GetMovingType()) );
+     switch ( pointsys.GetMovingType() )
        {
         case MOVE_TYPE_CORRECTION_UP:          // на коррекции
         case MOVE_TYPE_CORRECTION_DOWN:
@@ -166,7 +163,7 @@ void OnTick()
         case MOVE_TYPE_FLAT:                   // на флэте
         
         break;
-        case MOVE_TYPE_TREND_DOWN:            // на тренде
+        case MOVE_TYPE_TREND_DOWN:             // на тренде
         case MOVE_TYPE_TREND_DOWN_FORBIDEN:
         case MOVE_TYPE_TREND_UP:
         case MOVE_TYPE_TREND_UP_FORBIDEN:
