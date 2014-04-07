@@ -50,8 +50,12 @@ class POINTSYS
    CisNewBar *_eldNewBar;          // переменная для определения нового бара на eldTF  
    
   public:
+  // методы GET (возможно временные)
+   int  GetPriceDifference (){return (_priceDifference);};
   // методы получения торговых сигналов на основе бальной системы
-    //int  GetFlat
+   int  GetFlatSignals  ();        // получение торгового сигнала на Флэте
+   int  GetTrendSignals ();        // получение торгового сигнала на тренде
+   int  GetCorrSignals  ();        // получение торгового сигнала на коррекции  
   // системные методы
   bool  UpLoad();                  // метод загрузки (обновления) буферов в класс
   ENUM_MOVE_TYPE GetMovingType();  // для получения типа движения 
@@ -59,6 +63,164 @@ class POINTSYS
   POINTSYS (DEAL_PARAMS &deal_params,BASE_PARAMS &base_params,EMA_PARAMS &ema_params,MACD_PARAMS &macd_params,STOC_PARAMS &stoc_params,PBI_PARAMS &pbi_params);      // конструктор класса
  ~POINTSYS ();      // деструктор класса 
  };
+ 
+ 
+ int  POINTSYS::GetFlatSignals(void)
+  {
+  static int  wait = 0;
+  int order_direction = 0;  
+  double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);   // цена ASK
+  double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // цена BID
+ 
+  if(_bufferSTOCEld[1] > _stoc_params.top_level && _bufferSTOCEld[0] < _stoc_params.top_level)
+  {
+   if(GreatDoubles(_bufferEMAfastJr[1], _bufferEMAslowJr[1]) && GreatDoubles(_bufferEMAslowJr[0], _bufferEMAfastJr[0]))
+   {
+    if(GreatDoubles(ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
+    {
+     //продажа
+     return -1;  // типо сигнал на продажу
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
+   //  tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    }
+   }
+  }
+  if(_bufferSTOCEld[1] < _stoc_params.bottom_level && _bufferSTOCEld[0] > _stoc_params.bottom_level)
+  {
+   if(GreatDoubles(_bufferEMAslowJr[1], _bufferEMAfastJr[1]) && GreatDoubles(_bufferEMAfastJr[0], _bufferEMAslowJr[0]))
+   {
+    if(LessDoubles(bid, _bufferEMA3Eld[0] + _base_params.deltaPriceToEMA*_Point))
+    {
+     //покупка
+     return 1;  // типо сигнал на покупку
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
+    // tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    }
+   }
+  }
+  
+  // divengenceFlatMACD
+  
+  wait++; 
+  if (order_direction != 0)   // если есть сигнал о направлении ордера 
+  {
+   if (wait > _base_params.waitAfterDiv)   // проверяем на допустимое время ожидания после расхождения
+   {
+    wait = 0;                 // если не дождались обнуляем счетчик ожидания и направления сделки
+    order_direction = 0;
+   }
+  }  
+    
+  if (order_direction == 1)
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD 1", MakeFunctionPrefix(__FUNCTION__)));
+   if(LessDoubles(bid, _bufferEMA3Eld[0] + _base_params.deltaPriceToEMA*_Point))
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
+    //tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    return 1;  // типо сигнал на покупку
+    wait = 0;
+   }
+  }
+  if (order_direction == -1)
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD -1", MakeFunctionPrefix(__FUNCTION__)));
+   if(GreatDoubles(ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
+ //   tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    return -1;  // типо сигнал на продажу
+    wait = 0;
+   }
+  }  
+  
+  // divergence Flat Stochastic
+  
+  if (order_direction == 1)
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD 1", MakeFunctionPrefix(__FUNCTION__)));
+   if(LessDoubles(bid, _bufferEMA3Eld[0] + _base_params.deltaPriceToEMA*_Point))
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
+    return 1;  // сигнал на покупку
+    //tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    wait = 0;
+   }
+  }
+  if (order_direction == -1)
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD -1", MakeFunctionPrefix(__FUNCTION__)));
+   if(GreatDoubles(ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
+    return -1;  // сигнал на продажу
+    //tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    wait = 0;
+   }
+  }
+  
+  
+    return 0; // нет сигнала
+  }
+  
+ int  POINTSYS::GetTrendSignals(void)
+  {
+   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);   // цена ASK
+   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // цена BID  
+  /* 
+   if (_bufferPBI[0] == 1)               //Если направление тренда TREND_UP  
+ {
+  //log_file.Write(LOG_DEBUG, StringFormat("%s TREND UP.", MakeFunctionPrefix(__FUNCTION__)));
+  if (GreatOrEqualDoubles(_bufferEMA3Day[0] + _base_params.deltaPriceToEMA*_Point, bid))
+  {
+   //log_file.Write(LOG_DEBUG, StringFormat("%s Дневная цена меньше EMA3.", MakeFunctionPrefix(__FUNCTION__)));
+   if (GreatDoubles(_bufferEMAfastEld[0] + _base_params.deltaPriceToEMA*_Point, _bufferLowEld[0]) || 
+       GreatDoubles(_bufferEMAfastEld[1] + _base_params.deltaPriceToEMA*_Point, _bufferLowEld[1]))
+   {
+    //log_file.Write(LOG_DEBUG, StringFormat("%s EMAfast выше на одном из последних 2х барах.", MakeFunctionPrefix(__FUNCTION__)));
+    if (GreatDoubles(_bufferEMAslowJr[1], _bufferEMAfastJr[1]) && LessDoubles(_bufferEMAslowJr[0], _bufferEMAfastJr[0]))
+    {
+     //log_file.Write(LOG_DEBUG, StringFormat("%s Пересечение EMA на младшем TF.", MakeFunctionPrefix(__FUNCTION__)));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
+     return 1;   // типо открыта позиция на покупку
+   //  tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+     order_direction = 1;
+    }
+   }
+  }
+ } //end TREND_UP
+ else if (_bufferPBI[0] == 3)               //Если направление тренда TREND_DOWN  
+ {
+  //log_file.Write(LOG_DEBUG, StringFormat("%s TREND DOWN.", MakeFunctionPrefix(__FUNCTION__)));
+  if (GreatOrEqualDoubles(ask, _bufferEMA3Day[0] - _base_params.deltaPriceToEMA*_Point))
+  {
+   //log_file.Write(LOG_DEBUG, StringFormat("%s Дневная цена больше EMA3.", MakeFunctionPrefix(__FUNCTION__)));
+   if (GreatDoubles(_bufferHighEld[0], _bufferEMAfastEld[0] - _base_params.deltaPriceToEMA*_Point) || 
+       GreatDoubles(_bufferHighEld[1], _bufferEMAfastEld[1] - _base_params.deltaPriceToEMA*_Point))
+   {
+    //log_file.Write(LOG_DEBUG, StringFormat("%s EMAfast выше на одном из последних 2х барах.", MakeFunctionPrefix(__FUNCTION__)));
+    if (GreatDoubles(_bufferEMAfastJr[1], _bufferEMAslowJr[1]) && LessDoubles(_bufferEMAfastJr[0], _bufferEMAslowJr[0]))
+    {
+     //log_file.Write(LOG_DEBUG, StringFormat("%s Пересечение EMA на младшем TF.", MakeFunctionPrefix(__FUNCTION__)));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
+     return -1;   // типо открыта позиция на продажу
+   //  tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+     order_direction = -1;
+    }
+   }
+  }
+ } //end TREND_DOWN
+   */
+   return 0; // нет сигнала
+  } 
+ 
+ 
+ 
+ int POINTSYS::GetCorrSignals(void)
+  {
+  
+   return 0; // нет сигнала
+  }
  
  // кодирование методов класса больной системы
  
@@ -70,8 +232,10 @@ class POINTSYS
     int copiedEMAslowJr=-1;
     int copiedEMA3Eld=-1; 
     int attempts;
+
     if (_eldNewBar.isNewBar() > 0)      //на каждом новом баре старшего TF
       {
+
         for (attempts = 0; attempts < 25 && (   copiedPBI     < 0
                                              || copiedSTOCEld   < 0
                                              || copiedEMAfastJr < 0
@@ -87,13 +251,14 @@ class POINTSYS
  if (    copiedPBI != 1 ||   copiedSTOCEld != 2 ||  copiedEMA3Eld != 1 ||
       copiedEMAfastJr != 2 || copiedEMAslowJr != 2 )   //Копируем данные индикаторов
   {
+  // Comment("STOC = ",copiedSTOCEld," copiedEMA3Eld = ",copiedEMA3Eld,"copiedEMAfastJr=",copiedEMAfastJr,"copiedEMAslowJr=",copiedEMAslowJr,"copiedPBI=",copiedPBI);
    log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка заполнения буфера.Error(%d) = %s" 
                                           , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
    return false;
   }
  else
   {
-  Alert("Значение в раскраске = ",_bufferPBI[0]);
+  //Comment("Значение в раскраске = ",_bufferPBI[0]);
   return true;
    }     
       }
@@ -104,17 +269,17 @@ class POINTSYS
   {
    if (_bufferPBI[0] == 1)
     return MOVE_TYPE_TREND_UP;            // Тренд вверх - синий
-   if (_bufferPBI[0] == 1)
+   if (_bufferPBI[0] == 2)
     return MOVE_TYPE_TREND_UP_FORBIDEN;   // Тренд вверх, запрещенный верхним ТФ - фиолетовый
-   if (_bufferPBI[0] == 1)
+   if (_bufferPBI[0] == 3)
     return MOVE_TYPE_TREND_DOWN;          // Тренд вниз - красный
-   if (_bufferPBI[0] == 1) 
+   if (_bufferPBI[0] == 4) 
     return MOVE_TYPE_TREND_DOWN_FORBIDEN; // Тренд вниз, запрещенный верхним ТФ - коричневый
-   if (_bufferPBI[0] == 1)  
+   if (_bufferPBI[0] == 5)  
     return MOVE_TYPE_CORRECTION_UP;       // Коррекция вверх, корректируется тренд вниз - розовый
-   if (_bufferPBI[0] == 1)  
+   if (_bufferPBI[0] == 6)  
     return MOVE_TYPE_CORRECTION_DOWN;     // Коррекция вниз, корректируется тренд вверх - голубой
-   if (_bufferPBI[0] == 1)  
+   if (_bufferPBI[0] == 7)  
     return MOVE_TYPE_FLAT;                // Флэт - желтый
     
    return MOVE_TYPE_UNKNOWN;              // неизвестное движение
@@ -141,7 +306,7 @@ class POINTSYS
    //---------инициализируем параметры, буферы, индикаторы и прочее
    
    ////// сохраняем внешние параметры   ////// инициализаруем индикаторы
-   _handlePBI       = iCustom(_Symbol, _base_params.eldTF, "PriceBasedIndicator", _pbi_params.historyDepth, _pbi_params.bars);
+   _handlePBI       = iCustom(_Symbol, /*_base_params.eldTF*/ _Period, "PriceBasedIndicator", /*_pbi_params.bars*/1000);
    _handleSTOCEld   = iStochastic(NULL, _base_params.eldTF, _stoc_params.kPeriod, _stoc_params.dPeriod, _stoc_params.slow, MODE_SMA, STO_CLOSECLOSE);
    _handleEMAfastJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAfastJr, 0, MODE_EMA, PRICE_CLOSE);
    _handleEMAslowJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAslowJr, 0, MODE_EMA, PRICE_CLOSE);
@@ -149,6 +314,7 @@ class POINTSYS
 
  if (_handlePBI == INVALID_HANDLE || _handleEMAfastJr == INVALID_HANDLE || _handleEMAslowJr == INVALID_HANDLE)
  {
+
   log_file.Write(LOG_DEBUG, StringFormat("%s INVALID_HANDLE (handleTrend). Error(%d) = %s" 
                                         , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
   //return(INIT_FAILED);

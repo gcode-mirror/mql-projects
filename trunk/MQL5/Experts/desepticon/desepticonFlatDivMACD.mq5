@@ -134,10 +134,10 @@ void OnTick()
    
  if (eldNewBar.isNewBar() > 0)                       //на каждом новом баре старшего TF
  {
-  for (int attempts = 0; attempts < 25 && copiedTrend     < 0
-                                       && copiedEMA3Eld   < 0
-                                       && copiedEMAfastJr < 0
-                                       && copiedEMAslowJr < 0; attempts++) // опируем данные индикаторов
+  for (int attempts = 0; attempts < 25 && (copiedTrend     < 0
+                                        || copiedEMA3Eld   < 0
+                                        || copiedEMAfastJr < 0
+                                        || copiedEMAslowJr < 0); attempts++) // опируем данные индикаторов
   {
    copiedTrend     = CopyBuffer(    handleTrend, 4, 1, 1,     bufferTrend);
    copiedEMA3Eld   = CopyBuffer(  handleEMA3Eld, 0, 1, 1,   bufferEMA3Eld);

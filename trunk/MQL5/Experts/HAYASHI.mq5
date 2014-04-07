@@ -63,12 +63,19 @@ bool   openedPosition = false;  // флаг окрытия позиции
 double openPrice;               // цена открытия
 string symb;
 
+int    handle;
+double bufferPBI[];
+
     static CisNewBar isNewBar(symb, per);   // для проверки формирования нового бара
 
 MqlDateTime timeStr;            // структура времени для хранения текущего времени
 
 int OnInit()
   {
+  
+   handle  = iCustom(_Symbol, _Period, "PriceBasedIndicator", 1000);
+   
+  
    switch (sym)
     {
      case SYM_EURUSD:
@@ -103,10 +110,16 @@ void OnTick()
 
     double currentPrice;                           // текущая цена
     double spread;                                 // спред
+    int copiedPBI;
     
     // если сформирован новый бар
     if(isNewBar.isNewBar() > 0)
      {        
+     
+      copiedPBI = CopyBuffer( handle,4, 1, 1, bufferPBI);
+      
+      Comment("ЗНАЧЕНИЕ = ",bufferPBI[0]);
+     
       if (openedPosition == false)
        { // если до этого момента еще не была открыта позиция
      

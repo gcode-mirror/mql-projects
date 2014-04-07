@@ -41,7 +41,7 @@ input int    periodEMAfastJr = 15;                                     // период
 input int    periodEMAslowJr = 9;                                      // период медленной EMA
 
 sinput string pbi_string ="";                                          // параметры PriceBased indicator
-input int    historyDepth = 40;                                        // глубина истории для расчета
+input int    historyDepth = 2000;                                      // глубина истории для расчета
 input int    bars=30;                                                  // сколько свечей показывать
 
 sinput string deal_string="";                                          // параметры сделок  
@@ -82,6 +82,10 @@ CTradeManager *ctm;          // указатель на объект класса TradeManager
 POINTSYS      *pointsys;     // указатель на объект класса бальной системы
 
 
+// временные параменные
+
+int priceDifference;
+
 //+------------------------------------------------------------------+
 //| функция иницициализации                                          |
 //+------------------------------------------------------------------+
@@ -91,7 +95,8 @@ int OnInit()
    //------- заполняем структуры данных 
    
    // заполняем парметры EMA
-   
+   ema_params.periodEMAfastJr             = periodEMAfastJr;
+   ema_params.periodEMAslowJr             = periodEMAslowJr;
    // заполняем параметры MACD
    macd_params.fast_EMA_period            = fast_EMA_period; 
    macd_params.signal_period              = signal_period;
@@ -149,19 +154,31 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   ctm.OnTick();  
    // пробуем обновить буферы
+      
    if ( pointsys.UpLoad() == true )
     {
       // проверяем текущее ценовое движение 
-      Comment("ДВИЖЕНИЕ: ",MoveTypeToString(pointsys.GetMovingType()) );
+     // Comment("ДВИЖЕНИЕ2: ",MoveTypeToString(pointsys.GetMovingType()) );
      switch ( pointsys.GetMovingType() )
        {
         case MOVE_TYPE_CORRECTION_UP:          // на коррекции
         case MOVE_TYPE_CORRECTION_DOWN:
-        
+
         break;
         case MOVE_TYPE_FLAT:                   // на флэте
-        
+         switch ( pointsys.GetFlatSignals() )
+          {
+           case 1:  // сигнал на покупку
+            priceDifference = pointsys.GetPriceDifference();   // временно получаем значение priceDifference 
+            ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+           break;  
+           case -1: // сигнал на продажу
+            priceDifference = pointsys.GetPriceDifference();   // временно получаем значение priceDifference 
+            ctm.OpenUniquePosition(_Symbol,_Period,OP_SELL, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);           
+           break;
+          }          
         break;
         case MOVE_TYPE_TREND_DOWN:             // на тренде
         case MOVE_TYPE_TREND_DOWN_FORBIDEN:
