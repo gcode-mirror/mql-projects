@@ -11,7 +11,6 @@
 #include <StringUtilities.mqh>
 #include <CLog.mqh>
 #include "TradeLines.mqh"
-#include <Graph\Objects\Button.mqh>
 
 //+------------------------------------------------------------------+
 //| Класс обеспечивает вспомогательные торговые вычисления           |
@@ -21,6 +20,10 @@ class CSanyaRotate: public CSanya
 private:
  int hand_control;
  bool _beep;
+ double _ko;              // коэффициент соотношения между максимальное количеством шагов до экстремума и минимальным количеством шагов 
+ double secondAddPrice;   // уровень второй доливки
+ double thirdAddPrice;    // уровень третьей доливки
+
 public:
 //--- Конструкторы
  void CSanyaRotate(int deltaFast, int deltaSlow, int dayStep, int monthStep
@@ -49,7 +52,6 @@ void CSanyaRotate::CSanyaRotate(int deltaFast, int deltaSlow,  int dayStep, int 
                     , int fastDeltaStep = 100, int slowDeltaStep = 10
                     , int percentage = 100, int fastPeriod = 24, int slowPeriod = 30)  // Конструктор Саня
   {
-  
    _factor = 0.01;
    _deltaFastBase = deltaFast;
    _deltaSlowBase = deltaSlow;
@@ -65,6 +67,7 @@ void CSanyaRotate::CSanyaRotate(int deltaFast, int deltaSlow,  int dayStep, int 
    
    _dayStep = dayStep*Point();
    _monthStep = monthStep;
+   _ko = 1;
    _minStepsFromStartToExtremum = minStepsFromStartToExtremum;
    _maxStepsFromStartToExtremum = maxStepsFromStartToExtremum;
    _stepsFromStartToExit = stepsFromStartToExit;
@@ -83,11 +86,11 @@ void CSanyaRotate::CSanyaRotate(int deltaFast, int deltaSlow,  int dayStep, int 
    _isMonthInit = false;
    _symbol = Symbol();   // Имя инструмента, по умолчанию символ текущего графика
    _period = Period();   // Период графика, по умолчанию период текущего графика
-   currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
+   currentPrice = (_type == ORDER_TYPE_BUY) ? SymbolInfoDouble(_symbol, SYMBOL_ASK) : SymbolInfoDouble(_symbol, SYMBOL_BID);
    
    _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
-   first = true; second = true; third = true;
-   
+   addCount = 0;
+      
    _startDayPrice = currentPrice; 
    _average = 0;
    _averageMax = _startDayPrice + _dayStep;
@@ -102,7 +105,7 @@ void CSanyaRotate::CSanyaRotate(int deltaFast, int deltaSlow,  int dayStep, int 
    num3.direction = 0;
    num3.price = currentPrice;
    
-   dealStartPrice = _startDayPrice;
+   _dealStartPrice = _startDayPrice;
    
    if (_type == ORDER_TYPE_BUY)
    {
@@ -128,7 +131,6 @@ void CSanyaRotate::CSanyaRotate(int deltaFast, int deltaSlow,  int dayStep, int 
 void CSanyaRotate::RecountFastDelta()
 {
  SymbolInfoTick(_symbol, tick);
- currentPrice = SymbolInfoDouble(_symbol, SYMBOL_BID);
  SExtremum extr = isExtremum();
  RecountLevels(extr);
  //------------------------------
@@ -203,13 +205,13 @@ void CSanyaRotate::RecountFastDelta()
   if (flag || hand_control == 100)
   {
    PrintFormat("%s Переворачиваем направление основного движения", MakeFunctionPrefix(__FUNCTION__));
-   _type = (ENUM_ORDER_TYPE)(_type + MathPow (-1, _type)); // _type = 1 -> 1 + -1^1 = 0; _type = 0 -> 0 + -1^0 = 1
-   _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;
-   dealStartPrice = priceAB;
-   //RecountLevels(extr);
+   _type = (ENUM_ORDER_TYPE)(_type + MathPow (-1, _type)); // меняем тип _type = 1 -> 1 + -1^1 = 0; _type = 0 -> 0 + -1^0 = 1
+   _direction = (_type == ORDER_TYPE_BUY) ? 1 : -1;        // запоминаем новое направление
+   _dealStartPrice = priceAB;                              // запоминаем цену открытия сделки 
    _deltaFast = 100 - _deltaFastBase;   // увеличим младшую дельта (цена идет против выбранного направления - сейвимся)
    _fastDeltaChanged = true;
-   first = true; second = true; third = true;
+   addCount = 0;
+   _ko = 1; 
    _beep = false;
   }
  }
@@ -219,27 +221,34 @@ void CSanyaRotate::RecountFastDelta()
  //-------------------------
  if (_deltaFast > 0 && _deltaFast < 100)
  { 
-  if (LessDoubles(_direction*dealStartPrice + _minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && first)
+  // один шаг от цены открытия
+  if (LessDoubles(_direction*_dealStartPrice + _minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && addCount == 0)
   {
-   PrintFormat("Первая доливка");
-   first = false;
+   PrintFormat("Первая доливка"); 
    _deltaFast = _deltaFast - _firstAdd;
+   addCount++;
    _fastDeltaChanged = true;
+   _ko = 1;
   }
-  if (LessDoubles(_direction*dealStartPrice + 2*_minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && second)
+  // два шага от цены открытия
+  if (LessDoubles(_direction*_dealStartPrice + 2*_minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && addCount == 1)
   {
    PrintFormat("Вторая доливка");
-   second = false;
    _deltaFast = _deltaFast - _secondAdd;
+   addCount++;
    _fastDeltaChanged = true;
+   secondAddPrice = _dealStartPrice + _direction*2*_minStepsFromStartToExtremum*_dayStep;  // уровень второй доливки
+   thirdAddPrice = _dealStartPrice + _direction*4*_minStepsFromStartToExtremum*_dayStep;   // уровень третьей доливки
   }
-  if (LessDoubles(_direction*dealStartPrice + 4*_minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && third)
+  // четыре шага от цены открытия
+  if (LessDoubles(_direction*_dealStartPrice + 4*_minStepsFromStartToExtremum*_dayStep, _direction*priceAB) && addCount == 2)
   {
    PrintFormat("Третья доливка");
-   third = false;
    _deltaFast = _deltaFast - _thirdAdd;
+   addCount++;
    _fastDeltaChanged = true;
    _beep = true;
+   _ko = 0;
   }
  }
  
@@ -256,7 +265,7 @@ void CSanyaRotate::RecountFastDelta()
 void CSanyaRotate::RecountLevels(SExtremum &extr)
 {
  // Проверяем наличие экстремума 
- currentPrice = SymbolInfoDouble(_symbol, SYMBOL_LAST);
+ priceAB = (_direction == 1) ? tick.bid : tick.ask;
  if (extr.direction != 0)
  {
   if (extr.direction == num0.direction) // если новый экстремум в том же напрвлении, что старый
@@ -281,25 +290,27 @@ void CSanyaRotate::RecountLevels(SExtremum &extr)
  //-------------------------------------------------
  // Выставляем точку старта
  //-------------------------------------------------
-  // Если экстремум отошел от точки старта больше чем на _minStepsFromStartToExtremum шагов, то тащим точку старта
-  if (num0.direction*(num0.price - (_startDayPrice + num0.direction*_maxStepsFromStartToExtremum*_dayStep)) > 0)
+  // Если сделано 2 доливки начинаем подтаскивать линию старта к линии экстремума
+  if ((addCount == 2) && GreatDoubles(_direction*(priceAB - _startDayPrice), _minStepsFromStartToExtremum*_dayStep, 5))
   {
-   _startDayPrice = num0.price - num0.direction*_maxStepsFromStartToExtremum*_dayStep;
+   _ko = MathAbs(thirdAddPrice - priceAB)/MathAbs(thirdAddPrice - secondAddPrice);                        // коэффициент удаления экстремума от старта
+  }
+  // Если экстремум отошел от точки старта больше чем на _maxStepsFromStartToExtremum шагов, то тащим точку старта
+  double stepsCount = (_ko*_maxStepsFromStartToExtremum + (1 - _ko)*_minStepsFromStartToExtremum);
+  if (num0.direction*(num0.price - (_startDayPrice + num0.direction*stepsCount*_dayStep)) > 0)
+  {
+   _startDayPrice = num0.price - num0.direction*stepsCount*_dayStep;
    startLine.Price(0, _startDayPrice);
-   //Print("Экстремум очень далеко - переносим старт StartPrice=",_startDayPrice);
   }
  
  //-------------------------------------------------
  // Вычисляем средние значения
  //-------------------------------------------------
-  if (extr.direction > 0)
+  if (num0.direction > 0)
   {
-   _average = NormalizeDouble((extr.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
-   if (GreatDoubles (_average, _startDayPrice + _dayStep, 5))
-   {
-    _averageMax = _average; 
-    averageMaxLine.Price(0, _averageMax);
-   }
+   _average = NormalizeDouble((num0.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
+   _averageMax = MathMax(_average, _startDayPrice + _dayStep); 
+   averageMaxLine.Price(0, _averageMax);
    if (_type == ORDER_TYPE_BUY)
    {
     _currentEnterLevel = LEVEL_MAXIMUM;
@@ -313,14 +324,12 @@ void CSanyaRotate::RecountLevels(SExtremum &extr)
     //PrintFormat("Новый уровень входа %s и выхода %s", LevelToString(_currentEnterLevel), LevelToString(_currentExitLevel));
    }
   }
-  if (extr.direction < 0)
+  if (num0.direction < 0)
   {
-   _average = NormalizeDouble((extr.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
-   if (LessDoubles (_average, _startDayPrice - _dayStep, 5))
-   {
-    _averageMin = _average; 
-    averageMinLine.Price(0, _averageMin);
-   }
+   _average = NormalizeDouble((num0.price + _startDayPrice)/2, 5);   // вычислим среднее значение между текущей ценой и ценой начала работы
+   _averageMin = MathMin(_average, _startDayPrice - _dayStep); 
+   averageMinLine.Price(0, _averageMin);
+   
    if (_type == ORDER_TYPE_BUY)
    {
     _currentEnterLevel = LEVEL_AVEMIN;
@@ -343,7 +352,7 @@ void CSanyaRotate::RecountLevels(SExtremum &extr)
  //-------------------------------------------------
  // Вычисляем уровни входа
  //-------------------------------------------------
- priceAB = (_direction == 1) ? tick.bid : tick.ask;
+ //priceAB = (_direction == 1) ? tick.bid : tick.ask;
  switch (_currentEnterLevel)
  {
   case LEVEL_MAXIMUM:
