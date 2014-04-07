@@ -64,3 +64,23 @@ string LevelToString(ENUM_LEVELS level)
  }
  return res;
 }
+
+void OrdersProfitToFile(datetime startTime)
+{
+ int file_handle;
+ int index;
+ int total;
+ ulong ticket;
+ double cur_profit = 0;
+ file_handle = FileOpen("DEALS.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " "); 
+ HistorySelect(startTime,TimeCurrent());
+ total = HistoryDealsTotal();   
+ for (index=1;index<total;index++)
+ { 
+  ticket       =    HistoryDealGetTicket(index);
+  cur_profit   =    HistoryDealGetDouble(ticket,DEAL_PROFIT);
+  FileWrite (file_handle,DoubleToString(cur_profit) );
+  FileWrite (file_handle,IntegerToString(HistoryDealGetInteger(ticket,DEAL_TIME)) );
+ }
+ FileClose(file_handle);
+}

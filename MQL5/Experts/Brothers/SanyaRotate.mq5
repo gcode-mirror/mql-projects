@@ -12,6 +12,7 @@
 #include <CompareDoubles.mqh>
 #include <Brothers\CSanyaRotate.mqh>
 #include <CLog.mqh>
+#include <Graph\Objects\Button.mqh>
 
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
@@ -47,26 +48,22 @@ DELTA_STEP fastDeltaStep = FIFTY;  // Шаг изменения МЛАДШЕЙ дельты
 DELTA_STEP slowDeltaStep = TEN;  // Шаг изменения СТАРШЕЙ дельты
 
 CSanyaRotate *san;
+string buttonCapture = "KILL";
 Button *close_button;
 double vol = 0;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
-
-
-
 int OnInit()
   {
 //---
-   close_button = new Button ("close_button", "KILL", 10, 10, 40, 40, 0, 0, CORNER_LEFT_UPPER, 0);
+   close_button = new Button("close_button", "KILL", 10, 10, 160, 40, 0, 0, CORNER_LEFT_UPPER, 0);
    int fastDelta, firstAdd, secondAdd, thirdAdd;
    
    fastDelta = 100 / (1 + ko + ko*ko + ko*ko*ko);
    firstAdd = fastDelta * ko;
    secondAdd = firstAdd * ko;
    thirdAdd = 100 - secondAdd - firstAdd - fastDelta;
-   
-
    
    if (type != ORDER_TYPE_BUY && type != ORDER_TYPE_SELL)
    {
@@ -105,26 +102,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   int file_handle;
-   int index;
-   int total;
-   ulong ticket;
-   double cur_profit = 0;
-   file_handle = FileOpen("DEALS.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " "); 
-   HistorySelect(startTime,TimeCurrent());
-   total = HistoryDealsTotal();   
-   for (index=1;index<total;index++)
-    { 
-     ticket       =    HistoryDealGetTicket(index);
-     cur_profit   =    HistoryDealGetDouble(ticket,DEAL_PROFIT);
-     FileWrite (file_handle,DoubleToString(cur_profit) );
-     FileWrite (file_handle,IntegerToString(HistoryDealGetInteger(ticket,DEAL_TIME)) );
-     
-    }
-
-
-
-   FileClose(file_handle);
+   //OrdersProfitToFile(startTime);
    delete san;
   }
 //+------------------------------------------------------------------+
@@ -132,10 +110,10 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
  {
+  ObjectSetString(0, "close_button", OBJPROP_TEXT, StringFormat("KILL %d-я доливка из %d", san.GetAddCount(), 3));     // надпись на кнопке
   if (san.getBeep())
   {
    PlaySound(sound);
-   //Print("");
   }
   san.RecountFastDelta();
   
