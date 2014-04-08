@@ -75,7 +75,7 @@ int                handleMACD;             // хэндл MACD
 int                lastBarIndex;           // индекс последнего бара   
 long               countTrend;             // счетчик тренд линий
 
-PointDiv           divergencePoints;       // схождения и расхождения MACD
+PointDivMACD           divergencePoints;       // схождения и расхождения MACD
 CChartObjectTrend  trendLine;              // объект класса трендовой линии
 CisNewBar          isNewBar;               // для проверки формирования нового бара
 
