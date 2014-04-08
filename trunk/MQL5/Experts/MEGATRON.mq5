@@ -16,75 +16,80 @@
 #include <TradeManager/TradeManager.mqh>    // торговая библиотека
 #include <POINTSYS/POINTSYS.mqh>            // класс бальной системы
 
+
+
 //-------- входные параметры
 
-sinput string time_string="";                                          // параметры таймфреймов
+sinput string time_string="";                                           // параметры таймфреймов
 input ENUM_TIMEFRAMES eldTF = PERIOD_H1;
 input ENUM_TIMEFRAMES jrTF = PERIOD_M5;                                
 
-sinput string stoc_string="";                                          // параметры Stochastic 
-input int    kPeriod = 5;                                              // К-период стохастика
-input int    dPeriod = 3;                                              // D-период стохастика
-input int    slow  = 3;                                                // Сглаживание стохастика. Возможные значения от 1 до 3.
-input int    top_level = 80;                                           // Top-level стохастка
-input int    bottom_level = 20;                                        // Bottom-level стохастика
-input int    DEPTH = 100;                                              // глубина поиска расхождения
-input int    ALLOW_DEPTH_FOR_PRICE_EXTR = 25;                          // допустимая глубина для экстремума цены
+sinput string stoc_string="";                                           // параметры Stochastic 
+input int    kPeriod = 5;                                               // К-период стохастика
+input int    dPeriod = 3;                                               // D-период стохастика
+input int    slow  = 3;                                                 // Сглаживание стохастика. Возможные значения от 1 до 3.
+input int    top_level = 80;                                            // Top-level стохастка
+input int    bottom_level = 20;                                         // Bottom-level стохастика
+input int    allow_depth_for_price_extr = 25;                           // допустимая глубина для экстремума цены
+input int    depth_stoc = 100;                                          // глубина поиска расхождения
 
-sinput string macd_string="";                                          // параметры MACD
-input int fast_EMA_period = 12;                                        // быстрый период EMA для MACD
-input int slow_EMA_period = 26;                                        // медленный период EMA для MACD
-input int signal_period = 9;                                           // период сигнальной линии для MACD
+sinput string macd_string="";                                           // параметры MACD
+input int fast_EMA_period = 12;                                         // быстрый период EMA для MACD
+input int slow_EMA_period = 26;                                         // медленный период EMA для MACD
+input int signal_period = 9;                                            // период сигнальной линии для MACD
+input int depth_macd = 100;                                             // глубина истории поиска расхождения
 
-sinput string ema_string="";                                           // параметры для EMA
-input int    periodEMAfastJr = 15;                                     // период быстрой   EMA
-input int    periodEMAslowJr = 9;                                      // период медленной EMA
+sinput string ema_string="";                                            // параметры для EMA
+input int    periodEMAfastJr = 15;                                      // период быстрой   EMA
+input int    periodEMAslowJr = 9;                                       // период медленной EMA
 
-sinput string pbi_string ="";                                          // параметры PriceBased indicator
-input int    historyDepth = 2000;                                      // глубина истории для расчета
-input int    bars=30;                                                  // сколько свечей показывать
+sinput string pbi_string ="";                                           // параметры PriceBased indicator
+input int    historyDepth = 2000;                                       // глубина истории для расчета
+input int    bars=30;                                                   // сколько свечей показывать
 
-sinput string deal_string="";                                          // параметры сделок  
-input double orderVolume = 0.1;                                        // Объём сделки
-input int    slOrder = 100;                                            // Stop Loss
-input int    tpOrder = 100;                                            // Take Profit
-input int    trStop = 100;                                             // Trailing Stop
-input int    trStep = 100;                                             // Trailing Step
-input int    minProfit = 250;                                          // Minimal Profit 
-input bool   useLimitOrders = false;                                   // Использовать Limit ордера
-input int    limitPriceDifference = 50;                                // Разнциа для Limit ордеров
-input bool   useStopOrders = false;                                    // Использовать Stop ордера
-input int    stopPriceDifference = 50;                                 // Разнциа для Stop ордеров
+sinput string deal_string="";                                           // параметры сделок  
+input double orderVolume = 0.1;                                         // Объём сделки
+input int    slOrder = 100;                                             // Stop Loss
+input int    tpOrder = 100;                                             // Take Profit
+input int    trStop = 100;                                              // Trailing Stop
+input int    trStep = 100;                                              // Trailing Step
+input int    minProfit = 250;                                           // Minimal Profit 
+input ENUM_USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;   // Тип отложенного ордера                    
+input int    priceDifference = 50;                                      // Price Difference
 
-sinput string base_string ="";                                         // базовые параметры робота
-input        ENUM_TRAILING_TYPE  trailingType = TRAILING_TYPE_USUAL;   // тип трейлинга
-input bool   useJrEMAExit = false;                                     // будем ли выходить по ЕМА
-input int    posLifeTime = 10;                                         // время ожидания сделки в барах
-input int    deltaPriceToEMA = 7;                                      // допустимая разница между ценой и EMA для пересечения
-input int    deltaEMAtoEMA = 5;                                        // необходимая разница для разворота EMA
-input int    waitAfterDiv = 4;                                         // ожидание сделки после расхождения (в барах)
+sinput string base_string ="";                                          // базовые параметры робота
+input         ENUM_TRAILING_TYPE  trailingType = TRAILING_TYPE_USUAL;   // тип трейлинга
+input bool    useJrEMAExit = false;                                     // будем ли выходить по ЕМА
+input int     posLifeTime = 10;                                         // время ожидания сделки в барах
+input int     deltaPriceToEMA = 7;                                      // допустимая разница между ценой и EMA для пересечения
+input int     deltaEMAtoEMA = 5;                                        // необходимая разница для разворота EMA
+input int     waitAfterDiv = 4;                                         // ожидание сделки после расхождения (в барах)
+
 
 
 
 // объявление структур данных
 
-EMA_PARAMS    ema_params;     // параметры EMA
-MACD_PARAMS   macd_params;    // параметры MACD
-STOC_PARAMS   stoc_params;    // параметры стохастика
-PBI_PARAMS    pbi_params;     // параметры PriceBased indicator
-DEAL_PARAMS   deal_params;    // параметры сделок
-BASE_PARAMS   base_params;    // базовые параметры
+sEmaParams    ema_params;          // параметры EMA
+sMacdParams   macd_params;         // параметры MACD
+sStocParams   stoc_params;         // параметры стохастика
+sPbiParams    pbi_params;          // параметры PriceBased indicator
+sDealParams   deal_params;         // параметры сделок
+sBaseParams   base_params;         // базовые параметры
 
 
 // глобальные объекты
 
-CTradeManager *ctm;          // указатель на объект класса TradeManager
-POINTSYS      *pointsys;     // указатель на объект класса бальной системы
+CTradeManager  *ctm;               // указатель на объект класса TradeManager
+CPointSys      *pointsys;          // указатель на объект класса бальной системы
 
+// глобальные системные переменные
 
-// временные параменные
-
-int priceDifference;
+string symbol;                     // переменная для хранения символа
+ENUM_TIMEFRAMES period;            // переменная для хранения таймфрейма
+ENUM_TM_POSITION_TYPE deal_type;   // тип совершения сделки
+ENUM_TM_POSITION_TYPE opBuy,       // сигнал на покупку 
+                      opSell;      // сигнал на продажу
 
 //+------------------------------------------------------------------+
 //| функция иницициализации                                          |
@@ -101,11 +106,12 @@ int OnInit()
    macd_params.fast_EMA_period            = fast_EMA_period; 
    macd_params.signal_period              = signal_period;
    macd_params.slow_EMA_period            = slow_EMA_period;
+   macd_params.depth                      = depth_macd;
    ///////////////////////////////////////////////////////////////
    
    // заполняем параметры Стохастика
-   stoc_params.ALLOW_DEPTH_FOR_PRICE_EXTR = ALLOW_DEPTH_FOR_PRICE_EXTR;
-   stoc_params.DEPTH                      = DEPTH;
+   stoc_params.allow_depth_for_price_extr = allow_depth_for_price_extr;
+   stoc_params.depth                      = depth_stoc;
    stoc_params.bottom_level               = bottom_level;
    stoc_params.dPeriod                    = dPeriod;
    stoc_params.kPeriod                    = kPeriod;
@@ -114,16 +120,12 @@ int OnInit()
    //////////////////////////////////////////////////////////////
    
    // заполняем параметры сделок
-   deal_params.limitPriceDifference       = limitPriceDifference;
    deal_params.minProfit                  = minProfit;
    deal_params.orderVolume                = orderVolume;
    deal_params.slOrder                    = slOrder;
-   deal_params.stopPriceDifference        = stopPriceDifference;
    deal_params.tpOrder                    = tpOrder;
    deal_params.trStep                     = trStep;
    deal_params.trStop                     = trStop;
-   deal_params.useLimitOrders             = useLimitOrders;
-   deal_params.useStopOrders              = useStopOrders;
    //////////////////////////////////////////////////////////////
    
    // заполняем базовые параметры
@@ -136,7 +138,28 @@ int OnInit()
    base_params.waitAfterDiv               = waitAfterDiv;
    //------- выделяем память под динамические объекты
    ctm      = new CTradeManager(); // выделяем память под объект класса TradeManager
-   pointsys = new POINTSYS(deal_params,base_params,ema_params,macd_params,stoc_params,pbi_params);      // выделяем память под объект класса бальной системы  
+   pointsys = new CPointSys(deal_params,base_params,ema_params,macd_params,stoc_params,pbi_params);      // выделяем память под объект класса бальной системы  
+   
+   // сохраняем символ и период
+   
+   symbol = _Symbol;
+   period = _Period;
+   
+   switch (pending_orders_type)  //вычисление priceDifference
+   {
+    case USE_LIMIT_ORDERS: //useLimitsOrders = true;
+     opBuy  = OP_BUYLIMIT;
+     opSell = OP_SELLLIMIT;
+    break;
+    case USE_STOP_ORDERS:
+     opBuy  = OP_BUYSTOP;
+     opSell = OP_SELLSTOP;
+    break;
+    case USE_NO_ORDERS:
+     opBuy  = OP_BUY;
+     opSell = OP_SELL;      
+    break;
+   }     
    
    return(INIT_SUCCEEDED);
   }
@@ -156,11 +179,9 @@ void OnTick()
   {
    ctm.OnTick();  
    // пробуем обновить буферы
+   deal_type = OP_UNKNOWN;   // сохраняем неизвестный сигнал  
       
-   if ( pointsys.UpLoad() == true )
-    {
-      // проверяем текущее ценовое движение 
-     // Comment("ДВИЖЕНИЕ2: ",MoveTypeToString(pointsys.GetMovingType()) );
+     // проверяем текущее ценовое движение 
      switch ( pointsys.GetMovingType() )
        {
         case MOVE_TYPE_CORRECTION_UP:          // на коррекции
@@ -171,12 +192,10 @@ void OnTick()
          switch ( pointsys.GetFlatSignals() )
           {
            case 1:  // сигнал на покупку
-            priceDifference = pointsys.GetPriceDifference();   // временно получаем значение priceDifference 
-            ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+            deal_type = opBuy;     
            break;  
            case -1: // сигнал на продажу
-            priceDifference = pointsys.GetPriceDifference();   // временно получаем значение priceDifference 
-            ctm.OpenUniquePosition(_Symbol,_Period,OP_SELL, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);           
+            deal_type = opSell;            
            break;
           }          
         break;
@@ -187,5 +206,7 @@ void OnTick()
         
         break;
        }
-    } 
+     if (deal_type != OP_UNKNOWN)
+       ctm.OpenUniquePosition(symbol,period,deal_type, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);        
+
   }
