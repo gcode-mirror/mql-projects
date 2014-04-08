@@ -147,79 +147,45 @@ CPointSys::CPointSys(sDealParams &deal_params,sBaseParams &base_params,sEmaParam
 //--------------------------------------------------- 
 int CPointSys::GetFlatSignals()
  {
-  static int  wait = 0;
-  int order_direction = 0; 
+  int points = 0; 
   SymbolInfoTick(_symbol, _tick); 
 
   if (isUpLoaded ())     // если данные индикатора успешно прогрузились
   {
-   StochasticAndEma();
-  // divengenceFlatMACD
+   //StochasticAndEma();  // Ётот сигнал не проверен и пока что не используетс€
       
-  order_direction = divergenceMACD(_handleMACD, Symbol(), Period());   
-  if (order_direction == 1)
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s –асхождение MACD 1", MakeFunctionPrefix(__FUNCTION__)));
+   points += divergenceMACD(_handleMACD, Symbol(), Period());   
+   points += divergenceSTOC(_handleSTOCEld, Symbol(), Period(),80,20);   
   }
-  if (order_direction == -1)
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s –асхождение MACD -1", MakeFunctionPrefix(__FUNCTION__)));
-  }
- }  
-  
-  // divergence Flat Stochastic
-  order_direction = divergenceSTOC(_handleSTOCEld, Symbol(), Period());   
-  if (order_direction == 1)
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s –асхождение MACD 1", MakeFunctionPrefix(__FUNCTION__)));
-   if(LessDoubles(_tick.bid, _bufferEMA3Eld[0] + _base_params.deltaPriceToEMA*_Point))
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыта позици€ BUY.", MakeFunctionPrefix(__FUNCTION__)));
-    wait = 0;
-    return (1);  // сигнал на покупку    
-   }
-  }
-  if (order_direction == -1)
-  {
-   log_file.Write(LOG_DEBUG, StringFormat("%s –асхождение MACD -1", MakeFunctionPrefix(__FUNCTION__)));
-   if(GreatDoubles(_tick.ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыта позици€ SELL.", MakeFunctionPrefix(__FUNCTION__)));
-    wait = 0;    
-    return (-1);  // сигнал на продажу
-   }
-  }
-  
-  }
-  
-    return 0; // нет сигнала
-  }
-  
- int  CPointSys::GetTrendSignals(void)
-  {
-   SymbolInfoTick(Symbol(), _tick);
+  return (points); // нет сигнала
+ }
+
+//---------------------------------------------------
+// ¬ычисл€ем сигнал на тренде
+//--------------------------------------------------- 
+int  CPointSys::GetTrendSignals(void)
+{
+ SymbolInfoTick(Symbol(), _tick);
+ 
+ if ( isUpLoaded () )   // пытаемс€ прогрузить индикаторы
+ {
+    
+ }
+ return (0); // нет сигнала
+} 
+
+//---------------------------------------------------
+// ¬ычисл€ем сигнал на коррекции
+//---------------------------------------------------  
+int CPointSys::GetCorrSignals(void)
+{
+ SymbolInfoTick(Symbol(), _tick);
+ if ( isUpLoaded () ) // если удалось прогрузить индикаторы
+ {
    
-   if ( isUpLoaded () )   // пытаемс€ прогрузить индикаторы
-    {
-     
-   }
-   return (0); // нет сигнала
-  } 
- 
- 
- 
- int CPointSys::GetCorrSignals(void)
-  {
-   SymbolInfoTick(Symbol(), _tick);
-   if ( isUpLoaded () ) // если удалось прогрузить индикаторы
-    {
-     
-    }
-   return (0); // нет сигнала
-  }
-//----------------------------------------------- 
-// кодирование методов класса балльной системы
-//-----------------------------------------------
+ }
+ return (0); // нет сигнала
+}
 
 //-----------------------------------------------
 // метод заполнени€ индикаторных буферов
@@ -230,7 +196,6 @@ bool CPointSys::isUpLoaded(void)
  int copiedSTOCEld=-1;
  int copiedEMAfastJr=-1;
  int copiedEMAslowJr=-1;
- int copiedEMA3Eld=-1; 
  int attempts;
 
  for (attempts = 0; attempts < 25 && copiedPBI < 0; attempts++)
@@ -243,16 +208,14 @@ bool CPointSys::isUpLoaded(void)
  {
   for (attempts = 0; attempts < 25 && (copiedSTOCEld   < 0
                                        || copiedEMAfastJr < 0
-                                       || copiedEMAslowJr < 0
-                                       || copiedEMA3Eld   < 0 ); attempts++) 
+                                       || copiedEMAslowJr < 0); attempts++) 
   {
    // опируем данные индикаторов
-   copiedSTOCEld   =     CopyBuffer( _handleSTOCEld,   0, 1, 2, _bufferSTOCEld);
-   copiedEMAfastJr =     CopyBuffer( _handleEMAfastJr, 0, 1, 2, _bufferEMAfastJr);
-   copiedEMAslowJr =     CopyBuffer( _handleEMAslowJr, 0, 1, 2, _bufferEMAslowJr);
-   copiedEMA3Eld   =     CopyBuffer( _handleEMA3Eld,   0, 0, 1, _bufferEMA3Eld);
+   copiedSTOCEld   = CopyBuffer( _handleSTOCEld,   0, 1, 2, _bufferSTOCEld);
+   copiedEMAfastJr = CopyBuffer( _handleEMAfastJr, 0, 1, 2, _bufferEMAfastJr);
+   copiedEMAslowJr = CopyBuffer( _handleEMAslowJr, 0, 1, 2, _bufferEMAslowJr);
   }  
-  if (copiedSTOCEld != 2 ||  copiedEMA3Eld != 1 || copiedEMAfastJr != 2 || copiedEMAslowJr != 2 )   
+  if (copiedSTOCEld != 2 || copiedEMAfastJr != 2 || copiedEMAslowJr != 2 )   
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s ќшибка заполнени€ буфера.Error(%d) = %s" 
                                           , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));

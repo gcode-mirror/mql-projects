@@ -62,7 +62,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
  if (copiedSTOC != DEPTH_STOC || copiedHigh != DEPTH_STOC || copiedLow != DEPTH_STOC)
  {
   Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", GetLastError());
-  return(-2);
+  return(0);
  }
  index_Price_global_max = ArrayMaximum(iHigh_buf, 0, WHOLE_ARRAY);
  index_STOC_global_max =  ArrayMaximum(iSTOC_buf, 0, WHOLE_ARRAY);

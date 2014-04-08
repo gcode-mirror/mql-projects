@@ -8,8 +8,8 @@
 #property version   "1.00"
 #property indicator_separate_window
 #include <Lib CisNewBar.mqh>                  // для проверки формирования нового бара
-#include <divergenceStochastic.mqh>           // подключаем библиотеку для поиска схождений и расхождений стохастика
-#include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
+#include <Divergence/divergenceStochastic.mqh>           // подключаем библиотеку для поиска схождений и расхождений стохастика
+#include <ChartObjects/ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
 #include <CompareDoubles.mqh>                 // для проверки соотношения  цен
 
  // параметры индикатора
@@ -78,7 +78,7 @@ int                handleStoc;             // хэндл стохастика
 int                lastBarIndex;           // индекс последнего бара   
 long               countTrend;             // счетчик тренд линий
 
-PointDiv           divergencePoints;       // схождения и расхождения стохастика
+PointDivSTOC       divergencePoints;       // схождения и расхождения стохастика
 CChartObjectTrend  trendLine;              // объект класса трендовой линии
 CisNewBar          isNewBar;               // для проверки формирования нового бара
 
