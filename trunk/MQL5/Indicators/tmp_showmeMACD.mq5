@@ -8,8 +8,8 @@
 #property version   "1.00"
 #property indicator_separate_window
 #include <Lib CisNewBar.mqh>                  // для проверки формирования нового бара
-#include <divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений Стохастика
-#include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
+#include <Divergence/divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений Стохастика
+#include <ChartObjects/ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
 #include <CompareDoubles.mqh>                 // для проверки соотношения  цен
 
 // параметры индикатора
@@ -75,7 +75,7 @@ int                handleMACD;             // хэндл MACD
 int                lastBarIndex;           // индекс последнего бара   
 long               countTrend;             // счетчик тренд линий
 
-PointDivMACD           divergencePoints;       // схождения и расхождения MACD
+PointDivMACD       divergencePoints;       // схождения и расхождения MACD
 CChartObjectTrend  trendLine;              // объект класса трендовой линии
 CisNewBar          isNewBar;               // для проверки формирования нового бара
 
@@ -182,7 +182,7 @@ int OnCalculate(const int rates_total,
        for (;lastBarIndex > depth; lastBarIndex--)
         {
           // сканируем историю по хэндлу на наличие расхождений\схождений 
-          retCode = divergenceMACD (handleMACD,_Symbol,_Period,lastBarIndex,divergencePoints);
+          retCode = divergenceMACD(handleMACD,_Symbol,_Period,divergencePoints,lastBarIndex);
           // если не удалось загрузить буферы MACD)
           if (retCode == -2)
            return (0);
@@ -304,7 +304,7 @@ int OnCalculate(const int rates_total,
        if (isNewBar.isNewBar() > 0)
         {        
          // распознаем схождение\расхождение
-         retCode = divergenceMACD (handleMACD,_Symbol,_Period,1,divergencePoints);
+         retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,1);
          // если схождение\расхождение обнаружено
          if (retCode)
           {   
