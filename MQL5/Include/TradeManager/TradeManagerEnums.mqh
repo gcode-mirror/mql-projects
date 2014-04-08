@@ -1,10 +1,21 @@
 //+------------------------------------------------------------------+
-//|                                  Virtual Order Manager Enums.mqh |
-//|                                     Copyright Paul Hampton-Smith |
-//|                            http://paulsfxrandomwalk.blogspot.com |
+//|                                           TradeManager Enums.mqh |
+//|                                                    Copyright GIA |
+//|                                             http://www.saita.net |
 //+------------------------------------------------------------------+
-#property copyright "Paul Hampton-Smith"
-#property link      "http://paulsfxrandomwalk.blogspot.com"
+#property copyright "Copyright 2013, GIA"
+#property link      "http://www.saita.net"
+
+//+------------------------------------------------------------------+
+/// Similar enum to ENUM_ORDER_TYPE.
+//+------------------------------------------------------------------+
+enum ENUM_USE_PENDING_ORDERS 
+ { 
+  USE_LIMIT_ORDERS=0, //использовать лимит ордера
+  USE_STOP_ORDERS,    //использовать стоп ордера
+  USE_NO_ORDERS       //не использовать отложенники
+ };
+ 
 //+------------------------------------------------------------------+
 /// Similar enum to ENUM_ORDER_TYPE.
 //+------------------------------------------------------------------+

@@ -40,8 +40,8 @@ input int signal_period = 9;                                            // перио
 input int depth_macd = 100;                                             // глубина истории поиска расхождения
 
 sinput string ema_string="";                                            // параметры для EMA
-input int    periodEMAfastJr = 15;                                      // период быстрой   EMA
-input int    periodEMAslowJr = 9;                                       // период медленной EMA
+input int    periodEMAfastJr = 9;                                      // период быстрой   EMA
+input int    periodEMAslowJr = 15;                                       // период медленной EMA
 
 sinput string pbi_string ="";                                           // параметры PriceBased indicator
 input int    historyDepth = 2000;                                       // глубина истории для расчета
@@ -65,31 +65,24 @@ input int     deltaPriceToEMA = 7;                                      // допус
 input int     deltaEMAtoEMA = 5;                                        // необходимая разница для разворота EMA
 input int     waitAfterDiv = 4;                                         // ожидание сделки после расхождения (в барах)
 
-
-
-
 // объявление структур данных
-
 sEmaParams    ema_params;          // параметры EMA
 sMacdParams   macd_params;         // параметры MACD
 sStocParams   stoc_params;         // параметры стохастика
 sPbiParams    pbi_params;          // параметры PriceBased indicator
-sDealParams   deal_params;         // параметры сделок
-sBaseParams   base_params;         // базовые параметры
+sDealParams   deal_params;          // параметры сделок
+sBaseParams   base_params;          // базовые параметры
 
 
 // глобальные объекты
-
-CTradeManager  *ctm;               // указатель на объект класса TradeManager
-CPointSys      *pointsys;          // указатель на объект класса бальной системы
+CTradeManager  *ctm;                // указатель на объект класса TradeManager
+CPointSys      *pointsys;           // указатель на объект класса бальной системы
 
 // глобальные системные переменные
-
-string symbol;                     // переменная для хранения символа
-ENUM_TIMEFRAMES period;            // переменная для хранения таймфрейма
-ENUM_TM_POSITION_TYPE deal_type;   // тип совершения сделки
-ENUM_TM_POSITION_TYPE opBuy,       // сигнал на покупку 
-                      opSell;      // сигнал на продажу
+string symbol;                       // переменная для хранения символа
+ENUM_TIMEFRAMES period;              // переменная для хранения таймфрейма
+ENUM_TM_POSITION_TYPE deal_type;     // тип совершения сделки
+ENUM_TM_POSITION_TYPE opBuy, opSell; // сигнал на покупку 
 
 //+------------------------------------------------------------------+
 //| функция иницициализации                                          |
@@ -182,14 +175,14 @@ void OnTick()
    deal_type = OP_UNKNOWN;   // сохраняем неизвестный сигнал  
       
      // проверяем текущее ценовое движение 
-     switch ( pointsys.GetMovingType() )
+     switch (pointsys.GetMovingType())
        {
         case MOVE_TYPE_CORRECTION_UP:          // на коррекции
         case MOVE_TYPE_CORRECTION_DOWN:
 
         break;
         case MOVE_TYPE_FLAT:                   // на флэте
-         switch ( pointsys.GetFlatSignals() )
+         switch (pointsys.GetFlatSignals())
           {
            case 1:  // сигнал на покупку
             deal_type = opBuy;     
