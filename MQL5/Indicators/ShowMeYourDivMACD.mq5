@@ -10,8 +10,9 @@
 #include <Lib CisNewBar.mqh>                  // для проверки формирования нового бара
 #include <divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений Стохастика
 #include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
+#include <CompareDoubles.mqh>                 // для проверки соотношения  цен
 
- // параметры индикатора
+// параметры индикатора
  
 //---- всего задействовано 2 буфера
 #property indicator_buffers 2
@@ -61,6 +62,8 @@ input short               bars=20000;                // начальное количество бар
 input int                 fast_ema_period=12;        // период быстрой средней MACD
 input int                 slow_ema_period=26;        // период медленной средней MACD
 input int                 signal_period=9;           // период усреднения разности MACD
+input int                 depth=10;                  // грубина рассчета актуальности
+
 
 //+------------------------------------------------------------------+
 //| Глобальные переменные                                            |
@@ -71,7 +74,7 @@ int                handleMACD;             // хэндл MACD
 int                lastBarIndex;           // индекс последнего бара   
 long               countTrend;             // счетчик тренд линий
 
-PointDiv           divergencePoints;       // схождения и расхождения MACD
+PointDivMACD       divergencePoints;       // схождения и расхождения MACD
 CChartObjectTrend  trendLine;              // объект класса трендовой линии
 CisNewBar          isNewBar;               // для проверки формирования нового бара
 
@@ -81,6 +84,23 @@ CisNewBar          isNewBar;               // для проверки формирования нового б
 
 double bufferMACD[];   // буфер уровней MACD
 double signalMACD[];   // сигнальный буфер MACD
+
+int countConvPos = 0;       // количество положительных сигналов схождения
+int countConvNeg = 0;       // количество негативный сигналов схождения
+int countDivPos  = 0;       // количество положительный сигналов расхождения
+int countDivNeg  = 0;       // количество негативных сигналов расхождения 
+
+double averConvPos = 0;      // среднее актуальное схождение
+double averConvNeg = 0;      // среднее не актуальное схождение
+double averDivPos  = 0;      // среднее актуальное расхождение
+double averDivNeg  = 0;      // среднее не актуальное расхождение
+double averPos     = 0;      // средний актуальный сигнал
+double averNeg     = 0;      // средний не актуальный сигнал      
+ 
+// временные параменные для хранения локальных минимумов и максимумов
+ double localMax;
+ double localMin;
+
  
 //+------------------------------------------------------------------+
 //| Базовые функции индикатора                                       |
@@ -119,6 +139,7 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
     int retCode;  // результат вычисления схождения и расхождения
+    int count;    // индекс цикла для поиска максимума и минимума
     // если это первый запуск фунции пересчета индикатора
     if (first_calculate)
      {
@@ -147,8 +168,8 @@ int OnCalculate(const int rates_total,
            {
              // если не удалось загрузить буфера MACD
              return (0);
-           }  
-       for (;lastBarIndex > 0; lastBarIndex--)
+           }                
+       for (;lastBarIndex > depth; lastBarIndex--)
         {
           // сканируем историю по хэндлу на наличие расхождений\схождений 
           retCode = divergenceMACD (handleMACD,_Symbol,_Period,lastBarIndex,divergencePoints);
@@ -166,9 +187,69 @@ int OnCalculate(const int rates_total,
             trendLine.Create(0,"MACDLine_"+countTrend,1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);            
             //увеличиваем количество тренд линий
             countTrend++;
+            
+            localMax = high[rates_total-2-lastBarIndex];
+            localMin = low[rates_total-2-lastBarIndex];
+            
+            for (count=1;count<=depth;count++)
+             {
+              if (GreatDoubles (high[rates_total-2-lastBarIndex+count],localMax) )
+               localMax = high[rates_total-2-lastBarIndex+count];
+              if (LessDoubles (low[rates_total-2-lastBarIndex+count],localMin) )
+               localMin = low[rates_total-2-lastBarIndex+count];
+             } 
+            if (retCode == 1)
+             {                    
+          
+               if ( LessDoubles ( (localMax - close[rates_total-3-lastBarIndex]), (close[rates_total-3-lastBarIndex] - localMin) ) )
+                 {
+                   averDivPos  = averDivPos + close[rates_total-3-lastBarIndex+count] - localMin;
+                   averPos     = averPos + close[rates_total-3-lastBarIndex+count] - localMin;
+                   countDivPos ++; // увеличиваем счетчик положительных схождений
+                 }
+               else
+                 {
+                   averDivNeg = averDivNeg + close[rates_total-3-lastBarIndex] - localMax;  
+                   averNeg     = averNeg + close[rates_total-3-lastBarIndex] - localMax;                 
+                   countDivNeg ++; // иначе увеличиваем счетчик отрицательных схождений
+                 }
+             }
+            if (retCode == -1)
+             {
+                        
+               if (GreatDoubles ( (localMax - close[rates_total-3-lastBarIndex]), (close[rates_total-3-lastBarIndex] - localMin) ) )
+                 {
+                  averConvPos = averConvPos + localMax - close[rates_total-3-lastBarIndex];
+                  averPos     = averPos + localMax - close[rates_total-3-lastBarIndex];
+                  countConvPos ++; // увеличиваем счетчик положительных расхождений
+                 }
+               else
+                 {
+                  averConvNeg = averConvNeg + localMin - close[rates_total-3-lastBarIndex];  
+                  averNeg     = averNeg + localMin - close[rates_total-3-lastBarIndex];
+                  countConvNeg ++; // иначе увеличиваем счетчик отрицательных расхождений
+                 }   
+             }
         
            }
         }
+     
+    // вычисление средних значений
+   if (countConvNeg > 0)
+    averConvNeg = averConvNeg / countConvNeg;
+   if (countConvPos > 0) 
+    averConvPos = averConvPos / countConvPos;
+   if (countDivNeg > 0)
+    averDivNeg  = averDivNeg  / countDivNeg;
+   if (countDivPos > 0)
+    averDivPos  = averDivPos  / countDivPos;
+   if (countConvNeg > 0 || countDivNeg > 0)
+    averNeg     = averNeg     / (countConvNeg + countDivNeg);
+   if (countConvPos > 0 || countDivPos > 0)
+    averPos     = averPos     / (countConvPos + countDivPos);    
+            
+    
+        
        first_calculate = false;
      }
     else  // если запуска не первый
@@ -195,7 +276,8 @@ int OnCalculate(const int rates_total,
            //создаем линию схождения\расхождения на MACD
            trendLine.Create(0,"MACDLine_"+countTrend,1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);    
            // увеличиваем количество тренд линий
-           countTrend++;         
+           countTrend++;     
+          
           }        
         }
      } 

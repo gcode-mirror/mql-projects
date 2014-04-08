@@ -10,6 +10,7 @@
 #include <Lib CisNewBar.mqh>                  // для проверки формирования нового бара
 #include <divergenceStochastic.mqh>           // подключаем библиотеку для поиска схождений и расхождений стохастика
 #include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
+#include <CompareDoubles.mqh>                 // для проверки соотношения  цен
 
  // параметры индикатора
  
@@ -66,6 +67,7 @@ input int                 top_level=80;                 // верхний уровень
 input int                 bottom_level=20;              // нижний уровень 
 input int                 DEPTH_STOC=10;                // большой хвост буфера 
 input int                 ALLOW_DEPTH_FOR_PRICE_EXTR=3; // малый хвост буфера
+input int                 depth=10;                     // глубина вычисления актуальности
 
 
 //+------------------------------------------------------------------+
@@ -81,15 +83,36 @@ PointDiv           divergencePoints;       // схождения и расхождения стохастика
 CChartObjectTrend  trendLine;              // объект класса трендовой линии
 CisNewBar          isNewBar;               // для проверки формирования нового бара
 
-double bufferStoc[];    // буфер стохастика 1
-double bufferStoc2[];   // буфер стохастика 2
+double             bufferStoc[];           // буфер стохастика 1
+double             bufferStoc2[];          // буфер стохастика 2
+
+int countConvPos = 0;                      // количество положительных сигналов схождения
+int countConvNeg = 0;                      // количество негативный сигналов схождения
+int countDivPos  = 0;                      // количество положительный сигналов расхождения
+int countDivNeg  = 0;                      // количество негативных сигналов расхождения 
+
+double averConvPos = 0;      // среднее актуальное схождение
+double averConvNeg = 0;      // среднее не актуальное схождение
+double averDivPos  = 0;      // среднее актуальное расхождение
+double averDivNeg  = 0;      // среднее не актуальное расхождение
+double averPos     = 0;      // средний актуальный сигнал
+double averNeg     = 0;      // средний не актуальный сигнал   
  
+// временные параменные для хранения локальных минимумов и максимумов
+ double localMax;
+ double localMin;
+
+// счетчик в цикле по глубины вычисления схождений\расхождений
+
+int count;
+
+
 //+------------------------------------------------------------------+
 //| Базовые функции индикатора                                       |
 //+------------------------------------------------------------------+
 
 int OnInit()
-  {
+  { 
    // удаляем все графические объекты     
    ObjectsDeleteAll(0,0,OBJ_TREND);
    ObjectsDeleteAll(0,1,OBJ_TREND);   
@@ -165,13 +188,76 @@ int OnCalculate(const int rates_total,
             //создаем линию схождения\расхождения                    
             trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
             
-          //  trendLine.Color(lineColors[countTrend % 5] );         
+            //trendLine.Color(lineColors[countTrend % 5] );         
             //создаем линию схождения\расхождения на стохастике
             trendLine.Create(0,"StocLine_"+countTrend,1,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
             //увеличиваем количество тренд линий
             countTrend++;
+            
+            localMax = high[rates_total-1-lastBarIndex];
+            localMin = low[rates_total-1-lastBarIndex];
+            for (count=1;count<=depth;count++)
+             {
+              if (GreatDoubles(high[rates_total-1-lastBarIndex+count],localMax) )
+               localMax = high[rates_total-1-lastBarIndex+count];
+              if (LessDoubles (low[rates_total-1-lastBarIndex+count],localMin) )
+               localMin = low[rates_total-1-lastBarIndex+count];
+             } 
+             
+            // Alert("LAST BAR INDEX = ",rates_total-1-lastBarIndex," ВРЕМЯ = ",TimeToString(time[rates_total-2-lastBarIndex]));
+            // Alert("LOCAL MAX = ",localMax-close[rates_total-2-lastBarIndex]," LOCAL MIN = ",close[rates_total-2-lastBarIndex]-localMin);       
+            // Alert("ЦЕНА ЗАКРЫТИЯ = ",close[rates_total-1-lastBarIndex]);   
+            if (retCode == 1)
+             {
+  
+               if ( LessDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
+                 {
+               
+                   averDivPos  = averDivPos + close[rates_total-2-lastBarIndex] - localMin;
+                   averPos     = averPos + close[rates_total-2-lastBarIndex] - localMin; 
+                   countDivPos ++; // увеличиваем счетчик положительных схождений
+                 }
+               else
+                 {
+                   averDivNeg  = averDivNeg + close[rates_total-2-lastBarIndex] - localMax;  
+                   averNeg     = averNeg + close[rates_total-2-lastBarIndex] - localMax; 
+                   countDivNeg ++; // иначе увеличиваем счетчик отрицательных схождений
+                 }
+             }
+            if (retCode == -1)
+             {              
+               if (GreatDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
+                 {
+                  averConvPos = averConvPos + localMax - close[rates_total-2-lastBarIndex];
+                  averPos     = averPos + localMax - close[rates_total-2-lastBarIndex];  
+                  countConvPos ++; // увеличиваем счетчик положительных расхождений
+                  
+                 }
+               else
+                 {
+                  averConvNeg = averConvNeg + localMin - close[rates_total-2-lastBarIndex];  
+                  averNeg     = averNeg + localMin - close[rates_total-2-lastBarIndex];
+                  countConvNeg ++; // иначе увеличиваем счетчик отрицательных расхождений
+                 }   
+             }            
+            
            }
         }
+        
+           // вычисление средних значений
+   if (countConvNeg > 0)
+    averConvNeg = averConvNeg / countConvNeg;
+   if (countConvPos > 0) 
+    averConvPos = averConvPos / countConvPos;
+   if (countDivNeg > 0)
+    averDivNeg  = averDivNeg  / countDivNeg;
+   if (countDivPos > 0)
+    averDivPos  = averDivPos  / countDivPos;
+   if (countConvNeg > 0 || countDivNeg > 0)
+    averNeg     = averNeg     / (countConvNeg + countDivNeg);
+   if (countConvPos > 0 || countDivPos > 0)
+    averPos     = averPos     / (countConvPos + countDivPos);    
+        
        first_calculate = false;
      }
     else  // если запуска не первый
