@@ -1,8 +1,6 @@
 //+------------------------------------------------------------------+
-//|                                                   divergence.mqh |
-//|                        Copyright 2013, MetaQuotes Software Corp. |
-//|                                              http://www.mql5.com |
-//|                                            Pugachev Kirill 6263  |
+//|                                               divergenceMACD.mqh |
+//|                                              Copyright 2013, GIA |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
@@ -29,15 +27,17 @@ PointDivMACD nullMACD = {0};
 
 /////-------------------------------
 /////-------------------------------
-int isMACDExtremum(int handleMACD, int startIndex, int precision = 8, bool LOG = false)
+int isMACDExtremum(int handleMACD, int startIndex)
 { 
  double iMACD_buf[5];
  
  int copied = 0; 
- for(int attemps = 0; attemps < 25 && (copied = CopyBuffer(handleMACD, 0, startIndex, 5, iMACD_buf)) < 0; attemps++)
+ for(int attemps = 0; attemps < 25 && copied <= 0; attemps++)
  {
+  copied = CopyBuffer(handleMACD, 0, startIndex, 5, iMACD_buf);
   Sleep(100);
  }
+ 
  if(copied != 5)
  {
   int err = GetLastError();
@@ -45,21 +45,16 @@ int isMACDExtremum(int handleMACD, int startIndex, int precision = 8, bool LOG =
   return(0);
  }
 
- if (LOG) Alert("0[", (startIndex-4), "]=", iMACD_buf[0], "; 1[", (startIndex-3), "]=", iMACD_buf[1], "; 2[", (startIndex-2), "]=",  iMACD_buf[2], "; 3[", (startIndex-1), "]=",  iMACD_buf[3]);
-
- if ( GreatDoubles(iMACD_buf[2], iMACD_buf[0], precision) && GreatDoubles(iMACD_buf[2], iMACD_buf[1], precision) &&
-      GreatDoubles(iMACD_buf[2], iMACD_buf[3], precision) && GreatDoubles(iMACD_buf[2], 0, precision) )
+ if ( GreatDoubles(iMACD_buf[2], iMACD_buf[0]) && GreatDoubles(iMACD_buf[2], iMACD_buf[1]) &&
+      GreatDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] > 0)
  {
-  if (LOG) Alert("Нашли новый максимум на MACD. 0[", (startIndex-4), "]=", NormalizeDouble(iMACD_buf[0], 8), "; 1[", (startIndex-3), "]=", NormalizeDouble(iMACD_buf[1], 8), "; 2[", (startIndex-2), "]=",  NormalizeDouble(iMACD_buf[2], 8), "; 3[", (startIndex-1), "]=",  NormalizeDouble(iMACD_buf[3], 8));
   return(1);
  }
- else if ( LessDoubles(iMACD_buf[2], iMACD_buf[0], precision) && LessDoubles(iMACD_buf[2], iMACD_buf[1], precision) && 
-           LessDoubles(iMACD_buf[2], iMACD_buf[3], precision) && LessDoubles(iMACD_buf[2], 0, precision)) 
+ else if ( LessDoubles(iMACD_buf[2], iMACD_buf[0]) && LessDoubles(iMACD_buf[2], iMACD_buf[1]) && 
+           LessDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] < 0) 
       {
-       if (LOG) Alert("Нашли новый минимум на MACD. 1(", (startIndex+1), ")=", iMACD_buf[1], "; 2(", (startIndex+2), ")=", iMACD_buf[2], "; 3(", (startIndex+3), ")=",  iMACD_buf[3], "; 4(", (startIndex+4), ")=",  iMACD_buf[4]);
        return(-1);     
       }
- if (LOG) Alert("Не найдено экстремумов");
  return(0);
 }
 
@@ -70,7 +65,6 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  double iMACD_buf [DEPTH_MACD] = {0};
  double iHigh_buf [DEPTH_MACD] = {0};
  double iLow_buf  [DEPTH_MACD] = {0};
- datetime date_buf[DEPTH_MACD] = {0};
  double iClose_buf[DEPTH_MACD] = {0};
  
  int index_MACD_global_max;
@@ -88,21 +82,18 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  int copiedMACD  = -1;
  int copiedHigh  = -1;
  int copiedLow   = -1;
- int copiedDate  = -1;
  int copiedClose = -1;
  for(int attemps = 0; attemps < 25 && copiedMACD < 0
                                    && copiedHigh < 0
-                                   && copiedLow  < 0
-                                   && copiedDate < 0; attemps++)
+                                   && copiedLow  < 0; attemps++)
  {
   Sleep(100);
   copiedMACD  = CopyBuffer(handleMACD, 0, startIndex, DEPTH_MACD, iMACD_buf);
   copiedHigh  = CopyHigh(symbol,       timeframe, startIndex, DEPTH_MACD, iHigh_buf);
   copiedLow   = CopyLow (symbol,       timeframe, startIndex, DEPTH_MACD, iLow_buf);
-  copiedDate  = CopyTime(symbol,       timeframe, startIndex, DEPTH_MACD, date_buf); 
   copiedClose = CopyClose(symbol,      timeframe, startIndex, DEPTH_MACD, iClose_buf);
  }
- if (copiedMACD != DEPTH_MACD || copiedHigh != DEPTH_MACD || copiedLow != DEPTH_MACD || copiedDate != DEPTH_MACD || copiedClose != DEPTH_MACD)
+ if (copiedMACD != DEPTH_MACD || copiedHigh != DEPTH_MACD || copiedLow != DEPTH_MACD || copiedClose != DEPTH_MACD)
  {
    int err;
    if (LOG)

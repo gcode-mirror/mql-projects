@@ -7,9 +7,11 @@
 #property link      "http://www.mql5.com"
 
 // подключение библиотек
-#include <TradeManager/TradeManager.mqh>    // торговая библиотека
-#include <ColoredTrend/ColoredTrendUtilities.mqh>
+#include <Divergence/divergenceMACD.mqh>
+#include <Divergence/divergenceStochastic.mqh>
 #include <Lib CisNewBar.mqh>                // для проверки формирования нового бара
+#include <StringUtilities.mqh>
+#include <CLog.mqh>
 #include "STRUCTS.mqh"                      // библиотека структур данных для получения сигналов
 
 // класс балльной системы
@@ -33,12 +35,11 @@ class CPointSys
    // P.S. пока что взять хэндлы и буферы для DesepticonFlat
    
    // хэндлы индикаторов
-   int    _handlePBI;              // хэндл PriceBased indicator
-   int    _handleEMA3Eld;          // хэндл EMA 3 дневного TF
-   int    _handleEMAfastJr;        // хэндл EMA fast старшего таймфрейма
-   int    _handleEMAslowJr;        // хэндл EMA fast младшего таймфрейма
-   int    _handleSTOCEld;          // хэндл Stochastic старшего таймфрейма
-
+   int _handlePBI;         // хэндл PriceBased indicator
+   int _handleEMAfastJr;   // хэндл EMA fast старшего таймфрейма
+   int _handleEMAslowJr;   // хэндл EMA fast младшего таймфрейма
+   int _handleSTOCEld;     // хэндл Stochastic старшего таймфрейма
+   int _handleMACD;        // хэндл MACD
    // буферы индикаторов 
    double _bufferPBI[];            // буфер для PriceBased indicator  
    double _bufferEMA3Eld[];        // буфер для EMA 3 старшего таймфрейма
@@ -63,7 +64,7 @@ class CPointSys
    int  GetCorrSignals  ();        // получение торгового сигнала на коррекции  
   // системные методы
    bool  isUpLoaded();              // метод загрузки (обновления) буферов в класс. Возвращает true, если всё успешно
-   ENUM_MOVE_TYPE GetMovingType() {return((int)_bufferPBI[0]);};  // для получения типа движения 
+   int GetMovingType() {return((int)_bufferPBI[0]);};  // для получения типа движения 
   // конструкторы и дестрикторы класса Дисептикона
    CPointSys (sDealParams &deal_params,sBaseParams &base_params,sEmaParams &ema_params,sMacdParams &macd_params,sStocParams &stoc_params,sPbiParams &pbi_params);      // конструктор класса
    ~CPointSys ();      // деструктор класса 
@@ -72,32 +73,32 @@ class CPointSys
 //--------------------------------------
 // конструктор балльной системы
 //--------------------------------------
- CPointSys::CPointSys(sDealParams &deal_params,sBaseParams &base_params,sEmaParams &ema_params,sMacdParams &macd_params,sStocParams &stoc_params,sPbiParams &pbi_params)
-  {
-   //---------инициализируем параметры, буферы, индикаторы и прочее
-   _symbol = Symbol();
+CPointSys::CPointSys(sDealParams &deal_params,sBaseParams &base_params,sEmaParams &ema_params,sMacdParams &macd_params,sStocParams &stoc_params,sPbiParams &pbi_params)
+{
+ //---------инициализируем параметры, буферы, индикаторы и прочее
+ _symbol = Symbol();
+
+ ////// сохраняем внешние параметры
+ _deal_params = deal_params;
+ _base_params = base_params;
+ _ema_params  = ema_params;
+ _macd_params = macd_params;
+ _stoc_params = stoc_params;
+ _pbi_params  = pbi_params;
    
-   ////// сохраняем внешние параметры
-   _deal_params = deal_params;
-   _base_params = base_params;
-   _ema_params  = ema_params;
-   _macd_params = macd_params;
-   _stoc_params = stoc_params;
-   _pbi_params  = pbi_params;
+ // обнуляем баллы
+ _divMACD     = 0;
+ _divStoc     = 0;
    
-   // обнуляем баллы
-   _divMACD     = 0;
-   _divStoc     = 0;
+ ////// инициализаруем индикаторы
+ //---------инициализируем параметры, буферы, индикаторы и прочее
    
-   ////// инициализаруем индикаторы
-   //---------инициализируем параметры, буферы, индикаторы и прочее
-   
-   ////// сохраняем внешние параметры   ////// инициализаруем индикаторы
-   _handlePBI       = iCustom(_Symbol, _Period, "PriceBasedIndicator", 1000);
-   _handleSTOCEld   = iStochastic(NULL, _base_params.eldTF, _stoc_params.kPeriod, _stoc_params.dPeriod, _stoc_params.slow, MODE_SMA, STO_CLOSECLOSE);
-   _handleEMAfastJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAfastJr, 0, MODE_EMA, PRICE_CLOSE);
-   _handleEMAslowJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAslowJr, 0, MODE_EMA, PRICE_CLOSE);
-   _handleEMA3Eld   = iMA(Symbol(),  _base_params.eldTF,               3, 0, MODE_EMA, PRICE_CLOSE);
+ ////// сохраняем внешние параметры   ////// инициализаруем индикаторы
+ _handlePBI       = iCustom(Symbol(), Period(), "PriceBasedIndicator", 1000);
+ _handleMACD      = iMACD(Symbol(), Period(), _macd_params.fast_EMA_period,  _macd_params.slow_EMA_period, _macd_params.signal_period, _macd_params.applied_price);
+ _handleSTOCEld   = iStochastic(NULL, _base_params.eldTF, _stoc_params.kPeriod, _stoc_params.dPeriod, _stoc_params.slow, MODE_SMA, STO_CLOSECLOSE);
+ _handleEMAfastJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAfastJr, 0, MODE_EMA, PRICE_CLOSE);
+ _handleEMAslowJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAslowJr, 0, MODE_EMA, PRICE_CLOSE);
 
  if (_handlePBI == INVALID_HANDLE || _handleEMAfastJr == INVALID_HANDLE || _handleEMAslowJr == INVALID_HANDLE)
  {
@@ -107,37 +108,34 @@ class CPointSys
   //return(INIT_FAILED);
  }   
             
-  // выделяем память под объект класса определения формирования нового бара
-  _eldNewBar = new CisNewBar(_base_params.eldTF);
+ // выделяем память под объект класса определения формирования нового бара
+ _eldNewBar = new CisNewBar(_base_params.eldTF);
   // порядок элементов в массивах, как в таймсерии
-  ArraySetAsSeries( _bufferPBI, true);
-  ArraySetAsSeries( _bufferEMA3Eld, true);
-  ArraySetAsSeries( _bufferEMAfastJr, true);
-  ArraySetAsSeries( _bufferEMAslowJr, true);
-  ArraySetAsSeries( _bufferSTOCEld, true);
+ ArraySetAsSeries( _bufferPBI, true);
+ ArraySetAsSeries( _bufferEMAfastJr, true);
+ ArraySetAsSeries( _bufferEMAslowJr, true);
+ ArraySetAsSeries( _bufferSTOCEld, true);
   // изменяем размер буферов
-  ArrayResize( _bufferPBI, 1);
-  ArrayResize( _bufferEMA3Eld, 1);
-  ArrayResize( _bufferEMAfastJr, 2);
-  ArrayResize( _bufferEMAslowJr, 2);
-  ArrayResize( _bufferSTOCEld, 1);
-   
-  }
+ ArrayResize( _bufferPBI, 1);
+ ArrayResize( _bufferEMAfastJr, 2);
+ ArrayResize( _bufferEMAslowJr, 2);
+ ArrayResize( _bufferSTOCEld, 1);
+}
 
 //---------------------------------------------  
 // деструктор балльной системы
 //---------------------------------------------
  CPointSys::~CPointSys(void)
   {
+   delete _eldNewBar;
    // освобождаем индикаторы
    IndicatorRelease(_handlePBI);
-   IndicatorRelease(_handleEMA3Eld);
    IndicatorRelease(_handleEMAfastJr);
    IndicatorRelease(_handleEMAslowJr);
    IndicatorRelease(_handleSTOCEld);
+   IndicatorRelease(_handleMACD);
    // освобождаем память под буферы
    ArrayFree(_bufferPBI);
-   ArrayFree(_bufferEMA3Eld);
    ArrayFree(_bufferEMAfastJr);
    ArrayFree(_bufferEMAslowJr);
    // пишем в лог об деинициализации
@@ -153,46 +151,24 @@ int CPointSys::GetFlatSignals()
   int order_direction = 0; 
   SymbolInfoTick(_symbol, _tick); 
 
-  if ( isUpLoaded () )     // если данные индикатора успешно прогрузились
+  if (isUpLoaded ())     // если данные индикатора успешно прогрузились
   {
    StochasticAndEma();
   // divengenceFlatMACD
-  
-  wait++; 
-  if (order_direction != 0)   // если есть сигнал о направлении ордера 
-  {
-   if (wait > _base_params.waitAfterDiv)   // проверяем на допустимое время ожидания после расхождения
-   {
-    wait = 0;                 // если не дождались обнуляем счетчик ожидания и направления сделки
-    order_direction = 0;
-   }
-  }  
-    //order_direction = divergenceMACD(handleMACD, Symbol(), eldTF, 0, nullMACD);   
+      
+  order_direction = divergenceMACD(_handleMACD, Symbol(), Period());   
   if (order_direction == 1)
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD 1", MakeFunctionPrefix(__FUNCTION__)));
-   if(LessDoubles(_tick.bid, _bufferEMA3Eld[0] + _base_params.deltaPriceToEMA*_Point))
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
-    wait = 0;
-    return (1);  // типо сигнал на покупку
-
-   }
   }
   if (order_direction == -1)
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD -1", MakeFunctionPrefix(__FUNCTION__)));
-   if(GreatDoubles(_tick.ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
-    wait = 0;
-    return (-1);  // типо сигнал на продажу
-  
-   }
-  }  
+  }
+ }  
   
   // divergence Flat Stochastic
-  
+  order_direction = divergenceSTOC(_handleSTOCEld, Symbol(), Period());   
   if (order_direction == 1)
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Расхождение MACD 1", MakeFunctionPrefix(__FUNCTION__)));
@@ -221,7 +197,7 @@ int CPointSys::GetFlatSignals()
   
  int  CPointSys::GetTrendSignals(void)
   {
-   MqlTick tick;   // параметры тика
+   SymbolInfoTick(Symbol(), _tick);
    
    if ( isUpLoaded () )   // пытаемся прогрузить индикаторы
     {
@@ -234,7 +210,7 @@ int CPointSys::GetFlatSignals()
  
  int CPointSys::GetCorrSignals(void)
   {
-   MqlTick tick;   // параметры тика
+   SymbolInfoTick(Symbol(), _tick);
    if ( isUpLoaded () ) // если удалось прогрузить индикаторы
     {
      

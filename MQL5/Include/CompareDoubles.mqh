@@ -9,7 +9,7 @@
 //+------------------------------------------------------------------+
 //| EqualDoubles                                                   |
 //+------------------------------------------------------------------+
-bool EqualDoubles(double number1,double number2, int precision = 8)
+bool EqualDoubles(double number1,double number2, int precision = 5)
  {
   return(NormalizeDouble(number1-number2, precision) == 0);
  }
@@ -18,7 +18,7 @@ bool EqualDoubles(double number1,double number2, int precision = 8)
 //+------------------------------------------------------------------+
 //| GreatDoubles                                                   |
 //+------------------------------------------------------------------+
-bool GreatDoubles(double number1,double number2, int precision = 8)
+bool GreatDoubles(double number1,double number2, int precision = 5)
  {
   return(NormalizeDouble(number1-number2,precision)>0);
  }
@@ -27,7 +27,7 @@ bool GreatDoubles(double number1,double number2, int precision = 8)
 //+------------------------------------------------------------------+
 //| LessDoubles                                                   |
 //+------------------------------------------------------------------+
-bool LessDoubles(double number1,double number2, int precision = 8)
+bool LessDoubles(double number1,double number2, int precision = 5)
  {
   return(NormalizeDouble(number1-number2,precision) < 0);
  }
@@ -36,7 +36,7 @@ bool LessDoubles(double number1,double number2, int precision = 8)
 //+------------------------------------------------------------------+
 //| GreatOrEqualDoubles                                                   |
 //+------------------------------------------------------------------+
-bool GreatOrEqualDoubles(double number1,double number2, int precision = 8)
+bool GreatOrEqualDoubles(double number1,double number2, int precision = 5)
  {
   return(NormalizeDouble(number1-number2,precision)>=0);
  }
@@ -45,7 +45,7 @@ bool GreatOrEqualDoubles(double number1,double number2, int precision = 8)
 //+------------------------------------------------------------------+
 //| LessOrEqualDoubles                                                   |
 //+------------------------------------------------------------------+
-bool LessOrEqualDoubles(double number1,double number2, int precision = 8)
+bool LessOrEqualDoubles(double number1,double number2, int precision = 5)
  {
   return(NormalizeDouble(number1-number2,precision)<=0);
  }
