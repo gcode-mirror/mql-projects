@@ -9,6 +9,15 @@
 //| библиотека структур данных для получения сигналов                |
 //+------------------------------------------------------------------+
 
+// режим вычисления priceDifference
+
+enum ENUM_USE_PENDING_ORDERS 
+ { 
+  USE_LIMIT_ORDERS=0, //использовать лимит ордера
+  USE_STOP_ORDERS,    //использовать стоп ордера
+  USE_NO_ORDERS       //не использовать отложенники
+ };
+
 // перечисление типов сигналов
 
 enum SIGNAL_TYPE
@@ -18,7 +27,7 @@ enum SIGNAL_TYPE
  
 // структура хранения сигналов и количества баллов
 
-struct POINT_STRUCT
+struct sPoint
  {
   SIGNAL_TYPE signal;  // тип сигнала
   int point_value;     // количество баллов
@@ -26,7 +35,7 @@ struct POINT_STRUCT
 
 // структура EMA
 
-struct EMA_PARAMS
+struct sEmaParams
  {
   int    periodEMAfastJr;            // период быстрой EMA
   int    periodEMAslowJr;            // период медленной EMA
@@ -34,49 +43,46 @@ struct EMA_PARAMS
  
 // структура MACD
 
-struct MACD_PARAMS
+struct sMacdParams
  {
   int    fast_EMA_period;            // быстрый период EMA для MACD
   int    slow_EMA_period;            // медленный период EMA для MACD
   int    signal_period;              // период сигнальной линии для MACD 
+  int    depth;                      // глубина поиска расхождения    
  };
 
 // структура параметров Стохастика
 
-struct STOC_PARAMS
+struct sStocParams
  {
   int    kPeriod;                    // К-период стохастика
   int    dPeriod;                    // D-период стохастика
   int    slow;                       // Сглаживание стохастика. Возможные значения от 1 до 3.
   int    top_level;                  // Top-level стохастка
   int    bottom_level;               // Bottom-level стохастика
-  int    DEPTH;                      // глубина поиска расхождения
-  int    ALLOW_DEPTH_FOR_PRICE_EXTR; // допустимая глубина для экстремума цены
+  int    allow_depth_for_price_extr; // допустимая грубина для экстремума цены
+  int    depth;                      // глубина поиска расхождения    
  };
  
 // структура параметров PriceBasedIndicator
-struct PBI_PARAMS
+struct sPbiParams
  {
-  int    historyDepth;               // глубина истории для расчета
-  int    bars;                       // сколько свечей показывать
+  int    historyDepth;                            // глубина истории для расчета
+  int    bars;                                    // сколько свечей показывать
  };
 // структура сделок
-struct DEAL_PARAMS
+struct sDealParams
  {
-  double orderVolume;                // Объём сделки
-  int    slOrder;                    // Stop Loss
-  int    tpOrder;                    // Take Profit
-  int    trStop;                     // Trailing Stop
-  int    trStep;                     // Trailing Step
-  int    minProfit;                  // Minimal Profit 
-  bool   useLimitOrders;             // Использовать Limit ордера
-  int    limitPriceDifference;       // Разнциа для Limit ордеров
-  bool   useStopOrders;              // Использовать Stop ордера
-  int    stopPriceDifference;        // Разнциа для Stop ордеров 
+  double orderVolume;                             // Объём сделки
+  int    slOrder;                                 // Stop Loss
+  int    tpOrder;                                 // Take Profit
+  int    trStop;                                  // Trailing Stop
+  int    trStep;                                  // Trailing Step
+  int    minProfit;                               // Minimal Profit 
  };
  
 // структура базовых настроек
-struct BASE_PARAMS
+struct sBaseParams
  {
   ENUM_TIMEFRAMES eldTF;             //
   ENUM_TIMEFRAMES jrTF;              //
