@@ -36,40 +36,40 @@ struct sEmaParams
 
 struct sMacdParams
  {
-  int    fast_EMA_period;            // быстрый период EMA для MACD
-  int    slow_EMA_period;            // медленный период EMA для MACD
-  int    signal_period;              // период сигнальной линии для MACD 
-  int    depth;                      // глубина поиска расхождения    
+  int fast_EMA_period;            // быстрый период EMA для MACD
+  int slow_EMA_period;            // медленный период EMA для MACD
+  int signal_period;              // период сигнальной линии для MACD 
+  int applied_price;                      // глубина поиска расхождения    
  };
 
 // структура параметров Стохастика
 
 struct sStocParams
  {
-  int    kPeriod;                    // К-период стохастика
-  int    dPeriod;                    // D-период стохастика
-  int    slow;                       // Сглаживание стохастика. Возможные значения от 1 до 3.
-  int    top_level;                  // Top-level стохастка
-  int    bottom_level;               // Bottom-level стохастика
-  int    allow_depth_for_price_extr; // допустимая грубина для экстремума цены
-  int    depth;                      // глубина поиска расхождения    
+  int kPeriod;                    // К-период стохастика
+  int dPeriod;                    // D-период стохастика
+  int slow;                       // Сглаживание стохастика. Возможные значения от 1 до 3.
+  int top_level;                  // Top-level стохастка
+  int bottom_level;               // Bottom-level стохастика
+  int allow_depth_for_price_extr; // допустимая грубина для экстремума цены
+  int depth;                      // глубина поиска расхождения    
  };
  
 // структура параметров PriceBasedIndicator
 struct sPbiParams
  {
-  int    historyDepth;                            // глубина истории для расчета
-  int    bars;                                    // сколько свечей показывать
+  int historyDepth;                            // глубина истории для расчета
+  int bars;                                    // сколько свечей показывать
  };
 // структура сделок
 struct sDealParams
  {
   double orderVolume;                             // Объём сделки
-  int    slOrder;                                 // Stop Loss
-  int    tpOrder;                                 // Take Profit
-  int    trStop;                                  // Trailing Stop
-  int    trStep;                                  // Trailing Step
-  int    minProfit;                               // Minimal Profit 
+  int slOrder;                                 // Stop Loss
+  int tpOrder;                                 // Take Profit
+  int trStop;                                  // Trailing Stop
+  int trStep;                                  // Trailing Step
+  int minProfit;                               // Minimal Profit 
  };
  
 // структура базовых настроек
@@ -77,9 +77,9 @@ struct sBaseParams
  {
   ENUM_TIMEFRAMES eldTF;             //
   ENUM_TIMEFRAMES jrTF;              //
-  bool   useJrEMAExit;               // будем ли выходить по ЕМА
-  int    posLifeTime;                // время ожидания сделки в барах
-  int    deltaPriceToEMA;            // допустимая разница между ценой и EMA для пересечения
-  int    deltaEMAtoEMA;              // необходимая разница для разворота EMA
-  int    waitAfterDiv;               // ожидание сделки после расхождения (в барах)
+  bool useJrEMAExit;               // будем ли выходить по ЕМА
+  int posLifeTime;                // время ожидания сделки в барах
+  int deltaPriceToEMA;            // допустимая разница между ценой и EMA для пересечения
+  int deltaEMAtoEMA;              // необходимая разница для разворота EMA
+  int waitAfterDiv;               // ожидание сделки после расхождения (в барах)
  };

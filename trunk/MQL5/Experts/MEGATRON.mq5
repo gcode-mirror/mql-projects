@@ -15,11 +15,9 @@
 #include <Lib CisNewBar.mqh>                // для проверки формирования нового бара
 #include <TradeManager/TradeManager.mqh>    // торговая библиотека
 #include <POINTSYS/POINTSYS.mqh>            // класс бальной системы
-
-
+#include <ColoredTrend/ColoredTrendUtilities.mqh>
 
 //-------- входные параметры
-
 sinput string time_string="";                                           // параметры таймфреймов
 input ENUM_TIMEFRAMES eldTF = PERIOD_H1;
 input ENUM_TIMEFRAMES jrTF = PERIOD_M5;                                
@@ -37,7 +35,7 @@ sinput string macd_string="";                                           // парам
 input int fast_EMA_period = 12;                                         // быстрый период EMA для MACD
 input int slow_EMA_period = 26;                                         // медленный период EMA для MACD
 input int signal_period = 9;                                            // период сигнальной линии для MACD
-input int depth_macd = 100;                                             // глубина истории поиска расхождения
+input ENUM_APPLIED_PRICE applied_price=PRICE_CLOSE; // тип цены  
 
 sinput string ema_string="";                                            // параметры для EMA
 input int    periodEMAfastJr = 9;                                      // период быстрой   EMA
@@ -51,19 +49,20 @@ sinput string deal_string="";                                           // парам
 input double orderVolume = 0.1;                                         // Объём сделки
 input int    slOrder = 100;                                             // Stop Loss
 input int    tpOrder = 100;                                             // Take Profit
-input int    trStop = 100;                                              // Trailing Stop
-input int    trStep = 100;                                              // Trailing Step
-input int    minProfit = 250;                                           // Minimal Profit 
 input ENUM_USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;   // Тип отложенного ордера                    
 input int    priceDifference = 50;                                      // Price Difference
 
 sinput string base_string ="";                                          // базовые параметры робота
-input         ENUM_TRAILING_TYPE  trailingType = TRAILING_TYPE_USUAL;   // тип трейлинга
 input bool    useJrEMAExit = false;                                     // будем ли выходить по ЕМА
 input int     posLifeTime = 10;                                         // время ожидания сделки в барах
 input int     deltaPriceToEMA = 7;                                      // допустимая разница между ценой и EMA для пересечения
 input int     deltaEMAtoEMA = 5;                                        // необходимая разница для разворота EMA
 input int     waitAfterDiv = 4;                                         // ожидание сделки после расхождения (в барах)
+
+input        ENUM_TRAILING_TYPE  trailingType = TRAILING_TYPE_PBI;   // тип трейлинга
+input int    trStop = 100;                                              // Trailing Stop
+input int    trStep = 100;                                              // Trailing Step
+input int    minProfit = 250;                                           // Minimal Profit 
 
 // объявление структур данных
 sEmaParams    ema_params;          // параметры EMA
@@ -99,7 +98,6 @@ int OnInit()
    macd_params.fast_EMA_period            = fast_EMA_period; 
    macd_params.signal_period              = signal_period;
    macd_params.slow_EMA_period            = slow_EMA_period;
-   macd_params.depth                      = depth_macd;
    ///////////////////////////////////////////////////////////////
    
    // заполняем параметры Стохастика
