@@ -12,10 +12,10 @@
 
 //-------- подключение библиотек
 
-#include <Lib CisNewBar.mqh>                // дл€ проверки формировани€ нового бара
-#include <TradeManager/TradeManager.mqh>    // торгова€ библиотека
-#include <POINTSYS/POINTSYS.mqh>            // класс бальной системы
-#include <ColoredTrend/ColoredTrendUtilities.mqh>
+#include <Lib CisNewBar.mqh>                       // дл€ проверки формировани€ нового бара
+#include <TradeManager/TradeManager.mqh>           // торгова€ библиотека
+#include <PointSystem/PointSystem.mqh>             // класс бальной системы
+#include <ColoredTrend/ColoredTrendUtilities.mqh>  // константы price based indicator
 
 //-------- входные параметры
 sinput string time_string="";                                           // параметры таймфреймов
@@ -38,8 +38,9 @@ input int signal_period = 9;                                            // перио
 input ENUM_APPLIED_PRICE applied_price=PRICE_CLOSE; // тип цены  
 
 sinput string ema_string="";                                            // параметры дл€ EMA
-input int    periodEMAfastJr = 9;                                      // период быстрой   EMA
-input int    periodEMAslowJr = 15;                                       // период медленной EMA
+input int    periodEMAfastEld = 26;                                     // период быстрой   EMA на старшем таймфрейме 
+input int    periodEMAfastJr = 9;                                       // период быстрой   EMA на младшем таймфрейме
+input int    periodEMAslowJr = 15;                                      // период медленной EMA на младшем таймфрейме
 
 sinput string pbi_string ="";                                           // параметры PriceBased indicator
 input int    historyDepth = 2000;                                       // глубина истории дл€ расчета
@@ -65,10 +66,10 @@ input int    trStep = 100;                                              // Trail
 input int    minProfit = 250;                                           // Minimal Profit 
 
 // объ€вление структур данных
-sEmaParams    ema_params;          // параметры EMA
-sMacdParams   macd_params;         // параметры MACD
-sStocParams   stoc_params;         // параметры стохастика
-sPbiParams    pbi_params;          // параметры PriceBased indicator
+sEmaParams    ema_params;           // параметры EMA
+sMacdParams   macd_params;          // параметры MACD
+sStocParams   stoc_params;          // параметры стохастика
+sPbiParams    pbi_params;           // параметры PriceBased indicator
 sDealParams   deal_params;          // параметры сделок
 sBaseParams   base_params;          // базовые параметры
 
@@ -92,6 +93,7 @@ int OnInit()
    //------- заполн€ем структуры данных 
    
    // заполн€ем парметры EMA
+   ema_params.periodEMAfastEld            = periodEMAfastEld;
    ema_params.periodEMAfastJr             = periodEMAfastJr;
    ema_params.periodEMAslowJr             = periodEMAslowJr;
    // заполн€ем параметры MACD

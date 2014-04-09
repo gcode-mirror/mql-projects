@@ -35,22 +35,29 @@ class CPointSys
    // P.S. пока что взять хэндлы и буферы для DesepticonFlat
    
    // хэндлы индикаторов
-   int _handlePBI;         // хэндл PriceBased indicator
-   int _handleEMAfastJr;   // хэндл EMA fast старшего таймфрейма
-   int _handleEMAslowJr;   // хэндл EMA fast младшего таймфрейма
-   int _handleSTOCEld;     // хэндл Stochastic старшего таймфрейма
-   int _handleMACD;        // хэндл MACD
+   int _handlePBI;                 // хэндл PriceBased indicator
+   int _handleEMA3Eld;             // хэндл для EMA 3 старшего таймфрейма
+   int _handleEMAfastEld;          // хэндл EMA fast старшего таймфрейма   
+   int _handleEMAfastJr;           // хэндл EMA fast старшего таймфрейма
+   int _handleEMAslowJr;           // хэндл EMA fast младшего таймфрейма
+   int _handleSTOCEld;             // хэндл Stochastic старшего таймфрейма
+   int _handleMACD;                // хэндл MACD
    // буферы индикаторов 
    double _bufferPBI[];            // буфер для PriceBased indicator  
    double _bufferEMA3Eld[];        // буфер для EMA 3 старшего таймфрейма
+   double _bufferEMAfastEld[];     // буфер для EMA fast старшего таймфрейма    
    double _bufferEMAfastJr[];      // буфер для EMA fast младшего таймфрейма
    double _bufferEMAslowJr[];      // буфер для EMA slow младшего таймфрейма
    double _bufferSTOCEld[];        // буфер для Stochastic старшего таймфрейма  
+   // буферы цен
+   double _bufferHighEld[];        // буфер для цены high на старшем таймфрейме
+   double _bufferLowEld[];         // буфер для цены low на старшем таймфрейме   
    
    CisNewBar *_eldNewBar;          // переменная для определения нового бара на eldTF  
    
    // методы вычисления сигналов
-   int StochasticAndEma();
+   int StochasticAndEma();         // по стохастику и EMA
+   int TrendSignals();             // для тренда
 
    // баллы
    int    _divMACD;                // расхождение MACD
@@ -94,17 +101,21 @@ CPointSys::CPointSys(sDealParams &deal_params,sBaseParams &base_params,sEmaParam
  //---------инициализируем параметры, буферы, индикаторы и прочее
    
  ////// сохраняем внешние параметры   ////// инициализаруем индикаторы
- _handlePBI       = iCustom(Symbol(), Period(), "PriceBasedIndicator", 1000);
- _handleMACD      = iMACD(Symbol(), Period(), _macd_params.fast_EMA_period,  _macd_params.slow_EMA_period, _macd_params.signal_period, _macd_params.applied_price);
- _handleSTOCEld   = iStochastic(NULL, _base_params.eldTF, _stoc_params.kPeriod, _stoc_params.dPeriod, _stoc_params.slow, MODE_SMA, STO_CLOSECLOSE);
- _handleEMAfastJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAfastJr, 0, MODE_EMA, PRICE_CLOSE);
- _handleEMAslowJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAslowJr, 0, MODE_EMA, PRICE_CLOSE);
+ _handlePBI        = iCustom(Symbol(), Period(), "PriceBasedIndicator", 1000);
+ _handleMACD       = iMACD(Symbol(), Period(), _macd_params.fast_EMA_period,  _macd_params.slow_EMA_period, _macd_params.signal_period, _macd_params.applied_price);
+ _handleSTOCEld    = iStochastic(NULL, _base_params.eldTF, _stoc_params.kPeriod, _stoc_params.dPeriod, _stoc_params.slow, MODE_SMA, STO_CLOSECLOSE);
+ _handleEMA3Eld    = iMA(Symbol(),  _base_params.eldTF, 3,                            0, MODE_EMA, PRICE_CLOSE);
+ _handleEMAfastEld = iMA(Symbol(),  _base_params.eldTF, _ema_params.periodEMAfastEld, 0, MODE_EMA, PRICE_CLOSE); 
+ _handleEMAfastJr  = iMA(Symbol(),  _base_params.jrTF,  _ema_params.periodEMAfastJr,  0, MODE_EMA, PRICE_CLOSE);
+ _handleEMAslowJr  = iMA(Symbol(),  _base_params.jrTF,  _ema_params.periodEMAslowJr,  0, MODE_EMA, PRICE_CLOSE);
 
- if (_handlePBI == INVALID_HANDLE || 
-     _handleEMAfastJr == INVALID_HANDLE || 
-     _handleEMAslowJr == INVALID_HANDLE || 
-     _handleMACD == INVALID_HANDLE || 
-     _handleSTOCEld == INVALID_HANDLE)
+ if (_handlePBI        == INVALID_HANDLE || 
+     _handleEMA3Eld    == INVALID_HANDLE ||
+     _handleEMAfastEld == INVALID_HANDLE ||
+     _handleEMAfastJr  == INVALID_HANDLE || 
+     _handleEMAslowJr  == INVALID_HANDLE || 
+     _handleMACD       == INVALID_HANDLE || 
+     _handleSTOCEld    == INVALID_HANDLE   )
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s INVALID_HANDLE (handleTrend). Error(%d) = %s" 
                                         , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
@@ -113,15 +124,21 @@ CPointSys::CPointSys(sDealParams &deal_params,sBaseParams &base_params,sEmaParam
  // выделяем память под объект класса определения формирования нового бара
  _eldNewBar = new CisNewBar(_base_params.eldTF);
   // порядок элементов в массивах, как в таймсерии
- ArraySetAsSeries( _bufferPBI, true);
+ ArraySetAsSeries( _bufferPBI,       true);
+ ArraySetAsSeries( _bufferEMAfastEld,true);
  ArraySetAsSeries( _bufferEMAfastJr, true);
  ArraySetAsSeries( _bufferEMAslowJr, true);
- ArraySetAsSeries( _bufferSTOCEld, true);
+ ArraySetAsSeries( _bufferSTOCEld,   true);
+ ArraySetAsSeries( _bufferHighEld,   true);
+ ArraySetAsSeries( _bufferLowEld,    true);
   // изменяем размер буферов
- ArrayResize( _bufferPBI, 1);
+ ArrayResize( _bufferPBI,       1);
+ ArrayResize( _bufferEMAfastEld,2); 
  ArrayResize( _bufferEMAfastJr, 2);
  ArrayResize( _bufferEMAslowJr, 2);
- ArrayResize( _bufferSTOCEld, 1);
+ ArrayResize( _bufferSTOCEld,   1);
+ ArrayResize( _bufferHighEld,   2);
+ ArrayResize( _bufferLowEld,    2); 
 }
 
 //---------------------------------------------  
@@ -132,14 +149,19 @@ CPointSys::CPointSys(sDealParams &deal_params,sBaseParams &base_params,sEmaParam
    delete _eldNewBar;
    // освобождаем индикаторы
    IndicatorRelease(_handlePBI);
+   IndicatorRelease(_handleEMAfastEld);
    IndicatorRelease(_handleEMAfastJr);
    IndicatorRelease(_handleEMAslowJr);
    IndicatorRelease(_handleSTOCEld);
    IndicatorRelease(_handleMACD);
    // освобождаем память под буферы
    ArrayFree(_bufferPBI);
+   ArrayFree(_bufferEMA3Eld);
+   ArrayFree(_bufferEMAfastEld);
    ArrayFree(_bufferEMAfastJr);
    ArrayFree(_bufferEMAslowJr);
+   ArrayFree(_bufferHighEld);
+   ArrayFree(_bufferLowEld);
    // пишем в лог об деинициализации
    log_file.Write(LOG_DEBUG, StringFormat("%s Деиниализация.", MakeFunctionPrefix(__FUNCTION__)));    
   }
@@ -171,7 +193,7 @@ int  CPointSys::GetTrendSignals(void)
  
  if ( isUpLoaded () )   // пытаемся прогрузить индикаторы
  {
-    
+   
  }
  return (0); // нет сигнала
 } 
@@ -194,10 +216,15 @@ int CPointSys::GetCorrSignals(void)
 //-----------------------------------------------
 bool CPointSys::isUpLoaded(void)  
 {
+ // переменные для хранения количества скопированных баров в буферы
  int copiedPBI=-1;
  int copiedSTOCEld=-1;
+ int copiedEMA3Eld=-1;
+ int copiedEMAfastEld=-1;
  int copiedEMAfastJr=-1;
  int copiedEMAslowJr=-1;
+ int copiedHigh=-1;
+ int copiedLow=-1;
  int attempts;
 
  for (attempts = 0; attempts < 25 && copiedPBI < 0; attempts++)
@@ -213,11 +240,21 @@ bool CPointSys::isUpLoaded(void)
                                        || copiedEMAslowJr < 0); attempts++) 
   {
    //Копируем данные индикаторов
-   copiedSTOCEld   = CopyBuffer( _handleSTOCEld,   0, 1, 2, _bufferSTOCEld);
-   copiedEMAfastJr = CopyBuffer( _handleEMAfastJr, 0, 1, 2, _bufferEMAfastJr);
-   copiedEMAslowJr = CopyBuffer( _handleEMAslowJr, 0, 1, 2, _bufferEMAslowJr);
+   copiedSTOCEld    = CopyBuffer( _handleSTOCEld,   0, 1, 2, _bufferSTOCEld);
+   copiedEMA3Eld    = CopyBuffer( _handleEMA3Eld,   0, 0, 1, _bufferEMA3Eld);
+   copiedEMAfastEld = CopyBuffer( _handleEMAfastEld,0, 1, 2, _bufferEMAfastEld);
+   copiedEMAfastJr  = CopyBuffer( _handleEMAfastJr, 0, 1, 2, _bufferEMAfastJr);
+   copiedEMAslowJr  = CopyBuffer( _handleEMAslowJr, 0, 1, 2, _bufferEMAslowJr);
+   copiedHigh       = CopyHigh  ( Symbol(),  _base_params.eldTF,  1, 2, _bufferHighEld);
+   copiedLow        = CopyLow   ( Symbol(),  _base_params.eldTF,  1, 2, _bufferLowEld); 
   }  
-  if (copiedSTOCEld != 2 || copiedEMAfastJr != 2 || copiedEMAslowJr != 2 )   
+  if (copiedSTOCEld    != 2 ||
+      copiedEMA3Eld    != 1 ||
+      copiedEMAfastEld != 2 || 
+      copiedEMAfastJr  != 2 ||  
+      copiedEMAslowJr  != 2 ||
+      copiedHigh       != 2 ||
+      copiedLow        != 2 )   
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка заполнения буфера.Error(%d) = %s" 
                                           , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
@@ -256,9 +293,51 @@ int CPointSys::StochasticAndEma(void)
    }
   }
  }
- return(0);
+ return(0);   // нет сигнала
 }
 
 //------------------------------------------
 // Сигнал расхождение MACD
 //------------------------------------------
+
+//------------------------------------------
+// Сигнал для тренда
+//------------------------------------------
+
+ int CPointSys::TrendSignals(void)
+  {
+   if (_bufferPBI[0] == 1)               //Если направление тренда TREND_UP  
+ {
+  if (GreatOrEqualDoubles(_bufferEMA3Eld[0] + _base_params.deltaPriceToEMA*_Point, _tick.bid))
+  {
+  
+   if (GreatDoubles(_bufferEMAfastEld[0] + _base_params.deltaPriceToEMA*_Point, _bufferLowEld[0]) || 
+       GreatDoubles(_bufferEMAfastEld[1] + _base_params.deltaPriceToEMA*_Point, _bufferLowEld[1]))
+   {
+
+    if (GreatDoubles(_bufferEMAslowJr[1], _bufferEMAfastJr[1]) && LessDoubles(_bufferEMAslowJr[0], _bufferEMAfastJr[0]))
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
+     return (1);  // типо сигнал на покупку
+    }
+   }
+  }
+ } //end TREND_UP
+ else if (_bufferPBI[0] == 3)               //Если направление тренда TREND_DOWN  
+ {
+  if (GreatOrEqualDoubles(_tick.ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
+  {
+
+   if (GreatDoubles(_bufferHighEld[0], _bufferEMAfastEld[0] - _base_params.deltaPriceToEMA*_Point) || 
+       GreatDoubles(_bufferHighEld[1], _bufferEMAfastEld[1] - _base_params.deltaPriceToEMA*_Point))
+   {
+    if (GreatDoubles(_bufferEMAfastJr[1], _bufferEMAslowJr[1]) && LessDoubles(_bufferEMAfastJr[0], _bufferEMAslowJr[0]))
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
+     return (-1);  // типо сигнал на продажу
+    }
+   }
+  }
+ } //end TREND_DOWN
+   return (0); // нет сигнала
+  }

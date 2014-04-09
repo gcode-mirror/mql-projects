@@ -17,7 +17,7 @@ input ENUM_TIMEFRAMES jrTF = PERIOD_M5;
 
 input int periodEMAfastEld = 26;        // ןונטמה EMA fast סעאנרודמ עאילפנוילא
 input int periodEMAfastJr  = 26;        // ןונטמה EMA fast לכאהרודמ עאילפנוילא
-input int periodEMAslowJr  = 12;         // ןונטמה EMA slow לכאהרודמ עאילפנוילא
+input int periodEMAslowJr  = 12;        // ןונטמה EMA slow לכאהרודמ עאילפנוילא
 
 //ןאנאלוענû סהוכמך  
 input double orderVolume = 0.1;         // Îבת¸ל סהוכךט
@@ -76,7 +76,7 @@ int OnInit()
  
  if (     handleTrend == INVALID_HANDLE ||   handleEMA3Day == INVALID_HANDLE || 
       handleEMAfastJr == INVALID_HANDLE || handleEMAslowJr == INVALID_HANDLE ||
-     handleEMAfastEld == INVALID_HANDLE )
+       )
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s INVALID_HANDLE. Error(%d) = %s" 
                                         , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
