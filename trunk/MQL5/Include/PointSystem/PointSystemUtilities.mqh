@@ -28,8 +28,9 @@ struct sPoint
 
 struct sEmaParams
  {
-  int    periodEMAfastJr;            // период быстрой EMA
-  int    periodEMAslowJr;            // период медленной EMA
+  int    periodEMAfastEld;           // период быстрой EMA на страршем таймфрейме
+  int    periodEMAfastJr;            // период быстрой EMA на младшем таймфрейме
+  int    periodEMAslowJr;            // период медленной EMA на младшем таймфрейме
  };
  
 // структура MACD
