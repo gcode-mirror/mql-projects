@@ -12,7 +12,7 @@
 #include <Lib CisNewBar.mqh>                // для проверки формирования нового бара
 #include <StringUtilities.mqh>
 #include <CLog.mqh>
-#include "STRUCTS.mqh"                      // библиотека структур данных для получения сигналов
+#include "PointSystemUtilities.mqh"                      // библиотека структур данных для получения сигналов
 
 // класс балльной системы
 class CPointSys
@@ -100,12 +100,14 @@ CPointSys::CPointSys(sDealParams &deal_params,sBaseParams &base_params,sEmaParam
  _handleEMAfastJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAfastJr, 0, MODE_EMA, PRICE_CLOSE);
  _handleEMAslowJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAslowJr, 0, MODE_EMA, PRICE_CLOSE);
 
- if (_handlePBI == INVALID_HANDLE || _handleEMAfastJr == INVALID_HANDLE || _handleEMAslowJr == INVALID_HANDLE)
+ if (_handlePBI == INVALID_HANDLE || 
+     _handleEMAfastJr == INVALID_HANDLE || 
+     _handleEMAslowJr == INVALID_HANDLE || 
+     _handleMACD == INVALID_HANDLE || 
+     _handleSTOCEld == INVALID_HANDLE)
  {
-
   log_file.Write(LOG_DEBUG, StringFormat("%s INVALID_HANDLE (handleTrend). Error(%d) = %s" 
                                         , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
-  //return(INIT_FAILED);
  }   
             
  // выделяем память под объект класса определения формирования нового бара
