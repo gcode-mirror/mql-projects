@@ -76,7 +76,7 @@ int OnInit()
  
  if (     handleTrend == INVALID_HANDLE ||   handleEMA3Day == INVALID_HANDLE || 
       handleEMAfastJr == INVALID_HANDLE || handleEMAslowJr == INVALID_HANDLE ||
-       )
+     handleEMAfastEld == INVALID_HANDLE )
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s INVALID_HANDLE. Error(%d) = %s" 
                                         , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
