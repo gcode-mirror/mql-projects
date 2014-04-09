@@ -8,7 +8,7 @@
 #property version   "1.00"
 #property indicator_separate_window
 #include <Lib CisNewBar.mqh>                  // для проверки формирования нового бара
-#include <divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений Стохастика
+#include <Divergence/divergenceMACD.mqh>      // подключаем библиотеку для поиска схождений и расхождений Стохастика
 #include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
 #include <CompareDoubles.mqh>                 // для проверки соотношения  цен
 

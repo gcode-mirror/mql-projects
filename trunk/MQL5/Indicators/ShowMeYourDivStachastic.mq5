@@ -7,10 +7,10 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_separate_window
-#include <Lib CisNewBar.mqh>                  // для проверки формирования нового бара
-#include <divergenceStochastic.mqh>           // подключаем библиотеку для поиска схождений и расхождений стохастика
-#include <ChartObjects\ChartObjectsLines.mqh> // для рисования линий схождения\расхождения
-#include <CompareDoubles.mqh>                 // для проверки соотношения  цен
+#include <Lib CisNewBar.mqh>                   // для проверки формирования нового бара
+#include <Divergence/divergenceStochastic.mqh> // подключаем библиотеку для поиска схождений и расхождений стохастика
+#include <ChartObjects\ChartObjectsLines.mqh>  // для рисования линий схождения\расхождения
+#include <CompareDoubles.mqh>                  // для проверки соотношения  цен
 
  // параметры индикатора
  

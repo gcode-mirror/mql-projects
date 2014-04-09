@@ -163,13 +163,14 @@ void OnDeinit(const int reason)
   {
    // очищаем память, выделенную под динамические объекты
    delete ctm;      // удаляем объект класса торговой библиотеки
-   delete pointsys; // удаляем объект класса Дисептикона
+   delete pointsys; // удаляем объект класса балльной системы
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   int points;
    ctm.OnTick();  
    // пробуем обновить буферы
    deal_type = OP_UNKNOWN;   // сохраняем неизвестный сигнал  
@@ -182,21 +183,29 @@ void OnTick()
 
         break;
         case MOVE_TYPE_FLAT:                   // на флэте
-         switch (pointsys.GetFlatSignals())
-          {
-           case 1:  // сигнал на покупку
-            deal_type = opBuy;     
-           break;  
-           case -1: // сигнал на продажу
-            deal_type = opSell;            
-           break;
-          }          
+         points = pointsys.GetFlatSignals();   // получаем количество очков
+          if (points > 1)  // если система вернула как минимум 2 балла в сторону покупки
+           {
+            deal_type = opBuy;   // сохраняем сигнал на покупку
+           }
+          if (points < -1) // если система вернула как минимум 2 балла в сторону продажи
+           {
+            deal_type = opSell;  // сохраняем сигнал на продажу
+           }    
         break;
         case MOVE_TYPE_TREND_DOWN:             // на тренде
         case MOVE_TYPE_TREND_DOWN_FORBIDEN:
         case MOVE_TYPE_TREND_UP:
         case MOVE_TYPE_TREND_UP_FORBIDEN:
-        
+         points = pointsys.GetTrendSignals();  // получаем сигнал на тренде
+         if (points > 0)  // если получили сигнал на покупку
+          {
+           deal_type = opBuy;  // сохраняем сигнал на покупку
+          }
+         if (points < 0)  // если получили сигнал на продажу
+          {
+           deal_type = opSell; // сохраняем сигнал на продажу
+          }
         break;
        }
      if (deal_type != OP_UNKNOWN)
