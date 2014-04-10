@@ -8,32 +8,32 @@
 #property version   "1.00"
 #property indicator_chart_window
 
-#include <CExtremumCalc.mqh>
+#include <CExtremumCalc_NE.mqh>
 #include <Lib CisNewBar.mqh>
 
- input int epsilon = 25;          //Погрешность для поиска экстремумов
- input int depth = 50;            //Глубина поиска трех экстремумов
- input int period_ATR = 100;      //Период ATR
- input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR 
+ input int    period_ATR = 100;      //Период ATR для канала
+ input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR
+ input double precentageATR_price = 2; //Процентр ATR для нового экструмума
+ 
 
- input bool  show_Extr_MN  = true;
+ input bool  show_Extr_MN  = false;
  input color color_Extr_MN = clrRed;
- input bool  show_Extr_W1  = true;
+ input bool  show_Extr_W1  = false;
  input color color_Extr_W1 = clrOrange;
- input bool  show_Extr_D1  = true;
+ input bool  show_Extr_D1  = false;
  input color color_Extr_D1 = clrYellow;
- input bool  show_Extr_H4  = true;
+ input bool  show_Extr_H4  = false;
  input color color_Extr_H4 = clrBlue;
- input bool  show_Extr_H1  = true;
+ input bool  show_Extr_H1  = false;
  input color color_Extr_H1 = clrAqua;
- input bool  show_Price_D1  = true;
+ input bool  show_Price_D1  = false;
  input color color_Price_D1 = clrDarkKhaki;
 
- CExtremumCalc calcMN(epsilon, depth);
- CExtremumCalc calcW1(epsilon, depth);
- CExtremumCalc calcD1(epsilon, depth);
- CExtremumCalc calcH4(epsilon, depth);
- CExtremumCalc calcH1(epsilon, depth);
+ CExtremumCalc calcMN (Symbol(), PERIOD_MN1, precentageATR_price, period_ATR, percent_ATR);
+ CExtremumCalc calcW1 (Symbol(),  PERIOD_W1, precentageATR_price, period_ATR, percent_ATR);
+ CExtremumCalc calcD1 (Symbol(),  PERIOD_D1, precentageATR_price, period_ATR, percent_ATR);
+ CExtremumCalc calcH4 (Symbol(),  PERIOD_H4, precentageATR_price, period_ATR, percent_ATR);
+ CExtremumCalc calcH1 (Symbol(),  PERIOD_H1, precentageATR_price, period_ATR, percent_ATR);
 
  SExtremum estructMN[3];
  SExtremum estructW1[3];
@@ -47,19 +47,9 @@
  CisNewBar barD1(Symbol(), PERIOD_D1);
  CisNewBar barH4(Symbol(), PERIOD_H4);
  CisNewBar barH1(Symbol(), PERIOD_H1);
-
- string symbol = Symbol();
- int handle_ATR_MN;
- int handle_ATR_W1;
+ 
+ double buffer_ATR_D1[];
  int handle_ATR_D1;
- int handle_ATR_H4;
- int handle_ATR_H1;
-
- double buffer_ATR_MN [];
- double buffer_ATR_W1 [];
- double buffer_ATR_D1 [];
- double buffer_ATR_H4 [];
- double buffer_ATR_H1 [];
  
  bool first = true;
  //+------------------------------------------------------------------+
@@ -67,30 +57,18 @@
 //+------------------------------------------------------------------+
 int OnInit()
 {
- if(depth < 10) return(INIT_PARAMETERS_INCORRECT);
- handle_ATR_MN = iATR(symbol, PERIOD_MN1, period_ATR);
- handle_ATR_W1 = iATR(symbol,  PERIOD_W1, period_ATR);
- handle_ATR_D1 = iATR(symbol,  PERIOD_D1, period_ATR);
- handle_ATR_H4 = iATR(symbol,  PERIOD_H4, period_ATR);
- handle_ATR_H1 = iATR(symbol,  PERIOD_H1, period_ATR);
  SetInfoTabel();
-
+ PrintFormat("INITIALIZATION");
+ 
+ 
 //---
  return(INIT_SUCCEEDED);
 }
 
 void OnDeinit(const int reason)
 {
- IndicatorRelease(handle_ATR_MN);
- IndicatorRelease(handle_ATR_W1);
  IndicatorRelease(handle_ATR_D1);
- IndicatorRelease(handle_ATR_H4);
- IndicatorRelease(handle_ATR_H1);
- ArrayFree(buffer_ATR_MN);
- ArrayFree(buffer_ATR_W1); 
  ArrayFree(buffer_ATR_D1); 
- ArrayFree(buffer_ATR_H4); 
- ArrayFree(buffer_ATR_H1); 
  if(show_Extr_MN)  DeleteExtrLines(PERIOD_MN1);
  if(show_Extr_W1)  DeleteExtrLines(PERIOD_W1);
  if(show_Extr_D1)  DeleteExtrLines(PERIOD_D1);
@@ -114,7 +92,7 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
 //---
-   bool load = FillATRbuffer();
+   bool load = FillATRBuffer();
  
    if(load)
    {
@@ -122,42 +100,42 @@ int OnCalculate(const int rates_total,
     {
      if(show_Extr_MN)
      {
-      FillThreeExtr(symbol, PERIOD_MN1, calcMN, estructMN, buffer_ATR_MN);
+      FillThreeExtr(calcMN, estructMN);
       CreateExtrLines(estructMN, PERIOD_MN1, color_Extr_MN);
      }
      if(show_Extr_W1)
      {
-      FillThreeExtr(symbol, PERIOD_W1, calcW1, estructW1, buffer_ATR_W1);
+      FillThreeExtr(calcW1, estructW1);
       CreateExtrLines(estructW1,  PERIOD_W1, color_Extr_W1);
      }
      if(show_Extr_D1)
      {
-      FillThreeExtr(symbol, PERIOD_D1, calcD1, estructD1, buffer_ATR_D1);
+      FillThreeExtr(calcD1, estructD1);
       CreateExtrLines(estructD1,  PERIOD_D1, color_Extr_D1); 
      }
      if(show_Price_D1)
      {
-      FillFourPrice(symbol, PERIOD_D1, pstructD1, buffer_ATR_D1);
+      FillFourPrice(Symbol(), PERIOD_D1, pstructD1);
       CreatePriceLines(pstructD1, PERIOD_D1, color_Price_D1);
      }
      if(show_Extr_H4)
      {
-      FillThreeExtr(symbol, PERIOD_H4, calcH4, estructH4, buffer_ATR_H4);
+      FillThreeExtr(calcH4, estructH4);
       CreateExtrLines(estructH4,  PERIOD_H4, color_Extr_H4);
      }
      if(show_Extr_H1)
      {
-      FillThreeExtr(symbol, PERIOD_H1, calcH1, estructH1, buffer_ATR_H1);
+      FillThreeExtr(calcH1, estructH1);
       CreateExtrLines(estructH1,  PERIOD_H1, color_Extr_H1);
      }
      first = false;
     }//end first
-    
+    //-------------------------------------------------------
     if(barMN.isNewBar() > 0)
     {
      if(show_Extr_MN)
      {
-      FillThreeExtr(symbol, PERIOD_MN1, calcMN, estructMN, buffer_ATR_MN);
+      RecountThreeExtr(calcMN, estructMN);
       MoveExtrLines(estructMN, PERIOD_MN1);
      }
     }
@@ -165,7 +143,7 @@ int OnCalculate(const int rates_total,
     {
      if(show_Extr_W1)
      {
-      FillThreeExtr(symbol, PERIOD_W1, calcW1, estructW1, buffer_ATR_W1);
+      RecountThreeExtr(calcW1, estructW1);
       MoveExtrLines(estructW1, PERIOD_W1);
      }
     }
@@ -173,12 +151,12 @@ int OnCalculate(const int rates_total,
     { 
      if(show_Extr_D1)
      {
-      FillThreeExtr(symbol, PERIOD_D1, calcD1, estructD1, buffer_ATR_D1);
+      RecountThreeExtr(calcD1, estructD1);
       MoveExtrLines(estructD1, PERIOD_D1);
      }
      if(show_Price_D1)
      {
-      FillFourPrice(symbol, PERIOD_D1, pstructD1, buffer_ATR_D1);
+      FillFourPrice(Symbol(), PERIOD_D1, pstructD1);
       MovePriceLines(pstructD1, PERIOD_D1);
      }
     }
@@ -186,7 +164,7 @@ int OnCalculate(const int rates_total,
     {
      if(show_Extr_H4)
      {
-      FillThreeExtr(symbol, PERIOD_H4, calcH4, estructH4, buffer_ATR_H4);
+      RecountThreeExtr(calcH4, estructH4);
       MoveExtrLines(estructH4, PERIOD_H4);
      }
     }
@@ -194,7 +172,7 @@ int OnCalculate(const int rates_total,
     {
      if(show_Extr_H1)
      {
-      FillThreeExtr(symbol, PERIOD_H1, calcH1, estructH1, buffer_ATR_H1);
+      RecountThreeExtr(calcH1, estructH1);
       MoveExtrLines(estructH1, PERIOD_H1);
      }
     }
@@ -202,6 +180,37 @@ int OnCalculate(const int rates_total,
 //--- return value of prev_calculated for next call
    return(rates_total);
   }
+  
+  
+//-------------------------------------------------------------------+
+bool FillATRBuffer()
+{
+ bool result = true;
+ 
+ if(show_Extr_MN)
+  if(!calcMN.isATRCalculated())
+   result = false;
+   
+ if(show_Extr_W1)
+  if(!calcW1.isATRCalculated())
+   result = false;
+   
+ if(show_Extr_D1 || show_Price_D1)
+  if(!calcD1.isATRCalculated())
+   result = false;
+   
+// if(show_Extr_H4)  потому что ATR H4  требуется для расчетов любых экстремумов
+  if(!calcH4.isATRCalculated())
+   result = false;
+   
+ if(show_Extr_H1)
+  if(!calcH1.isATRCalculated())
+   result = false;   
+   
+ if(!result)
+  PrintFormat("%s Не получилось загрузить буфера ATR, подожди чутка братан. Ошибочка вышла %d", __FUNCTION__, GetLastError()); 
+ return(result);
+}
 //+------------------------------------------------------------------+
 bool HLineCreate(const long            chart_ID=0,        // ID графика
                  const string          name="HLine",      // имя линии
@@ -270,7 +279,7 @@ bool HLineDelete(const long   chart_ID=0,   // ID графика
  return(true);
 }
 
-void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[], double &buffer_ATR[])
+void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[])
 {
  double  open_buf[1];
  double close_buf[1];
@@ -281,15 +290,16 @@ void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[], dou
  CopyClose(symbol, tf, 1, 1, close_buf);
  CopyHigh (symbol, tf, 1, 1,  high_buf);
  CopyLow  (symbol, tf, 1, 1,   low_buf);
+ CopyBuffer(handle_ATR_D1, 0, 1, 1, buffer_ATR_D1);
  
  resArray[0].price   =   open_buf[0];
- resArray[0].channel = (buffer_ATR[0]*percent_ATR)/2;
+ resArray[0].channel = (buffer_ATR_D1[0]*percent_ATR)/2;
  resArray[1].price   =  close_buf[0];
- resArray[1].channel = (buffer_ATR[0]*percent_ATR)/2;
+ resArray[1].channel = (buffer_ATR_D1[0]*percent_ATR)/2;
  resArray[2].price   =   high_buf[0];
- resArray[2].channel = (buffer_ATR[0]*percent_ATR)/2;
+ resArray[2].channel = (buffer_ATR_D1[0]*percent_ATR)/2;
  resArray[3].price   =    low_buf[0];
- resArray[3].channel = (buffer_ATR[0]*percent_ATR)/2;
+ resArray[3].channel = (buffer_ATR_D1[0]*percent_ATR)/2;
 }
 
 void CreatePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf, color clr)
@@ -343,25 +353,29 @@ void DeletePriceLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"low-");
 }
 
-void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, SExtremum &resArray[], double &buffer_ATR[])
+void FillThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[])
 {
- extrcalc.FillExtremumsArray(symbol, tf);
- if (extrcalc.NumberOfExtr() < 3)
+ for(int i = 0; !extrcalc.isThreeExtrExist(); i++)
  {
-  Alert(__FUNCTION__, "Не удалось рассчитать три экстремума на таймфрейме ", EnumToString((ENUM_TIMEFRAMES)tf));
-  return;
+   extrcalc.RecountExtremum(i);
  }
-  
- int count = 0;
- for(int i = 0; i < depth && count < 3; i++)
+ 
+ for(int j = 0; j < 3; j++)
  {
-  if(extrcalc.getExtr(i).price > 0)
-  {
-   resArray[count] = extrcalc.getExtr(i);
-   resArray[count].channel = (buffer_ATR[i]*percent_ATR)/2;
-   count++;
-  }
+  resArray[j] = extrcalc.getExtr(j);
  }
+ //PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
+}
+
+void RecountThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[])
+{
+ extrcalc.RecountExtremum(0);
+
+ for(int j = 0; j < 3; j++)
+ {
+  resArray[j] = extrcalc.getExtr(j);
+ }
+ //PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
 }
 
 void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
@@ -406,34 +420,7 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"three-");
 }
 
-bool FillATRbuffer()
-{
-   if(handle_ATR_MN != INVALID_HANDLE && handle_ATR_W1 != INVALID_HANDLE && handle_ATR_D1 != INVALID_HANDLE &&
-      handle_ATR_H4 != INVALID_HANDLE && handle_ATR_H1 != INVALID_HANDLE )
-   {
-    int copiedATR_MN = CopyBuffer(handle_ATR_MN, 0, 1, depth, buffer_ATR_MN);
-    int copiedATR_W1 = CopyBuffer(handle_ATR_W1, 0, 1, depth, buffer_ATR_W1);
-    int copiedATR_D1 = CopyBuffer(handle_ATR_D1, 0, 1, depth, buffer_ATR_D1);
-    int copiedATR_H4 = CopyBuffer(handle_ATR_H4, 0, 1, depth, buffer_ATR_H4);
-    int copiedATR_H1 = CopyBuffer(handle_ATR_H1, 0, 1, depth, buffer_ATR_H1); 
-    
-    if (copiedATR_MN != depth || copiedATR_W1 != depth || copiedATR_D1 != depth ||
-        copiedATR_H4 != depth || copiedATR_H1 != depth) 
-    {
-     Print(__FUNCTION__, "Не удалось полностью скопировать буффер ATR. Error = ", GetLastError());
-     if(GetLastError() == 4401) 
-      Print(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
-     return false;
-    }
-    return true;
-   }
-  return false;
-}
-
-
-
 //CREATE AND DELETE LABEL AND RECTLABEL
-
 void SetInfoTabel()
 {
  int X = 10;
