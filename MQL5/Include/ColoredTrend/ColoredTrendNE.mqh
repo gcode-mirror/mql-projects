@@ -104,7 +104,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
   
  if(FillTimeSeries(CURRENT_TF, AMOUNT_OF_PRICE, start_pos, buffer_Rates) < 0) // получим размер заполненного массива
   return (false); 
- if(FillATRBuf(2, start_pos) < 0) // заполним массив данными индикатора ATR
+ if(FillATRBuf(1, GetNumberOfTopBarsInCurrentBars(_period, ATR_TIMEFRAME, start_pos)) < 0) // заполним массив данными индикатора ATR
   return (false);  
  
  CopyTime(_symbol, _period, start_pos, 1, time_buffer);  
@@ -243,6 +243,7 @@ SExtremum CColoredTrend::isExtremum(int start_index)
   high = buffer[0].high;
   low = buffer[0].low;
  }
+ 
  if (((num0.direction == 0) && (GreatDoubles(high, _startDayPrice + 2*difToNewExtremum, digits))) // ≈сли экстремумов еще нет и есть 2 шага от стартовой цены
    || (num0.direction > 0 && (GreatDoubles(high, num0.price, digits)))
    || (num0.direction < 0 && (GreatDoubles(high, num0.price + difToNewExtremum, digits))))
@@ -313,12 +314,9 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
  {
   Print("Ќе удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
  }
- //--- счетчик попыток
- int attempts = 0;
+ 
 //--- сколько скопировано
- int copied = 0;
-//--- делаем 25 попыток получить таймсерию по нужному символу
- copied = CopyBuffer(ATR_handle, 0, start_pos, count, buffer_ATR);
+ int copied = CopyBuffer(ATR_handle, 0, start_pos, count, buffer_ATR);
 
 //--- если не удалось скопировать достаточное количество баров
  if(copied < count)
@@ -430,4 +428,10 @@ void CColoredTrend::Zeros()
   {
    enumMoveType[i] = MOVE_TYPE_UNKNOWN;
   }
+}
+
+
+int GetNumberOfTopBarsInCurrentBars(ENUM_TIMEFRAMES timeframe_curr, ENUM_TIMEFRAMES timeframe_top, int current_bars)
+{
+  return ((current_bars*PeriodSeconds(timeframe_curr))/PeriodSeconds(timeframe_top));
 }

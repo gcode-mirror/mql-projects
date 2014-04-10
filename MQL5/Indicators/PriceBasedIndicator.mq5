@@ -154,7 +154,7 @@ int OnCalculate(const int rates_total,
    
    for(int i = 0; i < (double)(rates_total-start_iteration)/(seconds_top/seconds_current); i++)
    {
-    int start_pos_top = (top_buffer_index < GetNumberOfTopBarsInCurrentBars(current_timeframe, depth)) 
+    int start_pos_top = (top_buffer_index < GetNumberOfTopBarsInCurrentBars(current_timeframe, GetTopTimeframe(current_timeframe),depth)) 
                       ? (rates_total-start_iteration)/(seconds_top/seconds_current)-1 - i
                       : 0;
                       
@@ -225,11 +225,4 @@ int OnCalculate(const int rates_total,
    }
   
    return(rates_total);
-  }
-  
-//------------------------------------
-//------------------------------------
-  int GetNumberOfTopBarsInCurrentBars(ENUM_TIMEFRAMES timeframe, int current_bars)
-  {
-   return ((current_bars*PeriodSeconds(timeframe))/PeriodSeconds(GetTopTimeframe(timeframe)));
   }

@@ -91,10 +91,10 @@ void CExtremumCalc::FillExtremumsArray(string symbol, ENUM_TIMEFRAMES tf, dateti
    Alert(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
   return;
  }
- datetime time [];
- CopyTime(symbol, tf, start_time, _depth + 1, time);
+ //datetime time [];
+ //CopyTime(symbol, tf, start_time, _depth + 1, time);
 
- if(!ArrayGetAsSeries(price)) ArraySetAsSeries(price, true);
+ if(!ArrayGetAsSeries(price))       ArraySetAsSeries(price, true);
  if(!ArrayGetAsSeries(_extr_array)) ArraySetAsSeries(_extr_array, true);
  //if(!ArrayGetAsSeries(time)) ArraySetAsSeries(time, true);
  SExtremum zero = {0, 0, 0};
