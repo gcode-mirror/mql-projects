@@ -65,8 +65,6 @@ input ENUM_MA_METHOD      ma_method=MODE_SMA;           // тип сглаживания
 input ENUM_STO_PRICE      price_field=STO_LOWHIGH;      // способ расчета стохастика           
 input int                 top_level=80;                 // верхний уровень 
 input int                 bottom_level=20;              // нижний уровень 
-input int                 DEPTH_STOC=10;                // большой хвост буфера 
-input int                 ALLOW_DEPTH_FOR_PRICE_EXTR=3; // малый хвост буфера
 input int                 depth=10;                     // глубина вычисления актуальности
 
 
@@ -79,7 +77,7 @@ int                handleStoc;             // хэндл стохастика
 int                lastBarIndex;           // индекс последнего бара   
 long               countTrend;             // счетчик тренд линий
 
-PointDiv           divergencePoints;       // схождения и расхождения стохастика
+PointDivSTOC       divergencePoints;       // схождения и расхождения стохастика
 CChartObjectTrend  trendLine;              // объект класса трендовой линии
 CisNewBar          isNewBar;               // для проверки формирования нового бара
 
@@ -177,7 +175,7 @@ int OnCalculate(const int rates_total,
        for (;lastBarIndex > 0; lastBarIndex--)
         {
           // сканируем историю по хэндлу на наличие расхождений\схождений 
-          retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,DEPTH_STOC,ALLOW_DEPTH_FOR_PRICE_EXTR,divergencePoints,lastBarIndex);
+          retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,divergencePoints,lastBarIndex);
           // если не удалось загрузить буфер
           if (retCode == -2)
            return (0);
@@ -273,7 +271,7 @@ int OnCalculate(const int rates_total,
        if (isNewBar.isNewBar() > 0)
         {        
          // распознаем схождение\расхождение стохастика
-         retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,DEPTH_STOC,ALLOW_DEPTH_FOR_PRICE_EXTR,divergencePoints,1);         
+         retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,divergencePoints,1);         
          // если схождение\расхождение обнаружено
          if (retCode)
           {   
