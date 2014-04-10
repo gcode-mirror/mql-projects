@@ -28,9 +28,10 @@ struct sPoint
 
 struct sEmaParams
  {
-  int    periodEMAfastEld;           // ןונטמה בûסענמי EMA םא סענאנרול עאילפנוילו
-  int    periodEMAfastJr;            // ןונטמה בûסענמי EMA םא לכאהרול עאילפנוילו
-  int    periodEMAslowJr;            // ןונטמה לוהכוםםמי EMA םא לכאהרול עאילפנוילו
+  int handleEMA;   
+  int periodEMAfastEld;           // ןונטמה בûסענמי EMA םא סענאנרול עאילפנוילו
+  int periodEMAfastJr;            // ןונטמה בûסענמי EMA םא לכאהרול עאילפנוילו
+  int periodEMAslowJr;            // ןונטמה לוהכוםםמי EMA םא לכאהרול עאילפנוילו
  };
  
 // סענףךעףנא MACD

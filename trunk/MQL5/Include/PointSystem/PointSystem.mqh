@@ -72,20 +72,19 @@ class CPointSys
    bool  isUpLoaded();              // метод загрузки (обновлени€) буферов в класс. ¬озвращает true, если всЄ успешно
    int GetMovingType() {return((int)_bufferPBI[0]);};  // дл€ получени€ типа движени€ 
   // конструкторы и дестрикторы класса ƒисептикона
-   CPointSys (sDealParams &deal_params,sBaseParams &base_params,sEmaParams &ema_params,sMacdParams &macd_params,sStocParams &stoc_params,sPbiParams &pbi_params);      // конструктор класса
+   CPointSys (sBaseParams &base_params,sEmaParams &ema_params,sMacdParams &macd_params,sStocParams &stoc_params,sPbiParams &pbi_params);      // конструктор класса
    ~CPointSys ();      // деструктор класса 
  };
 
 //--------------------------------------
 // конструктор балльной системы
 //--------------------------------------
-CPointSys::CPointSys(sDealParams &deal_params,sBaseParams &base_params,sEmaParams &ema_params,sMacdParams &macd_params,sStocParams &stoc_params,sPbiParams &pbi_params)
+CPointSys::CPointSys(sBaseParams &base_params,sEmaParams &ema_params,sMacdParams &macd_params,sStocParams &stoc_params,sPbiParams &pbi_params)
 {
  //---------инициализируем параметры, буферы, индикаторы и прочее
  _symbol = Symbol();
 
  ////// сохран€ем внешние параметры
- _deal_params = deal_params;
  _base_params = base_params;
  _ema_params  = ema_params;
  _macd_params = macd_params;
@@ -208,7 +207,7 @@ int  CPointSys::GetTrendSignals(void)
  
  if ( isUpLoaded () )   // пытаемс€ прогрузить индикаторы
  {
-   return ( TrendSignals() );  // вернем сигнал на тренде
+   //return ( TrendSignals() );  // вернем сигнал на тренде
  }
  return (0); // нет сигнала
 } 
@@ -312,22 +311,11 @@ int CPointSys::StochasticAndEma(void)
 }
 
 //------------------------------------------
-// —игнал расхождение MACD
-//------------------------------------------
-
-//------------------------------------------
-// —игнал расхождение на —тохастике
-//------------------------------------------
-
-//------------------------------------------
 // —игнал дл€ тренда
 //------------------------------------------
-
- 
-
- int CPointSys::TrendSignals(void)
-  {
-   if (_bufferPBI[0] == 1)                   //≈сли направление тренда TREND_UP  
+int CPointSys::TrendSignals(void)
+{
+ if (_bufferPBI[0] == 1)                   //≈сли направление тренда TREND_UP  
  {
   if (GreatOrEqualDoubles(_bufferEMA3Eld[0] + _base_params.deltaPriceToEMA*_Point, _tick.bid))
   {
@@ -346,7 +334,7 @@ int CPointSys::StochasticAndEma(void)
  } //end TREND_UP
  else if (_bufferPBI[0] == 3)               //≈сли направление тренда TREND_DOWN  
  {
-  if (GreatOrEqualDoubles(_tick.ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
+  if(GreatOrEqualDoubles(_tick.ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
   {
 
    if (GreatDoubles(_bufferHighEld[0], _bufferEMAfastEld[0] - _base_params.deltaPriceToEMA*_Point) || 
@@ -371,6 +359,8 @@ int CPointSys::CorrSignals(void)
  {
  if(GreatDoubles(_bufferEMAslowJr[1], _bufferEMAfastJr[1]) && GreatDoubles (_bufferEMAfastJr[0], _bufferEMAslowJr[0]) 
     && _bufferSTOCEld[0] < _stoc_params.bottom_level) //стохастик внизу; пересечение младших EMA снизу вверх
-    return(100);     
+    return(1);  
+ 
+    
   return (0); // нет сигнала
  }
