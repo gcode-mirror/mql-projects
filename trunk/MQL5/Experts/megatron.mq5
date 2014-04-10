@@ -60,7 +60,7 @@ input int     deltaPriceToEMA = 7;                                      // допус
 input int     deltaEMAtoEMA = 5;                                        // необходимая разница для разворота EMA
 input int     waitAfterDiv = 4;                                         // ожидание сделки после расхождения (в барах)
 
-input        ENUM_TRAILING_TYPE  trailingType = TRAILING_TYPE_PBI;   // тип трейлинга
+input        ENUM_TRAILING_TYPE  trailingType = TRAILING_TYPE_PBI;      // тип трейлинга
 input int    trStop = 100;                                              // Trailing Stop
 input int    trStep = 100;                                              // Trailing Step
 input int    minProfit = 250;                                           // Minimal Profit 
@@ -169,7 +169,6 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-   int points;
  ctm.OnTick();  
  // пробуем обновить буферы
  if (pointsys.GetFlatSignals() >= 2)
