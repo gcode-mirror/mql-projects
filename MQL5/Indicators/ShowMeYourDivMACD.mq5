@@ -62,8 +62,6 @@ input short               bars=20000;                // начальное количество бар
 input int                 fast_ema_period=12;        // период быстрой средней MACD
 input int                 slow_ema_period=26;        // период медленной средней MACD
 input int                 signal_period=9;           // период усреднения разности MACD
-input int                 depth=10;                  // грубина рассчета актуальности
-
 
 //+------------------------------------------------------------------+
 //| Глобальные переменные                                            |
@@ -85,18 +83,7 @@ CisNewBar          isNewBar;               // для проверки формирования нового б
 double bufferMACD[];   // буфер уровней MACD
 double signalMACD[];   // сигнальный буфер MACD
 
-int countConvPos = 0;       // количество положительных сигналов схождения
-int countConvNeg = 0;       // количество негативный сигналов схождения
-int countDivPos  = 0;       // количество положительный сигналов расхождения
-int countDivNeg  = 0;       // количество негативных сигналов расхождения 
-
-double averConvPos = 0;      // среднее актуальное схождение
-double averConvNeg = 0;      // среднее не актуальное схождение
-double averDivPos  = 0;      // среднее актуальное расхождение
-double averDivNeg  = 0;      // среднее не актуальное расхождение
-double averPos     = 0;      // средний актуальный сигнал
-double averNeg     = 0;      // средний не актуальный сигнал      
- 
+   
 // временные параменные для хранения локальных минимумов и максимумов
  double localMax;
  double localMin;
@@ -169,7 +156,7 @@ int OnCalculate(const int rates_total,
              // если не удалось загрузить буфера MACD
              return (0);
            }                
-       for (;lastBarIndex > depth; lastBarIndex--)
+       for (;lastBarIndex > 0; lastBarIndex--)
         {
        // int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, PointDivMACD& div_point, int startIndex = 0
           // сканируем историю по хэндлу на наличие расхождений\схождений 
@@ -191,66 +178,10 @@ int OnCalculate(const int rates_total,
             
             localMax = high[rates_total-2-lastBarIndex];
             localMin = low[rates_total-2-lastBarIndex];
-            
-            for (count=1;count<=depth;count++)
-             {
-              if (GreatDoubles (high[rates_total-2-lastBarIndex+count],localMax) )
-               localMax = high[rates_total-2-lastBarIndex+count];
-              if (LessDoubles (low[rates_total-2-lastBarIndex+count],localMin) )
-               localMin = low[rates_total-2-lastBarIndex+count];
-             } 
-            if (retCode == 1)
-             {                    
-          
-               if ( LessDoubles ( (localMax - close[rates_total-3-lastBarIndex]), (close[rates_total-3-lastBarIndex] - localMin) ) )
-                 {
-                   averDivPos  = averDivPos + close[rates_total-3-lastBarIndex+count] - localMin;
-                   averPos     = averPos + close[rates_total-3-lastBarIndex+count] - localMin;
-                   countDivPos ++; // увеличиваем счетчик положительных схождений
-                 }
-               else
-                 {
-                   averDivNeg = averDivNeg + close[rates_total-3-lastBarIndex] - localMax;  
-                   averNeg     = averNeg + close[rates_total-3-lastBarIndex] - localMax;                 
-                   countDivNeg ++; // иначе увеличиваем счетчик отрицательных схождений
-                 }
-             }
-            if (retCode == -1)
-             {
-                        
-               if (GreatDoubles ( (localMax - close[rates_total-3-lastBarIndex]), (close[rates_total-3-lastBarIndex] - localMin) ) )
-                 {
-                  averConvPos = averConvPos + localMax - close[rates_total-3-lastBarIndex];
-                  averPos     = averPos + localMax - close[rates_total-3-lastBarIndex];
-                  countConvPos ++; // увеличиваем счетчик положительных расхождений
-                 }
-               else
-                 {
-                  averConvNeg = averConvNeg + localMin - close[rates_total-3-lastBarIndex];  
-                  averNeg     = averNeg + localMin - close[rates_total-3-lastBarIndex];
-                  countConvNeg ++; // иначе увеличиваем счетчик отрицательных расхождений
-                 }   
-             }
         
            }
         }
      
-    // вычисление средних значений
-   if (countConvNeg > 0)
-    averConvNeg = averConvNeg / countConvNeg;
-   if (countConvPos > 0) 
-    averConvPos = averConvPos / countConvPos;
-   if (countDivNeg > 0)
-    averDivNeg  = averDivNeg  / countDivNeg;
-   if (countDivPos > 0)
-    averDivPos  = averDivPos  / countDivPos;
-   if (countConvNeg > 0 || countDivNeg > 0)
-    averNeg     = averNeg     / (countConvNeg + countDivNeg);
-   if (countConvPos > 0 || countDivPos > 0)
-    averPos     = averPos     / (countConvPos + countDivPos);    
-            
-    
-        
        first_calculate = false;
      }
     else  // если запуска не первый
