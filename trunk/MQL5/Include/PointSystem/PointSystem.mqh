@@ -309,3 +309,67 @@ int CPointSys::StochasticAndEma(void)
  }
  return(0);   // нет сигнала
 }
+
+//------------------------------------------
+// Сигнал расхождение MACD
+//------------------------------------------
+
+//------------------------------------------
+// Сигнал расхождение на Стохастике
+//------------------------------------------
+
+//------------------------------------------
+// Сигнал для тренда
+//------------------------------------------
+
+ 
+
+ int CPointSys::TrendSignals(void)
+  {
+   if (_bufferPBI[0] == 1)                   //Если направление тренда TREND_UP  
+ {
+  if (GreatOrEqualDoubles(_bufferEMA3Eld[0] + _base_params.deltaPriceToEMA*_Point, _tick.bid))
+  {
+  
+   if (GreatDoubles(_bufferEMAfastEld[0] + _base_params.deltaPriceToEMA*_Point, _bufferLowEld[0]) || 
+       GreatDoubles(_bufferEMAfastEld[1] + _base_params.deltaPriceToEMA*_Point, _bufferLowEld[1]))
+   {
+
+    if (GreatDoubles(_bufferEMAslowJr[1], _bufferEMAfastJr[1]) && LessDoubles(_bufferEMAslowJr[0], _bufferEMAfastJr[0]))
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
+     return (1);  // типо сигнал на покупку
+    }
+   }
+  }
+ } //end TREND_UP
+ else if (_bufferPBI[0] == 3)               //Если направление тренда TREND_DOWN  
+ {
+  if (GreatOrEqualDoubles(_tick.ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
+  {
+
+   if (GreatDoubles(_bufferHighEld[0], _bufferEMAfastEld[0] - _base_params.deltaPriceToEMA*_Point) || 
+       GreatDoubles(_bufferHighEld[1], _bufferEMAfastEld[1] - _base_params.deltaPriceToEMA*_Point))
+   {
+    if (GreatDoubles(_bufferEMAfastJr[1], _bufferEMAslowJr[1]) && LessDoubles(_bufferEMAfastJr[0], _bufferEMAslowJr[0]))
+    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
+     return (-1);  // типо сигнал на продажу
+    }
+   }
+  }
+ } //end TREND_DOWN
+   return (0); // нет сигнала
+  }
+  
+//------------------------------------------
+// Сигнал для коррекции                
+//------------------------------------------
+
+int CPointSys::CorrSignals(void)
+ {
+ if(GreatDoubles(_bufferEMAslowJr[1], _bufferEMAfastJr[1]) && GreatDoubles (_bufferEMAfastJr[0], _bufferEMAslowJr[0]) 
+    && _bufferSTOCEld[0] < _stoc_params.bottom_level) //стохастик внизу; пересечение младших EMA снизу вверх
+    return(100);     
+  return (0); // нет сигнала
+ }
