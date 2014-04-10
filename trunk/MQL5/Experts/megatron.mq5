@@ -170,13 +170,14 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  ctm.OnTick();  
- // пробуем обновить буферы
- if (pointsys.GetFlatSignals() >= 2)
+ // обрабатываем сигналы
+ if (pointsys.GetFlatSignals() >= 2 || pointsys.GetTrendSignals() >= 2)
  {
   ctm.OpenUniquePosition(symbol,period, opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);        
  }
- if (pointsys.GetFlatSignals() <= -2)
+ if (pointsys.GetFlatSignals() <= -2 || pointsys.GetTrendSignals() <= -2)
  {
   ctm.OpenUniquePosition(symbol,period, opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);        
  }
+
 }

@@ -59,7 +59,7 @@ class CPointSys
    
    // методы вычисления сигналов
    int StochasticAndEma();         // Сигнал разворота ЕМА в зоне перекупленности/перепроданности
-   int TrendSignals();             // Сигнал
+   int CompareEMAWithPriceEld_AND_CrossEMAJr(); // 
    int CorrSignals();
    int lastTrend;                  // Направление последнего тренда
   public:
@@ -195,7 +195,7 @@ int CPointSys::GetFlatSignals()
    points += divergenceSTOC(_handleSTOCEld, Symbol(), Period(),80,20); 
    points += (lastTrend == MOVE_TYPE_TREND_UP || lastTrend == MOVE_TYPE_TREND_UP_FORBIDEN) ? 1 : -1;  
   }
-  return (points); // нет сигнала
+  return (points); // возвращаем количество баллов
  }
 
 //---------------------------------------------------
@@ -203,13 +203,14 @@ int CPointSys::GetFlatSignals()
 //--------------------------------------------------- 
 int  CPointSys::GetTrendSignals(void)
 {
+ int points = 0;
  SymbolInfoTick(Symbol(), _tick);
  
  if ( isUpLoaded () )   // пытаемся прогрузить индикаторы
  {
-   //return ( TrendSignals() );  // вернем сигнал на тренде
+   points+= CompareEMAWithPriceEld_AND_CrossEMAJr();  // прибавляем сигнал 
  }
- return (0); // нет сигнала
+ return (points); // возвращаем количество баллов
 } 
 
 //---------------------------------------------------
@@ -217,12 +218,13 @@ int  CPointSys::GetTrendSignals(void)
 //---------------------------------------------------  
 int CPointSys::GetCorrSignals(void)
 {
+ int points = 0;
  SymbolInfoTick(Symbol(), _tick);
  if ( isUpLoaded () ) // если удалось прогрузить индикаторы
  {
-   
+   points+= CorrSignals();  // прибавляем сигнал
  }
- return (0); // нет сигнала
+ return (points); // возвращаем количество баллов
 }
 
 //-----------------------------------------------
@@ -313,7 +315,7 @@ int CPointSys::StochasticAndEma(void)
 //------------------------------------------
 // Сигнал для тренда
 //------------------------------------------
-int CPointSys::TrendSignals(void)
+int CPointSys::CompareEMAWithPriceEld_AND_CrossEMAJr(void)
 {
  if (_bufferPBI[0] == 1)                   //Если направление тренда TREND_UP  
  {

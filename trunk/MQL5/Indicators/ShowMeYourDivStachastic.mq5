@@ -65,7 +65,6 @@ input ENUM_MA_METHOD      ma_method=MODE_SMA;           // тип сглаживания
 input ENUM_STO_PRICE      price_field=STO_LOWHIGH;      // способ расчета стохастика           
 input int                 top_level=80;                 // верхний уровень 
 input int                 bottom_level=20;              // нижний уровень 
-input int                 depth=10;                     // глубина вычисления актуальности
 
 
 //+------------------------------------------------------------------+
@@ -83,18 +82,6 @@ CisNewBar          isNewBar;               // для проверки формирования нового б
 
 double             bufferStoc[];           // буфер стохастика 1
 double             bufferStoc2[];          // буфер стохастика 2
-
-int countConvPos = 0;                      // количество положительных сигналов схождения
-int countConvNeg = 0;                      // количество негативный сигналов схождения
-int countDivPos  = 0;                      // количество положительный сигналов расхождения
-int countDivNeg  = 0;                      // количество негативных сигналов расхождения 
-
-double averConvPos = 0;      // среднее актуальное схождение
-double averConvNeg = 0;      // среднее не актуальное схождение
-double averDivPos  = 0;      // среднее актуальное расхождение
-double averDivNeg  = 0;      // среднее не актуальное расхождение
-double averPos     = 0;      // средний актуальный сигнал
-double averNeg     = 0;      // средний не актуальный сигнал   
  
 // временные параменные для хранения локальных минимумов и максимумов
  double localMax;
@@ -182,11 +169,8 @@ int OnCalculate(const int rates_total,
           // если схождение\расхождение обнаружено
           if (retCode)
            {                                     
-          //  trendLine.Color(lineColors[countTrend % 5] );
             //создаем линию схождения\расхождения                    
-            trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
-            
-            //trendLine.Color(lineColors[countTrend % 5] );         
+            trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);                       
             //создаем линию схождения\расхождения на стохастике
             trendLine.Create(0,"StocLine_"+countTrend,1,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
             //увеличиваем количество тренд линий
@@ -194,67 +178,12 @@ int OnCalculate(const int rates_total,
             
             localMax = high[rates_total-1-lastBarIndex];
             localMin = low[rates_total-1-lastBarIndex];
-            for (count=1;count<=depth;count++)
-             {
-              if (GreatDoubles(high[rates_total-1-lastBarIndex+count],localMax) )
-               localMax = high[rates_total-1-lastBarIndex+count];
-              if (LessDoubles (low[rates_total-1-lastBarIndex+count],localMin) )
-               localMin = low[rates_total-1-lastBarIndex+count];
-             } 
-             
-            // Alert("LAST BAR INDEX = ",rates_total-1-lastBarIndex," ВРЕМЯ = ",TimeToString(time[rates_total-2-lastBarIndex]));
-            // Alert("LOCAL MAX = ",localMax-close[rates_total-2-lastBarIndex]," LOCAL MIN = ",close[rates_total-2-lastBarIndex]-localMin);       
-            // Alert("ЦЕНА ЗАКРЫТИЯ = ",close[rates_total-1-lastBarIndex]);   
-            if (retCode == 1)
-             {
-  
-               if ( LessDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
-                 {
-               
-                   averDivPos  = averDivPos + close[rates_total-2-lastBarIndex] - localMin;
-                   averPos     = averPos + close[rates_total-2-lastBarIndex] - localMin; 
-                   countDivPos ++; // увеличиваем счетчик положительных схождений
-                 }
-               else
-                 {
-                   averDivNeg  = averDivNeg + close[rates_total-2-lastBarIndex] - localMax;  
-                   averNeg     = averNeg + close[rates_total-2-lastBarIndex] - localMax; 
-                   countDivNeg ++; // иначе увеличиваем счетчик отрицательных схождений
-                 }
-             }
-            if (retCode == -1)
-             {              
-               if (GreatDoubles ( (localMax - close[rates_total-2-lastBarIndex]), (close[rates_total-2-lastBarIndex] - localMin) ) )
-                 {
-                  averConvPos = averConvPos + localMax - close[rates_total-2-lastBarIndex];
-                  averPos     = averPos + localMax - close[rates_total-2-lastBarIndex];  
-                  countConvPos ++; // увеличиваем счетчик положительных расхождений
-                  
-                 }
-               else
-                 {
-                  averConvNeg = averConvNeg + localMin - close[rates_total-2-lastBarIndex];  
-                  averNeg     = averNeg + localMin - close[rates_total-2-lastBarIndex];
-                  countConvNeg ++; // иначе увеличиваем счетчик отрицательных расхождений
-                 }   
-             }            
+
+            
             
            }
         }
-        
-           // вычисление средних значений
-   if (countConvNeg > 0)
-    averConvNeg = averConvNeg / countConvNeg;
-   if (countConvPos > 0) 
-    averConvPos = averConvPos / countConvPos;
-   if (countDivNeg > 0)
-    averDivNeg  = averDivNeg  / countDivNeg;
-   if (countDivPos > 0)
-    averDivPos  = averDivPos  / countDivPos;
-   if (countConvNeg > 0 || countDivNeg > 0)
-    averNeg     = averNeg     / (countConvNeg + countDivNeg);
-   if (countConvPos > 0 || countDivPos > 0)
-    averPos     = averPos     / (countConvPos + countDivPos);    
+            
         
        first_calculate = false;
      }
