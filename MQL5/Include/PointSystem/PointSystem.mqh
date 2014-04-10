@@ -59,7 +59,8 @@ class CPointSys
    
    // методы вычисления сигналов
    int StochasticAndEma();         // Сигнал разворота ЕМА в зоне перекупленности/перепроданности
-   
+   int TrendSignals();             // Сигнал
+   int CorrSignals();
    int lastTrend;                  // Направление последнего тренда
   public:
 
