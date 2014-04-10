@@ -65,7 +65,7 @@ struct sPbiParams
 // структура сделок
 struct sDealParams
  {
-  double orderVolume;                             // Объём сделки
+  double orderVolume;                          // Объём сделки
   int slOrder;                                 // Stop Loss
   int tpOrder;                                 // Take Profit
   int trStop;                                  // Trailing Stop

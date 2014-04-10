@@ -12,10 +12,10 @@
 
 //-------- подключение библиотек
 
-#include <Lib CisNewBar.mqh>                       // для проверки формирования нового бара
-#include <TradeManager/TradeManager.mqh>           // торговая библиотека
-#include <PointSystem/PointSystem.mqh>             // класс бальной системы
-#include <ColoredTrend/ColoredTrendUtilities.mqh>  // константы price based indicator
+#include <Lib CisNewBar.mqh>                // для проверки формирования нового бара
+#include <TradeManager/TradeManager.mqh>    // торговая библиотека
+#include <PointSystem/PointSystem.mqh>            // класс бальной системы
+#include <ColoredTrend/ColoredTrendUtilities.mqh>
 
 //-------- входные параметры
 sinput string time_string="";                                           // параметры таймфреймов
@@ -66,10 +66,10 @@ input int    trStep = 100;                                              // Trail
 input int    minProfit = 250;                                           // Minimal Profit 
 
 // объявление структур данных
-sEmaParams    ema_params;           // параметры EMA
-sMacdParams   macd_params;          // параметры MACD
-sStocParams   stoc_params;          // параметры стохастика
-sPbiParams    pbi_params;           // параметры PriceBased indicator
+sEmaParams    ema_params;          // параметры EMA
+sMacdParams   macd_params;         // параметры MACD
+sStocParams   stoc_params;         // параметры стохастика
+sPbiParams    pbi_params;          // параметры PriceBased indicator
 sDealParams   deal_params;          // параметры сделок
 sBaseParams   base_params;          // базовые параметры
 
@@ -89,7 +89,6 @@ ENUM_TM_POSITION_TYPE opBuy, opSell; // сигнал на покупку
 //+------------------------------------------------------------------+
 int OnInit()
   {
-
    //------- заполняем структуры данных 
    
    // заполняем парметры EMA
@@ -169,46 +168,16 @@ void OnDeinit(const int reason)
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
-  {
+{
    int points;
-   ctm.OnTick();  
-   // пробуем обновить буферы
-   deal_type = OP_UNKNOWN;   // сохраняем неизвестный сигнал  
-      
-     // проверяем текущее ценовое движение 
-     switch (pointsys.GetMovingType())
-       {
-        case MOVE_TYPE_CORRECTION_UP:          // на коррекции
-        case MOVE_TYPE_CORRECTION_DOWN:
-
-        break;
-        case MOVE_TYPE_FLAT:                   // на флэте
-         points = pointsys.GetFlatSignals();   // получаем количество очков
-          if (points > 1)  // если система вернула как минимум 2 балла в сторону покупки
-           {
-            deal_type = opBuy;   // сохраняем сигнал на покупку
-           }
-          if (points < -1) // если система вернула как минимум 2 балла в сторону продажи
-           {
-            deal_type = opSell;  // сохраняем сигнал на продажу
-           }    
-        break;
-        case MOVE_TYPE_TREND_DOWN:             // на тренде
-        case MOVE_TYPE_TREND_DOWN_FORBIDEN:
-        case MOVE_TYPE_TREND_UP:
-        case MOVE_TYPE_TREND_UP_FORBIDEN:
-         points = pointsys.GetTrendSignals();  // получаем сигнал на тренде
-         if (points > 0)  // если получили сигнал на покупку
-          {
-           deal_type = opBuy;  // сохраняем сигнал на покупку
-          }
-         if (points < 0)  // если получили сигнал на продажу
-          {
-           deal_type = opSell; // сохраняем сигнал на продажу
-          }
-        break;
-       }
-     if (deal_type != OP_UNKNOWN)
-       ctm.OpenUniquePosition(symbol,period,deal_type, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);        
-
-  }
+ ctm.OnTick();  
+ // пробуем обновить буферы
+ if (pointsys.GetFlatSignals() >= 2)
+ {
+  ctm.OpenUniquePosition(symbol,period, opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);        
+ }
+ if (pointsys.GetFlatSignals() <= -2)
+ {
+  ctm.OpenUniquePosition(symbol,period, opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);        
+ }
+}
