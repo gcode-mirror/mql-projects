@@ -8,7 +8,7 @@
 #property version   "1.00"
  
 #include <Lib CisNewBar.mqh>
-#include <divergenceStochastic.mqh>
+#include <divergence/divergenceStochastic.mqh>
 #include <TradeManager/TradeManager.mqh>
 
 input ENUM_TIMEFRAMES eldTF = PERIOD_H1;
@@ -24,8 +24,6 @@ input int    dPeriod = 3;          // D-период стохастика
 input int    slow  = 3;            // Сглаживание стохастика. Возможные значения от 1 до 3.
 input int    top_level = 80;       // Top-level стохастка
 input int    bottom_level = 20;    // Bottom-level стохастика
-input int    DEPTH = 100;          // глубина поиска расхождения
-input int    ALLOW_DEPTH_FOR_PRICE_EXTR = 25; //допустимая глубина для экстремума цены
 
 //параметры сделок  
 input double orderVolume = 0.1;         // Объём сделки
@@ -211,7 +209,7 @@ void OnTick()
   } 
  } // end newBar
   
-  order_direction = divergenceSTOC(handleSTO, Symbol(), eldTF, top_level, bottom_level, DEPTH, ALLOW_DEPTH_FOR_PRICE_EXTR, null);
+  order_direction = divergenceSTOC(handleSTO, Symbol(), eldTF, top_level, bottom_level, NULL);
  if (bufferTrend[0] == 7)               //Если направление тренда FLAT  
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s ФЛЭТ", MakeFunctionPrefix(__FUNCTION__)));   
@@ -221,7 +219,7 @@ void OnTick()
    if(LessDoubles(bid, bufferEMA3Eld[0] + deltaPriceToEMA*point))
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
-    tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    tradeManager.OpenUniquePosition(Symbol(), Period(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
     wait = 0;
    }
   }
@@ -231,7 +229,7 @@ void OnTick()
    if(GreatDoubles(ask, bufferEMA3Eld[0] - deltaPriceToEMA*point))
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
-    tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+    tradeManager.OpenUniquePosition(Symbol(), Period(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
     wait = 0;
    }
   }

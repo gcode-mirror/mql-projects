@@ -113,7 +113,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
   if(isMACDExtremum(handleMACD, startIndex) == 1) //если в текущий момент есть экстремум
   {
    is_extr_exist = false;
-   for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума дл€ того что бы MACD_global_max был экстремумом
+   for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++) //будем искать после первого экстремума дл€ того что бы MACD_global_max был экстремумом
    {
     if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == 1) 
     {
@@ -121,8 +121,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
      break; 
     }
    }  
-   if (!is_extr_exist) 
-    return(0);  //если на всей истории начина€ с DEPTH до последних 15 баров не было экстремума
+   if (!is_extr_exist) return(0);  //если на всей истории начина€ с DEPTH до последних 15 баров не было экстремума
    
    index_MACD_global_max = ArrayMaximum(iMACD_buf, i-2, WHOLE_ARRAY);  
    for(i = index_MACD_global_max; i < DEPTH_MACD; i++)  //ищем было ли прохождение через 0 и возвращение назад 
@@ -133,15 +132,17 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
      break;
     }//не провер€ем на выход из 0 так как в текущий момент есть положительный экстремум
    }
-   if(!under_zero)                       
-    return(0); //если не было прохождени€ через 0 то нас данна€ ситуаци€ уже не интересует
+   if(!under_zero) return(0); //если не было прохождени€ через 0 то нас данна€ ситуаци€ уже не интересует
    
    if(LessDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_max]))  //на MACD: экстремум в текущий момент меньше глобального
    {
     index_Price_local_max    = ArrayMaximum(iHigh_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);
     if (index_Price_local_max == 0 || index_Price_local_max == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
+    { 
      return (0);
-    return(1);
+    }
+    //PrintFormat("–асхождение MACD на продажу");      
+    return(-1);
    }
   }
  }
@@ -178,8 +179,11 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
    {
     index_Price_local_min    = ArrayMinimum(iLow_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);  
     if (index_Price_local_min == 0 || index_Price_local_min == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
-     return (0);      
-    return(-1);
+    {
+     return (0);
+    }
+    //PrintFormat("–асхождение MACD на покупку");      
+    return(1);
    }
   }
  }

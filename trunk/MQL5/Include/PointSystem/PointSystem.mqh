@@ -35,14 +35,6 @@ class CPointSys
    
    // P.S. пока что взять хэндлы и буферы для DesepticonFlat
    
-   // хэндлы индикаторов
-   int _handlePBI;         // хэндл PriceBased indicator
-   int _handleEMA3Eld;             // хэндл для EMA 3 старшего таймфрейма
-   int _handleEMAfastEld;          // хэндл EMA fast старшего таймфрейма   
-   int _handleEMAfastJr;   // хэндл EMA fast старшего таймфрейма
-   int _handleEMAslowJr;   // хэндл EMA fast младшего таймфрейма
-   int _handleSTOCEld;     // хэндл Stochastic старшего таймфрейма
-   int _handleMACD;        // хэндл MACD
    // буферы индикаторов 
    double _bufferPBI[];            // буфер для PriceBased indicator  
    double _bufferPBIforTrendDirection[];
@@ -56,12 +48,12 @@ class CPointSys
    double _bufferLowEld[];         // буфер для цены low на старшем таймфрейме   
    
    CisNewBar *_eldNewBar;          // переменная для определения нового бара на eldTF  
-   
+   CisNewBar *_curNewBar;          // переменная для определения нового бара на текущем ТФ  
    // методы вычисления сигналов
    int StochasticAndEma();         // Сигнал разворота ЕМА в зоне перекупленности/перепроданности
    int CompareEMAWithPriceEld_AND_CrossEMAJr(); // 
    int CorrSignals();
-   int lastTrend;                  // Направление последнего тренда
+   ENUM_MOVE_TYPE lastTrend;                  // Направление последнего тренда
   public:
 
   // методы получения торговых сигналов на основе балльной системы
@@ -81,42 +73,20 @@ class CPointSys
 //--------------------------------------
 CPointSys::CPointSys(sBaseParams &base_params,sEmaParams &ema_params,sMacdParams &macd_params,sStocParams &stoc_params,sPbiParams &pbi_params)
 {
+ Print("Конструтор PointSystem");
  //---------инициализируем параметры, буферы, индикаторы и прочее
  _symbol = Symbol();
-
+ lastTrend = 0;     // последнего тренда пока еще не было
  ////// сохраняем внешние параметры
  _base_params = base_params;
  _ema_params  = ema_params;
  _macd_params = macd_params;
  _stoc_params = stoc_params;
  _pbi_params  = pbi_params;
-   
- ////// инициализаруем индикаторы
- //---------инициализируем параметры, буферы, индикаторы и прочее
-   
- ////// сохраняем внешние параметры   ////// инициализаруем индикаторы
- _handlePBI       = iCustom(Symbol(), Period(), "PriceBasedIndicator", 1000);
- _handleMACD      = iMACD(Symbol(), Period(), _macd_params.fast_EMA_period,  _macd_params.slow_EMA_period, _macd_params.signal_period, _macd_params.applied_price);
- _handleSTOCEld   = iStochastic(NULL, _base_params.eldTF, _stoc_params.kPeriod, _stoc_params.dPeriod, _stoc_params.slow, MODE_SMA, STO_CLOSECLOSE);
- _handleEMA3Eld    = iMA(Symbol(),  _base_params.eldTF, 3,                            0, MODE_EMA, PRICE_CLOSE);
- _handleEMAfastEld = iMA(Symbol(),  _base_params.eldTF, _ema_params.periodEMAfastEld, 0, MODE_EMA, PRICE_CLOSE); 
- _handleEMAfastJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAfastJr, 0, MODE_EMA, PRICE_CLOSE);
- _handleEMAslowJr = iMA(Symbol(),  _base_params.jrTF, _ema_params.periodEMAslowJr, 0, MODE_EMA, PRICE_CLOSE);
-
- if (_handlePBI == INVALID_HANDLE || 
-     _handleEMA3Eld    == INVALID_HANDLE ||
-     _handleEMAfastEld == INVALID_HANDLE ||
-     _handleEMAfastJr == INVALID_HANDLE || 
-     _handleEMAslowJr == INVALID_HANDLE || 
-     _handleMACD == INVALID_HANDLE || 
-     _handleSTOCEld    == INVALID_HANDLE   )
- {
-  log_file.Write(LOG_DEBUG, StringFormat("%s INVALID_HANDLE (handleTrend). Error(%d) = %s" 
-                                        , MakeFunctionPrefix(__FUNCTION__), GetLastError(), ErrorDescription(GetLastError())));
- }   
-            
+               
  // выделяем память под объект класса определения формирования нового бара
  _eldNewBar = new CisNewBar(_base_params.eldTF);
+ _curNewBar = new CisNewBar(_base_params.curTF);
   // порядок элементов в массивах, как в таймсерии
  ArraySetAsSeries( _bufferPBI, true);
  ArraySetAsSeries( _bufferPBIforTrendDirection, true);
@@ -126,32 +96,14 @@ CPointSys::CPointSys(sBaseParams &base_params,sEmaParams &ema_params,sMacdParams
  ArraySetAsSeries( _bufferHighEld,   true);
  ArraySetAsSeries( _bufferLowEld,    true);
   // изменяем размер буферов
- int bars = Bars(Symbol(), Period());
+ //int bars = Bars(Symbol(), Period());
  ArrayResize( _bufferPBI, 1);
- ArrayResize( _bufferPBIforTrendDirection, bars);
+ ArrayResize( _bufferPBIforTrendDirection, _pbi_params.historyDepth);
  ArrayResize( _bufferEMAfastJr, 2);
  ArrayResize( _bufferEMAslowJr, 2);
  ArrayResize( _bufferSTOCEld, 1);
  
- int copiedPBI = 0;
- for (int attempts = 0; attempts < 25 && copiedPBI <= 0; attempts++)
- {
-  Sleep(100);
-  copiedPBI = CopyBuffer(_handlePBI, 4, 0, bars, _bufferPBIforTrendDirection);
- }
- 
- lastTrend = MOVE_TYPE_UNKNOWN;
- for(int i = 0; i < bars; i++)
- {
-  if (_bufferPBIforTrendDirection[i] == MOVE_TYPE_TREND_UP ||
-      _bufferPBIforTrendDirection[i] == MOVE_TYPE_TREND_DOWN ||
-      _bufferPBIforTrendDirection[i] == MOVE_TYPE_TREND_UP_FORBIDEN ||
-      _bufferPBIforTrendDirection[i] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
-  {
-   lastTrend = _bufferPBIforTrendDirection[i];
-   break;
-  }
- }
+ //int tmp_handle = iCustom(Symbol(), Period(), "PriceBasedIndicator", 1000, 1, 1.5);
 }
 
 //---------------------------------------------  
@@ -160,15 +112,9 @@ CPointSys::CPointSys(sBaseParams &base_params,sEmaParams &ema_params,sMacdParams
  CPointSys::~CPointSys(void)
   {
    delete _eldNewBar;
-   // освобождаем индикаторы
-   IndicatorRelease(_handlePBI);
-   IndicatorRelease(_handleEMAfastEld);
-   IndicatorRelease(_handleEMAfastJr);
-   IndicatorRelease(_handleEMAslowJr);
-   IndicatorRelease(_handleSTOCEld);
-   IndicatorRelease(_handleMACD);
    // освобождаем память под буферы
    ArrayFree(_bufferPBI);
+   ArrayFree( _bufferPBIforTrendDirection);   
    ArrayFree(_bufferEMA3Eld);
    ArrayFree(_bufferEMAfastEld);
    ArrayFree(_bufferEMAfastJr);
@@ -184,18 +130,28 @@ CPointSys::CPointSys(sBaseParams &base_params,sEmaParams &ema_params,sMacdParams
 //--------------------------------------------------- 
 int CPointSys::GetFlatSignals()
  {
+  static int dm = 0, ds = 0;
   int points = 0; 
   SymbolInfoTick(_symbol, _tick); 
 
   if (isUpLoaded ())     // если данные индикатора успешно прогрузились
   {
-   //StochasticAndEma();  // Этот сигнал не проверен и пока что не используется
-      
-   points += divergenceMACD(_handleMACD, Symbol(), Period());   
-   points += divergenceSTOC(_handleSTOCEld, Symbol(), Period(),80,20); 
-   points += (lastTrend == MOVE_TYPE_TREND_UP || lastTrend == MOVE_TYPE_TREND_UP_FORBIDEN) ? 1 : -1;  
+   if (_curNewBar.isNewBar())
+   {
+    dm = divergenceMACD(_macd_params.handleMACD, Symbol(), Period());
+    ds = divergenceSTOC(_stoc_params.handleStochastic, Symbol(), Period(), _stoc_params.top_level, _stoc_params.bottom_level);
+   }
+   points += dm;
+   points += ds;
+   points += lastTrend;
+   if (MathAbs(points) >= 2)
+   {
+    Print("Points=",points);  
+    dm = 0;
+    ds = 0;
+   }
   }
-  return (points); // возвращаем количество баллов
+  return (points); 
  }
 
 //---------------------------------------------------
@@ -236,18 +192,64 @@ bool CPointSys::isUpLoaded(void)
  int copiedPBI=-1;
  int copiedSTOCEld=-1;
  int copiedEMA3Eld=-1;
- int copiedEMAfastEld=-1;
+ int copiedEMAfast =-1;
  int copiedEMAfastJr=-1;
  int copiedEMAslowJr=-1;
  int copiedHigh=-1;
  int copiedLow=-1;
  int attempts;
-
- for (attempts = 0; attempts < 25 && copiedPBI < 0; attempts++)
+ 
+ if (lastTrend == 0)
  {
-  copiedPBI = CopyBuffer(_handlePBI, 4, 0, 1, _bufferPBI);
+  for(attempts = 0; attempts < 25; attempts++)
+  {
+   Sleep(100);
+   copiedPBI = CopyBuffer(_pbi_params.handlePBI, 4, 0, _pbi_params.historyDepth, _bufferPBIforTrendDirection);
+  }
+  if (copiedPBI < 0)
+  {
+   PrintFormat("%s Не удалось скопировать буфер _bufferPBIforTrendDirection", MakeFunctionPrefix(__FUNCTION__));
+   return(false);
+  }
+  
+  for (int i = 0; i < _pbi_params.historyDepth; i++)
+  {
+   if (_bufferPBIforTrendDirection[i] == 1 ||   // если последний тренд ВВЕРХ
+       _bufferPBIforTrendDirection[i] == 2 )
+   {
+    lastTrend = 1;
+    break;
+   }
+   if (_bufferPBIforTrendDirection[i] == 3 ||   // если последний тренд ВНИЗ
+       _bufferPBIforTrendDirection[i] == 4 ) 
+   {
+    lastTrend = -1;
+    break;
+   }
+  }
  }
- if (copiedPBI < 0) return(false);  // Не смогли загрузить буфер PBI
+ 
+ for(attempts = 0; attempts < 25; attempts++)
+ {
+  Sleep(100);
+  copiedPBI = CopyBuffer(_pbi_params.handlePBI, 4, 0, 1, _bufferPBI);
+ }
+ if (copiedPBI < 0)
+ {
+  PrintFormat("%s Не удалось скопировать буфер PBI", MakeFunctionPrefix(__FUNCTION__));
+  return(false);
+ }
+ 
+ if (_bufferPBI[0] == 1 ||   // если последний тренд ВВЕРХ
+     _bufferPBI[0] == 2 )
+   {
+     lastTrend = 1;
+   }
+ if (_bufferPBI[0] == 3 ||   // если последний тренд ВНИЗ
+     _bufferPBI[0] == 4 ) 
+    {
+     lastTrend = -1;
+    }
  
  if (_eldNewBar.isNewBar() > 0)      //на каждом новом баре старшего TF
  {
@@ -256,17 +258,17 @@ bool CPointSys::isUpLoaded(void)
                                        || copiedEMAslowJr < 0); attempts++) 
   {
    //Копируем данные индикаторов
-   copiedSTOCEld   = CopyBuffer( _handleSTOCEld,   0, 1, 2, _bufferSTOCEld);
-   copiedEMA3Eld    = CopyBuffer( _handleEMA3Eld,   0, 0, 1, _bufferEMA3Eld);
-   copiedEMAfastEld = CopyBuffer( _handleEMAfastEld,0, 1, 2, _bufferEMAfastEld);
-   copiedEMAfastJr = CopyBuffer( _handleEMAfastJr, 0, 1, 2, _bufferEMAfastJr);
-   copiedEMAslowJr = CopyBuffer( _handleEMAslowJr, 0, 1, 2, _bufferEMAslowJr);
+   copiedSTOCEld   = CopyBuffer( _stoc_params.handleStochastic,   0, 1, 2, _bufferSTOCEld);
+   copiedEMA3Eld    = CopyBuffer( _ema_params.handleEMA3,   0, 0, 1, _bufferEMA3Eld);
+   copiedEMAfast = CopyBuffer( _ema_params.handleEMAfast,0, 1, 2, _bufferEMAfastEld);
+   copiedEMAfastJr = CopyBuffer( _ema_params.handleEMAfastJr, 0, 1, 2, _bufferEMAfastJr);
+   copiedEMAslowJr = CopyBuffer( _ema_params.handleEMAslowJr, 0, 1, 2, _bufferEMAslowJr);
    copiedHigh       = CopyHigh  ( Symbol(),  _base_params.eldTF,  1, 2, _bufferHighEld);
    copiedLow        = CopyLow   ( Symbol(),  _base_params.eldTF,  1, 2, _bufferLowEld); 
   }  
   if (copiedSTOCEld    != 2 ||
       copiedEMA3Eld    != 1 ||
-      copiedEMAfastEld != 2 || 
+      copiedEMAfast    != 2 || 
       copiedEMAfastJr  != 2 ||  
       copiedEMAslowJr  != 2 ||
       copiedHigh       != 2 ||
@@ -279,7 +281,7 @@ bool CPointSys::isUpLoaded(void)
  }
  return (true); // Нигде не выбило, значит все загрузилось
 }
- 
+
 //------------------------------------------
 // Сигнал Стохастик и ЕМА
 //------------------------------------------
@@ -292,7 +294,6 @@ int CPointSys::StochasticAndEma(void)
    if(GreatDoubles(_tick.ask, _bufferEMA3Eld[0] - _base_params.deltaPriceToEMA*_Point))
    {
      //продажа
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));     
     return(-1);  // типо сигнал на продажу
    }
   }
@@ -304,7 +305,6 @@ int CPointSys::StochasticAndEma(void)
    if(LessDoubles(_tick.bid, _bufferEMA3Eld[0] + _base_params.deltaPriceToEMA*_Point))
    {
      //покупка
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));     
     return(1);  // типо сигнал на покупку
    }
   }
@@ -328,7 +328,6 @@ int CPointSys::CompareEMAWithPriceEld_AND_CrossEMAJr(void)
 
     if (GreatDoubles(_bufferEMAslowJr[1], _bufferEMAfastJr[1]) && LessDoubles(_bufferEMAslowJr[0], _bufferEMAfastJr[0]))
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
      return (1);  // типо сигнал на покупку
     }
    }
@@ -344,7 +343,6 @@ int CPointSys::CompareEMAWithPriceEld_AND_CrossEMAJr(void)
    {
     if (GreatDoubles(_bufferEMAfastJr[1], _bufferEMAslowJr[1]) && LessDoubles(_bufferEMAfastJr[0], _bufferEMAslowJr[0]))
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
      return (-1);  // типо сигнал на продажу
     }
    }
@@ -363,6 +361,5 @@ int CPointSys::CorrSignals(void)
     && _bufferSTOCEld[0] < _stoc_params.bottom_level) //стохастик внизу; пересечение младших EMA снизу вверх
     return(1);  
  
-    
   return (0); // нет сигнала
  }

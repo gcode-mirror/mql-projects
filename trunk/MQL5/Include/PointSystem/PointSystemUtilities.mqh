@@ -28,47 +28,40 @@ struct sPoint
 
 struct sEmaParams
  {
-  int handleEMA;   
-  int periodEMAfastEld;           // период быстрой EMA на страршем таймфрейме
-  int periodEMAfastJr;            // период быстрой EMA на младшем таймфрейме
-  int periodEMAslowJr;            // период медленной EMA на младшем таймфрейме
+  int handleEMA3;   
+  int handleEMAfast;           // период быстрой EMA на страршем таймфрейме
+  int handleEMAfastJr;            // период быстрой EMA на младшем таймфрейме
+  int handleEMAslowJr;            // период медленной EMA на младшем таймфрейме
  };
  
 // структура MACD
 
 struct sMacdParams
  {
-  int fast_EMA_period;            // быстрый период EMA для MACD
-  int slow_EMA_period;            // медленный период EMA для MACD
-  int signal_period;              // период сигнальной линии для MACD 
-  int applied_price;                      // глубина поиска расхождения    
+  int handleMACD;
  };
 
 // структура параметров Стохастика
 
 struct sStocParams
  {
-  int kPeriod;                    // К-период стохастика
-  int dPeriod;                    // D-период стохастика
-  int slow;                       // Сглаживание стохастика. Возможные значения от 1 до 3.
+  int handleStochastic;
   int top_level;                  // Top-level стохастка
   int bottom_level;               // Bottom-level стохастика
-  int allow_depth_for_price_extr; // допустимая грубина для экстремума цены
-  int depth;                      // глубина поиска расхождения    
  };
  
 // структура параметров PriceBasedIndicator
 struct sPbiParams
  {
+  int handlePBI;
   int historyDepth;                            // глубина истории для расчета
-  int bars;                                    // сколько свечей показывать
  };
 // структура сделок
 struct sDealParams
  {
   double orderVolume;                          // Объём сделки
-  int slOrder;                                 // Stop Loss
-  int tpOrder;                                 // Take Profit
+  int sl;                                 // Stop Loss
+  int tp;                                 // Take Profit
   int trStop;                                  // Trailing Stop
   int trStep;                                  // Trailing Step
   int minProfit;                               // Minimal Profit 
@@ -78,6 +71,7 @@ struct sDealParams
 struct sBaseParams
  {
   ENUM_TIMEFRAMES eldTF;             //
+  ENUM_TIMEFRAMES curTF;          // 
   ENUM_TIMEFRAMES jrTF;              //
   bool useJrEMAExit;               // будем ли выходить по ЕМА
   int posLifeTime;                // время ожидания сделки в барах
