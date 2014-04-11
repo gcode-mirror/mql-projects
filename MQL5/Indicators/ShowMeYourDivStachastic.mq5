@@ -170,21 +170,21 @@ int OnCalculate(const int rates_total,
           if (retCode)
            {                                     
             //создаем линию схождения\расхождения                    
-            trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);                       
+            trendLine.Create(0,"StoPriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
             //создаем линию схождения\расхождения на стохастике
-            trendLine.Create(0,"StocLine_"+countTrend,1,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
+            trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
             //увеличиваем количество тренд линий
             countTrend++;
             
             localMax = high[rates_total-1-lastBarIndex];
             localMin = low[rates_total-1-lastBarIndex];
 
+             
+  
+                 }
+                 }
+                  
             
-            
-           }
-        }
-            
-        
        first_calculate = false;
      }
     else  // если запуска не первый
@@ -206,10 +206,10 @@ int OnCalculate(const int rates_total,
           {   
           // trendLine.Color(lineColors[countTrend % 5] );     
            // создаем линию схождения\расхождения              
-           trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
+           trendLine.Create(0,"StoPriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
           // trendLine.Color(lineColors[countTrend % 5] );           
            //создаем линию схождения\расхождения на MACD
-           trendLine.Create(0,"StocLine_"+countTrend,1,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);    
+           trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);    
            // увеличиваем количество тренд линий
            countTrend++;
           }      

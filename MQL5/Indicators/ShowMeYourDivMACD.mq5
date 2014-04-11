@@ -169,10 +169,10 @@ int OnCalculate(const int rates_total,
            {                                          
             trendLine.Color(lineColors[countTrend % 5] );
             //создаем линию схождения\расхождения                    
-            trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
+            trendLine.Create(0,"MacdPriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
             trendLine.Color(lineColors[countTrend % 5] );         
             //создаем линию схождения\расхождения на MACD
-            trendLine.Create(0,"MACDLine_"+countTrend,1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);            
+            trendLine.Create(0,"MACDLine_"+countTrend,3,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);            
             //увеличиваем количество тренд линий
             countTrend++;
             
@@ -204,9 +204,9 @@ int OnCalculate(const int rates_total,
           {   
            trendLine.Color(lineColors[countTrend % 5] );     
            // создаем линию схождения\расхождения              
-           trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
+           trendLine.Create(0,"MacdPriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
            //создаем линию схождения\расхождения на MACD
-           trendLine.Create(0,"MACDLine_"+countTrend,1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);    
+           trendLine.Create(0,"MACDLine_"+countTrend,3,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);    
            // увеличиваем количество тренд линий
            countTrend++;     
           

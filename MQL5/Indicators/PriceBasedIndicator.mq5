@@ -27,19 +27,16 @@
  
 //--- input параметры
 input int      depth = 1000;         // сколько свечей показывать
-input double   percentage_ATR_cur = 2;   
-input double   difToTrend_cur = 1.5;
-input double   percentage_ATR_top = 2;   
-input double   difToTrend_top = 1.5;
+input double   percentage_ATR = 2;   // процент АТР для появления нового экстремума
+input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
 //--- индикаторные буферы
-double         ColorCandlesBuffer1[];
-double         ColorCandlesBuffer2[];
-double         ColorCandlesBuffer3[];
-double         ColorCandlesBuffer4[];
-double         ColorCandlesColors[];
-double         ExtUpArrowBuffer[];
-double         ExtDownArrowBuffer[];
-
+double ColorCandlesBuffer1[];
+double ColorCandlesBuffer2[];
+double ColorCandlesBuffer3[];
+double ColorCandlesBuffer4[];
+double ColorCandlesColors[];
+double ExtUpArrowBuffer[];
+double ExtDownArrowBuffer[];
 
 CisNewBar NewBarCurrent, 
           NewBarTop;
@@ -61,8 +58,8 @@ int OnInit()
    NewBarCurrent.SetPeriod(current_timeframe);
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth, percentage_ATR_top, difToTrend_top);
-   trend    = new CColoredTrend(symbol,                  current_timeframe, depth, percentage_ATR_cur, difToTrend_cur);
+   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth, percentage_ATR, difToTrend);
+   trend    = new CColoredTrend(symbol,                  current_timeframe, depth, percentage_ATR, difToTrend);
 //--- indicator buffers mapping
    SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
    SetIndexBuffer(1, ColorCandlesBuffer2, INDICATOR_DATA);
@@ -148,7 +145,8 @@ int OnCalculate(const int rates_total,
     ArrayInitialize(ExtDownArrowBuffer , 0);
    }
    else 
-   { 
+   {
+    //PrintFormat("%s Предварительный Расчет индикатора закончен. Размер буфера = %d", MakeFunctionPrefix(__FUNCTION__), ArraySize(ColorCandlesColors));
     start_iteration = start_index + buffer_index - 1;
    }
    

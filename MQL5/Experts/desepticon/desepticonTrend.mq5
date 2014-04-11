@@ -70,7 +70,7 @@ int OnInit()
  log_file.Write(LOG_DEBUG, StringFormat("%s Иниализация.", MakeFunctionPrefix(__FUNCTION__)));
  handleTrend = iCustom(Symbol(), Period(), "PriceBasedIndicator", historyDepth, bars);
  handleEMA3Day = iMA(Symbol(), PERIOD_D1, 3, 0, MODE_EMA, PRICE_CLOSE);
- handleEMAfastEld = iMA(Symbol(), eldTF, periodEMAfastEld, 0, MODE_EMA, PRICE_CLOSE);
+ handleEMAfastEld = iMA(Symbol(), Period(), periodEMAfastEld, 0, MODE_EMA, PRICE_CLOSE);
  handleEMAfastJr  = iMA(Symbol(),  jrTF,  periodEMAfastJr, 0, MODE_EMA, PRICE_CLOSE);
  handleEMAslowJr  = iMA(Symbol(),  jrTF,  periodEMAslowJr, 0, MODE_EMA, PRICE_CLOSE);
  
@@ -248,7 +248,7 @@ void OnTick()
     {
      //log_file.Write(LOG_DEBUG, StringFormat("%s Пересечение EMA на младшем TF.", MakeFunctionPrefix(__FUNCTION__)));
      log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция BUY.", MakeFunctionPrefix(__FUNCTION__)));
-     tradeManager.OpenUniquePosition(Symbol(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+     tradeManager.OpenUniquePosition(Symbol(), Period(), opBuy, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
      order_direction = 1;
     }
    }
@@ -268,7 +268,7 @@ void OnTick()
     {
      //log_file.Write(LOG_DEBUG, StringFormat("%s Пересечение EMA на младшем TF.", MakeFunctionPrefix(__FUNCTION__)));
      log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция SELL.", MakeFunctionPrefix(__FUNCTION__)));
-     tradeManager.OpenUniquePosition(Symbol(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
+     tradeManager.OpenUniquePosition(Symbol(), Period(), opSell, orderVolume, slOrder, tpOrder, trailingType, minProfit, trStop, trStep, priceDifference);
      order_direction = -1;
     }
    }

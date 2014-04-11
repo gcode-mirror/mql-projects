@@ -134,26 +134,32 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
 {
  int errcolors = CopyBuffer(handle_PBI, 4, 0, DEPTH_PBI, PBI_colors);
  int errextrems, direction;
+ int mainTrend, forbidenTrend;
+ 
  if (type == OP_SELL)
  {
   //Print("PBI_Trailing, позиция СЕЛЛ, тип движения ", PBI_colors[0]);
   errextrems = CopyBuffer(handle_PBI, 5, 0, DEPTH_PBI, PBI_Extrems); // Копируем максимумы
   direction = 1;
+  mainTrend = 3;
+  forbidenTrend = 4;
  }
  if (type == OP_BUY)
  {
   //Print("PBI_Trailing, позиция БАЙ, тип движения ", PBI_colors[0]);
   errextrems = CopyBuffer(handle_PBI, 6, 0, DEPTH_PBI, PBI_Extrems); // Копируем минимумы
   direction = -1;
+  mainTrend = 1;
+  forbidenTrend = 2;
  }
  if(errcolors < 0 || errextrems < 0)
  {
-  Alert("Не удалось скопировать данные из индикаторного буфера"); 
+  PrintFormat("%s Не удалось скопировать данные из индикаторного буфера", MakeFunctionPrefix(__FUNCTION__)); 
   return(0.0); 
  }
 
  double newExtr = 0;
- if (PBI_colors[0] == 1 || PBI_colors[0] == 2 || PBI_colors[0] == 3 || PBI_colors[0] == 4)
+ if (PBI_colors[0] == mainTrend || PBI_colors[0] == forbidenTrend)
  {
   //Print("Текущее движение ", MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]));
   for (int index = 0; index < DEPTH_PBI; index++)
@@ -170,10 +176,10 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
   }
  }
  
- if (newExtr > 0 && GreatDoubles(direction * sl, direction * newExtr, 5))
+ if (newExtr > 0 && GreatDoubles(direction * sl, direction * (newExtr + direction * 50.0*Point()), 5))
  {
-  PrintFormat("%s oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), sl, newExtr);
-  return (newExtr);
+  PrintFormat("%s oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), sl, (newExtr + direction*50.0*Point()));
+  return (newExtr + direction*50.0*Point());
  }
  return(0.0);
 };

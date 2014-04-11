@@ -48,7 +48,7 @@ int OnInit()
    
    if (trailingType == TRAILING_TYPE_PBI)
    {
-    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", DEPTH_PBI, percentage_ATR_cur, difToTrend_cur, 2, 1.5);
+    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", DEPTH_PBI, percentage_ATR_cur, difToTrend_cur);
     if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
     {
      Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке

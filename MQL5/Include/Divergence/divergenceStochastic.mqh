@@ -77,12 +77,13 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
    for(int i = index_STOC_global_max - 3; i > 0; i--)
    { //идем начиная с глобального экстремума(-3 что бы найденный не совпал с глобальным)
     if(isSTOCExtremum(handleSTOC, i+startIndex) == 1 && iSTOC_buf[i+1] < top_level)
-    { //ища локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предидущего бара)   
+    { //ищем локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предыдущего бара)   
      // вычисляем второй экстремум локального максимума стохастика
-     index_Price_local_max      =  ArrayMaximum (iHigh_buf,ALLOW_DEPTH_FOR_PRICE_EXTR,WHOLE_ARRAY);
+     index_Price_local_max = ArrayMaximum (iHigh_buf,ALLOW_DEPTH_FOR_PRICE_EXTR,WHOLE_ARRAY);
      if (index_Price_local_max == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_max == (DEPTH_STOC-1) )
       return (0); 
-     return(1);
+     Print("Расхождение стохастика на продажу");   
+     return(-1);
     }   
    }
   }
@@ -95,12 +96,13 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
    for(int i = index_STOC_global_min - 3; i > 0; i--)
    { //идем начиная с глобального экстремума(-3 что бы найденный не совпал с глобальным)
     if(isSTOCExtremum(handleSTOC, i+startIndex) == -1 && iSTOC_buf[i+1] > bottom_level)
-    { //ища локальный ниже уровня top_level(+1 потому что isSTOCExtremum возваращет значение для предидущего бара)
-     // вычисляем второй экстремум локального минимума стохастика
-     index_Price_local_min      =  ArrayMinimum (iLow_buf,ALLOW_DEPTH_FOR_PRICE_EXTR,WHOLE_ARRAY);     
+    { //ищем локальный выше уровня bottom_level(+1 потому что isSTOCExtremum возваращет значение для предыдущего бара)
+      // вычисляем второй экстремум локального минимума стохастика
+     index_Price_local_min = ArrayMinimum (iLow_buf,ALLOW_DEPTH_FOR_PRICE_EXTR,WHOLE_ARRAY);     
      if (index_Price_local_min == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_min == (DEPTH_STOC-1) )
-      return (0);     
-     return(-1);
+      return (0);  
+     Print("Расхождение стохастика на покупку");   
+     return(1);
     }
    }
   }
@@ -176,7 +178,6 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      div_point.valueExtrPrice2  =  iHigh_buf[index_Price_local_max];
      div_point.valueExtrSTOC1   =  iSTOC_buf[index_STOC_global_max];
      div_point.valueExtrSTOC2   =  iSTOC_buf[i+1];      
-     
      return(1);
     }   
    }
