@@ -51,70 +51,65 @@ ENUM_TM_POSITION_TYPE opBuy,opSell;                      // типы ордеров
 double tmpBuffer[];
 
 int OnInit()
-  {
-   // выделяем память под объект тороговой библиотеки
-   ctm = new CTradeManager(); 
-   // создаем хэндл индикатора Стохастика
-   // handleStochastic = iStochastic(_Symbol,_Period, kPeriod, dPeriod, slow, MODE_SMA, STO_LOWHIGH);
+{
+ // выделяем память под объект тороговой библиотеки
+ ctm = new CTradeManager(); 
+ // создаем хэндл индикатора Стохастика
+ handleTMPStoc = iCustom (_Symbol,_Period,"ShowMeYourDivStachastic");   
    
-   handleTMPStoc    = iCustom (_Symbol,_Period,"ShowMeYourDivStachastic");   
-   
-   if ( handleTMPStoc == INVALID_HANDLE )
-     {
-       Print("Ошибка при инициализации эксперта ONODERA. Не удалось создать хэндл Стохастика");
-       return(INIT_FAILED);
-     }
-   // сохранение типов ордеров
-   switch (pending_orders_type)  
-     {
-      case USE_LIMIT_ORDERS: 
-       opBuy  = OP_BUYLIMIT;
-       opSell = OP_SELLLIMIT;
-      break;
-      case USE_STOP_ORDERS:
-       opBuy  = OP_BUYSTOP;
-       opSell = OP_SELLSTOP;
-      break;
-      case USE_NO_ORDERS:
-       opBuy  = OP_BUY;
-       opSell = OP_SELL;      
-      break;
-     }          
-   return(INIT_SUCCEEDED);
-  }
+ if ( handleTMPStoc == INVALID_HANDLE )
+ {
+  Print("Ошибка при инициализации эксперта ONODERA. Не удалось создать хэндл Стохастика");
+  return(INIT_FAILED);
+ }
+ // сохранение типов ордеров
+ switch (pending_orders_type)  
+ {
+  case USE_LIMIT_ORDERS: 
+   opBuy  = OP_BUYLIMIT;
+   opSell = OP_SELLLIMIT;
+   break;
+  case USE_STOP_ORDERS:
+   opBuy  = OP_BUYSTOP;
+   opSell = OP_SELLSTOP;
+   break;
+  case USE_NO_ORDERS:
+   opBuy  = OP_BUY;
+   opSell = OP_SELL;      
+   break;
+ }          
+ return(INIT_SUCCEEDED);
+}
 
 void OnDeinit(const int reason)
-  {
-   // удаляем объект класса TradeManager
-   delete ctm;
-   // удаляем индикатор Стохастика
-    // IndicatorRelease(handleStochastic);
-   IndicatorRelease(handleTMPStoc);
-  }
+{
+ // удаляем объект класса TradeManager
+ delete ctm;
+ // удаляем индикатор 
+ IndicatorRelease(handleTMPStoc);
+}
 
 void OnTick()
-  {
-    int copiedSTOC = -1;
-    // если сформирован новый бар
-  
-        copiedSTOC = CopyBuffer(handleTMPStoc,2,0,1,tmpBuffer);
-        if (copiedSTOC < 1)
-         {
-          Print("Не удалось прогрузить все буферы");
-          return;
-         }    
-       //divSignal = divergenceSTOC(handleStochastic,_Symbol,_Period,top_level,bottom_level);  // получаем сигнал расхождения
+{
+ int copiedSTOC = -1;
+ // если сформирован новый бар
+ //divSignal = divergenceSTOC(handleStochastic,_Symbol,_Period,top_level,bottom_level);  // получаем сигнал расхождения
+ copiedSTOC = CopyBuffer(handleTMPStoc,2,0,1,tmpBuffer);
+ if (copiedSTOC < 1)
+ {
+  PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
+  return;
+ }    
+ //divSignal = divergenceSTOC(handleStochastic,_Symbol,_Period,top_level,bottom_level);  // получаем сигнал расхождения
 
-        if ( EqualDoubles(tmpBuffer[0],1.0))  // получили расхождение на покупку
-         { 
-            currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-            ctm.OpenUniquePosition(_Symbol,_Period,opBuy,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);
-         }
-        if ( EqualDoubles(tmpBuffer[0],2.0)) // получили расхождение на продажу
-         {
-            currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);       
-            ctm.OpenUniquePosition(_Symbol,_Period,opSell,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);                 
-         }
-        
-      
-  }
+ if ( EqualDoubles(tmpBuffer[0],1.0))  // получили расхождение на покупку
+ { 
+  currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+  ctm.OpenUniquePosition(_Symbol,_Period,opBuy,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);
+ }
+ if ( EqualDoubles(tmpBuffer[0],2.0)) // получили расхождение на продажу
+ {
+  currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);       
+  ctm.OpenUniquePosition(_Symbol,_Period,opSell,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);                 
+ }
+}
