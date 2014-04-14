@@ -64,6 +64,8 @@ input int                 slow_ema_period=26;        // период медленной средней
 input int                 signal_period=9;           // период усреднения разности MACD
 input int                 depth=10;                  // грубина рассчета актуальности
 input string              file_url="STAT_MACD.txt";  // url адрес файла статистики 
+input double              averPotLossDiv = 0.00108;  // средний потенциальный убыток расхождения
+input double              averPotLossConv = 0.00120; // средний потенциальный убыток схождения
 
 
 //+------------------------------------------------------------------+
@@ -98,9 +100,18 @@ double averDivNeg  = 0;      // среднее не актуальное расхождение
 double averPos     = 0;      // средний актуальный сигнал
 double averNeg     = 0;      // средний не актуальный сигнал      
  
+
+double averLoseDivAtWin  = 0;  // средний потенциальный проигрыш при выгрышном расхождении  
+double averLoseConvAtWin = 0;  // средний потенциальный проигрыш при выйгрышном схождении
+ 
 // временные параменные для хранения локальных минимумов и максимумов
  double localMax;
  double localMin;
+ 
+// количество расхождений с меньшим среднего потенциального убытка
+ int countDivAAA  = 0;
+// количество схождений с меньшим среднего потенциального убытка
+ int countConvAAA = 0;
 
 // хэндл файла статистики схождений \ расхождений 
  int file_handle;   
@@ -212,12 +223,18 @@ int OnCalculate(const int rates_total,
              {
                FileWriteString(file_handle,"\n "+TimeToString(time[rates_total-3-lastBarIndex])+" (расхождение): " );   
                FileWriteString(file_handle,"\nприбыль: "+DoubleToString(close[rates_total-3-lastBarIndex]-localMin)+" убыток: "+DoubleToString(localMax - close[rates_total-3-lastBarIndex])+"\n");                            
-          
+               
+               
                if ( LessDoubles ( (localMax - close[rates_total-3-lastBarIndex]), (close[rates_total-3-lastBarIndex] - localMin) ) )
                  {
                    averDivPos  = averDivPos + close[rates_total-3-lastBarIndex+count] - localMin;
                    averPos     = averPos + close[rates_total-3-lastBarIndex+count] - localMin;
+                   averLoseDivAtWin = averLoseDivAtWin + localMax - close[rates_total-3-lastBarIndex];
                    countDivPos ++; // увеличиваем счетчик положительных схождений
+                   if (LessOrEqualDoubles(localMax - close[rates_total-3-lastBarIndex],averPotLossDiv) )
+                    {
+                     countDivAAA ++;   // увеличиваем количество таких расхождений
+                    }
                  }
                else
                  {
@@ -235,7 +252,12 @@ int OnCalculate(const int rates_total,
                  {
                   averConvPos = averConvPos + localMax - close[rates_total-3-lastBarIndex];
                   averPos     = averPos + localMax - close[rates_total-3-lastBarIndex];
+                  averLoseConvAtWin = averLoseConvAtWin + close[rates_total-3-lastBarIndex]-localMin;
                   countConvPos ++; // увеличиваем счетчик положительных расхождений
+                  if (LessOrEqualDoubles(close[rates_total-3-lastBarIndex]-localMin,averPotLossConv) )
+                   {
+                    countConvAAA ++;   // увеличиваем количество таких расхождений
+                   }                  
                  }
                else
                  {
@@ -261,6 +283,10 @@ int OnCalculate(const int rates_total,
     averNeg     = averNeg     / (countConvNeg + countDivNeg);
    if (countConvPos > 0 || countDivPos > 0)
     averPos     = averPos     / (countConvPos + countDivPos);    
+   if (countConvPos > 0)
+    averLoseConvAtWin = averLoseConvAtWin / countConvPos;
+   if (countDivPos > 0)
+    averLoseDivAtWin = averLoseDivAtWin / countDivPos;    
             
     // сохраняем в файл статистики количественные значения всех схождений \ расхождений
  
@@ -277,6 +303,13 @@ int OnCalculate(const int rates_total,
    FileWriteString(file_handle,"\nСреднее не актуальное расхождение: "+DoubleToString(averDivNeg,_Digits));
    FileWriteString(file_handle,"\nСредний актуальный: "+DoubleToString(averPos,_Digits));            
    FileWriteString(file_handle,"\nСредний не актуальный: "+DoubleToString(averNeg,_Digits));
+   
+   FileWriteString(file_handle,"\nСредний потенциальный убыток при расхождении: "+DoubleToString(averLoseDivAtWin,_Digits));            
+   FileWriteString(file_handle,"\nСредний потенциальный убыток при схождении: "+DoubleToString(averLoseConvAtWin,_Digits));
+   
+   FileWriteString(file_handle,"\nМеньше среднего убытка для расхождений: "+IntegerToString(countDivAAA)+"/"+IntegerToString(countDivPos));
+   FileWriteString(file_handle,"\nМеньше среднего убытка для схождений: "+IntegerToString(countConvAAA)+"/"+IntegerToString(countConvPos));   
+ 
    if (GreatDoubles(averNeg,0))
     FileWriteString(file_handle,"\nОтношение средних прибыли к убытку: "+DoubleToString(averPos/averNeg,_Digits));     
    if (GreatDoubles(averDivNeg,0))  
@@ -284,6 +317,8 @@ int OnCalculate(const int rates_total,
    if (GreatDoubles(averConvNeg,0))
     FileWriteString(file_handle,"\nОтношение средних прибыли к убытку схождений: "+DoubleToString(averConvPos/averConvNeg,_Digits)); 
      
+    
+   
                       
       
     FileClose(file_handle);          //закрывает файл статистики
