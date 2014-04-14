@@ -78,10 +78,12 @@ long               countTrend;             // счетчик тренд линий
 
 PointDivSTOC       divergencePoints;       // схождения и расхождения стохастика
 CChartObjectTrend  trendLine;              // объект класса трендовой линии
+CChartObjectVLine  vertLine;               // объект класса вертикальной линии
 CisNewBar          isNewBar;               // для проверки формирования нового бара
 
 double             bufferStoc[];           // буфер стохастика 1
 double             bufferStoc2[];          // буфер стохастика 2
+double             bufferArrow[];          // буфер стрелочек
  
 // временные параменные для хранения локальных минимумов и максимумов
  double localMax;
@@ -171,11 +173,14 @@ int OnCalculate(const int rates_total,
            {                                     
             //создаем линию схождения\расхождения                    
             trendLine.Create(0,"StoPriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
+            //создаем вертикальную линию 
+            vertLine.Create(0,"VertLine_"+countTrend,0,time[rates_total-lastBarIndex]);    
             //создаем линию схождения\расхождения на стохастике
             trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
+            
             //увеличиваем количество тренд линий
             countTrend++;
-            
+             
             localMax = high[rates_total-1-lastBarIndex];
             localMin = low[rates_total-1-lastBarIndex];
 
@@ -207,9 +212,12 @@ int OnCalculate(const int rates_total,
           // trendLine.Color(lineColors[countTrend % 5] );     
            // создаем линию схождения\расхождения              
            trendLine.Create(0,"StoPriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
-          // trendLine.Color(lineColors[countTrend % 5] );           
+          // trendLine.Color(lineColors[countTrend % 5] );
+           //создаем вертикальную линию 
+           vertLine.Create(0,"VertLine_"+countTrend,0,time[rates_total]);                     
            //создаем линию схождения\расхождения на MACD
            trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);    
+
            // увеличиваем количество тренд линий
            countTrend++;
           }      
