@@ -15,9 +15,9 @@
  // параметры индикатора
  
 //---- всего задействовано 2 буфера
-#property indicator_buffers 2
+#property indicator_buffers 3
 //---- использовано 2 графических построений
-#property indicator_plots   2
+#property indicator_plots   3
 
 //---- в качестве индикатора уровней  использованы линии
 #property indicator_type1 DRAW_LINE
@@ -40,6 +40,10 @@
 #property indicator_style2  STYLE_DASHDOT
 //---- отображение метки линии индикатора
 #property indicator_label2  "StochasticBottomLevel"
+
+//---- в качестве индикатора уровней  использованы 
+#property indicator_type3 DRAW_ARROW
+//---- отображение метки линии индикатора
 
  // перечисление режима загрузки баров истории
  enum BARS_MODE
@@ -103,9 +107,20 @@ int OnInit()
    // удаляем все графические объекты     
    ObjectsDeleteAll(0,0,OBJ_TREND);
    ObjectsDeleteAll(0,1,OBJ_TREND);   
+   ObjectsDeleteAll(0,0,OBJ_VLINE);
    // связываем индикатор с буфером
    SetIndexBuffer(0,bufferStoc,INDICATOR_DATA);
    SetIndexBuffer(1,bufferStoc2,INDICATOR_DATA);   
+   SetIndexBuffer(2,bufferArrow,INDICATOR_DATA);
+     
+   //--- зададим код символа для отрисовки в PLOT_ARROW
+   PlotIndexSetInteger(2,PLOT_ARROW,159);
+   //--- зададим cмещение стрелок по вертикали в пикселях 
+   PlotIndexSetInteger(2,PLOT_ARROW_SHIFT,0);
+   //--- установим в качестве пустого значения 0
+   PlotIndexSetDouble (2,PLOT_EMPTY_VALUE,0);
+
+   
    // инициализация глобальных  переменных
    first_calculate = true;
    countTrend = 1;
@@ -163,6 +178,7 @@ int OnCalculate(const int rates_total,
            }    
        for (;lastBarIndex > 0; lastBarIndex--)
         {
+          bufferArrow[rates_total-lastBarIndex] = 0;//close[lastBarIndex];
           // сканируем историю по хэндлу на наличие расхождений\схождений 
           retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,divergencePoints,lastBarIndex);
           // если не удалось загрузить буфер
@@ -175,6 +191,13 @@ int OnCalculate(const int rates_total,
             trendLine.Create(0,"StoPriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
             //создаем вертикальную линию 
             vertLine.Create(0,"VertLine_"+countTrend,0,time[rates_total-lastBarIndex]);    
+
+            
+           if (retCode == 1)
+            bufferArrow[rates_total-lastBarIndex] = 1;
+           if (retCode == -1)
+            bufferArrow[rates_total-lastBarIndex] = 2;      
+            
             //создаем линию схождения\расхождения на стохастике
             trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
             
@@ -204,8 +227,9 @@ int OnCalculate(const int rates_total,
        // если сформирован новый бар
        if (isNewBar.isNewBar() > 0)
         {        
+         bufferArrow[rates_total-1] = 0;//close[lastBarIndex];
          // распознаем схождение\расхождение стохастика
-         retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,divergencePoints,1);         
+         retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,divergencePoints,0);         
          // если схождение\расхождение обнаружено
          if (retCode)
           {   
@@ -214,7 +238,11 @@ int OnCalculate(const int rates_total,
            trendLine.Create(0,"StoPriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2); 
           // trendLine.Color(lineColors[countTrend % 5] );
            //создаем вертикальную линию 
-           vertLine.Create(0,"VertLine_"+countTrend,0,time[rates_total]);                     
+           vertLine.Create(0,"VertLine_"+countTrend,0,time[rates_total-1]);  
+           if (retCode == 1)
+            bufferArrow[rates_total-1] = 1;
+           if (retCode == -1)
+            bufferArrow[rates_total-1] = 2;                            
            //создаем линию схождения\расхождения на MACD
            trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);    
 

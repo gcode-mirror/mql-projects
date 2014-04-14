@@ -14,7 +14,7 @@
 
  // параметры индикатора
  
-//---- всего задействовано 2 буфера
+//---- всего задействовано 3 буфера
 #property indicator_buffers 2
 //---- использовано 2 графических построений
 #property indicator_plots   2
@@ -87,6 +87,7 @@ CisNewBar          isNewBar;               // для проверки формирования нового б
 double             bufferStoc[];           // буфер стохастика 1
 double             bufferStoc2[];          // буфер стохастика 2
 
+
 int countConvPos = 0;                      // количество положительных сигналов схождения
 int countConvNeg = 0;                      // количество негативный сигналов схождения
 int countDivPos  = 0;                      // количество положительный сигналов расхождения
@@ -137,6 +138,8 @@ int OnInit()
    // связываем индикатор с буфером
    SetIndexBuffer(0,bufferStoc,INDICATOR_DATA);
    SetIndexBuffer(1,bufferStoc2,INDICATOR_DATA);   
+
+    
    // инициализация глобальных  переменных
    first_calculate = true;
    countTrend = 1;
@@ -202,11 +205,8 @@ int OnCalculate(const int rates_total,
           // если схождение\расхождение обнаружено
           if (retCode)
            {                                     
-          //  trendLine.Color(lineColors[countTrend % 5] );
             //создаем линию схождения\расхождения                    
-            trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
-            
-            //trendLine.Color(lineColors[countTrend % 5] );         
+            trendLine.Create(0,"PriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);                        
             //создаем линию схождения\расхождения на стохастике
             trendLine.Create(0,"StocLine_"+countTrend,1,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
             //увеличиваем количество тренд линий
@@ -221,10 +221,7 @@ int OnCalculate(const int rates_total,
               if (LessDoubles (low[rates_total-1-lastBarIndex+count],localMin) )
                localMin = low[rates_total-1-lastBarIndex+count];
              } 
-             
-            // Alert("LAST BAR INDEX = ",rates_total-1-lastBarIndex," ВРЕМЯ = ",TimeToString(time[rates_total-2-lastBarIndex]));
-            // Alert("LOCAL MAX = ",localMax-close[rates_total-2-lastBarIndex]," LOCAL MIN = ",close[rates_total-2-lastBarIndex]-localMin);       
-            // Alert("ЦЕНА ЗАКРЫТИЯ = ",close[rates_total-1-lastBarIndex]);   
+              
             if (retCode == 1)
              {
 
