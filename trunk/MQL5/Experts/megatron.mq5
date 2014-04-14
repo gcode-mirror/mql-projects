@@ -70,7 +70,7 @@ sPbiParams    pbi_params;          // параметры PriceBased indicator
 sDealParams   deal_params;          // параметры сделок
 sBaseParams   base_params;          // базовые параметры
 
-int handlePBI, handleMACD, handleStochastic, handleEMA3, handleEMAfast, handleEMAfastJr, handleEMAslowJr;
+int handlePBIcur, handlePBIjr, handleMACD, handleStochastic, handleEMA3, handleEMAfast, handleEMAfastJr, handleEMAslowJr;
 
 // глобальные объекты
 CTradeManager  *ctm;                // указатель на объект класса TradeManager
@@ -95,7 +95,8 @@ int OnInit()
   eldTF = GetTopTimeframe(curTF);
   
  ////// инициализаруем индикаторы
-  handlePBI = iCustom(symbol, curTF, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
+  handlePBIjr = iCustom(symbol, jrTF, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
+  handlePBIcur = iCustom(symbol, curTF, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
   handleMACD = iMACD(symbol, curTF, fast_EMA_period,  slow_EMA_period, signal_period, applied_price);
   handleStochastic = iStochastic(symbol, curTF, kPeriod, dPeriod, slow, MODE_SMA, STO_LOWHIGH);
   handleEMA3 = iMA(symbol,  eldTF, 3, 0, MODE_EMA, PRICE_CLOSE);
@@ -108,7 +109,8 @@ int OnInit()
   int handleShowDivSto = iCustom(symbol, curTF, "ShowMeYourDivStachastic");
   
  /////// проверка создания хэндлов 
-  if (handlePBI == INVALID_HANDLE || 
+  if (handlePBIcur == INVALID_HANDLE || 
+      handlePBIjr == INVALID_HANDLE || 
       handleEMA3 == INVALID_HANDLE ||
       handleEMAfast == INVALID_HANDLE ||
       handleEMAfastJr == INVALID_HANDLE || 
@@ -138,7 +140,7 @@ int OnInit()
   //////////////////////////////////////////////////////////////
   
   // заполняем параметры PBI
-  pbi_params.handlePBI = handlePBI;
+  pbi_params.handlePBI = handlePBIcur;
   pbi_params.historyDepth = historyDepth;
   //////////////////////////////////////////////////////////////
   
@@ -189,7 +191,8 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   IndicatorRelease(handlePBI);
+   IndicatorRelease(handlePBIcur);
+   IndicatorRelease(handlePBIjr);
    IndicatorRelease(handleEMAfast);
    IndicatorRelease(handleEMAfastJr);
    IndicatorRelease(handleEMAslowJr);
@@ -209,26 +212,26 @@ void OnTick()
  ctm.DoTrailing();  
  // пробуем обновить буферы
  int point = pointsys.GetFlatSignals();
- if (point >= 2)
+ if (point >= 1)
  {
   if (ctm.GetPositionCount() == 0)
   {
    Print("point = ",point);
    stopLoss = CountStoploss(point);
-   ctm.OpenUniquePosition(symbol,curTF, opBuy, orderVolume, stopLoss, 0, trailingType, minProfit, trStop, trStep, handlePBI, priceDifference);        
+   ctm.OpenUniquePosition(symbol,curTF, opBuy, orderVolume, stopLoss, 0, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
   }
   else
   {
    ctm.PositionChangeSize(symbol, orderVolume);
   }
  }
- if (point <= -2)
+ if (point <= -1)
  {
   if (ctm.GetPositionCount() == 0)
   {
    Print("point = ",point);
    stopLoss = CountStoploss(point);
-   ctm.OpenUniquePosition(symbol,curTF, opSell, orderVolume, stopLoss, 0, trailingType, minProfit, trStop, trStep, handlePBI, priceDifference);        
+   ctm.OpenUniquePosition(symbol,curTF, opSell, orderVolume, stopLoss, 0, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
   }
   else
   {

@@ -143,8 +143,8 @@ int CPointSys::GetFlatSignals()
    }
    points += dm;
    points += ds;
-   points += lastTrend;
-   if (MathAbs(points) >= 2)
+   //points += lastTrend;
+   if (MathAbs(points) >= 1)
    {
     Print("Points=",points);  
     dm = 0;
