@@ -8,11 +8,11 @@
 #property version   "1.00"
 #property script_show_inputs
 
-#include <CExtremumCalc.mqh>
+#include <ExtrLine\CExtremumCalc_NE.mqh>
 #include <Lib CisNewBar.mqh>
 #include <CheckHistory.mqh>
 
-input datetime start_time = D'2007.01.01';
+input datetime start_time = D'2013.12.01';
 input datetime end_time =   D'2013.12.31';
 
  enum LevelType
@@ -24,20 +24,17 @@ input datetime end_time =   D'2013.12.31';
   EXTR_H1
  };
  
- input int epsilon = 25;          //Погрешность для поиска экстремумов
- input int depth = 50;            //Глубина поиска трех экстремумов
- input int period_ATR = 100;      //Период ATR
- input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR 
+ input int    period_ATR = 100;      //Период ATR для канала
+ input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR
+ input double precentageATR_price = 1; //Процентр ATR для нового экструмума
 
  input LevelType level = EXTR_H4;
- CExtremumCalc calc(epsilon, depth);
+ CExtremumCalc calc(Symbol(), Period(), precentageATR_price, period_ATR, percent_ATR);  
  SExtremum estruct[3];
  
- string symbol = Symbol();
  ENUM_TIMEFRAMES period_current = Period();
  ENUM_TIMEFRAMES period_level;
- int handle_ATR;
- double buffer_ATR [];
+ CisNewBar is_new_level_bar;
  
  bool level_one_UD   = false;
  bool level_one_DU   = false;
@@ -53,6 +50,7 @@ input datetime end_time =   D'2013.12.31';
  
  
  MqlRates buffer_rates[];
+ datetime buffer_time[];
 //+------------------------------------------------------------------+
 //| Script program start function                                    |
 //+------------------------------------------------------------------+
@@ -60,71 +58,66 @@ void OnStart()
 {
  PrintFormat("BEGIN");
  period_level = GetTFbyLevel(level);
+ calc.SetPeriod(period_level);
+ is_new_level_bar.SetPeriod(period_level);
+ 
  PrintFormat("start time: %s ; end time: %s", TimeToString(start_time), TimeToString(end_time));
  PrintFormat("level tf: %s", EnumToString(period_level));
- handle_ATR = iATR(symbol, period_level, period_ATR);
- int copied = CopyRates(symbol, period_current, start_time, end_time, buffer_rates);
- FillATRbuffer();
- datetime start_pos_time = start_time;
+ int copied = CopyRates(Symbol(), period_current, start_time, end_time, buffer_rates);
+ int copied_t = CopyTime(Symbol(), period_current, start_time, end_time, buffer_time);
+ while(!FillATRBuffer(calc)) FillATRBuffer(calc);
+
  int factor = PeriodSeconds(period_level)/PeriodSeconds();
- PrintFormat("copied: %d", copied);
- for(int i = 0; i < copied-1;i++)
+ PrintFormat("copied rates/time: %d/%d from %s to %s", copied, copied_t, TimeToString(start_time), TimeToString(end_time));
+ FillThreeExtr(calc, estruct);
+ is_new_level_bar.isNewBar(buffer_time[0]);
+ for(int i = 0; i < copied-1; i++)
  {
-  //PrintFormat("i = %d", i);  
-  if(MathMod(i, factor) == 0)  //симуляция появления нового бара на тайфреме для которого вычисленны уровни
-  {
-   //PrintFormat("i = %d", i);
-   FillThreeExtr(symbol, period_level, calc, estruct, buffer_ATR, start_pos_time);
-   //PrintFormat("%s one = %f; two = %f; three = %f", TimeToString(start_pos_time), estruct[0].price, estruct[1].price, estruct[2].price);
-   start_pos_time += PeriodSeconds(period_level);
-   //PrintFormat("%s DUU = %.0f; DUD = %.0f; UDU = %.0f; UDD = %.0f", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
-  }
+  RecountThreeExtr(calc, estruct, buffer_time[i]);
   CalcStatistic(buffer_rates[i]);
  }
  
- //PrintFormat("%s END start time = %s; end time = %s; copied = %d", __FUNCTION__, TimeToString(start_time), TimeToString(end_time), copied);
+ ArrayFree(buffer_rates);
+ ArrayFree(buffer_time);
  PrintFormat("%s END вошла снизу вврех вышла вверх = %.0f; вошла снизу вврех вышла вниз = %.0f; вошла сверху вниз вышла вверх = %.0f; вошла сверху вниз вышла вниз = %.0f", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
 }
 //+------------------------------------------------------------------+
-void FillThreeExtr (string symbol, ENUM_TIMEFRAMES tf, CExtremumCalc &extrcalc, SExtremum &resArray[], double &buffer_ATR[], datetime start_pos_time)
+//+Заполняет первые три экстрмума для расчетов начиная с start_time--+
+//+------------------------------------------------------------------+
+void FillThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[])
 {
- extrcalc.FillExtremumsArray(symbol, tf, start_pos_time);
- if (extrcalc.NumberOfExtr() < 3)
+ extrcalc.CalcThreeExtrOnHistory(start_time);
+ 
+ for(int j = 0; j < 3; j++)
  {
-  Alert(__FUNCTION__, "Не удалось рассчитать три экстремума на таймфрейме ", EnumToString((ENUM_TIMEFRAMES)tf));
-  return;
+  resArray[j] = extrcalc.getExtr(j);
  }
-  
- int count = 0;
- for(int i = 0; i < depth && count < 3; i++)
- {
-  if(extrcalc.getExtr(i).price > 0)
-  {
-   resArray[count] = extrcalc.getExtr(i);
-   resArray[count].channel = (buffer_ATR[i]*percent_ATR)/2;
-   count++;
-  }
- }
+ //PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
 }
 
-bool FillATRbuffer()
+void RecountThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos)
 {
- if(handle_ATR != INVALID_HANDLE)
+ extrcalc.RecountExtremum(false, start_pos);
+
+ for(int j = 0; j < 3; j++)
  {
-  int copiedATR = CopyBuffer(handle_ATR, 0, 1, depth, buffer_ATR); 
-   
-  if (copiedATR != depth) 
-  {
-   Print(__FUNCTION__, "Не удалось полностью скопировать буффер ATR. Error = ", GetLastError());
-   if(GetLastError() == 4401) 
-    Print(__FUNCTION__, "Подождите некоторое время или подгрузите историю вручную.");
-     return false;
-  }
-  return true;
+  resArray[j] = extrcalc.getExtr(j);
  }
- return false;
+ //PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
 }
-  
+
+bool FillATRBuffer(CExtremumCalc &extrcalc)
+{
+ bool result = true;
+ 
+ if(!extrcalc.isATRCalculated())
+  result = false;
+   
+ if(!result)
+  PrintFormat("%s Не получилось загрузить буфера ATR, подожди чутка братан. Ошибочка вышла %d", __FUNCTION__, GetLastError()); 
+ return(result);
+}
+
 ENUM_TIMEFRAMES GetTFbyLevel(LevelType lt)
 {
  ENUM_TIMEFRAMES result = Period();
