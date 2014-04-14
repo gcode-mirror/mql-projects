@@ -8,12 +8,13 @@
 #property version   "1.00"
 #property indicator_chart_window
 
-#include <CExtremumCalc_NE.mqh>
+#include <ExtrLine\CExtremumCalc_NE.mqh>
+#include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBar.mqh>
 
  input int    period_ATR = 100;      //Период ATR для канала
  input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR
- input double precentageATR_price = 2; //Процентр ATR для нового экструмума
+ input double precentageATR_price = 1; //Процентр ATR для нового экструмума
  
 
  input bool  show_Extr_MN  = false;
@@ -199,7 +200,7 @@ bool FillATRBuffer()
   if(!calcD1.isATRCalculated())
    result = false;
    
-// if(show_Extr_H4)  потому что ATR H4  требуется для расчетов любых экстремумов
+ if(show_Extr_H4)
   if(!calcH4.isATRCalculated())
    result = false;
    
@@ -211,73 +212,7 @@ bool FillATRBuffer()
   PrintFormat("%s Не получилось загрузить буфера ATR, подожди чутка братан. Ошибочка вышла %d", __FUNCTION__, GetLastError()); 
  return(result);
 }
-//+------------------------------------------------------------------+
-bool HLineCreate(const long            chart_ID=0,        // ID графика
-                 const string          name="HLine",      // имя линии
-                 const int             sub_window=0,      // номер подокна
-                 double                price=0,           // цена линии
-                 const color           clr=clrRed,        // цвет линии
-                 const int             width=1,           // толщина линии
-                 const ENUM_LINE_STYLE style=STYLE_SOLID, // стиль линии
-                 const bool            back=true          // на заднем плане
-                )      
-{
-//--- если цена не задана, то установим ее на уровне текущей цены Bid
- if(!price)
-  price=SymbolInfoDouble(Symbol(),SYMBOL_BID);
-//--- сбросим значение ошибки
- ResetLastError();
-//--- создадим горизонтальную линию
- if(!ObjectCreate(chart_ID,name,OBJ_HLINE,sub_window,0,price))
- {
-  Print(__FUNCTION__, ": не удалось создать горизонтальную линию! Код ошибки = ",GetLastError());
-  return(false);
- }
-//--- установим цвет линии
- ObjectSetInteger(chart_ID,name,OBJPROP_COLOR,clr);
-//--- установим стиль отображения линии
- ObjectSetInteger(chart_ID,name,OBJPROP_STYLE,style);
-//--- установим толщину линии
- ObjectSetInteger(chart_ID,name,OBJPROP_WIDTH,width);
-//--- отобразим на переднем (false) или заднем (true) плане
- ObjectSetInteger(chart_ID,name,OBJPROP_BACK,back);
-//--- успешное выполнение
- return(true);
-}
 
-bool HLineMove(const long   chart_ID=0,   // ID графика
-               const string name="HLine", // имя линии
-               double       price=0)      // цена линии
-{
-//--- если цена линии не задана, то перемещаем ее на уровень текущей цены Bid
- if(!price)
-  price=SymbolInfoDouble(Symbol(),SYMBOL_BID);
-//--- сбросим значение ошибки
- ResetLastError();
-//--- переместим горизонтальную линию
- if(!ObjectMove(chart_ID,name,0,0,price))
- {
-  Print(__FUNCTION__, ": не удалось переместить горизонтальную линию! Код ошибки = ",GetLastError());
-  return(false);
- }
-//--- успешное выполнение
- return(true);
-}
-
-bool HLineDelete(const long   chart_ID=0,   // ID графика
-                 const string name="HLine") // имя линии
-{
-//--- сбросим значение ошибки
- ResetLastError();
-//--- удалим горизонтальную линию
- if(!ObjectDelete(chart_ID,name))
- {
-  Print(__FUNCTION__, ": не удалось удалить горизонтальную линию! Код ошибки = ",GetLastError());
-  return(false);
- }
-//--- успешное выполнение
- return(true);
-}
 
 void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[])
 {
@@ -300,6 +235,72 @@ void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[])
  resArray[2].channel = (buffer_ATR_D1[0]*percent_ATR)/2;
  resArray[3].price   =    low_buf[0];
  resArray[3].channel = (buffer_ATR_D1[0]*percent_ATR)/2;
+}
+
+
+
+void FillThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[])
+{
+ extrcalc.CalcThreeExtrOnHistory();
+ 
+ for(int j = 0; j < 3; j++)
+ {
+  resArray[j] = extrcalc.getExtr(j);
+ }
+ PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
+}
+
+void RecountThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[])
+{
+ extrcalc.RecountExtremum();
+
+ for(int j = 0; j < 3; j++)
+ {
+  resArray[j] = extrcalc.getExtr(j);
+ }
+ PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
+}
+
+void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
+{
+ string name = "extr_" + EnumToString(tf) + "_";
+ HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 2);
+ HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 2);
+ HLineCreate(0, name+"two"   , 0, te[1].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr, 2);
+ HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr, 2);
+ HLineCreate(0, name+"three" , 0, te[2].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr, 2);
+ HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 2);
+}
+
+void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
+{
+ string name = "extr_" + EnumToString(tf) + "_";
+ HLineMove(0, name+"one"   , te[0].price);
+ HLineMove(0, name+"one+"  , te[0].price+te[0].channel);
+ HLineMove(0, name+"one-"  , te[0].price-te[0].channel);
+ HLineMove(0, name+"two"   , te[1].price);
+ HLineMove(0, name+"two+"  , te[1].price+te[1].channel);
+ HLineMove(0, name+"two-"  , te[1].price-te[1].channel);
+ HLineMove(0, name+"three" , te[2].price);
+ HLineMove(0, name+"three+", te[2].price+te[2].channel);
+ HLineMove(0, name+"three-", te[2].price-te[2].channel);
+}
+
+void DeleteExtrLines(ENUM_TIMEFRAMES tf)
+{
+ string name = "extr_" + EnumToString(tf) + "_";
+ HLineDelete(0, name+"one");
+ HLineDelete(0, name+"one+");
+ HLineDelete(0, name+"one-");
+ HLineDelete(0, name+"two");
+ HLineDelete(0, name+"two+");
+ HLineDelete(0, name+"two-");
+ HLineDelete(0, name+"three");
+ HLineDelete(0, name+"three+");
+ HLineDelete(0, name+"three-");
 }
 
 void CreatePriceLines(const SExtremum &fp[], ENUM_TIMEFRAMES tf, color clr)
@@ -353,73 +354,6 @@ void DeletePriceLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"low-");
 }
 
-void FillThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[])
-{
- for(int i = 0; !extrcalc.isThreeExtrExist(); i++)
- {
-   extrcalc.RecountExtremum(i);
- }
- 
- for(int j = 0; j < 3; j++)
- {
-  resArray[j] = extrcalc.getExtr(j);
- }
- //PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
-}
-
-void RecountThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[])
-{
- extrcalc.RecountExtremum(0);
-
- for(int j = 0; j < 3; j++)
- {
-  resArray[j] = extrcalc.getExtr(j);
- }
- //PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
-}
-
-void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
-{
- string name = "extr_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 2);
- HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 2);
- HLineCreate(0, name+"two"   , 0, te[1].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr, 2);
- HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr, 2);
- HLineCreate(0, name+"three" , 0, te[2].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr, 2);
- HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 2);
-}
-
-void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
-{
- string name = "extr_" + EnumToString(tf) + "_";
- HLineMove(0, name+"one"   , te[0].price);
- HLineMove(0, name+"one+"  , te[0].price+te[0].channel);
- HLineMove(0, name+"one-"  , te[0].price-te[0].channel);
- HLineMove(0, name+"two"   , te[1].price);
- HLineMove(0, name+"two+"  , te[1].price+te[1].channel);
- HLineMove(0, name+"two-"  , te[1].price-te[1].channel);
- HLineMove(0, name+"three" , te[2].price);
- HLineMove(0, name+"three+", te[2].price+te[2].channel);
- HLineMove(0, name+"three-", te[2].price-te[2].channel);
-}
-
-void DeleteExtrLines(ENUM_TIMEFRAMES tf)
-{
- string name = "extr_" + EnumToString(tf) + "_";
- HLineDelete(0, name+"one");
- HLineDelete(0, name+"one+");
- HLineDelete(0, name+"one-");
- HLineDelete(0, name+"two");
- HLineDelete(0, name+"two+");
- HLineDelete(0, name+"two-");
- HLineDelete(0, name+"three");
- HLineDelete(0, name+"three+");
- HLineDelete(0, name+"three-");
-}
-
 //CREATE AND DELETE LABEL AND RECTLABEL
 void SetInfoTabel()
 {
@@ -446,149 +380,3 @@ void DeleteInfoTabel()
  LabelDelete(0, "Price_PERIOD_D1");
  ChartRedraw();
 }
-//+------------------------------------------------------------------+
-//| Создает прямоугольную метку                                      |
-//+------------------------------------------------------------------+
-bool RectLabelCreate(const long             chart_ID=0,               // ID графика
-                     const string           name="RectLabel",         // имя метки
-                     const int              sub_window=0,             // номер подокна
-                     const int              x=0,                      // координата по оси X
-                     const int              y=0,                      // координата по оси Y
-                     const int              width=50,                 // ширина
-                     const int              height=18,                // высота
-                     const color            back_clr=C'236,233,216',  // цвет фона
-                     const ENUM_BORDER_TYPE border=BORDER_SUNKEN,     // тип границы
-                     const ENUM_BASE_CORNER corner=CORNER_LEFT_UPPER, // угол графика для привязки
-                     const color            clr=clrRed,               // цвет плоской границы (Flat)
-                     const ENUM_LINE_STYLE  style=STYLE_SOLID,        // стиль плоской границы
-                     const int              line_width=1,             // толщина плоской границы
-                     const bool             back=false,               // на заднем плане
-                     const bool             selection=false,          // выделить для перемещений
-                     const bool             hidden=true)              // скрыт в списке объектов
-  {
-//--- сбросим значение ошибки
-   ResetLastError();
-//--- создадим прямоугольную метку
-   if(!ObjectCreate(chart_ID,name,OBJ_RECTANGLE_LABEL,sub_window,0,0))
-     {
-      Print(__FUNCTION__,
-            ": не удалось создать прямоугольную метку! Код ошибки = ",GetLastError());
-      return(false);
-     }
-//--- установим координаты метки
-   ObjectSetInteger(chart_ID,name,OBJPROP_XDISTANCE,x);
-   ObjectSetInteger(chart_ID,name,OBJPROP_YDISTANCE,y);
-//--- установим размеры метки
-   ObjectSetInteger(chart_ID,name,OBJPROP_XSIZE,width);
-   ObjectSetInteger(chart_ID,name,OBJPROP_YSIZE,height);
-//--- установим цвет фона
-   ObjectSetInteger(chart_ID,name,OBJPROP_BGCOLOR,back_clr);
-//--- установим тип границы
-   ObjectSetInteger(chart_ID,name,OBJPROP_BORDER_TYPE,border);
-//--- установим угол графика, относительно которого будут определяться координаты точки
-   ObjectSetInteger(chart_ID,name,OBJPROP_CORNER,corner);
-//--- установим цвет плоской рамки (в режиме Flat)
-   ObjectSetInteger(chart_ID,name,OBJPROP_COLOR,clr);
-//--- установим стиль линии плоской рамки
-   ObjectSetInteger(chart_ID,name,OBJPROP_STYLE,style);
-//--- установим толщину плоской границы
-   ObjectSetInteger(chart_ID,name,OBJPROP_WIDTH,line_width);
-//--- отобразим на переднем (false) или заднем (true) плане
-   ObjectSetInteger(chart_ID,name,OBJPROP_BACK,back);
-//--- включим (true) или отключим (false) режим перемещения метки мышью
-   ObjectSetInteger(chart_ID,name,OBJPROP_SELECTABLE,selection);
-   ObjectSetInteger(chart_ID,name,OBJPROP_SELECTED,selection);
-//--- скроем (true) или отобразим (false) имя графического объекта в списке объектов
-   ObjectSetInteger(chart_ID,name,OBJPROP_HIDDEN,hidden);
-//--- успешное выполнение
-   return(true);
-  }
-//+------------------------------------------------------------------+
-//| Удаляет прямоугольную метку                                      |
-//+------------------------------------------------------------------+
-bool RectLabelDelete(const long   chart_ID=0,       // ID графика
-                     const string name="RectLabel") // имя метки
-  {
-//--- сбросим значение ошибки
-   ResetLastError();
-//--- удалим метку
-   if(!ObjectDelete(chart_ID,name))
-     {
-      Print(__FUNCTION__,
-            ": не удалось удалить прямоугольную метку! Код ошибки = ",GetLastError());
-      return(false);
-     }
-//--- успешное выполнение
-   return(true);
-  }
-//+------------------------------------------------------------------+
-//| Создает прямоугольную метку                                      |
-//+------------------------------------------------------------------+
-bool LabelCreate(const long              chart_ID=0,               // ID графика
-                 const string            name="Label",             // имя метки
-                 const int               sub_window=0,             // номер подокна
-                 const int               x=0,                      // координата по оси X
-                 const int               y=0,                      // координата по оси Y
-                 const ENUM_BASE_CORNER  corner=CORNER_LEFT_UPPER, // угол графика для привязки
-                 const string            text="Label",             // текст
-                 const string            font="Arial",             // шрифт
-                 const int               font_size=10,             // размер шрифта
-                 const color             clr=clrRed,               // цвет
-                 const ENUM_ANCHOR_POINT anchor=ANCHOR_LEFT_UPPER, // способ привязки
-                 const bool              back=false,               // на заднем плане
-                 const bool              selection=false,          // выделить для перемещений
-                 const bool              hidden=true)              // скрыт в списке объектов
-  {
-//--- сбросим значение ошибки
-   ResetLastError();
-//--- создадим текстовую метку
-   if(!ObjectCreate(chart_ID,name,OBJ_LABEL,sub_window,0,0))
-     {
-      Print(__FUNCTION__,
-            ": не удалось создать текстовую метку! Код ошибки = ",GetLastError());
-      return(false);
-     }
-//--- установим координаты метки
-   ObjectSetInteger(chart_ID,name,OBJPROP_XDISTANCE,x);
-   ObjectSetInteger(chart_ID,name,OBJPROP_YDISTANCE,y);
-//--- установим угол графика, относительно которого будут определяться координаты точки
-   ObjectSetInteger(chart_ID,name,OBJPROP_CORNER,corner);
-//--- установим текст
-   ObjectSetString(chart_ID,name,OBJPROP_TEXT,text);
-//--- установим шрифт текста
-   ObjectSetString(chart_ID,name,OBJPROP_FONT,font);
-//--- установим размер шрифта
-   ObjectSetInteger(chart_ID,name,OBJPROP_FONTSIZE,font_size);
-//--- установим способ привязки
-   ObjectSetInteger(chart_ID,name,OBJPROP_ANCHOR,anchor);
-//--- установим цвет
-   ObjectSetInteger(chart_ID,name,OBJPROP_COLOR,clr);
-//--- отобразим на переднем (false) или заднем (true) плане
-   ObjectSetInteger(chart_ID,name,OBJPROP_BACK,back);
-//--- включим (true) или отключим (false) режим перемещения метки мышью
-   ObjectSetInteger(chart_ID,name,OBJPROP_SELECTABLE,selection);
-   ObjectSetInteger(chart_ID,name,OBJPROP_SELECTED,selection);
-//--- скроем (true) или отобразим (false) имя графического объекта в списке объектов
-   ObjectSetInteger(chart_ID,name,OBJPROP_HIDDEN,hidden);
-//--- успешное выполнение
-   return(true);
-  }
-
-//+------------------------------------------------------------------+
-//| Удаляет текстовую метку                                          |
-//+------------------------------------------------------------------+
-bool LabelDelete(const long   chart_ID=0,   // ID графика
-                 const string name="Label") // имя метки
-  {
-//--- сбросим значение ошибки
-   ResetLastError();
-//--- удалим метку
-   if(!ObjectDelete(chart_ID,name))
-     {
-      Print(__FUNCTION__,
-            ": не удалось удалить текстовую метку! Код ошибки = ",GetLastError());
-      return(false);
-     }
-//--- успешное выполнение
-   return(true);
-  }

@@ -17,15 +17,19 @@
 #property indicator_width1  1
 
 #include <CompareDoubles.mqh>
-#include <CExtremumCalc.mqh>
+#include <CExtremumCalc_NE.mqh>
 #include <Lib CisNewBar.mqh>
 //--- input parameters
-input int depth = 10;
-input int epsilon = 25;
+ input int    period_ATR = 100;        //Период ATR для канала
+ input double percent_ATR = 0.03;      //Ширина канала уровня в процентах от ATR
+ input double precentageATR_price = 2; //Процентр ATR для нового экструмума
+ input int depth = 100;
+ 
 
-CExtremumCalc extrcalc(epsilon, depth);
+CExtremumCalc extrcalc(Symbol(), Period(), precentageATR_price, period_ATR, percent_ATR); 
 CisNewBar bar;
 //--- indicator buffers
+bool first = true;
 double         Buffer[];
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -65,7 +69,9 @@ int OnCalculate (const int rates_total,      // размер входных таймсерий
      //Alert("EXTR : ", i, " ", extrcalc.getExtr(i).price);
      Buffer[i] = extrcalc.getExtr(i).price;
     }
-   //}  
+   //}
+   
+    
    return(rates_total);
   }
 //+------------------------------------------------------------------+
