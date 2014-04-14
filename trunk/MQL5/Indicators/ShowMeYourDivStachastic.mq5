@@ -196,7 +196,7 @@ int OnCalculate(const int rates_total,
            if (retCode == 1)
             bufferArrow[rates_total-lastBarIndex] = 1;
            if (retCode == -1)
-            bufferArrow[rates_total-lastBarIndex] = 2;      
+            bufferArrow[rates_total-lastBarIndex] = -1;      
             
             //создаем линию схождения\расхождения на стохастике
             trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
@@ -242,7 +242,7 @@ int OnCalculate(const int rates_total,
            if (retCode == 1)
             bufferArrow[rates_total-1] = 1;
            if (retCode == -1)
-            bufferArrow[rates_total-1] = 2;                            
+            bufferArrow[rates_total-1] = -1;                            
            //создаем линию схождения\расхождения на MACD
            trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);    
 
