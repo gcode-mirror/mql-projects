@@ -96,14 +96,15 @@ void OnTick()
   {
     int copiedSTOC = -1;
     // если сформирован новый бар
-    if(isNewBar.isNewBar() > 0)
-     {
-       //divSignal = divergenceSTOC(handleStochastic,_Symbol,_Period,top_level,bottom_level);  // получаем сигнал расхождени€
+  
         copiedSTOC = CopyBuffer(handleTMPStoc,2,0,1,tmpBuffer);
         if (copiedSTOC < 1)
          {
           Print("Ќе удалось прогрузить все буферы");
-         }
+          return;
+         }    
+       //divSignal = divergenceSTOC(handleStochastic,_Symbol,_Period,top_level,bottom_level);  // получаем сигнал расхождени€
+
         if ( EqualDoubles(tmpBuffer[0],1.0))  // получили расхождение на покупку
          { 
             currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
@@ -115,5 +116,5 @@ void OnTick()
             ctm.OpenUniquePosition(_Symbol,_Period,opSell,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);                 
          }
         
-     }     
+      
   }
