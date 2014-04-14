@@ -88,6 +88,7 @@ CisNewBar          isNewBar;               // для проверки формирования нового б
 double bufferMACD[];   // буфер уровней MACD
 double signalMACD[];   // сигнальный буфер MACD
 
+
 int countConvPos = 0;       // количество положительных сигналов схождения
 int countConvNeg = 0;       // количество негативный сигналов схождения
 int countDivPos  = 0;       // количество положительный сигналов расхождения
