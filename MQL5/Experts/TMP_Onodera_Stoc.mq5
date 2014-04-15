@@ -105,11 +105,11 @@ void OnTick()
  if ( EqualDoubles(tmpBuffer[0],1.0))  // получили расхождение на покупку
  { 
   currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-  ctm.OpenUniquePosition(_Symbol,_Period,opBuy,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);
+  ctm.OpenUniquePosition(_Symbol,_Period,opSell,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);
  }
- if ( EqualDoubles(tmpBuffer[0],2.0)) // получили расхождение на продажу
+ if ( EqualDoubles(tmpBuffer[0],-1.0)) // получили расхождение на продажу
  {
   currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);       
-  ctm.OpenUniquePosition(_Symbol,_Period,opSell,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);                 
+  ctm.OpenUniquePosition(_Symbol,_Period,opBuy,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);                 
  }
 }
