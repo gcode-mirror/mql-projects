@@ -47,6 +47,9 @@ input  ENUM_APPLIED_PRICE priceType = PRICE_CLOSE; // тип цен, по которым вычисл
 #property indicator_style2  STYLE_DASHDOT          // стиль линии
 #property indicator_label2  "SIGNAL"               // наименование буфера
 
+// параметры 3-го буфера (сигнал на расхождение MACD)
+//#property indicator_type3 DRAW_NONE                // не отображать
+
 // глобальные переменные индикатора
 int                handleMACD;                     // хэндл MACD
 int                lastBarIndex;                   // индекс последнего бара 
@@ -55,6 +58,7 @@ long               countDiv;                       // счетчик тренд линий (для р
 
 PointDivMACD       divergencePoints;               // точки расхождения MACD на ценовом графике и на графике MACD
 CChartObjectTrend  trendLine;                      // объект класса трендовой линии (для отображения расхождений)
+CChartObjectVLine  vertLine;                       // объект класса вертикальной линии
 CisNewBar          isNewBar;                       // для проверки формирования нового бара
 
 // буферы индикатора 
@@ -62,10 +66,13 @@ double bufferMACD[];                               // буфер уровней MACD
 double signalMACD[];                               // сигнальный буфер MACD
 double bufferDiv[];                                // буфер моментов расхождения
 
+// дополнительные функции работы индикатора
+void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатора. В функцию передается время вертикальной линии
    
 // инициализация индикатора
 int OnInit()
-  {
+  {  
+   ArraySetAsSeries(bufferDiv,true);
    // загружаем хэндл индикатора MACD
    handleMACD = iMACD(_Symbol, _Period, fast_ema_period,slow_ema_period,signal_period,PRICE_CLOSE);
    if ( handleMACD == INVALID_HANDLE)  // если не удалось загрузить хэндл MACD
@@ -86,7 +93,7 @@ int OnInit()
   }
 
 // деинициализация индикатора
-void OnDeinit()
+void OnDeinit(const int reason)
  {
    // удаляем все графические объекты (линии расхождений, а также линии появления сигналов расхождений)  
    ObjectsDeleteAll(0,0,OBJ_TREND); // все трендовые линии с ценового графика 
@@ -136,6 +143,8 @@ int OnCalculate(const int rates_total,
        // проходим по всем барам истории и ищем расхождения MACD
        for (lastBarIndex = rates_total-101;lastBarIndex > 0; lastBarIndex--)
         {
+          // обнуляем буфер сигналов расхождений MACD
+          bufferDiv[lastBarIndex] = 0;
           retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,lastBarIndex);  // получаем сигнал на расхождение
           // если не удалось загрузить буферы MACD
           if (retCode == -2)
@@ -145,18 +154,68 @@ int OnCalculate(const int rates_total,
            }
           if (retCode)
            {                                          
-            trendLine.Color(clrYellow);
-            //создаем линию схождения\расхождения                    
-            trendLine.Create(0,"MacdPriceLine_"+countDiv,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
-            trendLine.Color(clrYellow);         
-            //создаем линию схождения\расхождения на MACD
-            trendLine.Create(0,"MACDLine_"+countDiv,1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);            
-            countDiv++; // увеличиваем количество отображаемых схождений
+             DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
            }
         }
           
       // Salnikova    
                              
     }
+    else    // если это не первый вызов индикатора 
+     {
+       // если сформировался новый бар
+       if (isNewBar.isNewBar() > 0 )
+        {
+              // положим индексацию нужных массивов как в таймсерии
+          if ( !ArraySetAsSeries (time,true) || 
+               !ArraySetAsSeries (open,true) || 
+               !ArraySetAsSeries (high,true) ||
+               !ArraySetAsSeries (low,true)  || 
+               !ArraySetAsSeries (close,true) )
+              {
+               // если не удалось установаить индексацию как в таймсерии для всех массивов цен и времени
+               Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось установить индексацию массивов как в таймсерии");
+               return (rates_total);
+              }
+          // обнуляем буфер сигнала расхождений
+          bufferDiv[0] = 0;
+          if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
+               CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
+           {
+             // если не удалось загрузить буфера MACD
+             Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+             return (rates_total);
+           }   
+          retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,1);  // получаем сигнал на расхождение
+          // если не удалось загрузить буферы MACD
+          if (retCode == -2)
+           {
+             Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+             return (0);
+           }
+          if (retCode)
+           {                                        
+             DrawIndicator (time[0]);       // отображаем графические элементы индикатора    
+             bufferDiv[0] = retCode;        // сохраняем текущий сигнал
+           }        
+            
+        }
+     }
    return(rates_total);
   }
+  
+// функция отображения графических элементов индикатора
+void DrawIndicator (datetime vertLineTime)
+ {
+   trendLine.Color(clrYellow);
+   // создаем линию схождения\расхождения                    
+   trendLine.Create(0,"MacdPriceLine_"+IntegerToString(countDiv),0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
+   trendLine.Color(clrYellow);         
+   // создаем линию схождения\расхождения на MACD
+   trendLine.Create(0,"MACDLine_"+IntegerToString(countDiv),1,divergencePoints.timeExtrMACD1,divergencePoints.valueExtrMACD1,divergencePoints.timeExtrMACD2,divergencePoints.valueExtrMACD2);            
+   vertLine.Color(clrRed);
+   // создаем вертикальную линию, показывающий момент появления расхождения MACD
+   vertLine.Create(0,"MACDVERT_"+IntegerToString(countDiv),0,vertLineTime);
+   countDiv++; // увеличиваем количество отображаемых схождений
+ }

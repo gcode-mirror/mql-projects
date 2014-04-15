@@ -7,8 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
-// подсключение библиотек
-#include <Divergence\divergenceStochastic.mqh>  // подключение расхождения 
+// подсключение библиотек 
 #include <TradeManager\TradeManager.mqh>        // подключение торговой библиотеки
 #include <Lib CisNewBar.mqh>                    // для проверки формирования нового бара
 #include <CompareDoubles.mqh>                   // для проверки соотношения  цен
@@ -55,7 +54,7 @@ int OnInit()
  // выделяем память под объект тороговой библиотеки
  ctm = new CTradeManager(); 
  // создаем хэндл индикатора Стохастика
- handleTMPStoc = iCustom (_Symbol,_Period,"ShowMeYourDivStachastic");   
+ handleTMPStoc = iCustom (_Symbol,_Period,"smydMACD");   
    
  if ( handleTMPStoc == INVALID_HANDLE )
  {
