@@ -178,7 +178,7 @@ int OnCalculate(const int rates_total,
            }    
        for (;lastBarIndex > 0; lastBarIndex--)
         {
-          bufferArrow[rates_total-lastBarIndex] = 0;//close[lastBarIndex];
+          bufferArrow[rates_total-lastBarIndex-1] = 0;
           // сканируем историю по хэндлу на наличие расхождений\схождений 
           retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,divergencePoints,lastBarIndex);
           // если не удалось загрузить буфер
@@ -190,13 +190,13 @@ int OnCalculate(const int rates_total,
             //создаем линию схождения\расхождения                    
             trendLine.Create(0,"StoPriceLine_"+countTrend,0,divergencePoints.timeExtrPrice1,divergencePoints.valueExtrPrice1,divergencePoints.timeExtrPrice2,divergencePoints.valueExtrPrice2);           
             //создаем вертикальную линию 
-            vertLine.Create(0,"VertLine_"+countTrend,0,time[rates_total-lastBarIndex]);    
+            vertLine.Create(0,"VertLine_"+countTrend,0,time[rates_total-lastBarIndex-1]);    
 
             
            if (retCode == 1)
-            bufferArrow[rates_total-lastBarIndex] = 1;
+            bufferArrow[rates_total-lastBarIndex-1] = 1;
            if (retCode == -1)
-            bufferArrow[rates_total-lastBarIndex] = -1;      
+            bufferArrow[rates_total-lastBarIndex-1] = -1;      
             
             //создаем линию схождения\расхождения на стохастике
             trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);            
@@ -227,7 +227,7 @@ int OnCalculate(const int rates_total,
        // если сформирован новый бар
        if (isNewBar.isNewBar() > 0)
         {        
-         bufferArrow[rates_total-1] = 0;//close[lastBarIndex];
+         bufferArrow[rates_total-1] = 0;
          // распознаем схождение\расхождение стохастика
          retCode = divergenceSTOC (handleStoc,_Symbol,_Period,top_level,bottom_level,divergencePoints,0);         
          // если схождение\расхождение обнаружено
@@ -240,9 +240,9 @@ int OnCalculate(const int rates_total,
            //создаем вертикальную линию 
            vertLine.Create(0,"VertLine_"+countTrend,0,time[rates_total-1]);  
            if (retCode == 1)
-            bufferArrow[rates_total-1] = 1;
+            bufferArrow[rates_total] = 1;
            if (retCode == -1)
-            bufferArrow[rates_total-1] = -1;                            
+            bufferArrow[rates_total] = -1;                            
            //создаем линию схождения\расхождения на MACD
            trendLine.Create(0,"StocLine_"+countTrend,4,divergencePoints.timeExtrSTOC1,divergencePoints.valueExtrSTOC1,divergencePoints.timeExtrSTOC2,divergencePoints.valueExtrSTOC2);    
 
