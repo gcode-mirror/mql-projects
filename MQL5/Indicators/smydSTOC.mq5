@@ -156,8 +156,7 @@ int OnCalculate(const int rates_total,
              bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
            }
         }
-          
-      // Salnikova    
+            
                              
     }
     else    // если это не первый вызов индикатора 
