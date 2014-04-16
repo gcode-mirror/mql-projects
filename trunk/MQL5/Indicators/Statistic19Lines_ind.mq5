@@ -8,7 +8,7 @@
 #property version   "1.00"
 #property indicator_chart_window
 
-#include <CExtremumCalc.mqh>
+#include <ExtrLine\CExtremumCalc.mqh>
 #include <Lib CisNewBar.mqh>
 
  enum LevelType
