@@ -41,11 +41,11 @@ input int                 bottom_level = 20;          // нижний уровень
 #property indicator_style1 STYLE_SOLID              // стиль линий
 #property indicator_label1  "StochasticTopLevel"    // наименование буфера
 // bottom level буфер
-#property indicator_type1 DRAW_LINE                 // линии
-#property indicator_color1  clrRed                  // цвет линий
-#property indicator_width1  1                       // толщина линий
-#property indicator_style1 STYLE_SOLID              // стиль линий
-#property indicator_label1  "StochasticBottomLevel" // наименование буфера
+#property indicator_type2 DRAW_LINE                 // линии
+#property indicator_color2  clrRed                  // цвет линий
+#property indicator_width2  1                       // толщина линий
+#property indicator_style2 STYLE_SOLID              // стиль линий
+#property indicator_label2  "StochasticBottomLevel" // наименование буфера
 
 
 // глобальные переменные индикатора
