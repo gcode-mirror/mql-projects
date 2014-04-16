@@ -186,7 +186,7 @@ int OnCalculate(const int rates_total,
              Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
              return (rates_total);
            }   
-          retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,1);  // получаем сигнал на расхождение
+          retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,0);  // получаем сигнал на расхождение
           // если не удалось загрузить буферы MACD
           if (retCode == -2)
            {

@@ -80,7 +80,12 @@ int    fileHandle;
 double averActualProfitDivBuy   = 0;       // средняя потенциальная прибыль от актуального расхождения на покупку
 double averActualLossDivBuy     = 0;       // средний потенциальный убыток при актуальном расхождении на покупку
 double averActualProfitDivSell  = 0;       // средняя потенциальная прибыль от актуального расхождения на продажу
-double averActualLossDivSell    = 0;       // средний потенциальный убыток при актуальном расхождении на продажу                     
+double averActualLossDivSell    = 0;       // средний потенциальный убыток при актуальном расхождении на продажу    
+
+double averNotActualProfitDivBuy   = 0;       // средняя потенциальная прибыль от НЕ актуального расхождения на покупку
+double averNotActualLossDivBuy     = 0;       // средний потенциальный убыток при НЕ актуальном расхождении на покупку
+double averNotActualProfitDivSell  = 0;       // средняя потенциальная прибыль от НЕ актуального расхождения на продажу
+double averNotActualLossDivSell    = 0;       // средний потенциальный убыток при НЕ актуальном расхождении на продажу                     
 
 // счетчики расхождений
 int    countActualDivBuy        = 0;       // количество актуальных расхождений на покупку
@@ -228,6 +233,8 @@ int OnCalculate(const int rates_total,
                  }
                 else
                  {
+                   averNotActualProfitDivSell = averNotActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
+                   averNotActualLossDivSell   = averNotActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
                    FileWriteString(fileHandle,"\n Статус: не актуальное");
                    FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(minPrice));
                    FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(maxPrice));
@@ -260,6 +267,8 @@ int OnCalculate(const int rates_total,
                  }
                 else
                  {
+                   averNotActualProfitDivBuy = averNotActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
+                   averNotActualLossDivBuy   = averNotActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка                 
                    FileWriteString(fileHandle,"\n Статус: не актуальное");
                    FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice));
                    FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice));
@@ -285,18 +294,34 @@ int OnCalculate(const int rates_total,
                averActualLossDivBuy    = averActualLossDivBuy    / countActualDivBuy;
                averActualProfitDivBuy  = averActualProfitDivBuy  / countActualDivBuy;
               }
+          if (countActualDivSell != countDivSell)
+              {
+               averActualLossDivSell   = averActualLossDivSell   / (countDivSell-countActualDivSell);
+               averActualProfitDivSell = averActualProfitDivSell / (countDivSell-countActualDivSell); 
+              }
+          if (countActualDivBuy != countDivBuy)
+              {
+               averActualLossDivBuy    = averActualLossDivBuy    / (countDivBuy-countActualDivBuy);
+               averActualProfitDivBuy  = averActualProfitDivBuy  / (countDivBuy-countActualDivBuy);
+              }              
               
           FileWriteString(fileHandle,"\n\n Количество расхождений SELL: "+IntegerToString(countDivSell));
-          FileWriteString(fileHandle,"\n Из ни актуальных: "+IntegerToString(countActualDivSell));
+          FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivSell));
            
-          FileWriteString(fileHandle,"\n Средняя прибыль: "+DoubleToString(averActualProfitDivSell));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток: "+DoubleToString(averActualLossDivSell));      
+          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivSell));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivSell));  
+          
+          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivSell));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivSell));                
           
           FileWriteString(fileHandle,"\n\n Количество расхождений BUY: "+IntegerToString(countDivBuy));
-          FileWriteString(fileHandle,"\n Из ни актуальных: "+IntegerToString(countActualDivBuy));
+          FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivBuy));
            
-          FileWriteString(fileHandle,"\n Средняя прибыль: "+DoubleToString(averActualProfitDivBuy));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток: "+DoubleToString(averActualLossDivBuy));  
+          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivBuy));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivBuy));  
+          
+          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivBuy));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivBuy));          
           
         // закрываем файл статистики
         
@@ -328,7 +353,7 @@ int OnCalculate(const int rates_total,
              Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
              return (rates_total);
            }   
-          retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,1);  // получаем сигнал на расхождение
+          retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,0);  // получаем сигнал на расхождение
           // если не удалось загрузить буферы MACD
           if (retCode == -2)
            {
