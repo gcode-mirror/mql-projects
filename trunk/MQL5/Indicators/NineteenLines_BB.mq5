@@ -307,8 +307,7 @@ int OnCalculate(const int rates_total,
      
      for(int i = rates_total-period_ATR_channel; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
-      PrintFormat("Calc for %s", TimeToString(time[i]));
-      while(!FillATRBuffer()) FillATRBuffer();
+      while(!FillATRBuffer()) {}
       CalcExtr(calcMN, estructMN, time[i], false);
       CalcExtr(calcW1, estructW1, time[i], false);
       CalcExtr(calcD1, estructD1, time[i], false);
@@ -419,19 +418,19 @@ bool FillATRBuffer()
 {
  bool result = true;
  
- if(show_Extr_MN && !calcMN.isATRCalculated(Bars(Symbol(), PERIOD_MN1) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
+ if(show_Extr_MN && !calcMN.isATRCalculated(Bars(Symbol(), PERIOD_MN1) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
   result = false;
    
- if(show_Extr_W1 && !calcW1.isATRCalculated(Bars(Symbol(), PERIOD_W1) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
+ if(show_Extr_W1 && !calcW1.isATRCalculated(Bars(Symbol(), PERIOD_W1) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
    result = false;
    
- if((show_Extr_D1 || show_Price_D1) && !calcD1.isATRCalculated(Bars(Symbol(), PERIOD_D1) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
+ if((show_Extr_D1 || show_Price_D1) && !calcD1.isATRCalculated(Bars(Symbol(), PERIOD_D1) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
    result = false;
    
- if(show_Extr_H4 && !calcH4.isATRCalculated(Bars(Symbol(), PERIOD_H4) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
+ if(show_Extr_H4 && !calcH4.isATRCalculated(Bars(Symbol(), PERIOD_H4) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
    result = false;
    
- if(show_Extr_H1 && !calcH1.isATRCalculated(Bars(Symbol(), PERIOD_H1) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
+ if(show_Extr_H1 && !calcH1.isATRCalculated(Bars(Symbol(), PERIOD_H1) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
    result = false;   
    
  if(!result)

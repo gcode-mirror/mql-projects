@@ -79,13 +79,13 @@ SExtremum CExtremumCalc::isExtremum(bool now = true, datetime start_pos_time = _
 
  
  if(CopyRates(_symbol, _period, start_pos_time, 1, buffer) < 1)
-  PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_period), GetLastError(), Bars(_symbol, _period), TimeToString(start_pos_time));
+  //PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_period), GetLastError(), Bars(_symbol, _period), TimeToString(start_pos_time));
   //return(result);
  if(CopyBuffer(handleATR_channel, 0, start_pos_time, 1, ATR_channel) < 1)
-  PrintFormat("%s ATR channel: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_period),GetLastError(), BarsCalculated(handleATR_channel), TimeToString(start_pos_time));
+  //PrintFormat("%s ATR channel: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_period),GetLastError(), BarsCalculated(handleATR_channel), TimeToString(start_pos_time));
   //return(result);
  if(CopyBuffer(handleATR_price, 0, start_pos_time, 1, ATR_price) < 1)
-  PrintFormat("%s ATR price: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_period),GetLastError(), BarsCalculated(handleATR_price), TimeToString(start_pos_time)); 
+  //PrintFormat("%s ATR price: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_period),GetLastError(), BarsCalculated(handleATR_price), TimeToString(start_pos_time)); 
   //return(result);
  difToNewExtremum = ATR_price[0]*_percentageATR_price;
  double high = 0, low = 0;
@@ -108,7 +108,7 @@ SExtremum CExtremumCalc::isExtremum(bool now = true, datetime start_pos_time = _
   result.direction = 1;
   result.price = high;
   result.channel = (ATR_channel[0]*_percentageATR_channel)/2;
-  PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, max %s %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), high);
+  //PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, max %s %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), high);
  }
  
  if ((num0.direction == 0 && (LessDoubles(low, _startDayPrice - 2*difToNewExtremum, digits))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
@@ -118,10 +118,10 @@ SExtremum CExtremumCalc::isExtremum(bool now = true, datetime start_pos_time = _
   result.direction = -1;
   result.price = low;
   result.channel = (ATR_channel[0]*_percentageATR_channel)/2;
-  PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, min %s  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), low);
+  //PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, min %s  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), low);
  }
  
- //PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, %s  %0.5f %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), low, high);
+ PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, %s  %0.5f %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), low, high);
  return(result);
 }
 
