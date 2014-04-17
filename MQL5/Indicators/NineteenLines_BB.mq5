@@ -308,11 +308,12 @@ int OnCalculate(const int rates_total,
      for(int i = rates_total-period_ATR_channel; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       PrintFormat("Calc for %s", TimeToString(time[i]));
-      CalcExtr(calcMN, estructMN, time[i]);
-      CalcExtr(calcW1, estructW1, time[i]);
-      CalcExtr(calcD1, estructD1, time[i]);
-      CalcExtr(calcH4, estructH4, time[i]);
-      CalcExtr(calcH1, estructH1, time[i]);
+      while(!FillATRBuffer()) FillATRBuffer();
+      CalcExtr(calcMN, estructMN, time[i], false);
+      CalcExtr(calcW1, estructW1, time[i], false);
+      CalcExtr(calcD1, estructD1, time[i], false);
+      CalcExtr(calcH4, estructH4, time[i], false);
+      CalcExtr(calcH1, estructH1, time[i], false);
       
       Extr_MN_Buffer1[i] = estructMN[0].price;
        ATR_MN_Buffer1[i] = estructMN[0].channel;
@@ -418,23 +419,19 @@ bool FillATRBuffer()
 {
  bool result = true;
  
- if(show_Extr_MN && !calcMN.isATRCalculated())
+ if(show_Extr_MN && !calcMN.isATRCalculated(Bars(Symbol(), PERIOD_MN1) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
   result = false;
    
- if(show_Extr_W1)
-  if(!calcW1.isATRCalculated())
+ if(show_Extr_W1 && !calcW1.isATRCalculated(Bars(Symbol(), PERIOD_W1) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
    result = false;
    
- if(show_Extr_D1 || show_Price_D1)
-  if(!calcD1.isATRCalculated())
+ if((show_Extr_D1 || show_Price_D1) && !calcD1.isATRCalculated(Bars(Symbol(), PERIOD_D1) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
    result = false;
    
- if(show_Extr_H4)
-  if(!calcH4.isATRCalculated())
+ if(show_Extr_H4 && !calcH4.isATRCalculated(Bars(Symbol(), PERIOD_H4) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
    result = false;
    
- if(show_Extr_H1)
-  if(!calcH1.isATRCalculated())
+ if(show_Extr_H1 && !calcH1.isATRCalculated(Bars(Symbol(), PERIOD_H1) - period_ATR_channel, Bars(Symbol(), PERIOD_H4) - ATR_PERIOD))
    result = false;   
    
  if(!result)
@@ -453,7 +450,7 @@ void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos
  {
   resArray[j] = extrcalc.getExtr(j);
  }
- PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
+ //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
 }
 
 //---------------------------------------------
