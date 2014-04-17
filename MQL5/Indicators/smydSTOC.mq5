@@ -156,8 +156,6 @@ int OnCalculate(const int rates_total,
              bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
            }
         }
-            
-                             
     }
     else    // если это не первый вызов индикатора 
      {

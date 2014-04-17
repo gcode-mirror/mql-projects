@@ -12,8 +12,8 @@
 #include <Lib CisNewBar.mqh>
 #include <CheckHistory.mqh>
 
-input datetime start_time = D'2013.12.01';
-input datetime end_time =   D'2013.12.31';
+input datetime start_time = D'2012.01.01';
+input datetime end_time =   D'2014.04.01';
 
  enum LevelType
  {

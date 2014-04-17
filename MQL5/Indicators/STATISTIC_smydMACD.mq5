@@ -156,227 +156,221 @@ int OnCalculate(const int rates_total,
                 const long &tick_volume[],
                 const long &volume[],
                 const int &spread[])
-  {
-   // локальные переменные
-   double maxPrice;          // локальный максимум цен
-   double minPrice;          // локальный минимум цен
+{
+// локальные переменные
+ double maxPrice;          // локальный максимум цен
+ double minPrice;          // локальный минимум цен
    
-   if (prev_calculated == 0) // если на пред. вызове было обработано 0 баров, значит этот вызов первый
-    {
-      // загрузим буфер MACD
-      if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
-           CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
-           {
-             // если не удалось загрузить буфера MACD
-             Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
-             return (0); 
-           }                
-      // положим индексацию нужных массивов как в таймсерии
-      if ( !ArraySetAsSeries (time,true) || 
-           !ArraySetAsSeries (open,true) || 
-           !ArraySetAsSeries (high,true) ||
-           !ArraySetAsSeries (low,true)  || 
-           !ArraySetAsSeries (close,true) )
-          {
-            // если не удалось установаить индексацию как в таймсерии для всех массивов цен и времени
-            Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось установить индексацию массивов как в таймсерии");
-            return (0);
-          }
-       // проходим по всем барам истории и ищем расхождения MACD
-       for (lastBarIndex = rates_total-101;lastBarIndex > 0; lastBarIndex--)
-        {
-          // обнуляем буфер сигналов расхождений MACD
-          bufferDiv[lastBarIndex] = 0;
-          retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,lastBarIndex);  // получаем сигнал на расхождение
-          // если не удалось загрузить буферы MACD
-          if (retCode == -2)
-           {
-             Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
-             return (0);
-           }
-          if (retCode)
-           {                                          
-             DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
-             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение    
-             
-             // вычисляем статистические данные по данному расхождению
-             if (time[lastBarIndex] >= start_time  && time[lastBarIndex] <= finish_time)   // если текущее время попадает в зону вычисления статистики
-              {
-             // вычисляем максимум на глубину вычисления актуальности
-             maxPrice =  high[ArrayMaximum(high,lastBarIndex-actualBars,actualBars)];  // находим максимум по high
-             minPrice =  low[ArrayMinimum(low,lastBarIndex -actualBars,actualBars)];   // находим минимум по low
-
-             // вычисляем актуальность расхождений
-             
-             if (retCode == 1)      // если расхождение на SELL
-              {
-               FileWriteString(fileHandle,""+TimeToString(time[lastBarIndex])+" (расхождение на SELL): \n { \n" );   
-                countDivSell ++;    // увеличиваем количество расхождений на SELL
-                
-                maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
-                minPrice = close[lastBarIndex] - minPrice;   // вычисляем, насколько цена ушла вниз от цены закрытия
-                
-                if (maxPrice < 0)
-                  maxPrice = 0;
-                if (minPrice < 0)
-                  minPrice = 0;
-                
-                if (minPrice > maxPrice)  // данное расхождение является актуальным
-                 {
-                   countActualDivSell ++;   // увеличиваем количество актуальных расхождений на SELL
-                   
-                   averActualProfitDivSell = averActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
-                   averActualLossDivSell   = averActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
-                   FileWriteString(fileHandle,"\n Статус: актуальное");
-                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(minPrice));
-                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(maxPrice));
-                   FileWriteString(fileHandle,"\n}\n");                     
-                 }
-                else
-                 {
-                   averNotActualProfitDivSell = averNotActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
-                   averNotActualLossDivSell   = averNotActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
-                   FileWriteString(fileHandle,"\n Статус: не актуальное");
-                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(minPrice));
-                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(maxPrice));
-                   FileWriteString(fileHandle,"\n}\n");                            
-                 }
-              }
-             if (retCode == -1)     // если расхождение на BUY
-              {
-               FileWriteString(fileHandle,""+TimeToString(time[lastBarIndex])+" (расхождение на BUY): \n { \n" );                 
-                countDivBuy ++;     // увеличиваем количество расхождений на BUY
-                
-                maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
-                minPrice = close[lastBarIndex] - minPrice;   // вычисляем, насколько цена ушла вниз от цены закрытия  
-                
-                if (maxPrice < 0)
-                  maxPrice = 0;
-                if (minPrice < 0)
-                  minPrice = 0;     
-                
-                if (maxPrice > minPrice)  // данное расхождение является аткуальным
-                 {
-                   countActualDivBuy ++;    // увеличиваем количество актуальных расхождений на BUY
-                   
-                   averActualProfitDivBuy = averActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
-                   averActualLossDivBuy   = averActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка
-                   FileWriteString(fileHandle,"\n Статус: актуальное");
-                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice,5));
-                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice,5));
-                   FileWriteString(fileHandle,"\n}\n");   
-                 }
-                else
-                 {
-                   averNotActualProfitDivBuy = averNotActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
-                   averNotActualLossDivBuy   = averNotActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка                 
-                   FileWriteString(fileHandle,"\n Статус: не актуальное");
-                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice));
-                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice));
-                   FileWriteString(fileHandle,"\n}\n");  
-                 }
-                          
-              }
-              
-             } // end проверки на дату 
-              
-              
-           }
-        }
-          
-          // запись в файл общей статистики
-          if (countActualDivSell > 0)
-              {
-               averActualLossDivSell   = averActualLossDivSell   / countActualDivSell;
-               averActualProfitDivSell = averActualProfitDivSell / countActualDivSell; 
-              }
-          if (countActualDivBuy > 0)
-              {
-               averActualLossDivBuy    = averActualLossDivBuy    / countActualDivBuy;
-               averActualProfitDivBuy  = averActualProfitDivBuy  / countActualDivBuy;
-              }
-          if (countActualDivSell != countDivSell)
-              {
-               averNotActualLossDivSell   = averNotActualLossDivSell   / (countDivSell-countActualDivSell);
-               averNotActualProfitDivSell = averNotActualProfitDivSell / (countDivSell-countActualDivSell); 
-              }
-          if (countActualDivBuy != countDivBuy)
-              {
-               averNotActualLossDivBuy    = averNotActualLossDivBuy    / (countDivBuy-countActualDivBuy);
-               averNotActualProfitDivBuy  = averNotActualProfitDivBuy  / (countDivBuy-countActualDivBuy);
-              }              
-              
-          FileWriteString(fileHandle,"\n\n Количество расхождений SELL: "+IntegerToString(countDivSell));
-          FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivSell));
-          FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivSell - countActualDivSell));          
-          
-          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivSell,5));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivSell,5));  
-          
-          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivSell,5));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivSell,5));                
-          
-          FileWriteString(fileHandle,"\n\n Количество расхождений BUY: "+IntegerToString(countDivBuy));
-          FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivBuy));
-          FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivBuy - countActualDivBuy));          
-           
-          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivBuy,5));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivBuy,5));  
-          
-          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivBuy,5));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivBuy,5));          
-        
-        Print("ПОДСЧЕТ СТАТИСТИКИ ЗАВЕРШЕН");
-          
-        // закрываем файл статистики
-        
-        FileClose(fileHandle);                       
-        fileHandle = INVALID_HANDLE;                     
-    }
-    else    // если это не первый вызов индикатора 
-     {
-       // если сформировался новый бар
-       if (isNewBar.isNewBar() > 0 )
-        {
-              // положим индексацию нужных массивов как в таймсерии
-          if ( !ArraySetAsSeries (time,true) || 
-               !ArraySetAsSeries (open,true) || 
-               !ArraySetAsSeries (high,true) ||
-               !ArraySetAsSeries (low,true)  || 
-               !ArraySetAsSeries (close,true) )
-              {
-               // если не удалось установаить индексацию как в таймсерии для всех массивов цен и времени
-               Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось установить индексацию массивов как в таймсерии");
-               return (rates_total);
-              }
-          // обнуляем буфер сигнала расхождений
-          bufferDiv[0] = 0;
-          if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
-               CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
-           {
-             // если не удалось загрузить буфера MACD
-             Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
-             return (rates_total);
-           }   
-          retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,0);  // получаем сигнал на расхождение
-          // если не удалось загрузить буферы MACD
-          if (retCode == -2)
-           {
-             Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
-             return (0);
-           }
-          if (retCode)
-           {                                        
-             DrawIndicator (time[0]);       // отображаем графические элементы индикатора    
-             bufferDiv[0] = retCode;        // сохраняем текущий сигнал
-           }        
-            
-        }
-     }
-   return(rates_total);
+ if (prev_calculated == 0) // если на пред. вызове было обработано 0 баров, значит этот вызов первый
+ {
+ // загрузим буфер MACD
+  if (CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
+      CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
+  {
+  // если не удалось загрузить буфера MACD
+   Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+   return (0); 
+  }                
+  // положим индексацию нужных массивов как в таймсерии
+  if (!ArraySetAsSeries (time,true) || 
+      !ArraySetAsSeries (open,true) || 
+      !ArraySetAsSeries (high,true) ||
+      !ArraySetAsSeries (low,true)  || 
+      !ArraySetAsSeries (close,true) )
+  {
+  // если не удалось установаить индексацию как в таймсерии для всех массивов цен и времени
+   Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось установить индексацию массивов как в таймсерии");
+   return (0);
   }
+  // проходим по всем барам истории и ищем расхождения MACD
+  for (lastBarIndex = rates_total-101; lastBarIndex > 0; lastBarIndex--)
+  {
+  // обнуляем буфер сигналов расхождений MACD
+   bufferDiv[lastBarIndex] = 0;
+   retCode = divergenceMACD(handleMACD, _Symbol, _Period, divergencePoints, lastBarIndex);  // получаем сигнал на расхождение
+  // если не удалось загрузить буферы MACD
+   if (retCode == -2)
+   {
+    Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+    return (0);
+   }
+   if (retCode)
+   {                                          
+    DrawIndicator(time[lastBarIndex]);    // отображаем графические элементы индикатора     
+    bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение    
+           
+   // вычисляем статистические данные по данному расхождению
+    if (time[lastBarIndex] >= start_time  && time[lastBarIndex] <= finish_time)   // если текущее время попадает в зону вычисления статистики
+    {
+    // вычисляем максимум на глубину вычисления актуальности
+     maxPrice =  high[ArrayMaximum(high,lastBarIndex-actualBars,actualBars)];  // находим максимум по high
+     minPrice =  low[ArrayMinimum(low,lastBarIndex -actualBars,actualBars)];   // находим минимум по low
+
+    // вычисляем актуальность расхождений
+     if (retCode == 1)      // если расхождение на SELL
+     {
+      FileWriteString(fileHandle,""+TimeToString(time[lastBarIndex])+" (расхождение на SELL): \n { \n" );   
+      countDivSell ++;    // увеличиваем количество расхождений на SELL
+               
+      maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
+      minPrice = close[lastBarIndex] - minPrice;   // вычисляем, насколько цена ушла вниз от цены закрытия
+                
+      if (maxPrice < 0)
+       maxPrice = 0;
+      if (minPrice < 0)
+       minPrice = 0;
+                
+      if (minPrice > maxPrice)  // данное расхождение является актуальным
+      {
+       countActualDivSell ++;   // увеличиваем количество актуальных расхождений на SELL
+                   
+       averActualProfitDivSell = averActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
+       averActualLossDivSell   = averActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
+       FileWriteString(fileHandle,"\n Статус: актуальное");
+       FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(minPrice));
+       FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(maxPrice));
+       FileWriteString(fileHandle,"\n}\n");                     
+      }
+      else
+      {
+       averNotActualProfitDivSell = averNotActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
+       averNotActualLossDivSell   = averNotActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
+       FileWriteString(fileHandle,"\n Статус: не актуальное");
+       FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(minPrice));
+       FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(maxPrice));
+       FileWriteString(fileHandle,"\n}\n");                            
+      }
+     }
+     if (retCode == -1)     // если расхождение на BUY
+     {
+      FileWriteString(fileHandle,""+TimeToString(time[lastBarIndex])+" (расхождение на BUY): \n { \n" );                 
+      countDivBuy ++;     // увеличиваем количество расхождений на BUY
+                
+      maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
+      minPrice = close[lastBarIndex] - minPrice;   // вычисляем, насколько цена ушла вниз от цены закрытия  
+                
+      if (maxPrice < 0)
+       maxPrice = 0;
+      if (minPrice < 0)
+       minPrice = 0;     
+                
+      if (maxPrice > minPrice)  // данное расхождение является аткуальным
+      {
+       countActualDivBuy ++;    // увеличиваем количество актуальных расхождений на BUY
+                   
+       averActualProfitDivBuy = averActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
+       averActualLossDivBuy   = averActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка
+       FileWriteString(fileHandle,"\n Статус: актуальное");
+       FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice,5));
+       FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice,5));
+       FileWriteString(fileHandle,"\n}\n");   
+      }
+      else
+      {
+       averNotActualProfitDivBuy = averNotActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
+       averNotActualLossDivBuy   = averNotActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка                 
+       FileWriteString(fileHandle,"\n Статус: не актуальное");
+       FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice));
+       FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice));
+       FileWriteString(fileHandle,"\n}\n");  
+      }
+     }
+    } // end проверки на дату 
+   }
+  }
+          
+  // запись в файл общей статистики
+  if (countActualDivSell > 0)
+  {
+   averActualLossDivSell   = averActualLossDivSell   / countActualDivSell;
+   averActualProfitDivSell = averActualProfitDivSell / countActualDivSell; 
+  }
+  if (countActualDivBuy > 0)
+  {
+   averActualLossDivBuy    = averActualLossDivBuy    / countActualDivBuy;
+   averActualProfitDivBuy  = averActualProfitDivBuy  / countActualDivBuy;
+  }
+  if (countActualDivSell != countDivSell)
+  {
+   averNotActualLossDivSell   = averNotActualLossDivSell   / (countDivSell-countActualDivSell);
+   averNotActualProfitDivSell = averNotActualProfitDivSell / (countDivSell-countActualDivSell); 
+  }
+  if (countActualDivBuy != countDivBuy)
+  {
+   averNotActualLossDivBuy    = averNotActualLossDivBuy    / (countDivBuy-countActualDivBuy);
+   averNotActualProfitDivBuy  = averNotActualProfitDivBuy  / (countDivBuy-countActualDivBuy);
+  }              
+              
+  FileWriteString(fileHandle,"\n\n Количество расхождений SELL: "+IntegerToString(countDivSell));
+  FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivSell));
+  FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivSell - countActualDivSell));          
+          
+  FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivSell,5));
+  FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivSell,5));  
+          
+  FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivSell,5));
+  FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivSell,5));                
+          
+  FileWriteString(fileHandle,"\n\n Количество расхождений BUY: "+IntegerToString(countDivBuy));
+  FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivBuy));
+  FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivBuy - countActualDivBuy));          
+           
+  FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivBuy,5));
+  FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivBuy,5));  
+          
+  FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivBuy,5));
+  FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivBuy,5));          
+  Print("ПОДСЧЕТ СТАТИСТИКИ ЗАВЕРШЕН");
   
+  // закрываем файл статистики
+  FileClose(fileHandle);                       
+  fileHandle = INVALID_HANDLE;                     
+ }
+ else    // если это не первый вызов индикатора 
+ {
+  // если сформировался новый бар
+  if (isNewBar.isNewBar() > 0 )
+  {
+  // положим индексацию нужных массивов как в таймсерии
+   if (!ArraySetAsSeries (time,true) || 
+       !ArraySetAsSeries (open,true) || 
+       !ArraySetAsSeries (high,true) ||
+       !ArraySetAsSeries (low,true)  || 
+       !ArraySetAsSeries (close,true) )
+   {
+   // если не удалось установаить индексацию как в таймсерии для всех массивов цен и времени
+    Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось установить индексацию массивов как в таймсерии");
+    return (rates_total);
+   }
+   // обнуляем буфер сигнала расхождений
+   bufferDiv[0] = 0;
+   if (CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
+       CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
+   {
+   // если не удалось загрузить буфера MACD
+    Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+    return (rates_total);
+   }   
+   retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,0);  // получаем сигнал на расхождение
+   // если не удалось загрузить буферы MACD
+   if (retCode == -2)
+   {
+    Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+    return (0);
+   }
+   if (retCode)
+   {                                        
+    DrawIndicator (time[0]);       // отображаем графические элементы индикатора    
+    bufferDiv[0] = retCode;        // сохраняем текущий сигнал
+   }        
+  }
+ }
+ return(rates_total);
+}
+ 
+//---------------------------------------------------------  
 // функция отображения графических элементов индикатора
+//----------------------------------------------------------
 void DrawIndicator (datetime vertLineTime)
  {
    trendLine.Color(clrYellow);

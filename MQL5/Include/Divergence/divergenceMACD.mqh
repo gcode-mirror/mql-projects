@@ -124,7 +124,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
    if (!is_extr_exist) return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
    
    index_MACD_global_max = ArrayMaximum(iMACD_buf, i-2, WHOLE_ARRAY);  
-   for(i = index_MACD_global_max; i < DEPTH_MACD; i++)  //ищем было ли прохождение через 0 и возвращение назад 
+   for(i = index_MACD_global_max; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 и возвращение назад 
    {
     if(iMACD_buf[i] < 0) 
     {
@@ -164,7 +164,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
  
    index_MACD_global_min = ArrayMinimum(iMACD_buf, i-2, WHOLE_ARRAY);  
-   for(i = index_MACD_global_min; i < DEPTH_MACD; i++)  //ищем было ли прохождение через 0 
+   for(i = index_MACD_global_min; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 
    {
     if(iMACD_buf[i] > 0) 
     {
@@ -261,8 +261,8 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
    if (!is_extr_exist) 
     return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
    
-   index_MACD_global_max = ArrayMaximum(iMACD_buf, i-2, WHOLE_ARRAY);  
-   for(i = index_MACD_global_max; i < DEPTH_MACD; i++)  //ищем было ли прохождение через 0 и возвращение назад 
+   index_MACD_global_max = ArrayMaximum(iMACD_buf, i-2, WHOLE_ARRAY);
+   for(i = index_MACD_global_max; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 и возвращение назад 
    {
     if(iMACD_buf[i] < 0) 
     {
@@ -316,7 +316,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
     return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
  
    index_MACD_global_min = ArrayMinimum(iMACD_buf, i-2, WHOLE_ARRAY);  
-   for(i = index_MACD_global_min; i < DEPTH_MACD; i++)  //ищем было ли прохождение через 0 
+   for(i = index_MACD_global_min; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 
    {
     if(iMACD_buf[i] > 0) 
     {
