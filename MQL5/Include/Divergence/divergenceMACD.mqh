@@ -41,7 +41,7 @@ int isMACDExtremum(int handleMACD, int startIndex)
  if(copied != 5)
  {
   int err = GetLastError();
-  Alert(__FUNCTION__, "Не удалось скопировать буффер полностью.", copied, "/5. Error = ", err);
+  Print(__FUNCTION__, "Не удалось скопировать буффер полностью.", copied, "/5. Error = ", err);
   return(0);
  }
 

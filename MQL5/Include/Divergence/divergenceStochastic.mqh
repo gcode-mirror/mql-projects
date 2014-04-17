@@ -226,7 +226,7 @@ int isSTOCExtremum(int handleSTOC, int startIndex = 0)
  }
  if (copiedSTOC < 3)
  {
-  Alert(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", GetLastError());
+  Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", GetLastError());
   return(0);
  }
  

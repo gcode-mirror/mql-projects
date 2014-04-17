@@ -13,6 +13,7 @@
 //| 1) рисует линии Стохастика                                       |
 //| 2) рисует линиями расхождения на Стохастике и на графике цены    |
 //| 3) рисует стрелочками момент возникновения сигнала               |
+//| 4) собирает статистику расхождений                               |
 //+------------------------------------------------------------------+
 
 // подключаем библиотеки 
@@ -27,6 +28,12 @@ input ENUM_MA_METHOD      ma_method    = MODE_SMA;    // тип сглаживания
 input ENUM_STO_PRICE      price_field  = STO_LOWHIGH; // способ расчета стохастика           
 input int                 top_level    = 80;          // верхний уровень 
 input int                 bottom_level = 20;          // нижний уровень 
+
+sinput string stat_params     = "";                // ПАРАМЕТРЫ ВЫЧИСЛЕНИЯ СТАТИСТИКИ
+input  int    actualBars      = 10;                // количество баров для подсчета актуальности
+input  string fileName        = "STOC_STAT.txt";   // имя файла статистики
+input  datetime  start_time   = 0;                 // дата, с которой начать проводить статистику
+input  datetime  finish_time  = 0;                 // дата, по которую проводить статистику
 
 // параметры индикаторных буферов 
 #property indicator_buffers 3                         // задействовано 3 индикаторных буфера
@@ -64,12 +71,40 @@ double bufferTopLevel[];                            // буфер уровней top level
 double bufferBottomLevel[];                         // буфер уровней bottom level
 double bufferDiv[];                                 // буфер моментов расхождения
 
+// хэндл файла статистики
+int    fileHandle;
+
+// переменные для хранения результатов статистики
+
+double averActualProfitDivBuy   = 0;       // средняя потенциальная прибыль от актуального расхождения на покупку
+double averActualLossDivBuy     = 0;       // средний потенциальный убыток при актуальном расхождении на покупку
+double averActualProfitDivSell  = 0;       // средняя потенциальная прибыль от актуального расхождения на продажу
+double averActualLossDivSell    = 0;       // средний потенциальный убыток при актуальном расхождении на продажу    
+
+double averNotActualProfitDivBuy   = 0;       // средняя потенциальная прибыль от НЕ актуального расхождения на покупку
+double averNotActualLossDivBuy     = 0;       // средний потенциальный убыток при НЕ актуальном расхождении на покупку
+double averNotActualProfitDivSell  = 0;       // средняя потенциальная прибыль от НЕ актуального расхождения на продажу
+double averNotActualLossDivSell    = 0;       // средний потенциальный убыток при НЕ актуальном расхождении на продажу                     
+
+// счетчики расхождений
+int    countActualDivBuy        = 0;       // количество актуальных расхождений на покупку
+int    countDivBuy              = 0;       // общее количество расхождений на покупку     
+int    countActualDivSell       = 0;       // колчиство актуальных расхождений на продажу
+int    countDivSell             = 0;       // общее количество расхождений на продажу        
+
 // дополнительные функции работы индикатора
 void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатора. В функцию передается время вертикальной линии
    
 // инициализация индикатора
 int OnInit()
   {  
+   // создаем файл статистики на запись
+   fileHandle = FileOpen(fileName,FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+   if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
+    {
+     Print("Ошибка индикатора ShowMeYourDivSTOC. Не удалось создать файл статистики");
+     return (INIT_FAILED);
+    }    
    ArraySetAsSeries(bufferDiv,true);
    // загружаем хэндл индикатора Стохастика
    handleSTOC = iStochastic(_Symbol,_Period,5,3,3,ma_method,price_field);
@@ -103,6 +138,9 @@ void OnDeinit(const int reason)
    ArrayFree(bufferDiv);
    // освобождаем хэндл Стохастика
    IndicatorRelease(handleSTOC);
+   // закрываем файл статистики 
+   if (fileHandle != INVALID_HANDLE)
+   FileClose(fileHandle);   
  }
 
 // базовая функция расчета индикатора
@@ -117,6 +155,10 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
+   // локальные переменные
+   double maxPrice;          // локальный максимум цен
+   double minPrice;          // локальный минимум цен
+     
    if (prev_calculated == 0) // если на пред. вызове было обработано 0 баров, значит этот вызов первый
     {
       // загрузим буфер Стохастика
@@ -154,9 +196,139 @@ int OnCalculate(const int rates_total,
            {                                          
              DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
              bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
+           
+         // вычисляем статистические данные по данному расхождению
+             if (time[lastBarIndex] >= start_time  && time[lastBarIndex] <= finish_time)   // если текущее время попадает в зону вычисления статистики
+              {
+             // вычисляем максимум на глубину вычисления актуальности
+             maxPrice =  high[ArrayMaximum(high,lastBarIndex-actualBars,actualBars)];  // находим максимум по high
+             minPrice =  low[ArrayMinimum(low,lastBarIndex -actualBars,actualBars)];   // находим минимум по low
+
+             // вычисляем актуальность расхождений
+             
+             if (retCode == 1)      // если расхождение на SELL
+              {
+               FileWriteString(fileHandle,""+TimeToString(time[lastBarIndex])+" (расхождение на SELL): \n { \n" );   
+                countDivSell ++;    // увеличиваем количество расхождений на SELL
+                
+                maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
+                minPrice = close[lastBarIndex] - minPrice;   // вычисляем, насколько цена ушла вниз от цены закрытия
+                
+                if (maxPrice < 0)
+                  maxPrice = 0;
+                if (minPrice < 0)
+                  minPrice = 0;
+                
+                if (minPrice > maxPrice)  // данное расхождение является актуальным
+                 {
+                   countActualDivSell ++;   // увеличиваем количество актуальных расхождений на SELL
+                   
+                   averActualProfitDivSell = averActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
+                   averActualLossDivSell   = averActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
+                   FileWriteString(fileHandle,"\n Статус: актуальное");
+                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(minPrice));
+                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(maxPrice));
+                   FileWriteString(fileHandle,"\n}\n");                     
+                 }
+                else
+                 {
+                   averNotActualProfitDivSell = averNotActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
+                   averNotActualLossDivSell   = averNotActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
+                   FileWriteString(fileHandle,"\n Статус: не актуальное");
+                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(minPrice));
+                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(maxPrice));
+                   FileWriteString(fileHandle,"\n}\n");                            
+                 }
+              }
+             if (retCode == -1)     // если расхождение на BUY
+              {
+               FileWriteString(fileHandle,""+TimeToString(time[lastBarIndex])+" (расхождение на BUY): \n { \n" );                 
+                countDivBuy ++;     // увеличиваем количество расхождений на BUY
+                
+                maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
+                minPrice = close[lastBarIndex] - minPrice;   // вычисляем, насколько цена ушла вниз от цены закрытия  
+                
+                if (maxPrice < 0)
+                  maxPrice = 0;
+                if (minPrice < 0)
+                  minPrice = 0;     
+                
+                if (maxPrice > minPrice)  // данное расхождение является аткуальным
+                 {
+                   countActualDivBuy ++;    // увеличиваем количество актуальных расхождений на BUY
+                   
+                   averActualProfitDivBuy = averActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
+                   averActualLossDivBuy   = averActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка
+                   FileWriteString(fileHandle,"\n Статус: актуальное");
+                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice,5));
+                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice,5));
+                   FileWriteString(fileHandle,"\n}\n");   
+                 }
+                else
+                 {
+                   averNotActualProfitDivBuy = averNotActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
+                   averNotActualLossDivBuy   = averNotActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка                 
+                   FileWriteString(fileHandle,"\n Статус: не актуальное");
+                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice));
+                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice));
+                   FileWriteString(fileHandle,"\n}\n");  
+                 }
+                          
+              }
+              
+             } // end проверки на дату              
+             
            }
         }
             
+ // запись в файл общей статистики
+          if (countActualDivSell > 0)
+              {
+               averActualLossDivSell   = averActualLossDivSell   / countActualDivSell;
+               averActualProfitDivSell = averActualProfitDivSell / countActualDivSell; 
+              }
+          if (countActualDivBuy > 0)
+              {
+               averActualLossDivBuy    = averActualLossDivBuy    / countActualDivBuy;
+               averActualProfitDivBuy  = averActualProfitDivBuy  / countActualDivBuy;
+              }
+          if (countActualDivSell != countDivSell)
+              {
+               averNotActualLossDivSell   = averNotActualLossDivSell   / (countDivSell-countActualDivSell);
+               averNotActualProfitDivSell = averNotActualProfitDivSell / (countDivSell-countActualDivSell); 
+              }
+          if (countActualDivBuy != countDivBuy)
+              {
+               averNotActualLossDivBuy    = averNotActualLossDivBuy    / (countDivBuy-countActualDivBuy);
+               averNotActualProfitDivBuy  = averNotActualProfitDivBuy  / (countDivBuy-countActualDivBuy);
+              }              
+              
+          FileWriteString(fileHandle,"\n\n Количество расхождений SELL: "+IntegerToString(countDivSell));
+          FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivSell));
+          FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivSell - countActualDivSell));          
+          
+          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivSell,5));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivSell,5));  
+          
+          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivSell,5));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivSell,5));                
+          
+          FileWriteString(fileHandle,"\n\n Количество расхождений BUY: "+IntegerToString(countDivBuy));
+          FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivBuy));
+          FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivBuy - countActualDivBuy));          
+           
+          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivBuy,5));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivBuy,5));  
+          
+          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivBuy,5));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivBuy,5));          
+        
+        Print("ПОДСЧЕТ СТАТИСТИКИ ЗАВЕРШЕН");
+          
+        // закрываем файл статистики
+        
+        FileClose(fileHandle);                       
+        fileHandle = INVALID_HANDLE;                 
                              
     }
     else    // если это не первый вызов индикатора 

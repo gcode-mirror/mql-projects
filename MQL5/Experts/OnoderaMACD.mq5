@@ -98,9 +98,6 @@ void OnTick()
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }    
-     Comment("ЗНАЧЕНИЕ В БУФЕРЕ = ",tmpBuffer[0]);
- //divSignal = divergenceSTOC(handleStochastic,_Symbol,_Period,top_level,bottom_level);  // получаем сигнал расхождения
-
    if ( EqualDoubles(tmpBuffer[0],1.0))  // получили расхождение на покупку
      { 
       currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
