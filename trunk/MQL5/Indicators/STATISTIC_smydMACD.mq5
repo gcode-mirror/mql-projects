@@ -33,6 +33,7 @@ sinput string stat_params     = "";                // ПАРАМЕТРЫ ВЫЧИСЛЕНИЯ СТАТИ
 input  int    actualBars      = 10;                // количество баров для подсчета актуальности
 input  string fileName        = "MACD_STAT.txt";   // имя файла статистики
 input  datetime  start_time   = 0;                 // дата, с которой начать проводить статистику
+input  datetime  finish_time  = 0;                 // дата, по которую проводить статистику
 
 // параметры индикаторных буферов 
 #property indicator_buffers 3                      // задействовано 3 индикаторных буфера
@@ -199,7 +200,7 @@ int OnCalculate(const int rates_total,
              bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение    
              
              // вычисляем статистические данные по данному расхождению
-             if (time[lastBarIndex] >= start_time)   // если текущее время попадает в зону вычисления статистики
+             if (time[lastBarIndex] >= start_time  && time[lastBarIndex] <= finish_time)   // если текущее время попадает в зону вычисления статистики
               {
              // вычисляем максимум на глубину вычисления актуальности
              maxPrice =  high[ArrayMaximum(high,lastBarIndex-actualBars,actualBars)];  // находим максимум по high
@@ -261,8 +262,8 @@ int OnCalculate(const int rates_total,
                    averActualProfitDivBuy = averActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
                    averActualLossDivBuy   = averActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка
                    FileWriteString(fileHandle,"\n Статус: актуальное");
-                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice));
-                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice));
+                   FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice,5));
+                   FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice,5));
                    FileWriteString(fileHandle,"\n}\n");   
                  }
                 else
@@ -296,32 +297,36 @@ int OnCalculate(const int rates_total,
               }
           if (countActualDivSell != countDivSell)
               {
-               averActualLossDivSell   = averActualLossDivSell   / (countDivSell-countActualDivSell);
-               averActualProfitDivSell = averActualProfitDivSell / (countDivSell-countActualDivSell); 
+               averNotActualLossDivSell   = averNotActualLossDivSell   / (countDivSell-countActualDivSell);
+               averNotActualProfitDivSell = averNotActualProfitDivSell / (countDivSell-countActualDivSell); 
               }
           if (countActualDivBuy != countDivBuy)
               {
-               averActualLossDivBuy    = averActualLossDivBuy    / (countDivBuy-countActualDivBuy);
-               averActualProfitDivBuy  = averActualProfitDivBuy  / (countDivBuy-countActualDivBuy);
+               averNotActualLossDivBuy    = averNotActualLossDivBuy    / (countDivBuy-countActualDivBuy);
+               averNotActualProfitDivBuy  = averNotActualProfitDivBuy  / (countDivBuy-countActualDivBuy);
               }              
               
           FileWriteString(fileHandle,"\n\n Количество расхождений SELL: "+IntegerToString(countDivSell));
           FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivSell));
-           
-          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivSell));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivSell));  
+          FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivSell - countActualDivSell));          
           
-          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivSell));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivSell));                
+          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivSell,5));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivSell,5));  
+          
+          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivSell,5));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivSell,5));                
           
           FileWriteString(fileHandle,"\n\n Количество расхождений BUY: "+IntegerToString(countDivBuy));
           FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivBuy));
+          FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivBuy - countActualDivBuy));          
            
-          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivBuy));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivBuy));  
+          FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivBuy,5));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivBuy,5));  
           
-          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivBuy));
-          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivBuy));          
+          FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivBuy,5));
+          FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivBuy,5));          
+        
+        Print("ПОДСЧЕТ СТАТИСТИКИ ЗАВЕРШЕН");
           
         // закрываем файл статистики
         

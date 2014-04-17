@@ -90,15 +90,12 @@ void OnTick()
  // если сформирован новый бар
  if (isNewBar.isNewBar() > 0)
   {
- 
-   //divSignal = divergenceSTOC(handleStochastic,_Symbol,_Period,top_level,bottom_level);  // получаем сигнал расхождения
    copiedSTOC = CopyBuffer(handleSTOC,2,0,1,tmpBuffer);
    if (copiedSTOC < 1)
     {
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }    
-     Comment("ЗНАЧЕНИЕ В БУФЕРЕ = ",tmpBuffer[0]);
    if ( EqualDoubles(tmpBuffer[0],1.0))  // получили расхождение на покупку
      { 
       currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
