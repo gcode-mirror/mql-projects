@@ -132,7 +132,7 @@ int OnCalculate(const int rates_total,
       // положим индексацию нужных массивов как в таймсерии
       if ( !ArraySetAsSeries (time,true) || 
            !ArraySetAsSeries (open,true) || 
-           !ArraySetAsSeries (high,true) ||
+           !ArraySetAsSeries (high,true) || 
            !ArraySetAsSeries (low,true)  || 
            !ArraySetAsSeries (close,true) )
           {
@@ -149,7 +149,7 @@ int OnCalculate(const int rates_total,
           // если не удалось загрузить буферы MACD
           if (retCode == -2)
            {
-             Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+             Comment("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
              return (0);
            }
           if (retCode)
@@ -157,6 +157,7 @@ int OnCalculate(const int rates_total,
              DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
              bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
            }
+           
         }
            
                              
@@ -167,10 +168,10 @@ int OnCalculate(const int rates_total,
        if (isNewBar.isNewBar() > 0 )
         {
               // положим индексацию нужных массивов как в таймсерии
-          if ( !ArraySetAsSeries (time,true) || 
-               !ArraySetAsSeries (open,true) || 
-               !ArraySetAsSeries (high,true) ||
-               !ArraySetAsSeries (low,true)  || 
+          if ( !ArraySetAsSeries (time, true) || 
+               !ArraySetAsSeries (open, true) || 
+               !ArraySetAsSeries (high, true) ||
+               !ArraySetAsSeries (low,  true) || 
                !ArraySetAsSeries (close,true) )
               {
                // если не удалось установаить индексацию как в таймсерии для всех массивов цен и времени
