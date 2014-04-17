@@ -28,8 +28,6 @@ input  int    priceDifference                      = 50;            // Price Dif
 
 sinput string macd_string                          = "";            // ПАРАМЕТРЫ MACD
 
-
-
 // объекты
 CTradeManager * ctm;                                                // указатель на объект торговой библиотеки
 static CisNewBar isNewBar(_Symbol, _Period);                        // для проверки формирования нового бара
@@ -37,7 +35,6 @@ static CisNewBar isNewBar(_Symbol, _Period);                        // для прове
 // хэндлы индикаторов 
 int handleMACD;                                                     // хэндл MACD
 
-      
 // переменные эксперта
 int divSignal;                                                      // сигнал на расхождение
 double currentPrice;                                                // текущая цена
