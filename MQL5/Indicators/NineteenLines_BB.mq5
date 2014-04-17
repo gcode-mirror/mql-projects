@@ -15,8 +15,8 @@
 #include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBar.mqh>
 
- input int    period_ATR_channel = 100;   //Период ATR для канала
- input double percent_ATR_channel = 0.03; //Ширина канала уровня в процентах от ATR
+ input int    period_ATR_channel = 30;   //Период ATR для канала
+ input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
  input double precentageATR_price = 1;    //Процентр ATR для нового экструмума
 
  input bool  show_Extr_MN  = false;
@@ -27,7 +27,7 @@
  input color color_Extr_D1 = clrYellow;
  input bool  show_Extr_H4  = false;
  input color color_Extr_H4 = clrBlue;
- input bool  show_Extr_H1  = false;
+ input bool  show_Extr_H1  = true;
  input color color_Extr_H1 = clrAqua;
  input bool  show_Price_D1  = false;
  input color color_Price_D1 = clrDarkKhaki;
@@ -43,7 +43,6 @@
  SExtremum estructD1[3];
  SExtremum estructH4[3];
  SExtremum estructH1[3];
- SExtremum pstructD1[4];
  
  double Extr_MN_Buffer1[];
  double Extr_MN_Buffer2[];
@@ -306,7 +305,7 @@ int OnCalculate(const int rates_total,
      calcH4.SetStartDayPrice(close[rates_total-1]);
      calcH1.SetStartDayPrice(close[rates_total-1]);
      
-     for(int i = rates_total-2-period_ATR_channel; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
+     for(int i = rates_total-period_ATR_channel; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       PrintFormat("Calc for %s", TimeToString(time[i]));
       CalcExtr(calcMN, estructMN, time[i]);
@@ -349,8 +348,8 @@ int OnCalculate(const int rates_total,
       Price_D1_Buffer2[i] = high [i+1];
       Price_D1_Buffer3[i] = low  [i+1];
       Price_D1_Buffer4[i] = close[i+1];
-      CopyBuffer(ATR_D1_handle, 0, i+1, 1, tmp_buffer_ATR);
-        ATR_D1_Buffer [i] = (tmp_buffer_ATR[0]*percent_ATR_channel)/2;
+      CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
+      ATR_D1_Buffer[i] = (tmp_buffer_ATR[0] * percent_ATR_channel)/2;
      }
      
      if(show_Extr_MN) MoveExtrLines (estructMN, PERIOD_MN1);
@@ -362,7 +361,7 @@ int OnCalculate(const int rates_total,
     }//end prev_calculated == 0
     else
     {
-     for(int i = rates_total - prev_calculated; i >= 0; i--)
+     for(int i = rates_total - prev_calculated - 1; i >= 0; i--)
      {      
       Extr_MN_Buffer1[i] = estructMN[0].price;
        ATR_MN_Buffer1[i] = estructMN[0].channel;
@@ -398,7 +397,8 @@ int OnCalculate(const int rates_total,
       Price_D1_Buffer2[i] = high [i+1];
       Price_D1_Buffer3[i] = low  [i+1];
       Price_D1_Buffer4[i] = close[i+1];
-        ATR_D1_Buffer [i] = ATR_D1_Buffer[i+1];
+      CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
+      ATR_D1_Buffer[i] = (tmp_buffer_ATR[0] * percent_ATR_channel)/2;
       
       if(barMN.isNewBar() > 0) CalcExtr(calcMN, estructMN, time[i], true); 
       if(barW1.isNewBar() > 0) CalcExtr(calcW1, estructW1, time[i], true);  
@@ -418,9 +418,8 @@ bool FillATRBuffer()
 {
  bool result = true;
  
- if(show_Extr_MN)
-  if(!calcMN.isATRCalculated())
-   result = false;
+ if(show_Extr_MN && !calcMN.isATRCalculated())
+  result = false;
    
  if(show_Extr_W1)
   if(!calcW1.isATRCalculated())
@@ -443,14 +442,13 @@ bool FillATRBuffer()
  return(result);
 }
 
-void CalcExtr (CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos_time, bool now = false)
+
+//---------------------------------------------
+// Пересчет экстремумов для заданного ТФ
+//---------------------------------------------
+void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos_time, bool now = false)
 {
  extrcalc.RecountExtremum(now, start_pos_time);
- GetThreeExtr(extrcalc, resArray);
-}
-
-void GetThreeExtr(CExtremumCalc &extrcalc, SExtremum &resArray[])
-{
  for(int j = 0; j < 3; j++)
  {
   resArray[j] = extrcalc.getExtr(j);
@@ -458,6 +456,9 @@ void GetThreeExtr(CExtremumCalc &extrcalc, SExtremum &resArray[])
  PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
 }
 
+//---------------------------------------------
+// Создание линий
+//---------------------------------------------
 void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
@@ -472,6 +473,9 @@ void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
  HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 2);
 }
 
+//---------------------------------------------
+// Сдвиг линий на заданный уровень
+//---------------------------------------------
 void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
 {
  string name = "extr_" + EnumToString(tf) + "_";
@@ -486,6 +490,9 @@ void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
  HLineMove(0, name+"three-", te[2].price-te[2].channel);
 }
 
+//---------------------------------------------
+// Удаление линий
+//---------------------------------------------
 void DeleteExtrLines(ENUM_TIMEFRAMES tf)
 {
  string name = "extr_" + EnumToString(tf) + "_";
