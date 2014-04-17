@@ -57,8 +57,8 @@ CExtremumCalc::CExtremumCalc(string symbol, ENUM_TIMEFRAMES period, double perce
                {
                 digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
                 _startDayPrice = -1;
-                handleATR_channel = iATR(_symbol,       _period, ATRperiod_channel);
-                handleATR_price   = iATR(_symbol, ATR_TIMEFRAME, ATR_PERIOD);              
+                handleATR_channel = iATR(_symbol, _period, ATRperiod_channel);
+                handleATR_price = iATR(_symbol, ATR_TIMEFRAME, ATR_PERIOD);              
                 if(handleATR_channel == INVALID_HANDLE || handleATR_price == INVALID_HANDLE) Alert("Invalid handle ATR.");
                }
 CExtremumCalc::~CExtremumCalc()
@@ -66,6 +66,8 @@ CExtremumCalc::~CExtremumCalc()
                  IndicatorRelease(handleATR_channel);
                  IndicatorRelease(handleATR_price);
                 }             
+
+//-----------------------------------------------------------------
 
 SExtremum CExtremumCalc::isExtremum(bool now = true, datetime start_pos_time = __DATETIME__)
 {
@@ -154,9 +156,9 @@ bool CExtremumCalc::isThreeExtrExist()
 bool CExtremumCalc::isATRCalculated()
 {
  if(BarsCalculated(handleATR_channel) >= 1 &&
-    BarsCalculated(handleATR_price  ) >= 1)
+    BarsCalculated(handleATR_price) >= 1)
   return(true);
- PrintFormat("%s %s . для channel расчитано %d, для price расчитано %d", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), BarsCalculated(handleATR_channel), BarsCalculated(handleATR_price  ));
+ PrintFormat("%s %s . для channel расчитано %d, для price расчитано %d, handleATR_price = %d", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), BarsCalculated(handleATR_channel), BarsCalculated(handleATR_price), handleATR_price);
  return(false);
 }
 
