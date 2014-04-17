@@ -90,6 +90,7 @@
  double tmp_buffer_ATR[];
  
  bool series_order = true;
+ bool first = true;
  //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -208,6 +209,12 @@ int OnInit()
  
  ATR_D1_handle = iATR(Symbol(), PERIOD_D1, period_ATR_channel);
  
+ InitializeExtrArray(estructMN);
+ InitializeExtrArray(estructW1);
+ InitializeExtrArray(estructD1);
+ InitializeExtrArray(estructH4);
+ InitializeExtrArray(estructH1);
+ 
  if(show_Extr_MN) CreateExtrLines (estructMN, PERIOD_MN1, color_Extr_MN);
  if(show_Extr_W1) CreateExtrLines (estructW1, PERIOD_W1 , color_Extr_W1);
  if(show_Extr_D1) CreateExtrLines (estructD1, PERIOD_D1 , color_Extr_D1);
@@ -291,7 +298,7 @@ int OnCalculate(const int rates_total,
  
    if(load)
    {
-    if(prev_calculated == 0)
+    if(first)
     {
      ArraySetAsSeries(open , series_order);
      ArraySetAsSeries(high , series_order);
@@ -304,6 +311,7 @@ int OnCalculate(const int rates_total,
      calcD1.SetStartDayPrice(close[rates_total-1]);
      calcH4.SetStartDayPrice(close[rates_total-1]);
      calcH1.SetStartDayPrice(close[rates_total-1]);
+     PrintFormat("Установлены стартдэйпрайс на всех тф");
      
      for(int i = rates_total-period_ATR_channel; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
@@ -357,7 +365,16 @@ int OnCalculate(const int rates_total,
      if(show_Extr_D1) MoveExtrLines (estructD1, PERIOD_D1 );
      if(show_Extr_H4) MoveExtrLines (estructH4, PERIOD_H4 );
      if(show_Extr_H1) MoveExtrLines (estructH1, PERIOD_H1 );
-     if(show_Price_D1)MovePriceLines(); 
+     if(show_Price_D1)MovePriceLines();
+     
+     PrintExtrArray(estructMN, PERIOD_MN1);
+     PrintExtrArray(estructW1, PERIOD_W1 ); 
+     PrintExtrArray(estructD1, PERIOD_D1 );
+     PrintExtrArray(estructH4, PERIOD_H4 );
+     PrintExtrArray(estructH1, PERIOD_H1 );
+     
+     PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
+     first = false; 
     }//end prev_calculated == 0
     else
     {
@@ -579,4 +596,25 @@ void DeleteInfoTabel()
  LabelDelete(0, "Extr_PERIOD_H1");
  LabelDelete(0, "Price_PERIOD_D1");
  ChartRedraw();
+}
+
+void InitializeExtrArray (SExtremum &te[])
+{
+ te[0].price = 0;
+ te[0].direction = 0;
+ te[0].channel = 0;
+ te[1].price = 0;
+ te[1].direction = 0;
+ te[1].channel = 0;
+ te[2].price = 0;
+ te[2].direction = 0;
+ te[2].channel = 0;
+}
+
+void PrintExtrArray(SExtremum &te[], ENUM_TIMEFRAMES tf)
+{
+ PrintFormat("%s {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f};", EnumToString((ENUM_TIMEFRAMES)tf),
+                                                                               te[0].price, te[0].direction, te[0].channel,
+                                                                               te[1].price, te[1].direction, te[1].channel,
+                                                                               te[2].price, te[2].direction, te[2].channel);
 }
