@@ -121,7 +121,7 @@ SExtremum CExtremumCalc::isExtremum(bool now = true, datetime start_pos_time = _
   //PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, min %s  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), low);
  }
  
- PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, %s  %0.5f %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), low, high);
+ //PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, %s  %0.5f %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), low, high);
  return(result);
 }
 
