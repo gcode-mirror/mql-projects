@@ -241,7 +241,7 @@ void FillFourPrice(string symbol, ENUM_TIMEFRAMES tf, SExtremum &resArray[])
 
 void FillThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[])
 {
- extrcalc.CalcThreeExtrOnHistory();
+ //extrcalc.CalcThreeExtrOnHistory();
  
  for(int j = 0; j < 3; j++)
  {
