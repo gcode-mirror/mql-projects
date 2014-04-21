@@ -43,6 +43,7 @@
  SExtremum estructD1[3];
  SExtremum estructH4[3];
  SExtremum estructH1[3];
+ SExtremum pstructD1[4];
  
  double Extr_MN_Buffer1[];
  double Extr_MN_Buffer2[];
@@ -214,13 +215,14 @@ int OnInit()
  InitializeExtrArray(estructD1);
  InitializeExtrArray(estructH4);
  InitializeExtrArray(estructH1);
- 
+ InitializeExtrArray(pstructD1);
+  
  if(show_Extr_MN) CreateExtrLines (estructMN, PERIOD_MN1, color_Extr_MN);
  if(show_Extr_W1) CreateExtrLines (estructW1, PERIOD_W1 , color_Extr_W1);
  if(show_Extr_D1) CreateExtrLines (estructD1, PERIOD_D1 , color_Extr_D1);
  if(show_Extr_H4) CreateExtrLines (estructH4, PERIOD_H4 , color_Extr_H4);
  if(show_Extr_H1) CreateExtrLines (estructH1, PERIOD_H1 , color_Extr_H1);
- if(show_Price_D1)CreatePriceLines(color_Price_D1); 
+ if(show_Price_D1)CreatePriceLines(pstructD1, color_Price_D1); 
  
 //---
  return(INIT_SUCCEEDED);
@@ -313,14 +315,19 @@ int OnCalculate(const int rates_total,
      calcH1.SetStartDayPrice(close[rates_total-1]);
      PrintFormat("Установлены стартдэйпрайс на всех тф");
      
-     for(int i = rates_total-period_ATR_channel; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
+     for(int i = rates_total-2; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       while(!FillATRBuffer()) {}
-      CalcExtr(calcMN, estructMN, time[i], false);
-      CalcExtr(calcW1, estructW1, time[i], false);
-      CalcExtr(calcD1, estructD1, time[i], false);
-      CalcExtr(calcH4, estructH4, time[i], false);
-      CalcExtr(calcH1, estructH1, time[i], false);
+      if(time[i]%PeriodSeconds(PERIOD_MN1) == 0) CalcExtr(calcMN, estructMN, time[i], false);
+      if(time[i]%PeriodSeconds(PERIOD_W1)  == 0) CalcExtr(calcW1, estructW1, time[i], false);
+      if(time[i]%PeriodSeconds(PERIOD_D1)  == 0) 
+      {
+       CalcExtr(calcD1, estructD1, time[i], false);
+       CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
+       CalcPrice(open[i+1], high[i+1], low[i+1], close[i+1], (tmp_buffer_ATR[0] * percent_ATR_channel)/2);
+      }
+      if(time[i]%PeriodSeconds(PERIOD_H4)  == 0) CalcExtr(calcH4, estructH4, time[i], false);
+      if(time[i]%PeriodSeconds(PERIOD_H1)  == 0) CalcExtr(calcH1, estructH1, time[i], false);
       
       Extr_MN_Buffer1[i] = estructMN[0].price;
        ATR_MN_Buffer1[i] = estructMN[0].channel;
@@ -352,12 +359,11 @@ int OnCalculate(const int rates_total,
        ATR_H1_Buffer2[i] = estructH1[1].channel;
       Extr_H1_Buffer3[i] = estructH1[2].price;
        ATR_H1_Buffer3[i] = estructH1[2].channel;
-      Price_D1_Buffer1[i] = open [i+1];
-      Price_D1_Buffer2[i] = high [i+1];
-      Price_D1_Buffer3[i] = low  [i+1];
-      Price_D1_Buffer4[i] = close[i+1];
-      CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
-      ATR_D1_Buffer[i] = (tmp_buffer_ATR[0] * percent_ATR_channel)/2;
+      Price_D1_Buffer1[i] = pstructD1[0].price;
+      Price_D1_Buffer2[i] = pstructD1[1].price;
+      Price_D1_Buffer3[i] = pstructD1[2].price;
+      Price_D1_Buffer4[i] = pstructD1[3].price;
+      ATR_D1_Buffer[i] = pstructD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
      }
      
      if(show_Extr_MN) MoveExtrLines (estructMN, PERIOD_MN1);
@@ -365,13 +371,14 @@ int OnCalculate(const int rates_total,
      if(show_Extr_D1) MoveExtrLines (estructD1, PERIOD_D1 );
      if(show_Extr_H4) MoveExtrLines (estructH4, PERIOD_H4 );
      if(show_Extr_H1) MoveExtrLines (estructH1, PERIOD_H1 );
-     if(show_Price_D1)MovePriceLines();
+     if(show_Price_D1)MovePriceLines(pstructD1);
      
      PrintExtrArray(estructMN, PERIOD_MN1);
      PrintExtrArray(estructW1, PERIOD_W1 ); 
      PrintExtrArray(estructD1, PERIOD_D1 );
      PrintExtrArray(estructH4, PERIOD_H4 );
      PrintExtrArray(estructH1, PERIOD_H1 );
+     //PrintExtrArray(pstructD1, PERIOD_D1 );
      
      PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
      first = false; 
@@ -410,19 +417,29 @@ int OnCalculate(const int rates_total,
        ATR_H1_Buffer2[i] = estructH1[1].channel;
       Extr_H1_Buffer3[i] = estructH1[2].price;
        ATR_H1_Buffer3[i] = estructH1[2].channel;
-      Price_D1_Buffer1[i] = open [i+1];
-      Price_D1_Buffer2[i] = high [i+1];
-      Price_D1_Buffer3[i] = low  [i+1];
-      Price_D1_Buffer4[i] = close[i+1];
-      CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
-      ATR_D1_Buffer[i] = (tmp_buffer_ATR[0] * percent_ATR_channel)/2;
+      Price_D1_Buffer1[i] = pstructD1[0].price;
+      Price_D1_Buffer2[i] = pstructD1[1].price;
+      Price_D1_Buffer3[i] = pstructD1[2].price;
+      Price_D1_Buffer4[i] = pstructD1[3].price;
+      ATR_D1_Buffer[i] = pstructD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
       
       if(barMN.isNewBar() > 0) CalcExtr(calcMN, estructMN, time[i], true); 
       if(barW1.isNewBar() > 0) CalcExtr(calcW1, estructW1, time[i], true);  
-      if(barD1.isNewBar() > 0) CalcExtr(calcD1, estructD1, time[i], true);
+      if(barD1.isNewBar() > 0) 
+      { 
+       CalcExtr(calcD1, estructD1, time[i], true);
+       CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
+       CalcPrice(open[i+1], high[i+1], low[i+1], close[i+1], (tmp_buffer_ATR[0] * percent_ATR_channel)/2);
+      }
       if(barH4.isNewBar() > 0) CalcExtr(calcH4, estructH4, time[i], true);
       if(barH1.isNewBar() > 0) CalcExtr(calcH1, estructH1, time[i], true);
      }
+     if(show_Extr_MN) MoveExtrLines (estructMN, PERIOD_MN1);
+     if(show_Extr_W1) MoveExtrLines (estructW1, PERIOD_W1 ); 
+     if(show_Extr_D1) MoveExtrLines (estructD1, PERIOD_D1 );
+     if(show_Extr_H4) MoveExtrLines (estructH4, PERIOD_H4 );
+     if(show_Extr_H1) MoveExtrLines (estructH1, PERIOD_H1 );
+     if(show_Price_D1)MovePriceLines(pstructD1);
     }
    }
 //--- return value of prev_calculated for next call
@@ -469,6 +486,17 @@ void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos
  //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
 }
 
+void CalcPrice(double open, double high, double low, double close, double ATR)
+{
+ pstructD1[0].price = open;
+ pstructD1[0].channel = ATR;
+ pstructD1[1].price = high;
+ pstructD1[1].channel = ATR;
+ pstructD1[2].price = low;
+ pstructD1[2].channel = ATR;
+ pstructD1[3].price = close;
+ pstructD1[3].channel = ATR;
+}
 //---------------------------------------------
 // Создание линий
 //---------------------------------------------
@@ -520,38 +548,38 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"three-");
 }
 
-void CreatePriceLines(color clr)
+void CreatePriceLines(const SExtremum &te[], color clr)
 {
  string name = "price_D1_";
- HLineCreate(0, name+"open"  , 0, 0, clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"open+" , 0, 0, clr, 2);
- HLineCreate(0, name+"open-" , 0, 0, clr, 2); 
- HLineCreate(0, name+"high"  , 0, 0, clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"high+" , 0, 0, clr, 2);
- HLineCreate(0, name+"high-" , 0, 0, clr, 2);
- HLineCreate(0, name+"low"   , 0, 0, clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"low+"  , 0, 0, clr, 2);
- HLineCreate(0, name+"low-"  , 0, 0, clr, 2);
- HLineCreate(0, name+"close" , 0, 0, clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"close+", 0, 0, clr, 2);
- HLineCreate(0, name+"close-", 0, 0, clr, 2);
+ HLineCreate(0, name+"open"  , 0, te[0].price, clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"open+" , 0, te[0].price+te[0].channel, clr, 2);
+ HLineCreate(0, name+"open-" , 0, te[0].price-te[0].channel, clr, 2); 
+ HLineCreate(0, name+"high"  , 0, te[1].price, clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"high+" , 0, te[1].price+te[1].channel, clr, 2);
+ HLineCreate(0, name+"high-" , 0, te[1].price-te[1].channel, clr, 2);
+ HLineCreate(0, name+"low"   , 0, te[2].price, clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"low+"  , 0, te[2].price+te[2].channel, clr, 2);
+ HLineCreate(0, name+"low-"  , 0, te[2].price-te[2].channel, clr, 2);
+ HLineCreate(0, name+"close" , 0, te[3].price, clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"close+", 0, te[3].price+te[3].channel, clr, 2);
+ HLineCreate(0, name+"close-", 0, te[3].price-te[3].channel, clr, 2);
 }
 
-void MovePriceLines()
+void MovePriceLines(const SExtremum &te[])
 {
  string name = "price_D1_";
- HLineMove(0, name+"open"  , Price_D1_Buffer1[0]);
- HLineMove(0, name+"open+" , Price_D1_Buffer1[0] + ATR_D1_Buffer[0]);
- HLineMove(0, name+"open-" , Price_D1_Buffer1[0] - ATR_D1_Buffer[0]);
- HLineMove(0, name+"high"  , Price_D1_Buffer2[0]);
- HLineMove(0, name+"high+" , Price_D1_Buffer2[0] + ATR_D1_Buffer[0]);
- HLineMove(0, name+"high-" , Price_D1_Buffer2[0] - ATR_D1_Buffer[0]); 
- HLineMove(0, name+"low"   , Price_D1_Buffer3[0]);
- HLineMove(0, name+"low+"  , Price_D1_Buffer3[0] + ATR_D1_Buffer[0]);
- HLineMove(0, name+"low-"  , Price_D1_Buffer3[0] - ATR_D1_Buffer[0]);
- HLineMove(0, name+"close" , Price_D1_Buffer4[0]);
- HLineMove(0, name+"close+", Price_D1_Buffer4[0] + ATR_D1_Buffer[0]);
- HLineMove(0, name+"close-", Price_D1_Buffer4[0] - ATR_D1_Buffer[0]);   
+ HLineMove(0, name+"open"  , te[0].price);
+ HLineMove(0, name+"open+" , te[0].price+te[0].channel);
+ HLineMove(0, name+"open-" , te[0].price-te[0].channel);
+ HLineMove(0, name+"high"  , te[1].price);
+ HLineMove(0, name+"high+" , te[1].price+te[1].channel);
+ HLineMove(0, name+"high-" , te[1].price-te[1].channel); 
+ HLineMove(0, name+"low"   , te[2].price);
+ HLineMove(0, name+"low+"  , te[2].price+te[2].channel);
+ HLineMove(0, name+"low-"  , te[2].price-te[2].channel);
+ HLineMove(0, name+"close" , te[3].price);
+ HLineMove(0, name+"close+", te[3].price+te[3].channel);
+ HLineMove(0, name+"close-", te[3].price-te[3].channel);   
 }
 
 void DeletePriceLines(ENUM_TIMEFRAMES tf)
@@ -600,15 +628,13 @@ void DeleteInfoTabel()
 
 void InitializeExtrArray (SExtremum &te[])
 {
- te[0].price = 0;
- te[0].direction = 0;
- te[0].channel = 0;
- te[1].price = 0;
- te[1].direction = 0;
- te[1].channel = 0;
- te[2].price = 0;
- te[2].direction = 0;
- te[2].channel = 0;
+ int size = ArraySize(te);
+ for(int i = 0; i < size; i++)
+ {
+  te[i].price = 0;
+  te[i].direction = 0;
+  te[i].channel = 0;
+ }
 }
 
 void PrintExtrArray(SExtremum &te[], ENUM_TIMEFRAMES tf)
