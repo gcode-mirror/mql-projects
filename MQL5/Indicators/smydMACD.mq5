@@ -29,8 +29,8 @@ input  int    signal_period   = 9;                 // период усреднения разности
 input  ENUM_APPLIED_PRICE priceType = PRICE_CLOSE; // тип цен, по которым вычисляется MACD
 
 // параметры индикаторных буферов 
-#property indicator_buffers 3                      // задействовано 3 индикаторных буфера
-#property indicator_plots   2                      // 2 буфера отображаются на графиках
+#property indicator_buffers 2                      // задействовано 2 индикаторных буфера
+#property indicator_plots   1                      // 1 буфер отображаются на графиках
 
 // параметры буферов
 
@@ -39,16 +39,6 @@ input  ENUM_APPLIED_PRICE priceType = PRICE_CLOSE; // тип цен, по которым вычисл
 #property indicator_color1  clrWhite               // цвет гистограммы
 #property indicator_width1  1                      // толщина гистограммы
 #property indicator_label1  "MACD"                 // наименование буфера
-
-// параметры 2-го буфера (сигнальная линия MACD)
-#property indicator_type2 DRAW_LINE                // линии
-#property indicator_color2  clrRed                 // цвет линии
-#property indicator_width2  1                      // толщина линии
-#property indicator_style2  STYLE_DASHDOT          // стиль линии
-#property indicator_label2  "SIGNAL"               // наименование буфера
-
-// параметры 3-го буфера (сигнал на расхождение MACD)
-//#property indicator_type3 DRAW_NONE                // не отображать
 
 // глобальные переменные индикатора
 int                handleMACD;                     // хэндл MACD
@@ -63,7 +53,6 @@ CisNewBar          isNewBar;                       // для проверки формирования 
 
 // буферы индикатора 
 double bufferMACD[];                               // буфер уровней MACD
-double signalMACD[];                               // сигнальный буфер MACD
 double bufferDiv[];                                // буфер моментов расхождения
 
 // дополнительные функции работы индикатора
@@ -85,8 +74,7 @@ int OnInit()
    ObjectsDeleteAll(0,0,OBJ_VLINE); // все вертикальные линии, обозначающие момент возникновения расхождения
    // связываем индикаторы с буферами 
    SetIndexBuffer(0,bufferMACD,INDICATOR_DATA);         // буфер MACD
-   SetIndexBuffer(1,signalMACD,INDICATOR_DATA);         // буфер сигнальной линии
-   SetIndexBuffer(2,bufferDiv ,INDICATOR_CALCULATIONS); // буфер расхождений (моментов возникновения сигналов)
+   SetIndexBuffer(1,bufferDiv ,INDICATOR_CALCULATIONS); // буфер расхождений (моментов возникновения сигналов)
    // инициализация глобальных  переменных
    countDiv = 0;                                        // выставляем начальное количество расхождений
    return(INIT_SUCCEEDED); // успешное завершение инициализации индикатора
@@ -101,7 +89,6 @@ void OnDeinit(const int reason)
    ObjectsDeleteAll(0,0,OBJ_VLINE); // все вертикальные линии, обозначающие момент возникновения расхождения
    // очищаем индикаторные буферы
    ArrayFree(bufferMACD);
-   ArrayFree(signalMACD);
    ArrayFree(bufferDiv);
    // освобождаем хэндл MACD
    IndicatorRelease(handleMACD);
@@ -122,8 +109,7 @@ int OnCalculate(const int rates_total,
    if (prev_calculated == 0) // если на пред. вызове было обработано 0 баров, значит этот вызов первый
     {
       // загрузим буфер MACD
-      if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
-           CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
+      if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0  )
            {
              // если не удалось загрузить буфера MACD
              Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
@@ -141,7 +127,7 @@ int OnCalculate(const int rates_total,
             return (0);
           }
        // проходим по всем барам истории и ищем расхождения MACD
-       for (lastBarIndex = rates_total-101;lastBarIndex > 0; lastBarIndex--)
+       for (lastBarIndex = rates_total-DEPTH_MACD-1;lastBarIndex > 0; lastBarIndex--)
         {
           // обнуляем буфер сигналов расхождений MACD
           bufferDiv[lastBarIndex] = 0;
@@ -149,7 +135,7 @@ int OnCalculate(const int rates_total,
           // если не удалось загрузить буферы MACD
           if (retCode == -2)
            {
-             Comment("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+             Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
              return (0);
            }
           if (retCode)
@@ -180,8 +166,7 @@ int OnCalculate(const int rates_total,
               }
           // обнуляем буфер сигнала расхождений
           bufferDiv[0] = 0;
-          if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
-               CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
+          if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0  )
            {
              // если не удалось загрузить буфера MACD
              Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");

@@ -89,7 +89,7 @@ void OnTick()
   {
  
    //divSignal = divergenceSTOC(handleStochastic,_Symbol,_Period,top_level,bottom_level);  // получаем сигнал расхождения
-   copiedMACD = CopyBuffer(handleMACD,2,0,1,tmpBuffer);
+   copiedMACD = CopyBuffer(handleMACD,1,0,1,tmpBuffer);
    if (copiedMACD < 1)
     {
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());

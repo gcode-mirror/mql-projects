@@ -8,6 +8,8 @@
 #property version   "1.00"
 #property indicator_separate_window   // будем задействовать побочное окно индикатора
 
+#include <StringUtilities.mqh> 
+
 //+------------------------------------------------------------------+
 //| Индикатор, показывающий расхождения MACD                         |
 //| 1) рисует MACD                                                   |
@@ -23,21 +25,25 @@
 #include <CompareDoubles.mqh>                      // для проверки соотношения  цен
 
 // входные пользовательские параметры индикатора
-sinput string macd_params     = "";                // ПАРАМЕТРЫ ИНДИКАТОРА MACD
-input  int    fast_ema_period = 12;                // период быстрой средней MACD
-input  int    slow_ema_period = 26;                // период медленной средней MACD
-input  int    signal_period   = 9;                 // период усреднения разности MACD
-input  ENUM_APPLIED_PRICE priceType = PRICE_CLOSE; // тип цен, по которым вычисляется MACD
+sinput string             macd_params        = "";           // ПАРАМЕТРЫ ИНДИКАТОРА MACD
+input  int                fast_ema_period    = 12;           // период быстрой средней MACD
+input  int                slow_ema_period    = 26;           // период медленной средней MACD
+input  ENUM_APPLIED_PRICE priceType          = PRICE_CLOSE;  // тип цен, по которым вычисляется MACD
 
-sinput string stat_params     = "";                // ПАРАМЕТРЫ ВЫЧИСЛЕНИЯ СТАТИСТИКИ
-input  int    actualBars      = 10;                // количество баров для подсчета актуальности
-input  string fileName        = "MACD_STAT.txt";   // имя файла статистики
-input  datetime  start_time   = 0;                 // дата, с которой начать проводить статистику
-input  datetime  finish_time  = 0;                 // дата, по которую проводить статистику
+sinput string             stat_params        = "";           // ПАРАМЕТРЫ ВЫЧИСЛЕНИЯ СТАТИСТИКИ
+input  int                actualBars         = 10;           // количество баров для подсчета актуальности
+input  string             fileName           = "MACD_STAT_"; // имя файла статистики
+input  datetime           start_time         = 0;            // дата, с которой начать проводить статистику
+input  datetime           finish_time        = 0;            // дата, по которую проводить статистику
+input  double             ZoneLossBuy        = 0;            // уровень убытка актуальных расхождений по BUY
+input  double             ZoneProfitBuy      = 0;            // уровень прибыли актуальных расхождений по BUY
+input  double             ZoneLossSell       = 0;            // уровень убытка актуальных расхождений по SELL 
+input  double             ZoneProfitSell     = 0;            // уровень прибыли актуальных расхождений по SELL
+
 
 // параметры индикаторных буферов 
-#property indicator_buffers 3                      // задействовано 3 индикаторных буфера
-#property indicator_plots   2                      // 2 буфера отображаются на графиках
+#property indicator_buffers 2                      // задействовано 2 индикаторных буфера
+#property indicator_plots   1                      // 1 буфер отображаются на графиках
 
 // параметры буферов
 
@@ -47,15 +53,6 @@ input  datetime  finish_time  = 0;                 // дата, по которую проводить
 #property indicator_width1  1                      // толщина гистограммы
 #property indicator_label1  "MACD"                 // наименование буфера
 
-// параметры 2-го буфера (сигнальная линия MACD)
-#property indicator_type2 DRAW_LINE                // линии
-#property indicator_color2  clrRed                 // цвет линии
-#property indicator_width2  1                      // толщина линии
-#property indicator_style2  STYLE_DASHDOT          // стиль линии
-#property indicator_label2  "SIGNAL"               // наименование буфера
-
-// параметры 3-го буфера (сигнал на расхождение MACD)
-//#property indicator_type3 DRAW_NONE                // не отображать
 
 // глобальные переменные индикатора
 int                handleMACD;                     // хэндл MACD
@@ -70,7 +67,6 @@ CisNewBar          isNewBar;                       // для проверки формирования 
 
 // буферы индикатора 
 double bufferMACD[];                               // буфер уровней MACD
-double signalMACD[];                               // сигнальный буфер MACD
 double bufferDiv[];                                // буфер моментов расхождения
 
 // хэндл файла статистики
@@ -78,30 +74,37 @@ int    fileHandle;
 
 // переменные для хранения результатов статистики
 
-double averActualProfitDivBuy   = 0;       // средняя потенциальная прибыль от актуального расхождения на покупку
-double averActualLossDivBuy     = 0;       // средний потенциальный убыток при актуальном расхождении на покупку
-double averActualProfitDivSell  = 0;       // средняя потенциальная прибыль от актуального расхождения на продажу
-double averActualLossDivSell    = 0;       // средний потенциальный убыток при актуальном расхождении на продажу    
+double averActualProfitDivBuy      = 0;    // средняя потенциальная прибыль от актуального расхождения на покупку
+double averActualLossDivBuy        = 0;    // средний потенциальный убыток при актуальном расхождении на покупку
+double averActualProfitDivSell     = 0;    // средняя потенциальная прибыль от актуального расхождения на продажу
+double averActualLossDivSell       = 0;    // средний потенциальный убыток при актуальном расхождении на продажу    
 
-double averNotActualProfitDivBuy   = 0;       // средняя потенциальная прибыль от НЕ актуального расхождения на покупку
-double averNotActualLossDivBuy     = 0;       // средний потенциальный убыток при НЕ актуальном расхождении на покупку
-double averNotActualProfitDivSell  = 0;       // средняя потенциальная прибыль от НЕ актуального расхождения на продажу
-double averNotActualLossDivSell    = 0;       // средний потенциальный убыток при НЕ актуальном расхождении на продажу                     
+double averNotActualProfitDivBuy   = 0;    // средняя потенциальная прибыль от НЕ актуального расхождения на покупку
+double averNotActualLossDivBuy     = 0;    // средний потенциальный убыток при НЕ актуальном расхождении на покупку
+double averNotActualProfitDivSell  = 0;    // средняя потенциальная прибыль от НЕ актуального расхождения на продажу
+double averNotActualLossDivSell    = 0;    // средний потенциальный убыток при НЕ актуальном расхождении на продажу                     
 
 // счетчики расхождений
-int    countActualDivBuy        = 0;       // количество актуальных расхождений на покупку
-int    countDivBuy              = 0;       // общее количество расхождений на покупку     
-int    countActualDivSell       = 0;       // колчиство актуальных расхождений на продажу
-int    countDivSell             = 0;       // общее количество расхождений на продажу                               
+int    countActualDivBuy           = 0;    // количество актуальных расхождений на покупку
+int    countDivBuy                 = 0;    // общее количество расхождений на покупку     
+int    countActualDivSell          = 0;    // колчиство актуальных расхождений на продажу
+int    countDivSell                = 0;    // общее количество расхождений на продажу     
+
+int    countDivZoneLossBuy         = 0;    // количество расхождений с убытком ниже уровня по BUY
+int    countDivZoneProfitBuy       = 0;    // количество расхождений с прибылью выше уровня по BUY
+
+int    countDivZoneLossSell        = 0;    // количество расхожденй с убытком ниже уровня по SELL
+int    countDivZoneProfitSell      = 0;    // количество расхождений с прибылью выше уровня по SELL
+                                                  
 
 // дополнительные функции работы индикатора
-void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатора. В функцию передается время вертикальной линии
+void DrawIndicator(datetime vertLineTime); // отображает линии индикатора. В функцию передается время вертикальной линии
    
 // инициализация индикатора
 int OnInit()
-  {  
+  {
    // создаем файл статистики на запись
-   fileHandle = FileOpen(fileName,FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+   fileHandle = FileOpen(fileName+_Symbol+"_"+PeriodToString(_Period)+".txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
    if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
     {
      Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось создать файл статистики");
@@ -109,7 +112,7 @@ int OnInit()
     }  
    ArraySetAsSeries(bufferDiv,true);
    // загружаем хэндл индикатора MACD
-   handleMACD = iMACD(_Symbol, _Period, fast_ema_period,slow_ema_period,signal_period,PRICE_CLOSE);
+   handleMACD = iMACD(_Symbol, _Period, fast_ema_period,slow_ema_period,9,PRICE_CLOSE);
    if ( handleMACD == INVALID_HANDLE)  // если не удалось загрузить хэндл MACD
     {
      return(INIT_FAILED);  // то инициализация завершилась не успенно
@@ -120,8 +123,7 @@ int OnInit()
    ObjectsDeleteAll(0,0,OBJ_VLINE); // все вертикальные линии, обозначающие момент возникновения расхождения
    // связываем индикаторы с буферами 
    SetIndexBuffer(0,bufferMACD,INDICATOR_DATA);         // буфер MACD
-   SetIndexBuffer(1,signalMACD,INDICATOR_DATA);         // буфер сигнальной линии
-   SetIndexBuffer(2,bufferDiv ,INDICATOR_CALCULATIONS); // буфер расхождений (моментов возникновения сигналов)
+   SetIndexBuffer(1,bufferDiv ,INDICATOR_CALCULATIONS); // буфер расхождений (моментов возникновения сигналов)
    // инициализация глобальных  переменных
    countDiv = 0;                                        // выставляем начальное количество расхождений
    return(INIT_SUCCEEDED); // успешное завершение инициализации индикатора
@@ -136,7 +138,6 @@ void OnDeinit(const int reason)
    ObjectsDeleteAll(0,0,OBJ_VLINE); // все вертикальные линии, обозначающие момент возникновения расхождения
    // очищаем индикаторные буферы
    ArrayFree(bufferMACD);
-   ArrayFree(signalMACD);
    ArrayFree(bufferDiv);
    // освобождаем хэндл MACD
    IndicatorRelease(handleMACD);
@@ -164,11 +165,10 @@ int OnCalculate(const int rates_total,
  if (prev_calculated == 0) // если на пред. вызове было обработано 0 баров, значит этот вызов первый
  {
  // загрузим буфер MACD
-  if (CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
-      CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
+  if (CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0  )
   {
   // если не удалось загрузить буфера MACD
-   Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+   Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буфер MACD");
    return (0); 
   }                
   // положим индексацию нужных массивов как в таймсерии
@@ -183,7 +183,7 @@ int OnCalculate(const int rates_total,
    return (0);
   }
   // проходим по всем барам истории и ищем расхождения MACD
-  for (lastBarIndex = rates_total-101; lastBarIndex > 0; lastBarIndex--)
+  for (lastBarIndex = rates_total-DEPTH_MACD-1; lastBarIndex > 0; lastBarIndex--)
   {
   // обнуляем буфер сигналов расхождений MACD
    bufferDiv[lastBarIndex] = 0;
@@ -208,12 +208,12 @@ int OnCalculate(const int rates_total,
 
     // вычисляем актуальность расхождений
      if (retCode == 1)      // если расхождение на SELL
-     {
-      FileWriteString(fileHandle,""+TimeToString(time[lastBarIndex])+" (расхождение на SELL): \n { \n" );   
+     { 
       countDivSell ++;    // увеличиваем количество расхождений на SELL
                
       maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
       minPrice = close[lastBarIndex] - minPrice;   // вычисляем, насколько цена ушла вниз от цены закрытия
+      
                 
       if (maxPrice < 0)
        maxPrice = 0;
@@ -226,24 +226,26 @@ int OnCalculate(const int rates_total,
                    
        averActualProfitDivSell = averActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
        averActualLossDivSell   = averActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
-       FileWriteString(fileHandle,"\n Статус: актуальное");
-       FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(minPrice));
-       FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(maxPrice));
-       FileWriteString(fileHandle,"\n}\n");                     
+       
+       if (minPrice > ZoneProfitSell)
+         {
+           countDivZoneProfitSell++;  
+         }
+       if (maxPrice < ZoneLossSell)
+         {
+           countDivZoneLossSell++;  
+         }         
+                            
       }
       else
       {
        averNotActualProfitDivSell = averNotActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
        averNotActualLossDivSell   = averNotActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
-       FileWriteString(fileHandle,"\n Статус: не актуальное");
-       FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(minPrice));
-       FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(maxPrice));
-       FileWriteString(fileHandle,"\n}\n");                            
+                           
       }
      }
      if (retCode == -1)     // если расхождение на BUY
-     {
-      FileWriteString(fileHandle,""+TimeToString(time[lastBarIndex])+" (расхождение на BUY): \n { \n" );                 
+     {              
       countDivBuy ++;     // увеличиваем количество расхождений на BUY
                 
       maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
@@ -260,19 +262,22 @@ int OnCalculate(const int rates_total,
                    
        averActualProfitDivBuy = averActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
        averActualLossDivBuy   = averActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка
-       FileWriteString(fileHandle,"\n Статус: актуальное");
-       FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice,5));
-       FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice,5));
-       FileWriteString(fileHandle,"\n}\n");   
+       
+       if (maxPrice > ZoneProfitBuy)
+         {
+           countDivZoneProfitBuy++;  
+         }
+       if (minPrice < ZoneLossBuy)
+         {
+           countDivZoneLossBuy++;  
+         }         
+ 
       }
       else
       {
        averNotActualProfitDivBuy = averNotActualProfitDivBuy + maxPrice;  // увеличиваем сумму для средней прибыли
        averNotActualLossDivBuy   = averNotActualLossDivBuy   + minPrice;  // увеличиваем сумму для среднего убытка                 
-       FileWriteString(fileHandle,"\n Статус: не актуальное");
-       FileWriteString(fileHandle,"\n Потенциальная прибыль: "+DoubleToString(maxPrice));
-       FileWriteString(fileHandle,"\n Потенциальный убыток: "+DoubleToString(minPrice));
-       FileWriteString(fileHandle,"\n}\n");  
+  
       }
      }
     } // end проверки на дату 
@@ -299,28 +304,35 @@ int OnCalculate(const int rates_total,
   {
    averNotActualLossDivBuy    = averNotActualLossDivBuy    / (countDivBuy-countActualDivBuy);
    averNotActualProfitDivBuy  = averNotActualProfitDivBuy  / (countDivBuy-countActualDivBuy);
-  }              
-              
-  FileWriteString(fileHandle,"\n\n Количество расхождений SELL: "+IntegerToString(countDivSell));
-  FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivSell));
-  FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivSell - countActualDivSell));          
+  }        
+      
+     
+    FileWriteString(fileHandle,"\n\n Количество расхождений SELL: "+IntegerToString(countDivSell));
+    FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivSell));
+    FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivSell - countActualDivSell));          
           
-  FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivSell,5));
-  FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivSell,5));  
+    FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivSell,5));
+    FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivSell,5));  
           
-  FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivSell,5));
-  FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivSell,5));                
+    FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivSell,5));
+    FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivSell,5));                
           
-  FileWriteString(fileHandle,"\n\n Количество расхождений BUY: "+IntegerToString(countDivBuy));
-  FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivBuy));
-  FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivBuy - countActualDivBuy));          
+    FileWriteString(fileHandle,"\n\n Количество расхождений BUY: "+IntegerToString(countDivBuy));
+    FileWriteString(fileHandle,"\n Из них актуальных: "+IntegerToString(countActualDivBuy));
+    FileWriteString(fileHandle,"\n Из них НЕ актуальных: "+IntegerToString(countDivBuy - countActualDivBuy));          
            
-  FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivBuy,5));
-  FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivBuy,5));  
+    FileWriteString(fileHandle,"\n Средняя прибыль актуальных: "+DoubleToString(averActualProfitDivBuy,5));
+    FileWriteString(fileHandle,"\n Средний потенциальный убыток актуальных: "+DoubleToString(averActualLossDivBuy,5));  
           
-  FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivBuy,5));
-  FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivBuy,5));          
-  Print("ПОДСЧЕТ СТАТИСТИКИ ЗАВЕРШЕН");
+    FileWriteString(fileHandle,"\n Средняя прибыль НЕ актуальных: "+DoubleToString(averNotActualProfitDivBuy,5));
+    FileWriteString(fileHandle,"\n Средний потенциальный убыток НЕ актуальных: "+DoubleToString(averNotActualLossDivBuy,5));
+    
+    FileWriteString(fileHandle,"\n\n Количество актуальных расхождений на SELL с прибылью выше уровня: "+IntegerToString(countDivZoneProfitSell));        
+    FileWriteString(fileHandle,"\n Количество актуальных расхождений на SELL с убытком ниже уровня: "+IntegerToString(countDivZoneLossSell));  
+   
+    FileWriteString(fileHandle,"\n Количество актуальных расхождений на BUY с прибылью выше уровня: "+IntegerToString(countDivZoneProfitBuy));        
+    FileWriteString(fileHandle,"\n Количество актуальных расхождений на BUY с убытком ниже уровня: "+IntegerToString(countDivZoneLossBuy));        
+   
   
   // закрываем файл статистики
   FileClose(fileHandle);                       
@@ -344,8 +356,7 @@ int OnCalculate(const int rates_total,
    }
    // обнуляем буфер сигнала расхождений
    bufferDiv[0] = 0;
-   if (CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0 ||
-       CopyBuffer(handleMACD,1,0,rates_total,signalMACD) < 0 )
+   if (CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0  )
    {
    // если не удалось загрузить буфера MACD
     Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");

@@ -7,7 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property script_show_inputs                  // делаем активными инпуты
-#include <divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений Стохастика
+#include <Divergence\divergenceMACD.mqh>                 // подключаем библиотеку для поиска схождений и расхождений Стохастика
 #include <CompareDoubles.mqh>                 // для проверки соотношения  цен
 //+------------------------------------------------------------------+
 //| Скрипт тестировщик актуальности расхождения MACD                 |
@@ -54,7 +54,7 @@ input int signal_period   = 9;          // период усреднения разности MACD
  int lastBarIndex;  // индекс последнего бара 
 
 // буфер для хранения результатов поиска схождения\расхождения MACD
- PointDiv  divergencePoints;    
+ PointDivMACD  divergencePoints;    
 
 // временные параменные для хранения локальных минимумов и максимумов
  double localMax;
@@ -120,7 +120,7 @@ void OnStart()
      Comment("____________________________");
      Comment("ПРОГРЕСС ВЫЧИСЛЕНИЯ: ",MathRound(100*(1.0*(lastBarIndex-bars_ahead-index)/(lastBarIndex-bars_ahead)))+"%");
      // вычисляем схождение\расхождение
-     switch ( divergenceMACD (handleMACD,_Symbol,_Period,index,divergencePoints) )
+     switch ( divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,index) )
       {
        // если найдено расхождение
        case 1:
