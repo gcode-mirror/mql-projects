@@ -65,7 +65,7 @@ double         DifLine3Buffer[];
 
 CExtremumCalc extrCalc (Symbol(), period, precentageATR_price, period_ATR_channel, percent_ATR_channel);
 SExtremum sExtr[3];
-CisNewBar bar (Symbol(), period);
+CisNewBar isNewLevelBar (Symbol(), period);
 bool first = true;
  bool series_order = true;
 //+------------------------------------------------------------------+
@@ -128,25 +128,24 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
    bool load = FillATRBuffer();
+   ArraySetAsSeries(open , series_order);
+   ArraySetAsSeries(high , series_order);
+   ArraySetAsSeries(low  , series_order);
+   ArraySetAsSeries(close, series_order);
+   ArraySetAsSeries(time , series_order);
  
    if(load)
    {
     if(first)
-    {
-     ArraySetAsSeries(open , series_order);
-     ArraySetAsSeries(high , series_order);
-     ArraySetAsSeries(low  , series_order);
-     ArraySetAsSeries(close, series_order);
-     ArraySetAsSeries(time , series_order);     
-          
+    {          
      extrCalc.SetStartDayPrice(close[rates_total-1]);
      PrintFormat("Установлены стартдэйпрайс на всех тф");
      
-     for(int i = rates_total-2; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
+     for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       while(!FillATRBuffer()) {}
       //PrintFormat("time calc = %s", TimeToString(time[i]));
-      if(time[i]%PeriodSeconds(period) == 0) CalcExtr(extrCalc, sExtr, time[i], false);
+      if(time[i] % PeriodSeconds(period) == 0) CalcExtr(extrCalc, sExtr, time[i], false);
       
       MainLineBuffer[i]  = sExtr[0].price;
       DifLineBuffer[i]   = sExtr[0].channel;
@@ -154,31 +153,34 @@ int OnCalculate(const int rates_total,
       DifLine2Buffer[i]  = sExtr[1].channel;
       MainLine3Buffer[i] = sExtr[2].price;
       DifLine3Buffer[i]  = sExtr[2].channel;
-      PrintExtrArray(sExtr, period);      
+      //PrintExtrArray(sExtr, period);      
      }
      
+     PrintFormat("%s num0 = {%.05f, %.05f}, num1 = {%.05f, %.05f}, num2 = {%.05f, %.05f}", TimeToString(time[0]), sExtr[0].price, sExtr[0].channel, sExtr[1].price, sExtr[1].channel,sExtr[2].price, sExtr[2].channel);
      MoveExtrLines(sExtr, period);
      PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
      first = false; 
     }//end prev_calculated == 0
     else
     {
-     for(int i = rates_total - prev_calculated - 1; i >= 0; i--)
-     {
-      while(!FillATRBuffer()) {}
-      if(bar.isNewBar() > 0) 
-      { 
-       CalcExtr(extrCalc, sExtr, time[i], true);
+     //for(int i = rates_total - prev_calculated - 1; i >= 0; i--)
+     //{
+      
+      //if(isNewLevelBar.isNewBar() > 0) 
+      //{
+       //PrintFormat("%s num0 = {%.05f, %.05f}, num1 = {%.05f, %.05f}, num2 = {%.05f, %.05f}", TimeToString(time[0]), sExtr[0].price, sExtr[0].channel, sExtr[1].price, sExtr[1].channel,sExtr[2].price, sExtr[2].channel);
+       while(!FillATRBuffer()) {} 
+       CalcExtr(extrCalc, sExtr, time[0], true);
        //PrintExtrArray(sExtr, period); 
-      } 
+     // } 
             
-      MainLineBuffer[i]  = sExtr[0].price;
-      DifLineBuffer[i]   = sExtr[0].channel;
-      MainLine2Buffer[i] = sExtr[1].price;
-      DifLine2Buffer[i]  = sExtr[1].channel;
-      MainLine3Buffer[i] = sExtr[2].price;
-      DifLine3Buffer[i]  = sExtr[2].channel;  
-     }
+      MainLineBuffer[0]  = sExtr[0].price;
+      DifLineBuffer[0]   = sExtr[0].channel;
+      MainLine2Buffer[0] = sExtr[1].price;
+      DifLine2Buffer[0]  = sExtr[1].channel;
+      MainLine3Buffer[0] = sExtr[2].price;
+      DifLine3Buffer[0]  = sExtr[2].channel;  
+     //}
      MoveExtrLines(sExtr, period);
     }
    }
