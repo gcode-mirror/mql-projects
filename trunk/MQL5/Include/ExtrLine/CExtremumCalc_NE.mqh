@@ -9,7 +9,6 @@
 #include <CompareDoubles.mqh>
 
 #define ATR_PERIOD 30
-#define ATR_TIMEFRAME PERIOD_H4
 
 struct SExtremum
 {
@@ -23,6 +22,7 @@ class CExtremumCalc
  private:
  string _symbol;
  ENUM_TIMEFRAMES _period;
+ ENUM_TIMEFRAMES _period_ATR;
  int digits;
  double _startDayPrice;
  double difToNewExtremum;
@@ -36,7 +36,7 @@ class CExtremumCalc
  int handleATR_price;
  
  public:
- CExtremumCalc(string symbol, ENUM_TIMEFRAMES period,  double percentageATR_price, int ATRperiod_channel, double percentageATR_channel);
+ CExtremumCalc(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES period_ATR, double percentageATR_price, int ATRperiod_channel, double percentageATR_channel);
 ~CExtremumCalc();
 
  SExtremum isExtremum(bool now = true, datetime start_index_time = __DATETIME__);
@@ -49,16 +49,17 @@ class CExtremumCalc
  bool isATRCalculated(int size_channel, int size_price);
 };
 
-CExtremumCalc::CExtremumCalc(string symbol, ENUM_TIMEFRAMES period, double percentageATR_price, int ATRperiod_channel, double percentageATR_channel):
+CExtremumCalc::CExtremumCalc(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES period_ATR, double percentageATR_price, int ATRperiod_channel, double percentageATR_channel):
                _symbol (symbol),
                _period (period),
+               _period_ATR (period_ATR),
                _percentageATR_price (percentageATR_price),
                _percentageATR_channel (percentageATR_channel)
                {
                 digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
                 _startDayPrice = -1;
                 handleATR_channel = iATR(_symbol, _period, ATRperiod_channel);
-                handleATR_price = iATR(_symbol, ATR_TIMEFRAME, ATR_PERIOD);              
+                handleATR_price = iATR(_symbol, _period_ATR, ATR_PERIOD);              
                 if(handleATR_channel == INVALID_HANDLE || handleATR_price == INVALID_HANDLE) Alert("Invalid handle ATR.");
                }
 CExtremumCalc::~CExtremumCalc()

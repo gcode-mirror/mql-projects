@@ -15,84 +15,104 @@
 #include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBar.mqh>
 
- input int    period_ATR_channel = 30;   //Период ATR для канала
- input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
- input double precentageATR_price = 1;    //Процентр ATR для нового экструмума
+#define TF_PERIOD_ATR_FOR_MN PERIOD_MN1
+#define TF_PERIOD_ATR_FOR_W1 PERIOD_W1
+#define TF_PERIOD_ATR_FOR_D1 PERIOD_D1
+#define TF_PERIOD_ATR_FOR_H4 PERIOD_H4
+#define TF_PERIOD_ATR_FOR_H1 PERIOD_H4
 
- input bool  show_Extr_MN  = false;
- input color color_Extr_MN = clrRed;
- input bool  show_Extr_W1  = false;
- input color color_Extr_W1 = clrOrange;
- input bool  show_Extr_D1  = false;
- input color color_Extr_D1 = clrYellow;
- input bool  show_Extr_H4  = false;
- input color color_Extr_H4 = clrBlue;
- input bool  show_Extr_H1  = true;
- input color color_Extr_H1 = clrAqua;
- input bool  show_Price_D1  = false;
- input color color_Price_D1 = clrDarkKhaki;
+#define PERCENTAGE_OF_ATR_FOR_MN  1
+#define PERCENTAGE_OF_ATR_FOR_W1  1
+#define PERCENTAGE_OF_ATR_FOR_D1  1
+#define PERCENTAGE_OF_ATR_FOR_H4  2
+#define PERCENTAGE_OF_ATR_FOR_H1  1
 
- CExtremumCalc calcMN (Symbol(), PERIOD_MN1, precentageATR_price, period_ATR_channel, percent_ATR_channel);
- CExtremumCalc calcW1 (Symbol(),  PERIOD_W1, precentageATR_price, period_ATR_channel, percent_ATR_channel);
- CExtremumCalc calcD1 (Symbol(),  PERIOD_D1, precentageATR_price, period_ATR_channel, percent_ATR_channel);
- CExtremumCalc calcH4 (Symbol(),  PERIOD_H4, precentageATR_price, period_ATR_channel, percent_ATR_channel);
- CExtremumCalc calcH1 (Symbol(),  PERIOD_H1, precentageATR_price, period_ATR_channel, percent_ATR_channel);
+input int    period_ATR_channel = 30;   //Период ATR для канала
+input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
 
- SExtremum estructMN[3];
- SExtremum estructW1[3];
- SExtremum estructD1[3];
- SExtremum estructH4[3];
- SExtremum estructH1[3];
- SExtremum pstructD1[4];
+
+input bool  flag1  = false;
+input color color_Extr_MN = clrRed;
+input bool  flag2  = false;
+input color color_Extr_W1 = clrOrange;
+input bool  flag3  = false;
+input color color_Extr_D1 = clrYellow;
+input bool  flag4  = false;
+input color color_Extr_H4 = clrBlue;
+input bool  flag5  = true;
+input color color_Extr_H1 = clrAqua;
+input bool  flag6  = false;
+input color color_Price_D1 = clrDarkKhaki;
+
+bool show_Extr_MN = flag1;
+bool show_Extr_W1 = flag2;
+bool show_Extr_D1 = flag3;
+bool show_Extr_H4 = flag4;
+bool show_Extr_H1 = flag5;
+bool show_Price_D1 = flag6;
+
+
+CExtremumCalc calcMN (Symbol(), PERIOD_MN1, TF_PERIOD_ATR_FOR_MN, PERCENTAGE_OF_ATR_FOR_MN, period_ATR_channel, percent_ATR_channel);
+CExtremumCalc calcW1 (Symbol(),  PERIOD_W1, TF_PERIOD_ATR_FOR_W1, PERCENTAGE_OF_ATR_FOR_W1, period_ATR_channel, percent_ATR_channel);
+CExtremumCalc calcD1 (Symbol(),  PERIOD_D1, TF_PERIOD_ATR_FOR_D1, PERCENTAGE_OF_ATR_FOR_D1, period_ATR_channel, percent_ATR_channel);
+CExtremumCalc calcH4 (Symbol(),  PERIOD_H4, TF_PERIOD_ATR_FOR_H4, PERCENTAGE_OF_ATR_FOR_H4, period_ATR_channel, percent_ATR_channel);
+CExtremumCalc calcH1 (Symbol(),  PERIOD_H1, TF_PERIOD_ATR_FOR_H1, PERCENTAGE_OF_ATR_FOR_H1, period_ATR_channel, percent_ATR_channel);
+
+SExtremum estructMN[3];
+SExtremum estructW1[3];
+SExtremum estructD1[3];
+SExtremum estructH4[3];
+SExtremum estructH1[3];
+SExtremum pstructD1[4];
  
- double Extr_MN_Buffer1[];
- double Extr_MN_Buffer2[];
- double Extr_MN_Buffer3[];
- double  ATR_MN_Buffer1[];
- double  ATR_MN_Buffer2[];
- double  ATR_MN_Buffer3[]; 
- double Extr_W1_Buffer1[];
- double Extr_W1_Buffer2[];
- double Extr_W1_Buffer3[];
- double  ATR_W1_Buffer1[];
- double  ATR_W1_Buffer2[];
- double  ATR_W1_Buffer3[];
- double Extr_D1_Buffer1[];
- double Extr_D1_Buffer2[];
- double Extr_D1_Buffer3[];
- double  ATR_D1_Buffer1[];
- double  ATR_D1_Buffer2[];
- double  ATR_D1_Buffer3[];
- double Extr_H4_Buffer1[];
- double Extr_H4_Buffer2[];
- double Extr_H4_Buffer3[];
- double  ATR_H4_Buffer1[];
- double  ATR_H4_Buffer2[];
- double  ATR_H4_Buffer3[];
- double Extr_H1_Buffer1[];
- double Extr_H1_Buffer2[];
- double Extr_H1_Buffer3[];
- double  ATR_H1_Buffer1[];
- double  ATR_H1_Buffer2[];
- double  ATR_H1_Buffer3[];
- double Price_D1_Buffer1[];
- double Price_D1_Buffer2[];
- double Price_D1_Buffer3[];
- double Price_D1_Buffer4[];
- double   ATR_D1_Buffer [];
+double Extr_MN_Buffer1[];
+double Extr_MN_Buffer2[];
+double Extr_MN_Buffer3[];
+double  ATR_MN_Buffer1[];
+double  ATR_MN_Buffer2[];
+double  ATR_MN_Buffer3[]; 
+double Extr_W1_Buffer1[];
+double Extr_W1_Buffer2[];
+double Extr_W1_Buffer3[];
+double  ATR_W1_Buffer1[];
+double  ATR_W1_Buffer2[];
+double  ATR_W1_Buffer3[];
+double Extr_D1_Buffer1[];
+double Extr_D1_Buffer2[];
+double Extr_D1_Buffer3[];
+double  ATR_D1_Buffer1[];
+double  ATR_D1_Buffer2[];
+double  ATR_D1_Buffer3[];
+double Extr_H4_Buffer1[];
+double Extr_H4_Buffer2[];
+double Extr_H4_Buffer3[];
+double  ATR_H4_Buffer1[];
+double  ATR_H4_Buffer2[];
+double  ATR_H4_Buffer3[];
+double Extr_H1_Buffer1[];
+double Extr_H1_Buffer2[];
+double Extr_H1_Buffer3[];
+double  ATR_H1_Buffer1[];
+double  ATR_H1_Buffer2[];
+double  ATR_H1_Buffer3[];
+double Price_D1_Buffer1[];
+double Price_D1_Buffer2[];
+double Price_D1_Buffer3[];
+double Price_D1_Buffer4[];
+double   ATR_D1_Buffer [];
  
- CisNewBar barMN(Symbol(), PERIOD_MN1);
- CisNewBar barW1(Symbol(), PERIOD_W1);
- CisNewBar barD1(Symbol(), PERIOD_D1);
- CisNewBar barH4(Symbol(), PERIOD_H4);
- CisNewBar barH1(Symbol(), PERIOD_H1);
+CisNewBar barMN(Symbol(), PERIOD_MN1);
+CisNewBar barW1(Symbol(), PERIOD_W1);
+CisNewBar barD1(Symbol(), PERIOD_D1);
+CisNewBar barH4(Symbol(), PERIOD_H4);
+CisNewBar barH1(Symbol(), PERIOD_H1);
  
- int ATR_D1_handle;
- double tmp_buffer_ATR[];
- 
- bool series_order = true;
- bool first = true;
- //+------------------------------------------------------------------+
+int ATR_D1_handle;
+double tmp_buffer_ATR[];
+
+bool series_order = true;
+bool first = true;
+//+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
@@ -216,6 +236,13 @@ int OnInit()
  InitializeExtrArray(estructH4);
  InitializeExtrArray(estructH1);
  InitializeExtrArray(pstructD1);
+ 
+ if(Period() > PERIOD_MN1 && show_Extr_MN) show_Extr_MN = false;
+ if(Period() > PERIOD_W1  && show_Extr_W1) show_Extr_W1 = false;
+ if(Period() > PERIOD_D1  && show_Extr_D1) show_Extr_D1 = false;
+ if(Period() > PERIOD_H4  && show_Extr_H4) show_Extr_H4 = false;
+ if(Period() > PERIOD_H1  && show_Extr_H1) show_Extr_H1 = false;
+ if(Period() > PERIOD_D1  && show_Price_D1) show_Price_D1 = false;
   
  if(show_Extr_MN) CreateExtrLines (estructMN, PERIOD_MN1, color_Extr_MN);
  if(show_Extr_W1) CreateExtrLines (estructW1, PERIOD_W1 , color_Extr_W1);
@@ -297,17 +324,17 @@ int OnCalculate(const int rates_total,
   {
 //---
    bool load = FillATRBuffer();
- 
+   
+   ArraySetAsSeries(open , series_order);
+   ArraySetAsSeries(high , series_order);
+   ArraySetAsSeries(low  , series_order);
+   ArraySetAsSeries(close, series_order);
+   ArraySetAsSeries(time , series_order);
+    
    if(load)
    {
     if(first)
     {
-     ArraySetAsSeries(open , series_order);
-     ArraySetAsSeries(high , series_order);
-     ArraySetAsSeries(low  , series_order);
-     ArraySetAsSeries(close, series_order);
-     ArraySetAsSeries(time , series_order);
-     
      calcMN.SetStartDayPrice(close[rates_total-1]);
      calcW1.SetStartDayPrice(close[rates_total-1]);
      calcD1.SetStartDayPrice(close[rates_total-1]);
@@ -318,53 +345,71 @@ int OnCalculate(const int rates_total,
      for(int i = rates_total-2; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       while(!FillATRBuffer()) {}
-      if(time[i]%PeriodSeconds(PERIOD_MN1) == 0) CalcExtr(calcMN, estructMN, time[i], false);
-      if(time[i]%PeriodSeconds(PERIOD_W1)  == 0) CalcExtr(calcW1, estructW1, time[i], false);
-      if(time[i]%PeriodSeconds(PERIOD_D1)  == 0) 
+      if(show_Extr_MN && time[i]%PeriodSeconds(PERIOD_MN1) == 0) CalcExtr(calcMN, estructMN, time[i], false);
+      if(show_Extr_W1 && time[i]%PeriodSeconds(PERIOD_W1)  == 0) CalcExtr(calcW1, estructW1, time[i], false);
+      if(show_Extr_D1 && time[i]%PeriodSeconds(PERIOD_D1)  == 0) 
       {
        CalcExtr(calcD1, estructD1, time[i], false);
        CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
        CalcPrice(open[i+1], high[i+1], low[i+1], close[i+1], (tmp_buffer_ATR[0] * percent_ATR_channel)/2);
       }
-      if(time[i]%PeriodSeconds(PERIOD_H4)  == 0) CalcExtr(calcH4, estructH4, time[i], false);
-      if(time[i]%PeriodSeconds(PERIOD_H1)  == 0) CalcExtr(calcH1, estructH1, time[i], false);
+      if(show_Extr_H4 && time[i]%PeriodSeconds(PERIOD_H4)  == 0) CalcExtr(calcH4, estructH4, time[i], false);
+      if(show_Extr_H1 && time[i]%PeriodSeconds(PERIOD_H1)  == 0) CalcExtr(calcH1, estructH1, time[i], false);
       
-      Extr_MN_Buffer1[i] = estructMN[0].price;
-       ATR_MN_Buffer1[i] = estructMN[0].channel;
-      Extr_MN_Buffer2[i] = estructMN[1].price;
-       ATR_MN_Buffer2[i] = estructMN[1].channel;
-      Extr_MN_Buffer3[i] = estructMN[2].price;
-       ATR_MN_Buffer3[i] = estructMN[2].channel;
-      Extr_W1_Buffer1[i] = estructW1[0].price;
-       ATR_W1_Buffer1[i] = estructW1[0].channel;
-      Extr_W1_Buffer2[i] = estructW1[1].price;
-       ATR_W1_Buffer2[i] = estructW1[1].channel;
-      Extr_W1_Buffer3[i] = estructW1[2].price;
-       ATR_W1_Buffer3[i] = estructW1[2].channel;
-      Extr_D1_Buffer1[i] = estructD1[0].price;
-       ATR_D1_Buffer1[i] = estructD1[0].channel;
-      Extr_D1_Buffer2[i] = estructD1[1].price;
-       ATR_D1_Buffer2[i] = estructD1[1].channel;
-      Extr_D1_Buffer3[i] = estructD1[2].price;
-       ATR_D1_Buffer3[i] = estructD1[2].channel;
-      Extr_H4_Buffer1[i] = estructH4[0].price;
-       ATR_H4_Buffer1[i] = estructH4[0].channel;
-      Extr_H4_Buffer2[i] = estructH4[1].price;
-       ATR_H4_Buffer2[i] = estructH4[1].channel;
-      Extr_H4_Buffer3[i] = estructH4[2].price;
-       ATR_H4_Buffer3[i] = estructH4[2].channel;
-      Extr_H1_Buffer1[i] = estructH1[0].price;
-       ATR_H1_Buffer1[i] = estructH1[0].channel;
-      Extr_H1_Buffer2[i] = estructH1[1].price;
-       ATR_H1_Buffer2[i] = estructH1[1].channel;
-      Extr_H1_Buffer3[i] = estructH1[2].price;
-       ATR_H1_Buffer3[i] = estructH1[2].channel;
-      Price_D1_Buffer1[i] = pstructD1[0].price;
-      Price_D1_Buffer2[i] = pstructD1[1].price;
-      Price_D1_Buffer3[i] = pstructD1[2].price;
-      Price_D1_Buffer4[i] = pstructD1[3].price;
-      ATR_D1_Buffer[i] = pstructD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
-     }
+      if(show_Extr_MN)
+      {
+       Extr_MN_Buffer1[i] = estructMN[0].price;
+        ATR_MN_Buffer1[i] = estructMN[0].channel;
+       Extr_MN_Buffer2[i] = estructMN[1].price;
+        ATR_MN_Buffer2[i] = estructMN[1].channel;
+       Extr_MN_Buffer3[i] = estructMN[2].price;
+        ATR_MN_Buffer3[i] = estructMN[2].channel;
+      }//end show_Extr_MN
+      if(show_Extr_W1)
+      { 
+       Extr_W1_Buffer1[i] = estructW1[0].price;
+        ATR_W1_Buffer1[i] = estructW1[0].channel;
+       Extr_W1_Buffer2[i] = estructW1[1].price;
+        ATR_W1_Buffer2[i] = estructW1[1].channel;
+       Extr_W1_Buffer3[i] = estructW1[2].price;
+        ATR_W1_Buffer3[i] = estructW1[2].channel;
+      }//end show_Extr_W1
+      if(show_Extr_D1)
+      { 
+       Extr_D1_Buffer1[i] = estructD1[0].price;
+        ATR_D1_Buffer1[i] = estructD1[0].channel;
+       Extr_D1_Buffer2[i] = estructD1[1].price;
+        ATR_D1_Buffer2[i] = estructD1[1].channel;
+       Extr_D1_Buffer3[i] = estructD1[2].price;
+        ATR_D1_Buffer3[i] = estructD1[2].channel;
+      }//end show_Extr_D1
+      if(show_Extr_H4)
+      {      
+       Extr_H4_Buffer1[i] = estructH4[0].price;
+        ATR_H4_Buffer1[i] = estructH4[0].channel;
+       Extr_H4_Buffer2[i] = estructH4[1].price;
+        ATR_H4_Buffer2[i] = estructH4[1].channel;
+       Extr_H4_Buffer3[i] = estructH4[2].price;
+        ATR_H4_Buffer3[i] = estructH4[2].channel;
+      }// end show_Extr_H4
+      if(show_Extr_H1)
+      {  
+       Extr_H1_Buffer1[i] = estructH1[0].price;
+        ATR_H1_Buffer1[i] = estructH1[0].channel;
+       Extr_H1_Buffer2[i] = estructH1[1].price;
+        ATR_H1_Buffer2[i] = estructH1[1].channel;
+       Extr_H1_Buffer3[i] = estructH1[2].price;
+        ATR_H1_Buffer3[i] = estructH1[2].channel;
+      }//end show_Extr_H1
+      if(show_Price_D1)
+      {         
+       Price_D1_Buffer1[i] = pstructD1[0].price;
+       Price_D1_Buffer2[i] = pstructD1[1].price;
+       Price_D1_Buffer3[i] = pstructD1[2].price;
+       Price_D1_Buffer4[i] = pstructD1[3].price;
+          ATR_D1_Buffer[i] = pstructD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
+      }
+     }//end fro
      
      if(show_Extr_MN) MoveExtrLines (estructMN, PERIOD_MN1);
      if(show_Extr_W1) MoveExtrLines (estructW1, PERIOD_W1 ); 
@@ -373,67 +418,73 @@ int OnCalculate(const int rates_total,
      if(show_Extr_H1) MoveExtrLines (estructH1, PERIOD_H1 );
      if(show_Price_D1)MovePriceLines(pstructD1);
      
-     PrintExtrArray(estructMN, PERIOD_MN1);
-     PrintExtrArray(estructW1, PERIOD_W1 ); 
-     PrintExtrArray(estructD1, PERIOD_D1 );
-     PrintExtrArray(estructH4, PERIOD_H4 );
-     PrintExtrArray(estructH1, PERIOD_H1 );
-     //PrintExtrArray(pstructD1, PERIOD_D1 );
-     
      PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
      first = false; 
     }//end prev_calculated == 0
     else
-    {
-     for(int i = rates_total - prev_calculated - 1; i >= 0; i--)
+    {     
+     if(show_Extr_MN)
+     {
+      Extr_MN_Buffer1[0] = estructMN[0].price;
+       ATR_MN_Buffer1[0] = estructMN[0].channel;
+      Extr_MN_Buffer2[0] = estructMN[1].price;
+       ATR_MN_Buffer2[0] = estructMN[1].channel;
+      Extr_MN_Buffer3[0] = estructMN[2].price;
+       ATR_MN_Buffer3[0] = estructMN[2].channel;
+     }//end show_Extr_MN
+     if(show_Extr_W1)
+     { 
+      Extr_W1_Buffer1[0] = estructW1[0].price;
+       ATR_W1_Buffer1[0] = estructW1[0].channel;
+      Extr_W1_Buffer2[0] = estructW1[1].price;
+       ATR_W1_Buffer2[0] = estructW1[1].channel;
+      Extr_W1_Buffer3[0] = estructW1[2].price;
+       ATR_W1_Buffer3[0] = estructW1[2].channel;
+     }//end show_Extr_W1
+     if(show_Extr_D1)
+     { 
+      Extr_D1_Buffer1[0] = estructD1[0].price;
+       ATR_D1_Buffer1[0] = estructD1[0].channel;
+      Extr_D1_Buffer2[0] = estructD1[1].price;
+       ATR_D1_Buffer2[0] = estructD1[1].channel;
+      Extr_D1_Buffer3[0] = estructD1[2].price;
+       ATR_D1_Buffer3[0] = estructD1[2].channel;
+     }//end show_Extr_D1
+     if(show_Extr_H4)
      {      
-      Extr_MN_Buffer1[i] = estructMN[0].price;
-       ATR_MN_Buffer1[i] = estructMN[0].channel;
-      Extr_MN_Buffer2[i] = estructMN[1].price;
-       ATR_MN_Buffer2[i] = estructMN[1].channel;
-      Extr_MN_Buffer3[i] = estructMN[2].price;
-       ATR_MN_Buffer3[i] = estructMN[2].channel;
-      Extr_W1_Buffer1[i] = estructW1[0].price;
-       ATR_W1_Buffer1[i] = estructW1[0].channel;
-      Extr_W1_Buffer2[i] = estructW1[1].price;
-       ATR_W1_Buffer2[i] = estructW1[1].channel;
-      Extr_W1_Buffer3[i] = estructW1[2].price;
-       ATR_W1_Buffer3[i] = estructW1[2].channel;
-      Extr_D1_Buffer1[i] = estructD1[0].price;
-       ATR_D1_Buffer1[i] = estructD1[0].channel;
-      Extr_D1_Buffer2[i] = estructD1[1].price;
-       ATR_D1_Buffer2[i] = estructD1[1].channel;
-      Extr_D1_Buffer3[i] = estructD1[2].price;
-       ATR_D1_Buffer3[i] = estructD1[2].channel;
-      Extr_H4_Buffer1[i] = estructH4[0].price;
-       ATR_H4_Buffer1[i] = estructH4[0].channel;
-      Extr_H4_Buffer2[i] = estructH4[1].price;
-       ATR_H4_Buffer2[i] = estructH4[1].channel;
-      Extr_H4_Buffer3[i] = estructH4[2].price;
-       ATR_H4_Buffer3[i] = estructH4[2].channel;
-      Extr_H1_Buffer1[i] = estructH1[0].price;
-       ATR_H1_Buffer1[i] = estructH1[0].channel;
-      Extr_H1_Buffer2[i] = estructH1[1].price;
-       ATR_H1_Buffer2[i] = estructH1[1].channel;
-      Extr_H1_Buffer3[i] = estructH1[2].price;
-       ATR_H1_Buffer3[i] = estructH1[2].channel;
-      Price_D1_Buffer1[i] = pstructD1[0].price;
-      Price_D1_Buffer2[i] = pstructD1[1].price;
-      Price_D1_Buffer3[i] = pstructD1[2].price;
-      Price_D1_Buffer4[i] = pstructD1[3].price;
-      ATR_D1_Buffer[i] = pstructD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
-      
-      if(barMN.isNewBar() > 0) CalcExtr(calcMN, estructMN, time[i], true); 
-      if(barW1.isNewBar() > 0) CalcExtr(calcW1, estructW1, time[i], true);  
-      if(barD1.isNewBar() > 0) 
-      { 
-       CalcExtr(calcD1, estructD1, time[i], true);
-       CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
-       CalcPrice(open[i+1], high[i+1], low[i+1], close[i+1], (tmp_buffer_ATR[0] * percent_ATR_channel)/2);
-      }
-      if(barH4.isNewBar() > 0) CalcExtr(calcH4, estructH4, time[i], true);
-      if(barH1.isNewBar() > 0) CalcExtr(calcH1, estructH1, time[i], true);
+      Extr_H4_Buffer1[0] = estructH4[0].price;
+       ATR_H4_Buffer1[0] = estructH4[0].channel;
+      Extr_H4_Buffer2[0] = estructH4[1].price;
+       ATR_H4_Buffer2[0] = estructH4[1].channel;
+      Extr_H4_Buffer3[0] = estructH4[2].price;
+       ATR_H4_Buffer3[0] = estructH4[2].channel;
+     }// end show_Extr_H4
+     if(show_Extr_H1)
+     {  
+      Extr_H1_Buffer1[0] = estructH1[0].price;
+       ATR_H1_Buffer1[0] = estructH1[0].channel;
+      Extr_H1_Buffer2[0] = estructH1[1].price;
+       ATR_H1_Buffer2[0] = estructH1[1].channel;
+      Extr_H1_Buffer3[0] = estructH1[2].price;
+       ATR_H1_Buffer3[0] = estructH1[2].channel;
+     }//end show_Extr_H1
+     if(show_Price_D1)
+     {
+      Price_D1_Buffer1[0] = pstructD1[0].price;
+      Price_D1_Buffer2[0] = pstructD1[1].price;
+      Price_D1_Buffer3[0] = pstructD1[2].price;
+      Price_D1_Buffer4[0] = pstructD1[3].price;
+         ATR_D1_Buffer[0] = pstructD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
      }
+      
+     CalcExtr(calcMN, estructMN, time[0], true); 
+     CalcExtr(calcW1, estructW1, time[0], true);  
+     CalcExtr(calcD1, estructD1, time[0], true);
+     CopyBuffer(ATR_D1_handle, 0, time[0] - PERIOD_D1, 1, tmp_buffer_ATR);
+     CalcPrice(open[1], high[1], low[1], close[1], (tmp_buffer_ATR[0] * percent_ATR_channel)/2);
+     CalcExtr(calcH4, estructH4, time[0], true);
+     CalcExtr(calcH1, estructH1, time[0], true);
+      
      if(show_Extr_MN) MoveExtrLines (estructMN, PERIOD_MN1);
      if(show_Extr_W1) MoveExtrLines (estructW1, PERIOD_W1 ); 
      if(show_Extr_D1) MoveExtrLines (estructD1, PERIOD_D1 );
@@ -452,19 +503,19 @@ bool FillATRBuffer()
 {
  bool result = true;
  
- if(show_Extr_MN && !calcMN.isATRCalculated(Bars(Symbol(), PERIOD_MN1) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
+ if(show_Extr_MN && !calcMN.isATRCalculated(Bars(Symbol(), PERIOD_MN1) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_MN) - ATR_PERIOD))
   result = false;
    
- if(show_Extr_W1 && !calcW1.isATRCalculated(Bars(Symbol(), PERIOD_W1) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
+ if(show_Extr_W1 && !calcW1.isATRCalculated(Bars(Symbol(), PERIOD_W1) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_W1) - ATR_PERIOD))
    result = false;
    
- if((show_Extr_D1 || show_Price_D1) && !calcD1.isATRCalculated(Bars(Symbol(), PERIOD_D1) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
+ if((show_Extr_D1 || show_Price_D1) && !calcD1.isATRCalculated(Bars(Symbol(), PERIOD_D1) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_D1) - ATR_PERIOD))
    result = false;
    
- if(show_Extr_H4 && !calcH4.isATRCalculated(Bars(Symbol(), PERIOD_H4) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
+ if(show_Extr_H4 && !calcH4.isATRCalculated(Bars(Symbol(), PERIOD_H4) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_H4) - ATR_PERIOD))
    result = false;
    
- if(show_Extr_H1 && !calcH1.isATRCalculated(Bars(Symbol(), PERIOD_H1) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
+ if(show_Extr_H1 && !calcH1.isATRCalculated(Bars(Symbol(), PERIOD_H1) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_H1) - ATR_PERIOD))
    result = false;   
    
  if(!result)
