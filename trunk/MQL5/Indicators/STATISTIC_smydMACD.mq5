@@ -106,7 +106,6 @@ datetime  lastPlusMACD  = 0;    // время последнего положительного MACD
 datetime  divBuyLastMinus = 0;  // время последнего минуса расхождения на BUY
 datetime  divSellLastPlus = 0;  // время последнего плюса расхождения на SELL
                                                   
-
 // дополнительные функции работы индикатора
 void DrawIndicator(datetime vertLineTime); // отображает линии индикатора. В функцию передается время вертикальной линии
    
@@ -237,7 +236,7 @@ int OnCalculate(const int rates_total,
        bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение    
            
      // вычисляем статистические данные по данному расхождению
-     if (time[lastBarIndex] >= start_time  && time[lastBarIndex] <= finish_time)   // если текущее время попадает в зону вычисления статистики
+     if (time[lastBarIndex] >= start_time  && time[lastBarIndex] <= finish_time && lastBarIndex>=actualBars)   // если текущее время попадает в зону вычисления статистики
       {
        // вычисляем максимум на глубину вычисления актуальности
        maxPrice =  high[ArrayMaximum(high,lastBarIndex-actualBars,actualBars)];  // находим максимум по high
