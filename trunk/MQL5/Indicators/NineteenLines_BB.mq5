@@ -100,13 +100,7 @@ double Price_D1_Buffer2[];
 double Price_D1_Buffer3[];
 double Price_D1_Buffer4[];
 double   ATR_D1_Buffer [];
- 
-CisNewBar barMN(Symbol(), PERIOD_MN1);
-CisNewBar barW1(Symbol(), PERIOD_W1);
-CisNewBar barD1(Symbol(), PERIOD_D1);
-CisNewBar barH4(Symbol(), PERIOD_H4);
-CisNewBar barH1(Symbol(), PERIOD_H1);
- 
+  
 int ATR_D1_handle;
 double tmp_buffer_ATR[];
 
@@ -237,11 +231,11 @@ int OnInit()
  InitializeExtrArray(estructH1);
  InitializeExtrArray(pstructD1);
  
- if(Period() > PERIOD_MN1 && show_Extr_MN) show_Extr_MN = false;
- if(Period() > PERIOD_W1  && show_Extr_W1) show_Extr_W1 = false;
- if(Period() > PERIOD_D1  && show_Extr_D1) show_Extr_D1 = false;
- if(Period() > PERIOD_H4  && show_Extr_H4) show_Extr_H4 = false;
- if(Period() > PERIOD_H1  && show_Extr_H1) show_Extr_H1 = false;
+ if(Period() > PERIOD_MN1 && show_Extr_MN)  show_Extr_MN = false;
+ if(Period() > PERIOD_W1  && show_Extr_W1)  show_Extr_W1 = false;
+ if(Period() > PERIOD_D1  && show_Extr_D1)  show_Extr_D1 = false;
+ if(Period() > PERIOD_H4  && show_Extr_H4)  show_Extr_H4 = false;
+ if(Period() > PERIOD_H1  && show_Extr_H1)  show_Extr_H1 = false;
  if(Period() > PERIOD_D1  && show_Price_D1) show_Price_D1 = false;
   
  if(show_Extr_MN) CreateExtrLines (estructMN, PERIOD_MN1, color_Extr_MN);
@@ -249,7 +243,7 @@ int OnInit()
  if(show_Extr_D1) CreateExtrLines (estructD1, PERIOD_D1 , color_Extr_D1);
  if(show_Extr_H4) CreateExtrLines (estructH4, PERIOD_H4 , color_Extr_H4);
  if(show_Extr_H1) CreateExtrLines (estructH1, PERIOD_H1 , color_Extr_H1);
- if(show_Price_D1)CreatePriceLines(pstructD1, color_Price_D1); 
+ if(show_Price_D1)CreatePriceLines(pstructD1, PERIOD_D1 , color_Price_D1); 
  
 //---
  return(INIT_SUCCEEDED);
@@ -416,7 +410,7 @@ int OnCalculate(const int rates_total,
      if(show_Extr_D1) MoveExtrLines (estructD1, PERIOD_D1 );
      if(show_Extr_H4) MoveExtrLines (estructH4, PERIOD_H4 );
      if(show_Extr_H1) MoveExtrLines (estructH1, PERIOD_H1 );
-     if(show_Price_D1)MovePriceLines(pstructD1);
+     if(show_Price_D1)MovePriceLines(pstructD1, PERIOD_D1 );
      
      PrintFormat("«акончен расчет на истории. (prev_calculated == 0)");
      first = false; 
@@ -476,7 +470,8 @@ int OnCalculate(const int rates_total,
       Price_D1_Buffer4[0] = pstructD1[3].price;
          ATR_D1_Buffer[0] = pstructD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинакова€
      }
-      
+     
+     while(!FillATRBuffer()) {} 
      CalcExtr(calcMN, estructMN, time[0], true); 
      CalcExtr(calcW1, estructW1, time[0], true);  
      CalcExtr(calcD1, estructD1, time[0], true);
@@ -490,7 +485,7 @@ int OnCalculate(const int rates_total,
      if(show_Extr_D1) MoveExtrLines (estructD1, PERIOD_D1 );
      if(show_Extr_H4) MoveExtrLines (estructH4, PERIOD_H4 );
      if(show_Extr_H1) MoveExtrLines (estructH1, PERIOD_H1 );
-     if(show_Price_D1)MovePriceLines(pstructD1);
+     if(show_Price_D1)MovePriceLines(pstructD1, PERIOD_D1 );
     }
    }
 //--- return value of prev_calculated for next call
@@ -599,9 +594,9 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"three-");
 }
 
-void CreatePriceLines(const SExtremum &te[], color clr)
+void CreatePriceLines(const SExtremum &te[], ENUM_TIMEFRAMES tf,color clr)
 {
- string name = "price_D1_";
+ string name = "price_" + EnumToString(tf) + "_";
  HLineCreate(0, name+"open"  , 0, te[0].price, clr, 1, STYLE_DASHDOT);
  HLineCreate(0, name+"open+" , 0, te[0].price+te[0].channel, clr, 2);
  HLineCreate(0, name+"open-" , 0, te[0].price-te[0].channel, clr, 2); 
@@ -616,9 +611,9 @@ void CreatePriceLines(const SExtremum &te[], color clr)
  HLineCreate(0, name+"close-", 0, te[3].price-te[3].channel, clr, 2);
 }
 
-void MovePriceLines(const SExtremum &te[])
+void MovePriceLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
 {
- string name = "price_D1_";
+ string name = "price_" + EnumToString(tf) + "_";
  HLineMove(0, name+"open"  , te[0].price);
  HLineMove(0, name+"open+" , te[0].price+te[0].channel);
  HLineMove(0, name+"open-" , te[0].price-te[0].channel);
