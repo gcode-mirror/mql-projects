@@ -64,6 +64,14 @@ double bufferTopLevel[];                            // буфер уровней top level
 double bufferBottomLevel[];                         // буфер уровней bottom level
 double bufferDiv[];                                 // буфер моментов расхождения
 
+// точки для хранения времени экстремумов цены   
+
+datetime onePointBuy  = 0;  
+datetime twoPointBuy  = 0;
+
+datetime onePointSell = 0;
+datetime twoPointSell = 0;
+
 // дополнительные функции работы индикатора
 void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатора. В функцию передается время вертикальной линии
    
@@ -150,11 +158,36 @@ int OnCalculate(const int rates_total,
              Print("Ошибка индикатора ShowMeYourDivSTOC. Не удалось загрузить буферы Стохастика");
              return (0);
            }
-          if (retCode)
-           {                                          
+          // если BUY и точки экстремумов цены не совпадают с предыдущим расхождением 
+          if (retCode == 1 && divergencePoints.timeExtrPrice1 != onePointBuy
+                           && divergencePoints.timeExtrPrice2 != onePointBuy
+                           && divergencePoints.timeExtrPrice1 != twoPointBuy
+                           && divergencePoints.timeExtrPrice2 != twoPointBuy
+                              
+                 )
+           {             
+                                        
              DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
-             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             // сохраняем время экстремумов цен
+             onePointBuy =  divergencePoints.timeExtrPrice1;
+             twoPointBuy =  divergencePoints.timeExtrPrice2;
            }
+          // если SELL и точки экстремумов цены не совпадают с предыдущим расхождением 
+          if (retCode == -1 && divergencePoints.timeExtrPrice1 != onePointSell
+                           && divergencePoints.timeExtrPrice2 != onePointSell
+                           && divergencePoints.timeExtrPrice1 != twoPointSell
+                           && divergencePoints.timeExtrPrice2 != twoPointSell
+                              
+                 )
+           {             
+                                        
+             DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             // сохраняем время экстремумов цен
+             onePointSell =  divergencePoints.timeExtrPrice1;
+             twoPointSell =  divergencePoints.timeExtrPrice2;
+           }           
         }
     }
     else    // если это не первый вызов индикатора 
