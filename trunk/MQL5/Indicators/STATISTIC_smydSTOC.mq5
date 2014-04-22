@@ -99,11 +99,6 @@ int    countDivBuy              = 0;       // общее количество расхождений на по
 int    countActualDivSell       = 0;       // колчиство актуальных расхождений на продажу
 int    countDivSell             = 0;       // общее количество расхождений на продажу   
 
-double zoneLossBuy = 0 ;                   // уровень убытка актуальных расхождений по BUY
-double zoneProfitBuy = 0;                  // уровень прибыли актуальных расхождений по BUY
-
-double zoneLossSell = 0;                   // уровень убытка актуальных расхождений по SELL 
-double zoneProfitSell = 0;                 // уровень прибыли актуальных расхождений по SELL
 
 int    countDivZoneLossBuy = 0;            // количество расхождений с убытком ниже уровня по BUY
 int    countDivZoneProfitBuy = 0;          // количество расхождений с прибылью выше уровня по BUY
@@ -111,7 +106,14 @@ int    countDivZoneProfitBuy = 0;          // количество расхождений с прибылью 
 int    countDivZoneLossSell = 0;           // количество расхожденй с убытком ниже уровня по SELL
 int    countDivZoneProfitSell = 0;         // количество расхождений с прибылью выше уровня по SELL
                                                    
-int    iterate;                            // количество проходов     
+
+// точки для хранения времени экстремумов цены   
+
+datetime onePointBuy  = 0;  
+datetime twoPointBuy  = 0;
+
+datetime onePointSell = 0;
+datetime twoPointSell = 0;  
 
 // дополнительные функции работы индикатора
 void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатора. В функцию передается время вертикальной линии
@@ -119,20 +121,6 @@ void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатор
 // инициализация индикатора
 int OnInit()
   {  
-   // задаем уровни параметрами, если не выбран подсчет средних значений 
-   if (useZoneAverage)
-     {
-      zoneLossBuy = ZoneLossBuy;
-      zoneLossSell = ZoneLossSell;
-      zoneProfitBuy = ZoneProfitBuy;
-      zoneProfitSell = ZoneProfitSell;
-      iterate = 1;   // только один проход по циклу
- 
-     }   
-   else
-     {
-      iterate = 2;  // два прохода по циклу для подсчета средних значений
-     }
    // создаем файл статистики на запись
    fileHandle = FileOpen(fileName+_Symbol+"_"+PeriodToString(_Period)+".txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
    if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
@@ -216,13 +204,7 @@ int OnCalculate(const int rates_total,
             Print("Ошибка индикатора ShowMeYourDivSTOC. Не удалось установить индексацию массивов как в таймсерии");
             return (0);
           }
-     // проходим в цикле 2 раза (для вычисления среднего
-     for (int index=0;index<iterate;index++)
-      {
-       countDivZoneLossBuy    = 0;
-       countDivZoneLossSell   = 0;
-       countDivZoneProfitBuy  = 0;
-       countDivZoneProfitSell = 0;          
+       
        // проходим по всем барам истории и ищем расхождения Стохастика
        for (lastBarIndex = rates_total-DEPTH_STOC-1;lastBarIndex > 0; lastBarIndex--)
         {
@@ -372,16 +354,7 @@ int OnCalculate(const int rates_total,
           FileWriteString(fileHandle,"\n Количество актуальных расхождений на BUY с прибылью выше уровня: "+IntegerToString(countDivZoneProfitBuy));        
           FileWriteString(fileHandle,"\n Количество актуальных расхождений на BUY с убытком ниже уровня: "+IntegerToString(countDivZoneLossBuy));        
     
-   }
-   
-  // если мы используем в качестве уровней средние значения
-  if (useZoneAverage)
-   {
-     zoneLossBuy     =  averActualLossDivBuy;
-     zoneLossSell    =  averActualLossDivSell;
-     zoneProfitBuy   =  averActualProfitDivBuy;
-     zoneProfitSell  =  averActualProfitDivSell;
-   }   
+  
           
         // закрываем файл статистики
         

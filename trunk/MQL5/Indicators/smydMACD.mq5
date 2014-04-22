@@ -140,18 +140,18 @@ int OnCalculate(const int rates_total,
             return (0);
           }
        // проходим по всем барам истории и ищем расхождения MACD
-       for (lastBarIndex = rates_total-1;lastBarIndex > 0; lastBarIndex--)
+       for (lastBarIndex = rates_total-2;lastBarIndex > 1; lastBarIndex--)
         {
           // сохраняем время последних 
-          if (bufferMACD[lastBarIndex] > 0)  // если MACD положительный  
+          if (bufferMACD[lastBarIndex+1] > 0)  // если MACD положительный  
             {
               // то сохраняем время 
-              lastPlusMACD = time[lastBarIndex];
+              lastPlusMACD = time[lastBarIndex+1];
             }
-          if (bufferMACD[lastBarIndex] < 0)  // если MACD отрицательный 
+          if (bufferMACD[lastBarIndex+1] < 0)  // если MACD отрицательный 
             {
               // то сохраняем время
-              lastMinusMACD = time[lastBarIndex];
+              lastMinusMACD = time[lastBarIndex+1];
             }
           // если мы дошли до бара, с которого можно начать вычислять расхождения
           if (lastBarIndex <= (rates_total-DEPTH_MACD-1) )
@@ -177,7 +177,7 @@ int OnCalculate(const int rates_total,
               {                                          
                DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
                bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
-               divSellLastPlus = lastPlusMACD;      // сохраняем время последнего плюса MACD
+               divSellLastPlus = lastPlusMACD;       // сохраняем время последнего плюса MACD
               }            
             }
         }
@@ -209,12 +209,12 @@ int OnCalculate(const int rates_total,
              return (rates_total);
            }   
           // сохраняем последние времена MACD
-          if (bufferMACD[1] > 0 ) // если текущий MACD больше нуля
+          if (bufferMACD[2] > 0 ) // если текущий MACD больше нуля
             {
               // то сохраняем время
               lastPlusMACD = time[1];
             }           
-          if (bufferMACD[1] < 0 ) // если текущий MACD меньше нуля
+          if (bufferMACD[2] < 0 ) // если текущий MACD меньше нуля
             {
               // то сохраняем время
               lastMinusMACD = time[1];
