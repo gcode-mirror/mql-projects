@@ -218,7 +218,50 @@ int OnCalculate(const int rates_total,
              return (0);
            }
           if (retCode)
-           {                                          
+           {            
+           
+            // если BUY
+            if ( retCode == 1)
+             {
+            // если BUY и точки экстремумов цены не совпадают с предыдущим расхождением 
+            if (  divergencePoints.timeExtrPrice1 != onePointBuy
+                             && divergencePoints.timeExtrPrice2 != onePointBuy
+                             && divergencePoints.timeExtrPrice1 != twoPointBuy
+                             && divergencePoints.timeExtrPrice2 != twoPointBuy
+                              
+                 )
+           {             
+                                        
+             DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             // сохраняем время экстремумов цен
+             onePointBuy =  divergencePoints.timeExtrPrice1;
+             twoPointBuy =  divergencePoints.timeExtrPrice2;
+           }
+             else
+                continue;
+           }
+          if (retCode == -1)
+           {
+          // если SELL и точки экстремумов цены не совпадают с предыдущим расхождением 
+          if ( divergencePoints.timeExtrPrice1 != onePointSell
+            && divergencePoints.timeExtrPrice2 != onePointSell
+            && divergencePoints.timeExtrPrice1 != twoPointSell
+            && divergencePoints.timeExtrPrice2 != twoPointSell
+                              
+                 )
+           {             
+                                        
+             DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             // сохраняем время экстремумов цен
+             onePointSell =  divergencePoints.timeExtrPrice1;
+             twoPointSell =  divergencePoints.timeExtrPrice2;
+           }           
+             else 
+                continue;
+           }
+                                         
              DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
              bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
            
