@@ -222,11 +222,43 @@ int OnCalculate(const int rates_total,
              Print("Ошибка индикатора ShowMeYourDivSTOC. Не удалось загрузить буферы Стохастика");
              return (0);
            }
-          if (retCode)
+        /*  if (retCode)
            {                                        
              DrawIndicator (time[0]);       // отображаем графические элементы индикатора    
              bufferDiv[0] = retCode;        // сохраняем текущий сигнал
            }        
+          */ 
+          // если BUY и точки экстремумов цены не совпадают с предыдущим расхождением 
+          if (retCode == 1 && divergencePoints.timeExtrPrice1 != onePointBuy
+                           && divergencePoints.timeExtrPrice2 != onePointBuy
+                           && divergencePoints.timeExtrPrice1 != twoPointBuy
+                           && divergencePoints.timeExtrPrice2 != twoPointBuy
+                              
+                 )
+           {             
+                                        
+             DrawIndicator (time[0]);   // отображаем графические элементы индикатора     
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             // сохраняем время экстремумов цен
+             onePointBuy =  divergencePoints.timeExtrPrice1;
+             twoPointBuy =  divergencePoints.timeExtrPrice2;
+           }
+          // если SELL и точки экстремумов цены не совпадают с предыдущим расхождением 
+          if (retCode == -1 && divergencePoints.timeExtrPrice1 != onePointSell
+                            && divergencePoints.timeExtrPrice2 != onePointSell
+                            && divergencePoints.timeExtrPrice1 != twoPointSell
+                            && divergencePoints.timeExtrPrice2 != twoPointSell
+                              
+                 )
+           {             
+                                        
+             DrawIndicator (time[0]);   // отображаем графические элементы индикатора     
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             // сохраняем время экстремумов цен
+             onePointSell =  divergencePoints.timeExtrPrice1;
+             twoPointSell =  divergencePoints.timeExtrPrice2;
+           }           
+                      
             
         }
      }
