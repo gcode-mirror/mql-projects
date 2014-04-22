@@ -95,6 +95,16 @@ int    countDivZoneProfitBuy       = 0;    // количество расхождений с прибылью 
 
 int    countDivZoneLossSell        = 0;    // количество расхожденй с убытком ниже уровня по SELL
 int    countDivZoneProfitSell      = 0;    // количество расхождений с прибылью выше уровня по SELL
+
+// переменные для хранения времени последних отрицательных и положительных значений MACD
+
+datetime  lastMinusMACD = 0;    // время последнего отрицательного MACD
+datetime  lastPlusMACD  = 0;    // время последнего положительного MACD
+
+// переменные для хранения времени перехода через ноль для расхождений MACD
+
+datetime  divBuyLastMinus = 0;  // время последнего минуса расхождения на BUY
+datetime  divSellLastPlus = 0;  // время последнего плюса расхождения на SELL
                                                   
 
 // дополнительные функции работы индикатора
@@ -103,6 +113,8 @@ void DrawIndicator(datetime vertLineTime); // отображает линии индикатора. В фун
 // инициализация индикатора
 int OnInit()
   {
+   // буфер MACD устанавливаем как в таймсерии
+   ArraySetAsSeries(bufferMACD,true);  
    // создаем файл статистики на запись
    fileHandle = FileOpen(fileName+_Symbol+"_"+PeriodToString(_Period)+".txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
    if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
@@ -183,49 +195,74 @@ int OnCalculate(const int rates_total,
    return (0);
   }
   // проходим по всем барам истории и ищем расхождения MACD
-  for (lastBarIndex = rates_total-DEPTH_MACD-1; lastBarIndex > 0; lastBarIndex--)
+  for (lastBarIndex = rates_total-1; lastBarIndex > 0; lastBarIndex--)
   {
-  // обнуляем буфер сигналов расхождений MACD
-   bufferDiv[lastBarIndex] = 0;
-   retCode = divergenceMACD(handleMACD, _Symbol, _Period, divergencePoints, lastBarIndex);  // получаем сигнал на расхождение
-  // если не удалось загрузить буферы MACD
-   if (retCode == -2)
-   {
-    Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
-    return (0);
-   }
-   if (retCode)
-   {                                          
-    DrawIndicator(time[lastBarIndex]);    // отображаем графические элементы индикатора     
-    bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение    
-           
-   // вычисляем статистические данные по данному расхождению
-    if (time[lastBarIndex] >= start_time  && time[lastBarIndex] <= finish_time)   // если текущее время попадает в зону вычисления статистики
+   // сохраняем время последних 
+   if (bufferMACD[lastBarIndex] > 0)  // если MACD положительный  
+      {
+       // то сохраняем время 
+       lastPlusMACD = time[lastBarIndex];
+      }
+   if (bufferMACD[lastBarIndex] < 0)  // если MACD отрицательный 
+      {
+       // то сохраняем время
+       lastMinusMACD = time[lastBarIndex];
+      }  
+   // если можно вычислять расхождения MACD 
+   if (lastBarIndex <= (rates_total-DEPTH_MACD-1) )
     {
-    // вычисляем максимум на глубину вычисления актуальности
-     maxPrice =  high[ArrayMaximum(high,lastBarIndex-actualBars,actualBars)];  // находим максимум по high
-     minPrice =  low[ArrayMinimum(low,lastBarIndex -actualBars,actualBars)];   // находим минимум по low
+     // обнуляем буфер сигналов расхождений MACD
+     bufferDiv[lastBarIndex] = 0;
+     retCode = divergenceMACD(handleMACD, _Symbol, _Period, divergencePoints, lastBarIndex);  // получаем сигнал на расхождение
+     // если не удалось загрузить буферы MACD
+     if (retCode == -2)
+      {
+       Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+       return (0);
+      }
+     if (retCode)
+      {             
+       if (retCode == 1)    // если расхождение на BUY
+        {
+         if ( lastMinusMACD!=divBuyLastMinus) lastMinusMACD = divBuyLastMinus;
+         else continue;
+        }
+       if (retCode == -1)  // если расхождение на SELL
+        {
+         if (lastPlusMACD != divSellLastPlus) lastPlusMACD  = divSellLastPlus;
+         else continue;
+        }
+                                     
+       DrawIndicator(time[lastBarIndex]);    // отображаем графические элементы индикатора     
+       bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение    
+           
+     // вычисляем статистические данные по данному расхождению
+     if (time[lastBarIndex] >= start_time  && time[lastBarIndex] <= finish_time)   // если текущее время попадает в зону вычисления статистики
+      {
+       // вычисляем максимум на глубину вычисления актуальности
+       maxPrice =  high[ArrayMaximum(high,lastBarIndex-actualBars,actualBars)];  // находим максимум по high
+       minPrice =  low[ArrayMinimum(low,lastBarIndex -actualBars,actualBars)];   // находим минимум по low
 
-    // вычисляем актуальность расхождений
-     if (retCode == 1)      // если расхождение на SELL
-     { 
-      countDivSell ++;    // увеличиваем количество расхождений на SELL
+       // вычисляем актуальность расхождений
+       if (retCode == 1)      // если расхождение на SELL
+        { 
+         countDivSell ++;    // увеличиваем количество расхождений на SELL
                
-      maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
-      minPrice = close[lastBarIndex] - minPrice;   // вычисляем, насколько цена ушла вниз от цены закрытия
+         maxPrice = maxPrice - close[lastBarIndex];   // вычисляем, насколько цена ушла вверх от цены закрытия
+         minPrice = close[lastBarIndex] - minPrice;   // вычисляем, насколько цена ушла вниз от цены закрытия
       
                 
-      if (maxPrice < 0)
-       maxPrice = 0;
-      if (minPrice < 0)
-       minPrice = 0;
+       if (maxPrice < 0)
+           maxPrice = 0;
+       if (minPrice < 0)
+           minPrice = 0;
                 
-      if (minPrice > maxPrice)  // данное расхождение является актуальным
-      {
-       countActualDivSell ++;   // увеличиваем количество актуальных расхождений на SELL
+       if (minPrice > maxPrice)  // данное расхождение является актуальным
+        {
+         countActualDivSell ++;   // увеличиваем количество актуальных расхождений на SELL
                    
-       averActualProfitDivSell = averActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
-       averActualLossDivSell   = averActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
+         averActualProfitDivSell = averActualProfitDivSell + minPrice; // увеличиваем сумму для средней прибыли
+         averActualLossDivSell   = averActualLossDivSell   + maxPrice; // увеличиваем сумму для среднего убытка
        
        if (minPrice > ZoneProfitSell)
          {
@@ -282,6 +319,7 @@ int OnCalculate(const int rates_total,
      }
     } // end проверки на дату 
    }
+   }  // от проверки на готовность рассчета расхождений MACD
   }
           
   // запись в файл общей статистики
@@ -362,6 +400,17 @@ int OnCalculate(const int rates_total,
     Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
     return (rates_total);
    }   
+   // сохраняем последние времена MACD
+   if (bufferMACD[1] > 0 ) // если текущий MACD больше нуля
+      {
+       // то сохраняем время
+       lastPlusMACD = time[1];
+      }           
+   if (bufferMACD[1] < 0 ) // если текущий MACD меньше нуля
+      {
+       // то сохраняем время
+       lastMinusMACD = time[1];
+      }   
    retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints,0);  // получаем сигнал на расхождение
    // если не удалось загрузить буферы MACD
    if (retCode == -2)
