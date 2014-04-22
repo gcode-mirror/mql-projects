@@ -7,7 +7,7 @@
 
 #include <CompareDoubles.mqh>
 
-#define DEPTH_MACD 100
+#define DEPTH_MACD 130
 #define BORDER_DEPTH_MACD 15
 
 struct PointDivMACD        
