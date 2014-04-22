@@ -222,12 +222,7 @@ int OnCalculate(const int rates_total,
              Print("Ошибка индикатора ShowMeYourDivSTOC. Не удалось загрузить буферы Стохастика");
              return (0);
            }
-        /*  if (retCode)
-           {                                        
-             DrawIndicator (time[0]);       // отображаем графические элементы индикатора    
-             bufferDiv[0] = retCode;        // сохраняем текущий сигнал
-           }        
-          */ 
+
           // если BUY и точки экстремумов цены не совпадают с предыдущим расхождением 
           if (retCode == 1 && divergencePoints.timeExtrPrice1 != onePointBuy
                            && divergencePoints.timeExtrPrice2 != onePointBuy
