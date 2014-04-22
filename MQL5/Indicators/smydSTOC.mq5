@@ -175,9 +175,9 @@ int OnCalculate(const int rates_total,
            }
           // если SELL и точки экстремумов цены не совпадают с предыдущим расхождением 
           if (retCode == -1 && divergencePoints.timeExtrPrice1 != onePointSell
-                           && divergencePoints.timeExtrPrice2 != onePointSell
-                           && divergencePoints.timeExtrPrice1 != twoPointSell
-                           && divergencePoints.timeExtrPrice2 != twoPointSell
+                            && divergencePoints.timeExtrPrice2 != onePointSell
+                            && divergencePoints.timeExtrPrice1 != twoPointSell
+                            && divergencePoints.timeExtrPrice2 != twoPointSell
                               
                  )
            {             
