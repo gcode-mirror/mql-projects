@@ -32,9 +32,7 @@ input  ENUM_APPLIED_PRICE priceType = PRICE_CLOSE; // тип цен, по которым вычисл
 #property indicator_buffers 2                      // задействовано 2 индикаторных буфера
 #property indicator_plots   1                      // 1 буфер отображаются на графиках
 
-// параметры буферов
-
-// параметры 1-го буфера (MACD)
+// параметры  буфера (MACD)
 #property indicator_type1 DRAW_HISTOGRAM           // гистограммы
 #property indicator_color1  clrWhite               // цвет гистограммы
 #property indicator_width1  1                      // толщина гистограммы
@@ -53,7 +51,7 @@ CisNewBar          isNewBar;                       // для проверки формирования 
 
 // буферы индикатора 
 double bufferMACD[];                               // буфер уровней MACD
-double bufferDiv[];                                // буфер моментов расхождения
+double bufferDiv[];                                // буфер сигналов расхождения
 
 // переменные для хранения времени последних отрицательных и положительных значений MACD
 
@@ -66,7 +64,7 @@ datetime  divSellLastMinus = 0;                    // время последнего минуса ра
 datetime  divBuyLastPlus   = 0;                    // время последнего плюса расхождения на BUY
 
 // дополнительные функции работы индикатора
-void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатора. В функцию передается время вертикальной линии
+void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатора. В функцию передается время вертикальной линии (сигнала расхождения)
    
 // инициализация индикатора
 int OnInit()
@@ -169,14 +167,14 @@ int OnCalculate(const int rates_total,
             if (retCode == _Sell && divSellLastMinus != lastMinusMACD)
               {                                          
                DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
-               bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
+               bufferDiv[lastBarIndex] = _Sell;    // сохраняем в буфер значение       
                divSellLastMinus = lastMinusMACD;     // сохраняем время последнего минуса MACD
               }
             // если расхождение на BUY и время плюса MACD последнего расхождения отличается от времени последнего плюса
             if (retCode == _Buy && divBuyLastPlus != lastPlusMACD)
               {                                          
                DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
-               bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение       
+               bufferDiv[lastBarIndex] = _Buy;    // сохраняем в буфер значение       
                divBuyLastPlus = lastPlusMACD;        // сохраняем время последнего плюса MACD
               }            
             }
@@ -212,12 +210,12 @@ int OnCalculate(const int rates_total,
           if (bufferMACD[2] > 0 ) // если текущий MACD больше нуля
             {
               // то сохраняем время
-              lastPlusMACD = time[1];
+              lastPlusMACD = time[2];
             }           
           if (bufferMACD[2] < 0 ) // если текущий MACD меньше нуля
             {
               // то сохраняем время
-              lastMinusMACD = time[1];
+              lastMinusMACD = time[2];
             }
           
           retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints, 0);  // получаем сигнал на расхождение
@@ -227,19 +225,18 @@ int OnCalculate(const int rates_total,
              Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
              return (0);
            }
-          if (retCode != 0)
           // если расхождение на SELL и время последнего минуса расхождения отличается от последнего минуса MACD
           if (retCode == _Sell && divSellLastMinus != lastMinusMACD)
            {                                        
              DrawIndicator (time[0]);          // отображаем графические элементы индикатора    
-             bufferDiv[0] = retCode;           // сохраняем текущий сигнал
+             bufferDiv[0] = _Sell;           // сохраняем текущий сигнал
              divSellLastMinus = lastMinusMACD; // сохраняем время последнего минуса
            }    
           // если расхождение на BUY и время последнего плюса расхождения отличается от последнего плюса MACD
           if (retCode == _Buy && divBuyLastPlus != lastPlusMACD)
            {                                        
              DrawIndicator (time[0]);          // отображаем графические элементы индикатора    
-             bufferDiv[0] = retCode;           // сохраняем текущий сигнал
+             bufferDiv[0] = _Buy;           // сохраняем текущий сигнал
              divBuyLastPlus = lastPlusMACD;    // сохраняем время последнего плюса
            }                  
             
