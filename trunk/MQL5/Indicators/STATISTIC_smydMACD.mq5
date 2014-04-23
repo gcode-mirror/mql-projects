@@ -8,7 +8,8 @@
 #property version   "1.00"
 #property indicator_separate_window   // будем задействовать побочное окно индикатора
 
-#include <StringUtilities.mqh> 
+#include <StringUtilities.mqh>        // строковые константы 
+#include <Constants.mqh>              // библиотека констант
 
 //+------------------------------------------------------------------+
 //| Индикатор, показывающий расхождения MACD                         |
@@ -98,13 +99,13 @@ int    countDivZoneProfitSell      = 0;    // количество расхождений с прибылью 
 
 // переменные для хранения времени последних отрицательных и положительных значений MACD
 
-datetime  lastMinusMACD = 0;    // время последнего отрицательного MACD
-datetime  lastPlusMACD  = 0;    // время последнего положительного MACD
+datetime  lastMinusMACD = 0;               // время последнего отрицательного MACD
+datetime  lastPlusMACD  = 0;               // время последнего положительного MACD
 
 // переменные для хранения времени перехода через ноль для расхождений MACD
 
-datetime  divBuyLastMinus = 0;  // время последнего минуса расхождения на BUY
-datetime  divSellLastPlus = 0;  // время последнего плюса расхождения на SELL
+datetime  divSellLastMinus = 0;            // время последнего минуса расхождения на SELL
+datetime  divBuyLastPlus   = 0;            // время последнего плюса расхождения на BUY
                                                   
 // дополнительные функции работы индикатора
 void DrawIndicator(datetime vertLineTime); // отображает линии индикатора. В функцию передается время вертикальной линии
@@ -196,6 +197,8 @@ int OnCalculate(const int rates_total,
   // проходим по всем барам истории и ищем расхождения MACD
   for (lastBarIndex = rates_total-2; lastBarIndex > 1; lastBarIndex--)
   {
+   // обнуляем буфер сигналов расхождений MACD
+   bufferDiv[lastBarIndex] = 0;  
    // сохраняем время последних 
    if (bufferMACD[lastBarIndex+1] > 0)  // если MACD положительный  
       {
@@ -210,8 +213,7 @@ int OnCalculate(const int rates_total,
    // если можно вычислять расхождения MACD 
    if (lastBarIndex <= (rates_total-DEPTH_MACD-1) )
     {
-     // обнуляем буфер сигналов расхождений MACD
-     bufferDiv[lastBarIndex] = 0;
+
      retCode = divergenceMACD(handleMACD, _Symbol, _Period, divergencePoints, lastBarIndex);  // получаем сигнал на расхождение
      // если не удалось загрузить буферы MACD
      if (retCode == -2)
@@ -221,14 +223,14 @@ int OnCalculate(const int rates_total,
       }
      if (retCode)
       {             
-       if (retCode == 1)    // если расхождение на BUY
+       if (retCode == _Buy)    // если расхождение на BUY
         {
-         if ( lastMinusMACD!=divBuyLastMinus) lastMinusMACD = divBuyLastMinus;
+         if (lastPlusMACD != divBuyLastMinus) lastPlusMACD  = divSellLastMinus;
          else continue;
         }
-       if (retCode == -1)  // если расхождение на SELL
+       if (retCode == _Sell)  // если расхождение на SELL
         {
-         if (lastPlusMACD != divSellLastPlus) lastPlusMACD  = divSellLastPlus;
+         if ( lastMinusMACD!=divSellLastMinus) lastMinusMACD = divBuyLastMinus; 
          else continue;
         }
                                      
@@ -243,7 +245,7 @@ int OnCalculate(const int rates_total,
        minPrice =  low[ArrayMinimum(low,lastBarIndex -actualBars,actualBars)];   // находим минимум по low
 
        // вычисляем актуальность расхождений
-       if (retCode == 1)      // если расхождение на SELL
+       if (retCode == _Sell)      // если расхождение на SELL
         { 
          countDivSell ++;    // увеличиваем количество расхождений на SELL
                
@@ -280,7 +282,7 @@ int OnCalculate(const int rates_total,
                            
       }
      }
-     if (retCode == -1)     // если расхождение на BUY
+     if (retCode == _Buy)     // если расхождение на BUY
      {              
       countDivBuy ++;     // увеличиваем количество расхождений на BUY
                 
