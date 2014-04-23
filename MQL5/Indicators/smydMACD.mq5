@@ -220,7 +220,7 @@ int OnCalculate(const int rates_total,
               lastMinusMACD = time[1];
             }
           
-          retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints, 1);  // получаем сигнал на расхождение
+          retCode = divergenceMACD (handleMACD,_Symbol,_Period,divergencePoints, 0);  // получаем сигнал на расхождение
           // если не удалось загрузить буферы MACD
           if (retCode == -2)
            {
