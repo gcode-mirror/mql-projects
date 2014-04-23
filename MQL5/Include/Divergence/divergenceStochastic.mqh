@@ -7,7 +7,8 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 
-#include <CompareDoubles.mqh>
+#include <CompareDoubles.mqh>          // для сравнения вещественных чисел
+#include <Constants.mqh>               // библиотека констант
 
 #define DEPTH_STOC 10                  // Глубина на которой ищем расхождение стохастика
 #define ALLOW_DEPTH_FOR_PRICE_EXTR 3   // Количество баров где смотрим на наличие нового экстремума 
@@ -83,7 +84,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      if (index_Price_local_max == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_max == (DEPTH_STOC-1) )
       return (0); 
      Print("Расхождение стохастика на продажу");   
-     return(-1);
+     return(_Sell);
     }   
    }
   }
@@ -102,7 +103,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      if (index_Price_local_min == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_min == (DEPTH_STOC-1) )
       return (0);  
      Print("Расхождение стохастика на покупку");   
-     return(1);
+     return(_Buy);
     }
    }
   }
@@ -178,7 +179,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      div_point.valueExtrPrice2  =  iHigh_buf[index_Price_local_max];
      div_point.valueExtrSTOC1   =  iSTOC_buf[index_STOC_global_max];
      div_point.valueExtrSTOC2   =  iSTOC_buf[i+1];      
-     return(1);
+     return(_Sell);
     }   
    }
   }
@@ -204,7 +205,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      div_point.valueExtrPrice2  =  iLow_buf[index_Price_local_min];
      div_point.valueExtrSTOC1   =  iSTOC_buf[index_STOC_global_min];
      div_point.valueExtrSTOC2   =  iSTOC_buf[i+1];  
-     return(-1);
+     return(_Buy);
     }
    }
   }

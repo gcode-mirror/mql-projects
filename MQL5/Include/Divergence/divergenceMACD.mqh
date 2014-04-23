@@ -5,7 +5,9 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 
-#include <CompareDoubles.mqh>
+#include <CompareDoubles.mqh>     // для сравнения вещественных переменных
+#include <Constants.mqh>          // подключаем библиотеку констант
+
 
 #define DEPTH_MACD 130
 #define BORDER_DEPTH_MACD 15
@@ -142,7 +144,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
      return (0);
     }
     //PrintFormat("Расхождение MACD на продажу");      
-    return(-1);
+    return(_Sell);
    }
   }
  }
@@ -183,7 +185,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
      return (0);
     }
     //PrintFormat("Расхождение MACD на покупку");      
-    return(1);
+    return(_Buy);
    }
   }
  }
@@ -292,7 +294,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
                                                                                     TimeToString(div_point.timeExtrPrice2),
                                                                                     TimeToString(div_point.timeExtrMACD1),
                                                                                     TimeToString(div_point.timeExtrMACD2));
-   */ return(1);
+   */ return(_Sell);
    }
   }
  // else
@@ -346,7 +348,7 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
                                                                                     TimeToString(div_point.timeExtrPrice2),
                                                                                     TimeToString(div_point.timeExtrMACD1),
                                                                                     TimeToString(div_point.timeExtrMACD2));    
-  */  return(-1);
+  */  return(_Buy);
    }
   }
  // else

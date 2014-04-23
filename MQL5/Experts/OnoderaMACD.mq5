@@ -11,7 +11,7 @@
 #include <TradeManager\TradeManager.mqh>        // подключение торговой библиотеки
 #include <Lib CisNewBar.mqh>                    // для проверки формирования нового бара
 #include <CompareDoubles.mqh>                   // для проверки соотношения  цен
-
+#include <Constants.mqh>                        // библиотека констант
 
 //+------------------------------------------------------------------+
 //| Эксперт, основанный на расхождении MACD                          |
@@ -19,39 +19,47 @@
 
 // входные параметры
 
-sinput string base_param                           = "";            // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
-input  int    StopLoss                             = 0;             // Стоп Лосс
-input  int    TakeProfit                           = 0;             // Тейк Профит
-input  double Lot                                  = 1;             // Лот
-input  ENUM_USE_PENDING_ORDERS pending_orders_type = USE_NO_ORDERS; // Тип отложенного ордера                    
-input  int    priceDifference                      = 50;            // Price Difference
+sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
+input  int    StopLoss                             = 0;                  // Стоп Лосс
+input  int    TakeProfit                           = 0;                  // Тейк Профит
+input  double Lot                                  = 1;                  // Лот
+input  ENUM_USE_PENDING_ORDERS pending_orders_type = USE_NO_ORDERS;      // Тип отложенного ордера                    
+input  int    priceDifference                      = 50;                 // Price Difference
 
-sinput string macd_string                          = "";            // ПАРАМЕТРЫ MACD
+sinput string trailingStr                          = "";                 // ПАРАМЕТРЫ трейлинга
+input         ENUM_TRAILING_TYPE trailingType      = TRAILING_TYPE_PBI;  // тип трейлинга
+input int     trStop                               = 100;                // Trailing Stop
+input int     trStep                               = 100;                // Trailing Step
+input int     minProfit                            = 250;                // минимальная прибыль
 
 // объекты
-CTradeManager * ctm;                                                // указатель на объект торговой библиотеки
-static CisNewBar isNewBar(_Symbol, _Period);                        // для проверки формирования нового бара
+CTradeManager * ctm;                                                     // указатель на объект торговой библиотеки
+static CisNewBar isNewBar(_Symbol, _Period);                             // для проверки формирования нового бара
 
 // хэндлы индикаторов 
-int handleMACD;                                                     // хэндл MACD
+int handleSmydMACD;                                                      // хэндл индикатора ShowMeYourDivMACD
 
 // переменные эксперта
-int divSignal;                                                      // сигнал на расхождение
-double currentPrice;                                                // текущая цена
-ENUM_TM_POSITION_TYPE opBuy,opSell;                                 // типы ордеров 
+int divSignal;                                                           // сигнал на расхождение
+double currentPrice;                                                     // текущая цена
+ENUM_TM_POSITION_TYPE opBuy,opSell;                                      // типы ордеров 
 
-double tmpBuffer[];
+double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
+
+int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
+
+int    copiedSmydMACD;                                                   // переменная для проверки копирования буфера сигналов расхождения
 
 int OnInit()
 {
  // выделяем память под объект тороговой библиотеки
  ctm = new CTradeManager(); 
- // создаем хэндл индикатора MACD
- handleMACD = iCustom (_Symbol,_Period,"smydMACD");   
+ // создаем хэндл индикатора ShowMeYourDivMACD
+ handleSmydMACD = iCustom (_Symbol,_Period,"smydMACD");   
    
- if ( handleMACD == INVALID_HANDLE )
+ if ( handleSmydMACD == INVALID_HANDLE )
  {
-  Print("Ошибка при инициализации эксперта ONODERA. Не удалось создать хэндл MACD");
+  Print("Ошибка при инициализации эксперта ONODERA. Не удалось создать хэндл ShowMeYourDivMACD");
   return(INIT_FAILED);
  }
  // сохранение типов ордеров
@@ -78,32 +86,42 @@ void OnDeinit(const int reason)
  // удаляем объект класса TradeManager
  delete ctm;
  // удаляем индикатор 
- IndicatorRelease(handleMACD);
+ IndicatorRelease(handleSmydMACD);
 }
+
+int countSell=0;
+int countBuy =0;
 
 void OnTick()
 {
- int copiedMACD = -1;
+ // выставляем переменную проверки копирования буфера сигналов в начальное значение
+ copiedSmydMACD = -1;
  // если сформирован новый бар
  if (isNewBar.isNewBar() > 0)
   {
- 
-   //divSignal = divergenceSTOC(handleStochastic,_Symbol,_Period,top_level,bottom_level);  // получаем сигнал расхождения
-   copiedMACD = CopyBuffer(handleMACD,1,0,1,tmpBuffer);
-   if (copiedMACD < 1)
+   copiedSmydMACD = CopyBuffer(handleSmydMACD,1,0,1,signalBuffer);
+
+   if (copiedSmydMACD < 1)
     {
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
-    }    
-   if ( EqualDoubles(tmpBuffer[0],1.0))  // получили расхождение на покупку
+    }   
+   if (signalBuffer[0] == _Buy)
+     countBuy++;
+   if (signalBuffer[0] == _Sell)
+     countSell++;
+
+    //  Comment("СИГНАЛ SELL = ",countSell," \n СИГНАЛ BUY = ",countBuy);
+ 
+   if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
      { 
       currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-      ctm.OpenUniquePosition(_Symbol,_Period,opSell,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);
+      ctm.OpenUniquePosition(_Symbol,_Period,opBuy,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);
      }
-   if ( EqualDoubles(tmpBuffer[0],-1.0)) // получили расхождение на продажу
+   if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
      {
       currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);       
-      ctm.OpenUniquePosition(_Symbol,_Period,opBuy,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);                 
+      ctm.OpenUniquePosition(_Symbol,_Period,opSell,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);                 
      }
    }  
 }
