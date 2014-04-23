@@ -12,111 +12,77 @@
 #include <Lib CisNewBar.mqh>
 #include <CheckHistory.mqh>
 
+enum LevelType
+{
+ EXTR_MN, 
+ EXTR_W1,
+ EXTR_D1,
+ EXTR_H4,
+ EXTR_H1
+};
+
 input datetime start_time = D'2012.01.01';
 input datetime end_time =   D'2014.04.01';
 
- enum LevelType
- {
-  EXTR_MN, 
-  EXTR_W1,
-  EXTR_D1,
-  EXTR_H4,
-  EXTR_H1
- };
+input int    period_ATR = 100;      //Период ATR для канала
+input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR
+input double precentageATR_price = 1; //Процентр ATR для нового экструмума
+input LevelType level = EXTR_H4;
  
- input int    period_ATR = 100;      //Период ATR для канала
- input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR
- input double precentageATR_price = 1; //Процентр ATR для нового экструмума
+SExtremum estruct[3];
+ENUM_TIMEFRAMES period_current = Period();
+ENUM_TIMEFRAMES period_level;
+CisNewBar is_new_level_bar;
 
- input LevelType level = EXTR_H4;
- CExtremumCalc calc(Symbol(), Period(), precentageATR_price, period_ATR, percent_ATR);  
- SExtremum estruct[3];
- 
- ENUM_TIMEFRAMES period_current = Period();
- ENUM_TIMEFRAMES period_level;
- CisNewBar is_new_level_bar;
- 
- bool level_one_UD   = false;
- bool level_one_DU   = false;
- bool level_two_UD   = false;
- bool level_two_DU   = false;
- bool level_three_UD = false;
- bool level_three_DU = false;
- 
- double count_DUU = 0;
- double count_DUD = 0;
- double count_UDD = 0;
- double count_UDU = 0;
+bool level_one_UD   = false;
+bool level_one_DU   = false;
+bool level_two_UD   = false;
+bool level_two_DU   = false;
+bool level_three_UD = false;
+bool level_three_DU = false;
+
+double count_DUU = 0;
+double count_DUD = 0;
+double count_UDD = 0;
+double count_UDU = 0;
  
  
- MqlRates buffer_rates[];
- datetime buffer_time[];
+int handle_19Lines;
+datetime buffer_time[];
+double buffer_19Lines_price1[];
+double buffer_19Lines_price2[];
+double buffer_19Lines_price3[];
+double buffer_19Lines_atr1[];
+double buffer_19Lines_atr2[];
+double buffer_19Lines_atr3[];
 //+------------------------------------------------------------------+
 //| Script program start function                                    |
 //+------------------------------------------------------------------+
 void OnStart()
 {
  PrintFormat("BEGIN");
- period_level = GetTFbyLevel(level);
- calc.SetPeriod(period_level);
- is_new_level_bar.SetPeriod(period_level);
- 
- PrintFormat("start time: %s ; end time: %s", TimeToString(start_time), TimeToString(end_time));
- PrintFormat("level tf: %s", EnumToString(period_level));
- int copied = CopyRates(Symbol(), period_current, start_time, end_time, buffer_rates);
- int copied_t = CopyTime(Symbol(), period_current, start_time, end_time, buffer_time);
- while(!FillATRBuffer(calc)) FillATRBuffer(calc);
+ int start_index_buffer = 0; //первый номер набора буферов для 3 линий уровня 
+ handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, true, clrRed, true, clrRed, true, clrRed, true, clrRed, true, clrRed, true, clrRed); 
 
- int factor = PeriodSeconds(period_level)/PeriodSeconds();
- PrintFormat("copied rates/time: %d/%d from %s to %s", copied, copied_t, TimeToString(start_time), TimeToString(end_time));
- FillThreeExtr(calc, estruct);
- is_new_level_bar.isNewBar(buffer_time[0]);
- for(int i = 0; i < copied-1; i++)
+ PrintFormat("Хэндл создал. молодец");
+ for(int i = 0; i < 5; i++)
  {
-  RecountThreeExtr(calc, estruct, buffer_time[i]);
-  CalcStatistic(buffer_rates[i]);
- }
+ Sleep(1000);
+ int size1 = CopyBuffer(handle_19Lines, start_index_buffer    , start_time, end_time, buffer_19Lines_price1);
+ int size2 = CopyBuffer(handle_19Lines, start_index_buffer + 1, start_time, end_time, buffer_19Lines_atr1);
+ int size3 = CopyBuffer(handle_19Lines, start_index_buffer + 2, start_time, end_time, buffer_19Lines_price2);
+ int size4 = CopyBuffer(handle_19Lines, start_index_buffer + 3, start_time, end_time, buffer_19Lines_atr2);
+ int size5 = CopyBuffer(handle_19Lines, start_index_buffer + 4, start_time, end_time, buffer_19Lines_price3);
+ int size6 = CopyBuffer(handle_19Lines, start_index_buffer + 5, start_time, end_time, buffer_19Lines_atr3);
  
- ArrayFree(buffer_rates);
- ArrayFree(buffer_time);
+ PrintFormat("bars = %d | %d / %d / %d / %d / %d / %d", BarsCalculated(handle_19Lines), size1, size2, size3, size4, size5, size6);
+ }
+ //int size = (end_time - start_time)/PeriodSeconds(PERIOD_M1);
+ //for(int i = )
+ 
  PrintFormat("%s END вошла снизу вврех вышла вверх = %.0f; вошла снизу вврех вышла вниз = %.0f; вошла сверху вниз вышла вверх = %.0f; вошла сверху вниз вышла вниз = %.0f", __FUNCTION__, count_DUU, count_DUD, count_UDU, count_UDD);
 }
-//+------------------------------------------------------------------+
-//+Заполняет первые три экстрмума для расчетов начиная с start_time--+
-//+------------------------------------------------------------------+
-void FillThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[])
-{
- extrcalc.CalcThreeExtrOnHistory(start_time);
- 
- for(int j = 0; j < 3; j++)
- {
-  resArray[j] = extrcalc.getExtr(j);
- }
- //PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
-}
 
-void RecountThreeExtr (CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos)
-{
- extrcalc.RecountExtremum(false, start_pos);
-
- for(int j = 0; j < 3; j++)
- {
-  resArray[j] = extrcalc.getExtr(j);
- }
- //PrintFormat("num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
-}
-
-bool FillATRBuffer(CExtremumCalc &extrcalc)
-{
- bool result = true;
- 
- if(!extrcalc.isATRCalculated())
-  result = false;
-   
- if(!result)
-  PrintFormat("%s Не получилось загрузить буфера ATR, подожди чутка братан. Ошибочка вышла %d", __FUNCTION__, GetLastError()); 
- return(result);
-}
 
 ENUM_TIMEFRAMES GetTFbyLevel(LevelType lt)
 {

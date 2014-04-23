@@ -31,18 +31,18 @@ input int    period_ATR_channel = 30;   //Период ATR для канала
 input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
 
 
-input bool  flag1  = false;
-input color color_Extr_MN = clrRed;
-input bool  flag2  = false;
-input color color_Extr_W1 = clrOrange;
-input bool  flag3  = false;
-input color color_Extr_D1 = clrYellow;
-input bool  flag4  = false;
-input color color_Extr_H4 = clrBlue;
-input bool  flag5  = true;
-input color color_Extr_H1 = clrAqua;
-input bool  flag6  = false;
-input color color_Price_D1 = clrDarkKhaki;
+input bool  flag1  = false;                  //Показывать экстремумы MN1
+input color color_Extr_MN = clrRed;          //Цвет линий экстремумов
+input bool  flag2  = false;                  //Показывать экстремумы W1
+input color color_Extr_W1 = clrOrange;       //Цвет линий экстремумов
+input bool  flag3  = false;                  //Показывать экстремумы D1
+input color color_Extr_D1 = clrYellow;       //Цвет линий экстремумов
+input bool  flag4  = false;                  //Показывать экстремумы H4
+input color color_Extr_H4 = clrBlue;         //Цвет линий экстремумов
+input bool  flag5  = true;                   //Показывать экстремумы H1
+input color color_Extr_H1 = clrAqua;         //Цвет линий экстремумов
+input bool  flag6  = false;                  //Показывать цены D1
+input color color_Price_D1 = clrDarkKhaki;   //Цвет линий экстремумов
 
 bool show_Extr_MN = flag1;
 bool show_Extr_W1 = flag2;
