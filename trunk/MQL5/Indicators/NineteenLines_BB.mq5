@@ -339,16 +339,16 @@ int OnCalculate(const int rates_total,
      for(int i = rates_total-2; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       while(!FillATRBuffer()) {}
-      if(show_Extr_MN && time[i]%PeriodSeconds(PERIOD_MN1) == 0) CalcExtr(calcMN, estructMN, time[i], false);
-      if(show_Extr_W1 && time[i]%PeriodSeconds(PERIOD_W1)  == 0) CalcExtr(calcW1, estructW1, time[i], false);
-      if(show_Extr_D1 && time[i]%PeriodSeconds(PERIOD_D1)  == 0) 
+      if(show_Extr_MN && (Period() ==  PERIOD_MN1 || time[i]%PeriodSeconds(PERIOD_MN1) == 0)) CalcExtr(calcMN, estructMN, time[i], false);
+      if(show_Extr_W1 && (Period() ==  PERIOD_W1  || time[i]%PeriodSeconds(PERIOD_W1)  == 0)) CalcExtr(calcW1, estructW1, time[i], false);
+      if(show_Extr_D1 && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) 
       {
        CalcExtr(calcD1, estructD1, time[i], false);
        CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
        CalcPrice(open[i+1], high[i+1], low[i+1], close[i+1], (tmp_buffer_ATR[0] * percent_ATR_channel)/2);
       }
-      if(show_Extr_H4 && time[i]%PeriodSeconds(PERIOD_H4)  == 0) CalcExtr(calcH4, estructH4, time[i], false);
-      if(show_Extr_H1 && time[i]%PeriodSeconds(PERIOD_H1)  == 0) CalcExtr(calcH1, estructH1, time[i], false);
+      if(show_Extr_H4 && (Period() ==  PERIOD_H4  || time[i]%PeriodSeconds(PERIOD_H4)  == 0)) CalcExtr(calcH4, estructH4, time[i], false);
+      if(show_Extr_H1 && (Period() ==  PERIOD_H1  || time[i]%PeriodSeconds(PERIOD_H1)  == 0)) CalcExtr(calcH1, estructH1, time[i], false);
       
       if(show_Extr_MN)
       {
