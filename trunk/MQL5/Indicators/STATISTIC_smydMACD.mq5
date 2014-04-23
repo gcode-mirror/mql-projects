@@ -225,12 +225,12 @@ int OnCalculate(const int rates_total,
       {             
        if (retCode == _Buy)    // если расхождение на BUY
         {
-         if (lastPlusMACD != divBuyLastMinus) lastPlusMACD  = divSellLastMinus;
+         if (lastPlusMACD != divBuyLastPlus) lastPlusMACD  = divBuyLastPlus;
          else continue;
         }
        if (retCode == _Sell)  // если расхождение на SELL
         {
-         if ( lastMinusMACD!=divSellLastMinus) lastMinusMACD = divBuyLastMinus; 
+         if ( lastMinusMACD!=divSellLastMinus) lastMinusMACD = divSellLastMinus; 
          else continue;
         }
                                      
