@@ -15,6 +15,7 @@ input int    period_ATR_channel = 30;   //Период ATR для канала
 input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
 input double precentageATR_price = 1;    //Процентр ATR для нового экструмумa
 input ENUM_TIMEFRAMES period = PERIOD_H1;
+input ENUM_TIMEFRAMES period_ATR = PERIOD_H1;
 
 #property indicator_chart_window
 #property indicator_buffers 6
@@ -63,7 +64,7 @@ double         DifLine2Buffer[];
 double         MainLine3Buffer[];
 double         DifLine3Buffer[];
 
-CExtremumCalc extrCalc (Symbol(), period, precentageATR_price, period_ATR_channel, percent_ATR_channel);
+CExtremumCalc extrCalc (Symbol(), period, period_ATR, precentageATR_price, period_ATR_channel, percent_ATR_channel);
 SExtremum sExtr[3];
 CisNewBar isNewLevelBar (Symbol(), period);
 bool first = true;
@@ -143,17 +144,21 @@ int OnCalculate(const int rates_total,
      
      for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
+      PrintFormat("time = %s; %d / %d = %d", TimeToString(time[i]), time[i], PeriodSeconds(period), time[i] % PeriodSeconds(period));
       while(!FillATRBuffer()) {}
       //PrintFormat("time calc = %s", TimeToString(time[i]));
-      if(time[i] % PeriodSeconds(period) == 0) CalcExtr(extrCalc, sExtr, time[i], false);
-      
+      if(period == Period() || time[i] % PeriodSeconds(period) == 0) 
+      {
+       PrintFormat("Сейчас я тебе все посчитаю, не ссы!");
+       CalcExtr(extrCalc, sExtr, time[i], false);
+      }
       MainLineBuffer[i]  = sExtr[0].price;
       DifLineBuffer[i]   = sExtr[0].channel;
       MainLine2Buffer[i] = sExtr[1].price;
       DifLine2Buffer[i]  = sExtr[1].channel;
       MainLine3Buffer[i] = sExtr[2].price;
       DifLine3Buffer[i]  = sExtr[2].channel;
-      //PrintExtrArray(sExtr, period);      
+      PrintExtrArray(sExtr, period);      
      }
      
      PrintFormat("%s num0 = {%.05f, %.05f}, num1 = {%.05f, %.05f}, num2 = {%.05f, %.05f}", TimeToString(time[0]), sExtr[0].price, sExtr[0].channel, sExtr[1].price, sExtr[1].channel,sExtr[2].price, sExtr[2].channel);
@@ -267,7 +272,7 @@ bool FillATRBuffer()
 {
  bool result = true;
  
- if(!extrCalc.isATRCalculated(Bars(Symbol(), period) - period_ATR_channel, Bars(Symbol(), ATR_TIMEFRAME) - ATR_PERIOD))
+ if(!extrCalc.isATRCalculated(Bars(Symbol(), period) - period_ATR_channel, Bars(Symbol(), period_ATR) - ATR_PERIOD))
   result = false;
  return (result);
 }
