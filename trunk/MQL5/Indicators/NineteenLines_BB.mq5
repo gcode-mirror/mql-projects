@@ -100,9 +100,8 @@ double Price_D1_Buffer2[];
 double Price_D1_Buffer3[];
 double Price_D1_Buffer4[];
 double   ATR_D1_Buffer [];
-  
-int ATR_D1_handle;
-double tmp_buffer_ATR[];
+
+int ATR_handle_for_price_line;
 
 bool series_order = true;
 bool first = true;
@@ -221,15 +220,15 @@ int OnInit()
  ArraySetAsSeries(Price_D1_Buffer3, series_order);
  ArraySetAsSeries(Price_D1_Buffer4, series_order);
  ArraySetAsSeries(  ATR_D1_Buffer , series_order);
- 
- ATR_D1_handle = iATR(Symbol(), PERIOD_D1, period_ATR_channel);
- 
+  
  InitializeExtrArray(estructMN);
  InitializeExtrArray(estructW1);
  InitializeExtrArray(estructD1);
  InitializeExtrArray(estructH4);
  InitializeExtrArray(estructH1);
  InitializeExtrArray(pstructD1);
+ 
+ ATR_handle_for_price_line = iATR(Symbol(), PERIOD_D1, period_ATR_channel);
  
  if(Period() > PERIOD_MN1 && show_Extr_MN)  show_Extr_MN = false;
  if(Period() > PERIOD_W1  && show_Extr_W1)  show_Extr_W1 = false;
@@ -251,7 +250,7 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
- IndicatorRelease(ATR_D1_handle);
+ IndicatorRelease(ATR_handle_for_price_line);
  //-------MN-LEVEL
  ArrayFree(Extr_MN_Buffer1);
  ArrayFree(Extr_MN_Buffer2);
@@ -339,16 +338,12 @@ int OnCalculate(const int rates_total,
      for(int i = rates_total-2; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       while(!FillATRBuffer()) {}
-      if(show_Extr_MN && (Period() ==  PERIOD_MN1 || time[i]%PeriodSeconds(PERIOD_MN1) == 0)) CalcExtr(calcMN, estructMN, time[i], false);
-      if(show_Extr_W1 && (Period() ==  PERIOD_W1  || time[i]%PeriodSeconds(PERIOD_W1)  == 0)) CalcExtr(calcW1, estructW1, time[i], false);
-      if(show_Extr_D1 && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) 
-      {
-       CalcExtr(calcD1, estructD1, time[i], false);
-       CopyBuffer(ATR_D1_handle, 0, time[i] - PERIOD_D1, 1, tmp_buffer_ATR);
-       CalcPrice(open[i+1], high[i+1], low[i+1], close[i+1], (tmp_buffer_ATR[0] * percent_ATR_channel)/2);
-      }
-      if(show_Extr_H4 && (Period() ==  PERIOD_H4  || time[i]%PeriodSeconds(PERIOD_H4)  == 0)) CalcExtr(calcH4, estructH4, time[i], false);
-      if(show_Extr_H1 && (Period() ==  PERIOD_H1  || time[i]%PeriodSeconds(PERIOD_H1)  == 0)) CalcExtr(calcH1, estructH1, time[i], false);
+      if(show_Extr_MN  && (Period() ==  PERIOD_MN1 || time[i]%PeriodSeconds(PERIOD_MN1) == 0)) CalcExtr(calcMN, estructMN, time[i], false);
+      if(show_Extr_W1  && (Period() ==  PERIOD_W1  || time[i]%PeriodSeconds(PERIOD_W1)  == 0)) CalcExtr(calcW1, estructW1, time[i], false);
+      if(show_Extr_D1  && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcExtr(calcD1, estructD1, time[i], false);
+      if(show_Price_D1 && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcPrice(pstructD1, PERIOD_D1, time[i]);
+      if(show_Extr_H4  && (Period() ==  PERIOD_H4  || time[i]%PeriodSeconds(PERIOD_H4)  == 0)) CalcExtr(calcH4, estructH4, time[i], false);
+      if(show_Extr_H1  && (Period() ==  PERIOD_H1  || time[i]%PeriodSeconds(PERIOD_H1)  == 0)) CalcExtr(calcH1, estructH1, time[i], false);
       
       if(show_Extr_MN)
       {
@@ -475,8 +470,7 @@ int OnCalculate(const int rates_total,
      CalcExtr(calcMN, estructMN, time[0], true); 
      CalcExtr(calcW1, estructW1, time[0], true);  
      CalcExtr(calcD1, estructD1, time[0], true);
-     CopyBuffer(ATR_D1_handle, 0, time[0] - PERIOD_D1, 1, tmp_buffer_ATR);
-     CalcPrice(open[1], high[1], low[1], close[1], (tmp_buffer_ATR[0] * percent_ATR_channel)/2);
+     CalcPrice(pstructD1, PERIOD_D1, time[0]);
      CalcExtr(calcH4, estructH4, time[0], true);
      CalcExtr(calcH1, estructH1, time[0], true);
       
@@ -532,16 +526,22 @@ void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos
  //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
 }
 
-void CalcPrice(double open, double high, double low, double close, double ATR)
+void CalcPrice(SExtremum &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
 {
- pstructD1[0].price = open;
- pstructD1[0].channel = ATR;
- pstructD1[1].price = high;
- pstructD1[1].channel = ATR;
- pstructD1[2].price = low;
- pstructD1[2].channel = ATR;
- pstructD1[3].price = close;
- pstructD1[3].channel = ATR;
+ double  buffer_ATR[1];
+ MqlRates rates_buffer[1];
+ 
+ CopyBuffer(ATR_handle_for_price_line, 0, start_pos-PeriodSeconds(tf), 1, buffer_ATR);
+ CopyRates(Symbol(), tf, start_pos-PeriodSeconds(tf), 1, rates_buffer);
+ 
+ pstructD1[0].price = rates_buffer[0].open;
+ pstructD1[0].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ pstructD1[1].price = rates_buffer[0].high;
+ pstructD1[1].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ pstructD1[2].price = rates_buffer[0].low;
+ pstructD1[2].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ pstructD1[3].price = rates_buffer[0].close;
+ pstructD1[3].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
 }
 //---------------------------------------------
 // Создание линий
