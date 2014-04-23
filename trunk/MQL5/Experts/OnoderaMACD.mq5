@@ -13,12 +13,13 @@
 #include <CompareDoubles.mqh>                   // для проверки соотношения  цен
 #include <Constants.mqh>                        // библиотека констант
 
+#define ADD_TO_STOPPLOSS 50
+
 //+------------------------------------------------------------------+
 //| Эксперт, основанный на расхождении MACD                          |
 //+------------------------------------------------------------------+
 
 // входные параметры
-
 sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
 input  int    StopLoss                             = 0;                  // Стоп Лосс
 input  int    TakeProfit                           = 0;                  // Тейк Профит
@@ -34,16 +35,19 @@ input int     minProfit                            = 250;                // мини
 
 // объекты
 CTradeManager * ctm;                                                     // указатель на объект торговой библиотеки
-static CisNewBar isNewBar(_Symbol, _Period);                             // для проверки формирования нового бара
+static CisNewBar *isNewBar;                             // для проверки формирования нового бара
 
 // хэндлы индикаторов 
 int handleSmydMACD;                                                      // хэндл индикатора ShowMeYourDivMACD
+int handlePBIcur;
 
 // переменные эксперта
 int divSignal;                                                           // сигнал на расхождение
 double currentPrice;                                                     // текущая цена
 ENUM_TM_POSITION_TYPE opBuy,opSell;                                      // типы ордеров 
-
+string symbol;
+ENUM_TIMEFRAMES period;
+int historyDepth;
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
 
 int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
@@ -52,10 +56,16 @@ int    copiedSmydMACD;                                                   // пере
 
 int OnInit()
 {
+ symbol = Symbol();
+ period = Period();
+ 
+ historyDepth = 1000;
  // выделяем память под объект тороговой библиотеки
+ isNewBar = new CisNewBar(symbol, period);
  ctm = new CTradeManager(); 
+ handlePBIcur = iCustom(symbol, period, "PriceBasedIndicator");
  // создаем хэндл индикатора ShowMeYourDivMACD
- handleSmydMACD = iCustom (_Symbol,_Period,"smydMACD");   
+ handleSmydMACD = iCustom (symbol,period,"smydMACD");   
    
  if ( handleSmydMACD == INVALID_HANDLE )
  {
@@ -84,6 +94,7 @@ int OnInit()
 void OnDeinit(const int reason)
 {
  // удаляем объект класса TradeManager
+ delete isNewBar;
  delete ctm;
  // удаляем индикатор 
  IndicatorRelease(handleSmydMACD);
@@ -95,10 +106,11 @@ int countBuy =0;
 void OnTick()
 {
  ctm.OnTick();
+ int stopLoss = 0;
  // выставляем переменную проверки копирования буфера сигналов в начальное значение
  copiedSmydMACD = -1;
  // если сформирован новый бар
- if (isNewBar.isNewBar() > 0)
+ //if (isNewBar.isNewBar() > 0)
   {
    copiedSmydMACD = CopyBuffer(handleSmydMACD,1,0,1,signalBuffer);
 
@@ -112,17 +124,75 @@ void OnTick()
    if (signalBuffer[0] == _Sell)
      countSell++;
 
-    //  Comment("СИГНАЛ SELL = ",countSell," \n СИГНАЛ BUY = ",countBuy);
+      //Comment("СИГНАЛ SELL = ",countSell," \n СИГНАЛ BUY = ",countBuy);
  
    if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
      { 
-      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-      ctm.OpenUniquePosition(_Symbol,_Period,opBuy,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);
+      currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
+      stopLoss = CountStoploss(1);
+      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, StopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
      }
    if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
      {
-      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);       
-      ctm.OpenUniquePosition(_Symbol,_Period,opSell,Lot,StopLoss,TakeProfit,0,0,0,0,0,priceDifference);                 
+      currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
+      stopLoss = CountStoploss(-1);
+      ctm.OpenUniquePosition(symbol,period, opSell, Lot, StopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
      }
    }  
+}
+
+int CountStoploss(int point)
+{
+ int stopLoss = 0;
+ int direction;
+ double priceAB;
+ double bufferStopLoss[];
+ ArraySetAsSeries(bufferStopLoss, true);
+ ArrayResize(bufferStopLoss, 1000);
+ 
+ int extrBufferNumber;
+ if (point > 0)
+ {
+  extrBufferNumber = 6;
+  priceAB = SymbolInfoDouble(symbol, SYMBOL_ASK);
+  direction = 1;
+ }
+ else
+ {
+  extrBufferNumber = 5; // Если point > 0 возьмем буфер с минимумами, иначе с максимумами
+  priceAB = SymbolInfoDouble(symbol, SYMBOL_BID);
+  direction = -1;
+ }
+ 
+ int copiedPBI = -1;
+ for(int attempts = 0; attempts < 25; attempts++)
+ {
+  Sleep(100);
+  copiedPBI = CopyBuffer(handlePBIcur, extrBufferNumber, 0,historyDepth, bufferStopLoss);
+ }
+ if (copiedPBI < 0)
+ {
+  PrintFormat("%s Не удалось скопировать буфер bufferStopLoss", MakeFunctionPrefix(__FUNCTION__));
+  return(false);
+ }
+ 
+ for(int i = 0; i < historyDepth; i++)
+ {
+  if (bufferStopLoss[i] > 0)
+  {
+   if (LessDoubles(direction*bufferStopLoss[i], direction*priceAB))
+   {
+    stopLoss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point()) + ADD_TO_STOPPLOSS;
+    break;
+   }
+  }
+ }
+ 
+ if (stopLoss <= 0)
+ {
+  PrintFormat("Не поставили стоп на экстремуме");
+  stopLoss = SymbolInfoInteger(symbol, SYMBOL_SPREAD) + ADD_TO_STOPPLOSS;
+ }
+ //PrintFormat("%s StopLoss = %d",MakeFunctionPrefix(__FUNCTION__), stopLoss);
+ return(stopLoss);
 }
