@@ -35,7 +35,7 @@ input int     minProfit                            = 250;                // мини
 
 // объекты
 CTradeManager * ctm;                                                     // указатель на объект торговой библиотеки
-static CisNewBar *isNewBar;                             // для проверки формирования нового бара
+static CisNewBar *isNewBar;                                              // для проверки формирования нового бара
 
 // хэндлы индикаторов 
 int handleSmydMACD;                                                      // хэндл индикатора ShowMeYourDivMACD
@@ -110,7 +110,7 @@ void OnTick()
  // выставляем переменную проверки копирования буфера сигналов в начальное значение
  copiedSmydMACD = -1;
  // если сформирован новый бар
- //if (isNewBar.isNewBar() > 0)
+ if (isNewBar.isNewBar() > 0)
   {
    copiedSmydMACD = CopyBuffer(handleSmydMACD,1,0,1,signalBuffer);
 
@@ -119,12 +119,10 @@ void OnTick()
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }   
-   if (signalBuffer[0] == _Buy)
-     countBuy++;
-   if (signalBuffer[0] == _Sell)
-     countSell++;
-
-      //Comment("СИГНАЛ SELL = ",countSell," \n СИГНАЛ BUY = ",countBuy);
+   if ( signalBuffer[0] == _Buy)
+        countBuy++;
+   if ( signalBuffer[0] == _Sell)
+        countSell++;
  
    if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
      { 
