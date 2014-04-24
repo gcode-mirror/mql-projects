@@ -13,7 +13,7 @@
 #include <CompareDoubles.mqh>                   // для проверки соотношения  цен
 #include <Constants.mqh>                        // библиотека констант
 
-#define ADD_TO_STOPPLOSS 50
+#define ADD_TO_STOPPLOSS 0
 
 //+------------------------------------------------------------------+
 //| Эксперт, основанный на расхождении Стохастика                    |
@@ -50,7 +50,7 @@ ENUM_TIMEFRAMES period;
 int historyDepth;
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
 
-int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
+int    stop_loss;                                                        // переменная для хранения действительного стоп лосса
 
 int    copiedSmydSTOC;                                                   // переменная для проверки копирования буфера сигналов расхождения
 
@@ -100,13 +100,10 @@ void OnDeinit(const int reason)
  IndicatorRelease(handleSmydSTOC);
 }
 
-int countSell=0;
-int countBuy =0;
-
 void OnTick()
 {
  ctm.OnTick();
- int stopLoss = 0;
+ ctm.DoTrailing();  
  // выставляем переменную проверки копирования буфера сигналов в начальное значение
  copiedSmydSTOC = -1;
  // если сформирован новый бар
@@ -119,28 +116,24 @@ void OnTick()
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }   
-   if ( signalBuffer[0] == _Buy)
-        countBuy++;
-   if ( signalBuffer[0] == _Sell)
-        countSell++;
-        
-   Comment("количество BUY = ",countBuy," \nколичество SELL = ",countSell);
  
    if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
      { 
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
-      stopLoss = CountStoploss(1);
-      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, StopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      stop_loss = CountStoploss(1);
+      Comment("СТОП ЛОСС = ",stop_loss);
+      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stop_loss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
      }
    if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
      {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
-      stopLoss = CountStoploss(-1);
-      ctm.OpenUniquePosition(symbol,period, opSell, Lot, StopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      stop_loss = CountStoploss(-1);
+      Comment("СТОП ЛОСС = ",stop_loss);      
+      ctm.OpenUniquePosition(symbol,period, opSell, Lot, stop_loss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
      }
    }  
 }
-
+// функция вычисляет стоп лосс
 int CountStoploss(int point)
 {
  int stopLoss = 0;
@@ -148,7 +141,7 @@ int CountStoploss(int point)
  double priceAB;
  double bufferStopLoss[];
  ArraySetAsSeries(bufferStopLoss, true);
- ArrayResize(bufferStopLoss, 1000);
+ ArrayResize(bufferStopLoss, historyDepth);
  
  int extrBufferNumber;
  if (point > 0)
@@ -187,7 +180,11 @@ int CountStoploss(int point)
    }
   }
  }
- 
+ // на случай сбоя матрицы, в которой мы живем, а возможно и не живем
+ // возможно всё вокруг - это лишь результат работы моего больного воображения
+ // так или иначе, мы не можем исключать, что stopLoss может быть отрицательным числом
+ // хотя гарантировать, что он будет положительным не из-за сбоя матрицы, мы опять таки не можем
+ // к чему вообще вся эта дискуссия, пойду напьюсь ;) 
  if (stopLoss <= 0)
  {
   PrintFormat("Не поставили стоп на экстремуме");
@@ -196,3 +193,4 @@ int CountStoploss(int point)
  //PrintFormat("%s StopLoss = %d",MakeFunctionPrefix(__FUNCTION__), stopLoss);
  return(stopLoss);
 }
+
