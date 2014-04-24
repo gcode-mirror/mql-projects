@@ -8,8 +8,8 @@
 #property version   "1.00"
 
 #property indicator_chart_window
-#property indicator_buffers 36
-#property indicator_plots   0
+#property indicator_buffers 36  
+#property indicator_plots   36
 
 #include <ExtrLine\CExtremumCalc_NE.mqh>
 #include <ExtrLine\HLine.mqh>
@@ -112,7 +112,7 @@ int OnInit()
 {
  SetInfoTabel();
  PrintFormat("INITIALIZATION");
- 
+
  SetIndexBuffer( 0, Extr_MN_Buffer1, INDICATOR_DATA);
  SetIndexBuffer( 1,  ATR_MN_Buffer1, INDICATOR_DATA);
  SetIndexBuffer( 2, Extr_MN_Buffer2, INDICATOR_DATA);
