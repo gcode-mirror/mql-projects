@@ -33,10 +33,9 @@ input int     trStop                               = 100;                // Trai
 input int     trStep                               = 100;                // Trailing Step
 input int     minProfit                            = 250;                // минимальная прибыль
 
-sinput string pbi_Str                              = "";                 // ПАРАМЕТРЫ PBI
-input double  percentage_ATR_cur                   = 2;   
-input double  difToTrend_cur                       = 1.5;
-input int     ATR_ma_period_cur                    = 12;
+sinput string PriceBasedIndicator                  = "";                 // ПАРАМЕТРЫ PBI
+input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
+input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
 
 // объекты
 CTradeManager * ctm;                                                     // указатель на объект торговой библиотеки
@@ -68,7 +67,7 @@ int OnInit()
  // выделяем память под объект тороговой библиотеки
  isNewBar = new CisNewBar(symbol, period);
  ctm = new CTradeManager(); 
- handlePBIcur = iCustom(symbol, period, "PriceBasedIndicator",historyDepth, percentage_ATR_cur, difToTrend_cur);
+ handlePBIcur = iCustom(symbol, period, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
  // создаем хэндл индикатора ShowMeYourDivMACD
  handleSmydMACD = iCustom (symbol,period,"smydMACD");   
    
@@ -125,14 +124,14 @@ void OnTick()
    if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
      { 
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
-      stop_loss = CountStoploss(1);
-      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stop_loss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      stopLoss = CountStoploss(1);
+      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
      }
    if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
      {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
-      stop_loss = CountStoploss(-1);
-      ctm.OpenUniquePosition(symbol,period, opSell, Lot, stop_loss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      stopLoss = CountStoploss(-1);
+      ctm.OpenUniquePosition(symbol,period, opSell, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
      }
    }  
 }
