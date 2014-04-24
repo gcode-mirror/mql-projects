@@ -68,14 +68,14 @@ void OnStart()
  for(int i = 0; i < 5; i++)
  {
  Sleep(1000);
- int size1 = CopyBuffer(handle_19Lines, start_index_buffer    , start_time, end_time, buffer_19Lines_price1);
+ int size1 = CopyBuffer(handle_19Lines, start_index_buffer     , start_time, end_time, buffer_19Lines_price1);
  int size2 = CopyBuffer(handle_19Lines, start_index_buffer + 1, start_time, end_time, buffer_19Lines_atr1);
  int size3 = CopyBuffer(handle_19Lines, start_index_buffer + 2, start_time, end_time, buffer_19Lines_price2);
  int size4 = CopyBuffer(handle_19Lines, start_index_buffer + 3, start_time, end_time, buffer_19Lines_atr2);
  int size5 = CopyBuffer(handle_19Lines, start_index_buffer + 4, start_time, end_time, buffer_19Lines_price3);
  int size6 = CopyBuffer(handle_19Lines, start_index_buffer + 5, start_time, end_time, buffer_19Lines_atr3);
  
- PrintFormat("bars = %d | %d / %d / %d / %d / %d / %d", BarsCalculated(handle_19Lines), size1, size2, size3, size4, size5, size6);
+ PrintFormat("bars = %d | size1=%d / size2=%d / size3=%d / size4=%d / size5=%d / size6=%d", BarsCalculated(handle_19Lines), size1, size2, size3, size4, size5, size6);
  }
  //int size = (end_time - start_time)/PeriodSeconds(PERIOD_M1);
  //for(int i = )
