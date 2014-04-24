@@ -33,6 +33,11 @@ input int     trStop                               = 100;                // Trai
 input int     trStep                               = 100;                // Trailing Step
 input int     minProfit                            = 250;                // минимальная прибыль
 
+sinput string pbi_Str                              = "";                 // ПАРАМЕТРЫ PBI
+input double  percentage_ATR_cur                   = 2;   
+input double  difToTrend_cur                       = 1.5;
+input int     ATR_ma_period_cur                    = 12;
+
 // объекты
 CTradeManager * ctm;                                                     // указатель на объект торговой библиотеки
 static CisNewBar *isNewBar;                                              // для проверки формирования нового бара
@@ -63,7 +68,7 @@ int OnInit()
  // выделяем память под объект тороговой библиотеки
  isNewBar = new CisNewBar(symbol, period);
  ctm = new CTradeManager(); 
- handlePBIcur = iCustom(symbol, period, "PriceBasedIndicator");
+ handlePBIcur = iCustom(symbol, period, "PriceBasedIndicator",historyDepth, percentage_ATR_cur, difToTrend_cur);
  // создаем хэндл индикатора ShowMeYourDivMACD
  handleSmydMACD = iCustom (symbol,period,"smydMACD");   
    
@@ -161,10 +166,10 @@ int CountStoploss(int point)
   Sleep(100);
   copiedPBI = CopyBuffer(handlePBIcur, extrBufferNumber, 0,historyDepth, bufferStopLoss);
  }
- if (copiedPBI < 0)
+ if (copiedPBI < historyDepth)
  {
   PrintFormat("%s Не удалось скопировать буфер bufferStopLoss", MakeFunctionPrefix(__FUNCTION__));
-  return(false);
+  return(0);
  }
  
  for(int i = 0; i < historyDepth; i++)

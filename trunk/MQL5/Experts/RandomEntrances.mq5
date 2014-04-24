@@ -9,18 +9,21 @@
 
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 
-#define DEPTH_PBI 100
+#define ADD_TO_STOPPLOSS 50
 
 input int step = 100;
 input int countSteps = 4;
 input int volume = 5;
 input double ko = 2;        // ko=0-весь объем, ko=1-равные доли, ko>1-увелич.доли, k0<1-уменьш.доли 
 
-input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL;
+input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 //input bool stepbypart = false; // 
 input double   percentage_ATR_cur = 2;   
 input double   difToTrend_cur = 1.5;
 input int      ATR_ma_period_cur = 12;
+input int      trStop                               = 100;                // Trailing Stop
+input int      trStep                               = 100;                // Trailing Step
+input int      minProfit                            = 250;                // минимальная прибыль
 
 string symbol;
 ENUM_TIMEFRAMES timeframe;
@@ -35,6 +38,12 @@ CTradeManager ctm();
 int handle_PBI;
 datetime history_start;
 
+int historyDepth;
+
+int handlePBIcur;                                                        // хэндл PriceBasedIndicator
+
+int stop_loss=0;
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -45,10 +54,10 @@ int OnInit()
    MathSrand((int)TimeLocal());
    count = 0;
    history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
-   
+   historyDepth = 1000;
    if (trailingType == TRAILING_TYPE_PBI)
    {
-    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", DEPTH_PBI, percentage_ATR_cur, difToTrend_cur);
+    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", historyDepth, percentage_ATR_cur, difToTrend_cur);
     if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
     {
      Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
@@ -95,15 +104,31 @@ void OnTick()
  {
   ctm.OnTick();
   ctm.DoTrailing();
+  // если позиции нет
   if (ctm.GetPositionCount() == 0)
   {
    lot = aDeg[0];
    count = 1;
    rnd = (double)MathRand()/32767;
-   ENUM_TM_POSITION_TYPE operation = GreatDoubles(rnd, 0.5, 5) ? OP_SELL : OP_BUY;
-   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, step, 0, trailingType, step, step, step, handle_PBI);   
-  }
+   ENUM_TM_POSITION_TYPE operation;
+   if ( GreatDoubles(rnd,0.5,5) )
+    {
+     operation = OP_SELL;
+     stop_loss = CountStoploss(-1);
+     //Comment("OP SELL STOP = ");
+    } 
+   else
+    {
+     operation = OP_BUY;
+     stop_loss = CountStoploss(1);
+        //  Comment("OP BUY STOP = ",stop_loss);
+    }
    
+  // Comment("СТОП ЛОСС = ",stop_loss);
+   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, stop_loss, 0, trailingType,minProfit, trStop, trStep, handle_PBI);
+
+  }
+  // если есть открытая позиция
   if (ctm.GetPositionCount() > 0)
   {
    profit = ctm.GetPositionPointsProfit(symbol);
@@ -121,4 +146,63 @@ void OnTrade()
   {
    ctm.OnTrade(history_start);
   }
+
+
+// функция вычисляет стоп лосс
+int CountStoploss(int point)
+{
+ int stopLoss = 0;
+ int direction;
+ double priceAB;
+ double bufferStopLoss[];
+ ArraySetAsSeries(bufferStopLoss, true);
+ ArrayResize(bufferStopLoss, historyDepth);
+ 
+ int extrBufferNumber;
+ if (point > 0)
+ {
+  extrBufferNumber = 6;
+  priceAB = SymbolInfoDouble(symbol, SYMBOL_ASK);
+  direction = 1;
+ }
+ else
+ {
+  extrBufferNumber = 5; // Если point > 0 возьмем буфер с минимумами, иначе с максимумами
+  priceAB = SymbolInfoDouble(symbol, SYMBOL_BID);
+  direction = -1;
+ }
+ 
+ int copiedPBI = -1;
+ for(int attempts = 0; attempts < 25; attempts++)
+ {
+  Sleep(100);
+  copiedPBI = CopyBuffer(handlePBIcur, extrBufferNumber, 0,historyDepth, bufferStopLoss);
+ }
+ if (copiedPBI < historyDepth)
+ {
+  PrintFormat("%s Не удалось скопировать буфер bufferStopLoss", MakeFunctionPrefix(__FUNCTION__));
+  return(copiedPBI);
+ }
+ 
+ for(int i = 0; i < historyDepth; i++)
+ {
+  
+  if (bufferStopLoss[i] > 0)
+  {
+   if (LessDoubles(direction*bufferStopLoss[i], direction*priceAB))
+   {
+    stopLoss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point()) + ADD_TO_STOPPLOSS;
+ 
+    break;
+   }
+  }
+ }
+ if (stopLoss <= 0)
+ {
+  PrintFormat("Не поставили стоп на экстремуме");
+  stopLoss = SymbolInfoInteger(symbol, SYMBOL_SPREAD) + ADD_TO_STOPPLOSS;
+ }
+ //PrintFormat("%s StopLoss = %d",MakeFunctionPrefix(__FUNCTION__), stopLoss);
+ return(stopLoss);
+}
 
