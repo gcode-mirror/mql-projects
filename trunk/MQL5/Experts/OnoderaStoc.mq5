@@ -121,20 +121,18 @@ void OnTick()
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }   
- 
+        
    if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
      { 
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
-      stop_loss = CountStoploss(1);
-      Comment("СТОП ЛОСС = ",stop_loss);
-      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stop_loss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      stopLoss = CountStoploss(1);
+      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
      }
    if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
      {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
-      stop_loss = CountStoploss(-1);
-      Comment("СТОП ЛОСС = ",stop_loss);      
-      ctm.OpenUniquePosition(symbol,period, opSell, Lot, stop_loss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      stopLoss = CountStoploss(-1);
+      ctm.OpenUniquePosition(symbol,period, opSell, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
      }
    }  
 }

@@ -248,6 +248,7 @@ SExtremum CColoredTrend::isExtremum(int start_index)
    || (num0.direction > 0 && (GreatDoubles(high, num0.price, digits)))
    || (num0.direction < 0 && (GreatDoubles(high, num0.price + difToNewExtremum, digits))))
  {
+  PrintFormat("Новый экстремум! high = %.05f > %.05f(num0) + %.05f(difToNewExtremum)", high, num0.price, difToNewExtremum);
   result.direction = 1;
   result.price = high;
  }
@@ -256,6 +257,7 @@ SExtremum CColoredTrend::isExtremum(int start_index)
    || (num0.direction < 0 && (LessDoubles(low, num0.price, digits)))
    || (num0.direction > 0 && (LessDoubles(low, num0.price - difToNewExtremum, digits))))
  {
+  PrintFormat("Новый экстремум! low = %.05f < %.05f(num0) - %.05f(difToNewExtremum)", low, num0.price, difToNewExtremum);
   result.direction = -1;
   result.price = low;
  }
@@ -397,10 +399,15 @@ int CColoredTrend::isLastBarHuge(int start_pos)
 int CColoredTrend::isNewTrend()
 {
  if (num1.direction < 0 && LessDoubles((num2.price - num1.price)*difToTrend ,(num0.price - num1.price), digits))
+ {
+  //PrintFormat("num0 = %.05f, num1 = %.05f, num2 = %.05f, (num2-num1)*k = %.05f < (num0-num1) = %.05f, difToTrend = %.02f", num0.price, num1.price, num2.price, (num2.price - num1.price)*difToTrend, (num0.price - num1.price), difToTrend);
   return(1);
+ }
  if (num1.direction > 0 && LessDoubles((num1.price - num2.price)*difToTrend ,(num1.price - num0.price), digits))
+ {
+  //PrintFormat("num0 = %.05f, num1 = %.05f, num2 = %.05f, (num1-num2)*k = %.05f < (num1-num0) = %.05f, difToTrend = %.02f", num0.price, num1.price, num2.price, (num1.price - num2.price)*difToTrend, (num1.price - num0.price), difToTrend);
   return(-1);
-  
+ }
  return(0);
 }
 
