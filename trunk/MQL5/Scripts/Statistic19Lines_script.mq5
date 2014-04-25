@@ -24,9 +24,9 @@ enum LevelType
 input datetime start_time = D'2012.01.01';
 input datetime end_time =   D'2014.04.01';
 
-input int    period_ATR = 100;      //Период ATR для канала
-input double percent_ATR = 0.03; //Ширина канала уровня в процентах от ATR
-input double precentageATR_price = 1; //Процентр ATR для нового экструмума
+input int    period_ATR = 100;        // Период ATR для канала
+input double percent_ATR = 0.03;      // Ширина канала уровня в процентах от ATR
+input double precentageATR_price = 1; // Процентр ATR для нового экструмума
 input LevelType level = EXTR_H4;
  
 SExtremum estruct[3];
