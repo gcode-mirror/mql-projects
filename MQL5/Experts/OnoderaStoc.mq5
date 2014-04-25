@@ -55,7 +55,7 @@ ENUM_TIMEFRAMES period;
 int historyDepth;
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
 
-int    stop_loss;                                                        // переменная для хранения действительного стоп лосса
+int    stopLoss;                                                        // переменная для хранения действительного стоп лосса
 
 int    copiedSmydSTOC;                                                   // переменная для проверки копирования буфера сигналов расхождения
 
@@ -139,7 +139,7 @@ void OnTick()
 // функция вычисляет стоп лосс
 int CountStoploss(int point)
 {
- int stopLoss = 0;
+ int stoploss = 0;
  int direction;
  double priceAB;
  double bufferStopLoss[];
@@ -178,7 +178,7 @@ int CountStoploss(int point)
   {
    if (LessDoubles(direction*bufferStopLoss[i], direction*priceAB))
    {
-    stopLoss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point()) + ADD_TO_STOPPLOSS;
+    stoploss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point()) + ADD_TO_STOPPLOSS;
     break;
    }
   }
@@ -188,10 +188,10 @@ int CountStoploss(int point)
  // так или иначе, мы не можем исключать, что stopLoss может быть отрицательным числом
  // хотя гарантировать, что он будет положительным не из-за сбоя матрицы, мы опять таки не можем
  // к чему вообще вся эта дискуссия, пойду напьюсь ;) 
- if (stopLoss <= 0)
+ if (stoploss <= 0)
  {
   PrintFormat("Не поставили стоп на экстремуме");
-  stopLoss = SymbolInfoInteger(symbol, SYMBOL_SPREAD) + ADD_TO_STOPPLOSS;
+  stoploss = SymbolInfoInteger(symbol, SYMBOL_SPREAD) + ADD_TO_STOPPLOSS;
  }
  //PrintFormat("%s StopLoss = %d",MakeFunctionPrefix(__FUNCTION__), stopLoss);
  return(stopLoss);
