@@ -149,6 +149,8 @@ int OnInit()
  SetIndexBuffer(33, Price_D1_Buffer4, INDICATOR_DATA);
  SetIndexBuffer(34,   ATR_D1_Buffer , INDICATOR_DATA);
  
+ 
+ 
  ArrayInitialize(Extr_MN_Buffer1,  0);
  ArrayInitialize(Extr_MN_Buffer2,  0);
  ArrayInitialize(Extr_MN_Buffer3,  0);
@@ -338,7 +340,7 @@ int OnCalculate(const int rates_total,
      for(int i = rates_total-2; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       while(!FillATRBuffer()) {}
-      if(show_Extr_MN  && (Period() ==  PERIOD_MN1 || time[i]%PeriodSeconds(PERIOD_MN1) == 0)) CalcExtr(calcMN, estructMN, time[i], false);
+      if(show_Extr_MN  && (Period() ==  PERIOD_MN1 || time[i]%PeriodSeconds(PERIOD_MN1) == 0)) CalcExtr(calcMN, estructMN, time[i], false); 
       if(show_Extr_W1  && (Period() ==  PERIOD_W1  || time[i]%PeriodSeconds(PERIOD_W1)  == 0)) CalcExtr(calcW1, estructW1, time[i], false);
       if(show_Extr_D1  && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcExtr(calcD1, estructD1, time[i], false);
       if(show_Price_D1 && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcPrice(pstructD1, PERIOD_D1, time[i]);
@@ -348,6 +350,7 @@ int OnCalculate(const int rates_total,
       if(show_Extr_MN)
       {
        Extr_MN_Buffer1[i] = estructMN[0].price;
+    
         ATR_MN_Buffer1[i] = estructMN[0].channel;
        Extr_MN_Buffer2[i] = estructMN[1].price;
         ATR_MN_Buffer2[i] = estructMN[1].channel;
@@ -366,6 +369,7 @@ int OnCalculate(const int rates_total,
       if(show_Extr_D1)
       { 
        Extr_D1_Buffer1[i] = estructD1[0].price;
+
         ATR_D1_Buffer1[i] = estructD1[0].channel;
        Extr_D1_Buffer2[i] = estructD1[1].price;
         ATR_D1_Buffer2[i] = estructD1[1].channel;
@@ -414,7 +418,7 @@ int OnCalculate(const int rates_total,
     {     
      if(show_Extr_MN)
      {
-      Extr_MN_Buffer1[0] = estructMN[0].price;
+      Extr_MN_Buffer1[0] = estructMN[0].price;  
        ATR_MN_Buffer1[0] = estructMN[0].channel;
       Extr_MN_Buffer2[0] = estructMN[1].price;
        ATR_MN_Buffer2[0] = estructMN[1].channel;
@@ -423,7 +427,7 @@ int OnCalculate(const int rates_total,
      }//end show_Extr_MN
      if(show_Extr_W1)
      { 
-      Extr_W1_Buffer1[0] = estructW1[0].price;
+      Extr_W1_Buffer1[0] = estructW1[0].price;        
        ATR_W1_Buffer1[0] = estructW1[0].channel;
       Extr_W1_Buffer2[0] = estructW1[1].price;
        ATR_W1_Buffer2[0] = estructW1[1].channel;
