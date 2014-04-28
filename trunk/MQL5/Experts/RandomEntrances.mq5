@@ -57,8 +57,8 @@ int OnInit()
    historyDepth = 1000;
    if (trailingType == TRAILING_TYPE_PBI)
    {
-    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", historyDepth, percentage_ATR_cur, difToTrend_cur);
-    if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+    handlePBIcur = iCustom(symbol, timeframe, "PriceBasedIndicator", historyDepth, percentage_ATR_cur, difToTrend_cur);
+    if(handlePBIcur == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
     {
      Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
     }
@@ -96,6 +96,8 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+   // удаляем хэндл индикатора PBI
+   IndicatorRelease(handlePBIcur);
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -115,17 +117,14 @@ void OnTick()
     {
      operation = OP_SELL;
      stop_loss = CountStoploss(-1);
-     //Comment("OP SELL STOP = ");
     } 
    else
     {
      operation = OP_BUY;
      stop_loss = CountStoploss(1);
-        //  Comment("OP BUY STOP = ",stop_loss);
     }
    
-  // Comment("СТОП ЛОСС = ",stop_loss);
-   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, stop_loss, 0, trailingType,minProfit, trStop, trStep, handle_PBI);
+   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, stop_loss, 0, trailingType,minProfit, trStop, trStep, handlePBIcur);
 
   }
   // если есть открытая позиция
