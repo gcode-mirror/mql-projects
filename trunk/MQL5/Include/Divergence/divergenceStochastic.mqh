@@ -10,7 +10,7 @@
 #include <CompareDoubles.mqh>          // для сравнения вещественных чисел
 #include <Constants.mqh>               // библиотека констант
 
-#define DEPTH_STOC 10                  // Глубина на которой ищем расхождение стохастика
+#define DEPTH_STOC 20                  // Глубина на которой ищем расхождение стохастика
 #define ALLOW_DEPTH_FOR_PRICE_EXTR 3   // Количество баров где смотрим на наличие нового экстремума 
 
 struct PointDivSTOC        

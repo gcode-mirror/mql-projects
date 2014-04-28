@@ -12,6 +12,7 @@
 #include <TradeManager\TradeManagerEnums.mqh>
 #include <CompareDoubles.mqh>
 #include <StringUtilities.mqh>
+#include <ColoredTrend\ColoredTrendUtilities.mqh>
 
 #define DEPTH_PBI 100
 
@@ -159,10 +160,11 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
  }
 
  double newExtr = 0;
+ int index;
  if (PBI_colors[0] == mainTrend || PBI_colors[0] == forbidenTrend)
  {
   //Print("Текущее движение ", MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]));
-  for (int index = 0; index < DEPTH_PBI; index++)
+  for (index = 0; index < DEPTH_PBI; index++)
   { 
    if (PBI_Extrems[index] > 0)
    {
@@ -178,7 +180,7 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
  
  if (newExtr > 0 && GreatDoubles(direction * sl, direction * (newExtr + direction * 50.0*Point()), 5))
  {
-  PrintFormat("%s oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), sl, (newExtr + direction*50.0*Point()));
+  PrintFormat("%s currentMoving = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), MoveTypeToString((ENUM_MOVE_TYPE)PBI_Extrems[index]), sl, (newExtr + direction*50.0*Point()));
   return (newExtr + direction*50.0*Point());
  }
  return(0.0);

@@ -43,7 +43,7 @@ static CisNewBar *isNewBar;                                              // для 
 
 // хэндлы индикаторов 
 int handleSmydMACD;                                                      // хэндл индикатора ShowMeYourDivMACD
-int handlePBIcur;
+int handle_PBI;
 
 // переменные эксперта
 int divSignal;                                                           // сигнал на расхождение
@@ -54,8 +54,7 @@ ENUM_TIMEFRAMES period;
 int historyDepth;
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
 
-int    stop_loss;                                                        // переменная для хранения действительного стоп лосса
-
+int    stopLoss;                                                        // переменная для хранения действительного стоп лосса
 int    copiedSmydMACD;                                                   // переменная для проверки копирования буфера сигналов расхождения
 
 int OnInit()
@@ -67,7 +66,14 @@ int OnInit()
  // выделяем память под объект тороговой библиотеки
  isNewBar = new CisNewBar(symbol, period);
  ctm = new CTradeManager(); 
- handlePBIcur = iCustom(symbol, period, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
+ if (trailingType == TRAILING_TYPE_PBI)
+ {
+  handle_PBI = iCustom(symbol, period, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
+  if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+  {
+   Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+  }
+ }
  // создаем хэндл индикатора ShowMeYourDivMACD
  handleSmydMACD = iCustom (symbol,period,"smydMACD");   
    
@@ -125,13 +131,13 @@ void OnTick()
      { 
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
       stopLoss = CountStoploss(1);
-      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
      }
    if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
      {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
       stopLoss = CountStoploss(-1);
-      ctm.OpenUniquePosition(symbol,period, opSell, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      ctm.OpenUniquePosition(symbol,period, opSell, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
      }
    }  
 }
@@ -163,7 +169,7 @@ int CountStoploss(int point)
  for(int attempts = 0; attempts < 25; attempts++)
  {
   Sleep(100);
-  copiedPBI = CopyBuffer(handlePBIcur, extrBufferNumber, 0,historyDepth, bufferStopLoss);
+  copiedPBI = CopyBuffer(handle_PBI, extrBufferNumber, 0,historyDepth, bufferStopLoss);
  }
  if (copiedPBI < historyDepth)
  {
