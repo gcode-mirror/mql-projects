@@ -18,12 +18,11 @@ input double ko = 2;        // ko=0-весь объем, ko=1-равные доли, ko>1-увелич.до
 
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 //input bool stepbypart = false; // 
-input double   percentage_ATR_cur = 2;   
-input double   difToTrend_cur = 1.5;
-input int      ATR_ma_period_cur = 12;
-input int      trStop                               = 100;                // Trailing Stop
-input int      trStep                               = 100;                // Trailing Step
-input int      minProfit                            = 250;                // минимальная прибыль
+input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
+input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
+input int      trStop    = 100;                // Trailing Stop
+input int      trStep    = 100;                // Trailing Step
+input int      minProfit = 250;                // минимальная прибыль
 
 string symbol;
 ENUM_TIMEFRAMES timeframe;
@@ -39,10 +38,7 @@ int handle_PBI;
 datetime history_start;
 
 int historyDepth;
-
-int handlePBIcur;                                                        // хэндл PriceBasedIndicator
-
-int stop_loss=0;
+int stoploss=0;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -57,8 +53,8 @@ int OnInit()
    historyDepth = 1000;
    if (trailingType == TRAILING_TYPE_PBI)
    {
-    handlePBIcur = iCustom(symbol, timeframe, "PriceBasedIndicator", historyDepth, percentage_ATR_cur, difToTrend_cur);
-    if(handlePBIcur == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
+    if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
     {
      Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
     }
@@ -72,13 +68,15 @@ int OnInit()
     k = k + MathPow(ko, i);
    }
    aKo[0] = 100 / k;
+   
+   sum = aKo[0];
    for (int i = 1; i < countSteps - 1; i++)
    {
     aKo[i] = aKo[i - 1] * ko;
     sum = sum + aKo[i];
    }
    aKo[countSteps - 1] = 100 - sum;
-      
+         
    for (int i = 0; i < countSteps; i++)
    {
     aDeg[i] = NormalizeDouble(volume * aKo[i] * 0.01, 2);
@@ -97,7 +95,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    // удаляем хэндл индикатора PBI
-   IndicatorRelease(handlePBIcur);
+   IndicatorRelease(handle_PBI);
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -114,19 +112,18 @@ void OnTick()
    rnd = (double)MathRand()/32767;
    ENUM_TM_POSITION_TYPE operation;
    if ( GreatDoubles(rnd,0.5,5) )
-    {
-     operation = OP_SELL;
-     stop_loss = CountStoploss(-1);
-    } 
+   {
+    operation = OP_SELL;
+    stoploss = CountStoploss(-1);
+   } 
    else
-    {
-     operation = OP_BUY;
-     stop_loss = CountStoploss(1);
-    }
-   
-   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, stop_loss, 0, trailingType,minProfit, trStop, trStep, handlePBIcur);
-
+   {
+    operation = OP_BUY;
+    stoploss = CountStoploss(1);
+   }
+   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, MathMax(stoploss, 0), 0, trailingType,minProfit, trStop, trStep, handle_PBI);
   }
+
   // если есть открытая позиция
   if (ctm.GetPositionCount() > 0)
   {
@@ -175,28 +172,32 @@ int CountStoploss(int point)
  for(int attempts = 0; attempts < 25; attempts++)
  {
   Sleep(100);
-  copiedPBI = CopyBuffer(handlePBIcur, extrBufferNumber, 0,historyDepth, bufferStopLoss);
+  copiedPBI = CopyBuffer(handle_PBI, extrBufferNumber, 0,historyDepth, bufferStopLoss);
+
  }
  if (copiedPBI < historyDepth)
  {
   PrintFormat("%s Не удалось скопировать буфер bufferStopLoss", MakeFunctionPrefix(__FUNCTION__));
-  return(copiedPBI);
+  return(0);
  }
  
  for(int i = 0; i < historyDepth; i++)
  {
-  
   if (bufferStopLoss[i] > 0)
   {
    if (LessDoubles(direction*bufferStopLoss[i], direction*priceAB))
    {
     stopLoss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point()) + ADD_TO_STOPPLOSS;
- 
     break;
    }
   }
  }
- if (stopLoss <= 0)
+ // на случай сбоя матрицы, в которой мы живем, а возможно и не живем
+ // возможно всё вокруг - это лишь результат работы моего больного воображения
+ // так или иначе, мы не можем исключать, что stopLoss может быть отрицательным числом
+ // хотя гарантировать, что он будет положительным не из-за сбоя матрицы, мы опять таки не можем
+ // к чему вообще вся эта дискуссия, пойду напьюсь ;) 
+ if (stopLoss <= 0)  
  {
   PrintFormat("Не поставили стоп на экстремуме");
   stopLoss = SymbolInfoInteger(symbol, SYMBOL_SPREAD) + ADD_TO_STOPPLOSS;
@@ -204,4 +205,5 @@ int CountStoploss(int point)
  //PrintFormat("%s StopLoss = %d",MakeFunctionPrefix(__FUNCTION__), stopLoss);
  return(stopLoss);
 }
+
 

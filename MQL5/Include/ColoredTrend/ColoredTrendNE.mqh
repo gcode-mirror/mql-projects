@@ -248,7 +248,7 @@ SExtremum CColoredTrend::isExtremum(int start_index)
    || (num0.direction > 0 && (GreatDoubles(high, num0.price, digits)))
    || (num0.direction < 0 && (GreatDoubles(high, num0.price + difToNewExtremum, digits))))
  {
-  PrintFormat("Новый экстремум! high = %.05f > %.05f(num0) + %.05f(difToNewExtremum)", high, num0.price, difToNewExtremum);
+  //PrintFormat("%s Новый экстремум! high = %.05f > %.05f(num0) + %.05f(difToNewExtremum)", MakeFunctionPrefix(__FUNCTION__), high, num0.price, difToNewExtremum);
   result.direction = 1;
   result.price = high;
  }
@@ -257,7 +257,7 @@ SExtremum CColoredTrend::isExtremum(int start_index)
    || (num0.direction < 0 && (LessDoubles(low, num0.price, digits)))
    || (num0.direction > 0 && (LessDoubles(low, num0.price - difToNewExtremum, digits))))
  {
-  PrintFormat("Новый экстремум! low = %.05f < %.05f(num0) - %.05f(difToNewExtremum)", low, num0.price, difToNewExtremum);
+  //PrintFormat("%s Новый экстремум! low = %.05f < %.05f(num0) - %.05f(difToNewExtremum)", MakeFunctionPrefix(__FUNCTION__), low, num0.price, difToNewExtremum);
   result.direction = -1;
   result.price = low;
  }
