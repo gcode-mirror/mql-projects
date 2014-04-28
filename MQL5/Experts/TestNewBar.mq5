@@ -39,7 +39,7 @@ void OnTick()
     if(isNewBar.isNewBar() > 0)
      {       
        countBars++;
-       Comment("Количество баров = ",countBars);
+       Print("Количество баров = ",countBars," время закрытия последнего = ",TimeToString(TimeCurrent()));
      }
    
   }
