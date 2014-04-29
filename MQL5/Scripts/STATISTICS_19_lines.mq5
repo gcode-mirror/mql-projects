@@ -43,8 +43,8 @@ input datetime end_time   = D'2014.04.01';       // конечная дата
 input string   file_name  = "STAT_19_LINES.txt"; // имя файла статистики
 
 sinput string atr_str = "";                      // ПАРАМЕТРЫ ИНДИКАТОРА АТR
-input int    period_ATR = 100;                   // Период ATR для канала
-input double percent_ATR = 0.03;                 // Ширина канала уровня в процентах от ATR
+input int    period_ATR = 30;                    // Период ATR для канала
+input double percent_ATR = 0.1;                  // Ширина канала уровня в процентах от ATR
 input double precentageATR_price = 1;            // Процентр ATR для нового экструмума
 input ENUM_LEVEL_TYPE level = EXTR_H4;           // тип уровня
 
@@ -89,6 +89,9 @@ int countBarsInsideLevel1=0;          // внутри первого уровня
 int countBarsInsideLevel2=0;          // внутри второго уровня
 int countBarsInsideLevel3=0;          // внутри третьего уровня
 
+// хэндл файла статистики
+int fileHandle;
+
 void OnStart()
   {
    // переменные для сохранения размеров загрузки буферов индикаторов
@@ -99,7 +102,7 @@ void OnStart()
    int size5;
    int size6;
    int size_price;
-   int start_index_buffer = 12; // первый номер набора буферов для 3 линий уровня 
+   int start_index_buffer = 6; // первый номер набора буферов для 3 линий уровня 
    int bars;                    // количество баров всего 
    
 
@@ -146,7 +149,7 @@ void OnStart()
     standOnLevel1  = false;
     standOnLevel2  = false;
     standOnLevel3  = false;
-          Print("ЦЕНА НА УРОВНЕ = ",buffer_19Lines_price2[4]);   
+          Comment("ЦЕНА НА УРОВНЕ = ",buffer_19Lines_price2[1]);   
     // проходим по всем барам цены  и считаем статистику проходов через уровни
     for (int index=1;index < bars; index++)
        {
@@ -275,10 +278,12 @@ void OnStart()
          
                 
        }
-Print("Количество пробитий снизу вверх = ",countDownUp);
-Print("Количество пробитий сверху вниз = ",countUpDown);
-Print("Количество отбитий сверху вверх = ",countUpUp);
-Print("Количество отбитий снизу вниз = ",countDownDown);
+   Print("Количество пробитий снизу вверх = ",countDownUp);
+   Print("Количество пробитий сверху вниз = ",countUpDown);
+   Print("Количество отбитий сверху вверх = ",countUpUp);
+   Print("Количество отбитий снизу вниз = ",countDownDown);
+   // сохраним результаты статистики в файл
+   SaveStatisticsToFile ();
 
   }
   
@@ -302,5 +307,18 @@ Print("Количество отбитий снизу вниз = ",countDownDown);
  
  void SaveStatisticsToFile ()
   {
-    
+    // создаем хэндл файла статистики
+    fileHandle = FileOpen(file_name+".txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+    if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
+     {
+      Print("Не удалось создать файл статистики");
+      return;
+     }  
+    FileWriteString(fileHandle,"Статистика по уровням:\n\n");
+    FileWriteString(fileHandle,"Количество прохождений через уровень сверху вниз: "+IntegerToString(countUpDown));
+    FileWriteString(fileHandle,"\nКоличество прохождений через уровень снизу вверх: "+IntegerToString(countDownUp));
+    FileWriteString(fileHandle,"\nКоличество отбитий от уровня сверху вверх : "+IntegerToString(countUpUp));
+    FileWriteString(fileHandle,"\nКоличество отбитий от уровня снизу вниз: "+IntegerToString(countDownDown));
+    // закрываем файл статистики
+    FileClose(fileHandle);            
   }

@@ -348,7 +348,7 @@ int OnCalculate(const int rates_total,
      {
       while(!FillATRBuffer()) {}
       if(show_Extr_MN  && (Period() ==  PERIOD_MN1 || time[i]%PeriodSeconds(PERIOD_MN1) == 0)) CalcExtr(calcMN, estructMN, time[i], false); 
-      if(show_Extr_W1  && (Period() ==  PERIOD_W1  || time[i]%PeriodSeconds(PERIOD_W1)  == 0)) CalcExtr(calcW1, estructW1, time[i], false); 
+      if(show_Extr_W1  && (Period() ==  PERIOD_W1  || time[i]%PeriodSeconds(PERIOD_W1)  == 0)){ CalcExtr(calcW1, estructW1, time[i], false); Print("",estructW1[0].channel," ",estructW1[0].price); }
       if(show_Extr_D1  && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcExtr(calcD1, estructD1, time[i], false);
       if(show_Price_D1 && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcPrice(pstructD1, PERIOD_D1, time[i]);
       if(show_Extr_H4  && (Period() ==  PERIOD_H4  || time[i]%PeriodSeconds(PERIOD_H4)  == 0)) CalcExtr(calcH4, estructH4, time[i], false);
@@ -374,7 +374,7 @@ int OnCalculate(const int rates_total,
       if(show_Extr_W1)
       { 
        Extr_W1_Buffer1[i] = estructW1[0].price;
-    //   Print("гмювемхе б астепе2 = ",estructW1[0].price);
+    ///   Print("гмювемхе б астепе2 = ",estructW1[0].price);
         ATR_W1_Buffer1[i] = estructW1[0].channel;
        Extr_W1_Buffer2[i] = estructW1[1].price;
         ATR_W1_Buffer2[i] = estructW1[1].channel;
@@ -443,7 +443,7 @@ int OnCalculate(const int rates_total,
      if(show_Extr_W1)
      { 
       Extr_W1_Buffer1[0] = estructW1[0].price;    
-       //      Print("гмювемхе б астепе2 = ",estructW1[0].price);    
+    ///   Print("гмювемхе б астепе2 = ",estructW1[0].price);    
        ATR_W1_Buffer1[0] = estructW1[0].channel;
       Extr_W1_Buffer2[0] = estructW1[1].price;
        ATR_W1_Buffer2[0] = estructW1[1].channel;
