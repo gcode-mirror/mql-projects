@@ -15,6 +15,7 @@
 #include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBar.mqh>
 
+
 #define TF_PERIOD_ATR_FOR_MN PERIOD_MN1
 #define TF_PERIOD_ATR_FOR_W1 PERIOD_W1
 #define TF_PERIOD_ATR_FOR_D1 PERIOD_D1
@@ -105,6 +106,12 @@ int ATR_handle_for_price_line;
 
 bool series_order = true;
 bool first = true;
+
+static CisNewBar isNewBarMN1(_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
+static CisNewBar isNewBarW1 (_Symbol, PERIOD_W1 );   // для проверки формирования нового бара на месяце
+static CisNewBar isNewBarD1 (_Symbol, PERIOD_D1 );   // для проверки формирования нового бара на месяце
+static CisNewBar isNewBarH4 (_Symbol, PERIOD_H4 );   // для проверки формирования нового бара на месяце
+static CisNewBar isNewBarH1 (_Symbol, PERIOD_H1 );   // для проверки формирования нового бара на месяце
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -341,12 +348,19 @@ int OnCalculate(const int rates_total,
      {
       while(!FillATRBuffer()) {}
       if(show_Extr_MN  && (Period() ==  PERIOD_MN1 || time[i]%PeriodSeconds(PERIOD_MN1) == 0)) CalcExtr(calcMN, estructMN, time[i], false); 
-      if(show_Extr_W1  && (Period() ==  PERIOD_W1  || time[i]%PeriodSeconds(PERIOD_W1)  == 0)) CalcExtr(calcW1, estructW1, time[i], false);
+      if(show_Extr_W1  && (Period() ==  PERIOD_W1  || time[i]%PeriodSeconds(PERIOD_W1)  == 0)) CalcExtr(calcW1, estructW1, time[i], false); 
       if(show_Extr_D1  && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcExtr(calcD1, estructD1, time[i], false);
       if(show_Price_D1 && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcPrice(pstructD1, PERIOD_D1, time[i]);
       if(show_Extr_H4  && (Period() ==  PERIOD_H4  || time[i]%PeriodSeconds(PERIOD_H4)  == 0)) CalcExtr(calcH4, estructH4, time[i], false);
       if(show_Extr_H1  && (Period() ==  PERIOD_H1  || time[i]%PeriodSeconds(PERIOD_H1)  == 0)) CalcExtr(calcH1, estructH1, time[i], false);
-      
+/*
+      if(show_Extr_MN  && (Period() ==  PERIOD_MN1 || isNewBarMN1.isNewBar()>0 ) ) CalcExtr(calcMN, estructMN, time[i], false); 
+      if(show_Extr_W1  && (Period() ==  PERIOD_W1  || isNewBarW1.isNewBar()>0 ) ) CalcExtr(calcW1, estructW1, time[i], false); 
+      if(show_Extr_D1  && (Period() ==  PERIOD_D1  || isNewBarD1.isNewBar()>0 ) ) CalcExtr(calcD1, estructD1, time[i], false);
+      if(show_Price_D1 && (Period() ==  PERIOD_D1  || isNewBarD1.isNewBar()>0 ) ) CalcPrice(pstructD1, PERIOD_D1, time[i]);
+      if(show_Extr_H4  && (Period() ==  PERIOD_H4  || isNewBarH4.isNewBar()>0 ) ) CalcExtr(calcH4, estructH4, time[i], false);
+      if(show_Extr_H1  && (Period() ==  PERIOD_H1  || isNewBarH1.isNewBar()>0 ) ) CalcExtr(calcH1, estructH1, time[i], false);
+*/     
       if(show_Extr_MN)
       {
        Extr_MN_Buffer1[i] = estructMN[0].price;
@@ -360,6 +374,7 @@ int OnCalculate(const int rates_total,
       if(show_Extr_W1)
       { 
        Extr_W1_Buffer1[i] = estructW1[0].price;
+    //   Print("ЗНАЧЕНИЕ В БУФЕРЕ2 = ",estructW1[0].price);
         ATR_W1_Buffer1[i] = estructW1[0].channel;
        Extr_W1_Buffer2[i] = estructW1[1].price;
         ATR_W1_Buffer2[i] = estructW1[1].channel;
@@ -427,7 +442,8 @@ int OnCalculate(const int rates_total,
      }//end show_Extr_MN
      if(show_Extr_W1)
      { 
-      Extr_W1_Buffer1[0] = estructW1[0].price;        
+      Extr_W1_Buffer1[0] = estructW1[0].price;    
+       //      Print("ЗНАЧЕНИЕ В БУФЕРЕ2 = ",estructW1[0].price);    
        ATR_W1_Buffer1[0] = estructW1[0].channel;
       Extr_W1_Buffer2[0] = estructW1[1].price;
        ATR_W1_Buffer2[0] = estructW1[1].channel;
