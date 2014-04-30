@@ -97,7 +97,7 @@ int OnInit()
    ArraySetAsSeries(DifLine3Buffer , series_order);
       
    InitializeExtrArray(sExtr);
-   CreateExtrLines(sExtr, period , Red);
+   //CreateExtrLines(sExtr, period , Red);
    
 //---
    return(INIT_SUCCEEDED);
@@ -112,7 +112,7 @@ void OnDeinit(const int reason)
  ArrayFree(DifLine2Buffer);
  ArrayFree(DifLine3Buffer);
   
- DeleteExtrLines (period);
+ //DeleteExtrLines (period);
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -162,7 +162,7 @@ int OnCalculate(const int rates_total,
      }
      
      PrintFormat("%s num0 = {%.05f, %.05f}, num1 = {%.05f, %.05f}, num2 = {%.05f, %.05f}", TimeToString(time[0]), sExtr[0].price, sExtr[0].channel, sExtr[1].price, sExtr[1].channel,sExtr[2].price, sExtr[2].channel);
-     MoveExtrLines(sExtr, period);
+     //MoveExtrLines(sExtr, period);
      PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
      first = false; 
     }//end prev_calculated == 0
@@ -186,7 +186,7 @@ int OnCalculate(const int rates_total,
       MainLine3Buffer[0] = sExtr[2].price;
       DifLine3Buffer[0]  = sExtr[2].channel;  
      //}
-     MoveExtrLines(sExtr, period);
+     //MoveExtrLines(sExtr, period);
     }
    }
 //--- return value of prev_calculated for next call

@@ -133,7 +133,10 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
 //+------------------------------------------------------------------+
 double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI)
 {
+ datetime buffer_date[];
  int errcolors = CopyBuffer(handle_PBI, 4, 0, DEPTH_PBI, PBI_colors);
+ int errdate = CopyTime(symbol, timeframe, 0, DEPTH_PBI, buffer_date);
+ ArraySetAsSeries(buffer_date, true);
  int errextrems, direction;
  int mainTrend, forbidenTrend;
  
@@ -158,12 +161,17 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
   PrintFormat("%s Не удалось скопировать данные из индикаторного буфера", MakeFunctionPrefix(__FUNCTION__)); 
   return(0.0); 
  }
+ 
+ //ArraySetAsSeries(buffer_date, true);
+ //ArraySetAsSeries(PBI_colors, true);
+ //ArraySetAsSeries(PBI_Extrems, true);
+
 
  double newExtr = 0;
  int index;
  if (PBI_colors[0] == mainTrend || PBI_colors[0] == forbidenTrend)
  {
-  //Print("Текущее движение ", MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]));
+//  PrintFormat("Текущее движение %s. time = %s", MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), TimeToString(buffer_date[0]));
   for (index = 0; index < DEPTH_PBI; index++)
   { 
    if (PBI_Extrems[index] > 0)
@@ -180,9 +188,10 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
  
  if (newExtr > 0 && GreatDoubles(direction * sl, direction * (newExtr + direction * 50.0*Point()), 5))
  {
-  PrintFormat("%s currentMoving = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), MoveTypeToString((ENUM_MOVE_TYPE)PBI_Extrems[index]), sl, (newExtr + direction*50.0*Point()));
+  PrintFormat("%s %s currentMoving = %s, extremum_from_last_coor_or_trend = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), TimeToString(buffer_date[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[index]), sl, (newExtr + direction*50.0*Point()));
   return (newExtr + direction*50.0*Point());
  }
+ ArrayFree(buffer_date);
  return(0.0);
 };
 //+------------------------------------------------------------------+
