@@ -446,7 +446,7 @@ int CColoredTrend::isLastBarHuge(int start_pos)
  datetime buffer_date[1];
  CopyTime(_symbol, _period, start_pos, 1, buffer_date);
  FillTimeSeries(BOTTOM_TF, AMOUNT_BARS_FOR_HUGE, buffer_date[0]-PeriodSeconds(GetBottomTimeframe(_period)), rates);
- PrintFormat("ñåé÷àñ %s; áàðû çàãðóæàþ ñ %s", TimeToString(buffer_date[0]), TimeToString(buffer_date[0]-PeriodSeconds(GetBottomTimeframe(_period))));
+ //PrintFormat("ñåé÷àñ %s; áàðû çàãðóæàþ ñ %s", TimeToString(buffer_date[0]), TimeToString(buffer_date[0]-PeriodSeconds(GetBottomTimeframe(_period))));
  int size = ArraySize(rates);
  for(int i = 0; i < size - 1; i++)
  {
@@ -459,12 +459,12 @@ int CColoredTrend::isLastBarHuge(int start_pos)
  {
   if(GreatDoubles(rates[size-1].open, rates[size-1].close, digits))
   {
-   //PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*HOW_HUGE_BAR_IS, rates[size-1].open, rates[size-1].close);
+   PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*HOW_HUGE_BAR_IS, rates[size-1].open, rates[size-1].close);
    return(1);
   }
   if(LessDoubles(rates[size-1].open, rates[size-1].close, digits))
   {
-   //PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*HOW_HUGE_BAR_IS, rates[size-1].open, rates[size-1].close);
+   PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*HOW_HUGE_BAR_IS, rates[size-1].open, rates[size-1].close);
    return(-1);
   }
  }
