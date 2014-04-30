@@ -156,7 +156,7 @@ int OnCalculate(const int rates_total,
                       ? (rates_total-start_iteration)/(seconds_top/seconds_current)-1 - i
                       : 0;
                       
-    error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
+    //error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
     //PrintFormat("i = %d; top_buffer_index = %d; start_pos_top = %d; move type top = %s", i, top_buffer_index, start_pos_top, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
     if(!error)
     {
