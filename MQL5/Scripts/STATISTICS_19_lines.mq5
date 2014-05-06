@@ -17,17 +17,6 @@
 //| Скрипт подсчета статистики 19 линий                              |
 //+------------------------------------------------------------------+
 
-
-// тип уровня
-enum ENUM_LEVEL_TYPE
-{
- EXTR_MN, 
- EXTR_W1,
- EXTR_D1,
- EXTR_H4,
- EXTR_H1
-};
-
 // перечисление типов положения цены относительно уровня
 enum ENUM_LOCATION_TYPE
  {
@@ -46,7 +35,6 @@ sinput string atr_str = "";                      // ПАРАМЕТРЫ ИНДИКАТОРА АТR
 input int    period_ATR = 30;                    // Период ATR для канала
 input double percent_ATR = 0.5;                  // Ширина канала уровня в процентах от ATR
 input double precentageATR_price = 1;            // Процент ATR для нового экструмума
-input ENUM_LEVEL_TYPE level = EXTR_H4;           // тип уровня
 
 // локальные переменные скрипта
 SExtremum estruct[3];

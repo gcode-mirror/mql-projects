@@ -11,9 +11,9 @@
 #include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBar.mqh>
 
-input int    period_ATR_channel = 30;   //Период ATR для канала
-input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
-input double precentageATR_price = 1;    //Процентр ATR для нового экструмумa
+input int    period_ATR_channel = 30;    // Период ATR для канала
+input double percent_ATR_channel = 0.1;  // Ширина канала уровня в процентах от ATR
+input double precentageATR_price = 1;    // Процентр ATR для нового экструмумa
 input ENUM_TIMEFRAMES period = PERIOD_H1;
 input ENUM_TIMEFRAMES period_ATR = PERIOD_H1;
 
