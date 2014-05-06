@@ -8,7 +8,7 @@
 #property version   "1.00"
 
 #property indicator_chart_window
-#property indicator_buffers 36  
+#property indicator_buffers 37  
 #property indicator_plots   36
 
 #include <ExtrLine\CExtremumCalc_NE.mqh>
@@ -111,7 +111,6 @@ int ATR_handle_for_price_line;
 bool series_order = true;
 bool first = true;
 
-
 /*
 static CisNewBar isNewBarMN1(_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
 static CisNewBar isNewBarW1 (_Symbol, PERIOD_W1 );   // для проверки формирования нового бара на месяце
@@ -162,7 +161,6 @@ int OnInit()
  SetIndexBuffer(32, Price_D1_Buffer3, INDICATOR_DATA);
  SetIndexBuffer(33, Price_D1_Buffer4, INDICATOR_DATA);
  SetIndexBuffer(34,   ATR_D1_Buffer , INDICATOR_DATA);
- 
  
  
  ArrayInitialize(Extr_MN_Buffer1,  0);
@@ -309,6 +307,7 @@ void OnDeinit(const int reason)
  ArrayFree(Price_D1_Buffer4);
  ArrayFree(  ATR_D1_Buffer );
   
+  
  if(show_Extr_MN) DeleteExtrLines (PERIOD_MN1);
  if(show_Extr_W1) DeleteExtrLines (PERIOD_W1);
  if(show_Extr_D1) DeleteExtrLines (PERIOD_D1);
@@ -380,19 +379,19 @@ int OnCalculate(const int rates_total,
       }//end show_Extr_MN
       if(show_Extr_W1)
       { 
-       Extr_W1_Buffer1[i] = count_count;//estructW1[0].price;
+       Extr_W1_Buffer1[i] = high[i];//count_count;//estructW1[0].price;
      // Print("ЗНАЧЕНИЕ В БУФЕРЕ2 = ",estructW1[0].price);
         ATR_W1_Buffer1[i] = estructW1[0].channel;
-       Extr_W1_Buffer2[i] = count_count;//estructW1[1].price;
+       Extr_W1_Buffer2[i] = high[i];//count_count;//estructW1[1].price;
         ATR_W1_Buffer2[i] = estructW1[1].channel;
-       Extr_W1_Buffer3[i] = count_count;//estructW1[2].price;
+       Extr_W1_Buffer3[i] = high[i];//count_count;//estructW1[2].price;
         ATR_W1_Buffer3[i] = estructW1[2].channel;
         
         count_count++;
-       Comment(
+     /*  Comment(
                "БУФ1 = ",Extr_W1_Buffer1[i],
                "\nВремя = ",TimeToString(TimeCurrent())
-        );       
+        ); */      
       }//end show_Extr_W1
       if(show_Extr_D1)
       { 
@@ -455,12 +454,12 @@ int OnCalculate(const int rates_total,
      }//end show_Extr_MN
      if(show_Extr_W1)
      { 
-      Extr_W1_Buffer1[0] = count_count;//estructW1[0].price;    
+      Extr_W1_Buffer1[0] = high[0];//count_count;//estructW1[0].price;    
     ///  Print("ЗНАЧЕНИЕ В БУФЕРЕ2 = ",estructW1[0].price);    
        ATR_W1_Buffer1[0] = estructW1[0].channel;
-      Extr_W1_Buffer2[0] = count_count;//estructW1[1].price;
+      Extr_W1_Buffer2[0] = high[0];//count_count;//estructW1[1].price;
        ATR_W1_Buffer2[0] = estructW1[1].channel;
-      Extr_W1_Buffer3[0] = count_count;//estructW1[2].price;
+      Extr_W1_Buffer3[0] = high[0];//count_count;//estructW1[2].price;
        ATR_W1_Buffer3[0] = estructW1[2].channel; 
        count_count++;    
        Comment(
