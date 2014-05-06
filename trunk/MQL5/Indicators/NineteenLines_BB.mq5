@@ -47,7 +47,6 @@ input color color_Price_D1 = clrDarkKhaki;   //Öâåò ëèíèé ýêñòðåìóìîâ
 
 //////////////////////////////
 
-int count_count=0;
 
 bool show_Extr_MN = flag1;
 bool show_Extr_W1 = flag2;
@@ -379,19 +378,13 @@ int OnCalculate(const int rates_total,
       }//end show_Extr_MN
       if(show_Extr_W1)
       { 
-       Extr_W1_Buffer1[i] = high[i];//count_count;//estructW1[0].price;
-     // Print("ÇÍÀ×ÅÍÈÅ Â ÁÓÔÅÐÅ2 = ",estructW1[0].price);
+       Extr_W1_Buffer1[i] = estructW1[0].price;
         ATR_W1_Buffer1[i] = estructW1[0].channel;
-       Extr_W1_Buffer2[i] = high[i];//count_count;//estructW1[1].price;
+       Extr_W1_Buffer2[i] = estructW1[1].price;
         ATR_W1_Buffer2[i] = estructW1[1].channel;
-       Extr_W1_Buffer3[i] = high[i];//count_count;//estructW1[2].price;
+       Extr_W1_Buffer3[i] = estructW1[2].price;
         ATR_W1_Buffer3[i] = estructW1[2].channel;
-        
-        count_count++;
-     /*  Comment(
-               "ÁÓÔ1 = ",Extr_W1_Buffer1[i],
-               "\nÂðåìÿ = ",TimeToString(TimeCurrent())
-        ); */      
+
       }//end show_Extr_W1
       if(show_Extr_D1)
       { 
@@ -454,18 +447,12 @@ int OnCalculate(const int rates_total,
      }//end show_Extr_MN
      if(show_Extr_W1)
      { 
-      Extr_W1_Buffer1[0] = high[0];//count_count;//estructW1[0].price;    
-    ///  Print("ÇÍÀ×ÅÍÈÅ Â ÁÓÔÅÐÅ2 = ",estructW1[0].price);    
+      Extr_W1_Buffer1[0] = estructW1[0].price;    
        ATR_W1_Buffer1[0] = estructW1[0].channel;
-      Extr_W1_Buffer2[0] = high[0];//count_count;//estructW1[1].price;
+      Extr_W1_Buffer2[0] = estructW1[1].price;
        ATR_W1_Buffer2[0] = estructW1[1].channel;
-      Extr_W1_Buffer3[0] = high[0];//count_count;//estructW1[2].price;
-       ATR_W1_Buffer3[0] = estructW1[2].channel; 
-       count_count++;    
-       Comment(
-               "ÁÓÔ1 = ",Extr_W1_Buffer1[0],
-               "\nÂðåìÿ = ",TimeToString(TimeCurrent())
-        );    
+      Extr_W1_Buffer3[0] = estructW1[2].price;
+       ATR_W1_Buffer3[0] = estructW1[2].channel;   
      }//end show_Extr_W1
      if(show_Extr_D1)
      { 
@@ -586,18 +573,15 @@ void CalcPrice(SExtremum &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
 void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- color clr1=clrBlue;
- color clr2=clrRed;
- color clr3=clrYellow;
- HLineCreate(0, name+"one"   , 0, te[0].price              , clr1, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr1, 2);
- HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr1, 2);
- HLineCreate(0, name+"two"   , 0, te[1].price              , clr2, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr2, 2);
- HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr2, 2);
- HLineCreate(0, name+"three" , 0, te[2].price              , clr3, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr3, 2);
- HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr3, 2);
+ HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 2);
+ HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 2);
+ HLineCreate(0, name+"two"   , 0, te[1].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr, 2);
+ HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr, 2);
+ HLineCreate(0, name+"three" , 0, te[2].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr, 2);
+ HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 2);
 }
 
 //---------------------------------------------

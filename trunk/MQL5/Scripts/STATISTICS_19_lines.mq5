@@ -17,6 +17,13 @@
 //| Скрипт подсчета статистики 19 линий                              |
 //+------------------------------------------------------------------+
 
+// перечисления режима вычисления статистики
+
+enum ENUM_CALCULATE_TYPE
+ {
+   
+ };
+
 // перечисление типов положения цены относительно уровня
 enum ENUM_LOCATION_TYPE
  {
@@ -46,6 +53,8 @@ int  countDownUp   = 0;                          // количество пробитий снизу вв
 int  countUpDown   = 0;                          // количество пробитий сверху вниз
 int  countUpUp     = 0;                          // количество не пробитий сверху
 int  countDownDown = 0;                          // количество не пробитий снизу
+int  countDone     = 0;                          // количество  сработавших уровней
+int  countUnDone   = 0;                          // количество не сработавших уровней
  
 // хэндл индикатора 19 lines
 int      handle_19Lines;
@@ -57,7 +66,6 @@ double   buffer_19Lines_price3[];
 double   buffer_19Lines_atr1  [];
 double   buffer_19Lines_atr2  [];
 double   buffer_19Lines_atr3  [];
-datetime buffer_time[];
 // буфер цен на заданному таймфрейме
 MqlRates buffer_price[];  
        
@@ -101,7 +109,10 @@ void OnStart()
    
    int bars;                    // количество баров всего 
     
-   // создаем хэндл индикатора 19 линий            
+   // создаем хэндл индикатора 19 линий   
+   
+   
+            
    handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed); 
    if (handle_19Lines == INVALID_HANDLE)
      {
@@ -125,7 +136,6 @@ void OnStart()
      size4 = CopyBuffer(handle_19Lines, start_index_buffer + 3, start_time, end_time, buffer_19Lines_atr2);
      size5 = CopyBuffer(handle_19Lines, start_index_buffer + 4, start_time, end_time, buffer_19Lines_price3);
      size6 = CopyBuffer(handle_19Lines, start_index_buffer + 5, start_time, end_time, buffer_19Lines_atr3);
-     size_time = CopyTime(_Symbol,PERIOD_M1,start_time,end_time,buffer_time);
      size_price = CopyRates(_Symbol,PERIOD_M1,start_time,end_time,buffer_price);
      PrintFormat("bars = %d | size1=%d / size2=%d / size3=%d / size4=%d / size5=%d / size6=%d / sizePrice=%d", BarsCalculated(handle_19Lines), size1, size2, size3, size4, size5, size6,size_price);
     }   
@@ -134,7 +144,7 @@ void OnStart()
     
     Print("КОЛИЧЕСТВО БАРОВ = ",bars," ПОДСЧИТАНО = ",BarsCalculated(handle_19Lines) );
     // проверка на загрузку всех буферов 
-    if ( size1!=bars || size2!=bars || size3!=bars ||size4!=bars||size5!=bars||size6!=bars||size_price!=bars||size_time!=bars)
+    if ( size1!=bars || size2!=bars || size3!=bars ||size4!=bars||size5!=bars||size6!=bars||size_price!=bars)
       {
        Print("Не удалось прогрузить все буферы индикатора");
        return;
@@ -154,11 +164,6 @@ void OnStart()
        {
   
         /////ДЛЯ ВТОРОГО УРОВНЯ//////  
-        
-    FileWriteString(fileTestStat,"\nВремя = "+TimeToString(buffer_time[index])+" Цена уровня2 = "+DoubleToString(buffer_19Lines_price2[index]) );       
-        
-        /*
-        
       
         if ( curBuf2 != buffer_19Lines_price2[index] ) // если значения буферов отличаются
          {
@@ -183,21 +188,31 @@ void OnStart()
              if (curLocLevel2 == LOCATION_ABOVE && prevLocLevel2 == LOCATION_BELOW)
                {
                 countDownUp ++;
+                if (standOnLevel2)  // если бары находились внутри уровня. то уровень сработавший
+                 countDone ++;
+                else
+                 countUnDone ++;
                 FileWriteString(fileTestStat,"\nЦена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2) );
                }
              if (curLocLevel2 == LOCATION_BELOW && prevLocLevel2 == LOCATION_ABOVE)
                {
                 countUpDown ++;
+                if (standOnLevel2)  // если бары находились внутри уровня. то уровень сработавший
+                 countDone ++;
+                else
+                 countUnDone ++;                
                 FileWriteString(fileTestStat,"\nЦена прошла сверху вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2) ); 
                }
              if (curLocLevel2 == LOCATION_ABOVE && prevLocLevel2 == LOCATION_ABOVE && standOnLevel2)
                {
                 countUpUp ++;
+                countDone ++; 
                 FileWriteString(fileTestStat,"\nЦена отбилась сверху вверх"+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2) ); 
                }
              if (curLocLevel2 == LOCATION_BELOW && prevLocLevel2 == LOCATION_BELOW && standOnLevel2)
                {
                 countDownDown ++;
+                countDone     ++;  
                 FileWriteString(fileTestStat,"\nЦена отбилась снизу вниз"+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2) );                
                }
              // обнуляем подсчет баров внутри уровня
@@ -206,7 +221,7 @@ void OnStart()
              standOnLevel2 = false;
             }  
            } ///END ДЛЯ ВТОРОГО УРОВНЯ
-  
+           
          /////ДЛЯ ТРЕТЬЕГО УРОВНЯ//////        
         if ( ! EqualDoubles (curBuf3,buffer_19Lines_price3[index] ) ) // если значения буферов отличаются
          {
@@ -231,21 +246,31 @@ void OnStart()
              if (curLocLevel3 == LOCATION_ABOVE && prevLocLevel3 == LOCATION_BELOW)
                 {
                  countDownUp ++;
+                if (standOnLevel3)  // если бары находились внутри уровня. то уровень сработавший
+                 countDone ++;
+                else
+                 countUnDone ++;                 
                  FileWriteString(fileTestStat,"\nЦена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index]));
                 }
              if (curLocLevel3 == LOCATION_BELOW && prevLocLevel3 == LOCATION_ABOVE)
                 {
                  countUpDown ++;
+                if (standOnLevel3)  // если бары находились внутри уровня. то уровень сработавший
+                 countDone ++;
+                else
+                 countUnDone ++;                 
                  FileWriteString(fileTestStat,"\nЦены прошла сверху вниз в "+TimeToString(buffer_price[index].time)+";количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index])); 
                 }
              if (curLocLevel3 == LOCATION_ABOVE && prevLocLevel3 == LOCATION_ABOVE && standOnLevel3)
                 {
                  countUpUp ++;
+                 countDone ++;  
                  FileWriteString(fileTestStat,"\nЦена отбилась сверху вверх в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index])); 
                 }
              if (curLocLevel3 == LOCATION_BELOW && prevLocLevel3 == LOCATION_BELOW && standOnLevel3)
                 {
                  countDownDown ++;
+                 countDone     ++;  
                  FileWriteString(fileTestStat,"\nЦена отбилась снизу вниз в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index]));                
                 }
             // обнуляем подсчет баров внутри уровня
@@ -256,14 +281,11 @@ void OnStart()
           }  ///END ДЛЯ ТРЕТЬЕГО УРОВНЯ        
                
   
-        */
+        
           
                 
        }
-   Print("Количество пробитий снизу вверх = ", countDownUp  );
-   Print("Количество пробитий сверху вниз = ", countUpDown  );
-   Print("Количество отбитий сверху вверх = ", countUpUp    );
-   Print("Количество отбитий снизу вниз   = ", countDownDown);
+
    // закрываем файл тестирования статистики прохождения уровней
    FileClose(fileTestStat);
    // сохраним результаты статистики в файл
@@ -303,6 +325,8 @@ void OnStart()
     FileWriteString(fileHandle,"\nКоличество прохождений через уровень снизу вверх: "+IntegerToString(countDownUp));
     FileWriteString(fileHandle,"\nКоличество отбитий от уровня сверху вверх : "+IntegerToString(countUpUp));
     FileWriteString(fileHandle,"\nКоличество отбитий от уровня снизу вниз: "+IntegerToString(countDownDown));
+    FileWriteString(fileHandle,"\nКоличество сработавших уровней: "+IntegerToString(countDone));  
+    FileWriteString(fileHandle,"\nКоличество НЕ сработавших уровней: "+IntegerToString(countUnDone));  
     // закрываем файл статистики
     FileClose(fileHandle);            
   }
