@@ -45,7 +45,7 @@ input string   file_name  = "STAT_19_LINES"; // имя файла статистики
 sinput string atr_str = "";                      // ПАРАМЕТРЫ ИНДИКАТОРА АТR
 input int    period_ATR = 30;                    // Период ATR для канала
 input double percent_ATR = 0.5;                  // Ширина канала уровня в процентах от ATR
-input double precentageATR_price = 1;            // Процентр ATR для нового экструмума
+input double precentageATR_price = 1;            // Процент ATR для нового экструмума
 input ENUM_LEVEL_TYPE level = EXTR_H4;           // тип уровня
 
 // локальные переменные скрипта
@@ -69,6 +69,7 @@ double   buffer_19Lines_price3[];
 double   buffer_19Lines_atr1  [];
 double   buffer_19Lines_atr2  [];
 double   buffer_19Lines_atr3  [];
+datetime buffer_time[];
 // буфер цен на заданному таймфрейме
 MqlRates buffer_price[];  
        
@@ -93,6 +94,10 @@ int countBarsInsideLevel3=0;          // внутри третьего уровня
 int fileHandle;                       // хэндл файла статистики
 int fileTestStat;                     // хэндл файла проверки статистики прохождения уровней
 
+// текущие значения буферов
+double curBuf2;                       // текущее значение 2-го буфера
+double curBuf3;                       // текущее значение 3-го буфера
+
 void OnStart()
   {
    // переменные для сохранения размеров загрузки буферов индикаторов
@@ -102,18 +107,12 @@ void OnStart()
    int size4;
    int size5;
    int size6;
+   int size_time;
    int size_price;
    int start_index_buffer = 6; // первый номер набора буферов для 3 линий уровня 
-   int bars;                    // количество баров всего 
    
-
-   // временные переменные для проверки на уровни
-   double   tmpPrice1 = 1.38660;      // временная цена уровня 1 (верхняя)
-   double   tmpZone1  = 5;            // временный диапазон от цены   
-   double   tmpPrice2 = 1.38640;      // временная цена уровня 2 (средняя)
-   double   tmpZone2  = 5;            // временный диапазон от цены     
-   double   tmpPrice3 = 1.38625;      // временная цена уровня 3 (нижняя)
-   double   tmpZone3  = 5;            // временный диапазон от цены       
+   int bars;                    // количество баров всего 
+    
    // создаем хэндл индикатора 19 линий            
    handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed); 
    if (handle_19Lines == INVALID_HANDLE)
@@ -138,112 +137,139 @@ void OnStart()
      size4 = CopyBuffer(handle_19Lines, start_index_buffer + 3, start_time, end_time, buffer_19Lines_atr2);
      size5 = CopyBuffer(handle_19Lines, start_index_buffer + 4, start_time, end_time, buffer_19Lines_price3);
      size6 = CopyBuffer(handle_19Lines, start_index_buffer + 5, start_time, end_time, buffer_19Lines_atr3);
+     size_time = CopyTime(_Symbol,PERIOD_M1,start_time,end_time,buffer_time);
      size_price = CopyRates(_Symbol,PERIOD_M1,start_time,end_time,buffer_price);
      PrintFormat("bars = %d | size1=%d / size2=%d / size3=%d / size4=%d / size5=%d / size6=%d / sizePrice=%d", BarsCalculated(handle_19Lines), size1, size2, size3, size4, size5, size6,size_price);
     }   
     // получаем количество баров индикаторов
     bars = Bars(_Symbol,PERIOD_M1,start_time,end_time);
+    
+    Print("КОЛИЧЕСТВО БАРОВ = ",bars," ПОДСЧИТАНО = ",BarsCalculated(handle_19Lines) );
     // проверка на загрузку всех буферов 
-    if ( size1!=bars || size2!=bars || size3!=bars ||size4!=bars||size5!=bars||size6!=bars||size_price!=bars)
+    if ( size1!=bars || size2!=bars || size3!=bars ||size4!=bars||size5!=bars||size6!=bars||size_price!=bars||size_time!=bars)
       {
        Print("Не удалось прогрузить все буферы индикатора");
        return;
       }
     // сохраняем текущее положение цены относительно уровней
-    prevLocLevel2 = GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price2[0],buffer_19Lines_atr2[0]);  
-    prevLocLevel3 = GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price3[0],buffer_19Lines_atr3[0]);            
+    prevLocLevel2  = GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price2[0],buffer_19Lines_atr2[0]);  
+    prevLocLevel3  = GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price3[0],buffer_19Lines_atr3[0]);               
     // выставляем флаги нахождения в зоне уровня в false
     standOnLevel2  = false;
     standOnLevel3  = false;
-          Comment("ЦЕНА НА УРОВНЕ 1 = ",buffer_19Lines_price1[bars-1]," КАНАЛ НА УРОВНЕ 1 = ",buffer_19Lines_atr1[bars-1],
-                  "\nЦЕНЫ НА УРОВНЕ 2 = ",buffer_19Lines_price2[bars-1]," КАНАЛ НА УРОВНЕ 2 = ",buffer_19Lines_atr2[bars-1],
-                  "\nЦЕНА НА УРОВНЕ 3 = ",buffer_19Lines_price3[bars-1]," КАНАЛ НА УРОВНЕ 3 = ",buffer_19Lines_atr3[bars-1]);   
+    // сохраним текущую цену на уровнях
+    curBuf2        = buffer_19Lines_price2[0];
+    curBuf3        = buffer_19Lines_price3[0];
+  
     // проходим по всем барам цены  и считаем статистику проходов через уровни
     for (int index=1;index < bars; index++)
        {
+  
+        /////ДЛЯ ВТОРОГО УРОВНЯ//////  
         
-        /////ДЛЯ ВТОРОГО УРОВНЯ//////        
-      /*         
-        curLocLevel2 = GetCurrentPriceLocation(buffer_price[index].close,buffer_19Lines_price2[index],buffer_19Lines_atr2[index]);
+    FileWriteString(fileTestStat,"\nВремя = "+TimeToString(buffer_time[index])+" Цена уровня2 = "+DoubleToString(buffer_19Lines_price2[index]) );       
         
-        if (curLocLevel2 == LOCATION_INSIDE) 
+        /*
+        
+      
+        if ( curBuf2 != buffer_19Lines_price2[index] ) // если значения буферов отличаются
          {
-           // если еще и Open находится внутри уровня
-           if (GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price2[index],buffer_19Lines_atr2[index])  == LOCATION_INSIDE)
-             countBarsInsideLevel2++;  // то увеличиваем количество баров внутри уровня
-           standOnLevel2 = true;
-         }
-        else 
-         {   
-           if (curLocLevel2 == LOCATION_ABOVE && prevLocLevel2 == LOCATION_BELOW)
-              {
-               countDownUp ++;
-               Print("верхний прошла снизу вверх в ",buffer_price[index].time," количество баров внутри уровня = ",countBarsInsideLevel2);
-              }
-           if (curLocLevel2 == LOCATION_BELOW && prevLocLevel2 == LOCATION_ABOVE)
-              {
-               countUpDown ++;
-               Print("верхний прошла сверху вниз в ",buffer_price[index].time," количество баров внутри уровня = ",countBarsInsideLevel2); 
-              }
-           if (curLocLevel2 == LOCATION_ABOVE && prevLocLevel2 == LOCATION_ABOVE && standOnLevel2)
-              {
-               countUpUp ++;
-               Print("верхний отбилась сверху вверх",buffer_price[index].time," количество баров внутри уровня = ",countBarsInsideLevel2); 
-              }
-           if (curLocLevel2 == LOCATION_BELOW && prevLocLevel2 == LOCATION_BELOW && standOnLevel2)
-              {
-               countDownDown ++;
-               
-               Print("верхний отбилась снизу вниз",buffer_price[index].time," количество баров внутри уровня = ",countBarsInsideLevel2);                
-              }
-           // обнуляем подсчет баров внутри уровня
-           countBarsInsideLevel2 = 0;   
-           prevLocLevel2 = curLocLevel2;
-           standOnLevel2 = false;
-         }   ///END ДЛЯ ВТОРОГО УРОВНЯ
-         
-         */
+           // то сохраним текущую цену уровня
+           curBuf2 = buffer_19Lines_price2[index];
+           // и предыдущее положение цены относительно уровня
+           prevLocLevel2  = GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price2[index],buffer_19Lines_atr2[index]);            
+         }  
+        else   // если буфер не изменил своего предыдушего положения
+        {       
+          curLocLevel2 = GetCurrentPriceLocation(buffer_price[index].close,buffer_19Lines_price2[index],buffer_19Lines_atr2[index]);
+        
+          if (curLocLevel2 == LOCATION_INSIDE) 
+            {
+             // если еще и Open находится внутри уровня
+             if (GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price2[index],buffer_19Lines_atr2[index])  == LOCATION_INSIDE)
+                 countBarsInsideLevel2++;  // то увеличиваем количество баров внутри уровня
+             standOnLevel2 = true;
+            }
+          else 
+            {   
+             if (curLocLevel2 == LOCATION_ABOVE && prevLocLevel2 == LOCATION_BELOW)
+               {
+                countDownUp ++;
+                FileWriteString(fileTestStat,"\nЦена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2) );
+               }
+             if (curLocLevel2 == LOCATION_BELOW && prevLocLevel2 == LOCATION_ABOVE)
+               {
+                countUpDown ++;
+                FileWriteString(fileTestStat,"\nЦена прошла сверху вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2) ); 
+               }
+             if (curLocLevel2 == LOCATION_ABOVE && prevLocLevel2 == LOCATION_ABOVE && standOnLevel2)
+               {
+                countUpUp ++;
+                FileWriteString(fileTestStat,"\nЦена отбилась сверху вверх"+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2) ); 
+               }
+             if (curLocLevel2 == LOCATION_BELOW && prevLocLevel2 == LOCATION_BELOW && standOnLevel2)
+               {
+                countDownDown ++;
+                FileWriteString(fileTestStat,"\nЦена отбилась снизу вниз"+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2) );                
+               }
+             // обнуляем подсчет баров внутри уровня
+             countBarsInsideLevel2 = 0;   
+             prevLocLevel2 = curLocLevel2;
+             standOnLevel2 = false;
+            }  
+           } ///END ДЛЯ ВТОРОГО УРОВНЯ
+  
          /////ДЛЯ ТРЕТЬЕГО УРОВНЯ//////        
-              
-        curLocLevel3 = GetCurrentPriceLocation(buffer_price[index].close,buffer_19Lines_price3[index],buffer_19Lines_atr3[index]);
-        
-        if (curLocLevel3 == LOCATION_INSIDE) 
+        if ( ! EqualDoubles (curBuf3,buffer_19Lines_price3[index] ) ) // если значения буферов отличаются
          {
-           // если еще и Open находится внутри уровня
-           if (GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price3[index],buffer_19Lines_atr3[index])  == LOCATION_INSIDE)
-             countBarsInsideLevel3++;  // то увеличиваем количество баров внутри уровня
-           standOnLevel3 = true;
-         }
-        else 
-         {   
-           if (curLocLevel3 == LOCATION_ABOVE && prevLocLevel3 == LOCATION_BELOW)
-              {
-               countDownUp ++;
-               FileWriteString(fileTestStat,"\nЦена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3));
-              }
-           if (curLocLevel3 == LOCATION_BELOW && prevLocLevel3 == LOCATION_ABOVE)
-              {
-               countUpDown ++;
-               FileWriteString(fileTestStat,"\nЦены прошла сверху вниз в "+TimeToString(buffer_price[index].time)+";количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)); 
-              }
-           if (curLocLevel3 == LOCATION_ABOVE && prevLocLevel3 == LOCATION_ABOVE && standOnLevel3)
-              {
-               countUpUp ++;
-               FileWriteString(fileTestStat,"\nЦена отбилась сверху вверх в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)); 
-              }
-           if (curLocLevel3 == LOCATION_BELOW && prevLocLevel3 == LOCATION_BELOW && standOnLevel3)
-              {
-               countDownDown ++;
+           // то сохраним текущую цену уровня
+           curBuf3 = buffer_19Lines_price3[index];
+           // и предыдущее положение цены относительно уровня
+           prevLocLevel3  = GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price3[index],buffer_19Lines_atr3[index]);            
+         }     
+        else // иначе
+         { 
+          curLocLevel3 = GetCurrentPriceLocation(buffer_price[index].close,buffer_19Lines_price3[index],buffer_19Lines_atr3[index]);
+        
+          if (curLocLevel3 == LOCATION_INSIDE) 
+            {
+             // если еще и Open находится внутри уровня
+             if (GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price3[index],buffer_19Lines_atr3[index])  == LOCATION_INSIDE)
+              countBarsInsideLevel3++;  // то увеличиваем количество баров внутри уровня
+             standOnLevel3 = true;
+            }
+          else 
+            {   
+             if (curLocLevel3 == LOCATION_ABOVE && prevLocLevel3 == LOCATION_BELOW)
+                {
+                 countDownUp ++;
+                 FileWriteString(fileTestStat,"\nЦена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index]));
+                }
+             if (curLocLevel3 == LOCATION_BELOW && prevLocLevel3 == LOCATION_ABOVE)
+                {
+                 countUpDown ++;
+                 FileWriteString(fileTestStat,"\nЦены прошла сверху вниз в "+TimeToString(buffer_price[index].time)+";количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index])); 
+                }
+             if (curLocLevel3 == LOCATION_ABOVE && prevLocLevel3 == LOCATION_ABOVE && standOnLevel3)
+                {
+                 countUpUp ++;
+                 FileWriteString(fileTestStat,"\nЦена отбилась сверху вверх в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index])); 
+                }
+             if (curLocLevel3 == LOCATION_BELOW && prevLocLevel3 == LOCATION_BELOW && standOnLevel3)
+                {
+                 countDownDown ++;
+                 FileWriteString(fileTestStat,"\nЦена отбилась снизу вниз в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index]));                
+                }
+            // обнуляем подсчет баров внутри уровня
+            countBarsInsideLevel3 = 0;   
+            prevLocLevel3 = curLocLevel3;
+            standOnLevel3 = false;
+           } 
+          }  ///END ДЛЯ ТРЕТЬЕГО УРОВНЯ        
                
-               FileWriteString(fileTestStat,"\nЦена отбилась снизу вниз в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel3));                
-              }
-           // обнуляем подсчет баров внутри уровня
-           countBarsInsideLevel3 = 0;   
-           prevLocLevel3 = curLocLevel3;
-           standOnLevel3 = false;
-         }   ///END ДЛЯ ТРЕТЬЕГО УРОВНЯ        
-                
-         
+  
+        */
+          
                 
        }
    Print("Количество пробитий снизу вверх = ", countDownUp  );
