@@ -21,7 +21,12 @@
 
 enum ENUM_CALCULATE_TYPE
  {
-   
+  CALC_M15=0,        
+  CALC_H1,
+  CALC_H4,
+  CALC_D1,
+  CALC_W1,
+  CALC_MN1
  };
 
 // перечисление типов положения цены относительно уровня
@@ -36,7 +41,8 @@ enum ENUM_LOCATION_TYPE
 sinput string  stat_str="";                      // ПАРАМЕТРЫ ВЫЧИСЛЕНИЯ СТАТИСТИКИ
 input datetime start_time = D'2012.01.01';       // начальная дата
 input datetime end_time   = D'2014.04.01';       // конечная дата
-input string   file_name  = "STAT_19_LINES"; // имя файла статистики
+input ENUM_CALCULATE_TYPE calc_type = CALC_W1;   // режим рассчета статистики
+input string   file_name  = "STAT_19_LINES";     // имя файла статистики
 
 sinput string atr_str = "";                      // ПАРАМЕТРЫ ИНДИКАТОРА АТR
 input int    period_ATR = 30;                    // Период ATR для канала
@@ -109,11 +115,37 @@ void OnStart()
    
    int bars;                    // количество баров всего 
     
-   // создаем хэндл индикатора 19 линий   
+   // создаем хэндл индикатора 19 линий (в зависимости от параметра calc_type)  
    
-   
+   switch (calc_type)
+    {
+     case CALC_D1:
+      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      false, clrRed, false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed);      
+     break;
+     case CALC_H1:
+      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);       
+     break;
+     case CALC_H4:
+      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed);       
+     break;
+     case CALC_M15:
+      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);       
+     break;
+     case CALC_MN1:
+      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);       
+     break;
+     case CALC_W1:
+      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);       
+     break;
+    }
             
-   handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed); 
+
    if (handle_19Lines == INVALID_HANDLE)
      {
       PrintFormat("Не удалось создать хэндл индикатора");
