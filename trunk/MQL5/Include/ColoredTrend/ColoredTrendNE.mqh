@@ -18,7 +18,7 @@
 #define ATR_PERIOD 30
 #define ATR_TIMEFRAME PERIOD_H4
 
-#define HOW_HUGE_BAR_IS 2
+#define FACTOR_OF_SUPERIORITY 2
 //CLog log_output(OUT_COMMENT, LOG_NONE, 50, "PBI", 30);
 
 //+------------------------------------------------------------------+
@@ -143,14 +143,14 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
  {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
   previous_move_type = enumMoveType[bar];
-  PrintFormat("Начало нового TREND DOWN");
+  //PrintFormat("Начало нового TREND DOWN");
   return (true);
  }
  else if (newTrend == 1 && enumMoveType[bar] != MOVE_TYPE_TREND_UP_FORBIDEN && enumMoveType[bar] != MOVE_TYPE_TREND_UP) // если текущее закрытие выше последнего экстремума 
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
   previous_move_type = enumMoveType[bar];
-  PrintFormat("Начало нового TREND UP");
+  //PrintFormat("Начало нового TREND UP");
   return (true);
  }
  else 
@@ -169,7 +169,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
   if(LessDoubles(buffer_Rates[AMOUNT_OF_PRICE-1].close, buffer_Rates[AMOUNT_OF_PRICE-1].open, digits))
   {
    enumMoveType[bar] = MOVE_TYPE_CORRECTION_DOWN;
-   PrintFormat("CORRECTION DOWN: цена закрытия меньше цены открытия");
+   //PrintFormat("CORRECTION DOWN: цена закрытия меньше цены открытия");
    if (num0.direction > 0) 
     lastOnTrend = num0; 
    else 
@@ -185,7 +185,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
   if(GreatDoubles(buffer_Rates[AMOUNT_OF_PRICE-1].close, buffer_Rates[AMOUNT_OF_PRICE-1].open, digits))
   {
    enumMoveType[bar] = MOVE_TYPE_CORRECTION_UP;
-   PrintFormat("CORRECTION UP: цена закрытия больше открытия предыдущего бара");
+   //PrintFormat("CORRECTION UP: цена закрытия больше открытия предыдущего бара");
    if (num0.direction < 0) 
     lastOnTrend = num0; 
    else 
@@ -202,7 +202,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
       isCorrectionEnds(buffer_Rates[AMOUNT_OF_PRICE-1].close, enumMoveType[bar], start_pos))                       
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
-  PrintFormat("ТРЕНД ВНИЗЪ!!!CORRECTIONEND bar = %d", bar);
+  //PrintFormat("ТРЕНД ВНИЗЪ!!!CORRECTIONEND bar = %d", bar);
   previous_move_type = enumMoveType[bar];
   return (true);
  }
@@ -211,7 +211,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
       isCorrectionEnds(buffer_Rates[AMOUNT_OF_PRICE-1].close, enumMoveType[bar], start_pos))
  {
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_UP_FORBIDEN : MOVE_TYPE_TREND_UP;
-  PrintFormat("ТРЕНД ВВЕРХЪ!!!CORRECTIONEND bar = %d", bar);
+  //PrintFormat("ТРЕНД ВВЕРХЪ!!!CORRECTIONEND bar = %d", bar);
   previous_move_type = enumMoveType[bar];
   return (true);
  }
@@ -220,7 +220,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
  if (((previous_move_type == MOVE_TYPE_TREND_DOWN || previous_move_type == MOVE_TYPE_CORRECTION_DOWN) && isEndTrend() ==  1) || 
      ((previous_move_type == MOVE_TYPE_TREND_UP   || previous_move_type == MOVE_TYPE_CORRECTION_UP  ) && isEndTrend() == -1))   
  {
-  PrintFormat("isEndTrend = %d: FLAT", isEndTrend());
+  //PrintFormat("isEndTrend = %d: FLAT", isEndTrend());
   enumMoveType[bar] = MOVE_TYPE_FLAT;
   previous_move_type = enumMoveType[bar];
   return (true);
@@ -412,22 +412,22 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int
   if(isLastBarHuge(start_pos) > 0) bottomTF_condition = true;
   if(num2.price == lastOnTrend.price && isNewTrend() == -1) 
   {
-   PrintFormat("newTrend : коррекция вверх заканчивается трендом вниз");
+   //PrintFormat("newTrend : коррекция вверх заканчивается трендом вниз");
    newTrend_condition = true;
   }
  }
  if (move_type == MOVE_TYPE_CORRECTION_DOWN)
  {
   extremum_condition = GreatDoubles(price, lastOnTrend.price, digits);
-  if(extremum_condition) PrintFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price);
+  //if(extremum_condition) PrintFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price);
   if(isLastBarHuge(start_pos) < 0) 
   {
-   PrintFormat("IS_CORRECTION_ENDS : LAST BAR HUGE");
+   //PrintFormat("IS_CORRECTION_ENDS : LAST BAR HUGE");
    bottomTF_condition = true;
   }
   if(num2.price == lastOnTrend.price && isNewTrend() == 1) 
   {
-   PrintFormat("newTrend : коррекция вниз заканчивается трендом вверх"); 
+   //PrintFormat("newTrend : коррекция вниз заканчивается трендом вверх"); 
    newTrend_condition = true;
   }
  }
@@ -440,7 +440,6 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int
 //+----------------------------------------------------------------+
 int CColoredTrend::isLastBarHuge(int start_pos)
 {
- if(_period == PERIOD_M1) return(0);
  double sum = 0;
  MqlRates rates[];
  datetime buffer_date[1];
@@ -455,20 +454,20 @@ int CColoredTrend::isLastBarHuge(int start_pos)
  double avgBar = sum / size;
  double lastBar = MathAbs(rates[size-1].open - rates[size-1].close);
     
- if(GreatDoubles(lastBar, avgBar*HOW_HUGE_BAR_IS))
+ if(GreatDoubles(lastBar, avgBar*FACTOR_OF_SUPERIORITY))
  {
   if(GreatDoubles(rates[size-1].open, rates[size-1].close, digits))
   {
-   PrintFormat("Я БООООЛЬШОООЙ БАР! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*HOW_HUGE_BAR_IS, rates[size-1].open, rates[size-1].close);
+   //PrintFormat("Я БООООЛЬШОООЙ БАР! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*FACTOR_OF_SUPERIORITY, rates[size-1].open, rates[size-1].close);
    return(1);
   }
   if(LessDoubles(rates[size-1].open, rates[size-1].close, digits))
   {
-   PrintFormat("Я БООООЛЬШОООЙ БАР! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*HOW_HUGE_BAR_IS, rates[size-1].open, rates[size-1].close);
+   //PrintFormat("Я БООООЛЬШОООЙ БАР! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*FACTOR_OF_SUPERIORITY, rates[size-1].open, rates[size-1].close);
    return(-1);
   }
  }
- //PrintFormat("Я БООООЛЬШОООЙ БАР! 0 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*HOW_HUGE_BAR_IS, rates[size-1].open, rates[size-1].close);
+ //PrintFormat("Я БООООЛЬШОООЙ БАР! 0 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*FACTOR_OF_SUPERIORITY, rates[size-1].open, rates[size-1].close);
  return(0);
 }
 

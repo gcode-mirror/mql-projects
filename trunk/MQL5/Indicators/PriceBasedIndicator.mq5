@@ -23,10 +23,11 @@
 #include <Lib CisNewBar.mqh>
 #include <ColoredTrend/ColoredTrendNE.mqh>
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
+#include <CLog.mqh>
 //----------------------------------------------------------------
  
 //--- input параметры
-input int      depth = 1000;         // сколько свечей показывать
+input int      history_depth = 1000; // сколько свечей показывать
 input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
 input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
 //--- индикаторные буферы
@@ -43,11 +44,12 @@ CisNewBar NewBarCurrent,
 
 CColoredTrend *trend, 
               *topTrend;
+              
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int  digits;
-input bool show_top = false;
-//+------------------------------------------------------------------+
+int depth = history_depth;
+input bool show_top = false;//+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
@@ -55,6 +57,8 @@ int OnInit()
    PrintFormat("%s Init", MakeFunctionPrefix(__FUNCTION__));
    symbol = Symbol();
    current_timeframe = Period();
+   if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe);
+   PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(current_timeframe);
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
@@ -134,6 +138,8 @@ int OnCalculate(const int rates_total,
     start_index = rates_total - depth;
     start_time = TimeCurrent() - depth*seconds_current;
     start_iteration = rates_total - depth;
+    buffer_index = 0;
+    top_buffer_index = 0;
     trend.Zeros();
     topTrend.Zeros();
     ArrayInitialize(ColorCandlesBuffer1, 0);
@@ -158,6 +164,7 @@ int OnCalculate(const int rates_total,
                       
     error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
     //PrintFormat("i = %d; top_buffer_index = %d; start_pos_top = %d; move type top = %s", i, top_buffer_index, start_pos_top, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+    //PrintFormat("TOP: i = %d; size = %f;", i , (double)(rates_total-start_iteration)/(seconds_top/seconds_current));
     if(!error)
     {
      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
@@ -174,6 +181,8 @@ int OnCalculate(const int rates_total,
    {
     int start_pos_cur = (buffer_index < depth) ? (rates_total - 1) - i : 0; 
     error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
+    //PrintFormat("i = %d; buffer_index = %d; start_pos_cur = %d; move type = %s", i, buffer_index, start_pos_cur, MoveTypeToString(trend.GetMoveType(buffer_index)));
+    //PrintFormat("CURRENT: i = %d; rates_total = %d;", i , rates_total);
     if(!error) 
     {
      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON CURRENT TIMEFRAME");
