@@ -46,20 +46,19 @@ protected:
   MqlRates buffer_Rates[];
   datetime time_buffer[];
   
-  int FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlRates &array[]);
   int FillTimeSeries(ENUM_TF tfType, int count, datetime start_pos, MqlRates &array[]);
-  int FillATRBuf(int count, int start_pos);
+  int FillATRBuf(int count, datetime start_pos);
   
-  bool isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int start_pos);
-  int isLastBarHuge(int start_pos);
+  bool isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, datetime start_pos);
+  int isLastBarHuge(datetime start_pos);
   int isNewTrend();
   int isEndTrend();
   
 public:
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif);
-  SExtremum isExtremum(int start_index);
+  SExtremum isExtremum(datetime start_index, bool now);
   bool FindExtremumInHistory(int depth);
-  bool CountMoveType(int bar, int start_pos, SExtremum &extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
+  bool CountMoveType(int bar, datetime start_pos, SExtremum &extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
   ENUM_MOVE_TYPE GetMoveType(int i);
   int TrendDirection();
   void Zeros();
@@ -97,7 +96,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 //+--------------------------------------+
 //| Функция вычисляет тип движения рынка |
 //+--------------------------------------+
-bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
+bool CColoredTrend::CountMoveType(int bar, datetime start_pos, SExtremum &extremum, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN)
 {
  if(bar == 0) //на "нулевом" баре ничего происходить не будет и данная строчка избавит нас от лишних проверок в дальнейшем
   return (true); 
@@ -107,7 +106,7 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
   
  if(FillTimeSeries(CURRENT_TF, AMOUNT_OF_PRICE, start_pos, buffer_Rates) < 0) // получим размер заполненного массива
   return (false); 
- if(FillATRBuf(1, GetNumberOfTopBarsInCurrentBars(_period, ATR_TIMEFRAME, start_pos)) < 0) // заполним массив данными индикатора ATR
+ if(FillATRBuf(1, start_pos) < 0) // заполним массив данными индикатора ATR
   return (false);  
  
  CopyTime(_symbol, _period, start_pos, 1, time_buffer);  
@@ -115,8 +114,10 @@ bool CColoredTrend::CountMoveType(int bar, int start_pos, SExtremum &extremum, E
  difToNewExtremum = buffer_ATR[0] * _percentage_ATR;
  SExtremum current_bar = {0, -1};
  
- int newTrend = 0;  
- current_bar = isExtremum(start_pos); 
+ int newTrend = 0;
+ bool now = false;
+ if(bar > _depth) now = true;
+ current_bar = isExtremum(start_pos, now); 
  if (current_bar.direction != 0)
  {
   extremum = current_bar;
@@ -243,14 +244,14 @@ ENUM_MOVE_TYPE CColoredTrend::GetMoveType(int i)
 //+--------------------------------------------------------------------+
 //| Функция возвращает направление и значение экстремума в данной точке|
 //+--------------------------------------------------------------------+
-SExtremum CColoredTrend::isExtremum(int start_index)
+SExtremum CColoredTrend::isExtremum(datetime start_index, bool now)
 {
  SExtremum result = {0,0};
  MqlRates buffer[1];
  CopyRates(_symbol, _period, start_index, 1, buffer);
  double high = 0, low = 0;
  
- if (start_index == 0)
+ if (now)
  {
   high = buffer[0].close;
   low = buffer[0].close;
@@ -282,47 +283,6 @@ SExtremum CColoredTrend::isExtremum(int start_index)
  return(result);
 }
 
-
-//+-------------------------------------------------+
-//| Функция заполняет массив цен из истории         |
-//+-------------------------------------------------+
-int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, int start_pos, MqlRates &array[])
-{
-//--- сколько скопировано
- int copied = 0;
- ENUM_TIMEFRAMES period;
- switch (tfType)
- {
-  case BOTTOM_TF: 
-   period = GetBottomTimeframe(_period);
-   break;
-  case CURRENT_TF:
-   period = _period;
-   break;
-  case TOP_TF:
-   period = GetTopTimeframe(_period);
-   break;
- }
- 
- copied = CopyRates(_symbol, period, start_pos, count, array); // справа налево от 0 до count-1, всего count элементов
-//--- если не удалось скопировать достаточное количество баров
- if(copied < count)
- {
-  string comm = StringFormat("%s Для символа %s получено %d баров из %d затребованных Rates. Period = %s. Error = %d | start = %d count = %d",
-                             MakeFunctionPrefix(__FUNCTION__),
-                             _symbol,
-                             copied,
-                             count,
-                             EnumToString((ENUM_TIMEFRAMES)period),
-                             GetLastError(),
-                             start_pos,
-                             count
-                            );
-  //--- выведем сообщение в комментарий на главное окно графика
-  Print(comm);
- }
- return(copied);
-}
 
 //+-------------------------------------------------+
 //| Функция заполняет массив цен из истории         |
@@ -368,7 +328,7 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, datetime start_pos,
 //+----------------------------------------------------+
 //| Функция заполняет массив индикатора ATR из истории |
 //+----------------------------------------------------+
-int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
+int CColoredTrend::FillATRBuf(int count, datetime start_pos)
 {
  if(ATR_handle == INVALID_HANDLE)                      //проверяем наличие хендла индикатора
  {
@@ -381,14 +341,14 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //--- если не удалось скопировать достаточное количество баров
  if(copied < count)
  {
-  string comm = StringFormat("%s Для символа %s получено %d баров из %d затребованных ATR. Period = %s.  Error = %d | start = %d count = %d bars_calculated = %d",
+  string comm = StringFormat("%s Для символа %s получено %d баров из %d затребованных ATR. Period = %s.  Error = %d | start = %s count = %d bars_calculated = %d",
                              MakeFunctionPrefix(__FUNCTION__),
                              _symbol,
                              copied,
                              count,
                              EnumToString((ENUM_TIMEFRAMES)_period),
                              GetLastError(),
-                             start_pos,
+                             TimeToString(start_pos),
                              count,
                              BarsCalculated(ATR_handle)
                             );
@@ -401,7 +361,7 @@ int CColoredTrend::FillATRBuf(int count, int start_pos = 0)
 //+----------------------------------------------------+
 //| Функция проверяет условия выхода из коррекции      |
 //+----------------------------------------------------+
-bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int start_pos)
+bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, datetime start_pos)
 {
  bool extremum_condition = false, 
       bottomTF_condition = false,
@@ -438,13 +398,11 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, int
 //+----------------------------------------------------------------+
 //| Функция определяет является ли бар "большим" и его направление |
 //+----------------------------------------------------------------+
-int CColoredTrend::isLastBarHuge(int start_pos)
+int CColoredTrend::isLastBarHuge(datetime start_pos)
 {
  double sum = 0;
  MqlRates rates[];
- datetime buffer_date[1];
- CopyTime(_symbol, _period, start_pos, 1, buffer_date);
- FillTimeSeries(BOTTOM_TF, AMOUNT_BARS_FOR_HUGE, buffer_date[0]-PeriodSeconds(GetBottomTimeframe(_period)), rates);
+ FillTimeSeries(BOTTOM_TF, AMOUNT_BARS_FOR_HUGE, start_pos-PeriodSeconds(GetBottomTimeframe(_period)), rates);
  //PrintFormat("сейчас %s; бары загружаю с %s", TimeToString(buffer_date[0]), TimeToString(buffer_date[0]-PeriodSeconds(GetBottomTimeframe(_period))));
  int size = ArraySize(rates);
  for(int i = 0; i < size - 1; i++)
