@@ -20,7 +20,7 @@
 
 //----------------------------------------------------------------
 #include <CompareDoubles.mqh>
-#include <Lib CisNewBar.mqh>
+#include <Lib CisNewBarDD.mqh>
 #include <ColoredTrend/ColoredTrendNE.mqh>
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
 #include <CLog.mqh>
@@ -49,7 +49,8 @@ string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int  digits;
 int depth = history_depth;
-input bool show_top = false;//+------------------------------------------------------------------+
+input bool show_top = false;
+//+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
@@ -122,21 +123,16 @@ int OnCalculate(const int rates_total,
   {
    static int start_index = 0;
    static int start_iteration = 0;
-   static datetime start_time;
    static int buffer_index = 0;
    static int top_buffer_index = 0;
    SExtremum extr_cur = {0, -1};
    SExtremum extr_top = {0, -1};
    bool error = true;
-   
-   int seconds_current = PeriodSeconds(current_timeframe);
-   int     seconds_top = PeriodSeconds(GetTopTimeframe(current_timeframe));
 
    if(prev_calculated == 0) 
    {
     PrintFormat("%s Первый расчет индикатора", MakeFunctionPrefix(__FUNCTION__));
     start_index = rates_total - depth;
-    start_time = TimeCurrent() - depth*seconds_current;
     start_iteration = rates_total - depth;
     buffer_index = 0;
     top_buffer_index = 0;
@@ -153,42 +149,27 @@ int OnCalculate(const int rates_total,
    else 
    {
     //PrintFormat("%s Предварительный Расчет индикатора закончен. Размер буфера = %d", MakeFunctionPrefix(__FUNCTION__), ArraySize(ColorCandlesColors));
-    start_iteration = start_index + buffer_index - 1;
+    start_iteration = start_index + buffer_index;
    }
-   
-   for(int i = 0; i < (double)(rates_total-start_iteration)/(seconds_top/seconds_current); i++)
+ 
+   for(int i = start_iteration; i < rates_total;  i++)    
    {
-    int start_pos_top = (top_buffer_index < GetNumberOfTopBarsInCurrentBars(current_timeframe, GetTopTimeframe(current_timeframe),depth)) 
-                      ? (rates_total-start_iteration)/(seconds_top/seconds_current)-1 - i
-                      : 0;
-                      
-    error = topTrend.CountMoveType(top_buffer_index, start_pos_top, extr_top);
+    error = topTrend.CountMoveType(top_buffer_index, time[i], extr_top);
     //PrintFormat("i = %d; top_buffer_index = %d; start_pos_top = %d; move type top = %s", i, top_buffer_index, start_pos_top, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
-    //PrintFormat("TOP: i = %d; size = %f;", i , (double)(rates_total-start_iteration)/(seconds_top/seconds_current));
     if(!error)
     {
      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
      return(0);
     }
-
-    if(top_buffer_index < (depth)/(seconds_top/seconds_current)) 
-    {
-     top_buffer_index++;
-    }
-   }
-   
-   for(int i = start_iteration; i < rates_total;  i++)    
-   {
-    int start_pos_cur = (buffer_index < depth) ? (rates_total - 1) - i : 0; 
-    error = trend.CountMoveType(buffer_index, start_pos_cur, extr_cur, topTrend.GetMoveType(top_buffer_index));
+    
+    error = trend.CountMoveType(buffer_index, time[i], extr_cur, topTrend.GetMoveType(top_buffer_index));
     //PrintFormat("i = %d; buffer_index = %d; start_pos_cur = %d; move type = %s", i, buffer_index, start_pos_cur, MoveTypeToString(trend.GetMoveType(buffer_index)));
-    //PrintFormat("CURRENT: i = %d; rates_total = %d;", i , rates_total);
     if(!error) 
     {
      Print("YOU NEED TO WAIT FOR THE NEXT BAR ON CURRENT TIMEFRAME");
      return(0);
-    } 
-     
+    }
+      
     ColorCandlesBuffer1[i] = open[i];
     ColorCandlesBuffer2[i] = high[i];
     ColorCandlesBuffer3[i] = low[i];
@@ -203,7 +184,8 @@ int OnCalculate(const int rates_total,
     {
      ColorCandlesColors[i] = topTrend.GetMoveType(top_buffer_index);
     }
-     if (extr_cur.direction > 0)
+    
+    if (extr_cur.direction > 0)
     {
      ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
      extr_cur.direction = 0;
@@ -214,21 +196,20 @@ int OnCalculate(const int rates_total,
      extr_cur.direction = 0;
     }
     
-    if(buffer_index < depth)  // Вычисления только для истории
+    if(buffer_index < depth)
     {
-     buffer_index++;
-     top_buffer_index = (start_time + seconds_current*buffer_index)/seconds_top - start_time/seconds_top;
+     if(    NewBarTop.isNewBar(time[i])) top_buffer_index++;                    //для того что бы считать на истории
+     if(NewBarCurrent.isNewBar(time[i])) buffer_index++;   //для того что бы считать на истории
     }
    }
-  
-   if(NewBarCurrent.isNewBar() > 0 && prev_calculated != 0)
-   {
-    buffer_index++;
-   }
    
-   if(NewBarTop.isNewBar() > 0 && prev_calculated != 0)
+   if(NewBarTop.isNewBar()  && prev_calculated != 0)
    {
     top_buffer_index++;
+   }
+   if(NewBarCurrent.isNewBar() && prev_calculated != 0)
+   {
+    buffer_index++;
    }
   
    return(rates_total);
