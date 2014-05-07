@@ -9,7 +9,6 @@
 #property script_show_inputs 
 
 #include <ExtrLine\CExtremumCalc_NE.mqh>
-#include <Lib CisNewBar.mqh>
 #include <CheckHistory.mqh>
 
 
@@ -17,78 +16,64 @@
 //| Скрипт подсчета статистики 19 линий                              |
 //+------------------------------------------------------------------+
 
-// перечисления режима вычисления статистики
+// перечисления режима вычисления статистики (по уровням)
 
 enum ENUM_CALCULATE_TYPE
- {
-  CALC_M15=0,        
-  CALC_H1,
-  CALC_H4,
-  CALC_D1,
-  CALC_W1,
-  CALC_MN1
+ {      
+  CALC_H1 = 0,                                   // часовик
+  CALC_H4,                                       // 4-х часовик
+  CALC_D1,                                       // дневные уровни 
+  CALC_W1,                                       // неделя
+  CALC_MN1                                       // месяц
  };
 
 // перечисление типов положения цены относительно уровня
 enum ENUM_LOCATION_TYPE
  {
-  LOCATION_ABOVE=0,  // выше уровня
-  LOCATION_BELOW,    // ниже уровня
-  LOCATION_INSIDE    // внутри уровня
+  LOCATION_ABOVE=0,                              // выше уровня
+  LOCATION_BELOW,                                // ниже уровня
+  LOCATION_INSIDE                                // внутри уровня
  };
 
 // вводимые параметры скрипта
 sinput string  stat_str="";                      // ПАРАМЕТРЫ ВЫЧИСЛЕНИЯ СТАТИСТИКИ
 input datetime start_time = D'2012.01.01';       // начальная дата
 input datetime end_time   = D'2014.04.01';       // конечная дата
-input ENUM_CALCULATE_TYPE calc_type = CALC_W1;   // режим рассчета статистики
+input ENUM_CALCULATE_TYPE calc_type = CALC_W1;   // уровни, по которым вычислять статистику
 input string   file_name  = "STAT_19_LINES";     // имя файла статистики
 
 sinput string atr_str = "";                      // ПАРАМЕТРЫ ИНДИКАТОРА АТR
 input int    period_ATR = 30;                    // Период ATR для канала
 input double percent_ATR = 0.5;                  // Ширина канала уровня в процентах от ATR
-input double precentageATR_price = 1;            // Процент ATR для нового экструмума
-
-// локальные переменные скрипта
-SExtremum estruct[3];
-ENUM_TIMEFRAMES period_current = Period(); // текущий период
-ENUM_TIMEFRAMES period_level;
-CisNewBar is_new_level_bar;
 
 int  countDownUp   = 0;                          // количество пробитий снизу вверх
 int  countUpDown   = 0;                          // количество пробитий сверху вниз
 int  countUpUp     = 0;                          // количество не пробитий сверху
 int  countDownDown = 0;                          // количество не пробитий снизу
-int  countDone     = 0;                          // количество  сработавших уровней
+int  countDone     = 0;                          // количество сработавших уровней
 int  countUnDone   = 0;                          // количество не сработавших уровней
  
 // хэндл индикатора 19 lines
 int      handle_19Lines;
 
 // индикаторные буферы
-double   buffer_19Lines_price1[];
 double   buffer_19Lines_price2[];
 double   buffer_19Lines_price3[];
-double   buffer_19Lines_atr1  [];
 double   buffer_19Lines_atr2  [];
 double   buffer_19Lines_atr3  [];
 // буфер цен на заданному таймфрейме
 MqlRates buffer_price[];  
        
 // хранит предыдущее положение цены относительно уровней
-ENUM_LOCATION_TYPE  prevLocLevel1;    // предыдущее положение цены относительно 1-го уровня
 ENUM_LOCATION_TYPE  prevLocLevel2;    // предыдущее положение цены относительно 2-го уровня
 ENUM_LOCATION_TYPE  prevLocLevel3;    // предыдущее положение цены относительно 3-го уровня
 // хранит текущее положение цены относительно уровней
-ENUM_LOCATION_TYPE  curLocLevel1;     // текущее положение цены относительно 1-го уровня
 ENUM_LOCATION_TYPE  curLocLevel2;     // текущее положение цены относительно 2-го уровня
 ENUM_LOCATION_TYPE  curLocLevel3;     // текущее положение цены относительно 3-го уровня
 // флаги попадания цены в уровень
-bool standOnLevel1;                   // флаг попадания в уровень 1
 bool standOnLevel2;                   // флаг попадания в уровень 2
 bool standOnLevel3;                   // флаг попадания в уровень 3
 // счетчики подсчета количества баров внутри уровней
-int countBarsInsideLevel1=0;          // внутри первого уровня
 int countBarsInsideLevel2=0;          // внутри второго уровня
 int countBarsInsideLevel3=0;          // внутри третьего уровня
 
@@ -103,45 +88,42 @@ double curBuf3;                       // текущее значение 3-го буфера
 void OnStart()
   {
    // переменные для сохранения размеров загрузки буферов индикаторов
-   int size1;
-   int size2;
    int size3;
    int size4;
    int size5;
    int size6;
-   int size_time;
    int size_price;
-   int start_index_buffer = 6; // первый номер набора буферов для 3 линий уровня 
-   
-   int bars;                    // количество баров всего 
+   int start_index_buffer;            // первый номер набора буферов для 3 линий уровня 
+   int bars;                          // количество баров всего 
     
    // создаем хэндл индикатора 19 линий (в зависимости от параметра calc_type)  
    
    switch (calc_type)
     {
-     case CALC_D1:
+     case CALC_D1:   // дневник
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
-      false, clrRed, false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed);      
+      false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed);   
+      start_index_buffer = 12;  
      break;
-     case CALC_H1:
+     case CALC_H1:   // часовик
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
-      false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);       
+      false, clrRed, false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed);
+      start_index_buffer = 24;      
      break;
-     case CALC_H4:
+     case CALC_H4:   // четырех часовик
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
-      false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed);       
+      false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed);  
+      start_index_buffer = 18;   
      break;
-     case CALC_M15:
+     case CALC_MN1:  // месяц
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
-      false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);       
+      true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);  
+      start_index_buffer = 0;    
      break;
-     case CALC_MN1:
+     case CALC_W1:   // неделька
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
-      false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);       
-     break;
-     case CALC_W1:
-      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
-      true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);       
+      false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed); 
+      start_index_buffer = 6;    
      break;
     }
             
@@ -162,28 +144,25 @@ void OnStart()
    for (int i = 0; i < 5; i++)
     {
      Sleep(1000);
-     size1 = CopyBuffer(handle_19Lines, start_index_buffer    , start_time, end_time, buffer_19Lines_price1);
-     size2 = CopyBuffer(handle_19Lines, start_index_buffer + 1, start_time, end_time, buffer_19Lines_atr1);
      size3 = CopyBuffer(handle_19Lines, start_index_buffer + 2, start_time, end_time, buffer_19Lines_price2);
      size4 = CopyBuffer(handle_19Lines, start_index_buffer + 3, start_time, end_time, buffer_19Lines_atr2);
      size5 = CopyBuffer(handle_19Lines, start_index_buffer + 4, start_time, end_time, buffer_19Lines_price3);
      size6 = CopyBuffer(handle_19Lines, start_index_buffer + 5, start_time, end_time, buffer_19Lines_atr3);
      size_price = CopyRates(_Symbol,PERIOD_M1,start_time,end_time,buffer_price);
-     PrintFormat("bars = %d | size1=%d / size2=%d / size3=%d / size4=%d / size5=%d / size6=%d / sizePrice=%d", BarsCalculated(handle_19Lines), size1, size2, size3, size4, size5, size6,size_price);
+     PrintFormat("bars = %d |  size3=%d / size4=%d / size5=%d / size6=%d / sizePrice=%d", BarsCalculated(handle_19Lines), size3, size4, size5, size6,size_price);
     }   
     // получаем количество баров индикаторов
     bars = Bars(_Symbol,PERIOD_M1,start_time,end_time);
     
-    Print("КОЛИЧЕСТВО БАРОВ = ",bars," ПОДСЧИТАНО = ",BarsCalculated(handle_19Lines) );
     // проверка на загрузку всех буферов 
-    if ( size1!=bars || size2!=bars || size3!=bars ||size4!=bars||size5!=bars||size6!=bars||size_price!=bars)
+    if ( size3!=bars ||size4!=bars||size5!=bars||size6!=bars||size_price!=bars)
       {
        Print("Не удалось прогрузить все буферы индикатора");
        return;
       }
     // сохраняем текущее положение цены относительно уровней
-    prevLocLevel2  = GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price2[0],buffer_19Lines_atr2[0]);  
-    prevLocLevel3  = GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price3[0],buffer_19Lines_atr3[0]);               
+    prevLocLevel2  =  GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price2[0],buffer_19Lines_atr2[0]);  
+    prevLocLevel3  =  GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price3[0],buffer_19Lines_atr3[0]);               
     // выставляем флаги нахождения в зоне уровня в false
     standOnLevel2  = false;
     standOnLevel3  = false;
@@ -255,7 +234,7 @@ void OnStart()
            } ///END ДЛЯ ВТОРОГО УРОВНЯ
            
          /////ДЛЯ ТРЕТЬЕГО УРОВНЯ//////        
-        if ( ! EqualDoubles (curBuf3,buffer_19Lines_price3[index] ) ) // если значения буферов отличаются
+        if ( curBuf3 != buffer_19Lines_price3[index]  ) // если значения буферов отличаются
          {
            // то сохраним текущую цену уровня
            curBuf3 = buffer_19Lines_price3[index];
@@ -311,11 +290,7 @@ void OnStart()
             standOnLevel3 = false;
            } 
           }  ///END ДЛЯ ТРЕТЬЕГО УРОВНЯ        
-               
-  
-        
-          
-                
+           
        }
 
    // закрываем файл тестирования статистики прохождения уровней
