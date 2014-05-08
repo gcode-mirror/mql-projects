@@ -8,8 +8,8 @@
 #property version   "1.00"
 
 #property indicator_chart_window
-#property indicator_buffers 37  
-#property indicator_plots   36
+#property indicator_buffers 45  
+#property indicator_plots   44
 
 #include <ExtrLine\CExtremumCalc_NE.mqh>
 #include <ExtrLine\HLine.mqh>
@@ -62,43 +62,53 @@ CExtremumCalc calcD1 (Symbol(),  PERIOD_D1, TF_PERIOD_ATR_FOR_D1, PERCENTAGE_OF_
 CExtremumCalc calcH4 (Symbol(),  PERIOD_H4, TF_PERIOD_ATR_FOR_H4, PERCENTAGE_OF_ATR_FOR_H4, period_ATR_channel, percent_ATR_channel);
 CExtremumCalc calcH1 (Symbol(),  PERIOD_H1, TF_PERIOD_ATR_FOR_H1, PERCENTAGE_OF_ATR_FOR_H1, period_ATR_channel, percent_ATR_channel);
 
-SExtremum estructMN[3];
-SExtremum estructW1[3];
-SExtremum estructD1[3];
-SExtremum estructH4[3];
-SExtremum estructH1[3];
+SExtremum estructMN[4];
+SExtremum estructW1[4];
+SExtremum estructD1[4];
+SExtremum estructH4[4];
+SExtremum estructH1[4];
 SExtremum pstructD1[4];
  
 double Extr_MN_Buffer1[];
 double Extr_MN_Buffer2[];
 double Extr_MN_Buffer3[];
+double Extr_MN_Buffer4[];
 double  ATR_MN_Buffer1[];
 double  ATR_MN_Buffer2[];
-double  ATR_MN_Buffer3[]; 
+double  ATR_MN_Buffer3[];
+double  ATR_MN_Buffer4[]; 
 double Extr_W1_Buffer1[];
 double Extr_W1_Buffer2[];
 double Extr_W1_Buffer3[];
+double Extr_W1_Buffer4[];
 double  ATR_W1_Buffer1[];
 double  ATR_W1_Buffer2[];
 double  ATR_W1_Buffer3[];
+double  ATR_W1_Buffer4[];
 double Extr_D1_Buffer1[];
 double Extr_D1_Buffer2[];
 double Extr_D1_Buffer3[];
+double Extr_D1_Buffer4[];
 double  ATR_D1_Buffer1[];
 double  ATR_D1_Buffer2[];
 double  ATR_D1_Buffer3[];
+double  ATR_D1_Buffer4[];
 double Extr_H4_Buffer1[];
 double Extr_H4_Buffer2[];
 double Extr_H4_Buffer3[];
+double Extr_H4_Buffer4[];
 double  ATR_H4_Buffer1[];
 double  ATR_H4_Buffer2[];
 double  ATR_H4_Buffer3[];
+double  ATR_H4_Buffer4[];
 double Extr_H1_Buffer1[];
 double Extr_H1_Buffer2[];
 double Extr_H1_Buffer3[];
+double Extr_H1_Buffer4[];
 double  ATR_H1_Buffer1[];
 double  ATR_H1_Buffer2[];
 double  ATR_H1_Buffer3[];
+double  ATR_H1_Buffer4[];
 double Price_D1_Buffer1[];
 double Price_D1_Buffer2[];
 double Price_D1_Buffer3[];
@@ -110,13 +120,13 @@ int ATR_handle_for_price_line;
 bool series_order = true;
 bool first = true;
 
-/*
-static CisNewBar isNewBarMN1(_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
-static CisNewBar isNewBarW1 (_Symbol, PERIOD_W1 );   // для проверки формирования нового бара на месяце
-static CisNewBar isNewBarD1 (_Symbol, PERIOD_D1 );   // для проверки формирования нового бара на месяце
-static CisNewBar isNewBarH4 (_Symbol, PERIOD_H4 );   // для проверки формирования нового бара на месяце
-static CisNewBar isNewBarH1 (_Symbol, PERIOD_H1 );   // для проверки формирования нового бара на месяце
-*/
+
+CisNewBar isNewBarMN1(_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
+CisNewBar isNewBarW1 (_Symbol, PERIOD_W1 );   // для проверки формирования нового бара на неделе
+CisNewBar isNewBarD1 (_Symbol, PERIOD_D1 );   // для проверки формирования нового бара на дне
+CisNewBar isNewBarH4 (_Symbol, PERIOD_H4 );   // для проверки формирования нового бара на 4 часах
+CisNewBar isNewBarH1 (_Symbol, PERIOD_H1 );   // для проверки формирования нового бара на часе
+
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -131,67 +141,87 @@ int OnInit()
  SetIndexBuffer( 3,  ATR_MN_Buffer2, INDICATOR_DATA);
  SetIndexBuffer( 4, Extr_MN_Buffer3, INDICATOR_DATA);
  SetIndexBuffer( 5,  ATR_MN_Buffer3, INDICATOR_DATA);
- SetIndexBuffer( 6, Extr_W1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer( 7,  ATR_W1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer( 8, Extr_W1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer( 9,  ATR_W1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(10, Extr_W1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(11,  ATR_W1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(12, Extr_D1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(13,  ATR_D1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(14, Extr_D1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(15,  ATR_D1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(16, Extr_D1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(17,  ATR_D1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(18, Extr_H4_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(19,  ATR_H4_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(20, Extr_H4_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(21,  ATR_H4_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(22, Extr_H4_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(23,  ATR_H4_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(24, Extr_H1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(25,  ATR_H1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(26, Extr_H1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(27,  ATR_H1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(28, Extr_H1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(29,  ATR_H1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(30, Price_D1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(31, Price_D1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(32, Price_D1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(33, Price_D1_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(34,   ATR_D1_Buffer , INDICATOR_DATA);
+ SetIndexBuffer( 6, Extr_MN_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer( 7,  ATR_MN_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer( 8, Extr_W1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer( 9,  ATR_W1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(10, Extr_W1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(11,  ATR_W1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(12, Extr_W1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(13,  ATR_W1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(14, Extr_W1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(15,  ATR_W1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(16, Extr_D1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(17,  ATR_D1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(18, Extr_D1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(19,  ATR_D1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(20, Extr_D1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(21,  ATR_D1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(22, Extr_D1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(23,  ATR_D1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(24, Extr_H4_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(25,  ATR_H4_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(26, Extr_H4_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(27,  ATR_H4_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(28, Extr_H4_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(29,  ATR_H4_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(30, Extr_H4_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(31,  ATR_H4_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(32, Extr_H1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(33,  ATR_H1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(34, Extr_H1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(35,  ATR_H1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(36, Extr_H1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(37,  ATR_H1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(38, Extr_H1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(39,  ATR_H1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(40, Price_D1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(41, Price_D1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(42, Price_D1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(43, Price_D1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(44,   ATR_D1_Buffer , INDICATOR_DATA);
  
  
  ArrayInitialize(Extr_MN_Buffer1,  0);
  ArrayInitialize(Extr_MN_Buffer2,  0);
  ArrayInitialize(Extr_MN_Buffer3,  0);
+ ArrayInitialize(Extr_MN_Buffer4,  0); 
  ArrayInitialize( ATR_MN_Buffer1,  0);
  ArrayInitialize( ATR_MN_Buffer2,  0);
  ArrayInitialize( ATR_MN_Buffer3,  0);
+ ArrayInitialize( ATR_MN_Buffer4,  0);
  ArrayInitialize(Extr_W1_Buffer1,  0);
  ArrayInitialize(Extr_W1_Buffer2,  0);
  ArrayInitialize(Extr_W1_Buffer3,  0);
+ ArrayInitialize(Extr_W1_Buffer4,  0);
  ArrayInitialize( ATR_W1_Buffer1,  0);
  ArrayInitialize( ATR_W1_Buffer2,  0);
  ArrayInitialize( ATR_W1_Buffer3,  0);
+ ArrayInitialize( ATR_W1_Buffer4,  0);
  ArrayInitialize(Extr_D1_Buffer1,  0);
  ArrayInitialize(Extr_D1_Buffer2,  0);
  ArrayInitialize(Extr_D1_Buffer3,  0);
+ ArrayInitialize(Extr_D1_Buffer4,  0);
  ArrayInitialize( ATR_D1_Buffer1,  0);
  ArrayInitialize( ATR_D1_Buffer2,  0);
  ArrayInitialize( ATR_D1_Buffer3,  0);
+ ArrayInitialize( ATR_D1_Buffer4,  0);
  ArrayInitialize(Extr_H4_Buffer1,  0);
  ArrayInitialize(Extr_H4_Buffer2,  0);
  ArrayInitialize(Extr_H4_Buffer3,  0);
+ ArrayInitialize(Extr_H4_Buffer4,  0);
  ArrayInitialize( ATR_H4_Buffer1,  0);
  ArrayInitialize( ATR_H4_Buffer2,  0);
  ArrayInitialize( ATR_H4_Buffer3,  0);
+ ArrayInitialize( ATR_H4_Buffer4,  0);
  ArrayInitialize(Extr_H1_Buffer1,  0);
  ArrayInitialize(Extr_H1_Buffer2,  0);
  ArrayInitialize(Extr_H1_Buffer3,  0);
+ ArrayInitialize(Extr_H1_Buffer4,  0);
  ArrayInitialize( ATR_H1_Buffer1,  0);
  ArrayInitialize( ATR_H1_Buffer2,  0);
  ArrayInitialize( ATR_H1_Buffer3,  0);
+ ArrayInitialize( ATR_H1_Buffer4,  0);
  ArrayInitialize(Price_D1_Buffer1, 0);
  ArrayInitialize(Price_D1_Buffer2, 0);
  ArrayInitialize(Price_D1_Buffer3, 0);
@@ -201,33 +231,43 @@ int OnInit()
  ArraySetAsSeries(Extr_MN_Buffer1,  series_order);
  ArraySetAsSeries(Extr_MN_Buffer2,  series_order);
  ArraySetAsSeries(Extr_MN_Buffer3,  series_order);
+ ArraySetAsSeries(Extr_MN_Buffer4,  series_order);
  ArraySetAsSeries( ATR_MN_Buffer1,  series_order);
  ArraySetAsSeries( ATR_MN_Buffer2,  series_order);
  ArraySetAsSeries( ATR_MN_Buffer3,  series_order);
+ ArraySetAsSeries( ATR_MN_Buffer4,  series_order);
  ArraySetAsSeries(Extr_W1_Buffer1,  series_order);
  ArraySetAsSeries(Extr_W1_Buffer2,  series_order);
  ArraySetAsSeries(Extr_W1_Buffer3,  series_order);
+ ArraySetAsSeries(Extr_W1_Buffer4,  series_order);
  ArraySetAsSeries( ATR_W1_Buffer1,  series_order);
  ArraySetAsSeries( ATR_W1_Buffer2,  series_order);
  ArraySetAsSeries( ATR_W1_Buffer3,  series_order);
+ ArraySetAsSeries( ATR_W1_Buffer4,  series_order);
  ArraySetAsSeries(Extr_D1_Buffer1,  series_order);
  ArraySetAsSeries(Extr_D1_Buffer2,  series_order);
  ArraySetAsSeries(Extr_D1_Buffer3,  series_order);
+ ArraySetAsSeries(Extr_D1_Buffer4,  series_order);
  ArraySetAsSeries( ATR_D1_Buffer1,  series_order);
  ArraySetAsSeries( ATR_D1_Buffer2,  series_order);
  ArraySetAsSeries( ATR_D1_Buffer3,  series_order);
+ ArraySetAsSeries( ATR_D1_Buffer4,  series_order);
  ArraySetAsSeries(Extr_H4_Buffer1,  series_order);
  ArraySetAsSeries(Extr_H4_Buffer2,  series_order);
  ArraySetAsSeries(Extr_H4_Buffer3,  series_order);
+ ArraySetAsSeries(Extr_H4_Buffer4,  series_order);
  ArraySetAsSeries( ATR_H4_Buffer1,  series_order);
  ArraySetAsSeries( ATR_H4_Buffer2,  series_order);
  ArraySetAsSeries( ATR_H4_Buffer3,  series_order);
+ ArraySetAsSeries( ATR_H4_Buffer4,  series_order);
  ArraySetAsSeries(Extr_H1_Buffer1,  series_order);
  ArraySetAsSeries(Extr_H1_Buffer2,  series_order);
  ArraySetAsSeries(Extr_H1_Buffer3,  series_order);
+ ArraySetAsSeries(Extr_H1_Buffer4,  series_order);
  ArraySetAsSeries( ATR_H1_Buffer1,  series_order);
  ArraySetAsSeries( ATR_H1_Buffer2,  series_order);
  ArraySetAsSeries( ATR_H1_Buffer3,  series_order);
+ ArraySetAsSeries( ATR_H1_Buffer4,  series_order);
  ArraySetAsSeries(Price_D1_Buffer1, series_order);
  ArraySetAsSeries(Price_D1_Buffer2, series_order);
  ArraySetAsSeries(Price_D1_Buffer3, series_order);
@@ -268,37 +308,47 @@ void OnDeinit(const int reason)
  ArrayFree(Extr_MN_Buffer1);
  ArrayFree(Extr_MN_Buffer2);
  ArrayFree(Extr_MN_Buffer3);
+ ArrayFree(Extr_MN_Buffer4);
  ArrayFree( ATR_MN_Buffer1);
  ArrayFree( ATR_MN_Buffer2);
  ArrayFree( ATR_MN_Buffer3);
+ ArrayFree( ATR_MN_Buffer4);
  //-------W1-LEVEL
  ArrayFree(Extr_W1_Buffer1);
  ArrayFree(Extr_W1_Buffer2);
  ArrayFree(Extr_W1_Buffer3);
+ ArrayFree(Extr_W1_Buffer4);
  ArrayFree( ATR_W1_Buffer1);
  ArrayFree( ATR_W1_Buffer2);
  ArrayFree( ATR_W1_Buffer3);
+ ArrayFree( ATR_W1_Buffer4);
  //-------D1-LEVEL
  ArrayFree(Extr_D1_Buffer1);
  ArrayFree(Extr_D1_Buffer2);
  ArrayFree(Extr_D1_Buffer3);
+ ArrayFree(Extr_D1_Buffer4);
  ArrayFree( ATR_D1_Buffer1);
  ArrayFree( ATR_D1_Buffer2);
  ArrayFree( ATR_D1_Buffer3);
+ ArrayFree( ATR_D1_Buffer4);
  //-------H4-LEVEL
  ArrayFree(Extr_H4_Buffer1);
  ArrayFree(Extr_H4_Buffer2);
  ArrayFree(Extr_H4_Buffer3);
+ ArrayFree(Extr_H4_Buffer4);
  ArrayFree( ATR_H4_Buffer1);
  ArrayFree( ATR_H4_Buffer2);
  ArrayFree( ATR_H4_Buffer3);
+ ArrayFree( ATR_H4_Buffer4);
  //-------H1-LEVEL
  ArrayFree(Extr_H1_Buffer1);
  ArrayFree(Extr_H1_Buffer2);
  ArrayFree(Extr_H1_Buffer3);
+ ArrayFree(Extr_H1_Buffer4);
  ArrayFree( ATR_H1_Buffer1);
  ArrayFree( ATR_H1_Buffer2);
  ArrayFree( ATR_H1_Buffer3);
+ ArrayFree( ATR_H1_Buffer4);
  //-------D1-LEVEL-PRICE
  ArrayFree(Price_D1_Buffer1);
  ArrayFree(Price_D1_Buffer2);
@@ -369,12 +419,13 @@ int OnCalculate(const int rates_total,
       if(show_Extr_MN)
       {
        Extr_MN_Buffer1[i] = estructMN[0].price;
-    
         ATR_MN_Buffer1[i] = estructMN[0].channel;
        Extr_MN_Buffer2[i] = estructMN[1].price;
         ATR_MN_Buffer2[i] = estructMN[1].channel;
        Extr_MN_Buffer3[i] = estructMN[2].price;
         ATR_MN_Buffer3[i] = estructMN[2].channel;
+       Extr_MN_Buffer4[i] = estructMN[3].price;
+        ATR_MN_Buffer4[i] = estructMN[3].channel;
       }//end show_Extr_MN
       if(show_Extr_W1)
       { 
@@ -384,17 +435,20 @@ int OnCalculate(const int rates_total,
         ATR_W1_Buffer2[i] = estructW1[1].channel;
        Extr_W1_Buffer3[i] = estructW1[2].price;
         ATR_W1_Buffer3[i] = estructW1[2].channel;
+       Extr_W1_Buffer4[i] = estructW1[3].price;
+        ATR_W1_Buffer4[i] = estructW1[3].channel;
 
       }//end show_Extr_W1
       if(show_Extr_D1)
       { 
        Extr_D1_Buffer1[i] = estructD1[0].price;
-
         ATR_D1_Buffer1[i] = estructD1[0].channel;
        Extr_D1_Buffer2[i] = estructD1[1].price;
         ATR_D1_Buffer2[i] = estructD1[1].channel;
        Extr_D1_Buffer3[i] = estructD1[2].price;
         ATR_D1_Buffer3[i] = estructD1[2].channel;
+       Extr_D1_Buffer4[i] = estructD1[3].price;
+        ATR_D1_Buffer4[i] = estructD1[3].channel;
       }//end show_Extr_D1
       if(show_Extr_H4)
       {      
@@ -404,6 +458,8 @@ int OnCalculate(const int rates_total,
         ATR_H4_Buffer2[i] = estructH4[1].channel;
        Extr_H4_Buffer3[i] = estructH4[2].price;
         ATR_H4_Buffer3[i] = estructH4[2].channel;
+       Extr_H4_Buffer4[i] = estructH4[3].price;
+        ATR_H4_Buffer4[i] = estructH4[3].channel;
       }// end show_Extr_H4
       if(show_Extr_H1)
       {  
@@ -413,6 +469,8 @@ int OnCalculate(const int rates_total,
         ATR_H1_Buffer2[i] = estructH1[1].channel;
        Extr_H1_Buffer3[i] = estructH1[2].price;
         ATR_H1_Buffer3[i] = estructH1[2].channel;
+       Extr_H1_Buffer4[i] = estructH1[3].price;
+        ATR_H1_Buffer4[i] = estructH1[3].channel;        
       }//end show_Extr_H1
       if(show_Price_D1)
       {         
@@ -438,21 +496,25 @@ int OnCalculate(const int rates_total,
     {     
      if(show_Extr_MN)
      {
-      Extr_MN_Buffer1[0] = estructMN[0].price;  
+      Extr_MN_Buffer1[0] = estructMN[0].price;
        ATR_MN_Buffer1[0] = estructMN[0].channel;
       Extr_MN_Buffer2[0] = estructMN[1].price;
        ATR_MN_Buffer2[0] = estructMN[1].channel;
       Extr_MN_Buffer3[0] = estructMN[2].price;
        ATR_MN_Buffer3[0] = estructMN[2].channel;
+      Extr_MN_Buffer4[0] = estructMN[3].price;
+       ATR_MN_Buffer4[0] = estructMN[3].channel;
      }//end show_Extr_MN
      if(show_Extr_W1)
      { 
-      Extr_W1_Buffer1[0] = estructW1[0].price;    
+      Extr_W1_Buffer1[0] = estructW1[0].price;
        ATR_W1_Buffer1[0] = estructW1[0].channel;
       Extr_W1_Buffer2[0] = estructW1[1].price;
        ATR_W1_Buffer2[0] = estructW1[1].channel;
       Extr_W1_Buffer3[0] = estructW1[2].price;
-       ATR_W1_Buffer3[0] = estructW1[2].channel;   
+       ATR_W1_Buffer3[0] = estructW1[2].channel;
+      Extr_W1_Buffer4[0] = estructW1[3].price;
+       ATR_W1_Buffer4[0] = estructW1[3].channel;
      }//end show_Extr_W1
      if(show_Extr_D1)
      { 
@@ -462,6 +524,8 @@ int OnCalculate(const int rates_total,
        ATR_D1_Buffer2[0] = estructD1[1].channel;
       Extr_D1_Buffer3[0] = estructD1[2].price;
        ATR_D1_Buffer3[0] = estructD1[2].channel;
+      Extr_D1_Buffer4[0] = estructD1[3].price;
+       ATR_D1_Buffer4[0] = estructD1[3].channel;
      }//end show_Extr_D1
      if(show_Extr_H4)
      {      
@@ -471,6 +535,8 @@ int OnCalculate(const int rates_total,
        ATR_H4_Buffer2[0] = estructH4[1].channel;
       Extr_H4_Buffer3[0] = estructH4[2].price;
        ATR_H4_Buffer3[0] = estructH4[2].channel;
+      Extr_H4_Buffer4[0] = estructH4[3].price;
+       ATR_H4_Buffer4[0] = estructH4[3].channel;
      }// end show_Extr_H4
      if(show_Extr_H1)
      {  
@@ -480,6 +546,8 @@ int OnCalculate(const int rates_total,
        ATR_H1_Buffer2[0] = estructH1[1].channel;
       Extr_H1_Buffer3[0] = estructH1[2].price;
        ATR_H1_Buffer3[0] = estructH1[2].channel;
+      Extr_H1_Buffer4[0] = estructH1[3].price;
+       ATR_H1_Buffer4[0] = estructH1[3].channel;        
      }//end show_Extr_H1
      if(show_Price_D1)
      {
@@ -543,7 +611,7 @@ bool FillATRBuffer()
 void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos_time, bool now = false)
 {
  extrcalc.RecountExtremum(now, start_pos_time);
- for(int j = 0; j < 3; j++)
+ for(int j = 0; j < 4; j++)
  {
   resArray[j] = extrcalc.getExtr(j);
  }
@@ -585,6 +653,9 @@ void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
  HLineCreate(0, name+"three" , 0, te[2].price              , clr3, 1, STYLE_DASHDOT);
  HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr3, 2);
  HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr3, 2);
+ HLineCreate(0, name+"four"  , 0, te[3].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"four+" , 0, te[3].price+te[3].channel, clr, 2);
+ HLineCreate(0, name+"four-" , 0, te[3].price-te[3].channel, clr, 2);
 }
 
 //---------------------------------------------
@@ -602,6 +673,9 @@ void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
  HLineMove(0, name+"three" , te[2].price);
  HLineMove(0, name+"three+", te[2].price+te[2].channel);
  HLineMove(0, name+"three-", te[2].price-te[2].channel);
+ HLineMove(0, name+"four"  , te[3].price);
+ HLineMove(0, name+"four+" , te[3].price+te[3].channel);
+ HLineMove(0, name+"four-" , te[3].price-te[3].channel);
 }
 
 //---------------------------------------------
@@ -619,6 +693,9 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"three");
  HLineDelete(0, name+"three+");
  HLineDelete(0, name+"three-");
+ HLineDelete(0, name+"four");
+ HLineDelete(0, name+"four+");
+ HLineDelete(0, name+"four-");
 }
 
 void CreatePriceLines(const SExtremum &te[], ENUM_TIMEFRAMES tf,color clr)
@@ -712,8 +789,9 @@ void InitializeExtrArray (SExtremum &te[])
 
 void PrintExtrArray(SExtremum &te[], ENUM_TIMEFRAMES tf)
 {
- PrintFormat("%s {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f};", EnumToString((ENUM_TIMEFRAMES)tf),
-                                                                               te[0].price, te[0].direction, te[0].channel,
-                                                                               te[1].price, te[1].direction, te[1].channel,
-                                                                               te[2].price, te[2].direction, te[2].channel);
+ PrintFormat("%s {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f};", EnumToString((ENUM_TIMEFRAMES)tf),
+                                                                                                   te[0].price, te[0].direction, te[0].channel,
+                                                                                                   te[1].price, te[1].direction, te[1].channel,
+                                                                                                   te[2].price, te[2].direction, te[2].channel,
+                                                                                                   te[3].price, te[3].direction, te[3].channel);
 }

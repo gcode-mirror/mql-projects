@@ -48,6 +48,7 @@ void OnStart()
  double buffer_PBI_D1 [];
  double buffer_PBI_W1 [];
  double buffer_PBI_MN1[];
+ datetime 
  
  int size1 = CopyBuffer(handle_PBI_M15, 4, 0, size_M15, buffer_PBI_M15);
  int size2 = CopyBuffer(handle_PBI_H1 , 4, 0, size_H1 , buffer_PBI_H1 );
