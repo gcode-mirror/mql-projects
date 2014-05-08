@@ -573,15 +573,18 @@ void CalcPrice(SExtremum &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
 void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 2);
- HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 2);
- HLineCreate(0, name+"two"   , 0, te[1].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr, 2);
- HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr, 2);
- HLineCreate(0, name+"three" , 0, te[2].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr, 2);
- HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 2);
+ color clr1 = clrBlue;
+ color clr2 = clrRed;
+ color clr3 = clrYellow;
+ HLineCreate(0, name+"one"   , 0, te[0].price              , clr1, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr1, 2);
+ HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr1, 2);
+ HLineCreate(0, name+"two"   , 0, te[1].price              , clr2, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr2, 2);
+ HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr2, 2);
+ HLineCreate(0, name+"three" , 0, te[2].price              , clr3, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr3, 2);
+ HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr3, 2);
 }
 
 //---------------------------------------------
