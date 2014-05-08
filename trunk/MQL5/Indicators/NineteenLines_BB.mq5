@@ -13,7 +13,7 @@
 
 #include <ExtrLine\CExtremumCalc_NE.mqh>
 #include <ExtrLine\HLine.mqh>
-#include <Lib CisNewBar.mqh>
+#include <Lib CisNewBarDD.mqh>
 
 
 #define TF_PERIOD_ATR_FOR_MN PERIOD_MN1
@@ -121,7 +121,7 @@ bool series_order = true;
 bool first = true;
 
 
-CisNewBar isNewBarMN1(_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
+CisNewBar isNewBarMN (_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
 CisNewBar isNewBarW1 (_Symbol, PERIOD_W1 );   // для проверки формирования нового бара на неделе
 CisNewBar isNewBarD1 (_Symbol, PERIOD_D1 );   // для проверки формирования нового бара на дне
 CisNewBar isNewBarH4 (_Symbol, PERIOD_H4 );   // для проверки формирования нового бара на 4 часах
@@ -402,20 +402,14 @@ int OnCalculate(const int rates_total,
      for(int i = rates_total-2; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       while(!FillATRBuffer()) {}
-      if(show_Extr_MN  && (Period() ==  PERIOD_MN1 || time[i]%PeriodSeconds(PERIOD_MN1) == 0)) CalcExtr(calcMN, estructMN, time[i], false); 
-      if(show_Extr_W1  && (Period() ==  PERIOD_W1  || time[i]%PeriodSeconds(PERIOD_W1)  == 0)) CalcExtr(calcW1, estructW1, time[i], false); /*Print("ЭКСТР[0] = ",estructW1[0].price,"ЭКСТР[1] = ",estructW1[1].price,"ЭКСТР[2] = ",estructW1[2].price," время = ",TimeToString(time[i]));}*/
-      if(show_Extr_D1  && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcExtr(calcD1, estructD1, time[i], false);
-      if(show_Price_D1 && (Period() ==  PERIOD_D1  || time[i]%PeriodSeconds(PERIOD_D1)  == 0)) CalcPrice(pstructD1, PERIOD_D1, time[i]);
-      if(show_Extr_H4  && (Period() ==  PERIOD_H4  || time[i]%PeriodSeconds(PERIOD_H4)  == 0)) CalcExtr(calcH4, estructH4, time[i], false);
-      if(show_Extr_H1  && (Period() ==  PERIOD_H1  || time[i]%PeriodSeconds(PERIOD_H1)  == 0)) CalcExtr(calcH1, estructH1, time[i], false);
-/*
-      if(show_Extr_MN  && (Period() ==  PERIOD_MN1 || isNewBarMN1.isNewBar()>0 ) ) CalcExtr(calcMN, estructMN, time[i], false); 
-      if(show_Extr_W1  && (Period() ==  PERIOD_W1  || isNewBarW1.isNewBar()>0 ) ) CalcExtr(calcW1, estructW1, time[i], false); 
-      if(show_Extr_D1  && (Period() ==  PERIOD_D1  || isNewBarD1.isNewBar()>0 ) ) CalcExtr(calcD1, estructD1, time[i], false);
-      if(show_Price_D1 && (Period() ==  PERIOD_D1  || isNewBarD1.isNewBar()>0 ) ) CalcPrice(pstructD1, PERIOD_D1, time[i]);
-      if(show_Extr_H4  && (Period() ==  PERIOD_H4  || isNewBarH4.isNewBar()>0 ) ) CalcExtr(calcH4, estructH4, time[i], false);
-      if(show_Extr_H1  && (Period() ==  PERIOD_H1  || isNewBarH1.isNewBar()>0 ) ) CalcExtr(calcH1, estructH1, time[i], false);
-*/     
+
+      if(show_Extr_MN  && isNewBarMN.isNewBar(time[i]) > 0) CalcExtr(calcMN, estructMN, time[i], false); 
+      if(show_Extr_W1  && isNewBarW1.isNewBar(time[i]) > 0) CalcExtr(calcW1, estructW1, time[i], false); 
+      if(show_Extr_D1  && isNewBarD1.isNewBar(time[i]) > 0) CalcExtr(calcD1, estructD1, time[i], false);
+      if(show_Extr_H4  && isNewBarH4.isNewBar(time[i]) > 0) CalcExtr(calcH4, estructH4, time[i], false);
+      if(show_Extr_H1  && isNewBarH1.isNewBar(time[i]) > 0) CalcExtr(calcH1, estructH1, time[i], false);
+      if(show_Price_D1 && isNewBarD1.isNewBar(time[i]) > 0) CalcPrice(pstructD1, PERIOD_D1, time[i]);
+           
       if(show_Extr_MN)
       {
        Extr_MN_Buffer1[i] = estructMN[0].price;
@@ -641,18 +635,16 @@ void CalcPrice(SExtremum &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
 void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- color clr1 = clrBlue;
- color clr2 = clrRed;
- color clr3 = clrYellow;
- HLineCreate(0, name+"one"   , 0, te[0].price              , clr1, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr1, 2);
- HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr1, 2);
- HLineCreate(0, name+"two"   , 0, te[1].price              , clr2, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr2, 2);
- HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr2, 2);
- HLineCreate(0, name+"three" , 0, te[2].price              , clr3, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr3, 2);
- HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr3, 2);
+
+ HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 2);
+ HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 2);
+ HLineCreate(0, name+"two"   , 0, te[1].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr, 2);
+ HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr, 2);
+ HLineCreate(0, name+"three" , 0, te[2].price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr, 2);
+ HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 2);
  HLineCreate(0, name+"four"  , 0, te[3].price              , clr, 1, STYLE_DASHDOT);
  HLineCreate(0, name+"four+" , 0, te[3].price+te[3].channel, clr, 2);
  HLineCreate(0, name+"four-" , 0, te[3].price-te[3].channel, clr, 2);
