@@ -13,7 +13,7 @@
 #include <CompareDoubles.mqh>                   // для проверки соотношения  цен
 #include <Constants.mqh>                        // библиотека констант
 
-#define ADD_TO_STOPPLOSS 50
+#define ADD_TO_STOPPLOSS 0
 
 //+------------------------------------------------------------------+
 //| Эксперт, основанный на расхождении Стохастика                    |
@@ -26,6 +26,7 @@ input  int    TakeProfit                           = 0;                  // Тейк
 input  double Lot                                  = 1;                  // Лот
 input  ENUM_USE_PENDING_ORDERS pending_orders_type = USE_NO_ORDERS;      // Тип отложенного ордера                    
 input  int    priceDifference                      = 50;                 // Price Difference
+input  int    lengthBetween2Div                    = 100;                // количество баров в истории для поиска последнего расхождения
 
 sinput string trailingStr                          = "";                 // ПАРАМЕТРЫ трейлинга
 input         ENUM_TRAILING_TYPE trailingType      = TRAILING_TYPE_PBI;  // тип трейлинга
@@ -48,14 +49,14 @@ int handlePBIcur;                                                        // хэнд
 
 // переменные эксперта
 int divSignal;                                                           // сигнал на расхождение
+int prevDivSignal;                                                       // предыдущий сигнал на расхождение
 double currentPrice;                                                     // текущая цена
-ENUM_TM_POSITION_TYPE opBuy,opSell;                                      // типы ордеров 
-string symbol;
+string symbol;                                                           // текущий символ
 ENUM_TIMEFRAMES period;
 int historyDepth;
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
 
-int    stopLoss;                                                        // переменная для хранения действительного стоп лосса
+int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
 int    copiedSmydSTOC;                                                   // переменная для проверки копирования буфера сигналов расхождения
 
 int OnInit()
@@ -70,28 +71,13 @@ int OnInit()
  handlePBIcur = iCustom(symbol, period, "PriceBasedIndicator",historyDepth, percentage_ATR_cur, difToTrend_cur);
  // создаем хэндл индикатора ShowMeYourDivSTOC
  handleSmydSTOC = iCustom (symbol,period,"smydSTOC");   
-   
  if ( handleSmydSTOC == INVALID_HANDLE )
  {
   Print("Ошибка при инициализации эксперта ONODERA. Не удалось создать хэндл ShowMeYourDivSTOC");
   return(INIT_FAILED);
  }
- // сохранение типов ордеров
- switch (pending_orders_type)  
- {
-  case USE_LIMIT_ORDERS: 
-   opBuy  = OP_BUYLIMIT;
-   opSell = OP_SELLLIMIT;
-   break;
-  case USE_STOP_ORDERS:
-   opBuy  = OP_BUYSTOP;
-   opSell = OP_SELLSTOP;
-   break;
-  case USE_NO_ORDERS:
-   opBuy  = OP_BUY;
-   opSell = OP_SELL;      
-   break;
- }          
+ // получаем последнее расхождение на истории 
+ prevDivSignal  =  FindLastDivType (handleSmydSTOC);      
  return(INIT_SUCCEEDED);
 }
 
@@ -100,8 +86,9 @@ void OnDeinit(const int reason)
  // удаляем объект класса TradeManager
  delete isNewBar;
  delete ctm;
- // удаляем индикатор 
+ // удаляем индикаторы
  IndicatorRelease(handleSmydSTOC);
+ IndicatorRelease(handlePBIcur);  
 }
 
 void OnTick()
@@ -122,16 +109,30 @@ void OnTick()
     }   
         
    if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
-     { 
+     {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
       stopLoss = CountStoploss(1);
-      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      // если предыдущий сигнал расхождения тоже BUY
+      if (prevDivSignal == _Buy)
+       {
+        // то мы просто открываемся на BUY немедленного исполнения
+        ctm.OpenUniquePosition(symbol,period, OP_BUY, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);         
+       }
+      else
+       {
+        // иначе мы используем LIMIT
+        
+       }
+        // сохраняем текущее расхождение в качестве предыдущего
+        prevDivSignal = signalBuffer[0];
      }
    if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
      {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
       stopLoss = CountStoploss(-1);
       ctm.OpenUniquePosition(symbol,period, opSell, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      // сохраняем текущее расхождение в качестве предыдущего
+      prevDivSignal = signalBuffer[0];   
      }
    }  
 }
@@ -196,3 +197,36 @@ int CountStoploss(int point)
  return(stopLoss);
 }
 
+// функция возвращает тип последнего расхождения до начала работы эксперта
+
+int  FindLastDivType (int smydHandle)
+ {
+  int copiedBuf = -1;   // переменная для хранения количества скопированных данных из буфера
+  double smydBuffer[];  // буфер временного хранения значений индикатора
+  // пытаемся прогрузить буферы индикатора
+  for (int attempts=0;attempts<25;attempts++)
+   {
+    copiedBuf = CopyBuffer(smydHandle,2,0,lengthBetween2Div,smydBuffer);   
+    Sleep(100);
+   }
+   if ( copiedBuf < lengthBetween2Div)
+    {
+     Print("Не удалось прогрузить буферы индикатора, поэтому последнее расхождение на истори найти не удалось");
+     return (0);
+    }
+   // пройдем по циклу от конца истории и попытаемся найти последнее расхождение
+   for (int index = lengthBetween2Div-1;index > 0; index++)
+    {
+      // если нашли отличное от нуля значение, значит нашли расхождение
+      if (smydBuffer[index] != 0)
+       return (smydBuffer[index]);
+    }
+   return (0);  // попали сюда, значит не нашли на истории ни одного расхождения
+ }
+ 
+// функция вычисляет Тейк Профит по двум экстремумам расхождения 
+int  GetTakeProfitByExtremums ()
+ {
+ 
+ }
+ 
