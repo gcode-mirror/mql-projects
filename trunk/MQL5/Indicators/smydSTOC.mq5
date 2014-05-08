@@ -13,6 +13,7 @@
 //| 1) рисует линии Стохастика                                       |
 //| 2) рисует линиями расхождения на Стохастике и на графике цены    |
 //| 3) рисует стрелочками момент возникновения сигнала               |
+//| 4) хранит значения расхождений и экстремумов на цене             |
 //+------------------------------------------------------------------+
 
 // подключаем библиотеки 
@@ -63,6 +64,10 @@ CisNewBar          isNewBar;                        // для проверки формирования
 double bufferTopLevel[];                            // буфер уровней top level
 double bufferBottomLevel[];                         // буфер уровней bottom level
 double bufferDiv[];                                 // буфер моментов расхождения
+double bufferExtrLeft[];                            // буфер левых экстремумов
+double bufferExtrRight[];                           // буфер правых экстремумов
+double bufferMin[];                                 // буфер минимумов
+
 
 // точки для хранения времени экстремумов цены   
 
@@ -90,11 +95,13 @@ int OnInit()
    ObjectsDeleteAll(0,1,OBJ_TREND); // все трендовые линии с побочного графика
    ObjectsDeleteAll(0,0,OBJ_VLINE); // все вертикальные линии, обозначающие момент возникновения расхождения
    // связываем индикаторы с буферами 
-   SetIndexBuffer(0,bufferTopLevel,INDICATOR_DATA);     // буфер top level Стохастика
-   SetIndexBuffer(1,bufferBottomLevel,INDICATOR_DATA);  // буфер bottom level Стохастика
-   SetIndexBuffer(2,bufferDiv ,INDICATOR_CALCULATIONS); // буфер расхождений (моментов возникновения сигналов)
+   SetIndexBuffer(0,bufferTopLevel,INDICATOR_DATA);          // буфер top level Стохастика
+   SetIndexBuffer(1,bufferBottomLevel,INDICATOR_DATA);       // буфер bottom level Стохастика
+   SetIndexBuffer(2,bufferDiv ,INDICATOR_CALCULATIONS);      // буфер расхождений (моментов возникновения сигналов)
+   SetIndexBuffer(3,bufferExtrLeft,INDICATOR_CALCULATIONS);  // буфер левых экстремумов
+   SetIndexBuffer(4,bufferExtrRight,INDICATOR_CALCULATIONS); // буфер правых экструмумов
    // инициализация глобальных  переменных
-   countDiv = 0;                                        // выставляем начальное количество расхождений
+   countDiv = 0;                                             // выставляем начальное количество расхождений
    return(INIT_SUCCEEDED); // успешное завершение инициализации индикатора
   }
 
@@ -109,6 +116,8 @@ void OnDeinit(const int reason)
    ArrayFree(bufferTopLevel);
    ArrayFree(bufferBottomLevel);
    ArrayFree(bufferDiv);
+   ArrayFree(bufferExtrLeft);
+   ArrayFree(bufferExtrRight);
    // освобождаем хэндл Стохастика
    IndicatorRelease(handleSTOC);
  }
@@ -151,6 +160,9 @@ int OnCalculate(const int rates_total,
         {
           // обнуляем буфер сигналов расхождений Стохастика
           bufferDiv[lastBarIndex] = 0;
+          // обнуляем буферы экстремумов
+          bufferExtrLeft[lastBarIndex]  = 0;
+          bufferExtrRight[lastBarIndex] = 0;
           retCode = divergenceSTOC(handleSTOC, _Symbol, _Period, top_level, bottom_level, divergencePoints, lastBarIndex);
           // если не удалось загрузить буферы Стохастика
           if (retCode == -2)
@@ -168,7 +180,9 @@ int OnCalculate(const int rates_total,
            {             
                                         
              DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
-             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение  
+             bufferExtrLeft[lastBarIndex]  = divergencePoints.timeExtrPrice1;  // сохраним значение левого экстремума
+             bufferExtrRight[lastBarIndex] = divergencePoints.timeExtrPrice2;  // сохраним значение правого экстремума    
              // сохраняем время экстремумов цен
              onePointBuy =  divergencePoints.timeExtrPrice1;
              twoPointBuy =  divergencePoints.timeExtrPrice2;
@@ -183,7 +197,9 @@ int OnCalculate(const int rates_total,
            {             
                                         
              DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
-             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение 
+             bufferExtrLeft[lastBarIndex]  = divergencePoints.timeExtrPrice1; // сохраним значение левого экстремума
+             bufferExtrRight[lastBarIndex] = divergencePoints.timeExtrPrice2; // сохраним значение правого экстремума      
              // сохраняем время экстремумов цен
              onePointSell =  divergencePoints.timeExtrPrice1;
              twoPointSell =  divergencePoints.timeExtrPrice2;
@@ -233,7 +249,9 @@ int OnCalculate(const int rates_total,
            {             
                                         
              DrawIndicator (time[0]);   // отображаем графические элементы индикатора     
-             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             bufferDiv[lastBarIndex] = retCode;                               // сохраняем в буфер значение    
+             bufferExtrLeft[lastBarIndex]  = divergencePoints.timeExtrPrice1; // сохраним значение левого экстремума
+             bufferExtrRight[lastBarIndex] = divergencePoints.timeExtrPrice2; // сохраним значение правого экстремума  
              // сохраняем время экстремумов цен
              onePointBuy =  divergencePoints.timeExtrPrice1;
              twoPointBuy =  divergencePoints.timeExtrPrice2;
@@ -248,7 +266,9 @@ int OnCalculate(const int rates_total,
            {             
                                         
              DrawIndicator (time[0]);   // отображаем графические элементы индикатора     
-             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение      
+             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение
+             bufferExtrLeft[lastBarIndex]  = divergencePoints.timeExtrPrice1; // сохраним значение левого экстремума
+             bufferExtrRight[lastBarIndex] = divergencePoints.timeExtrPrice2; // сохраним значение правого экстремума      
              // сохраняем время экстремумов цен
              onePointSell =  divergencePoints.timeExtrPrice1;
              twoPointSell =  divergencePoints.timeExtrPrice2;
