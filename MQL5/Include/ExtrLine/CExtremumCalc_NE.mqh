@@ -28,7 +28,8 @@ class CExtremumCalc
  double difToNewExtremum;
  SExtremum  num0,
             num1,
-            num2;
+            num2,
+            num3;
  int _depth;
  double _percentageATR_price;
  double _percentageATR_channel;
@@ -45,7 +46,7 @@ class CExtremumCalc
  ENUM_TIMEFRAMES getPeriod() { return(_period); } 
  void SetPeriod(ENUM_TIMEFRAMES tf) { _period = tf; }
  void SetStartDayPrice(double price) { _startDayPrice = price; }
- bool isThreeExtrExist();
+ bool isFourExtrExist();
  bool isATRCalculated(int size_channel, int size_price);
 };
 
@@ -139,6 +140,7 @@ void CExtremumCalc::RecountExtremum(bool now = true, datetime start_index_time =
   }
   else
   {
+   num3 = num2;
    num2 = num1;
    num1 = num0;
    num0 = current_bar;
@@ -146,9 +148,9 @@ void CExtremumCalc::RecountExtremum(bool now = true, datetime start_index_time =
  }
 }
 
-bool CExtremumCalc::isThreeExtrExist()
+bool CExtremumCalc::isFourExtrExist()
 {
- if(num0.direction != 0 && num1.direction != 0 && num2.direction != 0)
+ if(num0.direction != 0 && num1.direction != 0 && num2.direction != 0 && num3.direction != 0)
   return(true);
  return(false);
 }
@@ -173,6 +175,8 @@ SExtremum CExtremumCalc::getExtr(int i)
   return num1;
  case(2):
   return num2;
+ case(3):
+  return num3;
  default:
   return zero;
  }
