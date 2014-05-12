@@ -57,24 +57,24 @@ int  countUnDone   = 0;                          // количество не сработавших ур
 int      handle_19Lines;
 
 // индикаторные буферы
-double   buffer_19Lines_price2[];
+double   buffer_19Lines_price4[];
 double   buffer_19Lines_price3[];
-double   buffer_19Lines_atr2  [];
+double   buffer_19Lines_atr4  [];
 double   buffer_19Lines_atr3  [];
 // буфер цен на заданному таймфрейме
 MqlRates buffer_price[];  
        
 // хранит предыдущее положение цены относительно уровней
-ENUM_LOCATION_TYPE  prevLocLevel2;    // предыдущее положение цены относительно 2-го уровня
+ENUM_LOCATION_TYPE  prevLocLevel4;    // предыдущее положение цены относительно 4-го уровня
 ENUM_LOCATION_TYPE  prevLocLevel3;    // предыдущее положение цены относительно 3-го уровня
 // хранит текущее положение цены относительно уровней
-ENUM_LOCATION_TYPE  curLocLevel2;     // текущее положение цены относительно 2-го уровня
+ENUM_LOCATION_TYPE  curLocLevel4;     // текущее положение цены относительно 4-го уровня
 ENUM_LOCATION_TYPE  curLocLevel3;     // текущее положение цены относительно 3-го уровня
 // флаги попадания цены в уровень
-bool standOnLevel2;                   // флаг попадания в уровень 2
+bool standOnLevel4;                   // флаг попадания в уровень 4
 bool standOnLevel3;                   // флаг попадания в уровень 3
 // счетчики подсчета количества баров внутри уровней
-int countBarsInsideLevel2=0;          // внутри второго уровня
+int countBarsInsideLevel4=0;          // внутри четвертого уровня
 int countBarsInsideLevel3=0;          // внутри третьего уровня
 
 // хэндлы файлов статистики
@@ -82,7 +82,7 @@ int fileHandle;                       // хэндл файла статистики
 int fileTestStat;                     // хэндл файла проверки статистики прохождения уровней
 
 // текущие значения буферов
-double curBuf2;                       // текущее значение 2-го буфера
+double curBuf4;                       // текущее значение 4-го буфера
 double curBuf3;                       // текущее значение 3-го буфера
 
 void OnStart()
@@ -144,8 +144,8 @@ void OnStart()
    for (int i = 0; i < 5; i++)
     {
      Sleep(1000);
-     size3 = CopyBuffer(handle_19Lines, start_index_buffer + 2, start_time, end_time, buffer_19Lines_price2);
-     size4 = CopyBuffer(handle_19Lines, start_index_buffer + 3, start_time, end_time, buffer_19Lines_atr2);
+     size3 = CopyBuffer(handle_19Lines, start_index_buffer + 2, start_time, end_time, buffer_19Lines_price4);
+     size4 = CopyBuffer(handle_19Lines, start_index_buffer + 3, start_time, end_time, buffer_19Lines_atr4);
      size5 = CopyBuffer(handle_19Lines, start_index_buffer + 4, start_time, end_time, buffer_19Lines_price3);
      size6 = CopyBuffer(handle_19Lines, start_index_buffer + 5, start_time, end_time, buffer_19Lines_atr3);
      size_price = CopyRates(_Symbol,PERIOD_M1,start_time,end_time,buffer_price);
@@ -161,87 +161,87 @@ void OnStart()
        return;
       }
     // сохраняем текущее положение цены относительно уровней
-    prevLocLevel2  =  GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price2[0],buffer_19Lines_atr2[0]);  
+    prevLocLevel4  =  GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price4[0],buffer_19Lines_atr4[0]);  
     prevLocLevel3  =  GetCurrentPriceLocation(buffer_price[0].open,buffer_19Lines_price3[0],buffer_19Lines_atr3[0]);               
     // выставляем флаги нахождения в зоне уровня в false
-    standOnLevel2  = false;
+    standOnLevel4  = false;
     standOnLevel3  = false;
     // сохраним текущую цену на уровнях
-    curBuf2        = buffer_19Lines_price2[0];
+    curBuf4        = buffer_19Lines_price4[0];
     curBuf3        = buffer_19Lines_price3[0];
   
     // проходим по всем барам цены  и считаем статистику проходов через уровни
     for (int index=1;index < bars; index++)
        {
   
-        /////ДЛЯ ВТОРОГО УРОВНЯ//////  
+        /////ДЛЯ ЧЕТВЕРТОГО УРОВНЯ//////  
       
-        if ( curBuf2 != buffer_19Lines_price2[index] ) // если значения буферов отличаются
+        if ( curBuf4 != buffer_19Lines_price4[index] ) // если значения буферов отличаются
          {
            // то сохраним текущую цену уровня
-           curBuf2 = buffer_19Lines_price2[index];
+           curBuf4 = buffer_19Lines_price4[index];
            // и предыдущее положение цены относительно уровня
-           prevLocLevel2  = GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price2[index],buffer_19Lines_atr2[index]);  
+           prevLocLevel4  = GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price4[index],buffer_19Lines_atr4[index]);  
            // обнуляем флаг нахождения в зоне уровня 
-           standOnLevel2 = false;
+           standOnLevel4 = false;
            // обнуляем счетчик баров внутри уровня
-           countBarsInsideLevel2 = 0;        
+           countBarsInsideLevel4 = 0;        
          }  
         else   // если буфер не изменил своего предыдушего положения
         {       
-          curLocLevel2 = GetCurrentPriceLocation(buffer_price[index].close,buffer_19Lines_price2[index],buffer_19Lines_atr2[index]);
+          curLocLevel4 = GetCurrentPriceLocation(buffer_price[index].close,buffer_19Lines_price4[index],buffer_19Lines_atr4[index]);
         
-          if (curLocLevel2 == LOCATION_INSIDE) 
+          if (curLocLevel4 == LOCATION_INSIDE) 
             {
              // если еще и Open находится внутри уровня
-             if (GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price2[index],buffer_19Lines_atr2[index])  == LOCATION_INSIDE)
-                 countBarsInsideLevel2++;  // то увеличиваем количество баров внутри уровня
-             standOnLevel2 = true;
+             if (GetCurrentPriceLocation(buffer_price[index].open,buffer_19Lines_price4[index],buffer_19Lines_atr4[index])  == LOCATION_INSIDE)
+                 countBarsInsideLevel4++;  // то увеличиваем количество баров внутри уровня
+             standOnLevel4 = true;
             }
           else 
             {   
-             if (curLocLevel2 == LOCATION_ABOVE && prevLocLevel2 == LOCATION_BELOW)
+             if (curLocLevel4 == LOCATION_ABOVE && prevLocLevel4 == LOCATION_BELOW)
                {
                 countDownUp ++;
-                if (standOnLevel2)  // если бары находились внутри уровня. то уровень сработавший
+                if (standOnLevel4)  // если бары находились внутри уровня. то уровень сработавший
                  countDone ++;
                 else
                  countUnDone ++;
-                if (standOnLevel2)
-                 FileWriteString(fileTestStat,"\n(2) Сработал Цена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2)+" ATR = "+DoubleToString(buffer_19Lines_atr2[index])+" PRICE = "+DoubleToString(buffer_19Lines_price2[index]));
+                if (standOnLevel4)
+                 FileWriteString(fileTestStat,"\n(4) Сработал Цена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index]));
                 else
-                 FileWriteString(fileTestStat,"\n(2) Не сработал Цена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2)+" ATR = "+DoubleToString(buffer_19Lines_atr2[index])+" PRICE = "+DoubleToString(buffer_19Lines_price2[index]));                 
+                 FileWriteString(fileTestStat,"\n(4) Не сработал Цена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index]));                 
                }
-             if (curLocLevel2 == LOCATION_BELOW && prevLocLevel2 == LOCATION_ABOVE)
+             if (curLocLevel4 == LOCATION_BELOW && prevLocLevel4 == LOCATION_ABOVE)
                {
                 countUpDown ++;
-                if (standOnLevel2)  // если бары находились внутри уровня. то уровень сработавший
+                if (standOnLevel4)  // если бары находились внутри уровня. то уровень сработавший
                  countDone ++;
                 else
                  countUnDone ++;
-                 if (standOnLevel2)                
-                  FileWriteString(fileTestStat,"\n(2) Сработал Цена прошла сверху вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2)+" ATR = "+DoubleToString(buffer_19Lines_atr2[index])+" PRICE = "+DoubleToString(buffer_19Lines_price2[index])); 
+                 if (standOnLevel4)                
+                  FileWriteString(fileTestStat,"\n(4) Сработал Цена прошла сверху вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index])); 
                  else
-                  FileWriteString(fileTestStat,"\n(2) Не сработал Цена прошла сверху вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2)+" ATR = "+DoubleToString(buffer_19Lines_atr2[index])+" PRICE = "+DoubleToString(buffer_19Lines_price2[index]));                  
+                  FileWriteString(fileTestStat,"\n(4) Не сработал Цена прошла сверху вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index]));                  
                }
-             if (curLocLevel2 == LOCATION_ABOVE && prevLocLevel2 == LOCATION_ABOVE && standOnLevel2)
+             if (curLocLevel4 == LOCATION_ABOVE && prevLocLevel4 == LOCATION_ABOVE && standOnLevel4)
                {
                 countUpUp ++;
                 countDone ++; 
-                FileWriteString(fileTestStat,"\n(2) Сработал Цена отбилась сверху вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2)+" ATR = "+DoubleToString(buffer_19Lines_atr2[index])+" PRICE = "+DoubleToString(buffer_19Lines_price2[index])); 
+                FileWriteString(fileTestStat,"\n(4) Сработал Цена отбилась сверху вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index])); 
                }
-             if (curLocLevel2 == LOCATION_BELOW && prevLocLevel2 == LOCATION_BELOW && standOnLevel2)
+             if (curLocLevel4 == LOCATION_BELOW && prevLocLevel4 == LOCATION_BELOW && standOnLevel4)
                {
                 countDownDown ++;
                 countDone     ++;  
-                FileWriteString(fileTestStat,"\n(2) Сработал Цена отбилась снизу вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel2)+" ATR = "+DoubleToString(buffer_19Lines_atr2[index])+" PRICE = "+DoubleToString(buffer_19Lines_price2[index]));                
+                FileWriteString(fileTestStat,"\n(4) Сработал Цена отбилась снизу вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровня = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index]));                
                }
              // обнуляем подсчет баров внутри уровня
-             countBarsInsideLevel2 = 0;   
-             prevLocLevel2 = curLocLevel2;
-             standOnLevel2 = false;
+             countBarsInsideLevel4 = 0;   
+             prevLocLevel4 = curLocLevel4;
+             standOnLevel4 = false;
             }  
-           } ///END ДЛЯ ВТОРОГО УРОВНЯ
+           } ///END ДЛЯ ЧЕТВЕРТОГО УРОВНЯ
         
         
         
