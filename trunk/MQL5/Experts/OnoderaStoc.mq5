@@ -134,7 +134,16 @@ void OnTick()
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }   
-        
+       if (signalBuffer[0] != 0)
+       { 
+  Comment
+   (
+     "СИГНАЛ = ",signalBuffer[0],
+     "\nДАТА ЛЕВОГО = ",TimeToString(datetime(extrLeftTime[0])),  
+     "\nДАТА ПРАВОГО = ",TimeToString(datetime(extrRightTime[0]))      
+   );
+   }
+   
    if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
      {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);    
