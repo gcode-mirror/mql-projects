@@ -136,17 +136,23 @@ void OnTick()
     }   
        if (signalBuffer[0] != 0)
        { 
-  Comment
+       GetMaxAndMinBetweenExtrs();
+ /* Comment
    (
      "СИГНАЛ = ",signalBuffer[0],
      "\nДАТА ЛЕВОГО = ",TimeToString(datetime(extrLeftTime[0])),  
-     "\nДАТА ПРАВОГО = ",TimeToString(datetime(extrRightTime[0]))      
+     "\nДАТА ПРАВОГО = ",TimeToString(datetime(extrRightTime[0])),
+     "\nМИНИМУМ = ",DoubleToString(minBetweenExtrs),
+     "\nМАКСИМУМ = ",DoubleToString(maxBetweenExtrs)      
    );
+   */
+   
+   
    }
+
    
    if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
-     {
-      currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);    
+     { 
       stopLoss = CountStoploss(1);
       // если тренд вниз
       if (pbiBuffer[0] == MOVE_TYPE_TREND_DOWN || pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
@@ -160,17 +166,18 @@ void OnTick()
         if ( GetMaxAndMinBetweenExtrs() )  // если удалось вычислить максимумы и минимумы
          {
           // вычисляем тейк профит 
-          takeProfit      =  2*(maxBetweenExtrs-minBetweenExtrs)/_Point;
+          takeProfit      =  int(2*(maxBetweenExtrs-minBetweenExtrs)/_Point);
+          //  получаем текущую цену
+          currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);           
           //  уровень лимит ордера
-          limitOrderLevel =  maxBetweenExtrs/_Point;
+          limitOrderLevel =  MathAbs((currentPrice-maxBetweenExtrs))/_Point;
           // и открываем позицию лимит ордером на SELL
           ctm.OpenUniquePosition(symbol,period,OP_SELLLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
          }
        }
     }  // END OF BUY
    if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
-     {
-      currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
+     {  
       stopLoss = CountStoploss(-1);
       if (pbiBuffer[0] == MOVE_TYPE_TREND_UP || pbiBuffer[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
        {
@@ -183,9 +190,11 @@ void OnTick()
         if ( GetMaxAndMinBetweenExtrs() )  // если удалось вычислить максимумы и минимумы
          {
           // вычисляем тейк профит 
-          takeProfit      =  2*(maxBetweenExtrs-minBetweenExtrs)/_Point;
+          takeProfit      =  int(2*(maxBetweenExtrs-minBetweenExtrs)/_Point);
+          //  получаем текущую цену
+          currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);            
           //  уровень лимит ордера
-          limitOrderLevel =  minBetweenExtrs/_Point;
+          limitOrderLevel =  MathAbs(currentPrice-minBetweenExtrs)/_Point;
           // и открываем позицию лимит ордером на BUY
           ctm.OpenUniquePosition(symbol,period,OP_BUYLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
          }        
@@ -261,20 +270,20 @@ bool  GetMaxAndMinBetweenExtrs()
   int    n_bars;             // количество скопированных баров
   for (int attempts=0;attempts<25;attempts++)
    {
-    copiedHigh = CopyHigh(symbol,period,(datetime)extrLeftTime[0],(datetime)extrRightTime[0],tmpLow);
-    copiedLow  = CopyLow (symbol,period,(datetime)extrLeftTime[0],(datetime)extrRightTime[0],tmpLow);    
+    copiedHigh = CopyHigh(symbol,period,datetime(extrLeftTime[0]),datetime(extrRightTime[0]),tmpHigh);
+    copiedLow  = CopyLow (symbol,period,datetime(extrLeftTime[0]),datetime(extrRightTime[0]),tmpLow);    
     Sleep(100);
    }
-  n_bars = Bars(symbol,period,(datetime)extrLeftTime[0],(datetime)extrRightTime[0]);
+  n_bars = Bars(symbol,period,datetime(extrLeftTime[0]),datetime(extrRightTime[0]));
   if (copiedHigh < n_bars || copiedLow < n_bars)
    {
     Print("Ошибка работы эксперта ONODERA. Не удалось скопировать буферы высоких и\или низких цен для поиска максимума и минимума");
     return (false);
    }
   // вычисляем максимум цены
-  maxBetweenExtrs = ArrayMaximum(tmpHigh);
+  maxBetweenExtrs = tmpHigh[ArrayMaximum(tmpHigh)];
   // вычисляем минимум цены
-  minBetweenExtrs = ArrayMinimum(tmpLow);
+  minBetweenExtrs = tmpLow[ArrayMinimum(tmpLow)];
   return (true);
  }
  
