@@ -151,18 +151,18 @@ int OnCalculate(const int rates_total,
     //PrintFormat("%s ѕредварительный –асчет индикатора закончен. –азмер буфера = %d", MakeFunctionPrefix(__FUNCTION__), ArraySize(ColorCandlesColors));
     start_iteration = start_index + buffer_index;
    }
- 
+   if(prev_calculated == 0) PrintFormat("%s/%s", TimeToString(time[start_iteration]), TimeToString(time[rates_total-1]));
    for(int i = start_iteration; i < rates_total;  i++)    
    {
-    error = topTrend.CountMoveType(top_buffer_index, time[i], extr_top);
+    //error = topTrend.CountMoveType(top_buffer_index, time[i], extr_top);
     //PrintFormat("i = %d; top_buffer_index = %d; start_pos_top = %d; move type top = %s", i, top_buffer_index, start_pos_top, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
-    if(!error)
-    {
-     Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
-     return(0);
-    }
+    //if(!error)
+    //{
+    // Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
+    // return(0);
+    //}
     
-    error = trend.CountMoveType(buffer_index, time[i], extr_cur, topTrend.GetMoveType(top_buffer_index));
+    error = trend.CountMoveType(buffer_index, time[i], extr_cur);//, topTrend.GetMoveType(top_buffer_index));
     //PrintFormat("i = %d; buffer_index = %d; start_pos_cur = %d; move type = %s", i, buffer_index, start_pos_cur, MoveTypeToString(trend.GetMoveType(buffer_index)));
     if(!error) 
     {
@@ -198,8 +198,8 @@ int OnCalculate(const int rates_total,
     
     if(buffer_index < depth)
     {
-     if(    NewBarTop.isNewBar(time[i])) top_buffer_index++;                    //дл€ того что бы считать на истории
-     if(NewBarCurrent.isNewBar(time[i])) buffer_index++;   //дл€ того что бы считать на истории
+     if(    NewBarTop.isNewBar(time[i])) top_buffer_index++; //дл€ того что бы считать на истории
+     if(NewBarCurrent.isNewBar(time[i])) buffer_index++;     //дл€ того что бы считать на истории
     }
    }
    
