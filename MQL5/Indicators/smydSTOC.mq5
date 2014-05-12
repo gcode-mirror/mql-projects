@@ -83,6 +83,8 @@ void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатор
 int OnInit()
   {  
    ArraySetAsSeries(bufferDiv,true);
+   ArraySetAsSeries(bufferExtrLeft,true);
+   ArraySetAsSeries(bufferExtrRight,true);   
    // загружаем хэндл индикатора Стохастика
    handleSTOC = iStochastic(_Symbol,_Period,5,3,3,ma_method,price_field);
    if ( handleSTOC == INVALID_HANDLE)  // если не удалось загрузить хэндл Стохастика
@@ -180,8 +182,9 @@ int OnCalculate(const int rates_total,
                                         
              DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
              bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение  
-             bufferExtrLeft[lastBarIndex]  = (double)divergencePoints.timeExtrPrice1;  // сохраним время левого  экстремума
-             bufferExtrRight[lastBarIndex] = (double)divergencePoints.timeExtrPrice2;  // сохраним время правого экстремума    
+             bufferExtrLeft[lastBarIndex]  = double(divergencePoints.timeExtrPrice2);  // сохраним время левого  экстремума
+             bufferExtrRight[lastBarIndex] = double(divergencePoints.timeExtrPrice1);  // сохраним время правого экстремума    
+
              // сохраняем время экстремумов цен
              onePointBuy =  divergencePoints.timeExtrPrice1;
              twoPointBuy =  divergencePoints.timeExtrPrice2;
@@ -197,8 +200,9 @@ int OnCalculate(const int rates_total,
                                         
              DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
              bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение 
-             bufferExtrLeft[lastBarIndex]  = (double)divergencePoints.timeExtrPrice1; // сохраним время левого  экстремума
-             bufferExtrRight[lastBarIndex] = (double)divergencePoints.timeExtrPrice2; // сохраним время правого экстремума      
+             bufferExtrLeft[lastBarIndex]  = double(divergencePoints.timeExtrPrice2); // сохраним время левого  экстремума
+             bufferExtrRight[lastBarIndex] = double(divergencePoints.timeExtrPrice1); // сохраним время правого экстремума      
+      
              // сохраняем время экстремумов цен
              onePointSell =  divergencePoints.timeExtrPrice1;
              twoPointSell =  divergencePoints.timeExtrPrice2;
@@ -249,8 +253,9 @@ int OnCalculate(const int rates_total,
                                         
              DrawIndicator (time[0]);   // отображаем графические элементы индикатора     
              bufferDiv[lastBarIndex] = retCode;                               // сохраняем в буфер значение    
-             bufferExtrLeft[lastBarIndex]  = (double)divergencePoints.timeExtrPrice1; // сохраним время левого  экстремума
-             bufferExtrRight[lastBarIndex] = (double)divergencePoints.timeExtrPrice2; // сохраним время правого экстремума  
+             bufferExtrLeft[lastBarIndex]  = double(divergencePoints.timeExtrPrice2); // сохраним время левого  экстремума
+             bufferExtrRight[lastBarIndex] = double(divergencePoints.timeExtrPrice1); // сохраним время правого экстремума  
+      
              // сохраняем время экстремумов цен
              onePointBuy =  divergencePoints.timeExtrPrice1;
              twoPointBuy =  divergencePoints.timeExtrPrice2;
@@ -266,8 +271,9 @@ int OnCalculate(const int rates_total,
                                         
              DrawIndicator (time[0]);   // отображаем графические элементы индикатора     
              bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение
-             bufferExtrLeft[lastBarIndex]  = (double)divergencePoints.timeExtrPrice1; // сохраним время левого  экстремума
-             bufferExtrRight[lastBarIndex] = (double)divergencePoints.timeExtrPrice2; // сохраним время правого экстремума      
+             bufferExtrLeft[lastBarIndex]  = double(divergencePoints.timeExtrPrice2); // сохраним время левого  экстремума
+             bufferExtrRight[lastBarIndex] = double(divergencePoints.timeExtrPrice1); // сохраним время правого экстремума      
+       
              // сохраняем время экстремумов цен
              onePointSell =  divergencePoints.timeExtrPrice1;
              twoPointSell =  divergencePoints.timeExtrPrice2;
