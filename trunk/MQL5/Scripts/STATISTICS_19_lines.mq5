@@ -103,17 +103,17 @@ void OnStart()
      case CALC_D1:   // дневник
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
       false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed);   
-      start_index_buffer = 12;  
+      start_index_buffer = 16;  
      break;
      case CALC_H1:   // часовик
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
       false, clrRed, false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed);
-      start_index_buffer = 24;      
+      start_index_buffer = 32;      
      break;
      case CALC_H4:   // четырех часовик
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
       false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed);  
-      start_index_buffer = 18;   
+      start_index_buffer = 24;   
      break;
      case CALC_MN1:  // месяц
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
@@ -123,7 +123,7 @@ void OnStart()
      case CALC_W1:   // неделька
       handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
       false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed); 
-      start_index_buffer = 6;    
+      start_index_buffer = 8;    
      break;
     }
             
@@ -144,8 +144,8 @@ void OnStart()
    for (int i = 0; i < 5; i++)
     {
      Sleep(1000);
-     size3 = CopyBuffer(handle_19Lines, start_index_buffer + 2, start_time, end_time, buffer_19Lines_price4);
-     size4 = CopyBuffer(handle_19Lines, start_index_buffer + 3, start_time, end_time, buffer_19Lines_atr4);
+     size3 = CopyBuffer(handle_19Lines, start_index_buffer + 6, start_time, end_time, buffer_19Lines_price4);
+     size4 = CopyBuffer(handle_19Lines, start_index_buffer + 7, start_time, end_time, buffer_19Lines_atr4);
      size5 = CopyBuffer(handle_19Lines, start_index_buffer + 4, start_time, end_time, buffer_19Lines_price3);
      size6 = CopyBuffer(handle_19Lines, start_index_buffer + 5, start_time, end_time, buffer_19Lines_atr3);
      size_price = CopyRates(_Symbol,PERIOD_M1,start_time,end_time,buffer_price);
