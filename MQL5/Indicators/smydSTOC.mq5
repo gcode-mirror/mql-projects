@@ -16,6 +16,10 @@
 //| 4) хранит значения расхождений и экстремумов на цене             |
 //+------------------------------------------------------------------+
 
+// константы сигналов
+#define BUY   1    
+#define SELL -1
+
 // подключаем библиотеки 
 #include <Lib CisNewBar.mqh>                          // для проверки формирования нового бара
 #include <Divergence/divergenceStochastic.mqh>        // подключаем библиотеку для поиска расхождений MACD
@@ -172,7 +176,7 @@ int OnCalculate(const int rates_total,
              return (0);
            }
           // если BUY и точки экстремумов цены не совпадают с предыдущим расхождением 
-          if (retCode == _Buy && divergencePoints.timeExtrPrice1 != onePointBuy
+          if (retCode == BUY && divergencePoints.timeExtrPrice1 != onePointBuy
                            && divergencePoints.timeExtrPrice2 != onePointBuy
                            && divergencePoints.timeExtrPrice1 != twoPointBuy
                            && divergencePoints.timeExtrPrice2 != twoPointBuy
@@ -190,7 +194,7 @@ int OnCalculate(const int rates_total,
              twoPointBuy =  divergencePoints.timeExtrPrice2;
            }
           // если SELL и точки экстремумов цены не совпадают с предыдущим расхождением 
-          if (retCode == _Sell && divergencePoints.timeExtrPrice1 != onePointSell
+          if (retCode == SELL && divergencePoints.timeExtrPrice1 != onePointSell
                             && divergencePoints.timeExtrPrice2 != onePointSell
                             && divergencePoints.timeExtrPrice1 != twoPointSell
                             && divergencePoints.timeExtrPrice2 != twoPointSell
@@ -243,7 +247,7 @@ int OnCalculate(const int rates_total,
            }
 
           // если BUY и точки экстремумов цены не совпадают с предыдущим расхождением 
-          if (retCode == _Buy && divergencePoints.timeExtrPrice1 != onePointBuy
+          if (retCode == BUY && divergencePoints.timeExtrPrice1 != onePointBuy
                            && divergencePoints.timeExtrPrice2 != onePointBuy
                            && divergencePoints.timeExtrPrice1 != twoPointBuy
                            && divergencePoints.timeExtrPrice2 != twoPointBuy
@@ -261,7 +265,7 @@ int OnCalculate(const int rates_total,
              twoPointBuy =  divergencePoints.timeExtrPrice2;
            }
           // если SELL и точки экстремумов цены не совпадают с предыдущим расхождением 
-          if (retCode == _Sell && divergencePoints.timeExtrPrice1 != onePointSell
+          if (retCode == SELL && divergencePoints.timeExtrPrice1 != onePointSell
                             && divergencePoints.timeExtrPrice2 != onePointSell
                             && divergencePoints.timeExtrPrice1 != twoPointSell
                             && divergencePoints.timeExtrPrice2 != twoPointSell

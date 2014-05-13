@@ -84,7 +84,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      if (index_Price_local_max == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_max == (DEPTH_STOC-1) )
       return (0); 
      Print("Расхождение стохастика на продажу");   
-     return(_Sell);
+     return(SELL);
     }   
    }
   }
@@ -103,7 +103,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      if (index_Price_local_min == ALLOW_DEPTH_FOR_PRICE_EXTR || index_Price_local_min == (DEPTH_STOC-1) )
       return (0);  
      Print("Расхождение стохастика на покупку");   
-     return(_Buy);
+     return(BUY);
     }
    }
   }
@@ -179,7 +179,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      div_point.valueExtrPrice2  =  iHigh_buf[index_Price_local_max];
      div_point.valueExtrSTOC1   =  iSTOC_buf[index_STOC_global_max];
      div_point.valueExtrSTOC2   =  iSTOC_buf[i+1];      
-     return(_Sell);
+     return(SELL);
     }   
    }
   }
@@ -205,7 +205,7 @@ int divergenceSTOC(int handleSTOC, const string symbol, ENUM_TIMEFRAMES timefram
      div_point.valueExtrPrice2  =  iLow_buf[index_Price_local_min];
      div_point.valueExtrSTOC1   =  iSTOC_buf[index_STOC_global_min];
      div_point.valueExtrSTOC2   =  iSTOC_buf[i+1];  
-     return(_Buy);
+     return(BUY);
     }
    }
   }
