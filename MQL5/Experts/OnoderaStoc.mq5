@@ -11,10 +11,11 @@
 #include <TradeManager\TradeManager.mqh>        // подключение торговой библиотеки
 #include <Lib CisNewBar.mqh>                    // для проверки формирования нового бара
 #include <CompareDoubles.mqh>                   // для проверки соотношения  цен
-#include <Constants.mqh>                        // библиотека констант
 
 #define ADD_TO_STOPPLOSS 0
-
+// константы сигналов
+#define BUY   1    
+#define SELL -1
 //+------------------------------------------------------------------+
 //| Эксперт, основанный на расхождении Стохастика                    |
 //+------------------------------------------------------------------+
@@ -122,87 +123,74 @@ void OnTick()
  copiedPBI       = -1;
  // если сформирован новый бар
  if (isNewBar.isNewBar() > 0)
+ {
+  // пытаемся скопировать буферы 
+  copiedSmydSTOC  = CopyBuffer(handleSmydSTOC,2,0,1,signalBuffer);
+  copiedLeftExtr  = CopyBuffer(handleSmydSTOC,3,0,1,extrLeftTime);
+  copiedRightExtr = CopyBuffer(handleSmydSTOC,4,0,1,extrRightTime);
+  copiedPBI       = CopyBuffer(handlePBIcur,4,1,1,pbiBuffer);
+  // проверка на успешность копирования всех буферов
+  if (copiedSmydSTOC < 1 || copiedLeftExtr < 1 || copiedRightExtr < 1 || copiedPBI < 1)
   {
-   // пытаемся скопировать буферы 
-   copiedSmydSTOC  = CopyBuffer(handleSmydSTOC,2,0,1,signalBuffer);
-   copiedLeftExtr  = CopyBuffer(handleSmydSTOC,3,0,1,extrLeftTime);
-   copiedRightExtr = CopyBuffer(handleSmydSTOC,4,0,1,extrRightTime);
-   copiedPBI       = CopyBuffer(handlePBIcur,4,1,1,pbiBuffer);
-   // проверка на успешность копирования всех буферов
-   if (copiedSmydSTOC < 1 || copiedLeftExtr < 1 || copiedRightExtr < 1 || copiedPBI < 1)
-    {
-     PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
-     return;
-    }   
-       if (signalBuffer[0] != 0)
-       { 
-       GetMaxAndMinBetweenExtrs();
- /* Comment
-   (
-     "СИГНАЛ = ",signalBuffer[0],
-     "\nДАТА ЛЕВОГО = ",TimeToString(datetime(extrLeftTime[0])),  
-     "\nДАТА ПРАВОГО = ",TimeToString(datetime(extrRightTime[0])),
-     "\nМИНИМУМ = ",DoubleToString(minBetweenExtrs),
-     "\nМАКСИМУМ = ",DoubleToString(maxBetweenExtrs)      
-   );
-   */
-   
-   
-   }
+   PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
+   return;
+  }   
+  if (signalBuffer[0] != 0)
+  { 
+   GetMaxAndMinBetweenExtrs();   
+  }
 
-   
-   if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
-     { 
-      stopLoss = CountStoploss(1);
-      // если тренд вниз
-      if (pbiBuffer[0] == MOVE_TYPE_TREND_DOWN || pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
-       {
-        // то мы просто открываемся на BUY немедленного исполнения
-        ctm.OpenUniquePosition(symbol,period, OP_BUY, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);         
-       }
-      else
-       {
-        // иначе мы используем LIMIT ордера
-        if ( GetMaxAndMinBetweenExtrs() )  // если удалось вычислить максимумы и минимумы
-         {
-          // вычисляем тейк профит 
-          takeProfit      =  int(2*(maxBetweenExtrs-minBetweenExtrs)/_Point);
-          //  получаем текущую цену
-          currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);           
-          //  уровень лимит ордера
-          limitOrderLevel =  MathAbs((currentPrice-maxBetweenExtrs))/_Point;
-          // и открываем позицию лимит ордером на SELL
-          ctm.OpenUniquePosition(symbol,period,OP_SELLLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
-         }
-       }
-    }  // END OF BUY
-   if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
-     {  
-      stopLoss = CountStoploss(-1);
-      if (pbiBuffer[0] == MOVE_TYPE_TREND_UP || pbiBuffer[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
-       {
-        // то мы просто открываемся на SELL немедленного исполнения
-        ctm.OpenUniquePosition(symbol,period, OP_SELL, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
-       }
-      else
-       {
-        // иначе мы использует LIMIT ордера
-        if ( GetMaxAndMinBetweenExtrs() )  // если удалось вычислить максимумы и минимумы
-         {
-          // вычисляем тейк профит 
-          takeProfit      =  int(2*(maxBetweenExtrs-minBetweenExtrs)/_Point);
-          //  получаем текущую цену
-          currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);            
-          //  уровень лимит ордера
-          limitOrderLevel =  MathAbs(currentPrice-minBetweenExtrs)/_Point;
-          // и открываем позицию лимит ордером на BUY
-          ctm.OpenUniquePosition(symbol,period,OP_BUYLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
-         }        
-       }
-       
-     }  // END OF SELL
-     
-   }  
+  if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
+  { 
+   stopLoss = CountStoploss(1);
+   // если тренд вниз
+   if (pbiBuffer[0] == MOVE_TYPE_TREND_DOWN || pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+   {
+    // то мы просто открываемся на BUY немедленного исполнения
+    ctm.OpenUniquePosition(symbol,period, OP_BUY, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);         
+   }
+   else
+   {
+    // иначе мы используем LIMIT ордера
+    if ( GetMaxAndMinBetweenExtrs() )  // если удалось вычислить максимумы и минимумы
+    {
+     // вычисляем тейк профит 
+     takeProfit = int(2*(maxBetweenExtrs-minBetweenExtrs)/_Point);
+     //  получаем текущую цену
+     currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);           
+     //  уровень лимит ордера
+     limitOrderLevel =  MathAbs((currentPrice-maxBetweenExtrs))/_Point;
+     // и открываем позицию лимит ордером на SELL
+     ctm.OpenUniquePosition(symbol,period,OP_SELLLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
+    }
+   }
+  }  // END OF BUY
+  
+  if ( signalBuffer[0] == SELL) // получили расхождение на продажу
+  {  
+   stopLoss = CountStoploss(-1);
+   if (pbiBuffer[0] == MOVE_TYPE_TREND_UP || pbiBuffer[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
+   {
+    // то мы просто открываемся на SELL немедленного исполнения
+    ctm.OpenUniquePosition(symbol,period, OP_SELL, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+   }
+   else
+   {
+    // иначе мы использует LIMIT ордера
+    if ( GetMaxAndMinBetweenExtrs() )  // если удалось вычислить максимумы и минимумы
+    {
+     // вычисляем тейк профит 
+     takeProfit      =  int(2*(maxBetweenExtrs-minBetweenExtrs)/_Point);
+     //  получаем текущую цену
+     currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);            
+     //  уровень лимит ордера
+     limitOrderLevel =  MathAbs(currentPrice-minBetweenExtrs)/_Point;
+     // и открываем позицию лимит ордером на BUY
+     ctm.OpenUniquePosition(symbol,period,OP_BUYLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
+    }        
+   }
+  }  // END OF SELL
+ }  
 }
 // функция вычисляет стоп лосс
 int CountStoploss(int point)

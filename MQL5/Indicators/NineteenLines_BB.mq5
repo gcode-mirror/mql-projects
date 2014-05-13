@@ -22,11 +22,11 @@
 #define TF_PERIOD_ATR_FOR_H4 PERIOD_H4
 #define TF_PERIOD_ATR_FOR_H1 PERIOD_H4
 
-#define PERCENTAGE_OF_ATR_FOR_MN  1
-#define PERCENTAGE_OF_ATR_FOR_W1  1
-#define PERCENTAGE_OF_ATR_FOR_D1  1
+#define PERCENTAGE_OF_ATR_FOR_MN  1.5
+#define PERCENTAGE_OF_ATR_FOR_W1  1.5
+#define PERCENTAGE_OF_ATR_FOR_D1  1.5
 #define PERCENTAGE_OF_ATR_FOR_H4  2
-#define PERCENTAGE_OF_ATR_FOR_H1  1
+#define PERCENTAGE_OF_ATR_FOR_H1  1.5
 
 input int    period_ATR_channel = 30;   //Период ATR для канала
 input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
