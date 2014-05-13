@@ -12,8 +12,8 @@
 // универсальные значения 
 
 // константы сигналов
-#define _Buy   1    
-#define _Sell -1
+#define BUY   1    
+#define SELL -1
 
 // размеры лота для разных валют
 double lotsArray[6] =
@@ -45,7 +45,6 @@ enum  TRADE_MODE
  };
  
 // функция перевода TRADE_MODE в int
-
 int  TradeModeToInt (TRADE_MODE tm)
  {
   switch (tm)
@@ -64,7 +63,6 @@ int  TradeModeToInt (TRADE_MODE tm)
  }  
 
 // функция поиска строки в массиве
-
 int ArraySearchString (string  &strArray[],string str)
  {
   int index;
