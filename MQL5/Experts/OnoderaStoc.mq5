@@ -149,7 +149,7 @@ void OnTick()
           pbiBuffer[0] == MOVE_TYPE_TREND_UP_FORBIDEN  ||
           pbiBuffer[0] == MOVE_TYPE_CORRECTION_DOWN)   ||     
           !use_limits                                  ||
-         (flat_as_instant == true && pbiBuffer[0] == MOVE_TYPE_FLAT)
+         (flat_as_instant  && pbiBuffer[0] == MOVE_TYPE_FLAT)
           )
    {
     // то мы просто открываемся на BUY немедленного исполнения
@@ -189,7 +189,7 @@ void OnTick()
           pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN ||
           pbiBuffer[0] == MOVE_TYPE_CORRECTION_UP)      ||     
           !use_limits                                   ||
-         (flat_as_instant == true && pbiBuffer[0] == MOVE_TYPE_FLAT)
+         (flat_as_instant && pbiBuffer[0] == MOVE_TYPE_FLAT)
           )
    {
     // то мы просто открываемся на SELL немедленного исполнения
