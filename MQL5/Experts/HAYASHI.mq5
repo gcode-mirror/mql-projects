@@ -62,9 +62,8 @@ CTradeManager ctm();
 bool   openedPosition = false;  // флаг окрытия позиции
 double openPrice;               // цена открытия
 string symb;
-
-int    handle;
-double bufferPBI[];
+double currentPrice;                           // текущая цена
+double spread;                                 // спред
 
     static CisNewBar isNewBar(symb, per);   // для проверки формирования нового бара
 
@@ -108,18 +107,12 @@ void OnDeinit(const int reason)
 void OnTick()
   { 
 
-    double currentPrice;                           // текущая цена
-    double spread;                                 // спред
-    int copiedPBI;
+
     
     // если сформирован новый бар
     if(isNewBar.isNewBar() > 0)
      {        
-     
-      copiedPBI = CopyBuffer( handle,4, 1, 1, bufferPBI);
-      
-      Comment("ЗНАЧЕНИЕ = ",bufferPBI[0]);
-     
+
       if (openedPosition == false)
        { // если до этого момента еще не была открыта позиция
      

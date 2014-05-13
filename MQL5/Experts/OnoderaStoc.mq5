@@ -54,8 +54,9 @@ int handlePBIcur;                                                        // хэнд
 // переменные эксперта
 double currentPrice;                                                     // текуща€ цена
 string symbol;                                                           // текущий символ
-ENUM_TIMEFRAMES period;
-int historyDepth;
+ENUM_TIMEFRAMES period;                                                  // текущий период
+int historyDepth;                                                        // глубина истории
+
 double signalBuffer[];                                                   // буфер дл€ получени€ сигнала из индикатора
 double extrLeftTime[];                                                   // буфер дл€ хранени€ времени левых экстремумов
 double extrRightTime[];                                                  // буфер дл€ хранени€ времени правых экстремумов
@@ -131,24 +132,25 @@ void OnTick()
   copiedSmydSTOC  = CopyBuffer(handleSmydSTOC,2,0,1,signalBuffer);
   copiedLeftExtr  = CopyBuffer(handleSmydSTOC,3,0,1,extrLeftTime);
   copiedRightExtr = CopyBuffer(handleSmydSTOC,4,0,1,extrRightTime);
-  copiedPBI       = CopyBuffer(handlePBIcur,4,1,1,pbiBuffer);
+  copiedPBI       = CopyBuffer(handlePBIcur  ,4,1,1,pbiBuffer);
   // проверка на успешность копировани€ всех буферов
   if (copiedSmydSTOC < 1 || copiedLeftExtr < 1 || copiedRightExtr < 1 || copiedPBI < 1)
   {
    PrintFormat("Ќе удалось прогрузить все буферы Error=%d",GetLastError());
    return;
   }   
-  if (signalBuffer[0] != 0)
-  { 
-   GetMaxAndMinBetweenExtrs();   
-  }
 
   if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
   { 
+   // вычислили стоп лосс
    stopLoss = CountStoploss(1);
-   Print("stoploss= ",stopLoss);
-   // если тренд вниз
-   if (pbiBuffer[0] == MOVE_TYPE_TREND_DOWN || pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+   // услови€ открыти€ позиции на BUY на немедленное исполнение
+   if (  (pbiBuffer[0] == MOVE_TYPE_TREND_DOWN                       || 
+          pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN              ||
+          pbiBuffer[0] == MOVE_TYPE_CORRECTION_UP)                   ||     
+          use_limits   == false                                      ||
+         (flat_as_instant == true && pbiBuffer[0] == MOVE_TYPE_FLAT)
+          )
    {
     // то мы просто открываемс€ на BUY немедленного исполнени€
     ctm.OpenUniquePosition(symbol,period, OP_BUY, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);         
@@ -179,6 +181,7 @@ void OnTick()
   
   if ( signalBuffer[0] == SELL) // получили расхождение на продажу
   {  
+   // вычислили стоп лосс
    stopLoss = CountStoploss(-1);
    // услови€ открыти€ позиции на немедленное исполнение
    
@@ -200,7 +203,7 @@ void OnTick()
      // вычисл€ем тейк профит 
      takeProfit = int(2*(maxBetweenExtrs-minBetweenExtrs)/_Point);
      //  получаем текущую цену
-     currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);            
+     currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);            
      //  уровень лимит ордера
      limitOrderLevel =  (currentPrice-minBetweenExtrs)/_Point;
      // и открываем позицию лимит ордером на BUY
