@@ -25,7 +25,7 @@
 #define PERCENTAGE_OF_ATR_FOR_MN  1.5
 #define PERCENTAGE_OF_ATR_FOR_W1  1.5
 #define PERCENTAGE_OF_ATR_FOR_D1  1.5
-#define PERCENTAGE_OF_ATR_FOR_H4  2
+#define PERCENTAGE_OF_ATR_FOR_H4  1.5
 #define PERCENTAGE_OF_ATR_FOR_H1  1.5
 
 input int    period_ATR_channel = 30;   //Период ATR для канала
