@@ -203,11 +203,11 @@ void OnStart()
              if (curLocLevel4 == LOCATION_ABOVE && prevLocLevel4 == LOCATION_BELOW)
                {
                 countDownUp ++;
-                if (standOnLevel4)  // если бары находились внутри уровн€. то уровень сработавший
+                if (countBarsInsideLevel4 > 4)  // если бары находились внутри уровн€. то уровень сработавший
                  countDone ++;
                 else
                  countUnDone ++;
-                if (standOnLevel4)
+                if (countBarsInsideLevel4 > 4)
                  FileWriteString(fileTestStat,"\n(4) —работал ÷ена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровн€ = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index]));
                 else
                  FileWriteString(fileTestStat,"\n(4) Ќе сработал ÷ена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровн€ = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index]));                 
@@ -215,11 +215,11 @@ void OnStart()
              if (curLocLevel4 == LOCATION_BELOW && prevLocLevel4 == LOCATION_ABOVE)
                {
                 countUpDown ++;
-                if (standOnLevel4)  // если бары находились внутри уровн€. то уровень сработавший
+                if (countBarsInsideLevel4 > 4)  // если бары находились внутри уровн€. то уровень сработавший
                  countDone ++;
                 else
                  countUnDone ++;
-                 if (standOnLevel4)                
+                 if (countBarsInsideLevel4 > 4)                
                   FileWriteString(fileTestStat,"\n(4) —работал ÷ена прошла сверху вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровн€ = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index])); 
                  else
                   FileWriteString(fileTestStat,"\n(4) Ќе сработал ÷ена прошла сверху вниз в "+TimeToString(buffer_price[index].time)+" количество баров внутри уровн€ = "+IntegerToString(countBarsInsideLevel4)+" ATR = "+DoubleToString(buffer_19Lines_atr4[index])+" PRICE = "+DoubleToString(buffer_19Lines_price4[index]));                  
@@ -273,11 +273,11 @@ void OnStart()
              if (curLocLevel3 == LOCATION_ABOVE && prevLocLevel3 == LOCATION_BELOW)
                 {
                  countDownUp ++;
-                if (standOnLevel3)  // если бары находились внутри уровн€. то уровень сработавший
+                if (countBarsInsideLevel3 > 4)  // если бары находились внутри уровн€. то уровень сработавший
                  countDone ++;
                 else
                  countUnDone ++;  
-                 if (standOnLevel3)               
+                 if (countBarsInsideLevel3 > 4)               
                   FileWriteString(fileTestStat,"\n(3) —работал ÷ена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровн€ = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index]));
                  else
                   FileWriteString(fileTestStat,"\n(3) Ќе сработал ÷ена прошла снизу вверх в "+TimeToString(buffer_price[index].time)+"; количество баров внутри уровн€ = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index]));                  
@@ -285,11 +285,11 @@ void OnStart()
              if (curLocLevel3 == LOCATION_BELOW && prevLocLevel3 == LOCATION_ABOVE)
                 {
                  countUpDown ++;
-                if (standOnLevel3)  // если бары находились внутри уровн€. то уровень сработавший
+                if (countBarsInsideLevel3 > 4)  // если бары находились внутри уровн€. то уровень сработавший
                  countDone ++;
                 else
                  countUnDone ++;
-                 if (standOnLevel3)                 
+                 if (countBarsInsideLevel3 > 4)                 
                   FileWriteString(fileTestStat,"\n(3) —работал ÷ены прошла сверху вниз в "+TimeToString(buffer_price[index].time)+";количество баров внутри уровн€ = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index])); 
                  else
                   FileWriteString(fileTestStat,"\n(3) Ќе сработал ÷ены прошла сверху вниз в "+TimeToString(buffer_price[index].time)+";количество баров внутри уровн€ = "+IntegerToString(countBarsInsideLevel3)+" ATR = "+DoubleToString(buffer_19Lines_atr3[index])+" PRICE = "+DoubleToString(buffer_19Lines_price3[index]));                  

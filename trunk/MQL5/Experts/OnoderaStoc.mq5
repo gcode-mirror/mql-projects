@@ -145,10 +145,10 @@ void OnTick()
    // вычислили стоп лосс
    stopLoss = CountStoploss(1);
    // условия открытия позиции на BUY на немедленное исполнение
-   if (  (pbiBuffer[0] == MOVE_TYPE_TREND_DOWN                       || 
-          pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN              ||
-          pbiBuffer[0] == MOVE_TYPE_CORRECTION_UP)                   ||     
-          use_limits   == false                                      ||
+   if (  (pbiBuffer[0] == MOVE_TYPE_TREND_UP           || 
+          pbiBuffer[0] == MOVE_TYPE_TREND_UP_FORBIDEN  ||
+          pbiBuffer[0] == MOVE_TYPE_CORRECTION_DOWN)   ||     
+          !use_limits                                  ||
          (flat_as_instant == true && pbiBuffer[0] == MOVE_TYPE_FLAT)
           )
    {
@@ -185,10 +185,10 @@ void OnTick()
    stopLoss = CountStoploss(-1);
    // условия открытия позиции на немедленное исполнение
    
-   if (  (pbiBuffer[0] == MOVE_TYPE_TREND_UP                         || 
-          pbiBuffer[0] == MOVE_TYPE_TREND_UP_FORBIDEN                ||
-          pbiBuffer[0] == MOVE_TYPE_CORRECTION_DOWN)                 ||     
-          use_limits   == false                                      ||
+   if (  (pbiBuffer[0] == MOVE_TYPE_TREND_DOWN          || 
+          pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN ||
+          pbiBuffer[0] == MOVE_TYPE_CORRECTION_UP)      ||     
+          !use_limits                                   ||
          (flat_as_instant == true && pbiBuffer[0] == MOVE_TYPE_FLAT)
           )
    {
