@@ -15,6 +15,7 @@
 
 #define ADD_TO_STOPPLOSS 50
 
+
 //+------------------------------------------------------------------+
 //| Эксперт, основанный на расхождении MACD                          |
 //+------------------------------------------------------------------+
@@ -127,13 +128,13 @@ void OnTick()
      return;
     }   
  
-   if ( signalBuffer[0] == _Buy)  // получили расхождение на покупку
+   if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
      { 
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
       stopLoss = CountStoploss(1);
       ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
      }
-   if ( signalBuffer[0] == _Sell) // получили расхождение на продажу
+   if ( signalBuffer[0] == SELL) // получили расхождение на продажу
      {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
       stopLoss = CountStoploss(-1);

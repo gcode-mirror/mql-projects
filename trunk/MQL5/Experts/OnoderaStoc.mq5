@@ -11,11 +11,10 @@
 #include <TradeManager\TradeManager.mqh>        // подключение торговой библиотеки
 #include <Lib CisNewBar.mqh>                    // для проверки формирования нового бара
 #include <CompareDoubles.mqh>                   // для проверки соотношения  цен
+#include <Constants.mqh>                        // библиотека констант
 
-#define ADD_TO_STOPPLOSS 0
-// константы сигналов
-#define BUY   1    
-#define SELL -1
+#define ADD_TO_STOPPLOSS 50
+
 //+------------------------------------------------------------------+
 //| Эксперт, основанный на расхождении Стохастика                    |
 //+------------------------------------------------------------------+
@@ -29,7 +28,11 @@ input  ENUM_USE_PENDING_ORDERS pending_orders_type = USE_NO_ORDERS;      // Тип 
 input  int    priceDifference                      = 50;                 // Price Difference
 input  int    lengthBetween2Div                    = 100;                // количество баров в истории для поиска последнего расхождения
 
-sinput string trailingStr                          = "";                 // ПАРАМЕТРЫ трейлинга
+sinput string order_params                         = "";                 // ПАРАМЕТРЫ ОРДЕРОВ
+input  bool   use_limits                           = true;               // использование limit-ордеров
+input  bool   flat_as_instant                      = false;              // открываться на FLAT по направлению расхождения
+
+sinput string trailingStr                          = "";                 // ПАРАМЕТРЫ ТРЕЙЛИНГА
 input         ENUM_TRAILING_TYPE trailingType      = TRAILING_TYPE_PBI;  // тип трейлинга
 input int     trStop                               = 100;                // Trailing Stop
 input int     trStep                               = 100;                // Trailing Step
@@ -143,8 +146,14 @@ void OnTick()
   if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
   { 
    stopLoss = CountStoploss(1);
-   // если тренд вниз
-   if (pbiBuffer[0] == MOVE_TYPE_TREND_DOWN || pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN)
+   // условия открытия позиции на немедленное исполнение
+   
+   if (  (pbiBuffer[0] == MOVE_TYPE_TREND_DOWN                      || 
+          pbiBuffer[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN             ||
+          pbiBuffer[0] == MOVE_TYPE_CORRECTION_UP)                  ||     
+          use_limits   == false                                     ||
+         (flat_as_instant == true && pbiBuffer[0] == MOVE_TYPE_FLAT)
+          )
    {
     // то мы просто открываемся на BUY немедленного исполнения
     ctm.OpenUniquePosition(symbol,period, OP_BUY, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);         
@@ -159,7 +168,7 @@ void OnTick()
      //  получаем текущую цену
      currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);           
      //  уровень лимит ордера
-     limitOrderLevel =  MathAbs((currentPrice-maxBetweenExtrs))/_Point;
+     limitOrderLevel =  int(MathAbs((currentPrice-maxBetweenExtrs))/_Point);
      // и открываем позицию лимит ордером на SELL
      ctm.OpenUniquePosition(symbol,period,OP_SELLLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
     }
@@ -169,7 +178,14 @@ void OnTick()
   if ( signalBuffer[0] == SELL) // получили расхождение на продажу
   {  
    stopLoss = CountStoploss(-1);
-   if (pbiBuffer[0] == MOVE_TYPE_TREND_UP || pbiBuffer[0] == MOVE_TYPE_TREND_UP_FORBIDEN)
+   // условия открытия позиции на немедленное исполнение
+   
+   if (  (pbiBuffer[0] == MOVE_TYPE_TREND_UP                         || 
+          pbiBuffer[0] == MOVE_TYPE_TREND_UP_FORBIDEN                ||
+          pbiBuffer[0] == MOVE_TYPE_CORRECTION_DOWN)                 ||     
+          use_limits   == false                                      ||
+         (flat_as_instant == true && pbiBuffer[0] == MOVE_TYPE_FLAT)
+          )
    {
     // то мы просто открываемся на SELL немедленного исполнения
     ctm.OpenUniquePosition(symbol,period, OP_SELL, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
@@ -184,7 +200,7 @@ void OnTick()
      //  получаем текущую цену
      currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);            
      //  уровень лимит ордера
-     limitOrderLevel =  MathAbs(currentPrice-minBetweenExtrs)/_Point;
+     limitOrderLevel =  int(MathAbs(currentPrice-minBetweenExtrs)/_Point);
      // и открываем позицию лимит ордером на BUY
      ctm.OpenUniquePosition(symbol,period,OP_BUYLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
     }        
