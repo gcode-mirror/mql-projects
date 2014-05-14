@@ -48,7 +48,7 @@ void OnStart()
  double buffer_PBI_D1 [];
  double buffer_PBI_W1 [];
  double buffer_PBI_MN1[];
- datetime 
+ datetime time[];
  
  int size1 = CopyBuffer(handle_PBI_M15, 4, 0, size_M15, buffer_PBI_M15);
  int size2 = CopyBuffer(handle_PBI_H1 , 4, 0, size_H1 , buffer_PBI_H1 );
@@ -56,6 +56,7 @@ void OnStart()
  int size4 = CopyBuffer(handle_PBI_D1 , 4, 0, size_D1 , buffer_PBI_D1 );
  int size5 = CopyBuffer(handle_PBI_W1 , 4, 0, size_W1 , buffer_PBI_W1 );
  int size6 = CopyBuffer(handle_PBI_MN1, 4, 0, size_MN1, buffer_PBI_MN1);
+ int size7 = CopyTime(Symbol(), PERIOD_M15, 0, size_M15, time);
  
  PrintFormat("Gutten tag %d/%d/%d/%d/%d/%d", size1, size2, size3, size4, size5, size6);    
 /*
@@ -71,5 +72,12 @@ void OnStart()
   
  //}
  
+ ArrayFree(buffer_PBI_M15);
+ ArrayFree(buffer_PBI_H1);
+ ArrayFree(buffer_PBI_H4);
+ ArrayFree(buffer_PBI_D1);
+ ArrayFree(buffer_PBI_W1);
+ ArrayFree(buffer_PBI_MN1);
+ ArrayFree(time);
 }
 //+------------------------------------------------------------------+
