@@ -40,7 +40,7 @@ class CExtremumCalc
  CExtremumCalc(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES period_ATR, double percentageATR_price, int ATRperiod_channel, double percentageATR_channel);
 ~CExtremumCalc();
 
- SExtremum isExtremum(bool now = true, datetime start_index_time = __DATETIME__);
+ bool isExtremum(SExtremum& extr_array[], bool now = true, datetime start_index_time = __DATETIME__);
  void RecountExtremum(bool now = true, datetime start_index_time = __DATETIME__);
  SExtremum getExtr(int i);
  ENUM_TIMEFRAMES getPeriod() { return(_period); } 
@@ -71,9 +71,10 @@ CExtremumCalc::~CExtremumCalc()
 
 //-----------------------------------------------------------------
 
-SExtremum CExtremumCalc::isExtremum(bool now = true, datetime start_pos_time = __DATETIME__)
+bool CExtremumCalc::isExtremum(SExtremum& extr_array [], bool now = true, datetime start_pos_time = __DATETIME__)
 {
- SExtremum result = {0, -1, -1};
+ SExtremum result1 = {0, -1, -1};
+ SExtremum result2 = {0, -1, -1};
  if(_startDayPrice == -1) { Alert(StringFormat("Вы забыли установить startDayPrice на %s таймфрейме!", EnumToString((ENUM_TIMEFRAMES)_period))); }
  MqlRates buffer[1];
  double ATR_channel[1];
@@ -82,6 +83,7 @@ SExtremum CExtremumCalc::isExtremum(bool now = true, datetime start_pos_time = _
  
  if(CopyRates(_symbol, _period, start_pos_time, 1, buffer) < 1)
   PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_period), GetLastError(), Bars(_symbol, _period), TimeToString(start_pos_time));
+ //if(now) PrintFormat("Загружен бар %s", TimeToString(buffer[0].time));
   //return(result);
  if(CopyBuffer(handleATR_channel, 0, start_pos_time, 1, ATR_channel) < 1)
   PrintFormat("%s ATR channel: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_period),GetLastError(), BarsCalculated(handleATR_channel), TimeToString(start_pos_time));
@@ -107,44 +109,55 @@ SExtremum CExtremumCalc::isExtremum(bool now = true, datetime start_pos_time = _
    ||(num0.direction >  0 && (GreatDoubles(high, num0.price, digits)))
    ||(num0.direction <  0 && (GreatDoubles(high, num0.price + difToNewExtremum, digits))))
  {
-  result.direction = 1;
-  result.price = high;
-  result.channel = (ATR_channel[0]*_percentageATR_channel)/2;
-  //PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, max %s %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), high);
+  result1.direction = 1;
+  result1.price = high;
+  result1.channel = (ATR_channel[0]*_percentageATR_channel)/2;
+  PrintFormat("%s %s start_pos_time = %s; max %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_period), TimeToString(start_pos_time), high);
  }
  
  if ((num0.direction == 0 && (LessDoubles(low, _startDayPrice - 2*difToNewExtremum, digits))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
    ||(num0.direction <  0 && (LessDoubles(low, num0.price, digits)))
    ||(num0.direction >  0 && (LessDoubles(low, num0.price - difToNewExtremum, digits))))
  {
-  result.direction = -1;
-  result.price = low;
-  result.channel = (ATR_channel[0]*_percentageATR_channel)/2;
-  //PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, min %s  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), low);
+  result2.direction = -1;
+  result2.price = low;
+  result2.channel = (ATR_channel[0]*_percentageATR_channel)/2;
+  PrintFormat("%s %s start_pos_time = %s; min  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), TimeToString(start_pos_time), low);
  }
  
- //PrintFormat("%s %s startday price = %0.5f; difToNewExtremum = %0.5f, %s  %0.5f %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), _startDayPrice, difToNewExtremum, TimeToString(start_pos_time), low, high);
- return(result);
+ extr_array[0] = result1;
+ extr_array[1] = result2;
+  
+ if(result1.price != 0 || result2.price != 0) return(true);
+ return(false);
 }
 
 
 void CExtremumCalc::RecountExtremum(bool now = true, datetime start_index_time = __DATETIME__)
 {
- SExtremum current_bar = {0, -1};
- current_bar = isExtremum(now, start_index_time); 
- if (current_bar.direction != 0)
+ SExtremum new_extr[2] = {{0, -1, -1}, {0, -1, -1}};
+ SExtremum current_bar = {0, -1, -1};
+ 
+ if(isExtremum(new_extr, now, start_index_time))
  {
-  if (current_bar.direction == num0.direction) // если новый экстремум в том же напрвлении, что старый
+  for(int i = 0; i < 2; i++)
   {
-   num0.price = current_bar.price;
+   current_bar = new_extr[i];
+   if (current_bar.direction != 0)
+   {
+    if (current_bar.direction == num0.direction) // если новый экстремум в том же напрвлении, что старый
+    {
+     num0.price = current_bar.price;
+    }
+    else
+    {
+     num3 = num2;
+     num2 = num1;
+     num1 = num0;
+     num0 = current_bar;
+    }       
+   }
   }
-  else
-  {
-   num3 = num2;
-   num2 = num1;
-   num1 = num0;
-   num0 = current_bar;
-  }       
  }
 }
 
