@@ -9,7 +9,7 @@
 
 #include <ExtrLine\CExtremumCalc_NE.mqh>
 #include <ExtrLine\HLine.mqh>
-#include <Lib CisNewBar.mqh>
+#include <Lib CisNewBarDD.mqh>
 
 input int    period_ATR_channel = 30;    // Период ATR для канала
 input double percent_ATR_channel = 0.1;  // Ширина канала уровня в процентах от ATR
@@ -18,8 +18,8 @@ input ENUM_TIMEFRAMES period = PERIOD_H1;
 input ENUM_TIMEFRAMES period_ATR = PERIOD_H1;
 
 #property indicator_chart_window
-#property indicator_buffers 6
-#property indicator_plots   6
+#property indicator_buffers 8
+#property indicator_plots   8
 //--- plot MainLine
 #property indicator_label1  "MainLine"
 #property indicator_type1   DRAW_LINE
@@ -56,16 +56,30 @@ input ENUM_TIMEFRAMES period_ATR = PERIOD_H1;
 #property indicator_color6  clrBlueViolet
 #property indicator_style6  STYLE_SOLID
 #property indicator_width6  1
+//--- plot MainLine4
+#property indicator_label5  "MainLine4"
+#property indicator_type5   DRAW_LINE
+#property indicator_color5  clrBrown
+#property indicator_style5  STYLE_SOLID
+#property indicator_width5  1
+//--- plot DifLine4
+#property indicator_label6  "DifLine4"
+#property indicator_type6   DRAW_LINE
+#property indicator_color6  clrBrown
+#property indicator_style6  STYLE_SOLID
+#property indicator_width6  1
 //--- indicator buffers
-double         MainLineBuffer[];
-double         DifLineBuffer[];
-double         MainLine2Buffer[];
-double         DifLine2Buffer[];
-double         MainLine3Buffer[];
-double         DifLine3Buffer[];
+double MainLineBuffer[];
+double DifLineBuffer[];
+double MainLine2Buffer[];
+double DifLine2Buffer[];
+double MainLine3Buffer[];
+double DifLine3Buffer[];
+double MainLine4Buffer[];
+double DifLine4Buffer[];
 
 CExtremumCalc extrCalc (Symbol(), period, period_ATR, precentageATR_price, period_ATR_channel, percent_ATR_channel);
-SExtremum sExtr[3];
+SExtremum sExtr[4];
 CisNewBar isNewLevelBar (Symbol(), period);
 bool first = true;
  bool series_order = true;
@@ -81,6 +95,8 @@ int OnInit()
    SetIndexBuffer(3,DifLine2Buffer,INDICATOR_DATA);
    SetIndexBuffer(4,MainLine3Buffer,INDICATOR_DATA);
    SetIndexBuffer(5,DifLine3Buffer,INDICATOR_DATA);
+   SetIndexBuffer(6,MainLine4Buffer,INDICATOR_DATA);
+   SetIndexBuffer(7,DifLine4Buffer,INDICATOR_DATA);
    
    ArrayInitialize(MainLineBuffer , 0);
    ArrayInitialize(DifLineBuffer  , 0);
@@ -88,6 +104,8 @@ int OnInit()
    ArrayInitialize(DifLine2Buffer , 0);
    ArrayInitialize(MainLine3Buffer, 0);
    ArrayInitialize(DifLine3Buffer , 0);
+   ArrayInitialize(MainLine4Buffer, 0);
+   ArrayInitialize(DifLine4Buffer , 0);
 
    ArraySetAsSeries(MainLineBuffer , series_order);
    ArraySetAsSeries(DifLineBuffer  , series_order);
@@ -95,6 +113,8 @@ int OnInit()
    ArraySetAsSeries(DifLine2Buffer , series_order);
    ArraySetAsSeries(MainLine3Buffer, series_order);
    ArraySetAsSeries(DifLine3Buffer , series_order);
+   ArraySetAsSeries(MainLine4Buffer, series_order);
+   ArraySetAsSeries(DifLine4Buffer , series_order);
       
    InitializeExtrArray(sExtr);
    //CreateExtrLines(sExtr, period , Red);
@@ -108,9 +128,12 @@ void OnDeinit(const int reason)
  ArrayFree(MainLineBuffer);
  ArrayFree(MainLine2Buffer);
  ArrayFree(MainLine3Buffer);
+ ArrayFree(MainLine4Buffer);
  ArrayFree(DifLineBuffer);
  ArrayFree(DifLine2Buffer);
  ArrayFree(DifLine3Buffer);
+ ArrayFree(DifLine4Buffer);
+
   
  //DeleteExtrLines (period);
 }
@@ -144,10 +167,10 @@ int OnCalculate(const int rates_total,
      
      for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
-      PrintFormat("time = %s; %d / %d = %d", TimeToString(time[i]), time[i], PeriodSeconds(period), time[i] % PeriodSeconds(period));
+      //PrintFormat("time = %s; %d / %d = %d", TimeToString(time[i]), time[i], PeriodSeconds(period), time[i] % PeriodSeconds(period));
       while(!FillATRBuffer()) {}
       //PrintFormat("time calc = %s", TimeToString(time[i]));
-      if(period == Period() || time[i] % PeriodSeconds(period) == 0) 
+      if(isNewLevelBar.isNewBar(time[i]))
       {
        PrintFormat("Сейчас я тебе все посчитаю, не ссы!");
        CalcExtr(extrCalc, sExtr, time[i], false);
@@ -158,10 +181,12 @@ int OnCalculate(const int rates_total,
       DifLine2Buffer[i]  = sExtr[1].channel;
       MainLine3Buffer[i] = sExtr[2].price;
       DifLine3Buffer[i]  = sExtr[2].channel;
+      MainLine4Buffer[i] = sExtr[3].price;
+      DifLine4Buffer[i]  = sExtr[3].channel;
       PrintExtrArray(sExtr, period);      
      }
      
-     PrintFormat("%s num0 = {%.05f, %.05f}, num1 = {%.05f, %.05f}, num2 = {%.05f, %.05f}", TimeToString(time[0]), sExtr[0].price, sExtr[0].channel, sExtr[1].price, sExtr[1].channel,sExtr[2].price, sExtr[2].channel);
+     //PrintFormat("%s num0 = {%.05f, %.05f}, num1 = {%.05f, %.05f}, num2 = {%.05f, %.05f}", TimeToString(time[0]), sExtr[0].price, sExtr[0].channel, sExtr[1].price, sExtr[1].channel,sExtr[2].price, sExtr[2].channel);
      //MoveExtrLines(sExtr, period);
      PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
      first = false; 
@@ -180,11 +205,13 @@ int OnCalculate(const int rates_total,
      // } 
             
       MainLineBuffer[0]  = sExtr[0].price;
-      DifLineBuffer[0]   = sExtr[0].channel;
+      DifLineBuffer [0]  = sExtr[0].channel;
       MainLine2Buffer[0] = sExtr[1].price;
-      DifLine2Buffer[0]  = sExtr[1].channel;
+      DifLine2Buffer [0] = sExtr[1].channel;
       MainLine3Buffer[0] = sExtr[2].price;
-      DifLine3Buffer[0]  = sExtr[2].channel;  
+      DifLine3Buffer [0] = sExtr[2].channel;
+      MainLine4Buffer[0] = sExtr[3].price;
+      DifLine4Buffer [0] = sExtr[3].channel;  
      //}
      //MoveExtrLines(sExtr, period);
     }
@@ -220,6 +247,9 @@ void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
  HLineCreate(0, name+"three" , 0, te[2].price              , clrBlueViolet, 1, STYLE_DASHDOT);
  HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clrBlueViolet, 2);
  HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clrBlueViolet, 2);
+ HLineCreate(0, name+"four"  , 0, te[3].price              , clrBlueViolet, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"four+" , 0, te[3].price+te[3].channel, clrBlueViolet, 2);
+ HLineCreate(0, name+"four-" , 0, te[3].price-te[3].channel, clrBlueViolet, 2);
 }
 
 //---------------------------------------------
@@ -237,6 +267,9 @@ void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
  HLineMove(0, name+"three" , te[2].price);
  HLineMove(0, name+"three+", te[2].price+te[2].channel);
  HLineMove(0, name+"three-", te[2].price-te[2].channel);
+ HLineMove(0, name+"four"  , te[3].price);
+ HLineMove(0, name+"four+" , te[3].price+te[3].channel);
+ HLineMove(0, name+"four-" , te[3].price-te[3].channel);
 }
 
 //---------------------------------------------
@@ -254,6 +287,9 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"three");
  HLineDelete(0, name+"three+");
  HLineDelete(0, name+"three-");
+ HLineDelete(0, name+"four");
+ HLineDelete(0, name+"four+");
+ HLineDelete(0, name+"four-");
 }
 
 //---------------------------------------------
@@ -262,7 +298,7 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
 void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos_time, bool now = false)
 {
  extrcalc.RecountExtremum(now, start_pos_time);
- for(int j = 0; j < 3; j++)
+ for(int j = 0; j < 4; j++)
  {
   resArray[j] = extrcalc.getExtr(j);
  }
@@ -279,8 +315,9 @@ bool FillATRBuffer()
 
 void PrintExtrArray(SExtremum &te[], ENUM_TIMEFRAMES tf)
 {
- PrintFormat("%s {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f};", EnumToString((ENUM_TIMEFRAMES)tf),
-                                                                               te[0].price, te[0].direction, te[0].channel,
-                                                                               te[1].price, te[1].direction, te[1].channel,
-                                                                               te[2].price, te[2].direction, te[2].channel);
+ PrintFormat("%s {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f};", EnumToString((ENUM_TIMEFRAMES)tf),
+                                                                                                   te[0].price, te[0].direction, te[0].channel,
+                                                                                                   te[1].price, te[1].direction, te[1].channel,
+                                                                                                   te[2].price, te[2].direction, te[2].channel,
+                                                                                                   te[3].price, te[3].direction, te[3].channel);
 }
