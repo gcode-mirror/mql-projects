@@ -11,32 +11,19 @@
 #include <TradeManager\TradeManager.mqh>        // подключение торговой библиотеки
 #include <Lib CisNewBar.mqh>                    // для проверки формирования нового бара
 #include <CompareDoubles.mqh>                   // для проверки соотношения  цен
-#include <Constants.mqh>                        // библиотека констант
 
 #define ADD_TO_STOPPLOSS 50
-
+// константы сигналов
+#define BUY   1    
+#define SELL -1
 //+------------------------------------------------------------------+
 //| Эксперт, основанный на расхождении Стохастика                    |
 //+------------------------------------------------------------------+
 
 // входные параметры
-sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
-input  int    StopLoss                             = 0;                  // Стоп Лосс
-input  int    TakeProfit                           = 0;                  // Тейк Профит
-input  double Lot                                  = 1;                  // Лот
-input  ENUM_USE_PENDING_ORDERS pending_orders_type = USE_NO_ORDERS;      // Тип отложенного ордера                    
-input  int    priceDifference                      = 50;                 // Price Difference
-input  int    lengthBetween2Div                    = 100;                // количество баров в истории для поиска последнего расхождения
-
 sinput string order_params                         = "";                 // ПАРАМЕТРЫ ОРДЕРОВ
 input  bool   use_limits                           = true;               // использование limit-ордеров
 input  bool   flat_as_instant                      = false;              // открываться на FLAT по направлению расхождения
-
-sinput string trailingStr                          = "";                 // ПАРАМЕТРЫ ТРЕЙЛИНГА
-input         ENUM_TRAILING_TYPE trailingType      = TRAILING_TYPE_PBI;  // тип трейлинга
-input int     trStop                               = 100;                // Trailing Stop
-input int     trStep                               = 100;                // Trailing Step
-input int     minProfit                            = 250;                // минимальная прибыль
 
 sinput string pbi_Str                              = "";                 // ПАРАМЕТРЫ PBI
 input double  percentage_ATR_cur                   = 2;   
@@ -52,17 +39,19 @@ int handleSmydSTOC;                                                      // хэнд
 int handlePBIcur;                                                        // хэндл PriceBasedIndicator
 
 // переменные эксперта
-double currentPrice;                                                     // текущая цена
-string symbol;                                                           // текущий символ
-ENUM_TIMEFRAMES period;                                                  // текущий период
-int historyDepth;                                                        // глубина истории
+double currentPrice;        // текущая цена
+string symbol;              // текущий символ
+ENUM_TIMEFRAMES period;     // текущий период
+int historyDepth;           // глубина истории
+int priceDifference;        // Price Difference
+ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;  // тип трейлинга
+double lot;                  // Лот
 
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
 double extrLeftTime[];                                                   // буфер для хранения времени левых экстремумов
 double extrRightTime[];                                                  // буфер для хранения времени правых экстремумов
 double pbiBuffer[];                                                      // буфер для хранения индикатора PriceBasedIndicator
 
-int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
 int    copiedSmydSTOC;                                                   // переменная для проверки копирования буфера сигналов расхождения
 int    copiedLeftExtr;                                                   // переменная для проверки копирования буфера левых экстремумов
 int    copiedRightExtr;                                                  // переменная для проверки копирования буфера правых экстремумов
@@ -73,14 +62,17 @@ double minBetweenExtrs;
 double maxBetweenExtrs;
 
 // переменные для хранения значений тейк профита и уровня лимит ордеров  
-int    takeProfit;
-int    limitOrderLevel;
+int    stopLoss;           // переменная для хранения стоп лосса
+int    takeProfit;         // переменная для хранения тейк профита
+int    limitOrderLevel;    // переменная для хранения уровня отложенного ордера
 
 int OnInit()
 {
  symbol = Symbol();
  period = Period();
+ lot = 1;
  
+ trailingType = TRAILING_TYPE_PBI;  // тип трейлинга
  historyDepth = 1000;
  // выделяем память под объект тороговой библиотеки
  isNewBar = new CisNewBar(symbol, period);
@@ -150,10 +142,10 @@ void OnTick()
           pbiBuffer[0] == MOVE_TYPE_CORRECTION_DOWN)   ||     
           !use_limits                                  ||
          (flat_as_instant  && pbiBuffer[0] == MOVE_TYPE_FLAT)
-          )
+      )
    {
     // то мы просто открываемся на BUY немедленного исполнения
-    ctm.OpenUniquePosition(symbol,period, OP_BUY, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);         
+    ctm.OpenUniquePosition(symbol,period, OP_BUY, lot, stopLoss, takeProfit, trailingType, 0, 0, 0, handlePBIcur, priceDifference);         
    }
    else
    {
@@ -169,11 +161,11 @@ void OnTick()
      // и открываем позицию лимит ордером на SELL
      if (limitOrderLevel <= SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL))
      {
-      ctm.OpenUniquePosition(symbol,period, OP_BUY, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);         
+      ctm.OpenUniquePosition(symbol,period, OP_BUY, lot, stopLoss, takeProfit, trailingType, 0, 0, 0, handlePBIcur, priceDifference);         
      }
      else
      { 
-      ctm.OpenUniquePosition(symbol,period,OP_SELLLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
+      ctm.OpenUniquePosition(symbol,period,OP_SELLLIMIT,lot,stopLoss,takeProfit, trailingType, 0, 0, 0, handlePBIcur, limitOrderLevel);
      }
     }
    }
@@ -190,10 +182,10 @@ void OnTick()
           pbiBuffer[0] == MOVE_TYPE_CORRECTION_UP)      ||     
           !use_limits                                   ||
          (flat_as_instant && pbiBuffer[0] == MOVE_TYPE_FLAT)
-          )
+      )
    {
     // то мы просто открываемся на SELL немедленного исполнения
-    ctm.OpenUniquePosition(symbol,period, OP_SELL, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+    ctm.OpenUniquePosition(symbol,period, OP_SELL, lot, stopLoss, takeProfit, trailingType, 0, 0, 0, handlePBIcur, priceDifference);        
    }
    else
    {
@@ -209,11 +201,11 @@ void OnTick()
      // и открываем позицию лимит ордером на BUY
      if (limitOrderLevel <= SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL))
      {
-      ctm.OpenUniquePosition(symbol,period, OP_SELL, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, priceDifference);        
+      ctm.OpenUniquePosition(symbol,period, OP_SELL, lot, stopLoss, takeProfit, trailingType, 0, 0, 0, handlePBIcur, priceDifference);        
      }
      else
      {
-      ctm.OpenUniquePosition(symbol,period,OP_BUYLIMIT,Lot,stopLoss,takeProfit, trailingType, minProfit, trStop, trStep, handlePBIcur, limitOrderLevel);
+      ctm.OpenUniquePosition(symbol,period,OP_BUYLIMIT,lot,stopLoss,takeProfit, trailingType, 0, 0, 0, handlePBIcur, limitOrderLevel);
      }
     }        
    }
