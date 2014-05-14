@@ -403,12 +403,37 @@ int OnCalculate(const int rates_total,
      {
       while(!FillATRBuffer()) {}
 
-      if(show_Extr_MN  && isNewBarMN.isNewBar(time[i]) > 0) CalcExtr(calcMN, estructMN, time[i], false); 
-      if(show_Extr_W1  && isNewBarW1.isNewBar(time[i]) > 0) CalcExtr(calcW1, estructW1, time[i], false); 
-      if(show_Extr_D1  && isNewBarD1.isNewBar(time[i]) > 0) CalcExtr(calcD1, estructD1, time[i], false);
-      if(show_Extr_H4  && isNewBarH4.isNewBar(time[i]) > 0) CalcExtr(calcH4, estructH4, time[i], false);
-      if(show_Extr_H1  && isNewBarH1.isNewBar(time[i]) > 0) CalcExtr(calcH1, estructH1, time[i], false);
-      if(show_Price_D1 && isNewBarD1.isNewBar(time[i]) > 0) CalcPrice(pstructD1, PERIOD_D1, time[i]);
+      if(show_Extr_MN  && isNewBarMN.isNewBar(time[i]) > 0) 
+      {
+       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_MN1", __FUNCTION__, TimeToString(time[i]));
+       CalcExtr(calcMN, estructMN, time[i], false);
+      } 
+      if(show_Extr_W1  && isNewBarW1.isNewBar(time[i]) > 0) 
+      {
+       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_W1", __FUNCTION__, TimeToString(time[i]));
+       CalcExtr(calcW1, estructW1, time[i], false);
+      }
+      if(show_Extr_D1  && isNewBarD1.isNewBar(time[i]) > 0) 
+      {
+       PrintFormat("---------------------------------------------------------------------------------------");
+       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_D1", __FUNCTION__, TimeToString(time[i]));
+       CalcExtr(calcD1, estructD1, time[i], false);
+       PrintFormat("---------------------------------------------------------------------------------------");
+      }
+      if(show_Extr_H4  && isNewBarH4.isNewBar(time[i]) > 0) 
+      {
+       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_H4", __FUNCTION__, TimeToString(time[i]));
+       CalcExtr(calcH4, estructH4, time[i], false);
+      }
+      if(show_Extr_H1  && isNewBarH1.isNewBar(time[i]) > 0) 
+      {
+       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_D1", __FUNCTION__, TimeToString(time[i]));
+       CalcExtr(calcH1, estructH1, time[i], false);
+      }
+      if(show_Price_D1 && isNewBarD1.isNewBar(time[i]) > 0) 
+      {
+       CalcPrice(pstructD1, PERIOD_D1, time[i]);
+      }
            
       if(show_Extr_MN)
       {
@@ -553,12 +578,12 @@ int OnCalculate(const int rates_total,
      }
      
      while(!FillATRBuffer()) {} 
-     CalcExtr(calcMN, estructMN, time[0], true); 
-     CalcExtr(calcW1, estructW1, time[0], true);  
-     CalcExtr(calcD1, estructD1, time[0], true);
-     CalcPrice(pstructD1, PERIOD_D1, time[0]);
-     CalcExtr(calcH4, estructH4, time[0], true);
-     CalcExtr(calcH1, estructH1, time[0], true);
+     if(show_Extr_MN) CalcExtr(calcMN, estructMN, time[0], true); 
+     if(show_Extr_W1) CalcExtr(calcW1, estructW1, time[0], true);  
+     if(show_Extr_D1) CalcExtr(calcD1, estructD1, time[0], true);    
+     if(show_Extr_H4) CalcExtr(calcH4, estructH4, time[0], true);
+     if(show_Extr_H1) CalcExtr(calcH1, estructH1, time[0], true);
+     if(show_Price_D1)CalcPrice(pstructD1, PERIOD_D1, time[0]);
       
      if(show_Extr_MN) MoveExtrLines (estructMN, PERIOD_MN1);
      if(show_Extr_W1) MoveExtrLines (estructW1, PERIOD_W1 ); 
@@ -609,7 +634,7 @@ void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos
  {
   resArray[j] = extrcalc.getExtr(j);
  }
- //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
+ PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f}; num3: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price, resArray[3].direction, resArray[3].price);
 }
 
 void CalcPrice(SExtremum &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
