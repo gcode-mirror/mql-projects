@@ -405,29 +405,29 @@ int OnCalculate(const int rates_total,
 
       if(show_Extr_MN  && isNewBarMN.isNewBar(time[i]) > 0) 
       {
-       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_MN1", __FUNCTION__, TimeToString(time[i]));
+       //PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_MN1", __FUNCTION__, TimeToString(time[i]));
        CalcExtr(calcMN, estructMN, time[i], false);
       } 
       if(show_Extr_W1  && isNewBarW1.isNewBar(time[i]) > 0) 
       {
-       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_W1", __FUNCTION__, TimeToString(time[i]));
+       //PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_W1", __FUNCTION__, TimeToString(time[i]));
        CalcExtr(calcW1, estructW1, time[i], false);
       }
       if(show_Extr_D1  && isNewBarD1.isNewBar(time[i]) > 0) 
       {
-       PrintFormat("---------------------------------------------------------------------------------------");
-       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_D1", __FUNCTION__, TimeToString(time[i]));
+       //PrintFormat("---------------------------------------------------------------------------------------");
+       //PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_D1", __FUNCTION__, TimeToString(time[i]));
        CalcExtr(calcD1, estructD1, time[i], false);
-       PrintFormat("---------------------------------------------------------------------------------------");
+       //PrintFormat("---------------------------------------------------------------------------------------");
       }
       if(show_Extr_H4  && isNewBarH4.isNewBar(time[i]) > 0) 
       {
-       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_H4", __FUNCTION__, TimeToString(time[i]));
+       //PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_H4", __FUNCTION__, TimeToString(time[i]));
        CalcExtr(calcH4, estructH4, time[i], false);
       }
       if(show_Extr_H1  && isNewBarH1.isNewBar(time[i]) > 0) 
       {
-       PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_D1", __FUNCTION__, TimeToString(time[i]));
+       //PrintFormat("%s IT'S TIME(%s) FOR SOME CALCULATING FOR PERIOD_D1", __FUNCTION__, TimeToString(time[i]));
        CalcExtr(calcH1, estructH1, time[i], false);
       }
       if(show_Price_D1 && isNewBarD1.isNewBar(time[i]) > 0) 
@@ -634,7 +634,7 @@ void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos
  {
   resArray[j] = extrcalc.getExtr(j);
  }
- PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f}; num3: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price, resArray[3].direction, resArray[3].price);
+ //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f}; num3: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price, resArray[3].direction, resArray[3].price);
 }
 
 void CalcPrice(SExtremum &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)

@@ -112,7 +112,7 @@ bool CExtremumCalc::isExtremum(SExtremum& extr_array [], bool now = true, dateti
   result1.direction = 1;
   result1.price = high;
   result1.channel = (ATR_channel[0]*_percentageATR_channel)/2;
-  PrintFormat("%s %s start_pos_time = %s; max %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_period), TimeToString(start_pos_time), high);
+  //PrintFormat("%s %s start_pos_time = %s; max %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_period), TimeToString(start_pos_time), high);
  }
  
  if ((num0.direction == 0 && (LessDoubles(low, _startDayPrice - 2*difToNewExtremum, digits))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
@@ -122,7 +122,7 @@ bool CExtremumCalc::isExtremum(SExtremum& extr_array [], bool now = true, dateti
   result2.direction = -1;
   result2.price = low;
   result2.channel = (ATR_channel[0]*_percentageATR_channel)/2;
-  PrintFormat("%s %s start_pos_time = %s; min  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), TimeToString(start_pos_time), low);
+  //PrintFormat("%s %s start_pos_time = %s; min  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), TimeToString(start_pos_time), low);
  }
  
  extr_array[0] = result1;
