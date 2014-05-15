@@ -8,7 +8,7 @@
 #property version   "1.00"
 
 #include <ExtrLine\CExtremumCalc_NE.mqh>
-#include <ExtrLine\HLine.mqh>
+//#include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBarDD.mqh>
 
 input int    period_ATR_channel = 30;    // Период ATR для канала
@@ -235,6 +235,7 @@ void InitializeExtrArray (SExtremum &te[])
 //---------------------------------------------
 // Создание линий
 //---------------------------------------------
+/*
 void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
@@ -291,13 +292,13 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"four+");
  HLineDelete(0, name+"four-");
 }
-
+*/
 //---------------------------------------------
 // Пересчет экстремумов для заданного ТФ
 //---------------------------------------------
 void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos_time, bool now = false)
 {
- extrcalc.RecountExtremum(now, start_pos_time);
+ extrcalc.RecountExtremum(start_pos_time, now);
  for(int j = 0; j < 4; j++)
  {
   resArray[j] = extrcalc.getExtr(j);
