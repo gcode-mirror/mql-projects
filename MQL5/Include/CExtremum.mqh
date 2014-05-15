@@ -31,7 +31,7 @@ class CExtremum
 ~CExtremum();
 
  int isExtremum(SExtremum& extr_array[], double difToNewExtremum, datetime start_index_time = __DATETIME__,  bool now = true);
- int RecountExtremum(datetime start_index_time = __DATETIME__, bool now = true);
+ int RecountExtremum(double difToNewExtremum, datetime start_index_time = __DATETIME__, bool now = true);
  SExtremum getExtr(int i);
  ENUM_TIMEFRAMES getPeriod() { return(_period); }
  void SetPeriod(ENUM_TIMEFRAMES tf) { _period = tf; }
@@ -113,10 +113,10 @@ int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, dat
 }
 
 
-int CExtremum::RecountExtremum(datetime start_index_time = __DATETIME__, bool now = true)
+int CExtremum::RecountExtremum(double difToNewExtremum, datetime start_index_time = __DATETIME__, bool now = true)
 {
  SExtremum new_extr[2] = {{0, -1}, {0, -1}};
- int count_new_extrs = isExtremum(new_extr, now, start_index_time);
+ int count_new_extrs = isExtremum(new_extr, difToNewExtremum, start_index_time, now);
  if(count_new_extrs > 0)
  {
   for(int i = 0; i < 2; i++)
