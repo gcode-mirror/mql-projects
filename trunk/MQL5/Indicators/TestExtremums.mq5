@@ -7,8 +7,8 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
-#include <ExtrLine\CExtremumCalc_NE.mqh>
-//#include <ExtrLine\HLine.mqh>
+#include <ExtrLine\CLevel.mqh>
+#include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBarDD.mqh>
 
 input int    period_ATR_channel = 30;    // Период ATR для канала
@@ -59,15 +59,15 @@ input ENUM_TIMEFRAMES period_ATR = PERIOD_H1;
 //--- plot MainLine4
 #property indicator_label5  "MainLine4"
 #property indicator_type5   DRAW_LINE
-#property indicator_color5  clrBrown
+#property indicator_color5  clrGreenYellow
 #property indicator_style5  STYLE_SOLID
 #property indicator_width5  1
 //--- plot DifLine4
 #property indicator_label6  "DifLine4"
 #property indicator_type6   DRAW_LINE
-#property indicator_color6  clrBrown
+#property indicator_color6  clrGreenYellow
 #property indicator_style6  STYLE_SOLID
-#property indicator_width6  1
+#property indicator_width6  1  
 //--- indicator buffers
 double MainLineBuffer[];
 double DifLineBuffer[];
@@ -78,8 +78,8 @@ double DifLine3Buffer[];
 double MainLine4Buffer[];
 double DifLine4Buffer[];
 
-CExtremumCalc extrCalc (Symbol(), period, period_ATR, precentageATR_price, period_ATR_channel, percent_ATR_channel);
-SExtremum sExtr[4];
+CLevel extrCalc (Symbol(), period, period_ATR, precentageATR_price, period_ATR_channel, percent_ATR_channel);
+SLevel sExtr[4];
 CisNewBar isNewLevelBar (Symbol(), period);
 bool first = true;
  bool series_order = true;
@@ -117,7 +117,7 @@ int OnInit()
    ArraySetAsSeries(DifLine4Buffer , series_order);
       
    InitializeExtrArray(sExtr);
-   //CreateExtrLines(sExtr, period , Red);
+   CreateExtrLines(sExtr, period , Red);
    
 //---
    return(INIT_SUCCEEDED);
@@ -135,7 +135,7 @@ void OnDeinit(const int reason)
  ArrayFree(DifLine4Buffer);
 
   
- //DeleteExtrLines (period);
+ DeleteExtrLines (period);
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -151,7 +151,7 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
-   bool load = FillATRBuffer();
+   bool load = true;//FillATRBuffer();
    ArraySetAsSeries(open , series_order);
    ArraySetAsSeries(high , series_order);
    ArraySetAsSeries(low  , series_order);
@@ -162,32 +162,32 @@ int OnCalculate(const int rates_total,
    {
     if(first)
     {          
-     extrCalc.SetStartDayPrice(close[rates_total-1]);
+     //extrCalc.SetStartDayPrice(close[rates_total-1]);
      PrintFormat("Установлены стартдэйпрайс на всех тф");
      
      for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
       //PrintFormat("time = %s; %d / %d = %d", TimeToString(time[i]), time[i], PeriodSeconds(period), time[i] % PeriodSeconds(period));
-      while(!FillATRBuffer()) {}
+      //while(!FillATRBuffer()) {}
       //PrintFormat("time calc = %s", TimeToString(time[i]));
       if(isNewLevelBar.isNewBar(time[i]))
       {
-       PrintFormat("Сейчас я тебе все посчитаю, не ссы!");
+       PrintFormat("%s Сейчас я тебе все посчитаю, не ссы! %s", __FUNCTION__, TimeToString(time[i]));
        CalcExtr(extrCalc, sExtr, time[i], false);
       }
-      MainLineBuffer[i]  = sExtr[0].price;
+      /*MainLineBuffer[i]  = sExtr[0].extr.price;
       DifLineBuffer[i]   = sExtr[0].channel;
-      MainLine2Buffer[i] = sExtr[1].price;
+      MainLine2Buffer[i] = sExtr[1].extr.price;
       DifLine2Buffer[i]  = sExtr[1].channel;
-      MainLine3Buffer[i] = sExtr[2].price;
+      MainLine3Buffer[i] = sExtr[2].extr.price;
       DifLine3Buffer[i]  = sExtr[2].channel;
-      MainLine4Buffer[i] = sExtr[3].price;
+      MainLine4Buffer[i] = sExtr[3].extr.price;
       DifLine4Buffer[i]  = sExtr[3].channel;
-      PrintExtrArray(sExtr, period);      
+      PrintExtrArray(sExtr, period);  */    
      }
      
      //PrintFormat("%s num0 = {%.05f, %.05f}, num1 = {%.05f, %.05f}, num2 = {%.05f, %.05f}", TimeToString(time[0]), sExtr[0].price, sExtr[0].channel, sExtr[1].price, sExtr[1].channel,sExtr[2].price, sExtr[2].channel);
-     //MoveExtrLines(sExtr, period);
+     MoveExtrLines(sExtr, period);
      PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
      first = false; 
     }//end prev_calculated == 0
@@ -199,21 +199,21 @@ int OnCalculate(const int rates_total,
       //if(isNewLevelBar.isNewBar() > 0) 
       //{
        //PrintFormat("%s num0 = {%.05f, %.05f}, num1 = {%.05f, %.05f}, num2 = {%.05f, %.05f}", TimeToString(time[0]), sExtr[0].price, sExtr[0].channel, sExtr[1].price, sExtr[1].channel,sExtr[2].price, sExtr[2].channel);
-       while(!FillATRBuffer()) {} 
+       //while(!FillATRBuffer()) {} 
        CalcExtr(extrCalc, sExtr, time[0], true);
        //PrintExtrArray(sExtr, period); 
      // } 
             
-      MainLineBuffer[0]  = sExtr[0].price;
+     /* MainLineBuffer[0]  = sExtr[0].extr.price;
       DifLineBuffer [0]  = sExtr[0].channel;
-      MainLine2Buffer[0] = sExtr[1].price;
+      MainLine2Buffer[0] = sExtr[1].extr.price;
       DifLine2Buffer [0] = sExtr[1].channel;
-      MainLine3Buffer[0] = sExtr[2].price;
+      MainLine3Buffer[0] = sExtr[2].extr.price;
       DifLine3Buffer [0] = sExtr[2].channel;
-      MainLine4Buffer[0] = sExtr[3].price;
-      DifLine4Buffer [0] = sExtr[3].channel;  
+      MainLine4Buffer[0] = sExtr[3].extr.price;
+      DifLine4Buffer [0] = sExtr[3].channel;  */
      //}
-     //MoveExtrLines(sExtr, period);
+     MoveExtrLines(sExtr, period);
     }
    }
 //--- return value of prev_calculated for next call
@@ -221,13 +221,13 @@ int OnCalculate(const int rates_total,
   }
 //+------------------------------------------------------------------+
 
-void InitializeExtrArray (SExtremum &te[])
+void InitializeExtrArray (SLevel &te[])
 {
  int size = ArraySize(te);
  for(int i = 0; i < size; i++)
  {
-  te[i].price = 0;
-  te[i].direction = 0;
+  te[i].extr.price = 0;
+  te[i].extr.direction = 0;
   te[i].channel = 0;
  }
 }
@@ -235,42 +235,42 @@ void InitializeExtrArray (SExtremum &te[])
 //---------------------------------------------
 // Создание линий
 //---------------------------------------------
-/*
-void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
+
+void CreateExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 2);
- HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 2);
- HLineCreate(0, name+"two"   , 0, te[1].price              , clrAliceBlue, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clrAliceBlue, 2);
- HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clrAliceBlue, 2);
- HLineCreate(0, name+"three" , 0, te[2].price              , clrBlueViolet, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clrBlueViolet, 2);
- HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clrBlueViolet, 2);
- HLineCreate(0, name+"four"  , 0, te[3].price              , clrBlueViolet, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"four+" , 0, te[3].price+te[3].channel, clrBlueViolet, 2);
- HLineCreate(0, name+"four-" , 0, te[3].price-te[3].channel, clrBlueViolet, 2);
+ HLineCreate(0, name+"one"   , 0, te[0].extr.price              , clrRed, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"one+"  , 0, te[0].extr.price+te[0].channel, clrRed, 2);
+ HLineCreate(0, name+"one-"  , 0, te[0].extr.price-te[0].channel, clrRed, 2);
+ HLineCreate(0, name+"two"   , 0, te[1].extr.price              , clrAliceBlue, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"two+"  , 0, te[1].extr.price+te[1].channel, clrAliceBlue, 2);
+ HLineCreate(0, name+"two-"  , 0, te[1].extr.price-te[1].channel, clrAliceBlue, 2);
+ HLineCreate(0, name+"three" , 0, te[2].extr.price              , clrBlueViolet, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"three+", 0, te[2].extr.price+te[2].channel, clrBlueViolet, 2);
+ HLineCreate(0, name+"three-", 0, te[2].extr.price-te[2].channel, clrBlueViolet, 2);
+ HLineCreate(0, name+"four"  , 0, te[3].extr.price              , clrGreenYellow, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"four+" , 0, te[3].extr.price+te[3].channel, clrGreenYellow, 2);
+ HLineCreate(0, name+"four-" , 0, te[3].extr.price-te[3].channel, clrGreenYellow, 2);
 }
 
 //---------------------------------------------
 // Сдвиг линий на заданный уровень
 //---------------------------------------------
-void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
+void MoveExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- HLineMove(0, name+"one"   , te[0].price);
- HLineMove(0, name+"one+"  , te[0].price+te[0].channel);
- HLineMove(0, name+"one-"  , te[0].price-te[0].channel);
- HLineMove(0, name+"two"   , te[1].price);
- HLineMove(0, name+"two+"  , te[1].price+te[1].channel);
- HLineMove(0, name+"two-"  , te[1].price-te[1].channel);
- HLineMove(0, name+"three" , te[2].price);
- HLineMove(0, name+"three+", te[2].price+te[2].channel);
- HLineMove(0, name+"three-", te[2].price-te[2].channel);
- HLineMove(0, name+"four"  , te[3].price);
- HLineMove(0, name+"four+" , te[3].price+te[3].channel);
- HLineMove(0, name+"four-" , te[3].price-te[3].channel);
+ HLineMove(0, name+"one"   , te[0].extr.price);
+ HLineMove(0, name+"one+"  , te[0].extr.price+te[0].channel);
+ HLineMove(0, name+"one-"  , te[0].extr.price-te[0].channel);
+ HLineMove(0, name+"two"   , te[1].extr.price);
+ HLineMove(0, name+"two+"  , te[1].extr.price+te[1].channel);
+ HLineMove(0, name+"two-"  , te[1].extr.price-te[1].channel);
+ HLineMove(0, name+"three" , te[2].extr.price);
+ HLineMove(0, name+"three+", te[2].extr.price+te[2].channel);
+ HLineMove(0, name+"three-", te[2].extr.price-te[2].channel);
+ HLineMove(0, name+"four"  , te[3].extr.price);
+ HLineMove(0, name+"four+" , te[3].extr.price+te[3].channel);
+ HLineMove(0, name+"four-" , te[3].extr.price-te[3].channel);
 }
 
 //---------------------------------------------
@@ -292,33 +292,33 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"four+");
  HLineDelete(0, name+"four-");
 }
-*/
+
 //---------------------------------------------
 // Пересчет экстремумов для заданного ТФ
 //---------------------------------------------
-void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos_time, bool now = false)
+void CalcExtr(CLevel &extrcalc, SLevel &resArray[], datetime start_pos_time, bool now = false)
 {
- extrcalc.RecountExtremum(start_pos_time, now);
+ extrcalc.RecountLevel(start_pos_time, now);
  for(int j = 0; j < 4; j++)
  {
-  resArray[j] = extrcalc.getExtr(j);
+  resArray[j] = extrcalc.getLevel(j);
  }
 }
 
-bool FillATRBuffer()
+/*bool FillATRBuffer()
 {
  bool result = true;
  
  if(!extrCalc.isATRCalculated(Bars(Symbol(), period) - period_ATR_channel, Bars(Symbol(), period_ATR) - ATR_PERIOD))
   result = false;
  return (result);
-}
+}*/
 
-void PrintExtrArray(SExtremum &te[], ENUM_TIMEFRAMES tf)
+void PrintExtrArray(SLevel &te[], ENUM_TIMEFRAMES tf)
 {
  PrintFormat("%s {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f};", EnumToString((ENUM_TIMEFRAMES)tf),
-                                                                                                   te[0].price, te[0].direction, te[0].channel,
-                                                                                                   te[1].price, te[1].direction, te[1].channel,
-                                                                                                   te[2].price, te[2].direction, te[2].channel,
-                                                                                                   te[3].price, te[3].direction, te[3].channel);
+                                                                                                   te[0].extr.price, te[0].extr.direction, te[0].channel,
+                                                                                                   te[1].extr.price, te[1].extr.direction, te[1].channel,
+                                                                                                   te[2].extr.price, te[2].extr.direction, te[2].channel,
+                                                                                                   te[3].extr.price, te[3].extr.direction, te[3].channel);
 }
