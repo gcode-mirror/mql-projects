@@ -170,9 +170,17 @@ bool CExtremumCalc::isFourExtrExist()
 
 bool CExtremumCalc::isATRCalculated(int size_channel, int size_price)
 {
+ if(size_channel < 0 || size_price < 0)
+ {
+  PrintFormat("%s Некорректный размер: size_channel=%d; size_price=%d", __FUNCTION__, size_channel, size_price);
+  return(false);
+ }
  if(BarsCalculated(handleATR_channel) >= size_channel &&
     BarsCalculated(handleATR_price  ) >= size_price)
+ {
+  PrintFormat("%s channel = %d; price =  %d  %d/%d", __FUNCTION__, BarsCalculated(handleATR_channel), BarsCalculated(handleATR_price  ), size_channel, size_price);
   return(true);
+ }
  PrintFormat("%s %s . для channel расчитано %d, а хочу %d, для price расчитано %d, а хочу %d", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), BarsCalculated(handleATR_channel), size_channel, BarsCalculated(handleATR_price), size_price);
  return(false);
 }

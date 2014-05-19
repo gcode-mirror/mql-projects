@@ -7,6 +7,7 @@
 #property link      ""
 
 #include <CompareDoubles.mqh>
+#include <Lib CisNewBarDD.mqh>
 
 #define ARRAY_SIZE 10
 
@@ -26,7 +27,8 @@ class CExtremum
  double _startDayPrice;
  SExtremum extremums[ARRAY_SIZE];
  
- public:
+ //public:
+ CExtremum() {};
  CExtremum(string symbol, ENUM_TIMEFRAMES period);
 ~CExtremum();
 
