@@ -101,27 +101,27 @@ void OnStart()
    switch (calc_type)
     {
      case CALC_D1:   // дневник
-      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
       false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed);   
       start_index_buffer = 16;  
      break;
      case CALC_H1:   // часовик
-      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
       false, clrRed, false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed);
       start_index_buffer = 32;      
      break;
      case CALC_H4:   // четырех часовик
-      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
       false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed);  
       start_index_buffer = 24;   
      break;
      case CALC_MN1:  // месяц
-      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
       true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);  
       start_index_buffer = 0;    
      break;
      case CALC_W1:   // неделька
-      handle_19Lines = iCustom(Symbol(), PERIOD_M1, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
       false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed); 
       start_index_buffer = 8;    
      break;
@@ -148,11 +148,11 @@ void OnStart()
      size4 = CopyBuffer(handle_19Lines, start_index_buffer + 7, start_time, end_time, buffer_19Lines_atr4);
      size5 = CopyBuffer(handle_19Lines, start_index_buffer + 4, start_time, end_time, buffer_19Lines_price3);
      size6 = CopyBuffer(handle_19Lines, start_index_buffer + 5, start_time, end_time, buffer_19Lines_atr3);
-     size_price = CopyRates(_Symbol,PERIOD_M1,start_time,end_time,buffer_price);
+     size_price = CopyRates(_Symbol,_Period,start_time,end_time,buffer_price);
      PrintFormat("bars = %d |  size3=%d / size4=%d / size5=%d / size6=%d / sizePrice=%d", BarsCalculated(handle_19Lines), size3, size4, size5, size6,size_price);
     }   
     // получаем количество баров индикаторов
-    bars = Bars(_Symbol,PERIOD_M1,start_time,end_time);
+    bars = Bars(_Symbol,_Period,start_time,end_time);
     
     // проверка на загрузку всех буферов 
     if ( size3!=bars ||size4!=bars||size5!=bars||size6!=bars||size_price!=bars)
