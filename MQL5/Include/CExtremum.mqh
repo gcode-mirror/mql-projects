@@ -22,7 +22,7 @@ class CExtremum
 {
  protected:
  string _symbol;
- ENUM_TIMEFRAMES _period;
+ ENUM_TIMEFRAMES _period; 
  int _digits;
  double _startDayPrice;
  SExtremum extremums[ARRAY_SIZE];
