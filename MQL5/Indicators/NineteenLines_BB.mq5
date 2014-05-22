@@ -120,7 +120,6 @@ int ATR_handle_for_price_line;
 bool series_order = true;
 bool first = true;
 
-
 CisNewBar isNewBarMN (_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
 CisNewBar isNewBarW1 (_Symbol, PERIOD_W1 );   // для проверки формирования нового бара на неделе
 CisNewBar isNewBarD1 (_Symbol, PERIOD_D1 );   // для проверки формирования нового бара на дне
