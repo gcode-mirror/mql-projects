@@ -172,7 +172,7 @@ double CExtremum::AveregeBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos
  MqlRates buffer_rates[];
  if(CopyRates(_symbol, tf, start_pos, period, buffer_rates) < 0)
  {
-  PrintFormat("KISS MA ASS MOTHERFUCKER");
+  PrintFormat("%s Не удалось загрузить цены для самостоятельного подсчета ATR. TF = %s. Error = %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError());
  }
  int size = ArraySize(buffer_rates);
  for(int i = 0; i < size; i++)
