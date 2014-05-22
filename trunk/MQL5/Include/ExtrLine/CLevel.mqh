@@ -21,52 +21,39 @@ class CLevel: public CExtremum
 {
  private:
  double channel[ARRAY_SIZE];
- 
- ENUM_TIMEFRAMES _period_ATR_price;
- double _percentageATR_price;
+ int _period_ATR_channel;
  double _percentageATR_channel;
- int handleATR_channel;
- int handleATR_price;
  
  public:
- CLevel(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES period_ATR, double percentageATR_price, int ATRperiod_channel, double percentageATR_channel);
+ CLevel(string symbol, ENUM_TIMEFRAMES tf, ENUM_TIMEFRAMES tf_ATR, double percentageATR_price, int period_ATR_channel, double percentageATR_channel);
 ~CLevel();
 
- void RecountLevel(datetime start_index_time = __DATETIME__, bool now = true);
+ void RecountLevel(datetime start_pos_time = __DATETIME__, bool now = true);
  SLevel getLevel(int i);
 };
 
-CLevel::CLevel(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES period_ATR, double percentageATR_price, int ATRperiod_channel, double percentageATR_channel):
-               _period_ATR_price (period_ATR),
-               _percentageATR_price (percentageATR_price),
+CLevel::CLevel(string symbol, ENUM_TIMEFRAMES tf, ENUM_TIMEFRAMES tf_ATR, double percentageATR_price, int period_ATR_channel, double percentageATR_channel):
+               _period_ATR_channel (period_ATR_channel),
                _percentageATR_channel (percentageATR_channel)
                {
                 _symbol = symbol;
-                _period = period;
+                _tf_period = tf;
+                _tf_ATR = tf_ATR;
+                _period_ATR = ATR_PERIOD;
+                _percentage_ATR = percentageATR_price;
                 _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
-                handleATR_channel = iATR(_symbol, _period, ATRperiod_channel);
-                handleATR_price = iATR(_symbol, _period_ATR_price, ATR_PERIOD);              
-                if(handleATR_channel == INVALID_HANDLE || handleATR_price == INVALID_HANDLE) Alert("Invalid handle ATR.");
                }
 CLevel::~CLevel()
                 {
-                 IndicatorRelease(handleATR_channel);
-                 IndicatorRelease(handleATR_price);
+
                 }             
 
 //-----------------------------------------------------------------
 
-void CLevel::RecountLevel(datetime start_index_time = __DATETIME__, bool now = true)
+void CLevel::RecountLevel(datetime start_pos_time = __DATETIME__, bool now = true)
 {
- double difToNewExtremum = 50*Point();
- double buffer_ATR_channel[1] = {0};
- double buffer_ATR_price[1] = {0};
- 
- CopyBufferUpdated(handleATR_channel, start_index_time, 1, buffer_ATR_channel, "ATR для канала");
- CopyBufferUpdated(handleATR_price, start_index_time, 1, buffer_ATR_price, "ATR для цены");
- 
- difToNewExtremum = buffer_ATR_price[0]*_percentageATR_price;
- int count_new_extrs = RecountExtremum(difToNewExtremum, start_index_time, now);
+ int count_new_extrs = RecountExtremum(start_pos_time, now);
+ double level_channel = (AveregeBar(_tf_period, _period_ATR_channel, start_pos_time) * _percentageATR_channel)/2;
  
  if(count_new_extrs == 1)               //в случае когда появился один экстремум на одном баре
  {
@@ -74,7 +61,7 @@ void CLevel::RecountLevel(datetime start_index_time = __DATETIME__, bool now = t
   {
    channel[j] = channel[j-1];     
   }
-  channel[0] = (buffer_ATR_channel[0]*_percentageATR_channel)/2;
+  channel[0] = level_channel;
  }
  
  if(count_new_extrs == 2)                //в случае когда появилось два экстремума на одном баре
@@ -83,8 +70,8 @@ void CLevel::RecountLevel(datetime start_index_time = __DATETIME__, bool now = t
   {
    channel[j] = channel[j-1];     
   }
-  channel[1] = (buffer_ATR_channel[0]*_percentageATR_channel)/2;
-  channel[0] = (buffer_ATR_channel[0]*_percentageATR_channel)/2;
+  channel[1] = level_channel;
+  channel[0] = level_channel;
  }       
 }
 
@@ -98,33 +85,4 @@ SLevel CLevel::getLevel(int i)
  result.extr = extremums[i];
  result.channel = channel[i];
  return(result);
-}
-
-void CopyBufferUpdated(int handle, datetime start_index_time, int count, double& buffer[], string discription)
-{
- int error = 0;
- int copied = CopyBuffer(handle, 0, start_index_time, count, buffer);
- 
- if(copied < count)
- {
-  error = GetLastError();
-  if(error == 4806)
-  {
-   for(int i =0; i < 1000; i++)
-   {
-    if(BarsCalculated(handle) > 0)
-    {
-     PrintFormat("%s Была ошибка 4806. Вроде справились. Загружено для %s %d", __FUNCTION__, discription, BarsCalculated(handle));
-     break;
-    }
-   }
-   copied = CopyBuffer(handle, 0, start_index_time, count, buffer);
-   error = GetLastError();
-  }
-  
-  if(copied < count)
-   PrintFormat("%s Bad news. У меня нет %s. Time = %s; Error = %d", __FUNCTION__, discription, TimeToString(start_index_time), error);
-  
-  ResetLastError();
- }
 }

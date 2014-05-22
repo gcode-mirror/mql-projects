@@ -33,11 +33,9 @@ protected:
   ENUM_MOVE_TYPE enumMoveType[];
   ENUM_MOVE_TYPE previous_move_type;
   int _digits;
-  CExtremum extremums;
+  CExtremum *extremums;
   SExtremum lastOnTrend;       // последний экстремум текущего тренда
   SExtremum firstOnTrend;      // цена начала тренда и его направление  
-  double _percentage_ATR;
-  double difToNewExtremum;
   double difToTrend;     // ¬о столько раз новый бар должен превышать предыдущий экстремум, что бы началс€ тренд.
   int _depth;            //  оличество баров дл€ расчета индикатора 
   int ATR_handle;
@@ -71,25 +69,17 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
                    _symbol(symbol),
                    _period(period),
                    _depth(depth),
-                   _percentage_ATR(percentage_ATR),
                    previous_move_type(MOVE_TYPE_UNKNOWN),
                    difToTrend(dif)
 {
  _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  
- extremums.SetSymbol(_symbol);
- extremums.SetPeriod(_period);
- extremums.SetDigits(_digits);
+ extremums = new CExtremum(_symbol, _period, ATR_TIMEFRAME, ATR_PERIOD, percentage_ATR);
  
  firstOnTrend.direction = 0;
  firstOnTrend.price = -1;
  lastOnTrend.direction = 0;
  lastOnTrend.price = -1;
- 
- MqlRates buffer[1];
- CopyRates(_symbol, _period, _depth, 1, buffer);
- CopyTime(_symbol, _period, _depth, 1, time_buffer);
- ATR_handle = iATR(_symbol, ATR_TIMEFRAME, ATR_PERIOD);
  
  ArrayResize(enumMoveType, depth);
  Zeros();
@@ -108,20 +98,16 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
   ArrayResize(enumMoveType, ArraySize(enumMoveType)*2, ArraySize(enumMoveType)*2);
   
  if(FillTimeSeries(CURRENT_TF, AMOUNT_OF_PRICE, start_pos, buffer_Rates) < 0) // получим размер заполненного массива
-  return (false); 
- if(FillATRBuf(1, start_pos) < 0) // заполним массив данными индикатора ATR
-  return (false);  
+  return (false);
  
  CopyTime(_symbol, _period, start_pos, 1, time_buffer);  
  enumMoveType[bar] = previous_move_type;
- difToNewExtremum = 100*Point();//buffer_ATR[0] * _percentage_ATR;
  
  int newTrend = 0;
- int count_new_extrs = extremums.RecountExtremum(difToNewExtremum, start_pos, now);
- //PrintFormat("%s ¬ызываю. RecountExtremums %s %d : %d/%d", __FUNCTION__, TimeToString(start_pos), now, bar, _depth);
- //extremums.PrintExtremums();
+ int count_new_extrs = extremums.RecountExtremum(start_pos, now);
+
  if (count_new_extrs > 0)
- { //¬ массиве возвращаемых экструмумов на 0 месте стоит max, на месте 1 стоит min
+ {//¬ массиве возвращаемых экструмумов на 0 месте стоит max, на месте 1 стоит min
   if(count_new_extrs == 1)  
   {
    if(extremums.getExtr(0).direction == 1)       ret_extremums[0] = extremums.getExtr(0);
@@ -130,7 +116,7 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
   
   if(count_new_extrs == 2) 
   {
-   if(extremums.getExtr(0).direction == 1)       { ret_extremums[0] = extremums.getExtr(0); ret_extremums[1] = extremums.getExtr(1);}
+   if(extremums.getExtr(0).direction == 1)       { ret_extremums[0] = extremums.getExtr(0); ret_extremums[1] = extremums.getExtr(1); }
    else if(extremums.getExtr(0).direction == -1) { ret_extremums[0] = extremums.getExtr(1); ret_extremums[1] = extremums.getExtr(0); }
   }
   
