@@ -49,6 +49,7 @@ string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int  digits;
 int depth = history_depth;
+bool series_order = true;
 input bool show_top = false;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -74,22 +75,19 @@ int OnInit()
    SetIndexBuffer(5,    ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6,  ExtDownArrowBuffer, INDICATOR_DATA);
 
-   ArrayInitialize(   ExtUpArrowBuffer, 0);
-   ArrayInitialize( ExtDownArrowBuffer, 0); 
-   ArrayInitialize(ColorCandlesBuffer1, 0);
-   ArrayInitialize(ColorCandlesBuffer2, 0);
-   ArrayInitialize(ColorCandlesBuffer3, 0);
-   ArrayInitialize(ColorCandlesBuffer4, 0);
+   InitializeIndicatorBuffers();
    
    PlotIndexSetInteger(1, PLOT_ARROW, 218);
    PlotIndexSetInteger(2, PLOT_ARROW, 217);
    
-   ArraySetAsSeries(ColorCandlesBuffer1, false);
-   ArraySetAsSeries(ColorCandlesBuffer2, false);
-   ArraySetAsSeries(ColorCandlesBuffer3, false);
-   ArraySetAsSeries(ColorCandlesBuffer4, false);
-   ArraySetAsSeries( ColorCandlesColors, false);   
-
+   ArraySetAsSeries(ColorCandlesBuffer1, series_order);
+   ArraySetAsSeries(ColorCandlesBuffer2, series_order);
+   ArraySetAsSeries(ColorCandlesBuffer3, series_order);
+   ArraySetAsSeries(ColorCandlesBuffer4, series_order);
+   ArraySetAsSeries( ColorCandlesColors, series_order);
+   ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
+   ArraySetAsSeries( ExtDownArrowBuffer, series_order);
+   
    return(INIT_SUCCEEDED);
   }
   
@@ -121,96 +119,101 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
-   static int start_index = 0;
-   static int start_iteration = 0;
    static int buffer_index = 0;
    static int top_buffer_index = 0;
-   SExtremum extr_cur = {0, -1};
-   SExtremum extr_top = {0, -1};
-   bool error = true;
+   SExtremum extr_cur[2] = {{0, -1}, {0, -1}};
+   SExtremum extr_top[2] = {{0, -1}, {0, -1}};
+   
+   ArraySetAsSeries(open , series_order);
+   ArraySetAsSeries(high , series_order);
+   ArraySetAsSeries(low  , series_order);
+   ArraySetAsSeries(close, series_order);
+   ArraySetAsSeries(time , series_order);
 
    if(prev_calculated == 0) 
    {
     PrintFormat("%s ѕервый расчет индикатора", MakeFunctionPrefix(__FUNCTION__));
-    start_index = rates_total - depth;
-    start_iteration = rates_total - depth;
+
     buffer_index = 0;
     top_buffer_index = 0;
     trend.Zeros();
     topTrend.Zeros();
-    ArrayInitialize(ColorCandlesBuffer1, 0);
-    ArrayInitialize(ColorCandlesBuffer2, 0);
-    ArrayInitialize(ColorCandlesBuffer3, 0);
-    ArrayInitialize(ColorCandlesBuffer4, 0);
-    ArrayInitialize(ColorCandlesColors , 0);
-    ArrayInitialize(ExtUpArrowBuffer   , 0);
-    ArrayInitialize(ExtDownArrowBuffer , 0);
-   }
-   else 
-   {
-    //PrintFormat("%s ѕредварительный –асчет индикатора закончен. –азмер буфера = %d", MakeFunctionPrefix(__FUNCTION__), ArraySize(ColorCandlesColors));
-    start_iteration = start_index + buffer_index;
-   }
-   if(prev_calculated == 0) PrintFormat("%s/%s", TimeToString(time[start_iteration]), TimeToString(time[rates_total-1]));
-   for(int i = start_iteration; i < rates_total;  i++)    
-   {
-    //error = topTrend.CountMoveType(top_buffer_index, time[i], extr_top);
-    //PrintFormat("i = %d; top_buffer_index = %d; start_pos_top = %d; move type top = %s", i, top_buffer_index, start_pos_top, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
-    //if(!error)
-    //{
-    // Print("YOU NEED TO WAIT FOR THE NEXT BAR ON TOP TIMEFRAME");
-    // return(0);
-    //}
+    InitializeIndicatorBuffers();
+    NewBarCurrent.isNewBar(time[depth]);
+    NewBarTop.isNewBar(time[depth]);
     
-    error = trend.CountMoveType(buffer_index, time[i], extr_cur);//, topTrend.GetMoveType(top_buffer_index));
-    //PrintFormat("i = %d; buffer_index = %d; start_pos_cur = %d; move type = %s", i, buffer_index, start_pos_cur, MoveTypeToString(trend.GetMoveType(buffer_index)));
-    if(!error) 
+    for(int i = depth-1; i >= 0;  i--)    
     {
-     Print("YOU NEED TO WAIT FOR THE NEXT BAR ON CURRENT TIMEFRAME");
-     return(0);
-    }
+     //PrintFormat("i= %d; buffer_index = %d; time = %s;", i, buffer_index, TimeToString(time[i]));   
+     topTrend.CountMoveType(top_buffer_index, time[i], false, extr_top);    
+        trend.CountMoveType(    buffer_index, time[i], false, extr_cur);//, topTrend.GetMoveType(top_buffer_index));
       
-    ColorCandlesBuffer1[i] = open[i];
-    ColorCandlesBuffer2[i] = high[i];
-    ColorCandlesBuffer3[i] = low[i];
-    ColorCandlesBuffer4[i] = close[i]; 
+     ColorCandlesBuffer1[i] = open[i];
+     ColorCandlesBuffer2[i] = high[i];
+     ColorCandlesBuffer3[i] = low[i];
+     ColorCandlesBuffer4[i] = close[i]; 
     
-    //PrintFormat("%s current:%d %s; top: %d %s", TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
-    if(!show_top)
-    { 
-     ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
-    }
-    else
-    {
-     ColorCandlesColors[i] = topTrend.GetMoveType(top_buffer_index);
-    }
+     //PrintFormat("%s current:%d %s; top: %d %s", TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+     if(!show_top) ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
+     else  ColorCandlesColors[i] = topTrend.GetMoveType(top_buffer_index);
     
-    if (extr_cur.direction > 0)
+    if (extr_cur[0].direction > 0)
     {
-     ExtUpArrowBuffer[i] = extr_cur.price;// + 50*_Point;
-     extr_cur.direction = 0;
+     ExtUpArrowBuffer[i] = extr_cur[0].price;// + 50*_Point;
+     extr_cur[0].direction = 0;
     }
-    else if (extr_cur.direction < 0)
+    if (extr_cur[1].direction < 0)
     {
-     ExtDownArrowBuffer[i] = extr_cur.price;// - 50*_Point;
-     extr_cur.direction = 0;
+     ExtDownArrowBuffer[i] = extr_cur[1].price;// - 50*_Point;
+     extr_cur[1].direction = 0;
     }
-    
-    if(buffer_index < depth)
-    {
-     if(    NewBarTop.isNewBar(time[i])) top_buffer_index++; //дл€ того что бы считать на истории
-     if(NewBarCurrent.isNewBar(time[i])) buffer_index++;     //дл€ того что бы считать на истории
+
+     if(    NewBarTop.isNewBar(time[i]) && i !=0) top_buffer_index++; //дл€ того что бы считать на истории
+     if(NewBarCurrent.isNewBar(time[i]) && i !=0) buffer_index++;     //дл€ того что бы считать на истории
     }
+   }
+   
+   //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
+   ColorCandlesBuffer1[0] = open[0];
+   ColorCandlesBuffer2[0] = high[0];
+   ColorCandlesBuffer3[0] = low [0];
+   ColorCandlesBuffer4[0] = close[0]; 
+   if(!show_top) ColorCandlesColors[0] = trend.GetMoveType(buffer_index);
+   else  ColorCandlesColors[0] = topTrend.GetMoveType(top_buffer_index);
+   
+   if (extr_cur[0].direction > 0)
+   {
+    ExtUpArrowBuffer[0] = extr_cur[0].price;// + 50*_Point;
+    extr_cur[0].direction = 0;
+   }
+   if (extr_cur[1].direction < 0)
+   {
+    ExtDownArrowBuffer[0] = extr_cur[1].price;// - 50*_Point;
+    extr_cur[1].direction = 0;
    }
    
    if(NewBarTop.isNewBar()  && prev_calculated != 0)
    {
-    top_buffer_index++;
+    topTrend.CountMoveType(top_buffer_index, time[0], true, extr_top);
+    top_buffer_index++;     
    }
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
    {
-    buffer_index++;
+    trend.CountMoveType(buffer_index, time[0], true, extr_cur);//, topTrend.GetMoveType(top_buffer_index));
+    buffer_index++; 
    }
-  
+   
    return(rates_total);
   }
+
+
+void InitializeIndicatorBuffers()
+{
+ ArrayInitialize(ColorCandlesBuffer1, 0);
+ ArrayInitialize(ColorCandlesBuffer2, 0);
+ ArrayInitialize(ColorCandlesBuffer3, 0);
+ ArrayInitialize(ColorCandlesBuffer4, 0);
+ ArrayInitialize(ColorCandlesColors , 0);
+ ArrayInitialize(ExtUpArrowBuffer   , 0);
+ ArrayInitialize(ExtDownArrowBuffer , 0);
+}

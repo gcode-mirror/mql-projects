@@ -9,7 +9,7 @@
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBarDD.mqh>
 
-#define ARRAY_SIZE 10
+#define ARRAY_SIZE 4
 
 struct SExtremum
 {
@@ -24,20 +24,21 @@ class CExtremum
  string _symbol;
  ENUM_TIMEFRAMES _period; 
  int _digits;
- double _startDayPrice;
  SExtremum extremums[ARRAY_SIZE];
  
- //public:
- CExtremum() {};
+ public:
+ CExtremum() {_symbol = Symbol(); _period = Period();};
  CExtremum(string symbol, ENUM_TIMEFRAMES period);
 ~CExtremum();
 
- int isExtremum(SExtremum& extr_array[], double difToNewExtremum, datetime start_index_time = __DATETIME__,  bool now = true);
- int RecountExtremum(double difToNewExtremum, datetime start_index_time = __DATETIME__, bool now = true);
+ int isExtremum(SExtremum& extr_array[], double difToNewExtremum, datetime start_pos_time = __DATETIME__,  bool now = true);
+ int RecountExtremum(double difToNewExtremum, datetime start_pos_time = __DATETIME__, bool now = true);
  SExtremum getExtr(int i);
  ENUM_TIMEFRAMES getPeriod() { return(_period); }
+ void SetSymbol(string symb) { _symbol = symb; }
  void SetPeriod(ENUM_TIMEFRAMES tf) { _period = tf; }
- void SetStartDayPrice(double price) { _startDayPrice = price; }
+ void SetDigits(int digits) { _digits = digits; }
+ void PrintExtremums();
  int ExtrCount();
 };
 
@@ -78,6 +79,8 @@ int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, dat
   low = buffer[0].low;
  }
  
+ //PrintFormat("%s MAX dif = %.05f, time = %s, price = %.05f; extr[0].direction %d; extr[0].price = %.05f RESULT = %.05f", __FUNCTION__, difToNewExtremum, TimeToString(start_pos_time), high, extremums[0].direction, extremums[0].price, GreatDoubles(high, extremums[0].price));
+ //PrintExtremums();
  if ((extremums[0].direction == 0 && (GreatDoubles(high, 2*difToNewExtremum, _digits))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
    ||(extremums[0].direction >  0 && (GreatDoubles(high, extremums[0].price, _digits)))
    ||(extremums[0].direction <  0 && (GreatDoubles(high, extremums[0].price + difToNewExtremum, _digits))))
@@ -89,6 +92,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, dat
   //PrintFormat("%s %s start_pos_time = %s; max %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_period), TimeToString(start_pos_time), high);
  }
  
+  //PrintFormat("%s MIN dif = %.05f, time = %s, price = %.05f / %.05f; direction %d; extr[0].price = %.05f/%.05f", __FUNCTION__, difToNewExtremum, TimeToString(start_pos_time), high, low, extremums[0].direction, extremums[0].price, extremums[0].price-difToNewExtremum);
  if ((extremums[0].direction == 0 && (LessDoubles(low, 2*difToNewExtremum, _digits))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
    ||(extremums[0].direction <  0 && (LessDoubles(low, extremums[0].price, _digits)))
    ||(extremums[0].direction >  0 && (LessDoubles(low, extremums[0].price - difToNewExtremum, _digits))))
@@ -115,10 +119,11 @@ int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, dat
 }
 
 
-int CExtremum::RecountExtremum(double difToNewExtremum, datetime start_index_time = __DATETIME__, bool now = true)
+int CExtremum::RecountExtremum(double difToNewExtremum, datetime start_pos_time = __DATETIME__, bool now = true)
 {
  SExtremum new_extr[2] = {{0, -1}, {0, -1}};
- int count_new_extrs = isExtremum(new_extr, difToNewExtremum, start_index_time, now);
+ int count_new_extrs = isExtremum(new_extr, difToNewExtremum, start_pos_time, now);
+ 
  if(count_new_extrs > 0)
  {
   for(int i = 0; i < 2; i++)
@@ -159,4 +164,14 @@ SExtremum CExtremum::getExtr(int i)
  if(i < 0 || i >= ARRAY_SIZE)
   return zero;
  return(extremums[i]);
+}
+
+void CExtremum::PrintExtremums()
+{
+ string result = "";
+ for(int i = 0; i < ARRAY_SIZE; i++)
+ {
+  StringConcatenate(result, result, StringFormat("num%d = {%d %.05f %s}; ", i, extremums[i].direction, extremums[i].price, TimeToString(extremums[i].time)));
+ }
+ PrintFormat("%s %s", __FUNCTION__, result);
 }

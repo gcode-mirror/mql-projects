@@ -22,7 +22,7 @@ class CLevel: public CExtremum
  private:
  double channel[ARRAY_SIZE];
  
- ENUM_TIMEFRAMES _period_ATR;
+ ENUM_TIMEFRAMES _period_ATR_price;
  double _percentageATR_price;
  double _percentageATR_channel;
  int handleATR_channel;
@@ -37,7 +37,7 @@ class CLevel: public CExtremum
 };
 
 CLevel::CLevel(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES period_ATR, double percentageATR_price, int ATRperiod_channel, double percentageATR_channel):
-               _period_ATR (period_ATR),
+               _period_ATR_price (period_ATR),
                _percentageATR_price (percentageATR_price),
                _percentageATR_channel (percentageATR_channel)
                {
@@ -45,7 +45,7 @@ CLevel::CLevel(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES period_ATR
                 _period = period;
                 _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
                 handleATR_channel = iATR(_symbol, _period, ATRperiod_channel);
-                handleATR_price = iATR(_symbol, _period_ATR, ATR_PERIOD);              
+                handleATR_price = iATR(_symbol, _period_ATR_price, ATR_PERIOD);              
                 if(handleATR_channel == INVALID_HANDLE || handleATR_price == INVALID_HANDLE) Alert("Invalid handle ATR.");
                }
 CLevel::~CLevel()
@@ -62,13 +62,12 @@ void CLevel::RecountLevel(datetime start_index_time = __DATETIME__, bool now = t
  double buffer_ATR_channel[1] = {0};
  double buffer_ATR_price[1] = {0};
  
+ CopyBufferUpdated(handleATR_channel, start_index_time, 1, buffer_ATR_channel, "ATR для канала");
+ CopyBufferUpdated(handleATR_price, start_index_time, 1, buffer_ATR_price, "ATR для цены");
  
- if(CopyBuffer(handleATR_channel, 0, start_index_time, 1, buffer_ATR_channel) < 1)
-  PrintFormat("Bad news. У меня нет ATR  для канала.");
- if(CopyBuffer(handleATR_price, 0, start_index_time, 1, buffer_ATR_price) < 1)
-  PrintFormat("Bad news. У меня нет ATR  для цены.");
- //CopyBuffer
+ difToNewExtremum = buffer_ATR_price[0]*_percentageATR_price;
  int count_new_extrs = RecountExtremum(difToNewExtremum, start_index_time, now);
+ 
  if(count_new_extrs == 1)               //в случае когда появился один экстремум на одном баре
  {
   for(int j = ARRAY_SIZE-1; j >= 1; j--)
@@ -99,4 +98,33 @@ SLevel CLevel::getLevel(int i)
  result.extr = extremums[i];
  result.channel = channel[i];
  return(result);
+}
+
+void CopyBufferUpdated(int handle, datetime start_index_time, int count, double& buffer[], string discription)
+{
+ int error = 0;
+ int copied = CopyBuffer(handle, 0, start_index_time, count, buffer);
+ 
+ if(copied < count)
+ {
+  error = GetLastError();
+  if(error == 4806)
+  {
+   for(int i =0; i < 1000; i++)
+   {
+    if(BarsCalculated(handle) > 0)
+    {
+     PrintFormat("%s Была ошибка 4806. Вроде справились. Загружено для %s %d", __FUNCTION__, discription, BarsCalculated(handle));
+     break;
+    }
+   }
+   copied = CopyBuffer(handle, 0, start_index_time, count, buffer);
+   error = GetLastError();
+  }
+  
+  if(copied < count)
+   PrintFormat("%s Bad news. У меня нет %s. Time = %s; Error = %d", __FUNCTION__, discription, TimeToString(start_index_time), error);
+  
+  ResetLastError();
+ }
 }
