@@ -10,6 +10,9 @@
 #include <Lib CisNewBarDD.mqh>
 
 #define ARRAY_SIZE 4
+#define DEFAULT_TF_ATR PERIOD_H4
+#define DEFAULT_PERIOD_ATR 30
+#define DEFAULT_PERCENTAGE_ATR 1.0
 
 struct SExtremum
 {
@@ -22,39 +25,58 @@ class CExtremum
 {
  protected:
  string _symbol;
- ENUM_TIMEFRAMES _period; 
  int _digits;
+ ENUM_TIMEFRAMES _tf_period;
+ //--параметры ATR для difToNewExtremum-----
+ ENUM_TIMEFRAMES _tf_ATR;
+ int _period_ATR; 
+ double _percentage_ATR;
+ //-----------------------------------------
  SExtremum extremums[ARRAY_SIZE];
  
  public:
- CExtremum() {_symbol = Symbol(); _period = Period();};
- CExtremum(string symbol, ENUM_TIMEFRAMES period);
+ CExtremum();
+ CExtremum(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES tf_ATR, int period_ATR, double percentage_ATR);
 ~CExtremum();
 
- int isExtremum(SExtremum& extr_array[], double difToNewExtremum, datetime start_pos_time = __DATETIME__,  bool now = true);
- int RecountExtremum(double difToNewExtremum, datetime start_pos_time = __DATETIME__, bool now = true);
+ int isExtremum(SExtremum& extr_array[], datetime start_pos_time = __DATETIME__,  bool now = true);
+ int RecountExtremum(datetime start_pos_time = __DATETIME__, bool now = true);
+ double AveregeBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos);
  SExtremum getExtr(int i);
- ENUM_TIMEFRAMES getPeriod() { return(_period); }
- void SetSymbol(string symb) { _symbol = symb; }
- void SetPeriod(ENUM_TIMEFRAMES tf) { _period = tf; }
- void SetDigits(int digits) { _digits = digits; }
  void PrintExtremums();
- int ExtrCount();
+ int  ExtrCount();
+ ENUM_TIMEFRAMES getPeriod() { return(_tf_period); }
+ void SetSymbol(string symb) { _symbol = symb; }
+ void SetPeriod(ENUM_TIMEFRAMES tf) { _tf_period = tf; }
+ void SetDigits(int digits) { _digits = digits; }
 };
 
-CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period):
-               _symbol (symbol),
-               _period (period)
-               {
-                _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
-               }
+CExtremum::CExtremum(void):
+            _tf_ATR (DEFAULT_TF_ATR),
+            _period_ATR (DEFAULT_PERIOD_ATR),
+            _percentage_ATR (DEFAULT_PERCENTAGE_ATR)
+           {
+            _symbol = Symbol();
+            _tf_period = Period();
+            _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
+           }
+
+CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES tf_ATR, int period_ATR, double percentage_ATR):
+            _symbol (symbol),
+            _tf_period (period),
+            _tf_ATR (tf_ATR),
+            _period_ATR (period_ATR),
+            _percentage_ATR (percentage_ATR)
+            {
+             _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
+            }
 CExtremum::~CExtremum()
-                {
-                }             
+           {
+           }             
 
 //-----------------------------------------------------------------
 
-int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, datetime start_pos_time = __DATETIME__, bool now = true)
+int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __DATETIME__, bool now = true)
 {
  SExtremum result1 = {0, -1};
  SExtremum result2 = {0, -1};
@@ -62,10 +84,9 @@ int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, dat
  MqlRates buffer[1];
 
  
- if(CopyRates(_symbol, _period, start_pos_time, 1, buffer) < 1)
-  PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_period), GetLastError(), Bars(_symbol, _period), TimeToString(start_pos_time));
- //if(now) PrintFormat("Загружен бар %s", TimeToString(buffer[0].time));
-  //return(result);
+ if(CopyRates(_symbol, _tf_period, start_pos_time, 1, buffer) < 1)
+  PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
+ double difToNewExtremum = AveregeBar(_tf_ATR, _period_ATR, start_pos_time) * _percentage_ATR;
  double high = 0, low = 0;
  
  if (now)
@@ -79,8 +100,6 @@ int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, dat
   low = buffer[0].low;
  }
  
- //PrintFormat("%s MAX dif = %.05f, time = %s, price = %.05f; extr[0].direction %d; extr[0].price = %.05f RESULT = %.05f", __FUNCTION__, difToNewExtremum, TimeToString(start_pos_time), high, extremums[0].direction, extremums[0].price, GreatDoubles(high, extremums[0].price));
- //PrintExtremums();
  if ((extremums[0].direction == 0 && (GreatDoubles(high, 2*difToNewExtremum, _digits))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
    ||(extremums[0].direction >  0 && (GreatDoubles(high, extremums[0].price, _digits)))
    ||(extremums[0].direction <  0 && (GreatDoubles(high, extremums[0].price + difToNewExtremum, _digits))))
@@ -89,10 +108,9 @@ int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, dat
   result1.price = high;
   result1.time = start_pos_time;
   count++;
-  //PrintFormat("%s %s start_pos_time = %s; max %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_period), TimeToString(start_pos_time), high);
+  //PrintFormat("%s %s start_pos_time = %s; max %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_tf_period), TimeToString(start_pos_time), high);
  }
  
-  //PrintFormat("%s MIN dif = %.05f, time = %s, price = %.05f / %.05f; direction %d; extr[0].price = %.05f/%.05f", __FUNCTION__, difToNewExtremum, TimeToString(start_pos_time), high, low, extremums[0].direction, extremums[0].price, extremums[0].price-difToNewExtremum);
  if ((extremums[0].direction == 0 && (LessDoubles(low, 2*difToNewExtremum, _digits))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
    ||(extremums[0].direction <  0 && (LessDoubles(low, extremums[0].price, _digits)))
    ||(extremums[0].direction >  0 && (LessDoubles(low, extremums[0].price - difToNewExtremum, _digits))))
@@ -101,7 +119,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, dat
   result2.price = low;
   result2.time = start_pos_time;
   count++;
-  //PrintFormat("%s %s start_pos_time = %s; min  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), TimeToString(start_pos_time), low);
+  //PrintFormat("%s %s start_pos_time = %s; min  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), TimeToString(start_pos_time), low);
  }
  
  if(buffer[0].close <= buffer[0].open) //если close ниже open то сначала пишем high потом low
@@ -119,10 +137,10 @@ int CExtremum::isExtremum(SExtremum& extr_array [], double difToNewExtremum, dat
 }
 
 
-int CExtremum::RecountExtremum(double difToNewExtremum, datetime start_pos_time = __DATETIME__, bool now = true)
+int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now = true)
 {
  SExtremum new_extr[2] = {{0, -1}, {0, -1}};
- int count_new_extrs = isExtremum(new_extr, difToNewExtremum, start_pos_time, now);
+ int count_new_extrs = isExtremum(new_extr, start_pos_time, now);
  
  if(count_new_extrs > 0)
  {
@@ -146,6 +164,25 @@ int CExtremum::RecountExtremum(double difToNewExtremum, datetime start_pos_time 
   }
  }
  return(count_new_extrs);
+}
+
+double CExtremum::AveregeBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos)
+{
+ double result = 0;
+ MqlRates buffer_rates[];
+ if(CopyRates(_symbol, tf, start_pos, period, buffer_rates) < 0)
+ {
+  PrintFormat("KISS MA ASS MOTHERFUCKER");
+ }
+ int size = ArraySize(buffer_rates);
+ for(int i = 0; i < size; i++)
+ {
+  result += MathAbs(buffer_rates[i].high - buffer_rates[i].low);
+ }
+ result = result/size;
+ 
+ ArrayFree(buffer_rates);
+ return(result);
 }
 
 int CExtremum::ExtrCount()
