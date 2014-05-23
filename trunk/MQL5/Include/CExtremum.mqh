@@ -83,12 +83,11 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  int count = 0;
  MqlRates buffer[1];
 
- 
  if(CopyRates(_symbol, _tf_period, start_pos_time, 1, buffer) < 1)
   PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
  double difToNewExtremum = AveregeBar(_tf_ATR, _period_ATR, start_pos_time) * _percentage_ATR;
  double high = 0, low = 0;
- 
+
  if (now)
  {
   high = buffer[0].close;

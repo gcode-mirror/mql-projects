@@ -172,20 +172,10 @@ int OnCalculate(const int rates_total,
      if(NewBarCurrent.isNewBar(time[i])) buffer_index++;     //для того что бы считать на истории
     }
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН", MakeFunctionPrefix(__FUNCTION__));
-    topTrend.CountMoveType(top_buffer_index, time[0], true, extr_top);
-    trend.CountMoveType(buffer_index, time[0], true, extr_cur, topTrend.GetMoveType(top_buffer_index));
    }
    
-   if(NewBarTop.isNewBar()  && prev_calculated != 0)
-   {
-    topTrend.CountMoveType(top_buffer_index, time[0], true, extr_top);
-    top_buffer_index++;     
-   }
-   if(NewBarCurrent.isNewBar() && prev_calculated != 0)
-   {
-    trend.CountMoveType(buffer_index, time[0], true, extr_cur, topTrend.GetMoveType(top_buffer_index));
-    buffer_index++; 
-   }
+   topTrend.CountMoveType(top_buffer_index, time[0], true, extr_top);
+   trend.CountMoveType(buffer_index, time[0], true, extr_cur, topTrend.GetMoveType(top_buffer_index));
    
    //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
    ColorCandlesBuffer1[0] = open[0];
@@ -205,6 +195,10 @@ int OnCalculate(const int rates_total,
     ExtDownArrowBuffer[0] = extr_cur[1].price;// - 50*_Point;
     extr_cur[1].direction = 0;
    }
+   
+      
+   if(NewBarTop.isNewBar()  && prev_calculated != 0) top_buffer_index++;     
+   if(NewBarCurrent.isNewBar() && prev_calculated != 0) buffer_index++; 
    
    return(rates_total);
   }
