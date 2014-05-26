@@ -29,6 +29,7 @@
 #define PERCENTAGE_OF_ATR_FOR_H1  1.5
 
 input int    period_ATR_channel = 30;   //Период ATR для канала
+input int    period_average_ATR = 5;    //Период устреднения индикатора ATR
 input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
 
 
@@ -280,7 +281,8 @@ int OnInit()
  InitializeExtrArray(extr_levelH1);
  InitializeExtrArray(price_levelD1);
  
- ATR_handle_for_price_line = iATR(Symbol(), PERIOD_D1, period_ATR_channel);
+ //ATR_handle_for_price_line = iATR(Symbol(), PERIOD_D1, period_ATR_channel);
+ ATR_handle_for_price_line = iCustom(Symbol(),PERIOD_D1,"AverageATR",period_ATR_channel,period_average_ATR);
  
  if(Period() > PERIOD_MN1 && show_Extr_MN)  show_Extr_MN = false;
  if(Period() > PERIOD_W1  && show_Extr_W1)  show_Extr_W1 = false;

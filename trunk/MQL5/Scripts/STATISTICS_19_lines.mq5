@@ -44,6 +44,7 @@ input string   file_name  = "STAT_19_LINES";     // имя файла статистики
 
 sinput string atr_str = "";                      // ПАРАМЕТРЫ ИНДИКАТОРА АТR
 input int    period_ATR = 30;                    // Период ATR для канала
+input int    period_aver_ATR = 5;                // Период усреднения ATR
 input double percent_ATR = 0.5;                  // Ширина канала уровня в процентах от ATR
 
 int  countDownUp   = 0;                          // количество пробитий снизу вверх
@@ -101,27 +102,27 @@ void OnStart()
    switch (calc_type)
     {
      case CALC_D1:   // дневник
-      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines", period_ATR,period_aver_ATR, percent_ATR, 
       false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed);   
       start_index_buffer = 16;  
      break;
      case CALC_H1:   // часовик
-      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines", period_ATR,period_aver_ATR, percent_ATR, 
       false, clrRed, false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed);
       start_index_buffer = 32;      
      break;
      case CALC_H4:   // четырех часовик
-      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines", period_ATR,period_aver_ATR, percent_ATR, 
       false, clrRed, false, clrRed, false, clrRed, true, clrRed, false, clrRed, false, clrRed);  
       start_index_buffer = 24;   
      break;
      case CALC_MN1:  // месяц
-      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines", period_ATR,period_aver_ATR, percent_ATR, 
       true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed);  
       start_index_buffer = 0;    
      break;
      case CALC_W1:   // неделька
-      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines_BB", period_ATR, percent_ATR, 
+      handle_19Lines = iCustom(Symbol(), _Period, "NineteenLines", period_ATR,period_aver_ATR, percent_ATR, 
       false, clrRed, true, clrRed, false, clrRed, false, clrRed, false, clrRed, false, clrRed); 
       start_index_buffer = 8;    
      break;
