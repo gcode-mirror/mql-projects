@@ -7,8 +7,8 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_separate_window       // значит индикатор будем выводить в отдельном окне
-#property indicator_buffers 2             // количество буферов всего     
-#property indicator_plots   2             // из них, которые отображаются в окне
+#property indicator_buffers 1             // количество буферов всего     
+#property indicator_plots   1             // из них, которые отображаются в окне
 // свойства буферов
 #property indicator_type1 DRAW_LINE       // в качестве индикатора использованы линии
 #property indicator_color1  clrWhite      // цвет линий
@@ -16,11 +16,6 @@
 #property indicator_width1  1             // толщина линий
 #property indicator_label1  "Среднее ATR" // наименование буфера
 
-#property indicator_type1 DRAW_LINE       // в качестве индикатора использованы линии
-#property indicator_color1  clrLightBlue  // цвет линий
-#property indicator_style1  STYLE_SOLID   // стиль линий
-#property indicator_width1  1             // толщина линий
-#property indicator_label1  "ATR" // наименование буфера
 
 //+------------------------------------------------------------------+
 //| Индикатор усредняющий ATR                                        |
@@ -37,7 +32,9 @@ input int aver_period = 100;       // период усреднения значений ATR
 // системные переменные индикатора
 int handleATR;                // хэндл индикатора ATR
 int copiedATR = -1;           // переменная для получения количества скопированных данных индикатора ATR   
-int startIndex;               // индекс с которого начать вычисление усреднения ATR                     
+int startIndex;               // индекс с которого начать вычисление усреднения ATR
+int index;                    // индекс прохода по циклу    
+double lastSumm;              // переменная хранения последней суммы значений              
 // индикаторные буферы
 double averATRBuffer[];       // хранит значения усредненных значений ATR
 double bufferATR[];           // хранит значение буфера ATR
@@ -60,7 +57,7 @@ int OnInit()
      return (INIT_FAILED);
     }
    // задаем параметры индикаторных буферов
-   SetIndexBuffer(0,averATRBuffer,INDICATOR_DATA);
+   SetIndexBuffer(0,averATRBuffer,INDICATOR_DATA);  
    // загружаем хэндл ATR
    handleATR = iATR(_Symbol,_Period,ma_period);
    // создаем объект класса isNewBar
@@ -97,7 +94,6 @@ int OnCalculate(const int rates_total,
     // если это первый запуск индикатора
     if (prev_calculated == 0)
      {
-
        // пытаемся скопировать данные индикатора ATR
        copiedATR = CopyBuffer(handleATR,0,0,rates_total,bufferATR);
        
@@ -106,26 +102,30 @@ int OnCalculate(const int rates_total,
          Print("Ошибка индикатора AverageATR. Не удалось прогрузить буфер индикатора ATR");
          return(0);  // снова отравляем на пересчет
         } 
-
-         
+       // проходим по буферу ATR от startIndex до конца и вычисляем сумму 
+       lastSumm = 0;
+       for (index=0;index<aver_period;index++)
+        lastSumm = lastSumm + bufferATR[startIndex-index];
+       averATRBuffer[startIndex] = lastSumm / aver_period;  // сохраняем первое среднее значение
+       // проходим по буферу ATR и вычисляем остальные усредненные значения
+       for (index = startIndex+1;index < rates_total; index++)
+        {
+         lastSumm = lastSumm + bufferATR[index] - bufferATR[index-aver_period];  // вычисляем новую сумму
+         averATRBuffer[index] = lastSumm / aver_period;     // сохраняем среднее значение
+        }
      }
     // если не первых пересчет индикатора
     else 
      {
-     /*  // если новый бар сформирован
+     // вычисления в реальном времени доработать
+       // если новый бар сформирован
+       /*
        if ( isNewBar.isNewBar() > 0 )
         {
-          copiedATR 
-          averATRBuffer[0] = 
-        }*/
+          copiedATR = CopyBuffer(handleATRm,0,0,1,
+          averATRBuffer[rates_total-1] = 
+        }
+        */
      }
    return(rates_total);
   }
-  
-  // функция считает среднее значение индикаторного буфера ATR
-  double  GetAverageATRValue (int start_pos)   // start_pos - откуда начать вычислять среднее значение индикаторного буфера 
-   {
-     double averValue = 0;   // переменная для хранения среднего значения 
-     int    index;           // переменная для прохода по циклу
-    // for (index=start_pos;index
-   }
