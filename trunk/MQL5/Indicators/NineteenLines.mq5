@@ -11,7 +11,7 @@
 #property indicator_buffers 45  
 #property indicator_plots   44
 
-#include <ExtrLine\CExtremumCalc_NE.mqh>
+#include <ExtrLine\CLevel.mqh>
 #include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBarDD.mqh>
 
@@ -22,11 +22,11 @@
 #define TF_PERIOD_ATR_FOR_H4 PERIOD_H4
 #define TF_PERIOD_ATR_FOR_H1 PERIOD_H4
 
-#define PERCENTAGE_OF_ATR_FOR_MN  1
-#define PERCENTAGE_OF_ATR_FOR_W1  1
-#define PERCENTAGE_OF_ATR_FOR_D1  1
-#define PERCENTAGE_OF_ATR_FOR_H4  2
-#define PERCENTAGE_OF_ATR_FOR_H1  1
+#define PERCENTAGE_OF_ATR_FOR_MN  1.5
+#define PERCENTAGE_OF_ATR_FOR_W1  1.5
+#define PERCENTAGE_OF_ATR_FOR_D1  2
+#define PERCENTAGE_OF_ATR_FOR_H4  3
+#define PERCENTAGE_OF_ATR_FOR_H1  1.5
 
 input int    period_ATR_channel = 30;   //Период ATR для канала
 input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
@@ -56,18 +56,18 @@ bool show_Extr_H1 = flag5;
 bool show_Price_D1 = flag6;
 
 
-CExtremumCalc calcMN (Symbol(), PERIOD_MN1, TF_PERIOD_ATR_FOR_MN, PERCENTAGE_OF_ATR_FOR_MN, period_ATR_channel, percent_ATR_channel);
-CExtremumCalc calcW1 (Symbol(),  PERIOD_W1, TF_PERIOD_ATR_FOR_W1, PERCENTAGE_OF_ATR_FOR_W1, period_ATR_channel, percent_ATR_channel);
-CExtremumCalc calcD1 (Symbol(),  PERIOD_D1, TF_PERIOD_ATR_FOR_D1, PERCENTAGE_OF_ATR_FOR_D1, period_ATR_channel, percent_ATR_channel);
-CExtremumCalc calcH4 (Symbol(),  PERIOD_H4, TF_PERIOD_ATR_FOR_H4, PERCENTAGE_OF_ATR_FOR_H4, period_ATR_channel, percent_ATR_channel);
-CExtremumCalc calcH1 (Symbol(),  PERIOD_H1, TF_PERIOD_ATR_FOR_H1, PERCENTAGE_OF_ATR_FOR_H1, period_ATR_channel, percent_ATR_channel);
+CLevel calcMN (Symbol(), PERIOD_MN1, TF_PERIOD_ATR_FOR_MN, PERCENTAGE_OF_ATR_FOR_MN, period_ATR_channel, percent_ATR_channel);
+CLevel calcW1 (Symbol(),  PERIOD_W1, TF_PERIOD_ATR_FOR_W1, PERCENTAGE_OF_ATR_FOR_W1, period_ATR_channel, percent_ATR_channel);
+CLevel calcD1 (Symbol(),  PERIOD_D1, TF_PERIOD_ATR_FOR_D1, PERCENTAGE_OF_ATR_FOR_D1, period_ATR_channel, percent_ATR_channel);
+CLevel calcH4 (Symbol(),  PERIOD_H4, TF_PERIOD_ATR_FOR_H4, PERCENTAGE_OF_ATR_FOR_H4, period_ATR_channel, percent_ATR_channel);
+CLevel calcH1 (Symbol(),  PERIOD_H1, TF_PERIOD_ATR_FOR_H1, PERCENTAGE_OF_ATR_FOR_H1, period_ATR_channel, percent_ATR_channel);
 
-SExtremum estructMN[4];
-SExtremum estructW1[4];
-SExtremum estructD1[4];
-SExtremum estructH4[4];
-SExtremum estructH1[4];
-SExtremum pstructD1[4];
+SLevel extr_levelMN[4];
+SLevel extr_levelW1[4];
+SLevel extr_levelD1[4];
+SLevel extr_levelH4[4];
+SLevel extr_levelH1[4];
+SLevel price_levelD1[4];
  
 double Extr_MN_Buffer1[];
 double Extr_MN_Buffer2[];
@@ -119,7 +119,6 @@ int ATR_handle_for_price_line;
 
 bool series_order = true;
 bool first = true;
-
 
 CisNewBar isNewBarMN (_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
 CisNewBar isNewBarW1 (_Symbol, PERIOD_W1 );   // для проверки формирования нового бара на неделе
@@ -274,12 +273,12 @@ int OnInit()
  ArraySetAsSeries(Price_D1_Buffer4, series_order);
  ArraySetAsSeries(  ATR_D1_Buffer , series_order);
   
- InitializeExtrArray(estructMN);
- InitializeExtrArray(estructW1);
- InitializeExtrArray(estructD1);
- InitializeExtrArray(estructH4);
- InitializeExtrArray(estructH1);
- InitializeExtrArray(pstructD1);
+ InitializeExtrArray(extr_levelMN);
+ InitializeExtrArray(extr_levelW1);
+ InitializeExtrArray(extr_levelD1);
+ InitializeExtrArray(extr_levelH4);
+ InitializeExtrArray(extr_levelH1);
+ InitializeExtrArray(price_levelD1);
  
  ATR_handle_for_price_line = iATR(Symbol(), PERIOD_D1, period_ATR_channel);
  
@@ -290,12 +289,12 @@ int OnInit()
  if(Period() > PERIOD_H1  && show_Extr_H1)  show_Extr_H1 = false;
  if(Period() > PERIOD_D1  && show_Price_D1) show_Price_D1 = false;
   
- if(show_Extr_MN) CreateExtrLines (estructMN, PERIOD_MN1, color_Extr_MN);
- if(show_Extr_W1) CreateExtrLines (estructW1, PERIOD_W1 , color_Extr_W1);
- if(show_Extr_D1) CreateExtrLines (estructD1, PERIOD_D1 , color_Extr_D1);
- if(show_Extr_H4) CreateExtrLines (estructH4, PERIOD_H4 , color_Extr_H4);
- if(show_Extr_H1) CreateExtrLines (estructH1, PERIOD_H1 , color_Extr_H1);
- if(show_Price_D1)CreatePriceLines(pstructD1, PERIOD_D1 , color_Price_D1); 
+ if(show_Extr_MN) CreateExtrLines (extr_levelMN, PERIOD_MN1, color_Extr_MN);
+ if(show_Extr_W1) CreateExtrLines (extr_levelW1, PERIOD_W1 , color_Extr_W1);
+ if(show_Extr_D1) CreateExtrLines (extr_levelD1, PERIOD_D1 , color_Extr_D1);
+ if(show_Extr_H4) CreateExtrLines (extr_levelH4, PERIOD_H4 , color_Extr_H4);
+ if(show_Extr_H1) CreateExtrLines (extr_levelH1, PERIOD_H1 , color_Extr_H1);
+ if(show_Price_D1)CreatePriceLines(price_levelD1, PERIOD_D1 , color_Price_D1); 
  
 //---
  return(INIT_SUCCEEDED);
@@ -380,7 +379,7 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
 //---
-   bool load = FillATRBuffer();
+   bool load = true;//FillATRBuffer();
    
    ArraySetAsSeries(open , series_order);
    ArraySetAsSeries(high , series_order);
@@ -392,96 +391,90 @@ int OnCalculate(const int rates_total,
    {
     if(first)
     {
-     calcMN.SetStartDayPrice(close[rates_total-1]);
-     calcW1.SetStartDayPrice(close[rates_total-1]);
-     calcD1.SetStartDayPrice(close[rates_total-1]);
-     calcH4.SetStartDayPrice(close[rates_total-1]);
-     calcH1.SetStartDayPrice(close[rates_total-1]);
-     PrintFormat("Установлены стартдэйпрайс на всех тф");
+     PrintFormat("%s Рассчет на истории. %s / %s", __FUNCTION__, TimeToString(time[rates_total-2]), TimeToString(time[0]));
      
-     for(int i = rates_total-2; i > 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
+     for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
      {
-      while(!FillATRBuffer()) {}
+      //PrintFormat("%s %s", __FUNCTION__, TimeToString(time[i]));
+      if(show_Extr_MN  && isNewBarMN.isNewBar(time[i]) > 0) CalcExtr(calcMN, extr_levelMN, time[i], false);
+      if(show_Extr_W1  && isNewBarW1.isNewBar(time[i]) > 0) CalcExtr(calcW1, extr_levelW1, time[i], false);
+      if(show_Extr_D1  && isNewBarD1.isNewBar(time[i]) > 0) CalcExtr(calcD1, extr_levelD1, time[i], false);
+      if(show_Extr_H4  && isNewBarH4.isNewBar(time[i]) > 0) CalcExtr(calcH4, extr_levelH4, time[i], false);
+      if(show_Extr_H1  && isNewBarH1.isNewBar(time[i]) > 0) CalcExtr(calcH1, extr_levelH1, time[i], false);     
+      if(show_Price_D1 && isNewBarD1.isNewBar(time[i]) > 0) CalcPrice(price_levelD1, PERIOD_D1, time[i]);
 
-      if(show_Extr_MN  && isNewBarMN.isNewBar(time[i]) > 0) CalcExtr(calcMN, estructMN, time[i], false); 
-      if(show_Extr_W1  && isNewBarW1.isNewBar(time[i]) > 0) CalcExtr(calcW1, estructW1, time[i], false); 
-      if(show_Extr_D1  && isNewBarD1.isNewBar(time[i]) > 0) CalcExtr(calcD1, estructD1, time[i], false);
-      if(show_Extr_H4  && isNewBarH4.isNewBar(time[i]) > 0) CalcExtr(calcH4, estructH4, time[i], false);
-      if(show_Extr_H1  && isNewBarH1.isNewBar(time[i]) > 0) CalcExtr(calcH1, estructH1, time[i], false);
-      if(show_Price_D1 && isNewBarD1.isNewBar(time[i]) > 0) CalcPrice(pstructD1, PERIOD_D1, time[i]);
-           
       if(show_Extr_MN)
       {
-       Extr_MN_Buffer1[i] = estructMN[0].price;
-        ATR_MN_Buffer1[i] = estructMN[0].channel;
-       Extr_MN_Buffer2[i] = estructMN[1].price;
-        ATR_MN_Buffer2[i] = estructMN[1].channel;
-       Extr_MN_Buffer3[i] = estructMN[2].price;
-        ATR_MN_Buffer3[i] = estructMN[2].channel;
-       Extr_MN_Buffer4[i] = estructMN[3].price;
-        ATR_MN_Buffer4[i] = estructMN[3].channel;
+       Extr_MN_Buffer1[i] = extr_levelMN[0].extr.price;
+        ATR_MN_Buffer1[i] = extr_levelMN[0].channel;
+       Extr_MN_Buffer2[i] = extr_levelMN[1].extr.price;
+        ATR_MN_Buffer2[i] = extr_levelMN[1].channel;
+       Extr_MN_Buffer3[i] = extr_levelMN[2].extr.price;
+        ATR_MN_Buffer3[i] = extr_levelMN[2].channel;
+       Extr_MN_Buffer4[i] = extr_levelMN[3].extr.price;
+        ATR_MN_Buffer4[i] = extr_levelMN[3].channel;
       }//end show_Extr_MN
       if(show_Extr_W1)
       { 
-       Extr_W1_Buffer1[i] = estructW1[0].price;
-        ATR_W1_Buffer1[i] = estructW1[0].channel;
-       Extr_W1_Buffer2[i] = estructW1[1].price;
-        ATR_W1_Buffer2[i] = estructW1[1].channel;
-       Extr_W1_Buffer3[i] = estructW1[2].price;
-        ATR_W1_Buffer3[i] = estructW1[2].channel;
-       Extr_W1_Buffer4[i] = estructW1[3].price;
-        ATR_W1_Buffer4[i] = estructW1[3].channel;
+       Extr_W1_Buffer1[i] = extr_levelW1[0].extr.price;
+        ATR_W1_Buffer1[i] = extr_levelW1[0].channel;
+       Extr_W1_Buffer2[i] = extr_levelW1[1].extr.price;
+        ATR_W1_Buffer2[i] = extr_levelW1[1].channel;
+       Extr_W1_Buffer3[i] = extr_levelW1[2].extr.price;
+        ATR_W1_Buffer3[i] = extr_levelW1[2].channel;
+       Extr_W1_Buffer4[i] = extr_levelW1[3].extr.price;
+        ATR_W1_Buffer4[i] = extr_levelW1[3].channel;
 
       }//end show_Extr_W1
       if(show_Extr_D1)
       { 
-       Extr_D1_Buffer1[i] = estructD1[0].price;
-        ATR_D1_Buffer1[i] = estructD1[0].channel;
-       Extr_D1_Buffer2[i] = estructD1[1].price;
-        ATR_D1_Buffer2[i] = estructD1[1].channel;
-       Extr_D1_Buffer3[i] = estructD1[2].price;
-        ATR_D1_Buffer3[i] = estructD1[2].channel;
-       Extr_D1_Buffer4[i] = estructD1[3].price;
-        ATR_D1_Buffer4[i] = estructD1[3].channel;
+       Extr_D1_Buffer1[i] = extr_levelD1[0].extr.price;
+        ATR_D1_Buffer1[i] = extr_levelD1[0].channel;
+       Extr_D1_Buffer2[i] = extr_levelD1[1].extr.price;
+        ATR_D1_Buffer2[i] = extr_levelD1[1].channel;
+       Extr_D1_Buffer3[i] = extr_levelD1[2].extr.price;
+        ATR_D1_Buffer3[i] = extr_levelD1[2].channel;
+       Extr_D1_Buffer4[i] = extr_levelD1[3].extr.price;
+        ATR_D1_Buffer4[i] = extr_levelD1[3].channel;
       }//end show_Extr_D1
       if(show_Extr_H4)
       {      
-       Extr_H4_Buffer1[i] = estructH4[0].price;
-        ATR_H4_Buffer1[i] = estructH4[0].channel;
-       Extr_H4_Buffer2[i] = estructH4[1].price;
-        ATR_H4_Buffer2[i] = estructH4[1].channel;
-       Extr_H4_Buffer3[i] = estructH4[2].price;
-        ATR_H4_Buffer3[i] = estructH4[2].channel;
-       Extr_H4_Buffer4[i] = estructH4[3].price;
-        ATR_H4_Buffer4[i] = estructH4[3].channel;
+       Extr_H4_Buffer1[i] = extr_levelH4[0].extr.price;
+        ATR_H4_Buffer1[i] = extr_levelH4[0].channel;
+       Extr_H4_Buffer2[i] = extr_levelH4[1].extr.price;
+        ATR_H4_Buffer2[i] = extr_levelH4[1].channel;
+       Extr_H4_Buffer3[i] = extr_levelH4[2].extr.price;
+        ATR_H4_Buffer3[i] = extr_levelH4[2].channel;
+       Extr_H4_Buffer4[i] = extr_levelH4[3].extr.price;
+        ATR_H4_Buffer4[i] = extr_levelH4[3].channel;
       }// end show_Extr_H4
       if(show_Extr_H1)
       {  
-       Extr_H1_Buffer1[i] = estructH1[0].price;
-        ATR_H1_Buffer1[i] = estructH1[0].channel;
-       Extr_H1_Buffer2[i] = estructH1[1].price;
-        ATR_H1_Buffer2[i] = estructH1[1].channel;
-       Extr_H1_Buffer3[i] = estructH1[2].price;
-        ATR_H1_Buffer3[i] = estructH1[2].channel;
-       Extr_H1_Buffer4[i] = estructH1[3].price;
-        ATR_H1_Buffer4[i] = estructH1[3].channel;        
+       Extr_H1_Buffer1[i] = extr_levelH1[0].extr.price;
+        ATR_H1_Buffer1[i] = extr_levelH1[0].channel;
+       Extr_H1_Buffer2[i] = extr_levelH1[1].extr.price;
+        ATR_H1_Buffer2[i] = extr_levelH1[1].channel;
+       Extr_H1_Buffer3[i] = extr_levelH1[2].extr.price;
+        ATR_H1_Buffer3[i] = extr_levelH1[2].channel;
+       Extr_H1_Buffer4[i] = extr_levelH1[3].extr.price;
+        ATR_H1_Buffer4[i] = extr_levelH1[3].channel;        
       }//end show_Extr_H1
       if(show_Price_D1)
       {         
-       Price_D1_Buffer1[i] = pstructD1[0].price;
-       Price_D1_Buffer2[i] = pstructD1[1].price;
-       Price_D1_Buffer3[i] = pstructD1[2].price;
-       Price_D1_Buffer4[i] = pstructD1[3].price;
-          ATR_D1_Buffer[i] = pstructD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
+       Price_D1_Buffer1[i] = price_levelD1[0].extr.price;
+       Price_D1_Buffer2[i] = price_levelD1[1].extr.price;
+       Price_D1_Buffer3[i] = price_levelD1[2].extr.price;
+       Price_D1_Buffer4[i] = price_levelD1[3].extr.price;
+          ATR_D1_Buffer[i] = price_levelD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
       }
      }//end fro
      
-     if(show_Extr_MN) MoveExtrLines (estructMN, PERIOD_MN1);
-     if(show_Extr_W1) MoveExtrLines (estructW1, PERIOD_W1 ); 
-     if(show_Extr_D1) MoveExtrLines (estructD1, PERIOD_D1 );
-     if(show_Extr_H4) MoveExtrLines (estructH4, PERIOD_H4 );
-     if(show_Extr_H1) MoveExtrLines (estructH1, PERIOD_H1 );
-     if(show_Price_D1)MovePriceLines(pstructD1, PERIOD_D1 );
+     if(show_Extr_MN) MoveExtrLines (extr_levelMN, PERIOD_MN1);
+     if(show_Extr_W1) MoveExtrLines (extr_levelW1, PERIOD_W1 ); 
+     if(show_Extr_D1) MoveExtrLines (extr_levelD1, PERIOD_D1 );
+     if(show_Extr_H4) MoveExtrLines (extr_levelH4, PERIOD_H4 );
+     if(show_Extr_H1) MoveExtrLines (extr_levelH1, PERIOD_H1 );
+     if(show_Price_D1)MovePriceLines(price_levelD1, PERIOD_D1 );
      
      PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
      first = false; 
@@ -490,82 +483,82 @@ int OnCalculate(const int rates_total,
     {     
      if(show_Extr_MN)
      {
-      Extr_MN_Buffer1[0] = estructMN[0].price;
-       ATR_MN_Buffer1[0] = estructMN[0].channel;
-      Extr_MN_Buffer2[0] = estructMN[1].price;
-       ATR_MN_Buffer2[0] = estructMN[1].channel;
-      Extr_MN_Buffer3[0] = estructMN[2].price;
-       ATR_MN_Buffer3[0] = estructMN[2].channel;
-      Extr_MN_Buffer4[0] = estructMN[3].price;
-       ATR_MN_Buffer4[0] = estructMN[3].channel;
+      Extr_MN_Buffer1[0] = extr_levelMN[0].extr.price;
+       ATR_MN_Buffer1[0] = extr_levelMN[0].channel;
+      Extr_MN_Buffer2[0] = extr_levelMN[1].extr.price;
+       ATR_MN_Buffer2[0] = extr_levelMN[1].channel;
+      Extr_MN_Buffer3[0] = extr_levelMN[2].extr.price;
+       ATR_MN_Buffer3[0] = extr_levelMN[2].channel;
+      Extr_MN_Buffer4[0] = extr_levelMN[3].extr.price;
+       ATR_MN_Buffer4[0] = extr_levelMN[3].channel;
      }//end show_Extr_MN
      if(show_Extr_W1)
      { 
-      Extr_W1_Buffer1[0] = estructW1[0].price;
-       ATR_W1_Buffer1[0] = estructW1[0].channel;
-      Extr_W1_Buffer2[0] = estructW1[1].price;
-       ATR_W1_Buffer2[0] = estructW1[1].channel;
-      Extr_W1_Buffer3[0] = estructW1[2].price;
-       ATR_W1_Buffer3[0] = estructW1[2].channel;
-      Extr_W1_Buffer4[0] = estructW1[3].price;
-       ATR_W1_Buffer4[0] = estructW1[3].channel;
+      Extr_W1_Buffer1[0] = extr_levelW1[0].extr.price;
+       ATR_W1_Buffer1[0] = extr_levelW1[0].channel;
+      Extr_W1_Buffer2[0] = extr_levelW1[1].extr.price;
+       ATR_W1_Buffer2[0] = extr_levelW1[1].channel;
+      Extr_W1_Buffer3[0] = extr_levelW1[2].extr.price;
+       ATR_W1_Buffer3[0] = extr_levelW1[2].channel;
+      Extr_W1_Buffer4[0] = extr_levelW1[3].extr.price;
+       ATR_W1_Buffer4[0] = extr_levelW1[3].channel;
      }//end show_Extr_W1
      if(show_Extr_D1)
      { 
-      Extr_D1_Buffer1[0] = estructD1[0].price;
-       ATR_D1_Buffer1[0] = estructD1[0].channel;
-      Extr_D1_Buffer2[0] = estructD1[1].price;
-       ATR_D1_Buffer2[0] = estructD1[1].channel;
-      Extr_D1_Buffer3[0] = estructD1[2].price;
-       ATR_D1_Buffer3[0] = estructD1[2].channel;
-      Extr_D1_Buffer4[0] = estructD1[3].price;
-       ATR_D1_Buffer4[0] = estructD1[3].channel;
+      Extr_D1_Buffer1[0] = extr_levelD1[0].extr.price;
+       ATR_D1_Buffer1[0] = extr_levelD1[0].channel;
+      Extr_D1_Buffer2[0] = extr_levelD1[1].extr.price;
+       ATR_D1_Buffer2[0] = extr_levelD1[1].channel;
+      Extr_D1_Buffer3[0] = extr_levelD1[2].extr.price;
+       ATR_D1_Buffer3[0] = extr_levelD1[2].channel;
+      Extr_D1_Buffer4[0] = extr_levelD1[3].extr.price;
+       ATR_D1_Buffer4[0] = extr_levelD1[3].channel;
      }//end show_Extr_D1
      if(show_Extr_H4)
      {      
-      Extr_H4_Buffer1[0] = estructH4[0].price;
-       ATR_H4_Buffer1[0] = estructH4[0].channel;
-      Extr_H4_Buffer2[0] = estructH4[1].price;
-       ATR_H4_Buffer2[0] = estructH4[1].channel;
-      Extr_H4_Buffer3[0] = estructH4[2].price;
-       ATR_H4_Buffer3[0] = estructH4[2].channel;
-      Extr_H4_Buffer4[0] = estructH4[3].price;
-       ATR_H4_Buffer4[0] = estructH4[3].channel;
+      Extr_H4_Buffer1[0] = extr_levelH4[0].extr.price;
+       ATR_H4_Buffer1[0] = extr_levelH4[0].channel;
+      Extr_H4_Buffer2[0] = extr_levelH4[1].extr.price;
+       ATR_H4_Buffer2[0] = extr_levelH4[1].channel;
+      Extr_H4_Buffer3[0] = extr_levelH4[2].extr.price;
+       ATR_H4_Buffer3[0] = extr_levelH4[2].channel;
+      Extr_H4_Buffer4[0] = extr_levelH4[3].extr.price;
+       ATR_H4_Buffer4[0] = extr_levelH4[3].channel;
      }// end show_Extr_H4
      if(show_Extr_H1)
      {  
-      Extr_H1_Buffer1[0] = estructH1[0].price;
-       ATR_H1_Buffer1[0] = estructH1[0].channel;
-      Extr_H1_Buffer2[0] = estructH1[1].price;
-       ATR_H1_Buffer2[0] = estructH1[1].channel;
-      Extr_H1_Buffer3[0] = estructH1[2].price;
-       ATR_H1_Buffer3[0] = estructH1[2].channel;
-      Extr_H1_Buffer4[0] = estructH1[3].price;
-       ATR_H1_Buffer4[0] = estructH1[3].channel;        
+      Extr_H1_Buffer1[0] = extr_levelH1[0].extr.price;
+       ATR_H1_Buffer1[0] = extr_levelH1[0].channel;
+      Extr_H1_Buffer2[0] = extr_levelH1[1].extr.price;
+       ATR_H1_Buffer2[0] = extr_levelH1[1].channel;
+      Extr_H1_Buffer3[0] = extr_levelH1[2].extr.price;
+       ATR_H1_Buffer3[0] = extr_levelH1[2].channel;
+      Extr_H1_Buffer4[0] = extr_levelH1[3].extr.price;
+       ATR_H1_Buffer4[0] = extr_levelH1[3].channel;        
      }//end show_Extr_H1
      if(show_Price_D1)
      {
-      Price_D1_Buffer1[0] = pstructD1[0].price;
-      Price_D1_Buffer2[0] = pstructD1[1].price;
-      Price_D1_Buffer3[0] = pstructD1[2].price;
-      Price_D1_Buffer4[0] = pstructD1[3].price;
-         ATR_D1_Buffer[0] = pstructD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
+      Price_D1_Buffer1[0] = price_levelD1[0].extr.price;
+      Price_D1_Buffer2[0] = price_levelD1[1].extr.price;
+      Price_D1_Buffer3[0] = price_levelD1[2].extr.price;
+      Price_D1_Buffer4[0] = price_levelD1[3].extr.price;
+         ATR_D1_Buffer[0] = price_levelD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
      }
      
-     while(!FillATRBuffer()) {} 
-     CalcExtr(calcMN, estructMN, time[0], true); 
-     CalcExtr(calcW1, estructW1, time[0], true);  
-     CalcExtr(calcD1, estructD1, time[0], true);
-     CalcPrice(pstructD1, PERIOD_D1, time[0]);
-     CalcExtr(calcH4, estructH4, time[0], true);
-     CalcExtr(calcH1, estructH1, time[0], true);
+     //while(!FillATRBuffer()) {PrintFormat("REAL STOPIKI");} 
+     if(show_Extr_MN) CalcExtr(calcMN, extr_levelMN, time[0], true); 
+     if(show_Extr_W1) CalcExtr(calcW1, extr_levelW1, time[0], true);  
+     if(show_Extr_D1) CalcExtr(calcD1, extr_levelD1, time[0], true);    
+     if(show_Extr_H4) CalcExtr(calcH4, extr_levelH4, time[0], true);
+     if(show_Extr_H1) CalcExtr(calcH1, extr_levelH1, time[0], true);
+     if(show_Price_D1)CalcPrice(price_levelD1, PERIOD_D1, time[0]);
       
-     if(show_Extr_MN) MoveExtrLines (estructMN, PERIOD_MN1);
-     if(show_Extr_W1) MoveExtrLines (estructW1, PERIOD_W1 ); 
-     if(show_Extr_D1) MoveExtrLines (estructD1, PERIOD_D1 );
-     if(show_Extr_H4) MoveExtrLines (estructH4, PERIOD_H4 );
-     if(show_Extr_H1) MoveExtrLines (estructH1, PERIOD_H1 );
-     if(show_Price_D1)MovePriceLines(pstructD1, PERIOD_D1 );
+     if(show_Extr_MN) MoveExtrLines (extr_levelMN, PERIOD_MN1);
+     if(show_Extr_W1) MoveExtrLines (extr_levelW1, PERIOD_W1 ); 
+     if(show_Extr_D1) MoveExtrLines (extr_levelD1, PERIOD_D1 );
+     if(show_Extr_H4) MoveExtrLines (extr_levelH4, PERIOD_H4 );
+     if(show_Extr_H1) MoveExtrLines (extr_levelH1, PERIOD_H1 );
+     if(show_Price_D1)MovePriceLines(price_levelD1, PERIOD_D1 );
     }
    }
 //--- return value of prev_calculated for next call
@@ -574,10 +567,11 @@ int OnCalculate(const int rates_total,
   
   
 //-------------------------------------------------------------------+
-bool FillATRBuffer()
+/*bool FillATRBuffer()
 {
  bool result = true;
  
+ PrintFormat("Bars(MN1) = %d; SeriesInfoInteger = %d", Bars(Symbol(), PERIOD_MN1), SeriesInfoInteger(Symbol(), PERIOD_MN1, SERIES_BARS_COUNT));
  if(show_Extr_MN && !calcMN.isATRCalculated(Bars(Symbol(), PERIOD_MN1) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_MN) - ATR_PERIOD))
   result = false;
    
@@ -596,23 +590,23 @@ bool FillATRBuffer()
  if(!result)
   PrintFormat("%s Не получилось загрузить буфера ATR, подожди чутка братан. Ошибочка вышла %d", __FUNCTION__, GetLastError()); 
  return(result);
-}
+}*/
 
 
 //---------------------------------------------
 // Пересчет экстремумов для заданного ТФ
 //---------------------------------------------
-void CalcExtr(CExtremumCalc &extrcalc, SExtremum &resArray[], datetime start_pos_time, bool now = false)
+void CalcExtr(CLevel &extrcalc, SLevel &resArray[], datetime start_pos_time, bool now = false)
 {
- extrcalc.RecountExtremum(now, start_pos_time);
+ extrcalc.RecountLevel(start_pos_time, now);
  for(int j = 0; j < 4; j++)
  {
-  resArray[j] = extrcalc.getExtr(j);
+  resArray[j] = extrcalc.getLevel(j);
  }
- //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f};", EnumToString((ENUM_TIMEFRAMES)extrcalc.getPeriod()), resArray[0].direction, resArray[0].price, resArray[1].direction, resArray[1].price, resArray[2].direction, resArray[2].price);
+ //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f}; num3: {%d, %0.5f};", __FUNCTION__, resArray[0].extr.direction, resArray[0].extr.price, resArray[1].extr.direction, resArray[1].extr.price, resArray[2].extr.direction, resArray[2].extr.price, resArray[3].extr.direction, resArray[3].extr.price);
 }
 
-void CalcPrice(SExtremum &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
+void CalcPrice(SLevel &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
 {
  double  buffer_ATR[1];
  MqlRates rates_buffer[1];
@@ -620,54 +614,54 @@ void CalcPrice(SExtremum &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
  CopyBuffer(ATR_handle_for_price_line, 0, start_pos-PeriodSeconds(tf), 1, buffer_ATR);
  CopyRates(Symbol(), tf, start_pos-PeriodSeconds(tf), 1, rates_buffer);
  
- pstructD1[0].price = rates_buffer[0].open;
- pstructD1[0].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
- pstructD1[1].price = rates_buffer[0].high;
- pstructD1[1].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
- pstructD1[2].price = rates_buffer[0].low;
- pstructD1[2].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
- pstructD1[3].price = rates_buffer[0].close;
- pstructD1[3].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ price_levelD1[0].extr.price = rates_buffer[0].open;
+ price_levelD1[0].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ price_levelD1[1].extr.price = rates_buffer[0].high;
+ price_levelD1[1].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ price_levelD1[2].extr.price = rates_buffer[0].low;
+ price_levelD1[2].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ price_levelD1[3].extr.price = rates_buffer[0].close;
+ price_levelD1[3].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
 }
 //---------------------------------------------
 // Создание линий
 //---------------------------------------------
-void CreateExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf, color clr)
+void CreateExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf, color clr)
 {
  string name = "extr_" + EnumToString(tf) + "_";
 
- HLineCreate(0, name+"one"   , 0, te[0].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"one+"  , 0, te[0].price+te[0].channel, clr, 2);
- HLineCreate(0, name+"one-"  , 0, te[0].price-te[0].channel, clr, 2);
- HLineCreate(0, name+"two"   , 0, te[1].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"two+"  , 0, te[1].price+te[1].channel, clr, 2);
- HLineCreate(0, name+"two-"  , 0, te[1].price-te[1].channel, clr, 2);
- HLineCreate(0, name+"three" , 0, te[2].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"three+", 0, te[2].price+te[2].channel, clr, 2);
- HLineCreate(0, name+"three-", 0, te[2].price-te[2].channel, clr, 2);
- HLineCreate(0, name+"four"  , 0, te[3].price              , clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"four+" , 0, te[3].price+te[3].channel, clr, 2);
- HLineCreate(0, name+"four-" , 0, te[3].price-te[3].channel, clr, 2);
+ HLineCreate(0, name+"one"   , 0, te[0].extr.price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"one+"  , 0, te[0].extr.price+te[0].channel, clr, 2);
+ HLineCreate(0, name+"one-"  , 0, te[0].extr.price-te[0].channel, clr, 2);
+ HLineCreate(0, name+"two"   , 0, te[1].extr.price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"two+"  , 0, te[1].extr.price+te[1].channel, clr, 2);
+ HLineCreate(0, name+"two-"  , 0, te[1].extr.price-te[1].channel, clr, 2);
+ HLineCreate(0, name+"three" , 0, te[2].extr.price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"three+", 0, te[2].extr.price+te[2].channel, clr, 2);
+ HLineCreate(0, name+"three-", 0, te[2].extr.price-te[2].channel, clr, 2);
+ HLineCreate(0, name+"four"  , 0, te[3].extr.price              , clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"four+" , 0, te[3].extr.price+te[3].channel, clr, 2);
+ HLineCreate(0, name+"four-" , 0, te[3].extr.price-te[3].channel, clr, 2);
 }
 
 //---------------------------------------------
 // Сдвиг линий на заданный уровень
 //---------------------------------------------
-void MoveExtrLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
+void MoveExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf)
 {
  string name = "extr_" + EnumToString(tf) + "_";
- HLineMove(0, name+"one"   , te[0].price);
- HLineMove(0, name+"one+"  , te[0].price+te[0].channel);
- HLineMove(0, name+"one-"  , te[0].price-te[0].channel);
- HLineMove(0, name+"two"   , te[1].price);
- HLineMove(0, name+"two+"  , te[1].price+te[1].channel);
- HLineMove(0, name+"two-"  , te[1].price-te[1].channel);
- HLineMove(0, name+"three" , te[2].price);
- HLineMove(0, name+"three+", te[2].price+te[2].channel);
- HLineMove(0, name+"three-", te[2].price-te[2].channel);
- HLineMove(0, name+"four"  , te[3].price);
- HLineMove(0, name+"four+" , te[3].price+te[3].channel);
- HLineMove(0, name+"four-" , te[3].price-te[3].channel);
+ HLineMove(0, name+"one"   , te[0].extr.price);
+ HLineMove(0, name+"one+"  , te[0].extr.price+te[0].channel);
+ HLineMove(0, name+"one-"  , te[0].extr.price-te[0].channel);
+ HLineMove(0, name+"two"   , te[1].extr.price);
+ HLineMove(0, name+"two+"  , te[1].extr.price+te[1].channel);
+ HLineMove(0, name+"two-"  , te[1].extr.price-te[1].channel);
+ HLineMove(0, name+"three" , te[2].extr.price);
+ HLineMove(0, name+"three+", te[2].extr.price+te[2].channel);
+ HLineMove(0, name+"three-", te[2].extr.price-te[2].channel);
+ HLineMove(0, name+"four"  , te[3].extr.price);
+ HLineMove(0, name+"four+" , te[3].extr.price+te[3].channel);
+ HLineMove(0, name+"four-" , te[3].extr.price-te[3].channel);
 }
 
 //---------------------------------------------
@@ -690,38 +684,38 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"four-");
 }
 
-void CreatePriceLines(const SExtremum &te[], ENUM_TIMEFRAMES tf,color clr)
+void CreatePriceLines(const SLevel &te[], ENUM_TIMEFRAMES tf,color clr)
 {
  string name = "price_" + EnumToString(tf) + "_";
- HLineCreate(0, name+"open"  , 0, te[0].price, clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"open+" , 0, te[0].price+te[0].channel, clr, 2);
- HLineCreate(0, name+"open-" , 0, te[0].price-te[0].channel, clr, 2); 
- HLineCreate(0, name+"high"  , 0, te[1].price, clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"high+" , 0, te[1].price+te[1].channel, clr, 2);
- HLineCreate(0, name+"high-" , 0, te[1].price-te[1].channel, clr, 2);
- HLineCreate(0, name+"low"   , 0, te[2].price, clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"low+"  , 0, te[2].price+te[2].channel, clr, 2);
- HLineCreate(0, name+"low-"  , 0, te[2].price-te[2].channel, clr, 2);
- HLineCreate(0, name+"close" , 0, te[3].price, clr, 1, STYLE_DASHDOT);
- HLineCreate(0, name+"close+", 0, te[3].price+te[3].channel, clr, 2);
- HLineCreate(0, name+"close-", 0, te[3].price-te[3].channel, clr, 2);
+ HLineCreate(0, name+"open"  , 0, te[0].extr.price, clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"open+" , 0, te[0].extr.price+te[0].channel, clr, 2);
+ HLineCreate(0, name+"open-" , 0, te[0].extr.price-te[0].channel, clr, 2); 
+ HLineCreate(0, name+"high"  , 0, te[1].extr.price, clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"high+" , 0, te[1].extr.price+te[1].channel, clr, 2);
+ HLineCreate(0, name+"high-" , 0, te[1].extr.price-te[1].channel, clr, 2);
+ HLineCreate(0, name+"low"   , 0, te[2].extr.price, clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"low+"  , 0, te[2].extr.price+te[2].channel, clr, 2);
+ HLineCreate(0, name+"low-"  , 0, te[2].extr.price-te[2].channel, clr, 2);
+ HLineCreate(0, name+"close" , 0, te[3].extr.price, clr, 1, STYLE_DASHDOT);
+ HLineCreate(0, name+"close+", 0, te[3].extr.price+te[3].channel, clr, 2);
+ HLineCreate(0, name+"close-", 0, te[3].extr.price-te[3].channel, clr, 2);
 }
 
-void MovePriceLines(const SExtremum &te[], ENUM_TIMEFRAMES tf)
+void MovePriceLines(const SLevel &te[], ENUM_TIMEFRAMES tf)
 {
  string name = "price_" + EnumToString(tf) + "_";
- HLineMove(0, name+"open"  , te[0].price);
- HLineMove(0, name+"open+" , te[0].price+te[0].channel);
- HLineMove(0, name+"open-" , te[0].price-te[0].channel);
- HLineMove(0, name+"high"  , te[1].price);
- HLineMove(0, name+"high+" , te[1].price+te[1].channel);
- HLineMove(0, name+"high-" , te[1].price-te[1].channel); 
- HLineMove(0, name+"low"   , te[2].price);
- HLineMove(0, name+"low+"  , te[2].price+te[2].channel);
- HLineMove(0, name+"low-"  , te[2].price-te[2].channel);
- HLineMove(0, name+"close" , te[3].price);
- HLineMove(0, name+"close+", te[3].price+te[3].channel);
- HLineMove(0, name+"close-", te[3].price-te[3].channel);   
+ HLineMove(0, name+"open"  , te[0].extr.price);
+ HLineMove(0, name+"open+" , te[0].extr.price+te[0].channel);
+ HLineMove(0, name+"open-" , te[0].extr.price-te[0].channel);
+ HLineMove(0, name+"high"  , te[1].extr.price);
+ HLineMove(0, name+"high+" , te[1].extr.price+te[1].channel);
+ HLineMove(0, name+"high-" , te[1].extr.price-te[1].channel); 
+ HLineMove(0, name+"low"   , te[2].extr.price);
+ HLineMove(0, name+"low+"  , te[2].extr.price+te[2].channel);
+ HLineMove(0, name+"low-"  , te[2].extr.price-te[2].channel);
+ HLineMove(0, name+"close" , te[3].extr.price);
+ HLineMove(0, name+"close+", te[3].extr.price+te[3].channel);
+ HLineMove(0, name+"close-", te[3].extr.price-te[3].channel);   
 }
 
 void DeletePriceLines(ENUM_TIMEFRAMES tf)
@@ -768,22 +762,22 @@ void DeleteInfoTabel()
  ChartRedraw();
 }
 
-void InitializeExtrArray (SExtremum &te[])
+void InitializeExtrArray (SLevel &te[])
 {
  int size = ArraySize(te);
  for(int i = 0; i < size; i++)
  {
-  te[i].price = 0;
-  te[i].direction = 0;
+  te[i].extr.price = 0;
+  te[i].extr.direction = 0;
   te[i].channel = 0;
  }
 }
 
-void PrintExtrArray(SExtremum &te[], ENUM_TIMEFRAMES tf)
+void PrintExtrArray(SLevel &te[], ENUM_TIMEFRAMES tf)
 {
  PrintFormat("%s {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f};", EnumToString((ENUM_TIMEFRAMES)tf),
-                                                                                                   te[0].price, te[0].direction, te[0].channel,
-                                                                                                   te[1].price, te[1].direction, te[1].channel,
-                                                                                                   te[2].price, te[2].direction, te[2].channel,
-                                                                                                   te[3].price, te[3].direction, te[3].channel);
+                                                                                                   te[0].extr.price, te[0].extr.direction, te[0].channel,
+                                                                                                   te[1].extr.price, te[1].extr.direction, te[1].channel,
+                                                                                                   te[2].extr.price, te[2].extr.direction, te[2].channel,
+                                                                                                   te[3].extr.price, te[3].extr.direction, te[3].channel);
 }

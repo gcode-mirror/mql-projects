@@ -21,7 +21,7 @@
 //----------------------------------------------------------------
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBarDD.mqh>
-#include <ColoredTrend/ColoredTrendNE.mqh>
+#include <ColoredTrend/ColoredTrend.mqh>
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
 #include <CLog.mqh>
 //----------------------------------------------------------------
