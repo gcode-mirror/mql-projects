@@ -446,7 +446,7 @@ int OnCalculate(const int rates_total,
        Extr_W1_Buffer4[i] = extr_levelW1[3].extr.price;
         ATR_W1_Buffer4[i] = extr_levelW1[3].channel;
         
-         if (count > 29000 && count < 29300)
+         if (count > 29000 && count < 29450)
     {
    FileWriteString(fileHandle,
    "\n["+DoubleToString(ATR_W1_Buffer1[i])+ ","+DoubleToString(Extr_W1_Buffer1[i])+"]" +
@@ -457,7 +457,7 @@ int OnCalculate(const int rates_total,
    ;        
     
     }
-    if (count > 29300)
+    if (count > 29450)
      {
       FileClose(fileHandle);
      }

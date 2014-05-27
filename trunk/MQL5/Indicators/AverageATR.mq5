@@ -7,14 +7,20 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_separate_window       // значит индикатор будем выводить в отдельном окне
-#property indicator_buffers 1             // количество буферов всего     
-#property indicator_plots   1             // из них, которые отображаются в окне
+#property indicator_buffers 2             // количество буферов всего     
+#property indicator_plots   2             // из них, которые отображаются в окне
 // свойства буферов
-#property indicator_type1 DRAW_LINE       // в качестве индикатора использованы линии
+#property indicator_type1   DRAW_LINE     // в качестве индикатора использованы линии
 #property indicator_color1  clrWhite      // цвет линий
 #property indicator_style1  STYLE_SOLID   // стиль линий
 #property indicator_width1  1             // толщина линий
 #property indicator_label1  "Среднее ATR" // наименование буфера
+
+#property indicator_type2   DRAW_LINE     // в качестве индикатора использованы линии
+#property indicator_color2  clrLightCoral // цвет линий
+#property indicator_style2  STYLE_SOLID   // стиль линий
+#property indicator_width2  1             // толщина линий
+#property indicator_label2  "ATR"         // наименование буфера
 
 
 //+------------------------------------------------------------------+
@@ -33,11 +39,13 @@ input int aver_period = 100;     // период усреднения значений ATR
 int    handleATR;                // хэндл индикатора ATR
 int    copiedATR = -1;           // переменная для получения количества скопированных данных индикатора ATR   
 int    startIndex;               // индекс с которого начать вычисление усреднения ATR
-int    index;                    // индекс прохода по циклу    
+int    index;                    // индекс прохода по циклу  
+bool   first = true;               
 double lastSumm;                 // переменная хранения последней суммы значений              
 // индикаторные буферы
 double averATRBuffer[];          // хранит значения усредненных значений ATR
 double bufferATR[];              // хранит значение буфера ATR
+double tmpBuffer[];              // буфер временного хранения
 
 // используемые объекты классов
 CisNewBar *isNewBar;             // объект класса проверки появления нового бара
@@ -57,6 +65,7 @@ int OnInit()
     }
    // задаем параметры индикаторных буферов
    SetIndexBuffer(0,averATRBuffer,INDICATOR_DATA);  
+   SetIndexBuffer(1,bufferATR,INDICATOR_DATA);     
    // загружаем хэндл ATR
    handleATR = iATR(_Symbol,_Period,ma_period);
    // создаем объект класса isNewBar
@@ -118,17 +127,22 @@ int OnCalculate(const int rates_total,
      {
      // вычисления в реальном времени доработать
        // если новый бар сформирован
-       if ( isNewBar.isNewBar() > 0 )
+       if ( isNewBar.isNewBar() > 0 || first)
         {
+        first = false;
         // пытаемся скопировать данные индикатора ATR
-        copiedATR = CopyBuffer(handleATR,0,0,aver_period,bufferATR);
+        copiedATR = CopyBuffer(handleATR,0,0,aver_period,tmpBuffer);
         if (copiedATR == aver_period)
          {
           lastSumm = 0;
           for (index=0;index<aver_period;index++)
-           lastSumm = lastSumm + bufferATR[index];
+           lastSumm = lastSumm + tmpBuffer[index];
+          ArrayResize(averATRBuffer,rates_total);
+          ArrayResize(bufferATR,rates_total);
           // записываем текущее значение среднего  
           averATRBuffer[rates_total-1] = lastSumm / aver_period;
+          // записываем значение ATR
+          bufferATR[rates_total-1] = tmpBuffer[aver_period-1];
          }
         }  
      }
