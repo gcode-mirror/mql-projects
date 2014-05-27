@@ -22,26 +22,26 @@
 //+------------------------------------------------------------------+
 
 // подключаем необходимые библиотеки
-#include <Lib CisNewBar.mqh>  // для проверки формирования нового бара
+#include <Lib CisNewBar.mqh>     // для проверки формирования нового бара
 
 // входные параметры индикатора 
-input int ma_period   = 100;       // период усреднения 
-input int aver_period = 100;       // период усреднения значений ATR
+input int ma_period   = 100;     // период усреднения 
+input int aver_period = 100;     // период усреднения значений ATR
 
 
 // системные переменные индикатора
-int handleATR;                // хэндл индикатора ATR
-int copiedATR = -1;           // переменная для получения количества скопированных данных индикатора ATR   
-int startIndex;               // индекс с которого начать вычисление усреднения ATR
-int index;                    // индекс прохода по циклу    
-double lastSumm;              // переменная хранения последней суммы значений              
+int    handleATR;                // хэндл индикатора ATR
+int    copiedATR = -1;           // переменная для получения количества скопированных данных индикатора ATR   
+int    startIndex;               // индекс с которого начать вычисление усреднения ATR
+int    index;                    // индекс прохода по циклу    
+bool   firstCalcRealTime = true; // флаг первого подсчета среднего в реальном времени
+double lastSumm;                 // переменная хранения последней суммы значений              
 // индикаторные буферы
-double averATRBuffer[];       // хранит значения усредненных значений ATR
-double bufferATR[];           // хранит значение буфера ATR
+double averATRBuffer[];          // хранит значения усредненных значений ATR
+double bufferATR[];              // хранит значение буфера ATR
 
 // используемые объекты классов
-CisNewBar *isNewBar;          // объект класса проверки появления нового бара
-
+CisNewBar *isNewBar;             // объект класса проверки появления нового бара
 
 int OnInit()
   {
@@ -119,13 +119,21 @@ int OnCalculate(const int rates_total,
      {
      // вычисления в реальном времени доработать
        // если новый бар сформирован
-       /*
        if ( isNewBar.isNewBar() > 0 )
         {
-          copiedATR = CopyBuffer(handleATRm,0,0,1,
-          averATRBuffer[rates_total-1] = 
+        // пытаемся скопировать данные индикатора ATR
+        copiedATR = CopyBuffer(handleATR,0,0,aver_period,bufferATR);
+        if (copiedATR == aver_period)
+         {
+          lastSumm = 0;
+          for (index=0;index<aver_period;index++)
+           lastSumm = lastSumm + bufferATR[index];
+          // записываем текущее значение среднего
+          
+          averATRBuffer[rates_total-1] = lastSumm / aver_period;
+         }
         }
-        */
+        
      }
    return(rates_total);
   }
