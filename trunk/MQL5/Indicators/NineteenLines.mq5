@@ -7,6 +7,8 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
+
+
 #property indicator_chart_window
 #property indicator_buffers 45  
 #property indicator_plots   44
@@ -130,8 +132,19 @@ CisNewBar isNewBarH1 (_Symbol, PERIOD_H1 );   // для проверки формирования новог
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
+
+int fileHandle;
+
 int OnInit()
 {
+
+    fileHandle = FileOpen("BIG_IN_JAPAN.txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+    if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
+     {
+      Print("Не удалось создать файл тестирования статистики прохождения уровней");
+      return (INIT_FAILED);
+     }   
+
  SetInfoTabel();
  PrintFormat("INITIALIZATION");
 
@@ -304,6 +317,9 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
+
+ FileClose(fileHandle);
+ 
  IndicatorRelease(ATR_handle_for_price_line);
  //-------MN-LEVEL
  ArrayFree(Extr_MN_Buffer1);
@@ -369,6 +385,9 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
+
+int count = 0;
+
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
                 const datetime &time[],
@@ -426,6 +445,23 @@ int OnCalculate(const int rates_total,
         ATR_W1_Buffer3[i] = extr_levelW1[2].channel;
        Extr_W1_Buffer4[i] = extr_levelW1[3].extr.price;
         ATR_W1_Buffer4[i] = extr_levelW1[3].channel;
+        
+         if (count > 29000 && count < 29300)
+    {
+   FileWriteString(fileHandle,
+   "\n["+DoubleToString(ATR_W1_Buffer1[i])+ ","+DoubleToString(Extr_W1_Buffer1[i])+"]" +
+   " ["+DoubleToString(ATR_W1_Buffer2[i])+ ","+DoubleToString(Extr_W1_Buffer2[i])+"]" +
+   " ["+DoubleToString(ATR_W1_Buffer3[i])+ ","+DoubleToString(Extr_W1_Buffer3[i])+"]" +
+   " ["+DoubleToString(ATR_W1_Buffer4[i])+ ","+DoubleToString(Extr_W1_Buffer4[i])+"]" +
+   " Time:" + TimeToString(time[i]) )
+   ;        
+    
+    }
+    if (count > 29300)
+     {
+      FileClose(fileHandle);
+     }
+       count++;       
 
       }//end show_Extr_W1
       if(show_Extr_D1)
@@ -504,6 +540,12 @@ int OnCalculate(const int rates_total,
        ATR_W1_Buffer3[0] = extr_levelW1[2].channel;
       Extr_W1_Buffer4[0] = extr_levelW1[3].extr.price;
        ATR_W1_Buffer4[0] = extr_levelW1[3].channel;
+       
+       Comment("Текущее значение буфера (3): ",
+       DoubleToString(Extr_W1_Buffer3[0]),
+       " Текущее значение буфера (4):",
+       DoubleToString(Extr_W1_Buffer4[0])
+       ); 
      }//end show_Extr_W1
      if(show_Extr_D1)
      { 
