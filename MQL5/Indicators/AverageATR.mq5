@@ -34,7 +34,6 @@ int    handleATR;                // хэндл индикатора ATR
 int    copiedATR = -1;           // переменная для получения количества скопированных данных индикатора ATR   
 int    startIndex;               // индекс с которого начать вычисление усреднения ATR
 int    index;                    // индекс прохода по циклу    
-bool   firstCalcRealTime = true; // флаг первого подсчета среднего в реальном времени
 double lastSumm;                 // переменная хранения последней суммы значений              
 // индикаторные буферы
 double averATRBuffer[];          // хранит значения усредненных значений ATR
@@ -128,12 +127,10 @@ int OnCalculate(const int rates_total,
           lastSumm = 0;
           for (index=0;index<aver_period;index++)
            lastSumm = lastSumm + bufferATR[index];
-          // записываем текущее значение среднего
-          
+          // записываем текущее значение среднего  
           averATRBuffer[rates_total-1] = lastSumm / aver_period;
          }
-        }
-        
+        }  
      }
    return(rates_total);
   }
