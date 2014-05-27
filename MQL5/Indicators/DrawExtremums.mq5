@@ -48,8 +48,18 @@ int OnInit()
    if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe);
    PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(current_timeframe);
-   extr = new CExtremum(Symbol(), Period(), tf_ATR, period_ATR, percentage_ATR);
-   handle_ATR = iATR(Symbol(), tf_ATR, period_ATR);
+   ENUM_TIMEFRAMES per;
+   if (current_timeframe > tf_ATR)
+    {
+     per = current_timeframe;
+    }
+   else
+    {
+     per = tf_ATR;
+    }
+    
+   extr = new CExtremum(Symbol(), Period(), per, period_ATR, percentage_ATR);
+   handle_ATR = iATR(Symbol(), per, period_ATR);
 //--- indicator buffers mapping
    SetIndexBuffer(0,    ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(1,  ExtDownArrowBuffer, INDICATOR_DATA);
