@@ -24,27 +24,55 @@
 #define TF_PERIOD_ATR_FOR_H4 PERIOD_H4
 #define TF_PERIOD_ATR_FOR_H1 PERIOD_H4
 
+/*
 #define PERCENTAGE_OF_ATR_FOR_MN  1.5
 #define PERCENTAGE_OF_ATR_FOR_W1  1.5
 #define PERCENTAGE_OF_ATR_FOR_D1  2
 #define PERCENTAGE_OF_ATR_FOR_H4  3
 #define PERCENTAGE_OF_ATR_FOR_H1  1.5
+*/
 
+sinput string mainStr = "";             //Базовые параметры индикатора
 input int    period_ATR_channel = 30;   //Период ATR для канала
 input int    period_average_ATR = 5;    //Период устреднения индикатора ATR
-input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
 
 
+//input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
+
+sinput string levelStr = "";                 //ПАРАМЕТРЫ УРОВНЕЙ
+
+sinput string mn1Str   = "";                 //Месячные уровни
 input bool  flag1  = false;                  //Показывать экстремумы MN1
 input color color_Extr_MN = clrRed;          //Цвет линий экстремумов
+input double PERCENTAGE_OF_ATR_FOR_MN = 1.5; //Процент от ATR для поиска экстремума
+input double channel_ATR_MN1  =  0.1;        //Ширина уровней
+
+sinput string w1Str   = "";                  //Недельные уровни
 input bool  flag2  = false;                  //Показывать экстремумы W1
 input color color_Extr_W1 = clrOrange;       //Цвет линий экстремумов
+input double PERCENTAGE_OF_ATR_FOR_W1 = 1.5; //Процент от ATR для поиска экстремума
+input double channel_ATR_W1   =  0.25;       //Ширина уровней
+
+sinput string d1Str   = "";                  //Дневные уровни
 input bool  flag3  = false;                  //Показывать экстремумы D1
 input color color_Extr_D1 = clrYellow;       //Цвет линий экстремумов
+input double  PERCENTAGE_OF_ATR_FOR_D1 = 2;  //Процент от ATR для поиска экстремума
+input double channel_ATR_D1   =  0.5;        //Ширина уровней
+
+sinput string h1Str   = "";                  //4-х часовые уровни
 input bool  flag4  = false;                  //Показывать экстремумы H4
 input color color_Extr_H4 = clrBlue;         //Цвет линий экстремумов
+input double PERCENTAGE_OF_ATR_FOR_H4 = 3;   //Процент от ATR для поиска экстремума
+input double channel_ATR_H4   =  0.5;        //Ширина уровней
+
+sinput string h4Str   = "";                  //Часовые уровни
 input bool  flag5  = true;                   //Показывать экстремумы H1
 input color color_Extr_H1 = clrAqua;         //Цвет линий экстремумов
+input double PERCENTAGE_OF_ATR_FOR_H1 = 1.5; //Процент от ATR для поиска экстремума
+input double channel_ATR_H1   =  0.5;        //Ширина уровней
+ 
+
+sinput string dStr   = "";                   //Цены на дневнике
 input bool  flag6  = false;                  //Показывать цены D1
 input color color_Price_D1 = clrDarkKhaki;   //Цвет линий экстремумов
 
@@ -59,11 +87,11 @@ bool show_Extr_H1 = flag5;
 bool show_Price_D1 = flag6;
 
 
-CLevel calcMN (Symbol(), PERIOD_MN1, TF_PERIOD_ATR_FOR_MN, PERCENTAGE_OF_ATR_FOR_MN, period_ATR_channel, percent_ATR_channel);
-CLevel calcW1 (Symbol(),  PERIOD_W1, TF_PERIOD_ATR_FOR_W1, PERCENTAGE_OF_ATR_FOR_W1, period_ATR_channel, percent_ATR_channel);
-CLevel calcD1 (Symbol(),  PERIOD_D1, TF_PERIOD_ATR_FOR_D1, PERCENTAGE_OF_ATR_FOR_D1, period_ATR_channel, percent_ATR_channel);
-CLevel calcH4 (Symbol(),  PERIOD_H4, TF_PERIOD_ATR_FOR_H4, PERCENTAGE_OF_ATR_FOR_H4, period_ATR_channel, percent_ATR_channel);
-CLevel calcH1 (Symbol(),  PERIOD_H1, TF_PERIOD_ATR_FOR_H1, PERCENTAGE_OF_ATR_FOR_H1, period_ATR_channel, percent_ATR_channel);
+CLevel calcMN (Symbol(), PERIOD_MN1, TF_PERIOD_ATR_FOR_MN, PERCENTAGE_OF_ATR_FOR_MN, period_ATR_channel, channel_ATR_MN1);
+CLevel calcW1 (Symbol(),  PERIOD_W1, TF_PERIOD_ATR_FOR_W1, PERCENTAGE_OF_ATR_FOR_W1, period_ATR_channel, channel_ATR_W1);
+CLevel calcD1 (Symbol(),  PERIOD_D1, TF_PERIOD_ATR_FOR_D1, PERCENTAGE_OF_ATR_FOR_D1, period_ATR_channel, channel_ATR_D1);
+CLevel calcH4 (Symbol(),  PERIOD_H4, TF_PERIOD_ATR_FOR_H4, PERCENTAGE_OF_ATR_FOR_H4, period_ATR_channel, channel_ATR_H4);
+CLevel calcH1 (Symbol(),  PERIOD_H1, TF_PERIOD_ATR_FOR_H1, PERCENTAGE_OF_ATR_FOR_H1, period_ATR_channel, channel_ATR_H1);
 
 SLevel extr_levelMN[4];
 SLevel extr_levelW1[4];
@@ -659,13 +687,13 @@ void CalcPrice(SLevel &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
  CopyRates(Symbol(), tf, start_pos-PeriodSeconds(tf), 1, rates_buffer);
  
  price_levelD1[0].extr.price = rates_buffer[0].open;
- price_levelD1[0].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ price_levelD1[0].channel = (buffer_ATR[0]*channel_ATR_D1)/2;
  price_levelD1[1].extr.price = rates_buffer[0].high;
- price_levelD1[1].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ price_levelD1[1].channel = (buffer_ATR[0]*channel_ATR_D1)/2;
  price_levelD1[2].extr.price = rates_buffer[0].low;
- price_levelD1[2].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ price_levelD1[2].channel = (buffer_ATR[0]*channel_ATR_D1)/2;
  price_levelD1[3].extr.price = rates_buffer[0].close;
- price_levelD1[3].channel = (buffer_ATR[0]*percent_ATR_channel)/2;
+ price_levelD1[3].channel = (buffer_ATR[0]*channel_ATR_D1)/2;
 }
 //---------------------------------------------
 // Создание линий
