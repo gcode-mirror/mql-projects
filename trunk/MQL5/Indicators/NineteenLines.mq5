@@ -332,12 +332,12 @@ int OnInit()
  if(Period() > PERIOD_H1  && show_Extr_H1)  show_Extr_H1 = false;
  if(Period() > PERIOD_D1  && show_Price_D1) show_Price_D1 = false;
   
- if(show_Extr_MN) CreateExtrLines (extr_levelMN, PERIOD_MN1, color_Extr_MN);
- if(show_Extr_W1) CreateExtrLines (extr_levelW1, PERIOD_W1 , color_Extr_W1);
- if(show_Extr_D1) CreateExtrLines (extr_levelD1, PERIOD_D1 , color_Extr_D1);
- if(show_Extr_H4) CreateExtrLines (extr_levelH4, PERIOD_H4 , color_Extr_H4);
- if(show_Extr_H1) CreateExtrLines (extr_levelH1, PERIOD_H1 , color_Extr_H1);
- if(show_Price_D1)CreatePriceLines(price_levelD1, PERIOD_D1 , color_Price_D1); 
+ if(show_Extr_MN) CreateExtrLines (extr_levelMN, PERIOD_MN1, clrRed);
+ if(show_Extr_W1) CreateExtrLines (extr_levelW1, PERIOD_W1 , clrOrange);
+ if(show_Extr_D1) CreateExtrLines (extr_levelD1, PERIOD_D1 , clrYellow);
+ if(show_Extr_H4) CreateExtrLines (extr_levelH4, PERIOD_H4 , clrBlue);
+ if(show_Extr_H1) CreateExtrLines (extr_levelH1, PERIOD_H1 , clrAqua);
+ if(show_Price_D1)CreatePriceLines(price_levelD1, PERIOD_D1 ,clrDarkKhaki); 
  
 //---
  return(INIT_SUCCEEDED);
@@ -813,12 +813,12 @@ void SetInfoTabel()
  int X = 10;
  int Y = 30;
  RectLabelCreate(0, "Extr_Title", 0, X, Y, 130, 105, clrBlack, BORDER_FLAT, CORNER_LEFT_UPPER, clrWhite, STYLE_SOLID, 1, false, false, false);
- LabelCreate(0,  "Extr_PERIOD_MN", 0, X+65, Y+15, CORNER_LEFT_UPPER, "EXTREMUM MONTH", "Arial Black", 8,  color_Extr_MN, ANCHOR_CENTER, false, false, false);
- LabelCreate(0,  "Extr_PERIOD_W1", 0, X+65, Y+30, CORNER_LEFT_UPPER,  "EXTREMUM WEEK", "Arial Black", 8,  color_Extr_W1, ANCHOR_CENTER, false, false, false);
- LabelCreate(0,  "Extr_PERIOD_D1", 0, X+65, Y+45, CORNER_LEFT_UPPER,   "EXTREMUM DAY", "Arial Black", 8,  color_Extr_D1, ANCHOR_CENTER, false, false, false);
- LabelCreate(0,  "Extr_PERIOD_H4", 0, X+65, Y+60, CORNER_LEFT_UPPER, "EXTREMUM 4HOUR", "Arial Black", 8,  color_Extr_H4, ANCHOR_CENTER, false, false, false);
- LabelCreate(0,  "Extr_PERIOD_H1", 0, X+65, Y+75, CORNER_LEFT_UPPER, "EXTREMUM 1HOUR", "Arial Black", 8,  color_Extr_H1, ANCHOR_CENTER, false, false, false);
- LabelCreate(0, "Price_PERIOD_D1", 0, X+65, Y+90, CORNER_LEFT_UPPER,      "PRICE DAY", "Arial Black", 8, color_Price_D1, ANCHOR_CENTER, false, false, false);
+ LabelCreate(0,  "Extr_PERIOD_MN", 0, X+65, Y+15, CORNER_LEFT_UPPER, "EXTREMUM MONTH", "Arial Black", 8,  clrRed, ANCHOR_CENTER, false, false, false);
+ LabelCreate(0,  "Extr_PERIOD_W1", 0, X+65, Y+30, CORNER_LEFT_UPPER,  "EXTREMUM WEEK", "Arial Black", 8,  clrOrange, ANCHOR_CENTER, false, false, false);
+ LabelCreate(0,  "Extr_PERIOD_D1", 0, X+65, Y+45, CORNER_LEFT_UPPER,   "EXTREMUM DAY", "Arial Black", 8,  clrYellow, ANCHOR_CENTER, false, false, false);
+ LabelCreate(0,  "Extr_PERIOD_H4", 0, X+65, Y+60, CORNER_LEFT_UPPER, "EXTREMUM 4HOUR", "Arial Black", 8,  clrBlue, ANCHOR_CENTER, false, false, false);
+ LabelCreate(0,  "Extr_PERIOD_H1", 0, X+65, Y+75, CORNER_LEFT_UPPER, "EXTREMUM 1HOUR", "Arial Black", 8,  clrAqua, ANCHOR_CENTER, false, false, false);
+ LabelCreate(0, "Price_PERIOD_D1", 0, X+65, Y+90, CORNER_LEFT_UPPER,      "PRICE DAY", "Arial Black", 8,  clrDarkKhaki, ANCHOR_CENTER, false, false, false);
  ChartRedraw();
 }
 
