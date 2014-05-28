@@ -43,38 +43,32 @@ sinput string levelStr = "";                 //ПАРАМЕТРЫ УРОВНЕЙ
 
 sinput string mn1Str   = "";                 //Месячные уровни
 input bool  flag1  = false;                  //Показывать экстремумы MN1
-input color color_Extr_MN = clrRed;          //Цвет линий экстремумов
 input double PERCENTAGE_OF_ATR_FOR_MN = 1.5; //Процент от ATR для поиска экстремума
 input double channel_ATR_MN1  =  0.1;        //Ширина уровней
 
 sinput string w1Str   = "";                  //Недельные уровни
 input bool  flag2  = false;                  //Показывать экстремумы W1
-input color color_Extr_W1 = clrOrange;       //Цвет линий экстремумов
 input double PERCENTAGE_OF_ATR_FOR_W1 = 1.5; //Процент от ATR для поиска экстремума
 input double channel_ATR_W1   =  0.25;       //Ширина уровней
 
 sinput string d1Str   = "";                  //Дневные уровни
 input bool  flag3  = false;                  //Показывать экстремумы D1
-input color color_Extr_D1 = clrYellow;       //Цвет линий экстремумов
 input double  PERCENTAGE_OF_ATR_FOR_D1 = 2;  //Процент от ATR для поиска экстремума
 input double channel_ATR_D1   =  0.5;        //Ширина уровней
 
 sinput string h1Str   = "";                  //4-х часовые уровни
-input bool  flag4  = false;                  //Показывать экстремумы H4
-input color color_Extr_H4 = clrBlue;         //Цвет линий экстремумов
+input bool   flag4  = false;                 //Показывать экстремумы H4
 input double PERCENTAGE_OF_ATR_FOR_H4 = 3;   //Процент от ATR для поиска экстремума
 input double channel_ATR_H4   =  0.5;        //Ширина уровней
 
 sinput string h4Str   = "";                  //Часовые уровни
 input bool  flag5  = true;                   //Показывать экстремумы H1
-input color color_Extr_H1 = clrAqua;         //Цвет линий экстремумов
 input double PERCENTAGE_OF_ATR_FOR_H1 = 1.5; //Процент от ATR для поиска экстремума
 input double channel_ATR_H1   =  0.5;        //Ширина уровней
  
 
 sinput string dStr   = "";                   //Цены на дневнике
 input bool  flag6  = false;                  //Показывать цены D1
-input color color_Price_D1 = clrDarkKhaki;   //Цвет линий экстремумов
 
 //////////////////////////////
 
