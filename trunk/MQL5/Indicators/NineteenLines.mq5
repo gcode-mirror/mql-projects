@@ -432,7 +432,7 @@ int OnCalculate(const int rates_total,
       if(show_Extr_D1  && isNewBarD1.isNewBar(time[i]) > 0) CalcExtr(calcD1, extr_levelD1, time[i], false);
       if(show_Extr_H4  && isNewBarH4.isNewBar(time[i]) > 0) CalcExtr(calcH4, extr_levelH4, time[i], false);
       if(show_Extr_H1  && isNewBarH1.isNewBar(time[i]) > 0) CalcExtr(calcH1, extr_levelH1, time[i], false);     
-      if(show_Price_D1 && isNewBarD1.isNewBar(time[i]) > 0) CalcPrice(price_levelD1, PERIOD_D1, time[i]);
+      if(show_Price_D1 && isNewBarD1.isNewBar(time[i]) > 0) CalcPrice(PERIOD_D1, time[i]);
 
       if(show_Extr_MN)
       {
@@ -584,7 +584,7 @@ int OnCalculate(const int rates_total,
      if(show_Extr_D1) CalcExtr(calcD1, extr_levelD1, time[0], true);    
      if(show_Extr_H4) CalcExtr(calcH4, extr_levelH4, time[0], true);
      if(show_Extr_H1) CalcExtr(calcH1, extr_levelH1, time[0], true);
-     if(show_Price_D1)CalcPrice(price_levelD1, PERIOD_D1, time[0]);
+     if(show_Price_D1)CalcPrice(PERIOD_D1, time[0]);
       
      if(show_Extr_MN) MoveExtrLines (extr_levelMN, PERIOD_MN1);
      if(show_Extr_W1) MoveExtrLines (extr_levelW1, PERIOD_W1 ); 
@@ -639,7 +639,7 @@ void CalcExtr(CLevel &extrcalc, SLevel &resArray[], datetime start_pos_time, boo
  //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f}; num3: {%d, %0.5f};", __FUNCTION__, resArray[0].extr.direction, resArray[0].extr.price, resArray[1].extr.direction, resArray[1].extr.price, resArray[2].extr.direction, resArray[2].extr.price, resArray[3].extr.direction, resArray[3].extr.price);
 }
 
-void CalcPrice(SLevel &resArray[], ENUM_TIMEFRAMES tf, datetime start_pos)
+void CalcPrice(ENUM_TIMEFRAMES tf, datetime start_pos)
 {
  double  buffer_ATR[1];
  MqlRates rates_buffer[1];
