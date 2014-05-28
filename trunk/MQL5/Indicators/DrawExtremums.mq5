@@ -21,8 +21,12 @@
 //----------------------------------------------------------------
  
 //--- input параметры
-input int      history_depth = 1000; // сколько свечей показывать
-input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
+sinput string  mainStr = "";                 // ОСНОВНЫЕ ПАРАМЕТРЫ
+input  int     history_depth  = 1000;        // сколько свечей показывать
+input  double  percentage_ATR = 1;           // процент АТР для появления нового экстремума
+input  int     period_ATR     = 30;          // период ATR
+input  int     period_average_ATR = 1;       // период устреднения индикатора ATR
+
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];
 double ExtDownArrowBuffer[];
@@ -33,7 +37,6 @@ int handle_ATR;
               
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
-int      period_ATR = 30;      // период ATR
 ENUM_TIMEFRAMES tf_ATR = PERIOD_H4; // таймфрейм ATR
 int depth = history_depth;
 bool series_order = true;
@@ -59,7 +62,14 @@ int OnInit()
     }
     
    extr = new CExtremum(Symbol(), Period(), per, period_ATR, percentage_ATR);
-   handle_ATR = iATR(Symbol(), per, period_ATR);
+ //  handle_ATR = iCustom(Symbol(), per,"AverageATR",
+ //  handle_ATR = iATR(Symbol(), per, period_ATR);
+   handle_ATR = iCustom(Symbol(),per,"AverageATR",period_ATR,period_average_ATR); 
+   if (handle_ATR == INVALID_HANDLE)
+    {
+     Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать хэндл индикатора AverageATR");
+     return (INIT_FAILED);
+    }  
 //--- indicator buffers mapping
    SetIndexBuffer(0,    ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(1,  ExtDownArrowBuffer, INDICATOR_DATA);
