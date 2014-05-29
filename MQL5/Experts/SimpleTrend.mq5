@@ -149,13 +149,19 @@ void OnTick()
       // если позиция еще не открыта
       if (!openedPosition )
        {
-        lastTendention = GetLastTendention();                      // получаем предыдущую тенденцию
+        lastTendention = GetLastTendention();                      // получаем предыдущую тенденцию                 
         GetExtremums_M5_M15_H1();                                  // получаем значения последних экстремумов
+                  Comment(" \n",
+                          "M5 UP: ",DoubleToString(lastExtr_M5_up[0]),
+                          "\nM5 DOWN: ",DoubleToString(lastExtr_M5_down[0]),                          
+                          "\nM15 UP: ",DoubleToString(lastExtr_M15_up[0]),
+                          "\nM15 DOWN: ",DoubleToString(lastExtr_M15_down[0]),                          
+                          "\nH1 UP: ",DoubleToString(lastExtr_H1_up[0]),
+                          "\nH1 DOWN: ",DoubleToString(lastExtr_H1_down[0]),                          
+                         "\nЦены: ",DoubleToString(currentPrice)    );        
        } 
      }
     // на каждом тике
-    else
-     {
        // если позиция еще не открыта
        if (!openedPosition )
         {
@@ -163,42 +169,65 @@ void OnTick()
          // если общая тенденция  - вверх
          if (lastTendention == TENDENTION_UP && GetCurrentTendention () == TENDENTION_UP)
            {
+                 
              // если текущая цена пробила один из экстемумов на одном из таймфреймов
              if ( GreatDoubles (currentPrice,lastExtr_M5_up[0])  ||
                   GreatDoubles (currentPrice,lastExtr_M15_up[0]) ||
                   GreatDoubles (currentPrice,lastExtr_H1_up[0]) )
                 {
                   // если текущее расхождение MACD НЕ противоречит текущему движению
-                  
-                  // то открываем позицию на
-                  ctm.OpenUniquePosition(_Symbol,PERIOD_D1,OP_BUY,currentLot,stopLoss);
+    /*              Comment("Цена выше одного из экстремумов \n",
+                          "M5: ",DoubleToString(lastExtr_M5_up[0]),
+                          "\nM15: ",DoubleToString(lastExtr_M15_up[0]),
+                          "\nH1: ",DoubleToString(lastExtr_H1_up[0]),
+                         "\nЦены: ",DoubleToString(currentPrice)   
+                  );
+      */            
+                  // сохраняем стоп лосс
+                  stopLoss = 0;                  
+                  // то открываем позицию на BUY
+             //     ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,currentLot,stopLoss);
+                  // выставляем флаг открытия позиции в true
+                  openedPosition = true;
                 }
-                
+    
            }
          // если общая тенденция - вниз
          if (lastTendention == TENDENTION_DOWN && GetCurrentTendention () == TENDENTION_DOWN)
            {
+                          
+           
              // если текущая цена пробила один из экстемумов на одном из таймфреймов
              if ( LessDoubles (currentPrice,lastExtr_M5_down[0])  ||
                   LessDoubles (currentPrice,lastExtr_M15_down[0]) ||
                   LessDoubles (currentPrice,lastExtr_H1_down[0]) )
                 {
+                       /*          Comment("Цена ниже одного из экстремумов \n",
+                          "M5: ",DoubleToString(lastExtr_M5_down[0]),
+                          "\nM15: ",DoubleToString(lastExtr_M15_down[0]),
+                          "\nH1: ",DoubleToString(lastExtr_H1_down[0]),
+                          "\nЦены: ",DoubleToString(currentPrice)
+                  ); */
                   // если текущее расхождение MACD НЕ противоречит текущему движению
                   
-                  // то открываем позицию на
-                  ctm.OpenUniquePosition(_Symbol,PERIOD_D1,OP_SELL,currentLot,stopLoss);
-                }        
+                  // сохраняем стоп лосс
+                  stopLoss = 0;
+                  // то открываем позицию на SELL
+                 
+                }      
+
+                
+                  
            }
         }
         
-     }
   }
   
  // кодирование функций
  ENUM_TENDENTION GetLastTendention ()
   {
   
-   if ( CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1) == 1 )
+   if ( CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1) == 2 )
      {
       if ( GreatDoubles (lastBarD1[0].close,lastBarD1[0].open) )
        return (TENDENTION_UP);
@@ -219,19 +248,13 @@ void OnTick()
    
   bool  GetExtremums_M5_M15_H1()
    {
-   
-    int copiedM5_down  = -1;
-    int copiedM5_up    = -1;
-    int copiedM15_down = -1;
-    int copiedM15_up   = -1;
-    int copiedH1_down  = -1;
-    int copiedH1_up    = -1;
-    copiedM5_up    = CopyBuffer(handleDrawExtr_M5,2,1,1,lastExtr_M5_up);
-    copiedM5_down  = CopyBuffer(handleDrawExtr_M5,2,1,1,lastExtr_M5_down);
-    copiedM15_up   = CopyBuffer(handleDrawExtr_M15,2,1,1,lastExtr_M15_up);
-    copiedM15_down = CopyBuffer(handleDrawExtr_M15,2,1,1,lastExtr_M15_down);
-    copiedH1_up    = CopyBuffer(handleDrawExtr_H1,2,1,1,lastExtr_H1_up);
-    copiedH1_down  = CopyBuffer(handleDrawExtr_H1,2,1,1,lastExtr_H1_down);        
+    int copiedM5_up        = CopyBuffer(handleDrawExtr_M5,2,1,1,lastExtr_M5_up);
+    int copiedM5_down      = CopyBuffer(handleDrawExtr_M5,3,1,1,lastExtr_M5_down);
+    int copiedM15_up       = CopyBuffer(handleDrawExtr_M15,2,1,1,lastExtr_M15_up);
+    int copiedM15_down     = CopyBuffer(handleDrawExtr_M15,3,1,1,lastExtr_M15_down);
+    int copiedH1_up        = CopyBuffer(handleDrawExtr_H1,2,1,1,lastExtr_H1_up);
+    int copiedH1_down      = CopyBuffer(handleDrawExtr_H1,3,1,1,lastExtr_H1_down);        
+    
     if (copiedH1_down  < 1 ||
         copiedH1_up    < 1 ||
         copiedM15_down < 1 ||
