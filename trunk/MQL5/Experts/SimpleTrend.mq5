@@ -62,9 +62,12 @@ double currentLot;                       // текущий лот
 ENUM_TENDENTION  lastTendention;         // переменная для хранения последней тенденции 
 
 // переменные для хранения значений экстремумов
-double lastExtr_M5;                      // значение последнего экстремума на M5
-double lastExtr_M15;                     // значение последнего экстремума на M15
-double lastExtr_H1;                      // значение последнего экстремума на H1
+double lastExtr_M5_up[];                 // значение последнего верхнего экстремума на M5
+double lastExtr_M5_down[];               // значение последнего нижнего экстремума на M5
+double lastExtr_M15_up[];                // значение последнего верхнего экстремума на M15
+double lastExtr_M15_down[];              // значение последнего нижнего экстремума на M15
+double lastExtr_H1_up[];                 // значение последнего верхнего экстремума на H1
+double lastExtr_H1_down[];               // значение последнего нижнего экстремума на H1
 
 // описание системных функций робота
 ENUM_TENDENTION GetLastTendention();     // возвращает потенциальную тенденцию на предыдущем баре
@@ -74,10 +77,11 @@ bool            GetExtremums_M5_M15_H1();// ищет значения экстремумов на M5 M15 
 int OnInit()
   {
    int errorValue  = INIT_SUCCEEDED;  // результат инициализации эксперта
-   // пытаемся инициализировать хэндлы расхождений MACD и Стохастика
+   // пытаемся инициализировать хэндлы расхождений MACD 
    handleSmydMACD_D1  = iCustom(_Symbol,periodD1,"smydMACD");  
    handleSmydMACD_H1  = iCustom(_Symbol,periodH1,"smydMACD");  
    handleSmydMACD_M15 = iCustom(_Symbol,periodM15,"smydMACD"); 
+   // пытаемся инициализировать хэндлы идникатора Extremums
    handleDrawExtr_M5  = iCustom(_Symbol,periodM5,"DrawExtremums",false,PERIOD_M5);
    handleDrawExtr_M15 = iCustom(_Symbol,periodM15,"DrawExtremums",false,PERIOD_M15);
    handleDrawExtr_H1  = iCustom(_Symbol,periodH1,"DrawExtremums",false,PERIOD_H1);
@@ -145,7 +149,8 @@ void OnTick()
       // если позиция еще не открыта
       if (!openedPosition )
        {
-        lastTendention = GetLastTendention();                   // получаем предыдущую тенденцию
+        lastTendention = GetLastTendention();                      // получаем предыдущую тенденцию
+        GetExtremums_M5_M15_H1();                                  // получаем значения последних экстремумов
        } 
      }
     // на каждом тике
@@ -158,12 +163,31 @@ void OnTick()
          // если общая тенденция  - вверх
          if (lastTendention == TENDENTION_UP && GetCurrentTendention () == TENDENTION_UP)
            {
-             
+             // если текущая цена пробила один из экстемумов на одном из таймфреймов
+             if ( GreatDoubles (currentPrice,lastExtr_M5_up[0])  ||
+                  GreatDoubles (currentPrice,lastExtr_M15_up[0]) ||
+                  GreatDoubles (currentPrice,lastExtr_H1_up[0]) )
+                {
+                  // если текущее расхождение MACD НЕ противоречит текущему движению
+                  
+                  // то открываем позицию на
+                  ctm.OpenUniquePosition(_Symbol,PERIOD_D1,OP_BUY,currentLot,stopLoss);
+                }
+                
            }
          // если общая тенденция - вниз
          if (lastTendention == TENDENTION_DOWN && GetCurrentTendention () == TENDENTION_DOWN)
            {
-        
+             // если текущая цена пробила один из экстемумов на одном из таймфреймов
+             if ( LessDoubles (currentPrice,lastExtr_M5_down[0])  ||
+                  LessDoubles (currentPrice,lastExtr_M15_down[0]) ||
+                  LessDoubles (currentPrice,lastExtr_H1_down[0]) )
+                {
+                  // если текущее расхождение MACD НЕ противоречит текущему движению
+                  
+                  // то открываем позицию на
+                  ctm.OpenUniquePosition(_Symbol,PERIOD_D1,OP_SELL,currentLot,stopLoss);
+                }        
            }
         }
         
@@ -195,9 +219,30 @@ void OnTick()
    
   bool  GetExtremums_M5_M15_H1()
    {
-   /*
-    int copiedM5 = -1;
-    int copiedM15
-   */
+   
+    int copiedM5_down  = -1;
+    int copiedM5_up    = -1;
+    int copiedM15_down = -1;
+    int copiedM15_up   = -1;
+    int copiedH1_down  = -1;
+    int copiedH1_up    = -1;
+    copiedM5_up    = CopyBuffer(handleDrawExtr_M5,2,1,1,lastExtr_M5_up);
+    copiedM5_down  = CopyBuffer(handleDrawExtr_M5,2,1,1,lastExtr_M5_down);
+    copiedM15_up   = CopyBuffer(handleDrawExtr_M15,2,1,1,lastExtr_M15_up);
+    copiedM15_down = CopyBuffer(handleDrawExtr_M15,2,1,1,lastExtr_M15_down);
+    copiedH1_up    = CopyBuffer(handleDrawExtr_H1,2,1,1,lastExtr_H1_up);
+    copiedH1_down  = CopyBuffer(handleDrawExtr_H1,2,1,1,lastExtr_H1_down);        
+    if (copiedH1_down  < 1 ||
+        copiedH1_up    < 1 ||
+        copiedM15_down < 1 ||
+        copiedM15_up   < 1 ||
+        copiedM5_down  < 1 ||
+        copiedM5_up    < 1
+       )
+        {
+         Print("Ошибка эксперта SimpleTrend. Не удалось получить данные об экстремумах");
+         return (false);
+        }
+        
      return (true);
    }
