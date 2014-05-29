@@ -22,6 +22,8 @@
  
 //--- input параметры
 sinput string  mainStr = "";                 // ОСНОВНЫЕ ПАРАМЕТРЫ
+input  bool    useCurrentTimeframe = true;   // флаг использования текущего таймфрейма   
+input  ENUM_TIMEFRAMES period = PERIOD_H4;   // период экстремумов
 input  int     history_depth  = 1000;        // сколько свечей показывать
 input  double  percentage_ATR = 1;           // процент АТР для появления нового экстремума
 input  int     period_ATR     = 30;          // период ATR
@@ -47,7 +49,10 @@ int OnInit()
   {
    PrintFormat("%s Init", __FUNCTION__);
    symbol = Symbol();
-   current_timeframe = Period();
+   if (useCurrentTimeframe)
+    current_timeframe = Period();
+   else
+    current_timeframe = period;
    if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe);
    PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(current_timeframe);
