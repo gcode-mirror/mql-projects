@@ -7,7 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_chart_window
-#property indicator_buffers 2
+#property indicator_buffers 4
 #property indicator_plots   2
 
 #property indicator_type1   DRAW_ARROW
@@ -32,6 +32,11 @@ input  int     period_average_ATR = 1;       // период устреднения индикатора AT
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];
 double ExtDownArrowBuffer[];
+double LastUpArrowBuffer[];
+double LastDownArrowBuffer[];
+
+double lastUpArrow   = 0;                    // последнее значение верхнего экстремума
+double lastDownArrow = 0;                    // последнее значение нижнего экстремума
 
 CisNewBar NewBarCurrent;
 CExtremum *extr;
@@ -76,17 +81,23 @@ int OnInit()
      return (INIT_FAILED);
     }  
 //--- indicator buffers mapping
-   SetIndexBuffer(0,    ExtUpArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(1,  ExtDownArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(0, ExtUpArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(1, ExtDownArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(2, LastUpArrowBuffer, INDICATOR_CALCULATIONS);
+   SetIndexBuffer(3, LastDownArrowBuffer,INDICATOR_CALCULATIONS);
 
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
+   ArrayInitialize(LastUpArrowBuffer,   0);
+   ArrayInitialize(LastDownArrowBuffer, 0);
    
    PlotIndexSetInteger(0, PLOT_ARROW, 218);
    PlotIndexSetInteger(1, PLOT_ARROW, 217);
    
    ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
    ArraySetAsSeries( ExtDownArrowBuffer, series_order);
+   ArraySetAsSeries( LastUpArrowBuffer, series_order);
+   ArraySetAsSeries( LastDownArrowBuffer,series_order);
    
    return(INIT_SUCCEEDED);
   }
@@ -135,30 +146,41 @@ int OnCalculate(const int rates_total,
      if (extr_cur[0].direction > 0)
      {
       ExtUpArrowBuffer[i] = extr_cur[0].price;// + 50*_Point;
+      lastUpArrow = extr_cur[0].price;
       extr_cur[0].direction = 0;
      }
      if (extr_cur[1].direction < 0)
      {
       ExtDownArrowBuffer[i] = extr_cur[1].price;// - 50*_Point;
+      lastDownArrow = extr_cur[1].price;
       extr_cur[1].direction = 0;
      }
+      LastDownArrowBuffer[i] = lastDownArrow;
+      LastUpArrowBuffer[i]   = lastUpArrow; 
     }
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН.", __FUNCTION__);
    }
    
    //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
    RecountUpdated(time[0], true, extr_cur);
+   
+   
     
    if (extr_cur[0].direction > 0)
    {
     ExtUpArrowBuffer[0] = extr_cur[0].price;// + 50*_Point;
+    lastUpArrow = extr_cur[0].price;
     extr_cur[0].direction = 0;
    }
    if (extr_cur[1].direction < 0)
    {
     ExtDownArrowBuffer[0] = extr_cur[1].price;// - 50*_Point;
+    lastDownArrow = extr_cur[1].price;
     extr_cur[1].direction = 0;
    }
+   
+   LastDownArrowBuffer[0] = lastDownArrow;
+   LastUpArrowBuffer[0]   = lastUpArrow;
 
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
    {
