@@ -237,6 +237,7 @@ void OnTick()
        // если позиция была открыта на BUY
        else if ( openedPosition == BUY ) 
         {
+        // if ( countAddingToLot == 4 || curPrice 
          // меняем стоп лосс
          MoveStopLossForBuy ();
         }
