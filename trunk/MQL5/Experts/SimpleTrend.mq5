@@ -62,6 +62,7 @@ CisNewBar     *isNewBar_D1;              // новый бар на D1
 // дополнительные системные переменные
 bool firstLaunch    = true;              // флаг первого запуска эксперта
 int  openedPosition = 0;                 // тип открытой позиции 
+int  countAddingToLot = 0;               // счетчик доливок
 double curPrice;                         // для хранения текущей цены
 double stopLoss;                         // переменная для хранения стоп лосса
 double currentLot;                       // текущий лот
@@ -85,7 +86,8 @@ ENUM_TENDENTION GetLastTendention();               // возвращает потенциальную т
 ENUM_TENDENTION GetCurrentTendention();            // возвращает текущую тенденцию цены
 bool            GetExtremums();                    // ищет значения экстремумов на M5 M15 H1
 bool            IsMACDCompatible (int direction);  // проверяет совместимость расхождений MACD с текущей тенденцией
-void            MoveStopLoss ();                   // переносит стоп лосс на новое положение
+void            MoveStopLossForBuy ();             // переносит стоп лосс на новое положение для позиции BUY
+void            MoveStopLossForSell();             // переносит стоп лосс на новое положение для позиции SELL
 
 int OnInit()
   {
@@ -134,6 +136,7 @@ int OnInit()
    // создаем объекты класса CisNewBar
    isNewBar_D1 = new CisNewBar(_Symbol,PERIOD_D1);
    // инициализируем переменные
+   currentLot = lot;
    
    return(errorValue);
   }
@@ -234,18 +237,21 @@ void OnTick()
        // если позиция была открыта на BUY
        else if ( openedPosition == BUY ) 
         {
-        
+         // меняем стоп лосс
+         MoveStopLossForBuy ();
         }
        // если позиция была открыта на SELL
        else if ( openedPosition == SELL)
         {
-        
+         // меняем стоп лосс 
+         MoveStopLossForSell ();
         }
         
   }
   
  // кодирование функций
- ENUM_TENDENTION GetLastTendention ()
+ 
+ ENUM_TENDENTION GetLastTendention ()            // возвращает тенденцию на последнем баре
   {
   
    if ( CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1) == 2 )
@@ -258,7 +264,7 @@ void OnTick()
     return (TENDENTION_NO); 
   }
   
-  ENUM_TENDENTION GetCurrentTendention ()
+  ENUM_TENDENTION GetCurrentTendention ()        // проверяет тенденцию текущей цены
    {
     if ( GreatDoubles (curPrice,lastBarD1[1].open) )  
        return (TENDENTION_UP);
@@ -267,9 +273,7 @@ void OnTick()
      return (TENDENTION_NO); 
    }
    
- 
-   
-  bool  GetExtremums()
+  bool  GetExtremums()                           // загружает экстремумы 
    {
     int copiedM5_up        = CopyBuffer(handleDrawExtr_M5,2,1,1,lastExtr_M5_up);
     int copiedM5_down      = CopyBuffer(handleDrawExtr_M5,3,1,1,lastExtr_M5_down);
@@ -292,9 +296,8 @@ void OnTick()
         
      return (true);
    }
-   
-   
-   bool  IsMACDCompatible (int direction)
+    
+   bool  IsMACDCompatible (int direction)        // проверяет, не противоречит ли расхождение MACD текущей тенденции
     {
      int copiedMACD_M5  = CopyBuffer(handleSmydMACD_M5,1,0,1,divMACD_M5);
      int copiedMACD_M15 = CopyBuffer(handleSmydMACD_M15,1,0,1,divMACD_M15);
@@ -315,16 +318,62 @@ void OnTick()
      return (false);
     }
     
-   void MoveStopLoss ()
+   void MoveStopLossForBuy ()         // перетаскивает стоп лосс для позиции BUY
     {
-     // будем перетаскивать стоп лосс в зависимости от открытой позиции
-     switch (openedPosition)
+     int type;
+     switch (type)
       {
-       case BUY:    // позиция была открыта на BUY
-        if ( GreatDoubles( curPrice,    
+       case 0: // для M5
+        // если цена пробила последний экстремум
+        if ( GreatDoubles (curPrice, lastExtr_M5_up[0]) )
+         {
+          // то перемещаем стоп лосс на предыдущий нижний экстремум 
+          stopLoss = lastExtr_M5_down[0];
+         }
        break;
-       case SELL:   // позиция была открыта на SELL
-       
-       break;
-      } 
+       case 1: // для M15
+        if ( GreatDoubles (curPrice, lastExtr_M15_up[0]) )
+         {
+          // то перемещаем стоп лосс на предыдущий нижний экстремум
+          stopLoss = lastExtr_M15_down[0];
+         }
+       break;  
+       case 2: // для H1
+        if ( GreatDoubles (curPrice, lastExtr_H1_up[0]) )
+         {
+          // то перемещаем стоп лосс на предыдущий нижний эктсремум
+          stopLoss = lastExtr_H1_down[0];
+         }
+       break;  
+      }
     }
+    
+   void MoveStopLossForSell ()         // перетаскивает стоп лосс для позиции SELL
+    {
+     int type;
+     switch (type)
+      {
+       case 0: // для M5
+        // если цена пробила последний экстремум
+        if ( LessDoubles (curPrice, lastExtr_M5_down[0]) )
+         {
+          // то перемещаем стоп лосс на предыдущий нижний экстремум 
+          stopLoss = lastExtr_M5_up[0];
+         }
+       break;
+       case 1: // для M15
+        if ( LessDoubles (curPrice, lastExtr_M15_down[0]) )
+         {
+          // то перемещаем стоп лосс на предыдущий нижний экстремум
+          stopLoss = lastExtr_M15_up[0];
+         }
+       break;  
+       case 2: // для H1
+        if ( LessDoubles (curPrice, lastExtr_H1_down[0]) )
+         {
+          // то перемещаем стоп лосс на предыдущий нижний эктсремум
+          stopLoss = lastExtr_H1_up[0];
+         }
+       break;  
+      }
+    }    
