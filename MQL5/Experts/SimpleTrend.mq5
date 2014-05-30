@@ -24,17 +24,22 @@ enum ENUM_TENDENTION
   TENDENTION_UP,         // тенденция вверх
   TENDENTION_DOWN        // тенденция вниз
  };
+ 
+// константы сигналов
+#define BUY   1    
+#define SELL -1 
+#define NO_POSITION 0
 
 // входные параметры
-input double lot = 0.1;                  // начальный лот
+input double lot     = 0.1;              // начальный лот
 input double lotStep = 0.2;              // размер доливки
 
 // системные переменные
 
 // хэндлы индикаторов
-int handleSmydMACD_D1;                   // хэндл индикатора расхождений MACD на дневнике
-int handleSmydMACD_H1;                   // хэндл индикатора расхождений MACD на часовике
+int handleSmydMACD_M5;                   // хэндл индикатора расхождений MACD на минутке
 int handleSmydMACD_M15;                  // хэндл индикатора расхождений MACD на 15 минутах
+int handleSmydMACD_H1;                   // хэндл индикатора расхождений MACD на часовике
 int handleDrawExtr_M5;                   // хэндл индикатора экстремумов на 5-минутке
 int handleDrawExtr_M15;                  // хэндл индикатора экстремумов на 15-ти минутке
 int handleDrawExtr_H1;                   // хэндл индикатора экстремумов на часовике
@@ -52,16 +57,17 @@ MqlRates lastBarD1[];                    // буфер цен на дневнике
 // объекты классов
 CTradeManager *ctm;                      // объект торговой библиотеки
 CisNewBar     *isNewBar_D1;              // новый бар на D1
+
  
 // дополнительные системные переменные
 bool firstLaunch    = true;              // флаг первого запуска эксперта
-bool openedPosition = false;             // флаг открытия позиции
-double currentPrice;                     // для хранения текущей цены
+int  openedPosition = 0;                 // тип открытой позиции 
+double curPrice;                         // для хранения текущей цены
 double stopLoss;                         // переменная для хранения стоп лосса
 double currentLot;                       // текущий лот
 ENUM_TENDENTION  lastTendention;         // переменная для хранения последней тенденции 
 
-// переменные для хранения значений экстремумов
+// буферы для хранения значений экстремумов
 double lastExtr_M5_up[];                 // значение последнего верхнего экстремума на M5
 double lastExtr_M5_down[];               // значение последнего нижнего экстремума на M5
 double lastExtr_M15_up[];                // значение последнего верхнего экстремума на M15
@@ -69,38 +75,45 @@ double lastExtr_M15_down[];              // значение последнего нижнего экстрему
 double lastExtr_H1_up[];                 // значение последнего верхнего экстремума на H1
 double lastExtr_H1_down[];               // значение последнего нижнего экстремума на H1
 
+// буферы для хранения расхождений на MACD
+double divMACD_M5[];                     // на пятиминутке
+double divMACD_M15[];                    // на 15-минутке
+double divMACD_H1[];                     // на часовике
+
 // описание системных функций робота
-ENUM_TENDENTION GetLastTendention();     // возвращает потенциальную тенденцию на предыдущем баре
-ENUM_TENDENTION GetCurrentTendention();  // возвращает текущую тенденцию цены
-bool            GetExtremums_M5_M15_H1();// ищет значения экстремумов на M5 M15 H1
+ENUM_TENDENTION GetLastTendention();               // возвращает потенциальную тенденцию на предыдущем баре
+ENUM_TENDENTION GetCurrentTendention();            // возвращает текущую тенденцию цены
+bool            GetExtremums();                    // ищет значения экстремумов на M5 M15 H1
+bool            IsMACDCompatible (int direction);  // проверяет совместимость расхождений MACD с текущей тенденцией
+void            MoveStopLoss ();                   // переносит стоп лосс на новое положение
 
 int OnInit()
   {
    int errorValue  = INIT_SUCCEEDED;  // результат инициализации эксперта
    // пытаемся инициализировать хэндлы расхождений MACD 
-   handleSmydMACD_D1  = iCustom(_Symbol,periodD1,"smydMACD");  
+   handleSmydMACD_M5  = iCustom(_Symbol,periodM5,"smydMACD");  
+   handleSmydMACD_M15 = iCustom(_Symbol,periodM15,"smydMACD");    
    handleSmydMACD_H1  = iCustom(_Symbol,periodH1,"smydMACD");  
-   handleSmydMACD_M15 = iCustom(_Symbol,periodM15,"smydMACD"); 
    // пытаемся инициализировать хэндлы идникатора Extremums
    handleDrawExtr_M5  = iCustom(_Symbol,periodM5,"DrawExtremums",false,PERIOD_M5);
    handleDrawExtr_M15 = iCustom(_Symbol,periodM15,"DrawExtremums",false,PERIOD_M15);
    handleDrawExtr_H1  = iCustom(_Symbol,periodH1,"DrawExtremums",false,PERIOD_H1);
        
-   if (handleSmydMACD_D1  == INVALID_HANDLE)
+   if (handleSmydMACD_M5  == INVALID_HANDLE)
     {
-     Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора SmydMACD на D1");
+     Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора SmydMACD на M5");
      errorValue = INIT_FAILED;
-    }       
-   if (handleSmydMACD_H1  == INVALID_HANDLE)
-    {
-     Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора SmydMACD на H1");
-     errorValue = INIT_FAILED;  
     }      
    if (handleSmydMACD_M15  == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора SmydMACD на M15");
      errorValue = INIT_FAILED;     
-    }       
+    }        
+   if (handleSmydMACD_H1  == INVALID_HANDLE)
+    {
+     Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора SmydMACD на H1");
+     errorValue = INIT_FAILED;  
+    }          
    if (handleDrawExtr_H1 == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора DrawExtremums на H1");
@@ -118,7 +131,7 @@ int OnInit()
     }          
    // создаем объект класса TradeManager
    ctm = new CTradeManager();                    
-   // создаем объект класса CisNewBar
+   // создаем объекты класса CisNewBar
    isNewBar_D1 = new CisNewBar(_Symbol,PERIOD_D1);
    // инициализируем переменные
    
@@ -127,10 +140,21 @@ int OnInit()
 
 void OnDeinit(const int reason)
   {
+   // освобождаем буферы
+   ArrayFree(divMACD_M5);
+   ArrayFree(divMACD_M15);
+   ArrayFree(divMACD_H1);
+   ArrayFree(lastExtr_H1_down);
+   ArrayFree(lastExtr_H1_up);
+   ArrayFree(lastExtr_M15_down);
+   ArrayFree(lastExtr_M15_up);
+   ArrayFree(lastExtr_M5_down);
+   ArrayFree(lastExtr_M5_up);
+   ArrayFree(lastBarD1);
    // удаляем все индикаторы
-   IndicatorRelease(handleSmydMACD_D1);
+   IndicatorRelease(handleSmydMACD_M5);
+   IndicatorRelease(handleSmydMACD_M15);   
    IndicatorRelease(handleSmydMACD_H1);
-   IndicatorRelease(handleSmydMACD_M15);
    IndicatorRelease(handleDrawExtr_H1);
    IndicatorRelease(handleDrawExtr_M15);
    IndicatorRelease(handleDrawExtr_M5);
@@ -142,83 +166,80 @@ void OnDeinit(const int reason)
 void OnTick()
   {
     ctm.OnTick();
+    GetExtremums();           // получаем значения последних экстремумов
     // если это первый запуск эксперта или сформировался новый бар 
     if (firstLaunch || isNewBar_D1.isNewBar() > 0)
      {
       firstLaunch = false;
       // если позиция еще не открыта
-      if (!openedPosition )
+      if ( openedPosition == NO_POSITION )
        {
-        lastTendention = GetLastTendention();                      // получаем предыдущую тенденцию                 
-        GetExtremums_M5_M15_H1();                                  // получаем значения последних экстремумов
-                  Comment(" \n",
-                          "M5 UP: ",DoubleToString(lastExtr_M5_up[0]),
-                          "\nM5 DOWN: ",DoubleToString(lastExtr_M5_down[0]),                          
-                          "\nM15 UP: ",DoubleToString(lastExtr_M15_up[0]),
-                          "\nM15 DOWN: ",DoubleToString(lastExtr_M15_down[0]),                          
-                          "\nH1 UP: ",DoubleToString(lastExtr_H1_up[0]),
-                          "\nH1 DOWN: ",DoubleToString(lastExtr_H1_down[0]),                          
-                         "\nЦены: ",DoubleToString(currentPrice)    );        
+        lastTendention = GetLastTendention();                      // получаем предыдущую тенденцию                   
        } 
      }
-    // на каждом тике
-       // если позиция еще не открыта
-       if (!openedPosition )
+       // на каждом тике 
+       if ( openedPosition == NO_POSITION )   // если позиция еще не открыта
         {
-         currentPrice   = SymbolInfoDouble(_Symbol,SYMBOL_BID);   // получаем текущую цену
+         curPrice   = SymbolInfoDouble(_Symbol,SYMBOL_BID);   // получаем текущую цену
          // если общая тенденция  - вверх
          if (lastTendention == TENDENTION_UP && GetCurrentTendention () == TENDENTION_UP)
            {
-                 
              // если текущая цена пробила один из экстемумов на одном из таймфреймов
-             if ( GreatDoubles (currentPrice,lastExtr_M5_up[0])  ||
-                  GreatDoubles (currentPrice,lastExtr_M15_up[0]) ||
-                  GreatDoubles (currentPrice,lastExtr_H1_up[0]) )
+             if ( GreatDoubles (curPrice,lastExtr_M5_up[0])  ||
+                  GreatDoubles (curPrice,lastExtr_M15_up[0]) ||
+                  GreatDoubles (curPrice,lastExtr_H1_up[0]) )
                 {
                   // если текущее расхождение MACD НЕ противоречит текущему движению
-    /*              Comment("Цена выше одного из экстремумов \n",
-                          "M5: ",DoubleToString(lastExtr_M5_up[0]),
-                          "\nM15: ",DoubleToString(lastExtr_M15_up[0]),
-                          "\nH1: ",DoubleToString(lastExtr_H1_up[0]),
-                         "\nЦены: ",DoubleToString(currentPrice)   
-                  );
-      */            
-                  // сохраняем стоп лосс
-                  stopLoss = 0;                  
-                  // то открываем позицию на BUY
-             //     ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,currentLot,stopLoss);
-                  // выставляем флаг открытия позиции в true
-                  openedPosition = true;
+                  if ( IsMACDCompatible (BUY) )
+                   {
+                     Comment("Открылись на BUY");                   
+                     // вычисляем стоп лосс по последнему экстремуму
+                     stopLoss = int(lastExtr_M5_down[0]/_Point);
+                     // открываем позицию
+                     ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,currentLot,stopLoss);
+                     // выставляем флаг открытия позиции BUY
+                     openedPosition = BUY;                    
+                   } 
+                        
+
                 }
     
            }
          // если общая тенденция - вниз
          if (lastTendention == TENDENTION_DOWN && GetCurrentTendention () == TENDENTION_DOWN)
-           {
-                          
-           
+           {          
              // если текущая цена пробила один из экстемумов на одном из таймфреймов
-             if ( LessDoubles (currentPrice,lastExtr_M5_down[0])  ||
-                  LessDoubles (currentPrice,lastExtr_M15_down[0]) ||
-                  LessDoubles (currentPrice,lastExtr_H1_down[0]) )
+             if ( LessDoubles (curPrice,lastExtr_M5_down[0])  ||
+                  LessDoubles (curPrice,lastExtr_M15_down[0]) ||
+                  LessDoubles (curPrice,lastExtr_H1_down[0]) )
                 {
-                       /*          Comment("Цена ниже одного из экстремумов \n",
-                          "M5: ",DoubleToString(lastExtr_M5_down[0]),
-                          "\nM15: ",DoubleToString(lastExtr_M15_down[0]),
-                          "\nH1: ",DoubleToString(lastExtr_H1_down[0]),
-                          "\nЦены: ",DoubleToString(currentPrice)
-                  ); */
                   // если текущее расхождение MACD НЕ противоречит текущему движению
-                  
-                  // сохраняем стоп лосс
-                  stopLoss = 0;
-                  // то открываем позицию на SELL
+                  if ( IsMACDCompatible (SELL) )
+                   {
+                     Comment("Открылись на SELL");
+                     // вычисляем стоп лосс по последнему экстремуму
+                     stopLoss = int(lastExtr_M5_up[0]/_Point);
+                     // открываем позицию
+                     ctm.OpenUniquePosition(_Symbol,_Period,OP_SELL,currentLot,stopLoss);
+                     // выставляем флаг открытия позиции SELL
+                     openedPosition = SELL;                    
+                   } 
                  
                 }      
 
                 
                   
            }
+        }
+       // если позиция была открыта на BUY
+       else if ( openedPosition == BUY ) 
+        {
+        
+        }
+       // если позиция была открыта на SELL
+       else if ( openedPosition == SELL)
+        {
+        
         }
         
   }
@@ -239,14 +260,16 @@ void OnTick()
   
   ENUM_TENDENTION GetCurrentTendention ()
    {
-    if ( GreatDoubles (currentPrice,lastBarD1[1].open) )  
+    if ( GreatDoubles (curPrice,lastBarD1[1].open) )  
        return (TENDENTION_UP);
-    if ( LessDoubles  (currentPrice,lastBarD1[1].open) )
+    if ( LessDoubles  (curPrice,lastBarD1[1].open) )
        return (TENDENTION_DOWN);
      return (TENDENTION_NO); 
    }
    
-  bool  GetExtremums_M5_M15_H1()
+ 
+   
+  bool  GetExtremums()
    {
     int copiedM5_up        = CopyBuffer(handleDrawExtr_M5,2,1,1,lastExtr_M5_up);
     int copiedM5_down      = CopyBuffer(handleDrawExtr_M5,3,1,1,lastExtr_M5_down);
@@ -269,3 +292,39 @@ void OnTick()
         
      return (true);
    }
+   
+   
+   bool  IsMACDCompatible (int direction)
+    {
+     int copiedMACD_M5  = CopyBuffer(handleSmydMACD_M5,1,0,1,divMACD_M5);
+     int copiedMACD_M15 = CopyBuffer(handleSmydMACD_M15,1,0,1,divMACD_M15);
+     int copiedMACD_H1  = CopyBuffer(handleSmydMACD_H1,1,0,1,divMACD_H1);   
+     
+     if (copiedMACD_M5  < 1 ||
+         copiedMACD_M15 < 1 ||
+         copiedMACD_H1  < 1
+        )
+         {
+          Print("Ошибка эксперта SimpleTrend. Не удалось получить данные о расхождениях");
+          return (false);
+         }        
+      if ( (divMACD_M5[0]+direction) && (divMACD_M15[0]+direction) && (divMACD_H1[0]+direction) )
+       {
+        return (true);
+       }
+     return (false);
+    }
+    
+   void MoveStopLoss ()
+    {
+     // будем перетаскивать стоп лосс в зависимости от открытой позиции
+     switch (openedPosition)
+      {
+       case BUY:    // позиция была открыта на BUY
+        if ( GreatDoubles( curPrice,    
+       break;
+       case SELL:   // позиция была открыта на SELL
+       
+       break;
+      } 
+    }
