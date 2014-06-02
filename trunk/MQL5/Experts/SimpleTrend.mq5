@@ -178,7 +178,8 @@ void OnDeinit(const int reason)
 
 void OnTick()
   {
-    ctm.OnTick();
+    ctm.OnTick(); 
+    ctm.DoTrailing();  
     GetExtremums();           // получаем значения последних экстремумов
     curPrice   = SymbolInfoDouble(_Symbol,SYMBOL_BID);   // получаем текущую цену
     // если это первый запуск эксперта или сформировался новый бар 
