@@ -90,9 +90,7 @@ ENUM_TENDENTION GetLastTendention();               // возвращает потенциальную т
 ENUM_TENDENTION GetCurrentTendention();            // возвращает текущую тенденцию цены
 bool            GetExtremums();                    // ищет значения экстремумов на M5 M15 H1
 bool            IsMACDCompatible (int direction);  // проверяет совместимость расхождений MACD с текущей тенденцией
-void            MoveStopLossForBuy ();             // переносит стоп лосс на новое положение для позиции BUY
-void            MoveStopLossForSell();             // переносит стоп лосс на новое положение для позиции SELL
-void            CountNewLot();                     // вычисляет новое значение лота
+double          ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl, int handlePeriod); // трейлинг
 
 int OnInit()
   {
@@ -338,116 +336,65 @@ void OnTick()
      return (false);
     }
     
-   void MoveStopLossForBuy ()         // перетаскивает стоп лосс для позиции BUY
-    {
-     int type;
-     switch (type)
-      {
-       case 0: // для M1 с учетом пробоя экстремума на M5
-        // если цена пробила последний экстремум
-        if ( GreatDoubles (curPrice, lastExtr_M1_up[0]) )
-         {
-          // то перемещаем стоп лосс на предыдущий нижний экстремум
-          stopLoss = lastExtr_M1_down[0];
-          // если было меньше 3-х долиовок
-          if (countAddingToLot < 3)
-           {
-            // увеличиваем количество доливок
-            countAddingToLot++; 
-            // пересчитываем лот
-            CountNewLot ();
-           }
-          else
-           {
-            // 
-            // пересчитываем лот
-            CountNewLot ();
-            // переходим на M5
-            type = 1;
-           }
-         }
-        // если цена пробила последний экстремум на M5
-        if ( GreatDoubles (curPrice, lastExtr_M5_up[0]) )
-          {
-           // переходим на M5
-           type = 1;
-          }
-       break;
-       
-       case 1: // для M5 с учетом пробоя экстремума на M15
-        // если цена пробила последний экстремум
-        if ( GreatDoubles (curPrice, lastExtr_M5_up[0]) )
-         {
-          // то перемещаем стоп лосс на предыдущий нижний экстремум
-          stopLoss = lastExtr_M5_down[0];
-          // если было меньше 3-х долиовок
-          if (countAddingToLot < 3)
-           {
-            // увеличиваем количество доливок
-            countAddingToLot++; 
-            // пересчитываем лот
-            CountNewLot ();
-           }
-          else if (countAddingToLot == 3 ) 
-           {
-            // пересчитываем лот
-            CountNewLot ();
-            // переходим на M5
-            type = 1;
-           }
-         }
-        // если цена пробила последний экстремум на M5
-        if ( GreatDoubles (curPrice, lastExtr_M5_up[0]) )
-          {
-           // переходим на M5
-           type = 1;
-          }
-       break;       
-      
-      
-      }
-    }
-    
-   void MoveStopLossForSell ()         // перетаскивает стоп лосс для позиции SELL
-    {
-     int type;
-     switch (type)
-      {
-       case 0: // для M1
-        // если цена пробила последний экстремум
-        if ( LessDoubles (curPrice, lastExtr_M1_down[0]) )
-         {
-          // то перемещаем стоп лосс на предыдущий верхний экстремум
-          stopLoss = lastExtr_M1_up[0];
-         }
-       break;
-       case 1: // для M5
-        // если цена пробила последний экстремум
-        if ( LessDoubles (curPrice, lastExtr_M5_down[0]) )
-         {
-          // то перемещаем стоп лосс на предыдущий верхний экстремум 
-          stopLoss = lastExtr_M5_up[0];
-         }
-       break;
-       case 2: // для M15
-        if ( LessDoubles (curPrice, lastExtr_M15_down[0]) )
-         {
-          // то перемещаем стоп лосс на предыдущий верхний экстремум
-          stopLoss = lastExtr_M15_up[0];
-         }
-       break;  
-       case 3: // для H1
-        if ( LessDoubles (curPrice, lastExtr_H1_down[0]) )
-         {
-          // то перемещаем стоп лосс на предыдущий верхний эктсремум
-          stopLoss = lastExtr_H1_up[0];
-         }
-       break;  
-      }
-    }    
-    
-  void CountNewLot ()        // вычисляет новое значение лота
+// трейлинг по экстремумам
+double  ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl, int handleExtremums)
+ {
+  double extrHigh[]; // буфер верхних экстремумов на младшем таймфрейме
+  double extrLow[];  // буфер нижних экстремумов на младшем таймфрейме 
+  double stopLoss;   // переменная для хранения нового стоп лосса 
+  double currentPrice;  // текущая цена
+  switch (type)
    {
-   
+    case OP_BUY:
+     // извлекаем текущую цену
+     currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);
+     // если удалось прогрузить буферы
+     if ( CopyBuffer(handleExtremums,2,1,1,extrHigh) == 1 &&
+          CopyBuffer(handleExtremums,3,1,1,extrLow)  == 1 
+        )
+         {
+           // если цена перевалила за верхний экстремум младшего таймфрейма 
+           // и последний нижний экстремум лучше (выше), чем предыдущий стоп лосс
+           if ( GreatDoubles(currentPrice,extrHigh[0]) && GreatDoubles(extrLow[0],sl) )
+            {
+             // сохраним новое значение стоп лосса
+             stopLoss = extrLow[0];
+             // очистим массивы
+             ArrayFree(extrHigh);
+             ArrayFree(extrLow);
+             // то вернем стопЛосс на уровне последнего нижнего экстремума младшего таймфрейма
+             return (stopLoss);
+            }
+         }
+     
+    break;
+    case OP_SELL:
+     // извлекаем текущую цену
+     currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);
+     // если удалось прогрузить буферы
+     if ( CopyBuffer(handleExtremums,2,1,1,extrHigh) == 1 &&
+          CopyBuffer(handleExtremums,3,1,1,extrLow)  == 1 
+        )
+         {
+           // если цена перевалила за нижний экстремум младшего таймфрейма
+           // и последний верхний экстремум лучше (ниже), чем предыдущий стоп лосс
+           if ( LessDoubles(currentPrice,extrLow[0]) && LessDoubles(extrHigh[0],sl) )
+            {
+             // сохраним новое значение стоп лосса
+             stopLoss = extrHigh[0];
+             // очистим буферы
+             ArrayFree(extrHigh);
+             ArrayFree(extrLow);
+             // то вернем стопЛосс на уровне последнего верхнего экстремума младшего таймфрейма
+             return (stopLoss);
+            }
+         }
+         
+    break;
    }
+  // освободим буферы
+  ArrayFree(extrHigh);
+  ArrayFree(extrLow);
+  return (0.0);
+ } 
    
