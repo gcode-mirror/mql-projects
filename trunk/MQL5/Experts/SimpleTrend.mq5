@@ -61,12 +61,14 @@ CisNewBar     *isNewBar_D1;              // новый бар на D1
  
 // дополнительные системные переменные
 bool firstLaunch    = true;              // флаг первого запуска эксперта
+bool gettingTopLot  = false;             // флаг достижения максимального лота
 int  openedPosition = 0;                 // тип открытой позиции 
 int  countAddingToLot = 0;               // счетчик доливок
 double curPrice;                         // для хранения текущей цены
 double stopLoss;                         // переменная для хранения стоп лосса
 double currentLot;                       // текущий лот
-ENUM_TENDENTION  lastTendention;         // переменная для хранения последней тенденции 
+ENUM_TENDENTION  lastTendention;         // переменная для хранения последней тенденции
+ENUM_TIMEFRAMES  periodForTrailing = PERIOD_M1; // период для трейлинга 
 
 // буферы для хранения значений экстремумов
 double lastExtr_M1_up[];                 // значение последнего верхнего экстремума на M1
@@ -357,6 +359,7 @@ void OnTick()
            }
           else
            {
+            // 
             // пересчитываем лот
             CountNewLot ();
             // переходим на M5
@@ -385,7 +388,7 @@ void OnTick()
             // пересчитываем лот
             CountNewLot ();
            }
-          else// if (countAddingToLot == 3 && 
+          else if (countAddingToLot == 3 ) 
            {
             // пересчитываем лот
             CountNewLot ();
