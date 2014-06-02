@@ -14,7 +14,6 @@
 // подключение необходимых библиотек
 #include <Lib CisNewBarDD.mqh>           // для проверки формирования нового бара
 #include <CompareDoubles.mqh>            // для сравнения вещественных чисел
-
 #include <TradeManager\TradeManager.mqh> // торговая библиотека
 
 // перечисления и константы
@@ -40,6 +39,7 @@ input double lotStep = 0.2;              // размер доливки
 int handleSmydMACD_M5;                   // хэндл индикатора расхождений MACD на минутке
 int handleSmydMACD_M15;                  // хэндл индикатора расхождений MACD на 15 минутах
 int handleSmydMACD_H1;                   // хэндл индикатора расхождений MACD на часовике
+int handleDrawExtr_M1;                   // хэндл индикатора экстремумов на 1-минутке
 int handleDrawExtr_M5;                   // хэндл индикатора экстремумов на 5-минутке
 int handleDrawExtr_M15;                  // хэндл индикатора экстремумов на 15-ти минутке
 int handleDrawExtr_H1;                   // хэндл индикатора экстремумов на часовике
@@ -69,6 +69,8 @@ double currentLot;                       // текущий лот
 ENUM_TENDENTION  lastTendention;         // переменная для хранения последней тенденции 
 
 // буферы для хранения значений экстремумов
+double lastExtr_M1_up[];                 // значение последнего верхнего экстремума на M1
+double lastExtr_M1_down[];               // значение последнего нижнего экстремума на M1
 double lastExtr_M5_up[];                 // значение последнего верхнего экстремума на M5
 double lastExtr_M5_down[];               // значение последнего нижнего экстремума на M5
 double lastExtr_M15_up[];                // значение последнего верхнего экстремума на M15
@@ -88,6 +90,7 @@ bool            GetExtremums();                    // ищет значения экстремумов 
 bool            IsMACDCompatible (int direction);  // проверяет совместимость расхождений MACD с текущей тенденцией
 void            MoveStopLossForBuy ();             // переносит стоп лосс на новое положение для позиции BUY
 void            MoveStopLossForSell();             // переносит стоп лосс на новое положение для позиции SELL
+void            CountNewLot();                     // вычисляет новое значение лота
 
 int OnInit()
   {
@@ -97,6 +100,7 @@ int OnInit()
    handleSmydMACD_M15 = iCustom(_Symbol,periodM15,"smydMACD");    
    handleSmydMACD_H1  = iCustom(_Symbol,periodH1,"smydMACD");  
    // пытаемся инициализировать хэндлы идникатора Extremums
+   handleDrawExtr_M1  = iCustom(_Symbol,periodM1,"DrawExtremums",false,PERIOD_M1);   
    handleDrawExtr_M5  = iCustom(_Symbol,periodM5,"DrawExtremums",false,PERIOD_M5);
    handleDrawExtr_M15 = iCustom(_Symbol,periodM15,"DrawExtremums",false,PERIOD_M15);
    handleDrawExtr_H1  = iCustom(_Symbol,periodH1,"DrawExtremums",false,PERIOD_H1);
@@ -131,6 +135,11 @@ int OnInit()
      Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора DrawExtremums на M5");
      errorValue = INIT_FAILED;       
     }          
+   if (handleDrawExtr_M1 == INVALID_HANDLE)
+    {
+     Print("Ошибка при инициализации эксперат SimpleTrend. Не удалось создать хэндл индикатора DrawExtremums на M1");  
+     errorValue = INIT_FAILED;  
+    }
    // создаем объект класса TradeManager
    ctm = new CTradeManager();                    
    // создаем объекты класса CisNewBar
@@ -153,6 +162,8 @@ void OnDeinit(const int reason)
    ArrayFree(lastExtr_M15_up);
    ArrayFree(lastExtr_M5_down);
    ArrayFree(lastExtr_M5_up);
+   ArrayFree(lastExtr_M1_down);
+   ArrayFree(lastExtr_M1_down);
    ArrayFree(lastBarD1);
    // удаляем все индикаторы
    IndicatorRelease(handleSmydMACD_M5);
@@ -161,6 +172,7 @@ void OnDeinit(const int reason)
    IndicatorRelease(handleDrawExtr_H1);
    IndicatorRelease(handleDrawExtr_M15);
    IndicatorRelease(handleDrawExtr_M5);
+   IndicatorRelease(handleDrawExtr_M1);
    // удаляем объекты классов
    delete ctm;
    delete isNewBar_D1;
@@ -170,6 +182,7 @@ void OnTick()
   {
     ctm.OnTick();
     GetExtremums();           // получаем значения последних экстремумов
+    curPrice   = SymbolInfoDouble(_Symbol,SYMBOL_BID);   // получаем текущую цену
     // если это первый запуск эксперта или сформировался новый бар 
     if (firstLaunch || isNewBar_D1.isNewBar() > 0)
      {
@@ -183,7 +196,6 @@ void OnTick()
        // на каждом тике 
        if ( openedPosition == NO_POSITION )   // если позиция еще не открыта
         {
-         curPrice   = SymbolInfoDouble(_Symbol,SYMBOL_BID);   // получаем текущую цену
          // если общая тенденция  - вверх
          if (lastTendention == TENDENTION_UP && GetCurrentTendention () == TENDENTION_UP)
            {
@@ -198,7 +210,7 @@ void OnTick()
                      Comment("Открылись на BUY");                   
                      // вычисляем стоп лосс по последнему экстремуму
                      stopLoss = int(lastExtr_M5_down[0]/_Point);
-                     // открываем позицию
+                     // открываем позицию на BUY
                      ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,currentLot,stopLoss);
                      // выставляем флаг открытия позиции BUY
                      openedPosition = BUY;                    
@@ -222,7 +234,7 @@ void OnTick()
                      Comment("Открылись на SELL");
                      // вычисляем стоп лосс по последнему экстремуму
                      stopLoss = int(lastExtr_M5_up[0]/_Point);
-                     // открываем позицию
+                     // открываем позицию на SELL
                      ctm.OpenUniquePosition(_Symbol,_Period,OP_SELL,currentLot,stopLoss);
                      // выставляем флаг открытия позиции SELL
                      openedPosition = SELL;                    
@@ -276,19 +288,24 @@ void OnTick()
    
   bool  GetExtremums()                           // загружает экстремумы 
    {
+    int copiedM1_up        = CopyBuffer(handleDrawExtr_M1,2,1,1,lastExtr_M1_up);
+    int copiedM1_down      = CopyBuffer(handleDrawExtr_M1,3,1,1,lastExtr_M1_down);
     int copiedM5_up        = CopyBuffer(handleDrawExtr_M5,2,1,1,lastExtr_M5_up);
     int copiedM5_down      = CopyBuffer(handleDrawExtr_M5,3,1,1,lastExtr_M5_down);
     int copiedM15_up       = CopyBuffer(handleDrawExtr_M15,2,1,1,lastExtr_M15_up);
     int copiedM15_down     = CopyBuffer(handleDrawExtr_M15,3,1,1,lastExtr_M15_down);
     int copiedH1_up        = CopyBuffer(handleDrawExtr_H1,2,1,1,lastExtr_H1_up);
-    int copiedH1_down      = CopyBuffer(handleDrawExtr_H1,3,1,1,lastExtr_H1_down);        
+    int copiedH1_down      = CopyBuffer(handleDrawExtr_H1,3,1,1,lastExtr_H1_down);  
+          
     
     if (copiedH1_down  < 1 ||
         copiedH1_up    < 1 ||
         copiedM15_down < 1 ||
         copiedM15_up   < 1 ||
         copiedM5_down  < 1 ||
-        copiedM5_up    < 1
+        copiedM5_up    < 1 ||
+        copiedM1_up    < 1 ||
+        copiedM1_down  < 1
        )
         {
          Print("Ошибка эксперта SimpleTrend. Не удалось получить данные об экстремумах");
@@ -324,28 +341,67 @@ void OnTick()
      int type;
      switch (type)
       {
-       case 0: // для M5
+       case 0: // для M1 с учетом пробоя экстремума на M5
+        // если цена пробила последний экстремум
+        if ( GreatDoubles (curPrice, lastExtr_M1_up[0]) )
+         {
+          // то перемещаем стоп лосс на предыдущий нижний экстремум
+          stopLoss = lastExtr_M1_down[0];
+          // если было меньше 3-х долиовок
+          if (countAddingToLot < 3)
+           {
+            // увеличиваем количество доливок
+            countAddingToLot++; 
+            // пересчитываем лот
+            CountNewLot ();
+           }
+          else
+           {
+            // пересчитываем лот
+            CountNewLot ();
+            // переходим на M5
+            type = 1;
+           }
+         }
+        // если цена пробила последний экстремум на M5
+        if ( GreatDoubles (curPrice, lastExtr_M5_up[0]) )
+          {
+           // переходим на M5
+           type = 1;
+          }
+       break;
+       
+       case 1: // для M5 с учетом пробоя экстремума на M15
         // если цена пробила последний экстремум
         if ( GreatDoubles (curPrice, lastExtr_M5_up[0]) )
          {
-          // то перемещаем стоп лосс на предыдущий нижний экстремум 
-          stopLoss = lastExtr_M5_down[0];
-         }
-       break;
-       case 1: // для M15
-        if ( GreatDoubles (curPrice, lastExtr_M15_up[0]) )
-         {
           // то перемещаем стоп лосс на предыдущий нижний экстремум
-          stopLoss = lastExtr_M15_down[0];
+          stopLoss = lastExtr_M5_down[0];
+          // если было меньше 3-х долиовок
+          if (countAddingToLot < 3)
+           {
+            // увеличиваем количество доливок
+            countAddingToLot++; 
+            // пересчитываем лот
+            CountNewLot ();
+           }
+          else// if (countAddingToLot == 3 && 
+           {
+            // пересчитываем лот
+            CountNewLot ();
+            // переходим на M5
+            type = 1;
+           }
          }
-       break;  
-       case 2: // для H1
-        if ( GreatDoubles (curPrice, lastExtr_H1_up[0]) )
-         {
-          // то перемещаем стоп лосс на предыдущий нижний эктсремум
-          stopLoss = lastExtr_H1_down[0];
-         }
-       break;  
+        // если цена пробила последний экстремум на M5
+        if ( GreatDoubles (curPrice, lastExtr_M5_up[0]) )
+          {
+           // переходим на M5
+           type = 1;
+          }
+       break;       
+      
+      
       }
     }
     
@@ -354,27 +410,41 @@ void OnTick()
      int type;
      switch (type)
       {
-       case 0: // для M5
+       case 0: // для M1
+        // если цена пробила последний экстремум
+        if ( LessDoubles (curPrice, lastExtr_M1_down[0]) )
+         {
+          // то перемещаем стоп лосс на предыдущий верхний экстремум
+          stopLoss = lastExtr_M1_up[0];
+         }
+       break;
+       case 1: // для M5
         // если цена пробила последний экстремум
         if ( LessDoubles (curPrice, lastExtr_M5_down[0]) )
          {
-          // то перемещаем стоп лосс на предыдущий нижний экстремум 
+          // то перемещаем стоп лосс на предыдущий верхний экстремум 
           stopLoss = lastExtr_M5_up[0];
          }
        break;
-       case 1: // для M15
+       case 2: // для M15
         if ( LessDoubles (curPrice, lastExtr_M15_down[0]) )
          {
-          // то перемещаем стоп лосс на предыдущий нижний экстремум
+          // то перемещаем стоп лосс на предыдущий верхний экстремум
           stopLoss = lastExtr_M15_up[0];
          }
        break;  
-       case 2: // для H1
+       case 3: // для H1
         if ( LessDoubles (curPrice, lastExtr_H1_down[0]) )
          {
-          // то перемещаем стоп лосс на предыдущий нижний эктсремум
+          // то перемещаем стоп лосс на предыдущий верхний эктсремум
           stopLoss = lastExtr_H1_up[0];
          }
        break;  
       }
     }    
+    
+  void CountNewLot ()        // вычисляет новое значение лота
+   {
+   
+   }
+   
