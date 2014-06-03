@@ -81,7 +81,8 @@ int OnInit()
     return(INIT_FAILED);
    }
    
-   san = new CSanyaRotate(fastDelta, slowDelta, dayStep, monthStep, minStepsFromStartToExtremum, maxStepsFromStartToExtremum, stepsFromStartToExit
+   san = new CSanyaRotate(fastDelta, slowDelta, dayStep, monthStep, minStepsFromStartToExtremum, maxStepsFromStartToExtremum
+                , stepsFromStartToExit
                 , type, volume, firstAdd, secondAdd, thirdAdd, fastDeltaStep, slowDeltaStep, percentage
                 , fastPeriod, slowPeriod);
                 

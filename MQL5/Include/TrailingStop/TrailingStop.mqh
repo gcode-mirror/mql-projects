@@ -36,7 +36,8 @@ public:
                        
    double LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl
                        , int _minProfit, int _trailingStop, int _trailingStep);
-   double PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI);                    
+   double PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI);
+   double ExtremumsTrailing (string symbol, ENUM_TM_POSITION_TYPE type, double sl, int handleExtremums);                    
   };
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -162,11 +163,6 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
   return(0.0); 
  }
  
- //ArraySetAsSeries(buffer_date, true);
- //ArraySetAsSeries(PBI_colors, true);
- //ArraySetAsSeries(PBI_Extrems, true);
-
-
  double newExtr = 0;
  int index;
  if (PBI_colors[0] == mainTrend || PBI_colors[0] == forbidenTrend)
@@ -194,6 +190,49 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
  ArrayFree(buffer_date);
  return(0.0);
 };
+
+
+// трейлинг по экстремумам
+double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl, int handleExtremums)
+{
+ double extrHigh[]; // буфер верхних экстремумов на младшем таймфрейме
+ double extrLow[];  // буфер нижних экстремумов на младшем таймфрейме 
+ double stopLoss = 0;   // переменная для хранения нового стоп лосса 
+ double currentPrice = SymbolInfoDouble(symbol, SYMBOL_BID);;  // текущая цена
+ 
+ if (CopyBuffer(handleExtremums,2,1,1,extrHigh) < 1 &&
+     CopyBuffer(handleExtremums,3,1,1,extrLow)  < 1 )
+ {
+  return (0.0);
+ }
+      
+ if (type == OP_BUY)
+ {
+  // если цена перевалила за верхний экстремум младшего таймфрейма 
+  // и последний нижний экстремум лучше (выше), чем предыдущий стоп лосс
+  if ( GreatDoubles(currentPrice,extrHigh[0]) && GreatDoubles(extrLow[0],sl))
+  {
+   // сохраним новое значение стоп лосса
+   stopLoss = extrLow[0];
+  }
+ }
+    
+ if (type == OP_SELL)
+ {
+  // если цена перевалила за нижний экстремум младшего таймфрейма
+  // и последний верхний экстремум лучше (ниже), чем предыдущий стоп лосс
+  if ( LessDoubles(currentPrice,extrLow[0]) && LessDoubles(extrHigh[0],sl) )
+  {
+   // сохраним новое значение стоп лосса
+   stopLoss = extrHigh[0];
+  }
+ }
+ // освободим буферы
+ ArrayFree(extrHigh);
+ ArrayFree(extrLow);
+ return (stopLoss);
+}
+ 
 //+------------------------------------------------------------------+
 //|Получение актуальной информации по торговому инструменту          |
 //+------------------------------------------------------------------+

@@ -70,7 +70,7 @@ public:
   bool ClosePosition(string symbol, color Color=CLR_NONE);    // Закртыие позиции по символу
   bool ClosePosition(long ticket, color Color = CLR_NONE);    // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);          // Закрытие позиции по индексу в массиве позиций
-  bool DoTrailing();                                          // Вызов трейла
+  bool DoTrailing(int handleExtremums = 0);                   // Вызов трейла
   bool isMinProfit();
   bool isMinProfit(string symbol);
   bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменения истории 
@@ -88,7 +88,7 @@ public:
                          int minProfit = 0, int trailingStop = 0, int trailingStep = 0, int handlePBI = 0, int priceDifference = 0);
   bool PositionChangeSize(string strSymbol, double additionalVolume);
   bool PositionSelect(long index, ENUM_SELECT_TYPE type, ENUM_SELECT_MODE pool = MODE_TRADES);
-  void UpdateData(CPositionArray *positionsHistory);
+  void UpdateData(CPositionArray *positionsHistory = NULL);
 };
 
 //+---------------------------------
@@ -299,7 +299,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  return(false);
 }
 
-bool CTradeManager::DoTrailing()
+bool CTradeManager::DoTrailing(int handleExtremums = 0)
 {
  int total = _openPositions.Total();
  double sl;
@@ -318,6 +318,9 @@ bool CTradeManager::DoTrailing()
     break;
    case TRAILING_TYPE_PBI :
     sl = _trailingStop.PBITrailing(pos.getSymbol(), pos.getPeriod(), pos.getType(), pos.getStopLossPrice(), pos.getHandlePBI());  
+    break;
+   case TRAILING_TYPE_EXTREMUMS :
+    sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), handleExtremums);
     break;
    case TRAILING_TYPE_NONE :
    default:
@@ -809,8 +812,9 @@ bool CTradeManager::PositionSelect(long index, ENUM_SELECT_TYPE type, ENUM_SELEC
 //+------------------------------------------------------------------+
 //|  Обновляет данные о текущей прибыли и просадке                   |
 //+------------------------------------------------------------------+
-void CTradeManager::UpdateData(CPositionArray *positionsHistory)
+void CTradeManager::UpdateData(CPositionArray *positionsHistory = NULL)
 {
+ if (positionsHistory == NULL) positionsHistory = _positionsHistory;
  int index;  // индекс прохода по циклу
  int length = positionsHistory.Total(); // длина переданного массива истории
  CPosition *pos; // указатель на текущую позицию

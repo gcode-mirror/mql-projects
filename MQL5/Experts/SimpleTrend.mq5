@@ -31,7 +31,7 @@ enum ENUM_TENDENTION
 
 // входные параметры
 input double lot     = 0.1;              // начальный лот
-input double lotStep = 0.2;              // размер доливки
+input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_EXTREMUMS;  // тип трейлинга
 
 // системные переменные
 
@@ -64,7 +64,6 @@ int  countAddingToLot = 0;               // счетчик доливок
 int  indexHandleForTrail;                // индекс хэндла индикатора Extremums для трейлинга 
 double curPrice;                         // для хранения текущей цены
 double stopLoss;                         // переменная для хранения стоп лосса
-double currentLot;                       // текущий лот
 ENUM_TENDENTION  lastTendention;         // переменная для хранения последней тенденции
 ENUM_TIMEFRAMES  periodForTrailing = PERIOD_M1; // период для трейлинга 
 
@@ -142,9 +141,7 @@ int OnInit()
    ctm = new CTradeManager();                    
    // создаем объекты класса CisNewBar
    isNewBar_D1 = new CisNewBar(_Symbol,PERIOD_D1);
-   // инициализируем переменные
-   currentLot = lot;
-   
+
    return(errorValue);
   }
 
@@ -179,163 +176,146 @@ void OnDeinit(const int reason)
 void OnTick()
   {
     ctm.OnTick(); 
-    ctm.DoTrailing();  
-    GetExtremums();           // получаем значения последних экстремумов
-    curPrice   = SymbolInfoDouble(_Symbol,SYMBOL_BID);   // получаем текущую цену
+    ctm.UpdateData();
+    ctm.DoTrailing(handleExtremums[indexHandleForTrail]);  
+    FillExtremums();           // получаем значения последних экстремумов
+    curPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену
     // если это первый запуск эксперта или сформировался новый бар 
     if (firstLaunch || isNewBar_D1.isNewBar() > 0)
-     {
-      firstLaunch = false;
-      
-      // если нет открытых позиций 
-      if ( ctm.GetPositionCount() == 0 )
-       {
-        lastTendention = GetLastTendention();                      // получаем предыдущую тенденцию                   
-       } 
-     }
-       // на каждом тике 
-       if ( ctm.GetPositionCount() == 0 )   // если позиция еще не открыта
-        {
-         // если общая тенденция  - вверх
-         if (lastTendention == TENDENTION_UP && GetCurrentTendention () == TENDENTION_UP)
-           {
-             // если текущая цена пробила один из экстемумов на одном из таймфреймов
-             if ( GreatDoubles (curPrice,lastExtr_M5_up[0])  ||
-                  GreatDoubles (curPrice,lastExtr_M15_up[0]) ||
-                  GreatDoubles (curPrice,lastExtr_H1_up[0]) )
-                {
-                  // если текущее расхождение MACD НЕ противоречит текущему движению
-                  if ( IsMACDCompatible (BUY) )
-                   {                 
-                     // вычисляем стоп лосс по последнему экстремуму
-                     stopLoss = int(lastExtr_M5_down[0]/_Point);
-                     // открываем позицию на BUY
-                     ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,currentLot,stopLoss);
-                     // выставляем флаг открытия позиции BUY
-                     openedPosition = BUY;         
-                     // обнуляем индекс хэндлов индикатора Extremums для трейлинга
-                     indexHandleForTrail = 0;           
-                   } 
-                        
-
-                }
+    {
+     firstLaunch = false;
+     lastTendention = GetLastTendention();                      // получаем предыдущую тенденцию                   
+    }
     
-           }
-         // если общая тенденция - вниз
-         if (lastTendention == TENDENTION_DOWN && GetCurrentTendention () == TENDENTION_DOWN)
-           {          
-             // если текущая цена пробила один из экстемумов на одном из таймфреймов
-             if ( LessDoubles (curPrice,lastExtr_M5_down[0])  ||
-                  LessDoubles (curPrice,lastExtr_M15_down[0]) ||
-                  LessDoubles (curPrice,lastExtr_H1_down[0]) )
-                {
-                  // если текущее расхождение MACD НЕ противоречит текущему движению
-                  if ( IsMACDCompatible (SELL) )
-                   {
-                     // вычисляем стоп лосс по последнему экстремуму
-                     stopLoss = int(lastExtr_M5_up[0]/_Point);
-                     // открываем позицию на SELL
-                     ctm.OpenUniquePosition(_Symbol,_Period,OP_SELL,currentLot,stopLoss);
-                     // выставляем флаг открытия позиции SELL
-                     openedPosition = SELL;  
-                     // обнуляем индекс хэндлов индикатора Extremums для трейлинга
-                     indexHandleForTrail = 0;                                         
-                   } 
-                 
-                }      
-
-                
-                  
-           }
-        }
-       // если есть открытые позиции
-       else
+    // на каждом тике 
+    if ( ctm.GetPositionCount() == 0 )   // если позиция еще не открыта
+    {
+     // если общая тенденция  - вверх
+     if (lastTendention == TENDENTION_UP && GetCurrentTendention () == TENDENTION_UP)
+     {
+      // если текущая цена пробила один из экстемумов на одном из таймфреймов
+      if ( GreatDoubles (curPrice, lastExtr_M5_up[0])  ||
+           GreatDoubles (curPrice, lastExtr_M15_up[0]) ||
+           GreatDoubles (curPrice, lastExtr_H1_up[0]) )
+      {
+       // если текущее расхождение MACD НЕ противоречит текущему движению
+       if (IsMACDCompatible(BUY))
+       {                 
+        // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
+        stopLoss = int(lastExtr_M5_down[0]/_Point);
+        // открываем позицию на BUY
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0, trailingType);
+        // выставляем флаг открытия позиции BUY
+        openedPosition = BUY;         
+        // обнуляем индекс хэндлов индикатора Extremums для трейлинга
+        indexHandleForTrail = 0;           
+       } 
+      }
+     }
+     // если общая тенденция - вниз
+     if (lastTendention == TENDENTION_DOWN && GetCurrentTendention () == TENDENTION_DOWN)
+     {          
+      // если текущая цена пробила один из экстемумов на одном из таймфреймов
+      if ( LessDoubles (curPrice, lastExtr_M5_down[0])  ||
+           LessDoubles (curPrice, lastExtr_M15_down[0]) ||
+           LessDoubles (curPrice, lastExtr_H1_down[0])   )
+      {
+       // если текущее расхождение MACD НЕ противоречит текущему движению
+       if (IsMACDCompatible(SELL))
+       {
+        // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
+        stopLoss = int(lastExtr_M5_up[0]/_Point);
+        // открываем позицию на SELL
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lot, stopLoss, 0, trailingType);
+        // выставляем флаг открытия позиции SELL
+        openedPosition = SELL;  
+        // обнуляем индекс хэндлов индикатора Extremums для трейлинга
+        indexHandleForTrail = 0;                                         
+       } 
+      }      
+     }
+    }
+    // если есть открытые позиции
+    else
+    {
+     // если позиция была открыта позиция BUY
+     if (openedPosition == BUY) 
+     {
+      // если было сделано меньше 4-х доливок 
+      if (countAddingToLot < 4)
+      {
+       // если цена пробила последний верхний экстремум на M1
+       if (GreatDoubles(curPrice, lastExtr_M1_up[0]) )
+       {
+        // то доливаемся 
+        ctm.PositionChangeSize(_Symbol, lot);
+        // и увеличиваем количество доливок на единицу
+        countAddingToLot++;
+       } 
+      }
+      // трейлим стоп лосс
+      switch (indexHandleForTrail)
+      {
+       case 0:  //  M1
+        if (GreatDoubles(curPrice, lastExtr_M5_up[0]))  // если цена пробила экстремум на M5
         {
-       // если позиция была открыта на BUY
-       if ( openedPosition == BUY ) 
-        {
-         // если было сделано меньше 4-х доливок 
-         if ( countAddingToLot < 4 )
-           {
-            // если цена пробила последний верхний экстремум на M1
-            if (GreatDoubles(curPrice, lastExtr_M1_up[0]) )
-             {
-               // то доливаемся 
-               currentLot = currentLot + lotStep;
-               ctm.PositionChangeSize(_Symbol, lot);
-               // и увеличиваем количество доливок на единицу
-               countAddingToLot ++;
-             } 
-           }
-         // трейлим стоп лосс
-         switch (indexHandleForTrail)
-          {
-           case 0:  //  M1
-            if ( GreatDoubles (curPrice,lastExtr_M5_up[0]) )  // если цена пробила экстремум на M5
-             {
-              indexHandleForTrail = 1;  // то переходим на M5
-             }
-           break;
-           case 1:  // M5
-            if ( GreatDoubles (curPrice,lastExtr_M15_up[0]) )  // если цена пробила экстремум на M15
-             {
-              indexHandleForTrail = 2;  // то переходим на M15
-             }           
-           break;
-           case 2:  // M15
-            if ( GreatDoubles (curPrice,lastExtr_H1_up[0]) )  // если цена пробила экстремум на H1
-             {
-              indexHandleForTrail = 3;  // то переходим на H1
-             }           
-           break;
-          }
-         // изменяем стоп лосс
-         stopLoss = ExtremumsTrailing(_Symbol,OP_BUY,stopLoss,handleExtremums[indexHandleForTrail]);
+         indexHandleForTrail = 1;  // то переходим на M5
         }
-       // если позиция была открыта на SELL
-       else if ( openedPosition == SELL)
+        break;
+       case 1:  // M5
+        if (GreatDoubles(curPrice, lastExtr_M15_up[0]))  // если цена пробила экстремум на M15
         {
-         // если было сделано меньше 4-х доливок 
-         if ( countAddingToLot < 4 )
-           {
-            // если цена пробила последний нижний экстремум на M1
-            if (LessDoubles(curPrice, lastExtr_M1_down[0]) )
-             {
-               // то доливаемся 
-               currentLot = currentLot + lotStep;
-               ctm.PositionChangeSize(_Symbol, lot);
-               // и увеличиваем количество доливок на единицу
-               countAddingToLot ++;
-             } 
-           }
-         // трейлим стоп лосс
-         switch (indexHandleForTrail)
-          {
-           case 0:  //  M1
-            if ( LessDoubles (curPrice,lastExtr_M5_down[0]) )  // если цена пробила экстремум на M5
-             {
-              indexHandleForTrail = 1;  // то переходим на M5
-             }
-           break;
-           case 1:  // M5
-            if ( LessDoubles (curPrice,lastExtr_M15_down[0]) )  // если цена пробила экстремум на M15
-             {
-              indexHandleForTrail = 2;  // то переходим на M15
-             }           
-           break;
-           case 2:  // M15
-            if ( LessDoubles (curPrice,lastExtr_H1_down[0]) )  // если цена пробила экстремум на H1
-             {
-              indexHandleForTrail = 3;  // то переходим на H1
-             }           
-           break;
-          }
-         // изменяем стоп лосс
-         stopLoss = ExtremumsTrailing(_Symbol,OP_SELL,stopLoss,handleExtremums[indexHandleForTrail]);
+         indexHandleForTrail = 2;  // то переходим на M15
+        }           
+        break;
+       case 2:  // M15
+        if (GreatDoubles(curPrice, lastExtr_H1_up[0]))  // если цена пробила экстремум на H1
+        {
+         indexHandleForTrail = 3;  // то переходим на H1
+        }           
+        break;
+      }
+     }
+     // если позиция была открыта на SELL
+     else if ( openedPosition == SELL)
+     {
+      // если было сделано меньше 4-х доливок 
+      if ( countAddingToLot < 4 )
+      {
+       // если цена пробила последний нижний экстремум на M1
+       if (LessDoubles(curPrice, lastExtr_M1_down[0]) )
+       {
+        // то доливаемся 
+        ctm.PositionChangeSize(_Symbol, lot);
+        // и увеличиваем количество доливок на единицу
+        countAddingToLot++;
+       } 
+      }
+      // трейлим стоп лосс
+      switch (indexHandleForTrail)
+      {
+       case 0:  //  M1
+        if (LessDoubles(curPrice,lastExtr_M5_down[0]))  // если цена пробила экстремум на M5
+        {
+         indexHandleForTrail = 1;  // то переходим на M5
         }
-       }
-        
-  }
+        break;
+       case 1:  // M5
+        if (LessDoubles(curPrice,lastExtr_M15_down[0]))  // если цена пробила экстремум на M15
+        {
+         indexHandleForTrail = 2;  // то переходим на M15
+        }           
+        break;
+       case 2:  // M15
+        if (LessDoubles(curPrice,lastExtr_H1_down[0]))  // если цена пробила экстремум на H1
+        {
+         indexHandleForTrail = 3;  // то переходим на H1
+        }           
+        break;
+      }
+     }
+    }
+   }
   
  // кодирование функций
  
@@ -361,115 +341,40 @@ void OnTick()
      return (TENDENTION_NO); 
    }
    
-  bool  GetExtremums()                           // загружает экстремумы 
-   {
-    int copiedM1_up        = CopyBuffer(handleExtremums[0],2,1,1,lastExtr_M1_up);
-    int copiedM1_down      = CopyBuffer(handleExtremums[0],3,1,1,lastExtr_M1_down);
-    int copiedM5_up        = CopyBuffer(handleExtremums[1],2,1,1,lastExtr_M5_up);
-    int copiedM5_down      = CopyBuffer(handleExtremums[1],3,1,1,lastExtr_M5_down);
-    int copiedM15_up       = CopyBuffer(handleExtremums[2],2,1,1,lastExtr_M15_up);
-    int copiedM15_down     = CopyBuffer(handleExtremums[2],3,1,1,lastExtr_M15_down);
-    int copiedH1_up        = CopyBuffer(handleExtremums[3],2,1,1,lastExtr_H1_up);
-    int copiedH1_down      = CopyBuffer(handleExtremums[3],3,1,1,lastExtr_H1_down);  
+bool FillExtremums()                           // загружает экстремумы 
+{
+ int copiedM1_up        = CopyBuffer(handleExtremums[0],2,1,1,lastExtr_M1_up);
+ int copiedM1_down      = CopyBuffer(handleExtremums[0],3,1,1,lastExtr_M1_down);
+ int copiedM5_up        = CopyBuffer(handleExtremums[1],2,1,1,lastExtr_M5_up);
+ int copiedM5_down      = CopyBuffer(handleExtremums[1],3,1,1,lastExtr_M5_down);
+ int copiedM15_up       = CopyBuffer(handleExtremums[2],2,1,1,lastExtr_M15_up);
+ int copiedM15_down     = CopyBuffer(handleExtremums[2],3,1,1,lastExtr_M15_down);
+ int copiedH1_up        = CopyBuffer(handleExtremums[3],2,1,1,lastExtr_H1_up);
+ int copiedH1_down      = CopyBuffer(handleExtremums[3],3,1,1,lastExtr_H1_down);  
           
-    
-    if (copiedH1_down  < 1 ||
-        copiedH1_up    < 1 ||
-        copiedM15_down < 1 ||
-        copiedM15_up   < 1 ||
-        copiedM5_down  < 1 ||
-        copiedM5_up    < 1 ||
-        copiedM1_up    < 1 ||
-        copiedM1_down  < 1
-       )
-        {
-         Print("Ошибка эксперта SimpleTrend. Не удалось получить данные об экстремумах");
-         return (false);
-        }
-        
-     return (true);
-   }
-    
-   bool  IsMACDCompatible (int direction)        // проверяет, не противоречит ли расхождение MACD текущей тенденции
-    {
-     int copiedMACD_M5  = CopyBuffer(handleSmydMACD_M5,1,0,1,divMACD_M5);
-     int copiedMACD_M15 = CopyBuffer(handleSmydMACD_M15,1,0,1,divMACD_M15);
-     int copiedMACD_H1  = CopyBuffer(handleSmydMACD_H1,1,0,1,divMACD_H1);   
-     
-     if (copiedMACD_M5  < 1 ||
-         copiedMACD_M15 < 1 ||
-         copiedMACD_H1  < 1
-        )
-         {
-          Print("Ошибка эксперта SimpleTrend. Не удалось получить данные о расхождениях");
-          return (false);
-         }        
-      if ( (divMACD_M5[0]+direction) && (divMACD_M15[0]+direction) && (divMACD_H1[0]+direction) )
-       {
-        return (true);
-       }
-     return (false);
-    }
-    
-// трейлинг по экстремумам
-double  ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl, int handleExtremums)
+ if (copiedH1_down  < 1 || copiedH1_up    < 1 ||
+     copiedM15_down < 1 || copiedM15_up   < 1 ||
+     copiedM5_down  < 1 || copiedM5_up    < 1 ||
+     copiedM1_up    < 1 || copiedM1_down  < 1  )
  {
-  double extrHigh[]; // буфер верхних экстремумов на младшем таймфрейме
-  double extrLow[];  // буфер нижних экстремумов на младшем таймфрейме 
-  double stopLoss;   // переменная для хранения нового стоп лосса 
-  double currentPrice;  // текущая цена
-  switch (type)
-   {
-    case OP_BUY:
-     // извлекаем текущую цену
-     currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);
-     // если удалось прогрузить буферы
-     if ( CopyBuffer(handleExtremums,2,1,1,extrHigh) == 1 &&
-          CopyBuffer(handleExtremums,3,1,1,extrLow)  == 1 
-        )
-         {
-           // если цена перевалила за верхний экстремум младшего таймфрейма 
-           // и последний нижний экстремум лучше (выше), чем предыдущий стоп лосс
-           if ( GreatDoubles(currentPrice,extrHigh[0]) && GreatDoubles(extrLow[0],sl) )
-            {
-             // сохраним новое значение стоп лосса
-             stopLoss = extrLow[0];
-             // очистим массивы
-             ArrayFree(extrHigh);
-             ArrayFree(extrLow);
-             // то вернем стопЛосс на уровне последнего нижнего экстремума младшего таймфрейма
-             return (stopLoss);
-            }
-         }
-     
-    break;
-    case OP_SELL:
-     // извлекаем текущую цену
-     currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);
-     // если удалось прогрузить буферы
-     if ( CopyBuffer(handleExtremums,2,1,1,extrHigh) == 1 &&
-          CopyBuffer(handleExtremums,3,1,1,extrLow)  == 1 
-        )
-         {
-           // если цена перевалила за нижний экстремум младшего таймфрейма
-           // и последний верхний экстремум лучше (ниже), чем предыдущий стоп лосс
-           if ( LessDoubles(currentPrice,extrLow[0]) && LessDoubles(extrHigh[0],sl) )
-            {
-             // сохраним новое значение стоп лосса
-             stopLoss = extrHigh[0];
-             // очистим буферы
-             ArrayFree(extrHigh);
-             ArrayFree(extrLow);
-             // то вернем стопЛосс на уровне последнего верхнего экстремума младшего таймфрейма
-             return (stopLoss);
-            }
-         }
-         
-    break;
-   }
-  // освободим буферы
-  ArrayFree(extrHigh);
-  ArrayFree(extrLow);
-  return (0.0);
- } 
+  Print("Ошибка эксперта SimpleTrend. Не удалось получить данные об экстремумах");
+  return (false);
+ }
+ return (true);
+}
+    
+bool IsMACDCompatible(int direction)        // проверяет, не противоречит ли расхождение MACD текущей тенденции
+{
+ int copiedMACD_M5  = CopyBuffer(handleSmydMACD_M5,1,0,1,divMACD_M5);
+ int copiedMACD_M15 = CopyBuffer(handleSmydMACD_M15,1,0,1,divMACD_M15);
+ int copiedMACD_H1  = CopyBuffer(handleSmydMACD_H1,1,0,1,divMACD_H1);   
+   
+ if (copiedMACD_M5  < 1 || copiedMACD_M15 < 1 || copiedMACD_H1  < 1)
+ {
+  Print("Ошибка эксперта SimpleTrend. Не удалось получить данные о расхождениях");
+  return (false);
+ }        
+ // dir = 1 или -1, div = -1 или 1; Если расхождение против направления, то рез-т будет 0 = false, в противном случае true
+ return ((divMACD_M5[0]+direction) && (divMACD_M15[0]+direction) && (divMACD_H1[0]+direction));
+}
    
