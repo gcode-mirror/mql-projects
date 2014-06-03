@@ -64,6 +64,10 @@ int  countAddingToLot = 0;               // счетчик доливок
 int  indexHandleForTrail;                // индекс хэндла индикатора Extremums для трейлинга 
 double curPrice;                         // для хранения текущей цены
 double stopLoss;                         // переменная для хранения стоп лосса
+double extrValueM1;                      // значение экстремума на M1
+double extrValueM5;                      // значение экстремума на M5
+double extrValueM15;                     // значение экстремума на M15
+double extrValueH1;                      // значение экстремума на H1
 ENUM_TENDENTION  lastTendention;         // переменная для хранения последней тенденции
 ENUM_TIMEFRAMES  periodForTrailing = PERIOD_M1; // период для трейлинга 
 
@@ -88,6 +92,7 @@ ENUM_TENDENTION GetCurrentTendention();            // возвращает текущую тенденц
 bool            GetExtremums();                    // ищет значения экстремумов на M5 M15 H1
 bool            IsMACDCompatible (int direction);  // проверяет совместимость расхождений MACD с текущей тенденцией
 double          ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl, int handlePeriod); // трейлинг
+double          GetExtremumByIndex(int handle,int startIndex,int length,int extrType,int extrIndex);      // возвращает значение экстремума по индексу 
 
 int OnInit()
   {
@@ -238,82 +243,56 @@ void OnTick()
     // если есть открытые позиции
     else
     {
-     // если позиция была открыта позиция BUY
-     if (openedPosition == BUY) 
-     {
-      // если было сделано меньше 4-х доливок 
-      if (countAddingToLot < 4)
-      {
-       // если цена пробила последний верхний экстремум на M1
-       if (GreatDoubles(curPrice, lastExtr_M1_up[0]) )
-       {
-        // то доливаемся 
-        ctm.PositionChangeSize(_Symbol, lot);
-        // и увеличиваем количество доливок на единицу
-        countAddingToLot++;
-       } 
-      }
+
+       // если было сделано меньше 4-х доливок 
+       if (countAddingToLot < 4)
+         {
+          // если цена пробила последний верхний экстремум на M1
+          if (GreatDoubles(openedPosition*curPrice, openedPosition*lastExtr_M1_up[0]) )
+            {
+             // то доливаемся 
+             ctm.PositionChangeSize(_Symbol, lot);
+             // и увеличиваем количество доливок на единицу
+             countAddingToLot++;
+            } 
+         }    
+       // сохраним значения экстремумов
+       if (openedPosition == BUY)
+        {
+         extrValueM5 = lastExtr_M5_up[0];
+         extrValueM15 = lastExtr_M15_up[0];
+         extrValueH1 = lastExtr_H1_up[0];                  
+        }
+       if (openedPosition == SELL)
+        {
+         extrValueM5 = lastExtr_M5_down[0];
+         extrValueM15 = lastExtr_M15_down[0];
+         extrValueH1 = lastExtr_H1_down[0];                  
+        }        
       // трейлим стоп лосс
       switch (indexHandleForTrail)
       {
        case 0:  //  M1
-        if (GreatDoubles(curPrice, lastExtr_M5_up[0]))  // если цена пробила экстремум на M5
+        if (GreatDoubles(openedPosition*curPrice, openedPosition*extrValueM5))  // если цена пробила экстремум на M5
         {
          indexHandleForTrail = 1;  // то переходим на M5
         }
         break;
        case 1:  // M5
-        if (GreatDoubles(curPrice, lastExtr_M15_up[0]))  // если цена пробила экстремум на M15
+        if (GreatDoubles(openedPosition*curPrice, openedPosition*extrValueM15))  // если цена пробила экстремум на M15
         {
          indexHandleForTrail = 2;  // то переходим на M15
         }           
         break;
        case 2:  // M15
-        if (GreatDoubles(curPrice, lastExtr_H1_up[0]))  // если цена пробила экстремум на H1
+        if (GreatDoubles(openedPosition*curPrice, openedPosition*extrValueH1))  // если цена пробила экстремум на H1
         {
          indexHandleForTrail = 3;  // то переходим на H1
         }           
         break;
       }
-     }
-     // если позиция была открыта на SELL
-     else if ( openedPosition == SELL)
-     {
-      // если было сделано меньше 4-х доливок 
-      if ( countAddingToLot < 4 )
-      {
-       // если цена пробила последний нижний экстремум на M1
-       if (LessDoubles(curPrice, lastExtr_M1_down[0]) )
-       {
-        // то доливаемся 
-        ctm.PositionChangeSize(_Symbol, lot);
-        // и увеличиваем количество доливок на единицу
-        countAddingToLot++;
-       } 
-      }
-      // трейлим стоп лосс
-      switch (indexHandleForTrail)
-      {
-       case 0:  //  M1
-        if (LessDoubles(curPrice,lastExtr_M5_down[0]))  // если цена пробила экстремум на M5
-        {
-         indexHandleForTrail = 1;  // то переходим на M5
-        }
-        break;
-       case 1:  // M5
-        if (LessDoubles(curPrice,lastExtr_M15_down[0]))  // если цена пробила экстремум на M15
-        {
-         indexHandleForTrail = 2;  // то переходим на M15
-        }           
-        break;
-       case 2:  // M15
-        if (LessDoubles(curPrice,lastExtr_H1_down[0]))  // если цена пробила экстремум на H1
-        {
-         indexHandleForTrail = 3;  // то переходим на H1
-        }           
-        break;
-      }
-     }
+  
+     
     }
    }
   
@@ -378,3 +357,43 @@ bool IsMACDCompatible(int direction)        // проверяет, не противоречит ли рас
  return ((divMACD_M5[0]+direction) && (divMACD_M15[0]+direction) && (divMACD_H1[0]+direction));
 }
    
+double GetExtremumByIndex (int handle,int startIndex,int length,int extrType,int extrIndex)  // возвращает значение экстремума по индексу 
+ {
+  double bufferExtr[];    // буфер экстремумов
+  int    copiedExtr;      // количество скопированных элементов из индикатора
+  int    indexBuffer;     // индекс буфера
+  int    countExtr = -1;  // счетчик индексов экстремумов 
+  if (extrType == 1)      // по верхним экстремумам
+   {
+    indexBuffer = 0;
+   }
+  if (extrType == -1)     // по нижним экстремумам
+   {
+    indexBuffer = 1;
+   } 
+  // попытка прогрузить 
+  for (int attempts = 0; attempts < 25; attempts ++ )
+   {
+    copiedExtr = CopyBuffer(handle,indexBuffer,startIndex,length,bufferExtr);
+    Sleep(100);
+   }
+  // если количество скопированных элементов меньше length
+  if (copiedExtr < length)
+   { 
+    Print("Не удалось прогрузить буферы экстремумов");
+    return (0.0);  
+   }
+  // проходим по всем 
+  for (int index=length-1;index>0;index--)
+   {
+     // если в буфере найден экстремум
+     if ( bufferExtr[index] != 0 )
+      {
+        countExtr ++;  
+        // если нашли экстремум по индексу 
+        if (countExtr == extrIndex)
+         return (bufferExtr[index]); 
+      }
+   }
+  return (0.0);
+ }

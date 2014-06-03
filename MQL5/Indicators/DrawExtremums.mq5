@@ -8,7 +8,7 @@
 #property version   "1.00"
 #property indicator_chart_window
 #property indicator_buffers 4
-#property indicator_plots   4
+#property indicator_plots   2
 
 #property indicator_type1   DRAW_ARROW
 #property indicator_type2   DRAW_ARROW
@@ -40,6 +40,9 @@ double LastDownArrowBuffer[];
 
 double lastUpArrow   = 0;                    // последнее значение верхнего экстремума
 double lastDownArrow = 0;                    // последнее значение нижнего экстремума
+
+int indexPrevUp   = -1;                      // индекс последнего верхнего экстремума, которого нужно затереть
+int indexPrevDown = -1;                      // индекс последнего нижнего экстремума, которого нужно затереть 
 
 CisNewBar NewBarCurrent;
 CExtremum *extr;
@@ -86,8 +89,8 @@ int OnInit()
 //--- indicator buffers mapping
    SetIndexBuffer(0, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(1, ExtDownArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(2, LastUpArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(3, LastDownArrowBuffer,INDICATOR_DATA);
+   SetIndexBuffer(2, LastUpArrowBuffer, INDICATOR_CALCULATIONS);
+   SetIndexBuffer(3, LastDownArrowBuffer,INDICATOR_CALCULATIONS);
 
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
@@ -149,12 +152,28 @@ int OnCalculate(const int rates_total,
      if (extr_cur[0].direction > 0)
      {
       ExtUpArrowBuffer[i] = extr_cur[0].price;// + 50*_Point;
+      if (indexPrevUp > -1)
+       {
+        if (GreatDoubles(ExtUpArrowBuffer[i],ExtUpArrowBuffer[indexPrevUp]) )
+         {
+          ExtUpArrowBuffer[indexPrevUp] = 0; // затираем предыдущее значение
+         } 
+       }
+      indexPrevUp = i;  // обновляем предыдущий индекс
       lastUpArrow = extr_cur[0].price;
       extr_cur[0].direction = 0;
      }
      if (extr_cur[1].direction < 0)
      {
       ExtDownArrowBuffer[i] = extr_cur[1].price;// - 50*_Point;
+      if (indexPrevDown > -1)
+       {
+        if (LessDoubles(ExtDownArrowBuffer[i],ExtDownArrowBuffer[indexPrevDown]) )
+         {
+          ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение
+         } 
+       }
+      indexPrevDown = i;  // обновляем предыдущий индекс      
       lastDownArrow = extr_cur[1].price;
       extr_cur[1].direction = 0;
      }
