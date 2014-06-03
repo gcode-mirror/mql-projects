@@ -49,7 +49,8 @@ DELTA_STEP slowDeltaStep = TEN;  // Ψΰγ θημενενθÿ ΡÒΐΠΨΕΙ δελόςϋ
 
 CGlobalVariable g_volume;
 
-CSanya san(fastDelta, slowDelta, dayStep, monthStep, minStepsFromStartToExtremum, maxStepsFromStartToExtremum, stepsFromStartToExit
+CSanya san(fastDelta, slowDelta, dayStep, monthStep, minStepsFromStartToExtremum, maxStepsFromStartToExtremum
+          , stepsFromStartToExit
           , type, volume, firstAdd, secondAdd, thirdAdd, fastDeltaStep, slowDeltaStep, percentage
           , fastPeriod, slowPeriod);
 //+------------------------------------------------------------------+

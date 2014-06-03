@@ -19,17 +19,10 @@ enum DELTA_STEP
  HUNDRED = 100
 };
 
-
 enum ENUM_PERIOD
 {
  Day,
  Month
-};
-
-struct SExtremum
-{
- int direction;
- double price;
 };
 
 enum ENUM_LEVELS
