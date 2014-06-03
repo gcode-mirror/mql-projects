@@ -186,14 +186,15 @@ void OnTick()
     if (firstLaunch || isNewBar_D1.isNewBar() > 0)
      {
       firstLaunch = false;
-      // если позиция еще не открыта
-      if ( openedPosition == NO_POSITION )
+      
+      // если нет открытых позиций 
+      if ( ctm.GetPositionCount() == 0 )
        {
         lastTendention = GetLastTendention();                      // получаем предыдущую тенденцию                   
        } 
      }
        // на каждом тике 
-       if ( openedPosition == NO_POSITION )   // если позиция еще не открыта
+       if ( ctm.GetPositionCount() == 0 )   // если позиция еще не открыта
         {
          // если общая тенденция  - вверх
          if (lastTendention == TENDENTION_UP && GetCurrentTendention () == TENDENTION_UP)
@@ -247,8 +248,11 @@ void OnTick()
                   
            }
         }
+       // если есть открытые позиции
+       else
+        {
        // если позиция была открыта на BUY
-       else if ( openedPosition == BUY ) 
+       if ( openedPosition == BUY ) 
         {
          // если было сделано меньше 4-х доливок 
          if ( countAddingToLot < 4 )
@@ -329,6 +333,7 @@ void OnTick()
          // изменяем стоп лосс
          stopLoss = ExtremumsTrailing(_Symbol,OP_SELL,stopLoss,handleExtremums[indexHandleForTrail]);
         }
+       }
         
   }
   
