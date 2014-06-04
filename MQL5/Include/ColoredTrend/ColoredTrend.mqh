@@ -60,6 +60,7 @@ public:
   ENUM_MOVE_TYPE GetMoveType(int i);
   int TrendDirection();
   void Zeros();
+  void PrintExtr();
 };
 
 //+-----------------------------------------+
@@ -257,6 +258,7 @@ ENUM_MOVE_TYPE CColoredTrend::GetMoveType(int i)
 //+-------------------------------------------------+
 int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, datetime start_pos, MqlRates &array[])
 {
+ if(count > _depth) count = _depth;
 //--- сколько скопировано
  int copied = 0;
  ENUM_TIMEFRAMES period;
@@ -462,8 +464,7 @@ void CColoredTrend::Zeros()
   }
 }
 
-
-int GetNumberOfTopBarsInCurrentBars(ENUM_TIMEFRAMES timeframe_curr, ENUM_TIMEFRAMES timeframe_top, int current_bars)
+void CColoredTrend::PrintExtr(void)
 {
-  return ((current_bars*PeriodSeconds(timeframe_curr))/PeriodSeconds(timeframe_top));
+ extremums.PrintExtremums();
 }

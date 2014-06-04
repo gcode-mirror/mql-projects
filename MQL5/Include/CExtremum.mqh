@@ -171,9 +171,10 @@ double CExtremum::AveregeBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos
  MqlRates buffer_rates[];
  if(CopyRates(_symbol, tf, start_pos, period, buffer_rates) < 0)
  {
-  PrintFormat("%s Не удалось загрузить цены для самостоятельного подсчета ATR. TF = %s. Error = %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError());
+  PrintFormat("%s Не удалось загрузить цены для самостоятельного подсчета ATR. TF = %s. Error = %d", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError());
  }
  int size = ArraySize(buffer_rates);
+ 
  for(int i = 0; i < size; i++)
  {
   result += MathAbs(buffer_rates[i].high - buffer_rates[i].low);
@@ -207,7 +208,7 @@ void CExtremum::PrintExtremums()
  string result = "";
  for(int i = 0; i < ARRAY_SIZE; i++)
  {
-  StringConcatenate(result, result, StringFormat("num%d = {%d %.05f %s}; ", i, extremums[i].direction, extremums[i].price, TimeToString(extremums[i].time)));
+  StringConcatenate(result, result, StringFormat("num%d = {%d %.05f %s ,(%.05f)}; ", i, extremums[i].direction, extremums[i].price, TimeToString(extremums[i].time), AveregeBar(_tf_period, _period_ATR, extremums[i].time)*_percentage_ATR));
  }
  PrintFormat("%s %s", __FUNCTION__, result);
 }
