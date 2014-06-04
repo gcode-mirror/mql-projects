@@ -28,6 +28,7 @@ class CBlowInfoFromExtremums
    int _historyDepth;        // глубина истории
   public:
   // методы класса
+   bool IsInitFine ();                                                                    // проверяет, хорошо ли проиницилизирован объект   
    bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_index=0,int historyDepth=100); // функция обновляет экстремумы
    double GetExtrByIndex (ENUM_EXTR_USE extr_use,int extr_index);                         // возвращает значение экстремума по индексу
    ENUM_EXTR_USE GetFirstExtrType ();                                                     // возвращает тип последнего экстремума
@@ -38,6 +39,16 @@ class CBlowInfoFromExtremums
  };
  
  // кодирование методов класса
+ 
+ bool CBlowInfoFromExtremums::IsInitFine(void)   // проверяет правильность инициализации объекта
+  {
+   if (_handleExtremums == INVALID_HANDLE)
+    {
+     Print("Ошибка инициализации класса CBlowInfoFromExtremums. Не удалось создать хэндл индикатора DrawExtremums");
+     return(false);
+    }
+   return(true);
+  }
  
  bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_index=0,int historyDepth=100)       // обновляет данные экстремумов
   {
@@ -115,3 +126,16 @@ class CBlowInfoFromExtremums
      }
     return EXTR_NO;
    }
+   
+
+   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period)   // конструктор класса 
+    {
+     _handleExtremums = iCustom(symbol,period,"DrawExtremums",false,period);
+    }
+    
+   CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
+    {
+     ArrayFree(_extrBufferHigh);
+     ArrayFree(_extrBufferLow);
+     IndicatorRelease(_handleExtremums);
+    }

@@ -7,14 +7,11 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_chart_window
-#property indicator_buffers 4
-#property indicator_plots   4
+#property indicator_buffers 2
+#property indicator_plots   2
 
 #property indicator_type1   DRAW_ARROW
 #property indicator_type2   DRAW_ARROW
-#property indicator_type3   DRAW_LINE
-#property indicator_color3  clrRed
-#property indicator_type4   DRAW_LINE 
 
 //----------------------------------------------------------------
 #include <CompareDoubles.mqh>
@@ -35,11 +32,6 @@ input  int     period_average_ATR = 1;       // период устреднения индикатора AT
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];
 double ExtDownArrowBuffer[];
-double LastUpArrowBuffer[];
-double LastDownArrowBuffer[];
-
-double lastUpArrow   = 0;                    // последнее значение верхнего экстремума
-double lastDownArrow = 0;                    // последнее значение нижнего экстремума
 
 int indexPrevUp   = -1;                      // индекс последнего верхнего экстремума, которого нужно затереть
 int indexPrevDown = -1;                      // индекс последнего нижнего экстремума, которого нужно затереть 
@@ -90,21 +82,15 @@ int OnInit()
 //--- indicator buffers mapping
    SetIndexBuffer(0, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(1, ExtDownArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(2, LastUpArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(3, LastDownArrowBuffer,INDICATOR_DATA);
 
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
-   ArrayInitialize(LastUpArrowBuffer,   0);
-   ArrayInitialize(LastDownArrowBuffer, 0);
-   
+
    PlotIndexSetInteger(0, PLOT_ARROW, 218);
    PlotIndexSetInteger(1, PLOT_ARROW, 217);
    
    ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
    ArraySetAsSeries( ExtDownArrowBuffer, series_order);
-   ArraySetAsSeries( LastUpArrowBuffer, series_order);
-   ArraySetAsSeries( LastDownArrowBuffer,series_order);
    
    return(INIT_SUCCEEDED);
   }
@@ -132,14 +118,15 @@ int OnCalculate(const int rates_total,
   {
    SExtremum extr_cur[2] = {{0, -1}, {0, -1}};
    
+   if(prev_calculated == 0) 
+   {
+   
    ArraySetAsSeries(open , series_order);
    ArraySetAsSeries(high , series_order);
    ArraySetAsSeries(low  , series_order);
    ArraySetAsSeries(close, series_order);
-   ArraySetAsSeries(time , series_order);
- 
-   if(prev_calculated == 0) 
-   {
+   ArraySetAsSeries(time , series_order);   
+   
     PrintFormat("%s Первый расчет индикатора", __FUNCTION__);
     
     ArrayInitialize(ExtUpArrowBuffer   , 0);
@@ -162,7 +149,6 @@ int OnCalculate(const int rates_total,
        }
       jumper = 1;
       indexPrevUp = i;  // обновляем предыдущий индекс
-      lastUpArrow = extr_cur[0].price;
       extr_cur[0].direction = 0;
      }
      if (extr_cur[1].direction < 0)
@@ -178,40 +164,54 @@ int OnCalculate(const int rates_total,
        }
       jumper = -1;
       indexPrevDown = i;  // обновляем предыдущий индекс      
-      lastDownArrow = extr_cur[1].price;
       extr_cur[1].direction = 0;
      }
-      LastDownArrowBuffer[i] = lastDownArrow;
-      LastUpArrowBuffer[i]   = lastUpArrow; 
+
     }
+    // переворачиваем индексы
+    indexPrevDown = rates_total - 1 - indexPrevDown;
+    indexPrevUp   = rates_total - 1 - indexPrevUp;
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН.", __FUNCTION__);
+    return (rates_total);
    }
    
    //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
-   RecountUpdated(time[0], true, extr_cur);
+   RecountUpdated(time[rates_total-1], true, extr_cur);
    
-   
-    
+   ArraySetAsSeries(ExtUpArrowBuffer   , false);
+   ArraySetAsSeries(ExtDownArrowBuffer , false);
+     
    if (extr_cur[0].direction > 0)
    {
-    ExtUpArrowBuffer[0] = extr_cur[0].price;// + 50*_Point;
-    lastUpArrow = extr_cur[0].price;
-    extr_cur[0].direction = 0;
+   Comment("Получили верхний экстремум");
+    ExtUpArrowBuffer[rates_total-1] = extr_cur[0].price;// + 50*_Point;
+      if (jumper == 1)
+       {
+        if (GreatDoubles(ExtUpArrowBuffer[rates_total-1],ExtUpArrowBuffer[indexPrevUp]) )
+         {
+          ExtUpArrowBuffer[indexPrevUp] = 0; // затираем предыдущее значение
+         } 
+       }
+      jumper = 1;
+      indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
+      extr_cur[0].direction = 0;    
    }
    if (extr_cur[1].direction < 0)
    {
-    ExtDownArrowBuffer[0] = extr_cur[1].price;// - 50*_Point;
-    lastDownArrow = extr_cur[1].price;
-    extr_cur[1].direction = 0;
+   Comment("Получили нижний экстремум");   
+    ExtDownArrowBuffer[rates_total-1] = extr_cur[1].price;// - 50*_Point;
+      if (jumper == -1)
+       {
+        if (LessDoubles(ExtDownArrowBuffer[rates_total-1],ExtDownArrowBuffer[indexPrevDown]) )
+         {
+          ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение
+         } 
+       }
+      jumper = -1;
+      indexPrevDown = rates_total-1;  // обновляем предыдущий индекс      
+      extr_cur[1].direction = 0;    
    }
-   
-   LastDownArrowBuffer[0] = lastDownArrow;
-   LastUpArrowBuffer[0]   = lastUpArrow;
-
-   if(NewBarCurrent.isNewBar() && prev_calculated != 0)
-   {
-     
-   }
+ 
    
    return(rates_total);
   }

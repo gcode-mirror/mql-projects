@@ -15,6 +15,7 @@
 #include <Lib CisNewBarDD.mqh>           // для проверки формирования нового бара
 #include <CompareDoubles.mqh>            // для сравнения вещественных чисел
 #include <TradeManager\TradeManager.mqh> // торговая библиотека
+#include <BlowInfoFromExtremums.mqh>     // класс по работе с экстремумами индикатора DrawExtremums
 
 // перечисления и константы
 enum ENUM_TENDENTION
@@ -147,7 +148,7 @@ int OnInit()
    ctm = new CTradeManager();                    
    // создаем объекты класса CisNewBar
    isNewBar_D1 = new CisNewBar(_Symbol,PERIOD_D1);
-   isNewBar_M5 = new CisNewBar(_Symbol,PERIOD_M5)l
+   isNewBar_M5 = new CisNewBar(_Symbol,PERIOD_M5);
 
    return(errorValue);
   }
