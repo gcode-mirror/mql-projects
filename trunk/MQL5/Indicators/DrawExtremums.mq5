@@ -8,7 +8,7 @@
 #property version   "1.00"
 #property indicator_chart_window
 #property indicator_buffers 4
-#property indicator_plots   2
+#property indicator_plots   4
 
 #property indicator_type1   DRAW_ARROW
 #property indicator_type2   DRAW_ARROW
@@ -90,8 +90,8 @@ int OnInit()
 //--- indicator buffers mapping
    SetIndexBuffer(0, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(1, ExtDownArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(2, LastUpArrowBuffer, INDICATOR_CALCULATIONS);
-   SetIndexBuffer(3, LastDownArrowBuffer,INDICATOR_CALCULATIONS);
+   SetIndexBuffer(2, LastUpArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(3, LastDownArrowBuffer,INDICATOR_DATA);
 
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
