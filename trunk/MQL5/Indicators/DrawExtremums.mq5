@@ -183,7 +183,6 @@ int OnCalculate(const int rates_total,
      
    if (extr_cur[0].direction > 0)
    {
-   Comment("Получили верхний экстремум");
     ExtUpArrowBuffer[rates_total-1] = extr_cur[0].price;// + 50*_Point;
       if (jumper == 1)
        {
@@ -198,7 +197,6 @@ int OnCalculate(const int rates_total,
    }
    if (extr_cur[1].direction < 0)
    {
-   Comment("Получили нижний экстремум");   
     ExtDownArrowBuffer[rates_total-1] = extr_cur[1].price;// - 50*_Point;
       if (jumper == -1)
        {
