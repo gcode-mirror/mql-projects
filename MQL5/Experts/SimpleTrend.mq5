@@ -55,6 +55,7 @@ MqlRates lastBarD1[];                    // буфер цен на дневнике
 // объекты классов
 CTradeManager *ctm;                      // объект торговой библиотеки
 CisNewBar     *isNewBar_D1;              // новый бар на D1
+CisNewBar     *isNewBar_M5;              // новый бар на M5
 
  
 // дополнительные системные переменные
@@ -146,6 +147,7 @@ int OnInit()
    ctm = new CTradeManager();                    
    // создаем объекты класса CisNewBar
    isNewBar_D1 = new CisNewBar(_Symbol,PERIOD_D1);
+   isNewBar_M5 = new CisNewBar(_Symbol,PERIOD_M5)l
 
    return(errorValue);
   }
@@ -176,13 +178,15 @@ void OnDeinit(const int reason)
    // удаляем объекты классов
    delete ctm;
    delete isNewBar_D1;
+   delete isNewBar_D1;
   }
 
 void OnTick()
   {
     ctm.OnTick(); 
     ctm.UpdateData();
-    ctm.DoTrailing(handleExtremums[indexHandleForTrail]);  
+    ctm.DoTrailing(handleExtremums[indexHandleForTrail]);
+    if (firstLaunch || isNewBar_M5.isNewBar() > 0) FillExtremums();  // получаем значения экстремумов   
     FillExtremums();           // получаем значения последних экстремумов
     curPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену
     // если это первый запуск эксперта или сформировался новый бар 
@@ -372,7 +376,7 @@ double GetExtremumByIndex (int handle,int startIndex,int length,int extrType,int
     indexBuffer = 1;
    } 
   // попытка прогрузить 
-  for (int attempts = 0; attempts < 25; attempts ++ )
+  for (int attempts = 0; attempts < 5; attempts ++ )
    {
     copiedExtr = CopyBuffer(handle,indexBuffer,startIndex,length,bufferExtr);
     Sleep(100);
