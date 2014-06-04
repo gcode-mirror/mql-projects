@@ -149,7 +149,7 @@ int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now 
    {
     if (new_extr[i].direction == extremums[0].direction) // если новый экстремум в том же напрвлении, что старый
     {
-     extremums[0].price = new_extr[i].price;
+     extremums[0] = new_extr[i];
     }
     else
     {
