@@ -59,7 +59,7 @@ int OnInit()
    PrintFormat("%s Init", MakeFunctionPrefix(__FUNCTION__));
    symbol = Symbol();
    current_timeframe = Period();
-   if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe);
+   if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe)-1;
    PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(current_timeframe);
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
@@ -129,7 +129,7 @@ int OnCalculate(const int rates_total,
    ArraySetAsSeries(low  , series_order);
    ArraySetAsSeries(close, series_order);
    ArraySetAsSeries(time , series_order);
-
+   
    if(prev_calculated == 0) 
    {
     PrintFormat("%s Первый расчет индикатора", MakeFunctionPrefix(__FUNCTION__));
@@ -139,6 +139,7 @@ int OnCalculate(const int rates_total,
     trend.Zeros();
     topTrend.Zeros();
     InitializeIndicatorBuffers();
+    //PrintFormat("%s %s depth = %d; history_depth = %d", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)current_timeframe), depth, history_depth);
     NewBarCurrent.isNewBar(time[depth]);
     NewBarTop.isNewBar(time[depth]);
     
@@ -153,7 +154,6 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i]; 
     
-     //PrintFormat("%s current:%d %s; top: %d %s", TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
      if(!show_top) ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
      else  ColorCandlesColors[i] = topTrend.GetMoveType(top_buffer_index);
     
@@ -169,7 +169,12 @@ int OnCalculate(const int rates_total,
      }
     
      if(    NewBarTop.isNewBar(time[i])) top_buffer_index++; //для того что бы считать на истории
-     if(NewBarCurrent.isNewBar(time[i])) buffer_index++;     //для того что бы считать на истории
+     if(NewBarCurrent.isNewBar(time[i])) 
+     {
+      //trend.PrintExtr();
+      PrintFormat("HISTORY %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+      buffer_index++;     //для того что бы считать на истории
+     }
     }
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН", MakeFunctionPrefix(__FUNCTION__));
    }
@@ -198,8 +203,12 @@ int OnCalculate(const int rates_total,
    
       
    if(NewBarTop.isNewBar()  && prev_calculated != 0) top_buffer_index++;     
-   if(NewBarCurrent.isNewBar() && prev_calculated != 0) buffer_index++; 
-   
+   if(NewBarCurrent.isNewBar() && prev_calculated != 0)
+   {
+    //trend.PrintExtr();
+    PrintFormat("REAL %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[0]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+    buffer_index++; 
+   }
    return(rates_total);
   }
 
