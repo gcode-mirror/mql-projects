@@ -32,6 +32,7 @@ class CBlowInfoFromExtremums
    bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_index=0,int historyDepth=100); // функция обновляет экстремумы
    double GetExtrByIndex (ENUM_EXTR_USE extr_use,int extr_index);                         // возвращает значение экстремума по индексу
    ENUM_EXTR_USE GetFirstExtrType ();                                                     // возвращает тип последнего экстремума
+   string ShowExtrType (ENUM_EXTR_USE extr_use);                                          // отображает в виде строки тип экстремумов 
   // конструкторы и деструкторы
   CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period);
   CBlowInfoFromExtremums (int handle): _handleExtremums(handle) {};
@@ -126,6 +127,26 @@ class CBlowInfoFromExtremums
      }
     return EXTR_NO;
    }
+   
+   string CBlowInfoFromExtremums::ShowExtrType(ENUM_EXTR_USE extr_use)  // отображает в виде строки тип экстремумов
+    {
+     switch (extr_use)
+      {
+       case EXTR_BOTH:
+        return "Оба типа экстремумов";
+       break;
+       case EXTR_HIGH:
+        return "Высокие экстремумы";
+       break;
+       case EXTR_LOW:
+        return "Низкие экстремумы";
+       break;
+       case EXTR_NO:
+        return "Нет эксремумов";
+       break;
+      }
+     return "";
+    }
    
 
    CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period)   // конструктор класса 
