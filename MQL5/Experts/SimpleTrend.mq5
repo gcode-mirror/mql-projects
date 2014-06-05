@@ -8,7 +8,7 @@
 #property version   "1.00"
 
 //+------------------------------------------------------------------+
-//| Робот, торгующий на тренде                                       |
+//| Робот, торгующий на простом тренде                               |
 //+------------------------------------------------------------------+
 
 // подключение необходимых библиотек
@@ -31,83 +31,52 @@ enum ENUM_TENDENTION
 #define NO_POSITION 0
 
 // входные параметры
-input double lot     = 0.1;              // начальный лот
-input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_EXTREMUMS;  // тип трейлинга
-
-// системные переменные
+sinput string baseStr = "";                                        // ОСНОВНЫЕ ПАРАМЕТРЫ
+input  double lot     = 0.1;                                       // начальный лот
+input  double lot_step = 0.1;                                      // шаг увеличения лота
+input  ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_EXTREMUMS;  // тип трейлинга
 
 // хэндлы индикатора SmydMACD
-int handleSmydMACD_M5;                   // хэндл индикатора расхождений MACD на минутке
-int handleSmydMACD_M15;                  // хэндл индикатора расхождений MACD на 15 минутах
-int handleSmydMACD_H1;                   // хэндл индикатора расхождений MACD на часовике
-// массив хэндлов индикатора Extremums
-int handleExtremums[4];                  // 0 - M1,1 - M5, 2 - M15, 3 - H1             
-
-// таймфреймы
-ENUM_TIMEFRAMES periodD1  = PERIOD_D1;   // дневник
-ENUM_TIMEFRAMES periodH1  = PERIOD_H1;   // часовик
-ENUM_TIMEFRAMES periodM5  = PERIOD_M5;   // 5-ти минутка
-ENUM_TIMEFRAMES periodM15 = PERIOD_M15;  // 15-ти минутка
-ENUM_TIMEFRAMES periodM1  = PERIOD_M1;   // минутка
+int handleSmydMACD_M5;                             // хэндл индикатора расхождений MACD на минутке
+int handleSmydMACD_M15;                            // хэндл индикатора расхождений MACD на 15 минутах
+int handleSmydMACD_H1;                             // хэндл индикатора расхождений MACD на часовике
 
 // необходимые буферы
-MqlRates lastBarD1[];                    // буфер цен на дневнике
+MqlRates lastBarD1[];                              // буфер цен на дневнике
 
 // объекты классов
-CTradeManager *ctm;                      // объект торговой библиотеки
-CisNewBar     *isNewBar_D1;              // новый бар на D1
-CisNewBar     *isNewBar_M5;              // новый бар на M5
+CTradeManager *ctm;                                // объект торговой библиотеки
+CisNewBar     *isNewBar_D1;                        // новый бар на D1
+CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 
- 
 // дополнительные системные переменные
-bool firstLaunch    = true;              // флаг первого запуска эксперта
-int  openedPosition = 0;                 // тип открытой позиции 
-int  countAddingToLot = 0;               // счетчик доливок
-int  indexHandleForTrail;                // индекс хэндла индикатора Extremums для трейлинга 
-double curPrice;                         // для хранения текущей цены
-double stopLoss;                         // переменная для хранения стоп лосса
-double extrValueM1;                      // значение экстремума на M1
-double extrValueM5;                      // значение экстремума на M5
-double extrValueM15;                     // значение экстремума на M15
-double extrValueH1;                      // значение экстремума на H1
-ENUM_TENDENTION  lastTendention;         // переменная для хранения последней тенденции
-ENUM_TIMEFRAMES  periodForTrailing = PERIOD_M1; // период для трейлинга 
-
-// буферы для хранения значений экстремумов
-double lastExtr_M1_up[];                 // значение последнего верхнего экстремума на M1
-double lastExtr_M1_down[];               // значение последнего нижнего экстремума на M1
-double lastExtr_M5_up[];                 // значение последнего верхнего экстремума на M5
-double lastExtr_M5_down[];               // значение последнего нижнего экстремума на M5
-double lastExtr_M15_up[];                // значение последнего верхнего экстремума на M15
-double lastExtr_M15_down[];              // значение последнего нижнего экстремума на M15
-double lastExtr_H1_up[];                 // значение последнего верхнего экстремума на H1
-double lastExtr_H1_down[];               // значение последнего нижнего экстремума на H1
+bool             firstLaunch       = true;         // флаг первого запуска эксперта
+int              openedPosition    = 0;            // тип открытой позиции 
+int              countAddingToLot  = 0;            // счетчик доливок
+int              indexForTrail     = 0;            // индекс объекта BlowInfoFromExtremums для трейлинга 
+double           curPrice;                         // для хранения текущей цены
+double           stopLoss;                         // переменная для хранения стоп лосса
+ENUM_TENDENTION  lastTendention;                   // переменная для хранения последней тенденции
 
 // буферы для хранения расхождений на MACD
-double divMACD_M5[];                     // на пятиминутке
-double divMACD_M15[];                    // на 15-минутке
-double divMACD_H1[];                     // на часовике
+double divMACD_M5[];                               // на пятиминутке
+double divMACD_M15[];                              // на 15-минутке
+double divMACD_H1[];                               // на часовике
 
 // описание системных функций робота
 ENUM_TENDENTION GetLastTendention();               // возвращает потенциальную тенденцию на предыдущем баре
 ENUM_TENDENTION GetCurrentTendention();            // возвращает текущую тенденцию цены
-bool            GetExtremums();                    // ищет значения экстремумов на M5 M15 H1
 bool            IsMACDCompatible (int direction);  // проверяет совместимость расхождений MACD с текущей тенденцией
-double          ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl, int handlePeriod); // трейлинг
-double          GetExtremumByIndex(int handle,int startIndex,int length,int extrType,int extrIndex);      // возвращает значение экстремума по индексу 
+bool            IsExtremumBeaten (int index,
+                                  int direction);  // проверяет пробитие экстремума по индексу
 
 int OnInit()
   {
    int errorValue  = INIT_SUCCEEDED;  // результат инициализации эксперта
    // пытаемся инициализировать хэндлы расхождений MACD 
-   handleSmydMACD_M5  = iCustom(_Symbol,periodM5,"smydMACD");  
-   handleSmydMACD_M15 = iCustom(_Symbol,periodM15,"smydMACD");    
-   handleSmydMACD_H1  = iCustom(_Symbol,periodH1,"smydMACD");  
-   // пытаемся инициализировать хэндлы идникатора Extremums
-   handleExtremums[0]  = iCustom(_Symbol,periodM1,"DrawExtremums",false,PERIOD_M1);   
-   handleExtremums[1]  = iCustom(_Symbol,periodM5,"DrawExtremums",false,PERIOD_M5);
-   handleExtremums[2]  = iCustom(_Symbol,periodM15,"DrawExtremums",false,PERIOD_M15);
-   handleExtremums[3]  = iCustom(_Symbol,periodH1,"DrawExtremums",false,PERIOD_H1);
+   handleSmydMACD_M5  = iCustom(_Symbol,PERIOD_M5,"smydMACD");  
+   handleSmydMACD_M15 = iCustom(_Symbol,PERIOD_M15,"smydMACD");    
+   handleSmydMACD_H1  = iCustom(_Symbol,PERIOD_H1,"smydMACD");  
        
    if (handleSmydMACD_M5  == INVALID_HANDLE)
     {
@@ -124,32 +93,15 @@ int OnInit()
      Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора SmydMACD на H1");
      errorValue = INIT_FAILED;  
     }          
-   if (handleExtremums[3] == INVALID_HANDLE)
-    {
-     Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора DrawExtremums на H1");
-     errorValue = INIT_FAILED;       
-    }  
-   if (handleExtremums[2] == INVALID_HANDLE)
-    {
-     Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора DrawExtremums на M15");
-     errorValue = INIT_FAILED;       
-    }  
-   if (handleExtremums[1] == INVALID_HANDLE)
-    {
-     Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора DrawExtremums на M5");
-     errorValue = INIT_FAILED;       
-    }          
-   if (handleExtremums[0] == INVALID_HANDLE)
-    {
-     Print("Ошибка при инициализации эксперат SimpleTrend. Не удалось создать хэндл индикатора DrawExtremums на M1");  
-     errorValue = INIT_FAILED;  
-    }
    // создаем объект класса TradeManager
    ctm = new CTradeManager();                    
    // создаем объекты класса CisNewBar
    isNewBar_D1 = new CisNewBar(_Symbol,PERIOD_D1);
-   isNewBar_M5 = new CisNewBar(_Symbol,PERIOD_M5);
-
+   // создаем объекты класса CBlowInfoFromExtremums
+   blowInfo[0] = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1);   // минутка
+   blowInfo[1] = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5);   // 5-ти минутка
+   blowInfo[2] = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15);  // 15-ти минутка
+   blowInfo[3] = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1);   // часовик      
    return(errorValue);
   }
 
@@ -159,36 +111,26 @@ void OnDeinit(const int reason)
    ArrayFree(divMACD_M5);
    ArrayFree(divMACD_M15);
    ArrayFree(divMACD_H1);
-   ArrayFree(lastExtr_H1_down);
-   ArrayFree(lastExtr_H1_up);
-   ArrayFree(lastExtr_M15_down);
-   ArrayFree(lastExtr_M15_up);
-   ArrayFree(lastExtr_M5_down);
-   ArrayFree(lastExtr_M5_up);
-   ArrayFree(lastExtr_M1_down);
-   ArrayFree(lastExtr_M1_down);
    ArrayFree(lastBarD1);
    // удаляем все индикаторы
    IndicatorRelease(handleSmydMACD_M5);
    IndicatorRelease(handleSmydMACD_M15);   
    IndicatorRelease(handleSmydMACD_H1);
-   IndicatorRelease(handleExtremums[0]);
-   IndicatorRelease(handleExtremums[1]);
-   IndicatorRelease(handleExtremums[2]);
-   IndicatorRelease(handleExtremums[3]);
    // удаляем объекты классов
    delete ctm;
-   delete isNewBar_D1;
    delete isNewBar_D1;
   }
 
 void OnTick()
   {
+    blowInfo[0].Upload();
+    blowInfo[1].Upload();
+    blowInfo[2].Upload();
+    blowInfo[3].Upload();
     ctm.OnTick(); 
     ctm.UpdateData();
-    ctm.DoTrailing(handleExtremums[indexHandleForTrail]);
-    if (firstLaunch || isNewBar_M5.isNewBar() > 0) FillExtremums();  // получаем значения экстремумов   
-    FillExtremums();           // получаем значения последних экстремумов
+    ctm.DoTrailing(blowInfo[indexForTrail]);
+
     curPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену
     // если это первый запуск эксперта или сформировался новый бар 
     if (firstLaunch || isNewBar_D1.isNewBar() > 0)
@@ -204,100 +146,93 @@ void OnTick()
      if (lastTendention == TENDENTION_UP && GetCurrentTendention () == TENDENTION_UP)
      {
       // если текущая цена пробила один из экстемумов на одном из таймфреймов
-      if ( GreatDoubles (curPrice, lastExtr_M5_up[0])  ||
-           GreatDoubles (curPrice, lastExtr_M15_up[0]) ||
-           GreatDoubles (curPrice, lastExtr_H1_up[0]) )
+      if ( IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY) )
+      
       {
        // если текущее расхождение MACD НЕ противоречит текущему движению
        if (IsMACDCompatible(BUY))
        {                 
-        // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
-        stopLoss = int(lastExtr_M5_down[0]/_Point);
+        // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
+        stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_LOW,0)/_Point);
         // открываем позицию на BUY
         ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0, trailingType);
         // выставляем флаг открытия позиции BUY
         openedPosition = BUY;         
         // обнуляем индекс хэндлов индикатора Extremums для трейлинга
-        indexHandleForTrail = 0;           
+        indexForTrail = 0;           
        } 
+       
       }
      }
      // если общая тенденция - вниз
      if (lastTendention == TENDENTION_DOWN && GetCurrentTendention () == TENDENTION_DOWN)
      {          
       // если текущая цена пробила один из экстемумов на одном из таймфреймов
-      if ( LessDoubles (curPrice, lastExtr_M5_down[0])  ||
-           LessDoubles (curPrice, lastExtr_M15_down[0]) ||
-           LessDoubles (curPrice, lastExtr_H1_down[0])   )
+      if ( IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL)   )
       {
        // если текущее расхождение MACD НЕ противоречит текущему движению
        if (IsMACDCompatible(SELL))
        {
         // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
-        stopLoss = int(lastExtr_M5_up[0]/_Point);
+        stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_HIGH,0)/_Point);
         // открываем позицию на SELL
         ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lot, stopLoss, 0, trailingType);
         // выставляем флаг открытия позиции SELL
         openedPosition = SELL;  
         // обнуляем индекс хэндлов индикатора Extremums для трейлинга
-        indexHandleForTrail = 0;                                         
+        indexForTrail = 0;                                         
        } 
       }      
      }
     }
     // если есть открытые позиции
     else
-    {
-
-       // если было сделано меньше 4-х доливок 
-       if (countAddingToLot < 4)
-         {
-          // если цена пробила последний верхний экстремум на M1
-          if (GreatDoubles(openedPosition*curPrice, openedPosition*lastExtr_M1_up[0]) )
+    { 
+      // если позиция была открыта на BUY
+      if (openedPosition == BUY) 
+       {
+        if (countAddingToLot < 4)
+          {
+           // если цена пробила последний верхний экстремум на M1
+           if ( IsExtremumBeaten(0,BUY) )
             {
              // то доливаемся 
-             ctm.PositionChangeSize(_Symbol, lot);
+             ctm.PositionChangeSize(_Symbol, lot_step);
              // и увеличиваем количество доливок на единицу
              countAddingToLot++;
             } 
-         }    
-       // сохраним значения экстремумов
-       if (openedPosition == BUY)
-        {
-         extrValueM5 = lastExtr_M5_up[0];
-         extrValueM15 = lastExtr_M15_up[0];
-         extrValueH1 = lastExtr_H1_up[0];                  
-        }
-       if (openedPosition == SELL)
-        {
-         extrValueM5 = lastExtr_M5_down[0];
-         extrValueM15 = lastExtr_M15_down[0];
-         extrValueH1 = lastExtr_H1_down[0];                  
-        }        
-      // трейлим стоп лосс
-      switch (indexHandleForTrail)
-      {
-       case 0:  //  M1
-        if (GreatDoubles(openedPosition*curPrice, openedPosition*extrValueM5))  // если цена пробила экстремум на M5
-        {
-         indexHandleForTrail = 1;  // то переходим на M5
-        }
-        break;
-       case 1:  // M5
-        if (GreatDoubles(openedPosition*curPrice, openedPosition*extrValueM15))  // если цена пробила экстремум на M15
-        {
-         indexHandleForTrail = 2;  // то переходим на M15
-        }           
-        break;
-       case 2:  // M15
-        if (GreatDoubles(openedPosition*curPrice, openedPosition*extrValueH1))  // если цена пробила экстремум на H1
-        {
-         indexHandleForTrail = 3;  // то переходим на H1
-        }           
-        break;
-      }
-  
-     
+          }
+         // если еще можно переходить на более старший таймфрейм
+         if ( indexForTrail < 3)
+           {
+            if (  IsExtremumBeaten (indexForTrail+1,BUY) )    // если цена пробила экстремум текущего таймфрейма
+               indexForTrail ++; 
+           }          
+       }
+
+      // если позиция была открыта на SELL
+      if (openedPosition == SELL) 
+       {
+        if (countAddingToLot < 4)
+          {
+           // если цена пробила последний верхний экстремум на M1
+           if ( IsExtremumBeaten(0,SELL) )
+            {
+             // то доливаемся 
+             ctm.PositionChangeSize(_Symbol, lot_step);
+             // и увеличиваем количество доливок на единицу
+             countAddingToLot++;
+            } 
+          }
+         // если еще можно переходить на более старший таймфрейм
+         if ( indexForTrail < 3)
+           {
+            if (  IsExtremumBeaten (indexForTrail+1,SELL) )    // если цена пробила экстремум текущего таймфрейма
+               indexForTrail ++; 
+           }          
+       }       
+       
+       
     }
    }
   
@@ -325,27 +260,6 @@ void OnTick()
      return (TENDENTION_NO); 
    }
    
-bool FillExtremums()                           // загружает экстремумы 
-{
- int copiedM1_up        = CopyBuffer(handleExtremums[0],2,1,1,lastExtr_M1_up);
- int copiedM1_down      = CopyBuffer(handleExtremums[0],3,1,1,lastExtr_M1_down);
- int copiedM5_up        = CopyBuffer(handleExtremums[1],2,1,1,lastExtr_M5_up);
- int copiedM5_down      = CopyBuffer(handleExtremums[1],3,1,1,lastExtr_M5_down);
- int copiedM15_up       = CopyBuffer(handleExtremums[2],2,1,1,lastExtr_M15_up);
- int copiedM15_down     = CopyBuffer(handleExtremums[2],3,1,1,lastExtr_M15_down);
- int copiedH1_up        = CopyBuffer(handleExtremums[3],2,1,1,lastExtr_H1_up);
- int copiedH1_down      = CopyBuffer(handleExtremums[3],3,1,1,lastExtr_H1_down);  
-          
- if (copiedH1_down  < 1 || copiedH1_up    < 1 ||
-     copiedM15_down < 1 || copiedM15_up   < 1 ||
-     copiedM5_down  < 1 || copiedM5_up    < 1 ||
-     copiedM1_up    < 1 || copiedM1_down  < 1  )
- {
-  Print("Ошибка эксперта SimpleTrend. Не удалось получить данные об экстремумах");
-  return (false);
- }
- return (true);
-}
     
 bool IsMACDCompatible(int direction)        // проверяет, не противоречит ли расхождение MACD текущей тенденции
 {
@@ -361,44 +275,46 @@ bool IsMACDCompatible(int direction)        // проверяет, не противоречит ли рас
  // dir = 1 или -1, div = -1 или 1; Если расхождение против направления, то рез-т будет 0 = false, в противном случае true
  return ((divMACD_M5[0]+direction) && (divMACD_M15[0]+direction) && (divMACD_H1[0]+direction));
 }
-   
-double GetExtremumByIndex (int handle,int startIndex,int length,int extrType,int extrIndex)  // возвращает значение экстремума по индексу 
+
+bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой экстремума
  {
-  double bufferExtr[];    // буфер экстремумов
-  int    copiedExtr;      // количество скопированных элементов из индикатора
-  int    indexBuffer;     // индекс буфера
-  int    countExtr = -1;  // счетчик индексов экстремумов 
-  if (extrType == 1)      // по верхним экстремумам
-   {
-    indexBuffer = 0;
-   }
-  if (extrType == -1)     // по нижним экстремумам
-   {
-    indexBuffer = 1;
-   } 
-  // попытка прогрузить 
-  for (int attempts = 0; attempts < 5; attempts ++ )
-   {
-    copiedExtr = CopyBuffer(handle,indexBuffer,startIndex,length,bufferExtr);
-    Sleep(100);
-   }
-  // если количество скопированных элементов меньше length
-  if (copiedExtr < length)
-   { 
-    Print("Не удалось прогрузить буферы экстремумов");
-    return (0.0);  
-   }
-  // проходим по всем 
-  for (int index=length-1;index>0;index--)
-   {
-     // если в буфере найден экстремум
-     if ( bufferExtr[index] != 0 )
+  double lastExtrHigh;                                         // значение последнего экстремума HIGH
+  double lastExtrLow;                                          // значение последнего экстремума LOW
+  ENUM_EXTR_USE last_extr;                                     // переменная для хранения последнего экстремума 
+   // получаем тип последнего экстремума
+   last_extr = blowInfo[index].GetLastExtrType();
+   if (last_extr == EXTR_NO)
+    return (0.0);
+   if (direction == OP_BUY)
+    {
+     // если последним экстремумом был HIGH или BOTH
+     if (last_extr == EXTR_HIGH || last_extr == EXTR_BOTH)
+       lastExtrHigh = blowInfo[index].GetExtrByIndex(EXTR_HIGH,1);  // то берем для пробития предпоследний экстремум
+     if (last_extr == EXTR_LOW)
+      lastExtrHigh  = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // то берем для пробития последний экстремум 
+     lastExtrLow = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);      // получаем последний нижний экстремум
+     // если текущая цена пробила последний значимый HIGH экстремум
+     if ( GreatDoubles(curPrice,lastExtrHigh))
       {
-        countExtr ++;  
-        // если нашли экстремум по индексу 
-        if (countExtr == extrIndex)
-         return (bufferExtr[index]); 
+       // то возвратим true (цена пробила экстремум)
+       return (true);
       }
-   }
-  return (0.0);
- }
+    }
+    
+   if (direction == OP_SELL)
+    {
+      // если последним экстремумом был LOW или BOTH
+      if (last_extr == EXTR_LOW || last_extr == EXTR_BOTH)
+       lastExtrLow = blowInfo[index].GetExtrByIndex(EXTR_LOW,1);  // то берем для пробития предпоследний экстремум
+      if (last_extr == EXTR_HIGH)
+       lastExtrLow  = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);  // то берем для пробития последний экстремум 
+      lastExtrHigh = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // получаем последний верхний экстремум
+      // если текущая цена пробила последний значимый HIGH экстремум 
+      if ( LessDoubles(curPrice,lastExtrLow) )
+       {
+        // то возвратим true (цена пробила экстремум)
+        return (true);
+       }
+    }
+  return (false);
+ }   
