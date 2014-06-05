@@ -15,6 +15,7 @@
 #include <TrailingStop\TrailingStop.mqh>
 #include <CompareDoubles.mqh>
 #include <CLog.mqh>
+#include <BlowInfoFromExtremums.mqh>
 int error = 0;
 
 //+------------------------------------------------------------------+
@@ -70,7 +71,7 @@ public:
   bool ClosePosition(string symbol, color Color=CLR_NONE);    // Закртыие позиции по символу
   bool ClosePosition(long ticket, color Color = CLR_NONE);    // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);          // Закрытие позиции по индексу в массиве позиций
-  bool DoTrailing(int handleExtremums = 0);                   // Вызов трейла
+  bool DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL);     // Вызов трейла
   bool isMinProfit();
   bool isMinProfit(string symbol);
   bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменения истории 
@@ -299,7 +300,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  return(false);
 }
 
-bool CTradeManager::DoTrailing(int handleExtremums = 0)
+bool CTradeManager::DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL)
 {
  int total = _openPositions.Total();
  double sl;
@@ -320,7 +321,7 @@ bool CTradeManager::DoTrailing(int handleExtremums = 0)
     sl = _trailingStop.PBITrailing(pos.getSymbol(), pos.getPeriod(), pos.getType(), pos.getStopLossPrice(), pos.getHandlePBI());  
     break;
    case TRAILING_TYPE_EXTREMUMS :
-    sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), handleExtremums);
+    sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), blowInfo);
     break;
    case TRAILING_TYPE_NONE :
    default:
