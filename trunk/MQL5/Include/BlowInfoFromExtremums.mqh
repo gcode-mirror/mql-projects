@@ -29,12 +29,12 @@ class CBlowInfoFromExtremums
   public:
   // методы класса
    bool IsInitFine ();                                                                    // проверяет, хорошо ли проиницилизирован объект   
-   bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_index=0,int historyDepth=100); // функция обновляет экстремумы
+   bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_index=0,int historyDepth=1000); // функция обновляет экстремумы
    double GetExtrByIndex (ENUM_EXTR_USE extr_use,int extr_index);                         // возвращает значение экстремума по индексу
    ENUM_EXTR_USE GetFirstExtrType ();                                                     // возвращает тип последнего экстремума
    string ShowExtrType (ENUM_EXTR_USE extr_use);                                          // отображает в виде строки тип экстремумов 
   // конструкторы и деструкторы
-  CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period);
+  CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,double percentageATR=1,int periodATR=30,int period_average_ATR=1);
   CBlowInfoFromExtremums (int handle): _handleExtremums(handle) {};
  ~CBlowInfoFromExtremums ();
  };
@@ -51,10 +51,11 @@ class CBlowInfoFromExtremums
    return(true);
   }
  
- bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_index=0,int historyDepth=100)       // обновляет данные экстремумов
+ bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_index=0,int historyDepth=1000)       // обновляет данные экстремумов
   {
    int copiedHigh = historyDepth;
    int copiedLow  = historyDepth;
+   _historyDepth = historyDepth;
     if (extr_use == EXTR_NO)
      return (false);
      
@@ -113,16 +114,15 @@ class CBlowInfoFromExtremums
   
   ENUM_EXTR_USE CBlowInfoFromExtremums::GetFirstExtrType(void)  // возвращает тип последнего экстремума
    {
-    int index;
-    for (index=_historyDepth-1;index>0;index--)
+    for (int index=_historyDepth-1;index>0;index--)
      {
-       if (_extrBufferHigh[index] != 0)
+       if (_extrBufferHigh[index] != 0.0 )
         {
-         if (_extrBufferLow[index] != 0)
+         if (_extrBufferLow[index] != 0.0 )
            return EXTR_BOTH;
           return EXTR_HIGH;
         }
-       if (_extrBufferLow[index] != 0)
+       if (_extrBufferLow[index] != 0.0 )
         return EXTR_LOW;
      }
     return EXTR_NO;
@@ -149,9 +149,10 @@ class CBlowInfoFromExtremums
     }
    
 
-   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period)   // конструктор класса 
+   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,double percentageATR=1,int periodATR=30,int period_average_ATR=1)   // конструктор класса 
     {
-     _handleExtremums = iCustom(symbol,period,"DrawExtremums",false,period);
+     _historyDepth = historyDepth;
+     _handleExtremums = iCustom(symbol,period,"DrawExtremums",false,period,historyDepth,percentageATR,periodATR,period_average_ATR);
     }
     
    CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
