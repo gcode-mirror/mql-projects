@@ -127,53 +127,52 @@ int OnCalculate(const int rates_total,
    ArraySetAsSeries(close, series_order);
    ArraySetAsSeries(time , series_order);   
    
-    PrintFormat("%s Первый расчет индикатора", __FUNCTION__);
+   PrintFormat("%s Первый расчет индикатора", __FUNCTION__);
     
-    ArrayInitialize(ExtUpArrowBuffer   , 0);
-    ArrayInitialize(ExtDownArrowBuffer , 0);
-    NewBarCurrent.isNewBar(time[depth]);
+   ArrayInitialize(ExtUpArrowBuffer   , 0);
+   ArrayInitialize(ExtDownArrowBuffer , 0);
+   NewBarCurrent.isNewBar(time[depth]);
+   
+   for(int i = depth-1; i >= 0;  i--)    
+   {
+    RecountUpdated(time[i], false, extr_cur);
     
-    for(int i = depth-1; i >= 0;  i--)    
+    if (extr_cur[0].direction > 0)
     {
-     RecountUpdated(time[i], false, extr_cur);
-    
-     if (extr_cur[0].direction > 0)
+     ExtUpArrowBuffer[i] = extr_cur[0].price;// + 50*_Point;
+     if (jumper == 1)
      {
-      ExtUpArrowBuffer[i] = extr_cur[0].price;// + 50*_Point;
-      if (jumper == 1)
-       {
-        if (GreatDoubles(ExtUpArrowBuffer[i],ExtUpArrowBuffer[indexPrevUp]) )
-         {
-          ExtUpArrowBuffer[indexPrevUp] = 0; // затираем предыдущее значение
-         } 
-       }
-      jumper = 1;
-      indexPrevUp = i;  // обновляем предыдущий индекс
-      extr_cur[0].direction = 0;
+      if (GreatDoubles(ExtUpArrowBuffer[i],ExtUpArrowBuffer[indexPrevUp]) )
+      {
+       ExtUpArrowBuffer[indexPrevUp] = 0; // затираем предыдущее значение
+      } 
      }
-     if (extr_cur[1].direction < 0)
-     {
-      ExtDownArrowBuffer[i] = extr_cur[1].price;// - 50*_Point;
-     
-      if (jumper == -1)
-       {
-        if (LessDoubles(ExtDownArrowBuffer[i],ExtDownArrowBuffer[indexPrevDown]) )
-         {
-          ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение
-         } 
-       }
-      jumper = -1;
-      indexPrevDown = i;  // обновляем предыдущий индекс      
-      extr_cur[1].direction = 0;
-     }
-
+     jumper = 1;
+     indexPrevUp = i;  // обновляем предыдущий индекс
+     extr_cur[0].direction = 0;
     }
-    // переворачиваем индексы
-    indexPrevDown = rates_total - 1 - indexPrevDown;
-    indexPrevUp   = rates_total - 1 - indexPrevUp;
-    PrintFormat("%s Первый расчет индикатора ОКОНЧЕН.", __FUNCTION__);
-    return (rates_total);
+    if (extr_cur[1].direction < 0)
+    {
+     ExtDownArrowBuffer[i] = extr_cur[1].price;
+    
+     if (jumper == -1)
+     {
+      if (LessDoubles(ExtDownArrowBuffer[i],ExtDownArrowBuffer[indexPrevDown]) )
+      {
+       ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение
+      } 
+     }
+     jumper = -1;
+     indexPrevDown = i;  // обновляем предыдущий индекс      
+     extr_cur[1].direction = 0;
+    }
    }
+   // переворачиваем индексы
+   indexPrevDown = rates_total - 1 - indexPrevDown;
+   indexPrevUp   = rates_total - 1 - indexPrevUp;
+   PrintFormat("%s Первый расчет индикатора ОКОНЧЕН.", __FUNCTION__);
+   return (rates_total);
+  }
    
    //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
    RecountUpdated(time[rates_total-1], true, extr_cur);
@@ -183,31 +182,32 @@ int OnCalculate(const int rates_total,
      
    if (extr_cur[0].direction > 0)
    {
-    ExtUpArrowBuffer[rates_total-1] = extr_cur[0].price;// + 50*_Point;
-      if (jumper == 1)
-       {
-        if (GreatDoubles(ExtUpArrowBuffer[rates_total-1],ExtUpArrowBuffer[indexPrevUp]) )
-         {
-          ExtUpArrowBuffer[indexPrevUp] = 0; // затираем предыдущее значение
-         } 
-       }
-      jumper = 1;
-      indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
-      extr_cur[0].direction = 0;    
+    ExtUpArrowBuffer[rates_total-1] = extr_cur[0].price;
+    if (jumper == 1)
+    {
+     if (GreatDoubles(ExtUpArrowBuffer[rates_total-1], ExtUpArrowBuffer[indexPrevUp]) )
+     {
+      ExtUpArrowBuffer[indexPrevUp] = 0; // затираем предыдущее значение
+     } 
+    }
+    jumper = 1;
+    indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
+    extr_cur[0].direction = 0;    
    }
+   
    if (extr_cur[1].direction < 0)
    {
     ExtDownArrowBuffer[rates_total-1] = extr_cur[1].price;// - 50*_Point;
-      if (jumper == -1)
-       {
-        if (LessDoubles(ExtDownArrowBuffer[rates_total-1],ExtDownArrowBuffer[indexPrevDown]) )
-         {
-          ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение
-         } 
-       }
-      jumper = -1;
-      indexPrevDown = rates_total-1;  // обновляем предыдущий индекс      
-      extr_cur[1].direction = 0;    
+    if (jumper == -1)
+    {
+     if (LessDoubles(ExtDownArrowBuffer[rates_total-1],ExtDownArrowBuffer[indexPrevDown]) )
+     {
+      ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение
+     } 
+    }
+    jumper = -1;
+    indexPrevDown = rates_total-1;  // обновляем предыдущий индекс      
+    extr_cur[1].direction = 0;    
    }
  
    
