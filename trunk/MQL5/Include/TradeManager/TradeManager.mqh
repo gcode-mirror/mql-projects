@@ -303,7 +303,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
 bool CTradeManager::DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL)
 {
  int total = _openPositions.Total();
- double sl;
+ double sl = 0;
  CPosition *pos;
 //--- по массиву открытых позиций
  for(int i = total - 1; i >= 0; i--) 
@@ -321,7 +321,7 @@ bool CTradeManager::DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL)
     sl = _trailingStop.PBITrailing(pos.getSymbol(), pos.getPeriod(), pos.getType(), pos.getStopLossPrice(), pos.getHandlePBI());  
     break;
    case TRAILING_TYPE_EXTREMUMS :
-    sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), blowInfo);
+    if (blowInfo != NULL) sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), blowInfo);
     break;
    case TRAILING_TYPE_NONE :
    default:

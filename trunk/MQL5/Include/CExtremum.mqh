@@ -41,7 +41,7 @@ class CExtremum
 
  int isExtremum(SExtremum& extr_array[], datetime start_pos_time = __DATETIME__,  bool now = true);
  int RecountExtremum(datetime start_pos_time = __DATETIME__, bool now = true);
- double AveregeBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos);
+ double AverageBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos);
  SExtremum getExtr(int i);
  void PrintExtremums();
  int  ExtrCount();
@@ -85,7 +85,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
 
  if(CopyRates(_symbol, _tf_period, start_pos_time, 1, buffer) < 1)
   PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
- double difToNewExtremum = AveregeBar(_tf_ATR, _period_ATR, start_pos_time) * _percentage_ATR;
+ double difToNewExtremum = AverageBar(_tf_ATR, _period_ATR, start_pos_time) * _percentage_ATR;
  double high = 0, low = 0;
 
  if (now)
@@ -165,7 +165,7 @@ int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now 
  return(count_new_extrs);
 }
 
-double CExtremum::AveregeBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos)
+double CExtremum::AverageBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos)
 {
  double result = 0;
  MqlRates buffer_rates[];
@@ -208,7 +208,7 @@ void CExtremum::PrintExtremums()
  string result = "";
  for(int i = 0; i < ARRAY_SIZE; i++)
  {
-  StringConcatenate(result, result, StringFormat("num%d = {%d %.05f %s ,(%.05f)}; ", i, extremums[i].direction, extremums[i].price, TimeToString(extremums[i].time), AveregeBar(_tf_period, _period_ATR, extremums[i].time)*_percentage_ATR));
+  StringConcatenate(result, result, StringFormat("num%d = {%d %.05f %s ,(%.05f)}; ", i, extremums[i].direction, extremums[i].price, TimeToString(extremums[i].time), AverageBar(_tf_period, _period_ATR, extremums[i].time)*_percentage_ATR));
  }
  PrintFormat("%s %s", __FUNCTION__, result);
 }
