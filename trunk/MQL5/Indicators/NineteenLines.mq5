@@ -49,22 +49,22 @@ input double channel_ATR_MN1  =  0.1;        //Ширина уровней
 sinput string w1Str   = "";                  //Недельные уровни
 input bool  flag2  = true;                  //Показывать экстремумы W1
 input double PERCENTAGE_OF_ATR_FOR_W1 = 1.5; //Процент от ATR для поиска экстремума
-input double channel_ATR_W1   =  0.25;       //Ширина уровней
+input double channel_ATR_W1   =  0.15;       //Ширина уровней
 
 sinput string d1Str   = "";                  //Дневные уровни
 input bool  flag3  = true;                  //Показывать экстремумы D1
 input double  PERCENTAGE_OF_ATR_FOR_D1 = 2;  //Процент от ATR для поиска экстремума
-input double channel_ATR_D1   =  0.5;        //Ширина уровней
+input double channel_ATR_D1   =  0.25;        //Ширина уровней
 
 sinput string h1Str   = "";                  //4-х часовые уровни
 input bool   flag4  = true;                 //Показывать экстремумы H4
 input double PERCENTAGE_OF_ATR_FOR_H4 = 3;   //Процент от ATR для поиска экстремума
-input double channel_ATR_H4   =  0.5;        //Ширина уровней
+input double channel_ATR_H4   =  0.25;        //Ширина уровней
 
 sinput string h4Str   = "";                  //Часовые уровни
 input bool  flag5  = true;                   //Показывать экстремумы H1
 input double PERCENTAGE_OF_ATR_FOR_H1 = 1.5; //Процент от ATR для поиска экстремума
-input double channel_ATR_H1   =  0.5;        //Ширина уровней
+input double channel_ATR_H1   =  0.25;        //Ширина уровней
  
 
 sinput string dStr   = "";                   //Цены на дневнике
