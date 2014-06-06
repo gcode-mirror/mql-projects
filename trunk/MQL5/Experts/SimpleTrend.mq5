@@ -54,7 +54,8 @@ bool             firstLaunch       = true;         // флаг первого запуска экспе
 int              openedPosition    = 0;            // тип открытой позиции 
 int              countAddingToLot  = 0;            // счетчик доливок
 int              indexForTrail     = 0;            // индекс объекта BlowInfoFromExtremums для трейлинга 
-double           curPrice;                         // для хранения текущей цены
+double           curPrice          = 0;            // для хранения текущей цены
+double           prevPrice         = 0;            // для хранения предыдущей цены
 double           stopLoss;                         // переменная для хранения стоп лосса
 ENUM_TENDENTION  lastTendention;                   // переменная для хранения последней тенденции
 
@@ -64,11 +65,12 @@ double divMACD_M15[];                              // на 15-минутке
 double divMACD_H1[];                               // на часовике
 
 // описание системных функций робота
-ENUM_TENDENTION GetLastTendention();               // возвращает потенциальную тенденцию на предыдущем баре
-ENUM_TENDENTION GetCurrentTendention();            // возвращает текущую тенденцию цены
+ENUM_TENDENTION GetTendention(double priceOpen,double priceAfter);  // возвращает тенденцию 
 bool            IsMACDCompatible (int direction);  // проверяет совместимость расхождений MACD с текущей тенденцией
 bool            IsExtremumBeaten (int index,
                                   int direction);  // проверяет пробитие экстремума по индексу
+                                  
+  
 
 int OnInit()
   {
@@ -130,20 +132,23 @@ void OnTick()
     ctm.OnTick(); 
     ctm.UpdateData();
     ctm.DoTrailing(blowInfo[indexForTrail]);
-
-    curPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену
+    prevPrice = curPrice;                               // сохраним предыдущую цену
+    curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену
     // если это первый запуск эксперта или сформировался новый бар 
     if (firstLaunch || isNewBar_D1.isNewBar() > 0)
     {
      firstLaunch = false;
-     lastTendention = GetLastTendention();                      // получаем предыдущую тенденцию                   
+     if ( CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1) == 2 )     
+      {
+       lastTendention = GetTendention(lastBarD1[0].open,lastBarD1[0].close);        // получаем предыдущую тенденцию                   
+      }
     }
     
     // на каждом тике 
     if ( ctm.GetPositionCount() == 0 )   // если позиция еще не открыта
     {
      // если общая тенденция  - вверх
-     if (lastTendention == TENDENTION_UP && GetCurrentTendention () == TENDENTION_UP)
+     if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_UP)
      {
       // если текущая цена пробила один из экстемумов на одном из таймфреймов
       if ( IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY) )
@@ -153,7 +158,7 @@ void OnTick()
        if (IsMACDCompatible(BUY))
        {                 
         // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
-        stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_LOW,0)/_Point);
+        stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_LOW,0).price/_Point);
         // открываем позицию на BUY
         ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0, trailingType);
         // выставляем флаг открытия позиции BUY
@@ -165,7 +170,7 @@ void OnTick()
       }
      }
      // если общая тенденция - вниз
-     if (lastTendention == TENDENTION_DOWN && GetCurrentTendention () == TENDENTION_DOWN)
+     if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_DOWN)
      {          
       // если текущая цена пробила один из экстемумов на одном из таймфреймов
       if ( IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL)   )
@@ -174,7 +179,7 @@ void OnTick()
        if (IsMACDCompatible(SELL))
        {
         // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
-        stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_HIGH,0)/_Point);
+        stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price/_Point);
         // открываем позицию на SELL
         ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lot, stopLoss, 0, trailingType);
         // выставляем флаг открытия позиции SELL
@@ -238,29 +243,15 @@ void OnTick()
   
  // кодирование функций
  
- ENUM_TENDENTION GetLastTendention ()            // возвращает тенденцию на последнем баре
+ ENUM_TENDENTION GetTendention (double priceOpen,double priceAfter)            // возвращает тенденцию 
   {
-  
-   if ( CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1) == 2 )
-     {
-      if ( GreatDoubles (lastBarD1[0].close,lastBarD1[0].open) )
+      if ( GreatDoubles (priceAfter,priceOpen) )
        return (TENDENTION_UP);
-      if ( LessDoubles  (lastBarD1[0].close,lastBarD1[0].open) )
+      if ( LessDoubles  (priceAfter,priceOpen) )
        return (TENDENTION_DOWN); 
-     }
     return (TENDENTION_NO); 
   }
   
-  ENUM_TENDENTION GetCurrentTendention ()        // проверяет тенденцию текущей цены
-   {
-    if ( GreatDoubles (curPrice,lastBarD1[1].open) )  
-       return (TENDENTION_UP);
-    if ( LessDoubles  (curPrice,lastBarD1[1].open) )
-       return (TENDENTION_DOWN);
-     return (TENDENTION_NO); 
-   }
-   
-    
 bool IsMACDCompatible(int direction)        // проверяет, не противоречит ли расхождение MACD текущей тенденции
 {
  int copiedMACD_M5  = CopyBuffer(handleSmydMACD_M5,1,0,1,divMACD_M5);
@@ -278,8 +269,8 @@ bool IsMACDCompatible(int direction)        // проверяет, не противоречит ли рас
 
 bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой экстремума
  {
-  double lastExtrHigh;                                         // значение последнего экстремума HIGH
-  double lastExtrLow;                                          // значение последнего экстремума LOW
+  Extr   lastExtrHigh;                                         // последний HIGH экстремум
+  Extr   lastExtrLow;                                          // последний LOW экстремум
   ENUM_EXTR_USE last_extr;                                     // переменная для хранения последнего экстремума 
    // получаем тип последнего экстремума
    last_extr = blowInfo[index].GetLastExtrType();
@@ -294,7 +285,7 @@ bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой эк
       lastExtrHigh  = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // то берем для пробития последний экстремум 
      lastExtrLow = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);      // получаем последний нижний экстремум
      // если текущая цена пробила последний значимый HIGH экстремум
-     if ( GreatDoubles(curPrice,lastExtrHigh))
+     if ( GreatDoubles(curPrice,lastExtrHigh.price) && GreatDoubles(lastExtrHigh.price,prevPrice) && prevPrice > 0 )
       {
        // то возвратим true (цена пробила экстремум)
        return (true);
@@ -310,7 +301,7 @@ bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой эк
        lastExtrLow  = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);  // то берем для пробития последний экстремум 
       lastExtrHigh = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // получаем последний верхний экстремум
       // если текущая цена пробила последний значимый HIGH экстремум 
-      if ( LessDoubles(curPrice,lastExtrLow) )
+      if ( LessDoubles(curPrice,lastExtrLow.price) && LessDoubles(lastExtrLow.price,prevPrice) && prevPrice > 0 )
        {
         // то возвратим true (цена пробила экстремум)
         return (true);
