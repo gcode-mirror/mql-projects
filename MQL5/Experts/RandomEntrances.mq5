@@ -20,9 +20,9 @@ input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 //input bool stepbypart = false; // 
 input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
 input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
-input int      trStop    = 100;                // Trailing Stop
-input int      trStep    = 100;                // Trailing Step
-input int      minProfit = 250;                // минимальная прибыль
+input int      trStop    = 100;      // Trailing Stop
+input int      trStep    = 100;      // Trailing Step
+input int      minProfit = 250;      // минимальная прибыль
 
 string symbol;
 ENUM_TIMEFRAMES timeframe;
