@@ -299,13 +299,13 @@ bool UploadBuffers ()   // получает последние значения уровней
           {
           if (foundLevel)
            {
-             tmpLen = cuPrice - buffers[index].price[0] + buffers[index].atr[0] ;
+             tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
              if (tmpLen < len)
               len = tmpLen;
            }
           else
            {
-            len =  cuPrice - buffers[index].price[0] + buffers[index].atr[0];
+            len =  cuPrice - buffers[index].price[0] - buffers[index].atr[0];
             foundLevel = true;
            }
          }

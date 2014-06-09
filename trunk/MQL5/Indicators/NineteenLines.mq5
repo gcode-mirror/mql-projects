@@ -68,7 +68,7 @@ input double channel_ATR_H1   =  0.25;        //Ширина уровней
  
 
 sinput string dStr   = "";                   //Цены на дневнике
-input bool  flag6  = true;                  //Показывать цены D1
+input bool  flag6  = false;                  //Показывать цены D1
 
 //////////////////////////////
 
