@@ -49,9 +49,9 @@ double  buffer19Lines[]; // буфер 19Lines
 double  curPrice;        // текущая цена
 
 // буферы уровней 
-bufferLevel buffers[20];            // основной буфер уровней
-int         bufferState[20];        // буфер состояний текущей цены относительно буфера
-double      bufferPrevLevel[20];    // буфер для хранения цены уровня в предыдущий момент
+bufferLevel buffers[4];            // основной буфер уровней
+int         bufferState[4];        // буфер состояний текущей цены относительно буфера
+double      bufferPrevLevel[4];    // буфер для хранения цены уровня в предыдущий момент
 
 // торговая библиотека
 CTradeManager *ctm;
@@ -64,15 +64,15 @@ int OnInit()
      Print("Не удалось создать хэндл индикатора NineteenLines");
      return (INIT_FAILED);
     }
-   handlePBI     = iCustom(_Symbol, _Period, "PriceBasedIndicator",historyDepth, percentage_ATR_cur, difToTrend_cur);
+   handlePBI     = iCustom(_Symbol, PERIOD_M15, "PriceBasedIndicator",historyDepth, percentage_ATR_cur, difToTrend_cur);
    if ( handlePBI == INVALID_HANDLE)
     {
      Print("Не удалось создать хэндл PriceBasedIndicator");
      return(INIT_FAILED);
     }    
    ctm = new CTradeManager();
-   ArrayFill(bufferState,0,20,no_location);
-   ArrayFill(bufferPrevLevel,0,20,0.0);
+   ArrayFill(bufferState,0,4,no_location);
+   ArrayFill(bufferPrevLevel,0,4,0.0);
    return(INIT_SUCCEEDED);
   }
 
@@ -96,15 +96,15 @@ void OnTick()
       {
         if ( bufferState[indexBuffer] == up_location)   // если в последний момент цена оказалась выше уровня, то цена пробила уровень снизу вверх
           {
-            stopLoss   = int( (curPrice - buffers[indexBuffer].price[0]+buffers[indexBuffer].atr[0]) / _Point );  // стоп лосс
+            stopLoss   = int( (curPrice - buffers[indexBuffer].price[0]+buffers[indexBuffer].atr[0]) / _Point );  // стоп лосс      
             takeProfit = int(  GetClosestLevel (1) / _Point);                                                     // тейк профит
-            ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,1,stopLoss,takeProfit,trailingType, 0, 0, 0, handlePBI, priceDifference);
+            ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,1,stopLoss,takeProfit/*,trailingType, 0, 0, 0, handlePBI, priceDifference*/);
           }
         if ( bufferState[indexBuffer] == down_location) // если в последний момент цена оказалась ниже уровня, то цена пробила уровень сверху вниз
           {
             stopLoss   = int ( (buffers[indexBuffer].price[0]+buffers[indexBuffer].atr[0] - curPrice) / _Point );  // стоп лосс
             takeProfit = int (  GetClosestLevel (-1) / _Point );                                                   // тейк профит
-            ctm.OpenUniquePosition(_Symbol,_Period,OP_SELL,1,stopLoss,takeProfit,trailingType, 0, 0, 0, handlePBI, priceDifference);          
+            ctm.OpenUniquePosition(_Symbol,_Period,OP_SELL,1,stopLoss,takeProfit/*,trailingType, 0, 0, 0, handlePBI, priceDifference*/);          
           }
           
       }
@@ -115,14 +115,14 @@ void OnTick()
 
 void  SavePreviewPrices ()  // функция сохраняем предыдущие значения цен уровней
  {
-  for (int index=0;index<20;index++)
+  for (int index=0;index<4;index++)
    bufferPrevLevel[index] = buffers[index].price[0];
  }  
   
 void  ChangeLevelState ()   // проходит по уровням и возвращает номер того уровня, который удалось пробить
  {
    indexBuffer = -1;   // возвращаемый индекс буфера
-   for (int index=0;index<20;index++)
+   for (int index=0;index<4;index++)
     {
      // цена выше уровня
      if (GreatDoubles(curPrice,buffers[index].price[0]+buffers[index].atr[0]) )
@@ -151,10 +151,10 @@ bool UpdateBuffers ()   // получает последние значения уровней
  {
   int copiedPrice;
   int copiedATR;
-  for (int index=0;index<20;index++)
+  for (int index=0;index<4;index++)
    {
-    copiedPrice = CopyBuffer(handle19Lines,index*2,  0,1,  buffers[index].price);
-    copiedATR   = CopyBuffer(handle19Lines,index*2+1,0,1,  buffers[index].atr);
+    copiedPrice = CopyBuffer(handle19Lines,(index+12)*2,  0,1,  buffers[index].price);
+    copiedATR   = CopyBuffer(handle19Lines,(index+12)*2+1,0,1,  buffers[index].atr);
     if (copiedPrice < 1 || copiedATR < 1)
      {
       Print("Не удалось прогрузить буферы индикатора NineTeenLines");
@@ -176,7 +176,7 @@ bool UpdateBuffers ()   // получает последние значения уровней
    switch (direction)
     {
      case 1:  // ближний сверху
-      for (index=0;index<20;index++)
+      for (index=0;index<4;index++)
        {
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),curPrice)  )
@@ -196,7 +196,7 @@ bool UpdateBuffers ()   // получает последние значения уровней
        }
      break;
      case -1: // ближний снизу
-      for (index=0;index<20;index++)
+      for (index=0;index<4;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),curPrice)  )

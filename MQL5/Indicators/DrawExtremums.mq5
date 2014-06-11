@@ -21,8 +21,6 @@
 //----------------------------------------------------------------
  
 //--- input параметры
-
-input  bool    useCurrentTimeframe = true;   // флаг использования текущего таймфрейма   
 input  ENUM_TIMEFRAMES period = PERIOD_H4;   // период экстремумов
 input  int     history_depth  = 1000;        // сколько свечей показывать
 input  double  percentage_ATR = 1;           // процент АТР для появления нового экстремума
@@ -53,17 +51,13 @@ int OnInit()
   {
    PrintFormat("%s Init", __FUNCTION__);
    symbol = Symbol();
-   if (useCurrentTimeframe)
-    current_timeframe = Period();
-   else
-    current_timeframe = period;
-   if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe);
+   if(Bars(symbol, period) < depth) depth = Bars(symbol, period);
    PrintFormat("Глубина поиска равна: %d", depth);
-   NewBarCurrent.SetPeriod(current_timeframe);
+   NewBarCurrent.SetPeriod(period);
    ENUM_TIMEFRAMES per;
-   if (current_timeframe > tf_ATR)
+   if (period > tf_ATR)
     {
-     per = current_timeframe;
+     per = period;
     }
    else
     {
@@ -105,6 +99,8 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
+
+
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
                 const datetime &time[],
@@ -139,12 +135,14 @@ int OnCalculate(const int rates_total,
     
     if (extr_cur[0].direction > 0)
     {
+      if (i > (depth-430) )  
+     Print("Верхний Время = ",TimeToString(time[i]), " Экстремум = ",DoubleToString(extr_cur[0].price), " JUMPER = ",IntegerToString(jumper) ," JUMPER WILL = 1");
      ExtUpArrowBuffer[i] = extr_cur[0].price;// + 50*_Point;
-     if (jumper == 1)
+     if (jumper == 1 && extr_cur[1].direction >= 0)
      {
       if (GreatDoubles(ExtUpArrowBuffer[i],ExtUpArrowBuffer[indexPrevUp]) )
-      {
-       ExtUpArrowBuffer[indexPrevUp] = 0; // затираем предыдущее значение
+      {     
+       ExtUpArrowBuffer[indexPrevUp] = ExtUpArrowBuffer[indexPrevUp]+60*_Point;                              // затираем предыдущее значение
       } 
      }
      jumper = 1;
@@ -153,13 +151,15 @@ int OnCalculate(const int rates_total,
     }
     if (extr_cur[1].direction < 0)
     {
+    if (i > (depth-430) )
+     Print("Нижний Время = ",TimeToString(time[i]), " Экстремум = ",DoubleToString(extr_cur[1].price) , " JUMPER = ",IntegerToString(jumper)," JUMPER WILL = -1");    
      ExtDownArrowBuffer[i] = extr_cur[1].price;
     
      if (jumper == -1)
      {
       if (LessDoubles(ExtDownArrowBuffer[i],ExtDownArrowBuffer[indexPrevDown]) )
       {
-       ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение
+       ExtDownArrowBuffer[indexPrevDown] = ExtDownArrowBuffer[indexPrevDown]-60*_Point; // затираем предыдущее значение
       } 
      }
      jumper = -1;
