@@ -135,14 +135,13 @@ int OnCalculate(const int rates_total,
     
     if (extr_cur[0].direction > 0)
     {
-      if (i > (depth-430) )  
-     Print("Верхний Время = ",TimeToString(time[i]), " Экстремум = ",DoubleToString(extr_cur[0].price), " JUMPER = ",IntegerToString(jumper) ," JUMPER WILL = 1");
-     ExtUpArrowBuffer[i] = extr_cur[0].price;// + 50*_Point;
+     
+     ExtUpArrowBuffer[i] = extr_cur[0].price;
      if (jumper == 1 && extr_cur[1].direction >= 0)
      {
       if (GreatDoubles(ExtUpArrowBuffer[i],ExtUpArrowBuffer[indexPrevUp]) )
       {     
-       ExtUpArrowBuffer[indexPrevUp] = ExtUpArrowBuffer[indexPrevUp]+60*_Point;                              // затираем предыдущее значение
+       ExtUpArrowBuffer[indexPrevUp] = 0;// затираем предыдущее значение
       } 
      }
      jumper = 1;
@@ -151,15 +150,14 @@ int OnCalculate(const int rates_total,
     }
     if (extr_cur[1].direction < 0)
     {
-    if (i > (depth-430) )
-     Print("Нижний Время = ",TimeToString(time[i]), " Экстремум = ",DoubleToString(extr_cur[1].price) , " JUMPER = ",IntegerToString(jumper)," JUMPER WILL = -1");    
+    
      ExtDownArrowBuffer[i] = extr_cur[1].price;
     
      if (jumper == -1)
      {
       if (LessDoubles(ExtDownArrowBuffer[i],ExtDownArrowBuffer[indexPrevDown]) )
       {
-       ExtDownArrowBuffer[indexPrevDown] = ExtDownArrowBuffer[indexPrevDown]-60*_Point; // затираем предыдущее значение
+       ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение экстремума
       } 
      }
      jumper = -1;

@@ -72,20 +72,23 @@ class CBlowInfoFromExtremums
     if (extr_use == EXTR_NO)
      return (false);
      
-      for (int attempts = 0; attempts < 5; attempts ++)
+      for (int attempts = 0; attempts < 25; attempts ++)
        {
        if (extr_use != EXTR_LOW) 
          {      
-          copiedHigh     = CopyBuffer(_handleExtremums,0,start_time,historyDepth,_extrBufferHigh);
-          copiedHighTime = CopyTime(_symbol,_period,start_time,historyDepth,_timeBufferHigh);
+          copiedHigh     = CopyBuffer(_handleExtremums,0,0/*start_time*/,historyDepth,_extrBufferHigh);
+          copiedHighTime = CopyTime  (_symbol,_period,0/*start_time*/,historyDepth,_timeBufferHigh);
          }
        if (extr_use != EXTR_HIGH) 
          {
-          copiedLow      = CopyBuffer(_handleExtremums,1,start_time,historyDepth,_extrBufferLow); 
-          copiedLowTime  = CopyTime(_symbol,_period,start_time,historyDepth,_timeBufferLow);
+          copiedLow      = CopyBuffer(_handleExtremums,1,0/*start_time*/,historyDepth,_extrBufferLow); 
+          copiedLowTime  = CopyTime  (_symbol,_period,0/*start_time*/,historyDepth,_timeBufferLow);
          }
         Sleep(100);
        }
+      
+      Print("COPIEDHIGH = ",copiedHigh, " COPIEDLOW = ",copiedLow); 
+       
       if ( copiedHigh != historyDepth || copiedLow != historyDepth || copiedHighTime != historyDepth || copiedLowTime != historyDepth)
        {
         Print("Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums");
@@ -114,9 +117,10 @@ class CBlowInfoFromExtremums
           // если нашли экстремум по индексу 
           if (countExtr == extr_index)
            {
+            
             extr.price = _extrBufferHigh[index];
             extr.time  = _timeBufferHigh[index];
-            return (extr); 
+            //return (extr); 
            }
         }
       }
