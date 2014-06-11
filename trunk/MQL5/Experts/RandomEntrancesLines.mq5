@@ -7,6 +7,10 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
+//+------------------------------------------------------------------+
+//| Модификация Рандома с запретом на вход                           |
+//+------------------------------------------------------------------+
+
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 
 
@@ -72,12 +76,15 @@ int OnInit()
     {
      Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
     }
+
+   }
+ 
     handle_19Lines = iCustom(symbol,timeframe,"NineteenLines");     
     if (handle_19Lines == INVALID_HANDLE)
     {
      Print("Не удалось получить хэндл NineteenLines");
-    }
-   }
+    }   
+   
    ArrayResize(aDeg, countSteps);
    ArrayResize(aKo, countSteps);
    

@@ -7,8 +7,11 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
-#include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
+//+------------------------------------------------------------------+
+//| Модификация Рандома, закрывающая часть объема                    |
+//+------------------------------------------------------------------+
 
+#include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
 
 #define ADD_TO_STOPPLOSS 50
 
@@ -16,14 +19,15 @@ input int step = 100;
 input int countSteps = 4;
 input int volume = 5;
 input double ko = 2;        // ko=0-весь объем, ko=1-равные доли, ko>1-увелич.доли, k0<1-уменьш.доли 
+input double percentLowVolume = 0.5;  // процент уменьшения объема 
 
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 //input bool stepbypart = false; // 
 input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
 input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
-input int      trStop    = 100;                // Trailing Stop
-input int      trStep    = 100;                // Trailing Step
-input int      minProfit = 250;                // минимальная прибыль
+input int      trStop    = 100;      // Trailing Stop
+input int      trStep    = 100;      // Trailing Step
+input int      minProfit = 250;      // минимальная прибыль
 
 string symbol;
 ENUM_TIMEFRAMES timeframe;
@@ -49,10 +53,12 @@ struct bufferLevel
   double atr[];
  };
 
+double  currentPrice = 0;    // текущая цена
+double  previewPrice;        // предыдущая цена
+bool    isLotClosed;         // закрылся ли объем позиции
 
 // буферы уровней 
 bufferLevel buffers[20];
-
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -72,12 +78,14 @@ int OnInit()
     {
      Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
     }
+   }
+ 
     handle_19Lines = iCustom(symbol,timeframe,"NineteenLines");     
     if (handle_19Lines == INVALID_HANDLE)
     {
      Print("Не удалось получить хэндл NineteenLines");
-    }
-   }
+    }   
+   
    ArrayResize(aDeg, countSteps);
    ArrayResize(aKo, countSteps);
    
@@ -123,18 +131,15 @@ void OnTick()
  {
   ctm.OnTick();
   ctm.DoTrailing();
-  
+
+  // сохраняем предыдущую цену
+  previewPrice = currentPrice;
+  // сохраняем текущую цену
+  currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
+
   if ( !UploadBuffers () )   // если не удалось прогрузить буферы индикатора NineTeenLines
-    return;
-    
-  Comment(
-   "Цена = ",DoubleToString(SymbolInfoDouble(_Symbol,SYMBOL_BID)),
-   "\n верхний = ",DoubleToString(GetClosestLevel(1)),
-   "\n нижний = ",DoubleToString(GetClosestLevel(-1))
+    return;  
   
-  ); 
-  
-    
   // если позиции нет
   if (ctm.GetPositionCount() == 0)
   {
@@ -144,34 +149,35 @@ void OnTick()
    ENUM_TM_POSITION_TYPE operation;
    if ( GreatDoubles(rnd,0.5,5) )
    {
-
-    if (ko*GetClosestLevel(1) >= GetClosestLevel(-1))
-     return;
     operation = OP_SELL;
     stoploss = CountStoploss(-1);
    } 
    else
-   {   
-
-    if (ko*GetClosestLevel(-1) >= GetClosestLevel(1))
-     return;
+   {
     operation = OP_BUY;
     stoploss = CountStoploss(1);
    }
+   isLotClosed = false;
    ctm.OpenUniquePosition(symbol, timeframe, operation, lot, MathMax(stoploss, 0), 0, trailingType,minProfit, trStop, trStep, handle_PBI);
   }
 
   // если есть открытая позиция
-  if (ctm.GetPositionCount() > 0)
+  if (ctm.GetPositionCount() > 0 && !isLotClosed)
   {
-   profit = ctm.GetPositionPointsProfit(symbol);
-   if (profit > step && count < countSteps) 
-   {
-    lot = aDeg[count];
-    if (lot > 0) ctm.PositionChangeSize(symbol, lot);
-    count++;
-   }
+   isLotClosed =AllowToLowVolume();
+   if (isLotClosed )  
+    {
+     profit = ctm.GetPositionPointsProfit(symbol);
+     if (profit > step && count < countSteps) 
+       {
+        lot = aDeg[count];
+        if (lot > 0) ctm.PositionChangeSize(symbol, lot);
+        count++;
+       }
+    }
   }
+
+  
  }
 
 //+------------------------------------------------------------------+
@@ -243,6 +249,7 @@ int CountStoploss(int point)
  return(stopLoss);
 }
 
+
 bool UploadBuffers ()   // получает последние значения уровней
  {
   int copiedPrice;
@@ -260,59 +267,25 @@ bool UploadBuffers ()   // получает последние значения уровней
   return(true);     
  }
  
- // возвращает ближайший уровень к текущей цене
- double GetClosestLevel (int direction) 
-  {
-   double cuPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-   double len = 0;  //расстояние до цены от уровня
-   double tmpLen; 
-   bool   foundLevel = false;  // флаг найденного первого уровня
-   int    index;
-   
-   switch (direction)
-    {
-     case 1:  // ближний сверху
-      for (index=0;index<20;index++)
-       {
-        // если уровень выше
-        if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
-         {
-          if (foundLevel)
-           {
-             tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
-             if (tmpLen < len)
-              len = tmpLen;  
-           }
-          else
-           {
-            len = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
-            foundLevel = true;
-           }
-         }
-       }
-     break;
-     case -1: // ближний снизу
-      for (index=0;index<20;index++)
-       {
-        // если уровень ниже
-        if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
-          {
-          if (foundLevel)
-           {
-             tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
-             if (tmpLen < len)
-              len = tmpLen;
-           }
-          else
-           {
-            len =  cuPrice - buffers[index].price[0] - buffers[index].atr[0];
-            foundLevel = true;
-           }
-         }
-
-       }     
-       
-      break;
+bool AllowToLowVolume ()    // вычисляет, можно ли изменять объем сделки
+ {
+  if (previewPrice != 0)
+   {
+    // проходим по всем уровням и проверяем данное условие
+    for (int index=0;index < 20; index++)
+     {
+      // если текущая цена находится внутри уровня или на его границе
+      if ( GreatOrEqualDoubles(currentPrice,buffers[index].price[0]-buffers[index].atr[0]) &&
+           LessOrEqualDoubles (currentPrice,buffers[index].price[0]+buffers[index].atr[0]) )  
+        {
+         // если предыдущая цена находилась вне уровня
+         if ( GreatDoubles(previewPrice,buffers[index].price[0]+buffers[index].atr[0]) ||
+              LessDoubles (previewPrice,buffers[index].price[0]-buffers[index].atr[0]) ) 
+            {
+             return (true);   // то значит можно закрывать часть объема
+            }
+        }         
+     }
    }
-   return (len);
-  }
+   return (false);
+ }
