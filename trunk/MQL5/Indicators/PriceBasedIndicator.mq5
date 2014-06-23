@@ -71,7 +71,7 @@ int OnInit()
    SetIndexBuffer(1, ColorCandlesBuffer2, INDICATOR_DATA);
    SetIndexBuffer(2, ColorCandlesBuffer3, INDICATOR_DATA);
    SetIndexBuffer(3, ColorCandlesBuffer4, INDICATOR_DATA);
-   SetIndexBuffer(4,  ColorCandlesColors, INDICATOR_COLOR_INDEX);
+   SetIndexBuffer(4,  ColorCandlesColors, INDICATOR_DATA);
    SetIndexBuffer(5,    ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6,  ExtDownArrowBuffer, INDICATOR_DATA);
 
@@ -172,7 +172,7 @@ int OnCalculate(const int rates_total,
      if(NewBarCurrent.isNewBar(time[i])) 
      {
       //trend.PrintExtr();
-      PrintFormat("HISTORY %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+      //PrintFormat("HISTORY %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
       buffer_index++;     //для того что бы считать на истории
      }
     }
@@ -206,7 +206,7 @@ int OnCalculate(const int rates_total,
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
    {
     //trend.PrintExtr();
-    PrintFormat("REAL %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[0]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+    //PrintFormat("REAL %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[0]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
     buffer_index++; 
    }
    return(rates_total);

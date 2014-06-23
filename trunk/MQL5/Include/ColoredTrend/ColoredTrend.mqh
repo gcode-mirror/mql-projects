@@ -16,8 +16,8 @@
 #define AMOUNT_OF_PRICE 2
 #define AMOUNT_BARS_FOR_HUGE 100
 
-#define ATR_PERIOD 30
-#define ATR_TIMEFRAME PERIOD_H4
+//#define ATR_PERIOD 30
+//#define ATR_TIMEFRAME PERIOD_H4
 
 #define FACTOR_OF_SUPERIORITY 2
 //CLog log_output(OUT_COMMENT, LOG_NONE, 50, "PBI", 30);
@@ -75,7 +75,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
 {
  _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  
- extremums = new CExtremum(_symbol, _period, ATR_TIMEFRAME, ATR_PERIOD, percentage_ATR);
+ extremums = new CExtremum(_symbol, _period, percentage_ATR);
  
  firstOnTrend.direction = 0;
  firstOnTrend.price = -1;
