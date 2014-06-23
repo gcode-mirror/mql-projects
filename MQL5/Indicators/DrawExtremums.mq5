@@ -132,7 +132,6 @@ int OnCalculate(const int rates_total,
    for(int i = depth-1; i >= 0;  i--)    
    {
     RecountUpdated(time[i], false, extr_cur);
-    
     if (extr_cur[0].direction > 0)
     {
      

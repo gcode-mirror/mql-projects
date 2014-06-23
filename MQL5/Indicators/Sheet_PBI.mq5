@@ -11,8 +11,8 @@
 #include <Lib CisNewBarDD.mqh>
 #define DEPTH 100
 
-input double   percentage_ATR = 1;   
-input double   difToTrend = 1.5;
+//input double   percentage_ATR = 1;   
+//input double   difToTrend = 1.5;
 input string   file_name = "Sheet_PBI";
 input datetime end_time = D'2014.03.03';
 
@@ -69,10 +69,10 @@ int OnInit()
  
  handle_PBI_MN1 = -1;//iCustom(Symbol(), PERIOD_MN1, "PriceBasedIndicator", DEPTH, percentage_ATR, difToTrend);
  handle_PBI_W1  = -1;//iCustom(Symbol(), PERIOD_W1 , "PriceBasedIndicator", DEPTH, percentage_ATR, difToTrend);
- handle_PBI_D1  = -1;//iCustom(Symbol(), PERIOD_D1 , "PriceBasedIndicator", DEPTH, percentage_ATR, difToTrend);
- handle_PBI_H4  = -1;//iCustom(Symbol(), PERIOD_H4 , "PriceBasedIndicator", DEPTH, percentage_ATR, difToTrend);
- handle_PBI_H1  = -1;//iCustom(Symbol(), PERIOD_H1 , "PriceBasedIndicator", DEPTH, percentage_ATR, difToTrend);
- handle_PBI_M15 = iCustom(Symbol(), PERIOD_M15, "PriceBasedIndicator", DEPTH, percentage_ATR, difToTrend);
+ handle_PBI_D1  = iCustom(Symbol(), PERIOD_D1 , "PriceBasedIndicator", DEPTH, 3.0, 1.1);
+ handle_PBI_H4  = iCustom(Symbol(), PERIOD_H4 , "PriceBasedIndicator", DEPTH, 1.5, 1.7);
+ handle_PBI_H1  = iCustom(Symbol(), PERIOD_H1 , "PriceBasedIndicator", DEPTH, 1.1, 1.3);
+ handle_PBI_M15 = iCustom(Symbol(), PERIOD_M15, "PriceBasedIndicator", DEPTH, 0.6, 1.2);
  
  isNewBarM15 = new CisNewBar(_Symbol, PERIOD_M15);   // дл€ проверки формировани€ нового бара на 15 минутах
  
@@ -120,25 +120,24 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
 {
  ArraySetAsSeries(time, true);
- 
  if(isNewBarM15.isNewBar())
  {
   
   //int err1 = CopyBuffer(handle_PBI_MN1, 4, 0, 1, buffer_PBI_MN1);
   //int err2 = CopyBuffer(handle_PBI_W1 , 4, 0, 1, buffer_PBI_W1 );
-  //int err3 = CopyBuffer(handle_PBI_D1 , 4, 1, 1, buffer_PBI_D1 );
-  //int err4 = CopyBuffer(handle_PBI_H4 , 4, 1, 1, buffer_PBI_H4 );
-  //int err5 = CopyBuffer(handle_PBI_H1 , 4, 1, 1, buffer_PBI_H1 );
-  int err6 = CopyBuffer(handle_PBI_M15, 4, 1, 1, buffer_PBI_M15);
+  int err3 = CopyBuffer(handle_PBI_D1 , 4, 1, 1, buffer_PBI_D1 );
+  int err4 = CopyBuffer(handle_PBI_H4 , 4, 0, 1, buffer_PBI_H4 );
+  int err5 = CopyBuffer(handle_PBI_H1 , 4, 0, 1, buffer_PBI_H1 );
+  int err6 = CopyBuffer(handle_PBI_M15, 4, 0, 1, buffer_PBI_M15);
   
-  PrintFormat("Ќовый бар %s; загружено M15 = %d (%d)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
+  //PrintFormat("Ќовый бар %s; загружено M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
     
   //StringConcatenate(str_MN1, str_MN1, StringFormat("%d;", buffer_PBI_MN1[0]));
   //StringConcatenate(str_W1 , str_W1 , StringFormat("%d;", buffer_PBI_W1 [0]));
-  //StringConcatenate(str_D1 , str_D1 , StringFormat("%d;", buffer_PBI_D1 [0]));
-  //StringConcatenate(str_H4 , str_H4 , StringFormat("%d;", buffer_PBI_H4 [0]));
-  //StringConcatenate(str_H1 , str_H1 , StringFormat("%d;", buffer_PBI_H1 [0]));
-  StringConcatenate(str_M15, str_M15, StringFormat("%d;", buffer_PBI_M15[0]));
+  StringConcatenate(str_D1 , str_D1 , StringFormat("%d;", buffer_PBI_D1 [0]));
+  StringConcatenate(str_H4 , str_H4 , StringFormat("%d;", buffer_PBI_H4 [0]));
+  StringConcatenate(str_H1 , str_H1 , StringFormat("%d;", buffer_PBI_H1 [0]));
+  StringConcatenate(str_M15, str_M15, StringFormat("%f;", buffer_PBI_M15[0]));
   StringConcatenate(str_time, str_time, StringFormat("%s;", TimeToString(time[0])));
  }
  

@@ -36,7 +36,7 @@ class CExtremum
  
  public:
  CExtremum();
- CExtremum(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES tf_ATR, int period_ATR, double percentage_ATR);
+ CExtremum(string symbol, ENUM_TIMEFRAMES period, double percentage_ATR);
 ~CExtremum();
 
  int isExtremum(SExtremum& extr_array[], datetime start_pos_time = __DATETIME__,  bool now = true);
@@ -52,22 +52,22 @@ class CExtremum
 };
 
 CExtremum::CExtremum(void):
-            _tf_ATR (DEFAULT_TF_ATR),
             _period_ATR (DEFAULT_PERIOD_ATR),
             _percentage_ATR (DEFAULT_PERCENTAGE_ATR)
            {
             _symbol = Symbol();
             _tf_period = Period();
+            _tf_ATR = GetATR_TF(_tf_period);
             _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
            }
 
-CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, ENUM_TIMEFRAMES tf_ATR, int period_ATR, double percentage_ATR):
+CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, double percentage_ATR):
             _symbol (symbol),
             _tf_period (period),
-            _tf_ATR (tf_ATR),
-            _period_ATR (period_ATR),
+            _period_ATR (DEFAULT_PERIOD_ATR),
             _percentage_ATR (percentage_ATR)
             {
+             _tf_ATR = GetATR_TF(_tf_period);
              _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
             }
 CExtremum::~CExtremum()
@@ -211,4 +211,13 @@ void CExtremum::PrintExtremums()
   StringConcatenate(result, result, StringFormat("num%d = {%d %.05f %s ,(%.05f)}; ", i, extremums[i].direction, extremums[i].price, TimeToString(extremums[i].time), AverageBar(_tf_period, _period_ATR, extremums[i].time)*_percentage_ATR));
  }
  PrintFormat("%s %s", __FUNCTION__, result);
+}
+
+ENUM_TIMEFRAMES GetATR_TF(ENUM_TIMEFRAMES tf)
+{
+ ENUM_TIMEFRAMES result = DEFAULT_TF_ATR;
+ if(tf >= DEFAULT_TF_ATR) result = tf;
+ 
+ PrintFormat("TIMEFRAME FOR ATR %s", EnumToString((ENUM_TIMEFRAMES)result));
+ return(result);
 }
