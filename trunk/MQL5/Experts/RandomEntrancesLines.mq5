@@ -20,6 +20,7 @@ input int step = 100;
 input int countSteps = 4;
 input int volume = 5;
 input double ko = 2;        // ko=0-весь объем, ko=1-равные доли, ko>1-увелич.доли, k0<1-уменьш.доли 
+input double levelsKo = 3;
 
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 //input bool stepbypart = false; // 
@@ -152,7 +153,7 @@ void OnTick()
    if ( GreatDoubles(rnd,0.5,5) )
    {
 
-    if (ko*GetClosestLevel(1) >= GetClosestLevel(-1))
+    if (levelsKo*GetClosestLevel(1) >= GetClosestLevel(-1))
      return;
     operation = OP_SELL;
     stoploss = CountStoploss(-1);
@@ -160,7 +161,7 @@ void OnTick()
    else
    {   
 
-    if (ko*GetClosestLevel(-1) >= GetClosestLevel(1))
+    if (levelsKo*GetClosestLevel(-1) >= GetClosestLevel(1))
      return;
     operation = OP_BUY;
     stoploss = CountStoploss(1);
