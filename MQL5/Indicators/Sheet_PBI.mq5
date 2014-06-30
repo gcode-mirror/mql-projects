@@ -16,11 +16,6 @@
 input string   file_name = "Sheet_PBI";
 input datetime end_time = D'2014.03.03';
 
-CisNewBar *isNewBarMN1;   // для проверки формирования нового бара на месяце
-CisNewBar *isNewBarW1;    // для проверки формирования нового бара на неделе
-CisNewBar *isNewBarD1;    // для проверки формирования нового бара на дне
-CisNewBar *isNewBarH4;    // для проверки формирования нового бара на 4 часах
-CisNewBar *isNewBarH1;    // для проверки формирования нового бара на часе
 CisNewBar *isNewBarM15;   // для проверки формирования нового бара на 15 минутах
 
 int file_handle_MN1;
@@ -67,12 +62,12 @@ int OnInit()
  file_handle_M15 = FileOpen(StringFormat("%s_M15.csv", file_name), FILE_WRITE|FILE_CSV|FILE_COMMON);
  file_handle_time = FileOpen(StringFormat("%s_time.csv", file_name), FILE_WRITE|FILE_CSV|FILE_COMMON);
  
- handle_PBI_MN1 = -1;//iCustom(Symbol(), PERIOD_MN1, "PriceBasedIndicator", DEPTH, percentage_ATR, difToTrend);
- handle_PBI_W1  = -1;//iCustom(Symbol(), PERIOD_W1 , "PriceBasedIndicator", DEPTH, percentage_ATR, difToTrend);
- handle_PBI_D1  = iCustom(Symbol(), PERIOD_D1 , "PriceBasedIndicator", DEPTH, 3.0, 1.1);
- handle_PBI_H4  = iCustom(Symbol(), PERIOD_H4 , "PriceBasedIndicator", DEPTH, 1.5, 1.7);
- handle_PBI_H1  = iCustom(Symbol(), PERIOD_H1 , "PriceBasedIndicator", DEPTH, 1.1, 1.3);
- handle_PBI_M15 = iCustom(Symbol(), PERIOD_M15, "PriceBasedIndicator", DEPTH, 0.6, 1.2);
+ handle_PBI_MN1 = iCustom(Symbol(), PERIOD_MN1, "PriceBasedIndicator", DEPTH, 2.2);
+ handle_PBI_W1  = iCustom(Symbol(), PERIOD_W1 , "PriceBasedIndicator", DEPTH, 2.2);
+ handle_PBI_D1  = iCustom(Symbol(), PERIOD_D1 , "PriceBasedIndicator", DEPTH, 2.2);
+ handle_PBI_H4  = iCustom(Symbol(), PERIOD_H4 , "PriceBasedIndicator", DEPTH, 1.5);
+ handle_PBI_H1  = iCustom(Symbol(), PERIOD_H1 , "PriceBasedIndicator", DEPTH, 1.1);
+ handle_PBI_M15 = iCustom(Symbol(), PERIOD_M15, "PriceBasedIndicator", DEPTH, 0.6);
  
  isNewBarM15 = new CisNewBar(_Symbol, PERIOD_M15);   // для проверки формирования нового бара на 15 минутах
  
@@ -123,37 +118,22 @@ int OnCalculate(const int rates_total,
  if(isNewBarM15.isNewBar())
  {
   
-  //int err1 = CopyBuffer(handle_PBI_MN1, 4, 0, 1, buffer_PBI_MN1);
-  //int err2 = CopyBuffer(handle_PBI_W1 , 4, 0, 1, buffer_PBI_W1 );
-  int err3 = CopyBuffer(handle_PBI_D1 , 4, 1, 1, buffer_PBI_D1 );
+  int err1 = CopyBuffer(handle_PBI_MN1, 4, 0, 1, buffer_PBI_MN1);
+  int err2 = CopyBuffer(handle_PBI_W1 , 4, 0, 1, buffer_PBI_W1 );
+  int err3 = CopyBuffer(handle_PBI_D1 , 4, 0, 1, buffer_PBI_D1 );
   int err4 = CopyBuffer(handle_PBI_H4 , 4, 0, 1, buffer_PBI_H4 );
   int err5 = CopyBuffer(handle_PBI_H1 , 4, 0, 1, buffer_PBI_H1 );
   int err6 = CopyBuffer(handle_PBI_M15, 4, 0, 1, buffer_PBI_M15);
   
   //PrintFormat("Новый бар %s; загружено M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
     
-  //StringConcatenate(str_MN1, str_MN1, StringFormat("%d;", buffer_PBI_MN1[0]));
-  //StringConcatenate(str_W1 , str_W1 , StringFormat("%d;", buffer_PBI_W1 [0]));
-  StringConcatenate(str_D1 , str_D1 , StringFormat("%d;", buffer_PBI_D1 [0]));
-  StringConcatenate(str_H4 , str_H4 , StringFormat("%d;", buffer_PBI_H4 [0]));
-  StringConcatenate(str_H1 , str_H1 , StringFormat("%d;", buffer_PBI_H1 [0]));
-  StringConcatenate(str_M15, str_M15, StringFormat("%f;", buffer_PBI_M15[0]));
-  StringConcatenate(str_time, str_time, StringFormat("%s;", TimeToString(time[0])));
- }
- 
- if(time[0] == (end_time - PeriodSeconds(PERIOD_M15)) && written)
- {
-  written = false;
-  PrintFormat("%s Закончилась запись в файл. Дальнейшее выполнение бесполесно. time = %s", __FUNCTION__, TimeToString(time[0]));
-  FileWrite(file_handle_M15, str_M15);
-  FileWrite(file_handle_H1 , str_H1);
-  FileWrite(file_handle_H4 , str_H4);
-  FileWrite(file_handle_D1 , str_D1);
-  FileWrite(file_handle_W1 , str_W1);
-  FileWrite(file_handle_MN1, str_MN1);
-  FileWrite(file_handle_time, str_time);
-  PrintFormat("%s", str_time);
-  PrintFormat("%s", str_M15);
+  FileWrite(file_handle_MN1, StringFormat("%f", buffer_PBI_MN1[0]));
+  FileWrite(file_handle_W1 , StringFormat("%f", buffer_PBI_W1 [0]));
+  FileWrite(file_handle_D1 , StringFormat("%f", buffer_PBI_D1 [0]));
+  FileWrite(file_handle_H4 , StringFormat("%f", buffer_PBI_H4 [0]));
+  FileWrite(file_handle_H1 , StringFormat("%f", buffer_PBI_H1 [0]));
+  FileWrite(file_handle_M15, StringFormat("%f", buffer_PBI_M15[0]));
+  FileWrite(file_handle_time, StringFormat("%s", TimeToString(time[0])));
  }
  
  return(rates_total);

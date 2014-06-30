@@ -64,8 +64,8 @@ int OnInit()
    NewBarCurrent.SetPeriod(current_timeframe);
    NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth, percentage_ATR, difToTrend);
-   trend    = new CColoredTrend(symbol,                  current_timeframe, depth, percentage_ATR, difToTrend);
+   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth);
+   trend    = new CColoredTrend(symbol,                  current_timeframe, depth);
 //--- indicator buffers mapping
    SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
    SetIndexBuffer(1, ColorCandlesBuffer2, INDICATOR_DATA);

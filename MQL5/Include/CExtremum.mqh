@@ -36,7 +36,7 @@ class CExtremum
  
  public:
  CExtremum();
- CExtremum(string symbol, ENUM_TIMEFRAMES period, double percentage_ATR);
+ CExtremum(string symbol, ENUM_TIMEFRAMES period);
 ~CExtremum();
 
  int isExtremum(SExtremum& extr_array[], datetime start_pos_time = __DATETIME__,  bool now = true);
@@ -49,25 +49,27 @@ class CExtremum
  void SetSymbol(string symb) { _symbol = symb; }
  void SetPeriod(ENUM_TIMEFRAMES tf) { _tf_period = tf; }
  void SetDigits(int digits) { _digits = digits; }
+ void SetATR_TF();
+ void SetPercentageATR();
 };
 
 CExtremum::CExtremum(void):
-            _period_ATR (DEFAULT_PERIOD_ATR),
-            _percentage_ATR (DEFAULT_PERCENTAGE_ATR)
+            _period_ATR (DEFAULT_PERIOD_ATR)
            {
             _symbol = Symbol();
             _tf_period = Period();
-            _tf_ATR = GetATR_TF(_tf_period);
+            SetATR_TF();
+            SetPercentageATR();
             _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
            }
 
-CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, double percentage_ATR):
+CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period):
             _symbol (symbol),
             _tf_period (period),
-            _period_ATR (DEFAULT_PERIOD_ATR),
-            _percentage_ATR (percentage_ATR)
+            _period_ATR (DEFAULT_PERIOD_ATR)
             {
-             _tf_ATR = GetATR_TF(_tf_period);
+             SetATR_TF();
+             SetPercentageATR();
              _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
             }
 CExtremum::~CExtremum()
@@ -169,9 +171,10 @@ double CExtremum::AverageBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos
 {
  double result = 0;
  MqlRates buffer_rates[];
- if(CopyRates(_symbol, tf, start_pos, period, buffer_rates) < 0)
+ if(CopyRates(_symbol, tf, start_pos, period, buffer_rates) < period)
  {
   PrintFormat("%s Не удалось загрузить цены для самостоятельного подсчета ATR. TF = %s. Error = %d", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError());
+  return(0);
  }
  int size = ArraySize(buffer_rates);
  
@@ -213,11 +216,46 @@ void CExtremum::PrintExtremums()
  PrintFormat("%s %s", __FUNCTION__, result);
 }
 
-ENUM_TIMEFRAMES GetATR_TF(ENUM_TIMEFRAMES tf)
+void CExtremum::SetATR_TF()
 {
- ENUM_TIMEFRAMES result = DEFAULT_TF_ATR;
- if(tf >= DEFAULT_TF_ATR) result = tf;
- 
- PrintFormat("TIMEFRAME FOR ATR %s", EnumToString((ENUM_TIMEFRAMES)result));
- return(result);
+ if(_tf_period >= DEFAULT_TF_ATR) _tf_ATR = _tf_period;
+
+ switch(_tf_period)
+ {
+   case(PERIOD_M15):
+      _tf_ATR = PERIOD_H4;
+   case(PERIOD_H1):
+      _tf_ATR = PERIOD_H4;
+   case(PERIOD_H4):
+      _tf_ATR = PERIOD_H4;
+   case(PERIOD_D1):
+      _tf_ATR = PERIOD_D1;
+   case(PERIOD_W1):
+      _tf_ATR = PERIOD_W1;
+   case(PERIOD_MN1):
+      _tf_ATR = PERIOD_MN1;
+   default:
+      _tf_ATR = DEFAULT_TF_ATR;
+ }
+}
+
+void CExtremum::SetPercentageATR()
+{
+ switch(_tf_period)
+ {
+   case(PERIOD_M15):
+      _percentage_ATR = 0.6;
+   case(PERIOD_H1):
+      _percentage_ATR = 1.1;
+   case(PERIOD_H4):
+      _percentage_ATR = 1.5;
+   case(PERIOD_D1):
+      _percentage_ATR = 2.2;
+   case(PERIOD_W1):
+      _percentage_ATR = 2.2;
+   case(PERIOD_MN1):
+      _percentage_ATR = 2.2;
+   default:
+      _percentage_ATR = DEFAULT_PERCENTAGE_ATR;
+ }
 }
