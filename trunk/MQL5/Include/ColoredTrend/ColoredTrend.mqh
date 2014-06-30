@@ -15,9 +15,7 @@
 
 #define AMOUNT_OF_PRICE 2
 #define AMOUNT_BARS_FOR_HUGE 100
-
-//#define ATR_PERIOD 30
-//#define ATR_TIMEFRAME PERIOD_H4
+#define DEFAULT_DIFF_TO_TREND 1.5
 
 #define FACTOR_OF_SUPERIORITY 2
 //CLog log_output(OUT_COMMENT, LOG_NONE, 50, "PBI", 30);
@@ -51,9 +49,10 @@ protected:
   int isLastBarHuge(datetime start_pos);
   int isNewTrend();
   int isEndTrend();
+  void SetDiffToTrend();
   
 public:
-  void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif);
+  void CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth);
   SExtremum isExtremum(datetime start_index, bool now);
   bool FindExtremumInHistory(int depth);
   bool CountMoveType(int bar, datetime start_pos, bool now, SExtremum &extremum[], ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);
@@ -66,21 +65,21 @@ public:
 //+-----------------------------------------+
 //| Конструктор                             |
 //+-----------------------------------------+
-void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth, double percentage_ATR, double dif) : 
+void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int depth) : 
                    _symbol(symbol),
                    _period(period),
                    _depth(depth),
-                   previous_move_type(MOVE_TYPE_UNKNOWN),
-                   difToTrend(dif)
+                   previous_move_type(MOVE_TYPE_UNKNOWN)
 {
  _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
  
- extremums = new CExtremum(_symbol, _period, percentage_ATR);
+ extremums = new CExtremum(_symbol, _period);
  
  firstOnTrend.direction = 0;
  firstOnTrend.price = -1;
  lastOnTrend.direction = 0;
  lastOnTrend.price = -1;
+ SetDiffToTrend();
  
  ArrayResize(enumMoveType, depth);
  Zeros();
@@ -395,7 +394,7 @@ int CColoredTrend::isLastBarHuge(datetime start_pos)
 {
  double sum = 0;
  MqlRates rates[];
- FillTimeSeries(BOTTOM_TF, AMOUNT_BARS_FOR_HUGE, start_pos-PeriodSeconds(GetBottomTimeframe(_period)), rates);
+ if(FillTimeSeries(BOTTOM_TF, AMOUNT_BARS_FOR_HUGE, start_pos-PeriodSeconds(GetBottomTimeframe(_period)), rates) < AMOUNT_BARS_FOR_HUGE) return(0);
  //PrintFormat("сейчас %s; бары загружаю с %s", TimeToString(buffer_date[0]), TimeToString(buffer_date[0]-PeriodSeconds(GetBottomTimeframe(_period))));
  for(int i = 0; i < AMOUNT_BARS_FOR_HUGE - 1; i++)
  {
@@ -464,6 +463,27 @@ void CColoredTrend::Zeros()
   }
 }
 
+void CColoredTrend::SetDiffToTrend()
+{
+ switch(_period)
+ {
+   case(PERIOD_M15):
+      difToTrend = 1.2;
+   case(PERIOD_H1):
+      difToTrend = 1.3;
+   case(PERIOD_H4):
+      difToTrend = 1.7;
+   case(PERIOD_D1):
+      difToTrend = 0.8;
+   case(PERIOD_W1):
+      difToTrend = 0.8;
+   case(PERIOD_MN1):
+      difToTrend = 0.8;
+   default:
+      difToTrend = DEFAULT_DIFF_TO_TREND;
+ }
+}
+ 
 void CColoredTrend::PrintExtr(void)
 {
  extremums.PrintExtremums();
