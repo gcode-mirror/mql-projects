@@ -46,6 +46,7 @@ class CExtremum
  void PrintExtremums();
  int  ExtrCount();
  ENUM_TIMEFRAMES getPeriod() { return(_tf_period); }
+ double getPercentageATR() { return(_percentage_ATR); }
  void SetSymbol(string symb) { _symbol = symb; }
  void SetPeriod(ENUM_TIMEFRAMES tf) { _tf_period = tf; }
  void SetDigits(int digits) { _digits = digits; }
@@ -218,24 +219,29 @@ void CExtremum::PrintExtremums()
 
 void CExtremum::SetATR_TF()
 {
- if(_tf_period >= DEFAULT_TF_ATR) _tf_ATR = _tf_period;
-
  switch(_tf_period)
  {
    case(PERIOD_M15):
       _tf_ATR = PERIOD_H4;
+      break;
    case(PERIOD_H1):
       _tf_ATR = PERIOD_H4;
+      break;
    case(PERIOD_H4):
       _tf_ATR = PERIOD_H4;
+      break;
    case(PERIOD_D1):
       _tf_ATR = PERIOD_D1;
+      break;
    case(PERIOD_W1):
       _tf_ATR = PERIOD_W1;
+      break;
    case(PERIOD_MN1):
       _tf_ATR = PERIOD_MN1;
+      break;
    default:
       _tf_ATR = DEFAULT_TF_ATR;
+      break;
  }
 }
 
@@ -245,17 +251,24 @@ void CExtremum::SetPercentageATR()
  {
    case(PERIOD_M15):
       _percentage_ATR = 0.6;
+      break;
    case(PERIOD_H1):
-      _percentage_ATR = 1.1;
+      _percentage_ATR = 1.0;
+      break;
    case(PERIOD_H4):
-      _percentage_ATR = 1.5;
+      _percentage_ATR = 2.2;
+      break;
    case(PERIOD_D1):
       _percentage_ATR = 2.2;
+      break;
    case(PERIOD_W1):
       _percentage_ATR = 2.2;
+      break;
    case(PERIOD_MN1):
       _percentage_ATR = 2.2;
+      break;
    default:
       _percentage_ATR = DEFAULT_PERCENTAGE_ATR;
+      break;
  }
 }

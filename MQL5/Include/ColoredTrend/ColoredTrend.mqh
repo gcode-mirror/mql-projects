@@ -34,7 +34,7 @@ protected:
   CExtremum *extremums;
   SExtremum lastOnTrend;       // последний экстремум текущего тренда
   SExtremum firstOnTrend;      // цена начала тренда и его направление  
-  double difToTrend;     // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
+  double _difToTrend;     // Во столько раз новый бар должен превышать предыдущий экстремум, что бы начался тренд.
   int _depth;            // Количество баров для расчета индикатора 
   int ATR_handle;
   double buffer_ATR[];
@@ -81,6 +81,7 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int dep
  lastOnTrend.price = -1;
  SetDiffToTrend();
  
+ PrintFormat("%s %s; precentage ATR = %.02f, diff to trend = %.02f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period), extremums.getPercentageATR(), _difToTrend);
  ArrayResize(enumMoveType, depth);
  Zeros();
  //log_output.Write(LOG_DEBUG, StringFormat("%s Конструктор класса CColoredTrend", EnumToString(_period)));
@@ -131,7 +132,7 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
  }
   
  if (newTrend == -1 && enumMoveType[bar] != MOVE_TYPE_TREND_DOWN_FORBIDEN && enumMoveType[bar] != MOVE_TYPE_TREND_DOWN)
- {// Если разница между последним (0) и предпоследним (1) экстремумом в "difToTrend" раз меньше нового движения
+ {// Если разница между последним (0) и предпоследним (1) экстремумом в "_difToTrend" раз меньше нового движения
   enumMoveType[bar] = (topTF_Movement == MOVE_TYPE_FLAT) ? MOVE_TYPE_TREND_DOWN_FORBIDEN : MOVE_TYPE_TREND_DOWN;
   firstOnTrend.direction = -1;
   firstOnTrend.price = buffer_Rates[AMOUNT_OF_PRICE-1].open;
@@ -425,14 +426,14 @@ int CColoredTrend::isLastBarHuge(datetime start_pos)
 //+----------------------------------------------------+
 int CColoredTrend::isNewTrend()
 {
- if (extremums.getExtr(1).direction < 0 && LessDoubles((extremums.getExtr(2).price - extremums.getExtr(1).price)*difToTrend ,(extremums.getExtr(0).price - extremums.getExtr(1).price), _digits))
+ if (extremums.getExtr(1).direction < 0 && LessDoubles((extremums.getExtr(2).price - extremums.getExtr(1).price)*_difToTrend ,(extremums.getExtr(0).price - extremums.getExtr(1).price), _digits))
  {
-  //PrintFormat("ISNEWTREND MAX: num0 = %.05f, num1 = %.05f, num2 = %.05f, (num2-num1)*k = %.05f < (num0-num1) = %.05f, difToTrend = %.02f", num0.price, num1.price, num2.price, (num2.price - num1.price)*difToTrend, (num0.price - num1.price), difToTrend);
+  //PrintFormat("ISNEWTREND MAX: num0 = %.05f, num1 = %.05f, num2 = %.05f, (num2-num1)*k = %.05f < (num0-num1) = %.05f, _difToTrend = %.02f", num0.price, num1.price, num2.price, (num2.price - num1.price)*_difToTrend, (num0.price - num1.price), _difToTrend);
   return(1);
  }
- if (extremums.getExtr(1).direction > 0 && LessDoubles((extremums.getExtr(1).price - extremums.getExtr(2).price)*difToTrend ,(extremums.getExtr(1).price - extremums.getExtr(0).price), _digits))
+ if (extremums.getExtr(1).direction > 0 && LessDoubles((extremums.getExtr(1).price - extremums.getExtr(2).price)*_difToTrend ,(extremums.getExtr(1).price - extremums.getExtr(0).price), _digits))
  {
-  //PrintFormat("ISNEWTREND MIN: num0 = %.05f, num1 = %.05f, num2 = %.05f, (num1-num2)*k = %.05f < (num1-num0) = %.05f, difToTrend = %.02f", num0.price, num1.price, num2.price, (num1.price - num2.price)*difToTrend, (num1.price - num0.price), difToTrend);
+  //PrintFormat("ISNEWTREND MIN: num0 = %.05f, num1 = %.05f, num2 = %.05f, (num1-num2)*k = %.05f < (num1-num0) = %.05f, _difToTrend = %.02f", num0.price, num1.price, num2.price, (num1.price - num2.price)*_difToTrend, (num1.price - num0.price), _difToTrend);
   return(-1);
  }
  return(0);
@@ -443,9 +444,9 @@ int CColoredTrend::isNewTrend()
 //+----------------------------------------------------------+
 int CColoredTrend::isEndTrend()
 {
- if (extremums.getExtr(1).direction < 0 && GreatDoubles((extremums.getExtr(2).price - extremums.getExtr(1).price)*difToTrend ,(extremums.getExtr(0).price - extremums.getExtr(1).price), _digits))
+ if (extremums.getExtr(1).direction < 0 && GreatDoubles((extremums.getExtr(2).price - extremums.getExtr(1).price)*_difToTrend ,(extremums.getExtr(0).price - extremums.getExtr(1).price), _digits))
   return(1);
- if (extremums.getExtr(1).direction > 0 && GreatDoubles((extremums.getExtr(1).price - extremums.getExtr(2).price)*difToTrend ,(extremums.getExtr(1).price - extremums.getExtr(0).price), _digits))
+ if (extremums.getExtr(1).direction > 0 && GreatDoubles((extremums.getExtr(1).price - extremums.getExtr(2).price)*_difToTrend ,(extremums.getExtr(1).price - extremums.getExtr(0).price), _digits))
   return(-1);
  return(0);
 }
@@ -468,19 +469,26 @@ void CColoredTrend::SetDiffToTrend()
  switch(_period)
  {
    case(PERIOD_M15):
-      difToTrend = 1.2;
+      _difToTrend = 1.2;
+      break;
    case(PERIOD_H1):
-      difToTrend = 1.3;
+      _difToTrend = 1.3;
+      break;
    case(PERIOD_H4):
-      difToTrend = 1.7;
+      _difToTrend = 1.3;
+      break;
    case(PERIOD_D1):
-      difToTrend = 0.8;
+      _difToTrend = 0.8;
+      break;
    case(PERIOD_W1):
-      difToTrend = 0.8;
+      _difToTrend = 0.8;
+      break;
    case(PERIOD_MN1):
-      difToTrend = 0.8;
+      _difToTrend = 0.8;
+      break;
    default:
-      difToTrend = DEFAULT_DIFF_TO_TREND;
+      _difToTrend = DEFAULT_DIFF_TO_TREND;
+      break;
  }
 }
  

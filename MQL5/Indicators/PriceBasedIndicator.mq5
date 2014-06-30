@@ -28,8 +28,7 @@
  
 //--- input параметры
 input int      history_depth = 1000; // сколько свечей показывать
-input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
-input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
+
 //--- индикаторные буферы
 double ColorCandlesBuffer1[];
 double ColorCandlesBuffer2[];

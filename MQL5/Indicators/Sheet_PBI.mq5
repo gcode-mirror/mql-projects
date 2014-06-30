@@ -14,7 +14,6 @@
 //input double   percentage_ATR = 1;   
 //input double   difToTrend = 1.5;
 input string   file_name = "Sheet_PBI";
-input datetime end_time = D'2014.03.03';
 
 CisNewBar *isNewBarM15;   // для проверки формирования нового бара на 15 минутах
 
@@ -62,12 +61,20 @@ int OnInit()
  file_handle_M15 = FileOpen(StringFormat("%s_M15.csv", file_name), FILE_WRITE|FILE_CSV|FILE_COMMON);
  file_handle_time = FileOpen(StringFormat("%s_time.csv", file_name), FILE_WRITE|FILE_CSV|FILE_COMMON);
  
- handle_PBI_MN1 = iCustom(Symbol(), PERIOD_MN1, "PriceBasedIndicator", DEPTH, 2.2);
- handle_PBI_W1  = iCustom(Symbol(), PERIOD_W1 , "PriceBasedIndicator", DEPTH, 2.2);
- handle_PBI_D1  = iCustom(Symbol(), PERIOD_D1 , "PriceBasedIndicator", DEPTH, 2.2);
- handle_PBI_H4  = iCustom(Symbol(), PERIOD_H4 , "PriceBasedIndicator", DEPTH, 1.5);
- handle_PBI_H1  = iCustom(Symbol(), PERIOD_H1 , "PriceBasedIndicator", DEPTH, 1.1);
- handle_PBI_M15 = iCustom(Symbol(), PERIOD_M15, "PriceBasedIndicator", DEPTH, 0.6);
+ FileWrite(file_handle_MN1, "PERIOD_MN1");
+ FileWrite(file_handle_W1 , "PERIOD_W1");
+ FileWrite(file_handle_D1 , "PERIOD_D1");
+ FileWrite(file_handle_H4 , "PERIOD_H4");
+ FileWrite(file_handle_H1 , "PERIOD_H1");
+ FileWrite(file_handle_M15, "PERIOD_M15");
+ FileWrite(file_handle_time, "DATETIME");
+ 
+ handle_PBI_MN1 = iCustom(Symbol(), PERIOD_MN1, "PriceBasedIndicator", DEPTH);
+ handle_PBI_W1  = iCustom(Symbol(), PERIOD_W1 , "PriceBasedIndicator", DEPTH);
+ handle_PBI_D1  = iCustom(Symbol(), PERIOD_D1 , "PriceBasedIndicator", DEPTH);
+ handle_PBI_H4  = iCustom(Symbol(), PERIOD_H4 , "PriceBasedIndicator", DEPTH);
+ handle_PBI_H1  = iCustom(Symbol(), PERIOD_H1 , "PriceBasedIndicator", DEPTH);
+ handle_PBI_M15 = iCustom(Symbol(), PERIOD_M15, "PriceBasedIndicator", DEPTH);
  
  isNewBarM15 = new CisNewBar(_Symbol, PERIOD_M15);   // для проверки формирования нового бара на 15 минутах
  
@@ -126,7 +133,8 @@ int OnCalculate(const int rates_total,
   int err6 = CopyBuffer(handle_PBI_M15, 4, 0, 1, buffer_PBI_M15);
   
   //PrintFormat("Новый бар %s; загружено M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
-    
+  //TODO: vove type to string
+  
   FileWrite(file_handle_MN1, StringFormat("%f", buffer_PBI_MN1[0]));
   FileWrite(file_handle_W1 , StringFormat("%f", buffer_PBI_W1 [0]));
   FileWrite(file_handle_D1 , StringFormat("%f", buffer_PBI_D1 [0]));
