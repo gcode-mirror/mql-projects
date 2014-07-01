@@ -161,7 +161,7 @@ void OnTick()
    else
    {   
 
-    if (levelsKo*GetClosestLevel(1) <= GetClosestLevel(-1))
+    if (levelsKo*GetClosestLevel(1) <= GetClosestLevel(-1) )
      return;
     operation = OP_BUY;
     stoploss = CountStoploss(1);
