@@ -32,14 +32,14 @@ string MoveTypeToString(ENUM_MOVE_TYPE enumMoveType)
   {
    switch(enumMoveType)
      {
-      case MOVE_TYPE_UNKNOWN: return("движение не определено");
-      case MOVE_TYPE_TREND_UP: return("тренд вверх");
-      case MOVE_TYPE_TREND_UP_FORBIDEN: return("тренд вверх запрещен со старшего ТФ");
-      case MOVE_TYPE_TREND_DOWN: return("тренд вниз");
-      case MOVE_TYPE_TREND_DOWN_FORBIDEN: return("тренд вниз запрещен со старшего ТФ");
-      case MOVE_TYPE_CORRECTION_UP: return("коррекция вверх");
-      case MOVE_TYPE_CORRECTION_DOWN: return("коррекция вниз");
-      case MOVE_TYPE_FLAT: return("флэт");
+      case MOVE_TYPE_UNKNOWN: return("NULL");
+      case MOVE_TYPE_TREND_UP: return("TREND UP");
+      case MOVE_TYPE_TREND_UP_FORBIDEN: return("TREND UP FORB");
+      case MOVE_TYPE_TREND_DOWN: return("TREND DOWN");
+      case MOVE_TYPE_TREND_DOWN_FORBIDEN: return("TREND DOWN FORB");
+      case MOVE_TYPE_CORRECTION_UP: return("CORRECTION UP");
+      case MOVE_TYPE_CORRECTION_DOWN: return("CORRECTION DOWN");
+      case MOVE_TYPE_FLAT: return("FLAT");
       default: return("Error: unknown move type"+(string)enumMoveType);
      }
   }

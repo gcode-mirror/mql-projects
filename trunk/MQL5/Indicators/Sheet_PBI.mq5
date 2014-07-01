@@ -9,6 +9,7 @@
 #property indicator_chart_window
 
 #include <Lib CisNewBarDD.mqh>
+#include <ColoredTrend\ColoredTrendUtilities.mqh>
 #define DEPTH 100
 
 //input double   percentage_ATR = 1;   
@@ -135,12 +136,12 @@ int OnCalculate(const int rates_total,
   //PrintFormat("Новый бар %s; загружено M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
   //TODO: vove type to string
   
-  FileWrite(file_handle_MN1, StringFormat("%f", buffer_PBI_MN1[0]));
-  FileWrite(file_handle_W1 , StringFormat("%f", buffer_PBI_W1 [0]));
-  FileWrite(file_handle_D1 , StringFormat("%f", buffer_PBI_D1 [0]));
-  FileWrite(file_handle_H4 , StringFormat("%f", buffer_PBI_H4 [0]));
-  FileWrite(file_handle_H1 , StringFormat("%f", buffer_PBI_H1 [0]));
-  FileWrite(file_handle_M15, StringFormat("%f", buffer_PBI_M15[0]));
+  FileWrite(file_handle_MN1, MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_MN1[0]));
+  FileWrite(file_handle_W1 , MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_W1 [0]));
+  FileWrite(file_handle_D1 , MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_D1 [0]));
+  FileWrite(file_handle_H4 , MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H4 [0]));
+  FileWrite(file_handle_H1 , MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1 [0]));
+  FileWrite(file_handle_M15, MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_M15[0]));
   FileWrite(file_handle_time, StringFormat("%s", TimeToString(time[0])));
  }
  
