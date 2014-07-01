@@ -87,7 +87,7 @@ class CBlowInfoFromExtremums
         Sleep(100);
        }
       
-      Print("COPIEDHIGH = ",copiedHigh, " COPIEDLOW = ",copiedLow); 
+      //Print("COPIEDHIGH = ",copiedHigh, " COPIEDLOW = ",copiedLow); 
        
       if ( copiedHigh != historyDepth || copiedLow != historyDepth || copiedHighTime != historyDepth || copiedLowTime != historyDepth)
        {
