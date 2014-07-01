@@ -162,7 +162,7 @@ void OnTick()
         // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
         stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_LOW,0).price/_Point);
         // открываем позицию на BUY
-   //     ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0, trailingType);
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0, trailingType);
         // выставляем флаг открытия позиции BUY
         openedPosition = BUY;         
         // обнуляем индекс хэндлов индикатора Extremums для трейлинга
@@ -184,7 +184,7 @@ void OnTick()
         // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
         stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price/_Point);
         // открываем позицию на SELL
-   //     ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lot, stopLoss, 0, trailingType);
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lot, stopLoss, 0, trailingType);
         // выставляем флаг открытия позиции SELL
         openedPosition = SELL;  
         // обнуляем индекс хэндлов индикатора Extremums для трейлинга
