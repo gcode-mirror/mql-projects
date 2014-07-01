@@ -165,7 +165,7 @@ void OnTick()
   if (ctm.GetPositionCount() > 0 && !isLotClosed)
   {
    isLotClosed =AllowToLowVolume();
-   if (isLotClosed == true)
+   if (isLotClosed)
     ctm.PositionChangeSize(symbol, lot*percentLowVolume);  // закрываем часть объема
    if (!isLotClosed )  
     {
