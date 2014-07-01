@@ -117,13 +117,13 @@ int OnCalculate(const int rates_total,
     else 
      { 
 
-        bufferATR [rates_total-1] = bufferATR[rates_total-2] - (high[rates_total-1- ma_period]-low[rates_total-1-ma_period])/ma_period + (high[rates_total-1]-low[rates_total-1])/ma_period;    
+        bufferATR [rates_total-1] = bufferATR[rates_total-2] - (high[rates_total-1- ma_period]-low[rates_total-1-ma_period])/ma_period + ( MathMax(high[rates_total-1],close[rates_total-1])-MathMin(low[rates_total-1],close[rates_total-1]) )/ma_period;    
         
         CopyBuffer(handleATR,0,0,1,atrValue);
         
-       Comment("HIGH = ",DoubleToString(high[rates_total-1])," LOW = ",DoubleToString(low[rates_total-1])); 
+      // Comment("HIGH = ",DoubleToString(high[rates_total-1])," LOW = ",DoubleToString(low[rates_total-1])); 
         
-      // Print("[",DoubleToString(bufferATR[rates_total-1]),", ",DoubleToString(atrValue[0]),"]");
+       Print("[",DoubleToString(bufferATR[rates_total-1]),", ",DoubleToString(atrValue[0]),"]");
         
            
         lastSummATR = 0;
