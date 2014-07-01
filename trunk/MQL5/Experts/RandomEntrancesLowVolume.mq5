@@ -19,7 +19,7 @@ input int step = 100;
 input int countSteps = 4;
 input int volume = 5;
 input double ko = 2;        // ko=0-весь объем, ko=1-равные доли, ko>1-увелич.доли, k0<1-уменьш.доли 
-input double percentLowVolume = 0.5;  // процент уменьшения объема 
+input double percentLowVolume = 0.8;  // процент уменьшения объема 
 
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 //input bool stepbypart = false; // 
@@ -73,7 +73,7 @@ int OnInit()
    historyDepth = 1000;
    if (trailingType == TRAILING_TYPE_PBI)
    {
-    handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
+    handle_PBI = iCustom(symbol, PERIOD_M15, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
     if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
     {
      Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
@@ -165,7 +165,9 @@ void OnTick()
   if (ctm.GetPositionCount() > 0 && !isLotClosed)
   {
    isLotClosed =AllowToLowVolume();
-   if (isLotClosed )  
+   if (isLotClosed == true)
+    ctm.PositionChangeSize(symbol, lot*percentLowVolume);  // закрываем часть объема
+   if (!isLotClosed )  
     {
      profit = ctm.GetPositionPointsProfit(symbol);
      if (profit > step && count < countSteps) 

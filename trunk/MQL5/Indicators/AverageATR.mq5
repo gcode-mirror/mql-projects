@@ -39,8 +39,7 @@ input int aver_period = 100;     // период усреднения значений ATR
 int    handleATR;                // хэндл индикатора ATR
 int    copiedATR = -1;           // переменная для получения количества скопированных данных индикатора ATR   
 int    startIndex;               // индекс с которого начать вычисление усреднения ATR
-int    index;                    // индекс прохода по циклу  
-bool   first = true;               
+int    index;                    // индекс прохода по циклу          
 double lastSumm;                 // переменная хранения последней суммы значений              
 // индикаторные буферы
 double averATRBuffer[];          // хранит значения усредненных значений ATR
@@ -125,11 +124,6 @@ int OnCalculate(const int rates_total,
     // если не первых пересчет индикатора
     else 
      {
-     // вычисления в реальном времени доработать
-       // если новый бар сформирован
-       if ( isNewBar.isNewBar() > 0 || first)
-        {
-        first = false;
         // пытаемся скопировать данные индикатора ATR
         copiedATR = CopyBuffer(handleATR,0,0,aver_period,tmpBuffer);
         if (copiedATR == aver_period)
@@ -144,7 +138,7 @@ int OnCalculate(const int rates_total,
           // записываем значение ATR
           bufferATR[rates_total-1] = tmpBuffer[aver_period-1];
          }
-        }  
+        
      }
    return(rates_total);
   }
