@@ -75,16 +75,15 @@ int OnInit()
     handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
     if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
     {
-     Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+     PrintFormat("%s Не удалось получить хендл Price Based Indicator", MakeFunctionPrefix(__FUNCTION__));      //если хендл не получен, то выводим сообщение в лог об ошибке
     }
-
    }
  
-    handle_19Lines = iCustom(symbol,timeframe,"NineteenLines");     
-    if (handle_19Lines == INVALID_HANDLE)
-    {
-     Print("Не удалось получить хэндл NineteenLines");
-    }   
+   handle_19Lines = iCustom(symbol, timeframe, "NineteenLines");     
+   if (handle_19Lines == INVALID_HANDLE)
+   {
+    PrintFormat("%s Не удалось получить хэндл NineteenLines", MakeFunctionPrefix(__FUNCTION__));
+   }   
    
    ArrayResize(aDeg, countSteps);
    ArrayResize(aKo, countSteps);
@@ -107,13 +106,7 @@ int OnInit()
    for (int i = 0; i < countSteps; i++)
    {
     aDeg[i] = NormalizeDouble(volume * aKo[i] * 0.01, 2);
-   }
-        
-   for (int i = 0; i < countSteps; i++)
-   {
-    PrintFormat("aDeg[%d] = %.02f", i, aDeg[i]);
-   }
-         
+   }         
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -134,14 +127,15 @@ void OnTick()
   
   if ( !UploadBuffers () )   // если не удалось прогрузить буферы индикатора NineTeenLines
     return;
-    
+  
+  /*  
   Comment(
    "Цена = ",DoubleToString(SymbolInfoDouble(_Symbol,SYMBOL_BID)),
    "\n верхний = ",DoubleToString(GetClosestLevel(1)),
    "\n нижний = ",DoubleToString(GetClosestLevel(-1))
   
   ); 
-  
+  */
     
   // если позиции нет
   if (ctm.GetPositionCount() == 0)

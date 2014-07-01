@@ -90,8 +90,11 @@ int OnCalculate(const int rates_total,
        // проходим по всем барам и вычисляем ATR
        lastSummPrice = 0;
        for (index=0;index<ma_period;index++)
+       {
         lastSummPrice = lastSummPrice + high[ma_period-index-1]-low[ma_period-index-1];
-        
+        bufferATR[index] = 0;
+        averATRBuffer[index] = 0;
+       }
        bufferATR[ma_period-1] = lastSummPrice / ma_period;  // сохраняем первое среднее значение
        // проходим по буферу цен и вычисляем остальные усредненные значения
        for (index = ma_period;index < rates_total; index++)
@@ -103,7 +106,10 @@ int OnCalculate(const int rates_total,
        // проходим по буферу ATR от startIndex до конца и вычисляем сумму 
        lastSummATR = 0;
        for (index=0;index<aver_period;index++)
+       {
         lastSummATR = lastSummATR + bufferATR[startIndex-index];
+        //averATRBuffer[startIndex-index] = 0;
+       }
        averATRBuffer[startIndex] = lastSummATR / aver_period;  // сохраняем первое среднее значение
        // проходим по буферу ATR и вычисляем остальные усредненные значения
        for (index = startIndex+1;index < rates_total; index++)
