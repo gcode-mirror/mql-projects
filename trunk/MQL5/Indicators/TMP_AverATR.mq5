@@ -41,6 +41,8 @@ double lastSummATR;              // переменная хранения последней суммы значений
 double averATRBuffer[];          // хранит значения усредненных значений ATR
 double bufferATR[];              // хранит значение буфера ATR
 
+int    handleATR;
+
 int OnInit()
   {
    int barsCount;             // для хранения количества баров в истории
@@ -54,6 +56,7 @@ int OnInit()
      Print("Ошибка инициализации индикатора AverageATR. Не корректно заданы периоды усреднения");
      return (INIT_FAILED);
     }
+   handleATR = iATR(_Symbol,_Period,ma_period);
    // задаем параметры индикаторных буферов
    SetIndexBuffer(0,averATRBuffer,INDICATOR_DATA);  
    SetIndexBuffer(1,bufferATR,INDICATOR_DATA);     
@@ -66,7 +69,9 @@ void OnDeinit (const int reason)
   ArrayFree(averATRBuffer);
   ArrayFree(bufferATR);
  }
-
+ 
+ double atrValue[];
+ 
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
                 const datetime &time[],
@@ -110,19 +115,23 @@ int OnCalculate(const int rates_total,
      }
     // если не первый пересчет индикатора
     else 
-     {      
-        lastSummPrice = 0;
-        for (index=0;index<ma_period;index++)
-         {
-          lastSummPrice = lastSummPrice + high[rates_total - index - 1] - low[rates_total - index - 1];
-         }         
-        bufferATR [rates_total-1] = lastSummPrice / ma_period;     
+     { 
+
+        bufferATR [rates_total-1] = bufferATR[rates_total-2] - (high[rates_total-1- ma_period]-low[rates_total-1-ma_period])/ma_period + (high[rates_total-1]-low[rates_total-1])/ma_period;    
+        
+        CopyBuffer(handleATR,0,0,1,atrValue);
+        
+       Comment("HIGH = ",DoubleToString(high[rates_total-1])," LOW = ",DoubleToString(low[rates_total-1])); 
+        
+      // Print("[",DoubleToString(bufferATR[rates_total-1]),", ",DoubleToString(atrValue[0]),"]");
+        
+           
         lastSummATR = 0;
         for (index=0;index<aver_period;index++)
          lastSummATR = lastSummATR + bufferATR[rates_total-1-index];
         // записываем текущее значение среднего  
         averATRBuffer[rates_total-1] = lastSummATR / aver_period;
-        Print("[",DoubleToString(averATRBuffer[rates_total-1]),"]");
+        
      }
    return(rates_total);
   }

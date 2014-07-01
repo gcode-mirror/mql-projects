@@ -126,6 +126,9 @@ int OnCalculate(const int rates_total,
      {
         // пытаемся скопировать данные индикатора ATR
         copiedATR = CopyBuffer(handleATR,0,0,aver_period,tmpBuffer);
+        
+        Print("[",DoubleToString(tmpBuffer[aver_period-1]),"]");
+        
         if (copiedATR == aver_period)
          {
           lastSumm = 0;
@@ -137,7 +140,7 @@ int OnCalculate(const int rates_total,
           averATRBuffer[rates_total-1] = lastSumm / aver_period;
           // записываем значение ATR
           bufferATR[rates_total-1] = tmpBuffer[aver_period-1];
-                 Print("[",DoubleToString(averATRBuffer[rates_total-1]),"]"); 
+          //Print("[",DoubleToString(bufferATR[rates_total-1]),"]");
          }
         
      }
