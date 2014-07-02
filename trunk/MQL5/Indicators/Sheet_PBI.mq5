@@ -38,15 +38,13 @@ double buffer_PBI_H4 [];
 double buffer_PBI_D1 [];
 double buffer_PBI_W1 [];
 double buffer_PBI_MN1[];
+double buffer_PBI_top_M15[];
+double buffer_PBI_top_H1 [];
+double buffer_PBI_top_H4 [];
+double buffer_PBI_top_D1 [];
+double buffer_PBI_top_W1 [];
+double buffer_PBI_top_MN1[];
 datetime buffer_time[];
-
-string str_MN1 = "PERIOD_MN1;";
-string str_W1  = "PERIOD_W1;";
-string str_D1  = "PERIOD_D1;";
-string str_H4  = "PERIOD_H4;";
-string str_H1  = "PERIOD_H1;";
-string str_M15 = "PERIOD_M15;";
-string str_time = "datetime;";
 
 bool written = true;
 //+------------------------------------------------------------------+
@@ -62,12 +60,12 @@ int OnInit()
  file_handle_M15 = FileOpen(StringFormat("%s_M15.csv", file_name), FILE_WRITE|FILE_CSV|FILE_COMMON);
  file_handle_time = FileOpen(StringFormat("%s_time.csv", file_name), FILE_WRITE|FILE_CSV|FILE_COMMON);
  
- FileWrite(file_handle_MN1, "PERIOD_MN1");
- FileWrite(file_handle_W1 , "PERIOD_W1");
- FileWrite(file_handle_D1 , "PERIOD_D1");
- FileWrite(file_handle_H4 , "PERIOD_H4");
- FileWrite(file_handle_H1 , "PERIOD_H1");
- FileWrite(file_handle_M15, "PERIOD_M15");
+ FileWrite(file_handle_MN1, "PERIOD_MN1;PERIOD_MN1");
+ FileWrite(file_handle_W1 , "PERIOD_W1 ;PERIOD_MN1");
+ FileWrite(file_handle_D1 , "PERIOD_D1 ;PERIOD_W1" );
+ FileWrite(file_handle_H4 , "PERIOD_H4 ;PERIOD_D1" );
+ FileWrite(file_handle_H1 , "PERIOD_H1 ;PERIOD_H4" );
+ FileWrite(file_handle_M15, "PERIOD_M15;PERIOD_H1" );
  FileWrite(file_handle_time, "DATETIME");
  
  handle_PBI_MN1 = iCustom(Symbol(), PERIOD_MN1, "PriceBasedIndicator", DEPTH);
@@ -105,6 +103,12 @@ void OnDeinit(const int reason)
  ArrayFree(buffer_PBI_D1);
  ArrayFree(buffer_PBI_W1);
  ArrayFree(buffer_PBI_MN1);
+ ArrayFree(buffer_PBI_top_M15);
+ ArrayFree(buffer_PBI_top_H1);
+ ArrayFree(buffer_PBI_top_H4);
+ ArrayFree(buffer_PBI_top_D1);
+ ArrayFree(buffer_PBI_top_W1);
+ ArrayFree(buffer_PBI_top_MN1);
  ArrayFree(buffer_time);
 }
 
@@ -126,22 +130,28 @@ int OnCalculate(const int rates_total,
  if(isNewBarM15.isNewBar())
  {
   
-  int err1 = CopyBuffer(handle_PBI_MN1, 4, 0, 1, buffer_PBI_MN1);
-  int err2 = CopyBuffer(handle_PBI_W1 , 4, 0, 1, buffer_PBI_W1 );
-  int err3 = CopyBuffer(handle_PBI_D1 , 4, 0, 1, buffer_PBI_D1 );
-  int err4 = CopyBuffer(handle_PBI_H4 , 4, 0, 1, buffer_PBI_H4 );
-  int err5 = CopyBuffer(handle_PBI_H1 , 4, 0, 1, buffer_PBI_H1 );
-  int err6 = CopyBuffer(handle_PBI_M15, 4, 0, 1, buffer_PBI_M15);
+  CopyBuffer(handle_PBI_MN1, 4, 0, 1, buffer_PBI_MN1);
+  CopyBuffer(handle_PBI_W1 , 4, 0, 1, buffer_PBI_W1 );
+  CopyBuffer(handle_PBI_D1 , 4, 0, 1, buffer_PBI_D1 );
+  CopyBuffer(handle_PBI_H4 , 4, 0, 1, buffer_PBI_H4 );
+  CopyBuffer(handle_PBI_H1 , 4, 0, 1, buffer_PBI_H1 );
+  CopyBuffer(handle_PBI_M15, 4, 0, 1, buffer_PBI_M15);
+  CopyBuffer(handle_PBI_MN1, 7, 0, 1, buffer_PBI_top_MN1);
+  CopyBuffer(handle_PBI_W1 , 7, 0, 1, buffer_PBI_top_W1 );
+  CopyBuffer(handle_PBI_D1 , 7, 0, 1, buffer_PBI_top_D1 );
+  CopyBuffer(handle_PBI_H4 , 7, 0, 1, buffer_PBI_top_H4 );
+  CopyBuffer(handle_PBI_H1 , 7, 0, 1, buffer_PBI_top_H1 );
+  CopyBuffer(handle_PBI_M15, 7, 0, 1, buffer_PBI_top_M15);
   
   //PrintFormat("Новый бар %s; загружено M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
   //TODO: vove type to string
   
-  FileWrite(file_handle_MN1, MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_MN1[0]));
-  FileWrite(file_handle_W1 , MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_W1 [0]));
-  FileWrite(file_handle_D1 , MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_D1 [0]));
-  FileWrite(file_handle_H4 , MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H4 [0]));
-  FileWrite(file_handle_H1 , MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1 [0]));
-  FileWrite(file_handle_M15, MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_M15[0]));
+  FileWrite(file_handle_MN1, StringFormat("%s; %s", MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_MN1[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_MN1[0])));
+  FileWrite(file_handle_W1 , StringFormat("%s; %s", MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_W1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_W1 [0])));
+  FileWrite(file_handle_D1 , StringFormat("%s; %s", MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_D1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_D1 [0])));
+  FileWrite(file_handle_H4 , StringFormat("%s; %s", MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H4 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H4 [0])));
+  FileWrite(file_handle_H1 , StringFormat("%s; %s", MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H1 [0])));
+  FileWrite(file_handle_M15, StringFormat("%s; %s", MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0])));
   FileWrite(file_handle_time, StringFormat("%s", TimeToString(time[0])));
  }
  

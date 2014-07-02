@@ -8,7 +8,7 @@
 #property version   "1.00"
  
 #property indicator_chart_window
-#property indicator_buffers 7
+#property indicator_buffers 8
 #property indicator_plots   3
 //--- plot ColorCandles
 #property indicator_label1  "ColoredTrend"
@@ -35,6 +35,7 @@ double ColorCandlesBuffer2[];
 double ColorCandlesBuffer3[];
 double ColorCandlesBuffer4[];
 double ColorCandlesColors[];
+double ColorCandlesColorsTop[];
 double ExtUpArrowBuffer[];
 double ExtDownArrowBuffer[];
 
@@ -49,7 +50,7 @@ ENUM_TIMEFRAMES current_timeframe;
 int  digits;
 int depth = history_depth;
 bool series_order = true;
-input bool show_top = false;
+
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -73,6 +74,7 @@ int OnInit()
    SetIndexBuffer(4,  ColorCandlesColors, INDICATOR_DATA);
    SetIndexBuffer(5,    ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6,  ExtDownArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(7, ColorCandlesColorsTop, INDICATOR_CALCULATIONS);
 
    InitializeIndicatorBuffers();
    
@@ -84,6 +86,7 @@ int OnInit()
    ArraySetAsSeries(ColorCandlesBuffer3, series_order);
    ArraySetAsSeries(ColorCandlesBuffer4, series_order);
    ArraySetAsSeries( ColorCandlesColors, series_order);
+   ArraySetAsSeries(ColorCandlesColorsTop, series_order);
    ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
    ArraySetAsSeries( ExtDownArrowBuffer, series_order);
    
@@ -101,6 +104,7 @@ void OnDeinit(const int reason)
    ArrayFree(ColorCandlesBuffer3);
    ArrayFree(ColorCandlesBuffer4);
    ArrayFree(ColorCandlesColors);
+   ArrayFree(ColorCandlesColorsTop);
    delete topTrend;
    delete trend;
 }
@@ -153,8 +157,8 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i]; 
     
-     if(!show_top) ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
-     else  ColorCandlesColors[i] = topTrend.GetMoveType(top_buffer_index);
+     ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
+     ColorCandlesColorsTop[i] = topTrend.GetMoveType(top_buffer_index);
     
      if (extr_cur[0].direction > 0)
      {
@@ -186,8 +190,8 @@ int OnCalculate(const int rates_total,
    ColorCandlesBuffer2[0] = high[0];
    ColorCandlesBuffer3[0] = low [0];
    ColorCandlesBuffer4[0] = close[0]; 
-   if(!show_top) ColorCandlesColors[0] = trend.GetMoveType(buffer_index);
-   else  ColorCandlesColors[0] = topTrend.GetMoveType(top_buffer_index);
+   ColorCandlesColors[0] = trend.GetMoveType(buffer_index);
+   ColorCandlesColorsTop[0] = topTrend.GetMoveType(top_buffer_index);
    
    if (extr_cur[0].direction > 0)
    {

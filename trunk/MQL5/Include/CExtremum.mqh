@@ -28,6 +28,7 @@ class CExtremum
  int _digits;
  ENUM_TIMEFRAMES _tf_period;
  //--параметры ATR для difToNewExtremum-----
+ int _handle_average_atr;
  ENUM_TIMEFRAMES _tf_ATR;
  int _period_ATR; 
  double _percentage_ATR;
@@ -62,6 +63,7 @@ CExtremum::CExtremum(void):
             SetATR_TF();
             SetPercentageATR();
             _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
+            _handle_average_atr = iCustom(_symbol, _tf_ATR, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR);
            }
 
 CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period):
@@ -72,6 +74,7 @@ CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period):
              SetATR_TF();
              SetPercentageATR();
              _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
+             _handle_average_atr = iCustom(_symbol, _tf_ATR, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR);
             }
 CExtremum::~CExtremum()
            {
@@ -170,6 +173,14 @@ int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now 
 
 double CExtremum::AverageBar (ENUM_TIMEFRAMES tf, int period, datetime start_pos)
 {
+ /*double buffer_average_atr[1];
+ if(CopyBuffer(_handle_average_atr, 0, start_pos, 1, buffer_average_atr) == 1) 
+  return(buffer_average_atr[0]);
+ else
+ {
+  PrintFormat("ERROR. Ihave this error = %d, %s", GetLastError(), EnumToString((ENUM_TIMEFRAMES)tf));
+  return(0);
+ }*/
  double result = 0;
  MqlRates buffer_rates[];
  if(CopyRates(_symbol, tf, start_pos, period, buffer_rates) < period)
