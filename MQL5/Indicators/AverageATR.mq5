@@ -116,7 +116,8 @@ int OnCalculate(const int rates_total,
     // если не первый пересчет индикатора
     else 
      { 
-        bufferATR [rates_total-1] = bufferATR[rates_total-2] - (high[rates_total-1- ma_period]-low[rates_total-1-ma_period])/ma_period + ( MathMax(high[rates_total-1],close[rates_total-1])-MathMin(low[rates_total-1],close[rates_total-1]) )/ma_period;      
+      //  bufferATR [rates_total-1] = bufferATR[rates_total-2] - (high[rates_total-1- ma_period]-low[rates_total-1-ma_period])/ma_period + ( MathMax(high[rates_total-1],close[rates_total-1])-MathMin(low[rates_total-1],close[rates_total-1]) )/ma_period;      
+      bufferATR [rates_total-1] = bufferATR[rates_total-2] - (high[rates_total-1- ma_period]-low[rates_total-1-ma_period])/ma_period + (high[rates_total-1]-low[rates_total-1] )/ma_period;       
         averATRBuffer[rates_total-1] = averATRBuffer[rates_total-2] - bufferATR[rates_total-1-aver_period]/aver_period + bufferATR[rates_total-1]/aver_period;
      }
    return(rates_total);
