@@ -44,12 +44,11 @@ double bufferATR[];              // хранит значение буфера ATR
 
 int OnInit()
   {
-   int barsCount;                // для хранения количества баров в истории
       startIndex = ma_period-1+aver_period;
       // если стартовый индекс превысил допустимое количество баров
       if (startIndex >= n_bars)
        {
-        Print("Ошибка инициализации индикатора AverageATR. Не корректно заданы периоды усреднения");
+        Print("Ошибка инициализации индикатора AverageATR. Некорректно заданы периоды усреднения");
         return (INIT_FAILED);
        }      
     
