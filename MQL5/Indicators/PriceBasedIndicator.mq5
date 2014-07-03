@@ -8,8 +8,8 @@
 #property version   "1.00"
  
 #property indicator_chart_window
-#property indicator_buffers 8
-#property indicator_plots   3
+#property indicator_buffers 10
+#property indicator_plots   5
 //--- plot ColorCandles
 #property indicator_label1  "ColoredTrend"
 #property indicator_type1   DRAW_COLOR_CANDLES
@@ -17,6 +17,9 @@
 
 #property indicator_type2   DRAW_ARROW
 #property indicator_type3   DRAW_ARROW
+#property indicator_type4   DRAW_ARROW
+#property indicator_type5   DRAW_ARROW
+
 
 //----------------------------------------------------------------
 #include <CompareDoubles.mqh>
@@ -27,7 +30,8 @@
 //----------------------------------------------------------------
  
 //--- input параметры
-input int      history_depth = 1000; // сколько свечей показывать
+input int history_depth = 1000; // сколько свечей показывать
+input bool show_top = false;
 
 //--- индикаторные буферы
 double ColorCandlesBuffer1[];
@@ -38,6 +42,8 @@ double ColorCandlesColors[];
 double ColorCandlesColorsTop[];
 double ExtUpArrowBuffer[];
 double ExtDownArrowBuffer[];
+double ExtUpArrowBufferTop[];
+double ExtDownArrowBufferTop[];
 
 CisNewBar NewBarCurrent, 
           NewBarTop;
@@ -67,19 +73,33 @@ int OnInit()
    topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth);
    trend    = new CColoredTrend(symbol,                  current_timeframe, depth);
 //--- indicator buffers mapping
+   
    SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
    SetIndexBuffer(1, ColorCandlesBuffer2, INDICATOR_DATA);
    SetIndexBuffer(2, ColorCandlesBuffer3, INDICATOR_DATA);
    SetIndexBuffer(3, ColorCandlesBuffer4, INDICATOR_DATA);
-   SetIndexBuffer(4,  ColorCandlesColors, INDICATOR_DATA);
+   if(show_top) 
+   {
+    SetIndexBuffer(4, ColorCandlesColorsTop, INDICATOR_DATA);
+    SetIndexBuffer(7,    ColorCandlesColors, INDICATOR_CALCULATIONS);
+   }
+   else
+   {
+    SetIndexBuffer(4,    ColorCandlesColors, INDICATOR_DATA);
+    SetIndexBuffer(7, ColorCandlesColorsTop, INDICATOR_CALCULATIONS);
+   }
+   
    SetIndexBuffer(5,    ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6,  ExtDownArrowBuffer, INDICATOR_DATA);
-   SetIndexBuffer(7, ColorCandlesColorsTop, INDICATOR_CALCULATIONS);
+   SetIndexBuffer(8,    ExtUpArrowBufferTop, INDICATOR_DATA);
+   SetIndexBuffer(9,  ExtDownArrowBufferTop, INDICATOR_DATA);
 
    InitializeIndicatorBuffers();
    
    PlotIndexSetInteger(1, PLOT_ARROW, 218);
    PlotIndexSetInteger(2, PLOT_ARROW, 217);
+   PlotIndexSetInteger(3, PLOT_ARROW, 234);
+   PlotIndexSetInteger(4, PLOT_ARROW, 233);
    
    ArraySetAsSeries(ColorCandlesBuffer1, series_order);
    ArraySetAsSeries(ColorCandlesBuffer2, series_order);
@@ -89,6 +109,8 @@ int OnInit()
    ArraySetAsSeries(ColorCandlesColorsTop, series_order);
    ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
    ArraySetAsSeries( ExtDownArrowBuffer, series_order);
+   ArraySetAsSeries(   ExtUpArrowBufferTop, series_order);   
+   ArraySetAsSeries( ExtDownArrowBufferTop, series_order);
    
    return(INIT_SUCCEEDED);
   }
@@ -99,6 +121,8 @@ void OnDeinit(const int reason)
    Print(__FUNCTION__,"_Код причины деинициализации = ",reason);
    ArrayFree(ExtUpArrowBuffer);
    ArrayFree(ExtDownArrowBuffer);
+   ArrayFree(ExtUpArrowBufferTop);
+   ArrayFree(ExtDownArrowBufferTop);
    ArrayFree(ColorCandlesBuffer1);
    ArrayFree(ColorCandlesBuffer2);
    ArrayFree(ColorCandlesBuffer3);
@@ -170,11 +194,26 @@ int OnCalculate(const int rates_total,
       ExtDownArrowBuffer[i] = extr_cur[1].price;// - 50*_Point;
       extr_cur[1].direction = 0;
      }
+     
+  /*   if (extr_top[0].direction > 0)
+     {
+      ExtUpArrowBufferTop[i] = extr_top[0].price;// + 50*_Point;
+      extr_top[0].direction = 0;
+     }
+     if (extr_top[1].direction < 0)
+     {
+      ExtDownArrowBufferTop[i] = extr_top[1].price;// - 50*_Point;
+      extr_top[1].direction = 0;
+     }*/
     
-     if(    NewBarTop.isNewBar(time[i])) top_buffer_index++; //для того что бы считать на истории
+     if(    NewBarTop.isNewBar(time[i])) 
+     {
+      topTrend.PrintExtr();
+      top_buffer_index++; //для того что бы считать на истории
+     }
      if(NewBarCurrent.isNewBar(time[i])) 
      {
-      //trend.PrintExtr();
+      trend.PrintExtr();
       //PrintFormat("HISTORY %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
       buffer_index++;     //для того что бы считать на истории
      }
@@ -204,11 +243,25 @@ int OnCalculate(const int rates_total,
     extr_cur[1].direction = 0;
    }
    
+  /* if (extr_top[0].direction > 0)
+   {
+    ExtUpArrowBufferTop[0] = extr_top[0].price;// + 50*_Point;
+    extr_top[0].direction = 0;
+   }
+   if (extr_top[1].direction < 0)
+   {
+    ExtDownArrowBufferTop[0] = extr_top[1].price;// - 50*_Point;
+    extr_top[1].direction = 0;
+   }*/
       
-   if(NewBarTop.isNewBar()  && prev_calculated != 0) top_buffer_index++;     
+   if(NewBarTop.isNewBar()  && prev_calculated != 0) 
+   {
+    topTrend.PrintExtr();
+    top_buffer_index++;
+   }    
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
    {
-    //trend.PrintExtr();
+    trend.PrintExtr();
     //PrintFormat("REAL %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[0]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
     buffer_index++; 
    }
@@ -225,4 +278,7 @@ void InitializeIndicatorBuffers()
  ArrayInitialize(ColorCandlesColors , 0);
  ArrayInitialize(ExtUpArrowBuffer   , 0);
  ArrayInitialize(ExtDownArrowBuffer , 0);
+ ArrayInitialize(ExtUpArrowBufferTop, 0);
+ ArrayInitialize(ExtDownArrowBufferTop, 0);
+ ArrayInitialize(ColorCandlesColorsTop, 0);
 }
