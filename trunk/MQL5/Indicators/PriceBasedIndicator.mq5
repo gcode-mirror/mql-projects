@@ -160,7 +160,7 @@ int OnCalculate(const int rates_total,
    if(prev_calculated == 0) 
    {
     PrintFormat("%s Первый расчет индикатора", MakeFunctionPrefix(__FUNCTION__));
-
+    //if(!CheckATR(trend.GetATRtf(), topTrend.GetATRtf())) return(0);
     buffer_index = 0;
     top_buffer_index = 0;
     trend.Zeros();
@@ -208,12 +208,12 @@ int OnCalculate(const int rates_total,
     
      if(    NewBarTop.isNewBar(time[i])) 
      {
-      topTrend.PrintExtr();
+      //topTrend.PrintExtr();
       top_buffer_index++; //для того что бы считать на истории
      }
      if(NewBarCurrent.isNewBar(time[i])) 
      {
-      trend.PrintExtr();
+      //trend.PrintExtr();
       //PrintFormat("HISTORY %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[i]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
       buffer_index++;     //для того что бы считать на истории
      }
@@ -256,12 +256,12 @@ int OnCalculate(const int rates_total,
       
    if(NewBarTop.isNewBar()  && prev_calculated != 0) 
    {
-    topTrend.PrintExtr();
+    //topTrend.PrintExtr();
     top_buffer_index++;
    }    
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
    {
-    trend.PrintExtr();
+    //trend.PrintExtr();
     //PrintFormat("REAL %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[0]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
     buffer_index++; 
    }
@@ -282,3 +282,19 @@ void InitializeIndicatorBuffers()
  ArrayInitialize(ExtDownArrowBufferTop, 0);
  ArrayInitialize(ColorCandlesColorsTop, 0);
 }
+
+/*bool CheckATR(ENUM_TIMEFRAMES cur, ENUM_TIMEFRAMES top)
+{
+ double buffer_cur[];
+ double buffer_top[];
+ int handle_cur = iCustom(Symbol(), cur, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR, history_depth);
+ int handle_top = iCustom(Symbol(), top, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR, history_depth);
+ if(CopyBuffer(handle_cur, 0, 0, history_depth, buffer_cur) <= 0 &&
+    CopyBuffer(handle_top, 0, 0, history_depth, buffer_top) <= 0)
+ {
+  PrintFormat("Не загрузил ФЕК");
+  return(false);
+ }
+ PrintFormat(" Загрузил ФЕК");
+ return(true);
+}*/

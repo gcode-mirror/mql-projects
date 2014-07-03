@@ -28,6 +28,7 @@ class CExtremum
  int _digits;
  ENUM_TIMEFRAMES _tf_period;
  //--параметры ATR для difToNewExtremum-----
+ //int _handle_average_atr;
  ENUM_TIMEFRAMES _tf_ATR;
  int _period_ATR; 
  double _percentage_ATR;
@@ -46,6 +47,7 @@ class CExtremum
  void PrintExtremums();
  int  ExtrCount();
  ENUM_TIMEFRAMES getPeriod() { return(_tf_period); }
+ ENUM_TIMEFRAMES getATFtf() { return(_tf_ATR); }
  double getPercentageATR() { return(_percentage_ATR); }
  void SetSymbol(string symb) { _symbol = symb; }
  void SetPeriod(ENUM_TIMEFRAMES tf) { _tf_period = tf; }
@@ -62,6 +64,8 @@ CExtremum::CExtremum(void):
             SetATR_TF();
             SetPercentageATR();
             _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
+            //_handle_average_atr = iCustom(_symbol, _tf_ATR, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR, 50);
+            //if(_handle_average_atr == INVALID_HANDLE) Alert("JI INVALID");
            }
 
 CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period):
@@ -72,6 +76,8 @@ CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period):
              SetATR_TF();
              SetPercentageATR();
              _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
+             //_handle_average_atr = iCustom(_symbol, _tf_ATR, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR, 50);
+             //if(_handle_average_atr == INVALID_HANDLE) Alert("JI INVALID");
             }
 CExtremum::~CExtremum()
            {
