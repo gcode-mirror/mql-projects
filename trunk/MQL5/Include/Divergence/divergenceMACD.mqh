@@ -12,6 +12,9 @@
 #define DEPTH_MACD 130
 #define BORDER_DEPTH_MACD 15
 
+#define _Buy 1
+#define _Sell -1
+
 struct PointDivMACD        
 {                           
    datetime timeExtrMACD1;  // время появления первого экстремума MACD
