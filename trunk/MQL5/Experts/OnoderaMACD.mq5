@@ -57,7 +57,7 @@ ENUM_TIMEFRAMES period;
 int historyDepth;
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
 
-int    stopLoss;                                                        // переменная для хранения действительного стоп лосса
+int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
 int    copiedSmydMACD;                                                   // переменная для проверки копирования буфера сигналов расхождения
 
 int OnInit()
