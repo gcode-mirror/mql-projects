@@ -42,7 +42,6 @@ protected:
   datetime time_buffer[];
   
   int FillTimeSeries(ENUM_TF tfType, int count, datetime start_pos, MqlRates &array[]);
-  int FillATRBuf(int count, datetime start_pos);
   
   bool isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, datetime start_pos);
   bool isCorrectionWrong(double price, ENUM_MOVE_TYPE move_type, datetime start_pos);
@@ -301,39 +300,7 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, datetime start_pos,
   //--- выведем сообщение в комментарий на главное окно графика
   Print(comm);
  }
- return(copied);
-}
-
-//+----------------------------------------------------+
-//| Функция заполняет массив индикатора ATR из истории |
-//+----------------------------------------------------+
-int CColoredTrend::FillATRBuf(int count, datetime start_pos)
-{
- if(ATR_handle == INVALID_HANDLE)                      //проверяем наличие хендла индикатора
- {
-  Print("Не удалось получить хендл ATR");             //если хендл не получен, то выводим сообщение в лог об ошибке
- }
- 
-//--- сколько скопировано
- int copied = CopyBuffer(ATR_handle, 0, start_pos, count, buffer_ATR);
-
-//--- если не удалось скопировать достаточное количество баров
- if(copied < count)
- {
-  string comm = StringFormat("%s Для символа %s получено %d баров из %d затребованных ATR. Period = %s.  Error = %d | start = %s count = %d bars_calculated = %d",
-                             MakeFunctionPrefix(__FUNCTION__),
-                             _symbol,
-                             copied,
-                             count,
-                             EnumToString((ENUM_TIMEFRAMES)_period),
-                             GetLastError(),
-                             TimeToString(start_pos),
-                             count,
-                             BarsCalculated(ATR_handle)
-                            );
-  //--- выведем сообщение в комментарий на главное окно графика
-  Print(comm);
- }
+ ArraySetAsSeries(array, true);
  return(copied);
 }
 
