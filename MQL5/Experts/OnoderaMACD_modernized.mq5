@@ -62,6 +62,7 @@ double backlogBuffer[];                                                  // буфе
 int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
 int    copiedSmydMACD;                                                   // переменная для проверки копирования буфера сигналов расхождения
 int    copiedBacklog;                                                    // переменная для проверки копирования буфера отставания сигнала от последнего экстремума
+bool   catchedDiv = false;                                               // флаг пойманного расхождения
 
 int OnInit()
 {
@@ -125,7 +126,8 @@ void OnTick()
  copiedBacklog  = -1;
  // если сформирован новый бар
  if (isNewBar.isNewBar() > 0)
-  {
+  catchedDiv = false;
+ // {
    copiedSmydMACD = CopyBuffer(handleSmydMACD,1,0,1,signalBuffer);
    copiedBacklog  = CopyBuffer(handleSmydMACD,2,0,1,backlogBuffer);
    if (copiedSmydMACD < 1 || copiedBacklog < 1)
@@ -134,19 +136,21 @@ void OnTick()
      return;
     }   
  
-   if ( signalBuffer[0] == BUY && backlogBuffer[0] <= backlogValue )  // получили расхождение на покупку и отставание сигнала меньше или равно заданному числу
+   if ( signalBuffer[0] == BUY && backlogBuffer[0] <= backlogValue && !catchedDiv)  // получили расхождение на покупку и отставание сигнала меньше или равно заданному числу
      { 
+      catchedDiv = true;
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
       stopLoss = CountStoploss(1);
       ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
      }
-   if ( signalBuffer[0] == SELL && backlogBuffer[0] <= backlogValue) // получили расхождение на продажу и отставание сигнала меньше или равно заданному числу
+   if ( signalBuffer[0] == SELL && backlogBuffer[0] <= backlogValue && !catchedDiv) // получили расхождение на продажу и отставание сигнала меньше или равно заданному числу
      {
+      catchedDiv = true;
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
       stopLoss = CountStoploss(-1);
       ctm.OpenUniquePosition(symbol,period, opSell, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
      }
-   }  
+   //}  
 }
 
 int CountStoploss(int point)

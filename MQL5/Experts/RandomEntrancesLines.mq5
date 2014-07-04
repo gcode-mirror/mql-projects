@@ -7,28 +7,23 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
-//+------------------------------------------------------------------+
-//| Модификация Рандома с запретом на вход                           |
-//+------------------------------------------------------------------+
-
 #include <TradeManager\TradeManager.mqh> //подключаем библиотеку для совершения торговых операций
-
 
 #define ADD_TO_STOPPLOSS 50
 
 input int step = 100;
 input int countSteps = 4;
 input int volume = 5;
-input double ko = 2;                 // ko=0-весь объем, ko=1-равные доли, ko>1-увелич.доли, k0<1-уменьш.доли
+input double ko = 2;        // ko=0-весь объем, ko=1-равные доли, ko>1-увелич.доли, k0<1-уменьш.доли 
 input double levelsKo = 3;
-
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 //input bool stepbypart = false; // 
 input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
 input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
-input int      trStop    = 100;                // Trailing Stop
-input int      trStep    = 100;                // Trailing Step
-input int      minProfit = 250;                // минимальная прибыль
+input int      trStop    = 100;      // Trailing Stop
+input int      trStep    = 100;      // Trailing Step
+input int      minProfit = 250;      // минимальная прибыль
+
 
 string symbol;
 ENUM_TIMEFRAMES timeframe;
@@ -54,10 +49,8 @@ struct bufferLevel
   double atr[];
  };
 
-
 // буферы уровней 
 bufferLevel buffers[20];
-
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -75,15 +68,15 @@ int OnInit()
     handle_PBI = iCustom(symbol, timeframe, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
     if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
     {
-     PrintFormat("%s Не удалось получить хендл Price Based Indicator", MakeFunctionPrefix(__FUNCTION__));      //если хендл не получен, то выводим сообщение в лог об ошибке
+     Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
     }
    }
- 
+   
    handle_19Lines = iCustom(symbol, timeframe, "NineteenLines");     
    if (handle_19Lines == INVALID_HANDLE)
-   {
-    PrintFormat("%s Не удалось получить хэндл NineteenLines", MakeFunctionPrefix(__FUNCTION__));
-   }   
+    {
+     PrintFormat("%s Не удалось получить хэндл NineteenLines", MakeFunctionPrefix(__FUNCTION__));
+    }      
    
    ArrayResize(aDeg, countSteps);
    ArrayResize(aKo, countSteps);
@@ -106,7 +99,13 @@ int OnInit()
    for (int i = 0; i < countSteps; i++)
    {
     aDeg[i] = NormalizeDouble(volume * aKo[i] * 0.01, 2);
-   }         
+   }
+        
+   for (int i = 0; i < countSteps; i++)
+   {
+    PrintFormat("aDeg[%d] = %.02f", i, aDeg[i]);
+   }
+         
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -126,17 +125,8 @@ void OnTick()
   ctm.DoTrailing();
   
   if ( !UploadBuffers () )   // если не удалось прогрузить буферы индикатора NineTeenLines
-    return;
+    return;  
   
-  /*  
-  Comment(
-   "Цена = ",DoubleToString(SymbolInfoDouble(_Symbol,SYMBOL_BID)),
-   "\n верхний = ",DoubleToString(GetClosestLevel(1)),
-   "\n нижний = ",DoubleToString(GetClosestLevel(-1))
-  
-  ); 
-  */
-    
   // если позиции нет
   if (ctm.GetPositionCount() == 0)
   {
@@ -146,17 +136,15 @@ void OnTick()
    ENUM_TM_POSITION_TYPE operation;
    if ( GreatDoubles(rnd,0.5,5) )
    {
-
     if (levelsKo*GetClosestLevel(-1) <= GetClosestLevel(1) )
-     return;
+     return;   
     operation = OP_SELL;
     stoploss = CountStoploss(-1);
    } 
    else
-   {   
-
+   {
     if (levelsKo*GetClosestLevel(1) <= GetClosestLevel(-1) )
-     return;
+     return;   
     operation = OP_BUY;
     stoploss = CountStoploss(1);
    }
@@ -245,6 +233,7 @@ int CountStoploss(int point)
  return(stopLoss);
 }
 
+
 bool UploadBuffers ()   // получает последние значения уровней
  {
   int copiedPrice;
@@ -261,8 +250,8 @@ bool UploadBuffers ()   // получает последние значения уровней
    }
   return(true);     
  }
- 
- // возвращает ближайший уровень к текущей цене
+
+// возвращает ближайший уровень к текущей цене
  double GetClosestLevel (int direction) 
   {
    double cuPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
@@ -318,3 +307,5 @@ bool UploadBuffers ()   // получает последние значения уровней
    }
    return (len);
   }
+  
+  
