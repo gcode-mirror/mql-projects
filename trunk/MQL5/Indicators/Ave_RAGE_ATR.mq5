@@ -27,53 +27,34 @@
 //| Индикатор усредняющий ATR                                        |
 //+------------------------------------------------------------------+
 
-// подключаем необходимые библиотеки
-#include <Lib CisNewBar.mqh>     // для проверки формирования нового бара
-
 // входные параметры индикатора 
-input int ma_period   = 100;     // период усреднения 
-input int aver_period = 100;     // период усреднения значений ATR
+input int ma_period   = 100;                       // период усреднения 
+input int aver_period = 100;                       // период усреднения значений ATR
+input int n_bars      = 10000;                     // количество рассчитанных баров при первом запуске индикатора
+ 
 
-
-// системные переменные индикатора
-int    handleATR;                // хэндл индикатора ATR
-int    copiedATR = -1;           // переменная для получения количества скопированных данных индикатора ATR   
+// системные переменные индикатора 
 int    startIndex;               // индекс с которого начать вычисление усреднения ATR
 int    index;                    // индекс прохода по циклу          
-double lastSumm;                 // переменная хранения последней суммы значений              
+double lastSummPrice;            // переменная хранения последней суммы цен
+double lastSummATR;              // переменная хранения последней суммы значений ATR              
 // индикаторные буферы
 double averATRBuffer[];          // хранит значения усредненных значений ATR
 double bufferATR[];              // хранит значение буфера ATR
-double tmpBuffer[];              // буфер временного хранения
-
-// используемые объекты классов
-CisNewBar *isNewBar;             // объект класса проверки появления нового бара
 
 int OnInit()
   {
-   int barsCount;             // для хранения количества баров в истории
-   // вычисляем количество баров в истории
-   barsCount = Bars(_Symbol,_Period); 
-   // вычисляем стартовый индекс, с которого начнем вычислять усредненное значение ATR 
-   startIndex = ma_period-1+aver_period;
-   // если стартовый индекс превысил допустимое количество баров
-   if (startIndex >= barsCount)
-    {
-     Print("Ошибка инициализации индикатора AverageATR. Не корректно заданы периоды усреднения");
-     return (INIT_FAILED);
-    }
+      startIndex = ma_period-1+aver_period;
+      // если стартовый индекс превысил допустимое количество баров
+      if (startIndex >= n_bars)
+       {
+        Print("Ошибка инициализации индикатора AverageATR. Некорректно заданы периоды усреднения");
+        return (INIT_FAILED);
+       }      
+    
    // задаем параметры индикаторных буферов
    SetIndexBuffer(0,averATRBuffer,INDICATOR_DATA);  
    SetIndexBuffer(1,bufferATR,INDICATOR_DATA);     
-   // загружаем хэндл ATR
-   handleATR = iATR(_Symbol,_Period,ma_period);
-   // создаем объект класса isNewBar
-   isNewBar = new CisNewBar(_Symbol,_Period);
-   if (handleATR == INVALID_HANDLE)
-    {
-     Print("Ошибка инициализации индикатора AverageATR. Не удалось создать индикатор ATR");
-     return(INIT_FAILED);
-    }
    return(INIT_SUCCEEDED);
   }
   
@@ -81,12 +62,9 @@ void OnDeinit (const int reason)
  {
   // очищаем буферы индикаторов
   ArrayFree(averATRBuffer);
-  // освобождаем хэндл индикатора ATR
-  IndicatorRelease(handleATR);
-  // удаляем объект класса isNewBar
-  delete isNewBar;
+  ArrayFree(bufferATR);
  }
-
+ 
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
                 const datetime &time[],
@@ -101,48 +79,50 @@ int OnCalculate(const int rates_total,
     // если это первый запуск индикатора
     if (prev_calculated == 0)
      {
-       // пытаемся скопировать данные индикатора ATR
-       copiedATR = CopyBuffer(handleATR,0,0,rates_total,bufferATR);
+        
+       // проходим по всем барам и вычисляем ATR
+       lastSummPrice = 0;
+       for (index=0;index<ma_period;index++)
+       {
+        lastSummPrice = lastSummPrice + high[ rates_total - n_bars - ma_period - aver_period + index ]-low[ rates_total - n_bars - ma_period - aver_period + index ];
+        bufferATR[ rates_total - n_bars - ma_period - aver_period + index ] = 0;
+        averATRBuffer[ rates_total - n_bars - ma_period - aver_period + index ] = 0;
+       }
+       bufferATR[rates_total - n_bars - aver_period] = lastSummPrice / ma_period;  // сохраняем первое среднее значение
+       // проходим по буферу цен и вычисляем остальные усредненные значения
+       for (index = rates_total - n_bars - aver_period + 1;index < rates_total; index++)
+        {
+         lastSummPrice = lastSummPrice + high[index] - low[index] - high[index-ma_period] + low[index-ma_period]; // вычисляем новую сумму
+         bufferATR[index] = lastSummPrice / ma_period;     // сохраняем среднее значение
+        }       
        
-       if (copiedATR < rates_total)
-        {
-         Print("Ошибка индикатора AverageATR. Не удалось прогрузить буфер индикатора ATR");
-         return(0);  // снова отравляем на пересчет
-        } 
        // проходим по буферу ATR от startIndex до конца и вычисляем сумму 
-       lastSumm = 0;
+       lastSummATR = 0;
        for (index=0;index<aver_period;index++)
-        lastSumm = lastSumm + bufferATR[startIndex-index];
-       averATRBuffer[startIndex] = lastSumm / aver_period;  // сохраняем первое среднее значение
+       {
+        lastSummATR = lastSummATR + bufferATR[rates_total - n_bars + index];
+        //averATRBuffer[startIndex-index] = 0;
+       }
+       averATRBuffer[rates_total - n_bars] = lastSummATR / aver_period;  // сохраняем первое среднее значение
        // проходим по буферу ATR и вычисляем остальные усредненные значения
-       for (index = startIndex+1;index < rates_total; index++)
+       for (index = rates_total - n_bars + 1;index < rates_total; index++)
         {
-         lastSumm = lastSumm + bufferATR[index] - bufferATR[index-aver_period];  // вычисляем новую сумму
-         averATRBuffer[index] = lastSumm / aver_period;     // сохраняем среднее значение
-        }
+         lastSummATR = lastSummATR + bufferATR[index] - bufferATR[index-aver_period];  // вычисляем новую сумму
+         averATRBuffer[index] = lastSummATR / aver_period;     // сохраняем среднее значение
+        }   
+        
+        
+        
      }
-    // если не первых пересчет индикатора
+    // если не первый пересчет индикатора
     else 
-     {
-        // пытаемся скопировать данные индикатора ATR
-        copiedATR = CopyBuffer(handleATR,0,0,aver_period,tmpBuffer);
-        
-        Print("[",DoubleToString(tmpBuffer[aver_period-1]),"]");
-        
-        if (copiedATR == aver_period)
-         {
-          lastSumm = 0;
-          for (index=0;index<aver_period;index++)
-           lastSumm = lastSumm + tmpBuffer[index];
-          ArrayResize(averATRBuffer,rates_total);
-          ArrayResize(bufferATR,rates_total);
-          // записываем текущее значение среднего  
-          averATRBuffer[rates_total-1] = lastSumm / aver_period;
-          // записываем значение ATR
-          bufferATR[rates_total-1] = tmpBuffer[aver_period-1];
-          //Print("[",DoubleToString(bufferATR[rates_total-1]),"]");
-         }
-        
+     { 
+      
+      //  bufferATR [rates_total-1] = bufferATR[rates_total-2] - (high[rates_total-1- ma_period]-low[rates_total-1-ma_period])/ma_period + ( MathMax(high[rates_total-1],close[rates_total-1])-MathMin(low[rates_total-1],close[rates_total-1]) )/ma_period;      
+      bufferATR [rates_total-1] = bufferATR[rates_total-2] - (high[rates_total-1- ma_period]-low[rates_total-1-ma_period])/ma_period + (high[rates_total-1]-low[rates_total-1] )/ma_period;       
+        averATRBuffer[rates_total-1] = averATRBuffer[rates_total-2] - bufferATR[rates_total-1-aver_period]/aver_period + bufferATR[rates_total-1]/aver_period;
+  //   Print("Данные индикатора = ",DoubleToString(bufferATR[rates_total-1])," , ",DoubleToString(averATRBuffer[rates_total-1]) );
+    
      }
    return(rates_total);
   }
