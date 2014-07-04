@@ -136,6 +136,7 @@ void OnTick()
    ENUM_TM_POSITION_TYPE operation;
    if ( GreatDoubles(rnd,0.5,5) )
    {
+    Comment("ямхгс = ",DoubleToString(GetClosestLevel(-1))," ябепус = ",DoubleToString(GetClosestLevel(1)));
     if (levelsKo*GetClosestLevel(-1) <= GetClosestLevel(1) )
      return;   
     operation = OP_SELL;
@@ -143,6 +144,7 @@ void OnTick()
    } 
    else
    {
+    Comment("ямхгс = ",DoubleToString(GetClosestLevel(-1))," ябепус = ",DoubleToString(GetClosestLevel(1)));   
     if (levelsKo*GetClosestLevel(1) <= GetClosestLevel(-1) )
      return;   
     operation = OP_BUY;
