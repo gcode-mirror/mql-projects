@@ -10,7 +10,7 @@
 
 #include <Lib CisNewBarDD.mqh>
 #include <ColoredTrend\ColoredTrendUtilities.mqh>
-#define DEPTH 100
+#define DEPTH 5000
 
 //input double   percentage_ATR = 1;   
 //input double   difToTrend = 1.5;
@@ -76,7 +76,7 @@ int OnInit()
  handle_PBI_M15 = iCustom(Symbol(), PERIOD_M15, "PriceBasedIndicator", DEPTH);
  
  isNewBar = new CisNewBar(_Symbol, _Period);   // для проверки формирования нового бара на 15 минутах
- 
+ PrintFormat("Инициализация закончена. %d", DEPTH);
  return(INIT_SUCCEEDED);
 }
 
