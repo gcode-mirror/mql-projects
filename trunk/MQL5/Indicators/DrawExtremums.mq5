@@ -64,7 +64,7 @@ int OnInit()
      per = tf_ATR;
     }
     
-   extr = new CExtremum(Symbol(), Period(), per, period_ATR, percentage_ATR);
+   extr = new CExtremum(Symbol(), Period()/*, per, period_ATR, percentage_ATR*/);
  //  handle_ATR = iCustom(Symbol(), per,"AverageATR",
  //  handle_ATR = iATR(Symbol(), per, period_ATR);
    handle_ATR = iCustom(Symbol(),per,"AverageATR",period_ATR,period_average_ATR); 
