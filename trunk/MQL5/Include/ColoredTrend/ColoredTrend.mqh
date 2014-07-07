@@ -239,7 +239,7 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
      ((previous_move_type == MOVE_TYPE_TREND_UP   || previous_move_type == MOVE_TYPE_CORRECTION_UP  ) && isEndTrend() == -1))   
  {
   enumMoveType[bar] = MOVE_TYPE_FLAT;
-  PrintEvent(enumMoveType[bar], previous_move_type, buffer_Rates[AMOUNT_OF_PRICE-1].close, "isCorrectionEnds");
+  PrintEvent(enumMoveType[bar], previous_move_type, buffer_Rates[AMOUNT_OF_PRICE-1].close, "isEndTrend");
   firstOnTrend.direction = 0;
   firstOnTrend.price = -1;
   previous_move_type = enumMoveType[bar];
@@ -327,7 +327,7 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, dat
    newTrend_condition = true;
   } 
  }
- if (move_type == MOVE_TYPE_CORRECTION_DOWN)
+ else if (move_type == MOVE_TYPE_CORRECTION_DOWN)
  {
   extremum_condition = GreatDoubles(price, lastOnTrend.price, _digits);
   if(extremum_condition) PrintFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price);
@@ -342,6 +342,8 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, dat
    newTrend_condition = true;
   }
  }
+ else
+  PrintFormat("%s %s Íåâåðíûé òèï äâèæåíèÿ!", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period));
  
  return ((extremum_condition) || (bottomTF_condition) || (newTrend_condition) );
 }
@@ -380,6 +382,8 @@ int CColoredTrend::isLastBarHuge(datetime start_pos)
 {
  double sum = 0;
  MqlRates rates[];
+ datetime buffer_date[];
+ CopyTime(_symbol, GetBottomTimeframe(_period),  start_pos-PeriodSeconds(GetBottomTimeframe(_period)), AMOUNT_BARS_FOR_HUGE, buffer_date);
  if(FillTimeSeries(BOTTOM_TF, AMOUNT_BARS_FOR_HUGE, start_pos-PeriodSeconds(GetBottomTimeframe(_period)), rates) < AMOUNT_BARS_FOR_HUGE) return(0);
  //PrintFormat("ñåé÷àñ %s; áàðû çàãðóæàþ ñ %s", TimeToString(buffer_date[0]), TimeToString(buffer_date[0]-PeriodSeconds(GetBottomTimeframe(_period))));
  for(int i = 0; i < AMOUNT_BARS_FOR_HUGE - 1; i++)
@@ -387,18 +391,18 @@ int CColoredTrend::isLastBarHuge(datetime start_pos)
   sum = sum + rates[i].high - rates[i].low;  
  }
  double avgBar = sum / AMOUNT_BARS_FOR_HUGE;
- double lastBar = MathAbs(rates[AMOUNT_BARS_FOR_HUGE-1].open - rates[AMOUNT_BARS_FOR_HUGE-1].close);
+ double lastBar = MathAbs(rates[0].open - rates[0].close);
     
  if(GreatDoubles(lastBar, avgBar*FACTOR_OF_SUPERIORITY))
  {
-  if(GreatDoubles(rates[AMOUNT_BARS_FOR_HUGE-1].open, rates[AMOUNT_BARS_FOR_HUGE-1].close, _digits))
+  if(GreatDoubles(rates[0].open, rates[0].close, _digits))
   {
-   //PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! 1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*FACTOR_OF_SUPERIORITY, rates[size-1].open, rates[size-1].close);
+   //PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! 1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*FACTOR_OF_SUPERIORITY, rates[AMOUNT_BARS_FOR_HUGE-1].open, rates[AMOUNT_BARS_FOR_HUGE-1].close);
    return(1);
   }
-  if(LessDoubles(rates[AMOUNT_BARS_FOR_HUGE-1].open, rates[AMOUNT_BARS_FOR_HUGE-1].close, _digits))
+  if(LessDoubles(rates[0].open, rates[0].close, _digits))
   {
-   //PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*FACTOR_OF_SUPERIORITY, rates[size-1].open, rates[size-1].close);
+   ///PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*FACTOR_OF_SUPERIORITY, rates[AMOUNT_BARS_FOR_HUGE-1].open, rates[AMOUNT_BARS_FOR_HUGE-1].close);
    return(-1);
   }
  }
