@@ -15,6 +15,7 @@
 
 //----------------------------------------------------------------
 #include <CompareDoubles.mqh>
+#include <DrawExtemums/CDrawExtremums.mqh>
 #include <CExtremum.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <CLog.mqh>
