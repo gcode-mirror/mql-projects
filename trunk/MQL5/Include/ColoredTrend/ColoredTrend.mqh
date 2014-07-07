@@ -315,8 +315,17 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, dat
  if (move_type == MOVE_TYPE_CORRECTION_UP)
  {
   extremum_condition = LessDoubles(price, lastOnTrend.price, _digits);
-  if(isLastBarHuge(start_pos) > 0) bottomTF_condition = true;
-  if(extremums.getExtr(2).price == lastOnTrend.price && isNewTrend() == -1) newTrend_condition = true; 
+  if(extremum_condition) PrintFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price);
+  if(isLastBarHuge(start_pos) > 0) 
+  {
+   PrintFormat("%s IS_CORRECTION_ENDS : LAST BAR HUGE", EnumToString((ENUM_TIMEFRAMES)_period));
+   bottomTF_condition = true;
+  }
+  if(extremums.getExtr(2).price == lastOnTrend.price && isNewTrend() == -1) 
+  {
+   PrintFormat("newTrend : êîððåêöèÿ ââåðõ çàêàí÷èâàåòñÿ òðåíäîì âíèç");  
+   newTrend_condition = true;
+  } 
  }
  if (move_type == MOVE_TYPE_CORRECTION_DOWN)
  {
@@ -324,7 +333,7 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, dat
   if(extremum_condition) PrintFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price);
   if(isLastBarHuge(start_pos) < 0) 
   {
-   PrintFormat("IS_CORRECTION_ENDS : LAST BAR HUGE");
+   PrintFormat("%s IS_CORRECTION_ENDS : LAST BAR HUGE", EnumToString((ENUM_TIMEFRAMES)_period));
    bottomTF_condition = true;
   }
   if(extremums.getExtr(2).price == lastOnTrend.price && isNewTrend() == 1) 
@@ -384,7 +393,7 @@ int CColoredTrend::isLastBarHuge(datetime start_pos)
  {
   if(GreatDoubles(rates[AMOUNT_BARS_FOR_HUGE-1].open, rates[AMOUNT_BARS_FOR_HUGE-1].close, _digits))
   {
-   //PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! -1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*FACTOR_OF_SUPERIORITY, rates[size-1].open, rates[size-1].close);
+   //PrintFormat("ß ÁÎÎÎÎËÜØÎÎÎÉ ÁÀÐ! 1 %s : %.05f %.05f; Open = %.05f; close = %.05f", TimeToString(buffer_date[0]), lastBar, avgBar*FACTOR_OF_SUPERIORITY, rates[size-1].open, rates[size-1].close);
    return(1);
   }
   if(LessDoubles(rates[AMOUNT_BARS_FOR_HUGE-1].open, rates[AMOUNT_BARS_FOR_HUGE-1].close, _digits))
