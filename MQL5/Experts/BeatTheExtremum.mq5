@@ -45,6 +45,7 @@ void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
  int count_new_extrs = extr.RecountExtremum(start_pos, now);
  if (count_new_extrs > 0)
  { //В массиве возвращаемых экструмумов на 0 месте стоит max, на месте 1 стоит min
+  
   if(count_new_extrs == 1)
   {
    if(extr.getExtr(0).direction == 1)       ret_extremums[0] = extr.getExtr(0);
@@ -56,5 +57,8 @@ void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
    if(extr.getExtr(0).direction == 1)       { ret_extremums[0] = extr.getExtr(0); ret_extremums[1] = extr.getExtr(1);}
    else if(extr.getExtr(0).direction == -1) { ret_extremums[0] = extr.getExtr(1); ret_extremums[1] = extr.getExtr(0); }
   }     
+  
+  
+  
  }
 }  
