@@ -321,15 +321,15 @@ bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, dat
  if (move_type == MOVE_TYPE_CORRECTION_DOWN)
  {
   extremum_condition = GreatDoubles(price, lastOnTrend.price, _digits);
-  //if(extremum_condition) PrintFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price);
+  if(extremum_condition) PrintFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price);
   if(isLastBarHuge(start_pos) < 0) 
   {
-   //PrintFormat("IS_CORRECTION_ENDS : LAST BAR HUGE");
+   PrintFormat("IS_CORRECTION_ENDS : LAST BAR HUGE");
    bottomTF_condition = true;
   }
   if(extremums.getExtr(2).price == lastOnTrend.price && isNewTrend() == 1) 
   {
-   //PrintFormat("newTrend : коррекция вниз заканчивается трендом вверх"); 
+   PrintFormat("newTrend : коррекция вниз заканчивается трендом вверх"); 
    newTrend_condition = true;
   }
  }
