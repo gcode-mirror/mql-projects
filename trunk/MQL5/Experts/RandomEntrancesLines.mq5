@@ -133,6 +133,7 @@ void OnTick()
    lot = aDeg[0];
    count = 1;
    rnd = (double)MathRand()/32767;
+  
    ENUM_TM_POSITION_TYPE operation;
    if ( GreatDoubles(rnd,0.5,5) )
    {
