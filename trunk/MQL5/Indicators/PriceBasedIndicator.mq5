@@ -219,6 +219,8 @@ int OnCalculate(const int rates_total,
      }
     }
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН", MakeFunctionPrefix(__FUNCTION__));
+    trend.PrintExtr();
+    topTrend.PrintExtr();
    }
    
    topTrend.CountMoveType(top_buffer_index, time[0], true, extr_top);
