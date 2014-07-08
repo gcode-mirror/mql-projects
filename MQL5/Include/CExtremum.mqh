@@ -96,7 +96,9 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
   PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
  double difToNewExtremum = AverageBar(_tf_ATR, _period_ATR, start_pos_time) * _percentage_ATR;
  double high = 0, low = 0;
-
+ 
+ if(extremums[0].time == buffer[0].time && !now) return(0); //исключаем повторное определение экстремумов на истории
+ 
  if (now)
  {
   high = buffer[0].close;
@@ -114,7 +116,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  {
   result1.direction = 1;
   result1.price = high;
-  result1.time = start_pos_time;
+  result1.time = buffer[0].time;
   count++;
   //PrintFormat("%s %s start_pos_time = %s; max %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_tf_period), TimeToString(start_pos_time), high);
  }
@@ -125,7 +127,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  {
   result2.direction = -1;
   result2.price = low;
-  result2.time = start_pos_time;
+  result2.time = buffer[0].time;
   count++;
   //PrintFormat("%s %s start_pos_time = %s; min  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), TimeToString(start_pos_time), low);
  }
