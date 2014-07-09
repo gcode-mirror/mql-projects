@@ -228,9 +228,9 @@ void CExtremum::PrintExtremums()
  string result = "";
  for(int i = 0; i < ARRAY_SIZE; i++)
  {
-  StringConcatenate(result, result, StringFormat("%s num%d = {%d %.05f %s ,(%.05f)}; ", EnumToString((ENUM_TIMEFRAMES)_tf_period), i, extremums[i].direction, extremums[i].price, TimeToString(extremums[i].time), AverageBar(_tf_period, _period_ATR, extremums[i].time)*_percentage_ATR));
+  StringConcatenate(result, result, StringFormat("num%d = {%d %.05f %s ,(%.05f)}; ", i, extremums[i].direction, extremums[i].price, TimeToString(extremums[i].time), AverageBar(_tf_period, _period_ATR, extremums[i].time)*_percentage_ATR));
  }
- PrintFormat("%s %s", __FUNCTION__, result);
+ PrintFormat("%s %s %s %s", __FUNCTION__, TimeToString(TimeCurrent()),EnumToString((ENUM_TIMEFRAMES)_tf_period), result);
 }
 
 void CExtremum::SetATR_TF()

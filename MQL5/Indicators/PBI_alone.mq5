@@ -69,7 +69,7 @@ int OnInit()
    NewBarCurrent.SetPeriod(current_timeframe);
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
    trend    = new CColoredTrend(symbol,                  current_timeframe, depth);
-   handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PBI_alone", depth, false, true);
+   if(!is_it_top) handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PBI_alone", depth, false, true);
 //--- indicator buffers mapping
    
    SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
@@ -122,7 +122,7 @@ void OnDeinit(const int reason)
    ArrayFree(ColorCandlesBuffer4);
    ArrayFree(ColorCandlesColors);
    ArrayFree(ColorCandlesColorsTop);
-   IndicatorRelease(handle_top_trend);
+   if(!is_it_top) IndicatorRelease(handle_top_trend);
    delete trend;
 }
 //+------------------------------------------------------------------+
@@ -161,17 +161,16 @@ int OnCalculate(const int rates_total,
     
     for(int i = depth-1; i >= 0;  i--)    
     {
-     //PrintFormat("i= %d; buffer_index = %d; time = %s;", i, buffer_index, TimeToString(time[i]));
      if(!is_it_top) CopyBuffer(handle_top_trend, 4, time[i], 1, buffer_top_trend);   
-     trend.CountMoveType(    buffer_index, time[i], false, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
+     trend.CountMoveType(buffer_index, time[i], false, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
       
      ColorCandlesBuffer1[i] = open[i];
      ColorCandlesBuffer2[i] = high[i];
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i]; 
-    
      ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
      ColorCandlesColorsTop[i] = buffer_top_trend[0];
+     //if(!is_it_top) PrintFormat("Time:%s, top move:%s", TimeToString(time[i]), MoveTypeToString((ENUM_MOVE_TYPE)ColorCandlesColorsTop[i]));
     
      if (extr_cur[0].direction > 0)
      {
@@ -219,8 +218,9 @@ int OnCalculate(const int rates_total,
        
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
    {
-    //trend.PrintExtr();
+    trend.PrintExtr();
     //PrintFormat("REAL %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[0]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
+    //if(!is_it_top) PrintFormat("Time:%s, top move:%s", TimeToString(time[0]), MoveTypeToString((ENUM_MOVE_TYPE)ColorCandlesColorsTop[0]));
     buffer_index++; 
    }
    return(rates_total);
