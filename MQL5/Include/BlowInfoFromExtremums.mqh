@@ -78,13 +78,13 @@ class CBlowInfoFromExtremums
          {      
           copiedHigh     = CopyBuffer(_handleExtremums,0,start_time,historyDepth,_extrBufferHigh);
           copiedHighTime = CopyTime  (_symbol,_period,start_time,historyDepth,_timeBufferHigh);
-          Print("copiedHIGH = ",copiedHigh," copiedHighTime = ",copiedHighTime);
+         // Print("copiedHIGH = ",copiedHigh," copiedHighTime = ",copiedHighTime);
          }
        if (extr_use != EXTR_HIGH) 
          {
           copiedLow      = CopyBuffer(_handleExtremums,1,start_time,historyDepth,_extrBufferLow); 
           copiedLowTime  = CopyTime  (_symbol,_period,start_time,historyDepth,_timeBufferLow);
-          Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime);
+         // Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime);
           
          }
         Sleep(100);
