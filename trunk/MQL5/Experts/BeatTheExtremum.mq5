@@ -6,22 +6,22 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
-#include <TradeManager\TradeManager.mqh>   // торговая библиотека
-#include <BlowInfoFromExtremums.mqh>       // библиотека для получения информации об экстемумах
+#include <TradeManager\TradeManager.mqh>    // торговая библиотека
+#include <BlowInfoFromExtremums.mqh>        // библиотека для получения информации об экстемумах
 
 // системные переменные
-double currentPrice;                       // переменная хранения текущей цены
-double previewPrice;                       // переменная хранения предыдущей цены
-Extr            lastExtrHigh;              // последний экстремум HIGH
-Extr            lastExtrLow;               // последний экстремум LOW
-Extr            currentExtrHigh;           // текущий экстремум HIGH
-Extr            currentExtrLow;            // текущий экстремум LOW
-bool            extrHighBeaten = false;    // флаг пробития верхнего экстремума
-bool            extrLowBeaten  = false;    // флаг пробития нижнего экстремума
+double currentPrice;                        // переменная хранения текущей цены
+double previewPrice;                        // переменная хранения предыдущей цены
+Extr             lastExtrHigh;              // последний экстремум HIGH
+Extr             lastExtrLow;               // последний экстремум LOW
+Extr             currentExtrHigh;           // текущий экстремум HIGH
+Extr             currentExtrLow;            // текущий экстремум LOW
+bool             extrHighBeaten = false;    // флаг пробития верхнего экстремума
+bool             extrLowBeaten  = false;    // флаг пробития нижнего экстремума
 
-CTradeManager *ctm;                        // торговая библиотека
-CBlowInfoFromExtremums *blowInfo;          // объект класса для получения информации об экстремумах
-CChartObjectHLine  horLine;                // объект класса горизонтальной линии
+CTradeManager *ctm;                         // торговая библиотека
+CBlowInfoFromExtremums *blowInfo;           // объект класса для получения информации об экстремумах
+CChartObjectHLine  horLine;                 // объект класса горизонтальной линии
 CChartObjectHLine  horLine2;               
 
 int OnInit()
@@ -29,7 +29,7 @@ int OnInit()
    horLine.Color(clrRed);
    horLine2.Color(clrLightGreen);
    previewPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-ctm   = new CTradeManager();
+   ctm   = new CTradeManager();
    if (ctm == NULL)
     return (INIT_FAILED);
    blowInfo = new CBlowInfoFromExtremums(_Symbol,_Period);
@@ -85,15 +85,16 @@ void OnTick()
       {
       Print("Цена=",DoubleToString(currentPrice)," Пред=",DoubleToString(previewPrice)," Экстремум=",DoubleToString(lastExtrHigh.price)," Время=",TimeToString(lastExtrHigh.time)); 
        extrHighBeaten = true;
-       ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,1.0);
+       ctm.OpenUniquePosition(_Symbol,_Period,OP_SELL,1.0);
       }     
      if (LessDoubles(currentPrice,lastExtrLow.price)&& GreatDoubles(previewPrice,lastExtrLow.price) && !extrLowBeaten)
       {
       Print("Цена=",DoubleToString(currentPrice)," Пред=",DoubleToString(previewPrice)," Экстремум=",DoubleToString(lastExtrLow.price)," Время=",TimeToString(lastExtrHigh.time));       
        extrLowBeaten = true;
-       ctm.OpenUniquePosition(_Symbol,_Period,OP_SELL,1.0);
+       ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,1.0);
       }       
     }   
     // записываем предыдущую цену
     previewPrice = currentPrice;
   }
+  
