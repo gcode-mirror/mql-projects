@@ -36,6 +36,9 @@ int indexPrevUp   = -1;                      // индекс последнего верхнего экстр
 int indexPrevDown = -1;                      // индекс последнего нижнего экстремума, которого нужно затереть 
 int jumper        = 0;                       // переменная-попрыгун. ня ^_^
 
+double lastExtrUpValue;                      // значение последнего экстремума
+double lastExtrDownValue;                    // значение последнего экстемума   
+
 CisNewBar NewBarCurrent;
 CExtremum *extr;
 int handle_ATR;
@@ -180,13 +183,10 @@ int OnCalculate(const int rates_total,
      
    if (extr_cur[0].direction > 0)
    {
-    ExtUpArrowBuffer[rates_total-1] = extr_cur[0].price;
-    if (jumper == 1)
+    lastExtrUpValue = extr_cur[0].price;
+    if (jumper == -1)
     {
-     if (GreatDoubles(ExtUpArrowBuffer[rates_total-1], ExtUpArrowBuffer[indexPrevUp]) )
-     {
-      ExtUpArrowBuffer[indexPrevUp] = 0; // затираем предыдущее значение
-     } 
+     ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue; 
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
@@ -195,13 +195,10 @@ int OnCalculate(const int rates_total,
    
    if (extr_cur[1].direction < 0)
    {
-    ExtDownArrowBuffer[rates_total-1] = extr_cur[1].price;// - 50*_Point;
-    if (jumper == -1)
+    lastExtrDownValue = extr_cur[1].price;
+    if (jumper == 1)
     {
-     if (LessDoubles(ExtDownArrowBuffer[rates_total-1],ExtDownArrowBuffer[indexPrevDown]) )
-     {
-      ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение
-     } 
+     ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
     }
     jumper = -1;
     indexPrevDown = rates_total-1;  // обновляем предыдущий индекс      
