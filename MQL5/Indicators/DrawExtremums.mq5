@@ -139,14 +139,12 @@ int OnCalculate(const int rates_total,
     if (extr_cur[0].direction > 0)
     {
      
-     ExtUpArrowBuffer[i] = extr_cur[0].price;
-     if (jumper == 1 && extr_cur[1].direction >= 0)
-     {
-      if (GreatDoubles(ExtUpArrowBuffer[i],ExtUpArrowBuffer[indexPrevUp]) )
-      {     
-       ExtUpArrowBuffer[indexPrevUp] = 0;// затираем предыдущее значение
-      } 
-     }
+    // ExtUpArrowBuffer[i] = extr_cur[0].price;
+     lastExtrUpValue = extr_cur[0].price;
+     if (jumper == -1)
+      {
+       ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
+      }
      jumper = 1;
      indexPrevUp = i;  // обновляем предыдущий индекс
      extr_cur[0].direction = 0;
@@ -154,15 +152,12 @@ int OnCalculate(const int rates_total,
     if (extr_cur[1].direction < 0)
     {
     
-     ExtDownArrowBuffer[i] = extr_cur[1].price;
-    
-     if (jumper == -1)
-     {
-      if (LessDoubles(ExtDownArrowBuffer[i],ExtDownArrowBuffer[indexPrevDown]) )
+   //  ExtDownArrowBuffer[i] = extr_cur[1].price;
+     lastExtrDownValue = extr_cur[1].price;
+     if (jumper == 1)
       {
-       ExtDownArrowBuffer[indexPrevDown] = 0; // затираем предыдущее значение экстремума
-      } 
-     }
+       ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
+      }
      jumper = -1;
      indexPrevDown = i;  // обновляем предыдущий индекс      
      extr_cur[1].direction = 0;
