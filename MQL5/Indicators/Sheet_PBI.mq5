@@ -14,7 +14,8 @@
 
 //input double   percentage_ATR = 1;   
 //input double   difToTrend = 1.5;
-input string   file_name = "Sheet_PBI";
+input string file_name = "Sheet_PBI";
+input string indicator_name = "PBI_alone";
 
 CisNewBar *isNewBar;   // для проверки формирования нового бара на 15 минутах
 
@@ -47,16 +48,14 @@ bool written = true;
 int OnInit()
 {
  file_handle = FileOpen(StringFormat("%s_%s_PBI_%d.csv", file_name, EnumToString((ENUM_TIMEFRAMES)Period()),rand()%1000), FILE_WRITE|FILE_CSV|FILE_COMMON);
-
- 
  FileWrite(file_handle, "DATETIME;PERIOD_M15;PERIOD_H1;PERIOD_H1;PERIOD_H4;PERIOD_H4;PERIOD_D1;PERIOD_D1;PERIOD_W1;PERIOD_W1;PERIOD_MN1;PERIOD_MN1;PERIOD_MN1");
  
- handle_PBI_MN1 = iCustom(Symbol(), PERIOD_MN1, "PriceBasedIndicator", DEPTH);
- handle_PBI_W1  = iCustom(Symbol(), PERIOD_W1 , "PriceBasedIndicator", DEPTH);
- handle_PBI_D1  = iCustom(Symbol(), PERIOD_D1 , "PriceBasedIndicator", DEPTH);
- handle_PBI_H4  = iCustom(Symbol(), PERIOD_H4 , "PriceBasedIndicator", DEPTH);
- handle_PBI_H1  = iCustom(Symbol(), PERIOD_H1 , "PriceBasedIndicator", DEPTH);
- handle_PBI_M15 = iCustom(Symbol(), PERIOD_M15, "PriceBasedIndicator", DEPTH);
+ handle_PBI_MN1 = iCustom(Symbol(), PERIOD_MN1, indicator_name, DEPTH);
+ handle_PBI_W1  = iCustom(Symbol(), PERIOD_W1 , indicator_name, DEPTH);
+ handle_PBI_D1  = iCustom(Symbol(), PERIOD_D1 , indicator_name, DEPTH);
+ handle_PBI_H4  = iCustom(Symbol(), PERIOD_H4 , indicator_name, DEPTH);
+ handle_PBI_H1  = iCustom(Symbol(), PERIOD_H1 , indicator_name, DEPTH);
+ handle_PBI_M15 = iCustom(Symbol(), PERIOD_M15, indicator_name, DEPTH);
  
  isNewBar = new CisNewBar(_Symbol, _Period);   // для проверки формирования нового бара на 15 минутах
  PrintFormat("Инициализация закончена. %d", DEPTH);
