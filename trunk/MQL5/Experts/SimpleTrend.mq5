@@ -91,12 +91,12 @@ int OnInit()
        )
         return (INIT_FAILED);
    // пытаемся загрузить экстремумы
-   if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+   if (/*blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && */blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
        )
         {
          // получаем первые экстремумы
-         for (int index=0;index<4;index++)
+         for (int index=1;index<4;index++)
            {
             lastExtrHigh[index]   =  blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // сохраним значение последнего экстремума HIGH
             lastExtrLow[index]    =  blowInfo[index].GetExtrByIndex(EXTR_LOW,0);   // сохраним значение последнего экстремума LOW
@@ -129,12 +129,13 @@ void OnTick()
   {  
     ctm.OnTick(); 
     ctm.UpdateData();
-    ctm.DoTrailing(blowInfo[indexForTrail]);
-    if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+   // ctm.DoTrailing(blowInfo[indexForTrail]);
+  //  Print("НЕТ ТЕНДЕНЦИИ");
+    if (/*blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && */blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
         blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000) )
         {   
     // получаем новые значения экстремумов
-    for (int index=0;index<4;index++)
+    for (int index=1;index<4;index++)
       {
        currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);
        currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);    
@@ -166,6 +167,7 @@ void OnTick()
      // если общая тенденция  - вверх
      if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_UP)
      {
+      Print("ТЕНДЕНЦИЯ ВВЕРХ");
       // если текущая цена пробила один из экстемумов на одном из таймфреймов
       if ( IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY) )
       {
@@ -175,7 +177,7 @@ void OnTick()
         // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
         stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_LOW,0).price/_Point);
         // открываем позицию на BUY
-        ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0, trailingType);
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0,/* trailingType*/0);
         // выставляем флаг открытия позиции BUY
         openedPosition = BUY;         
         // обнуляем индекс хэндлов индикатора Extremums для трейлинга
@@ -185,7 +187,8 @@ void OnTick()
      }
      // если общая тенденция - вниз
      if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_DOWN)
-     {           
+     {        
+       Print("ТЕНДЕНЦИЯ ВНИЗ");    
       // если текущая цена пробила один из экстемумов на одном из таймфреймов
       if ( IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL)   )
       {
@@ -196,7 +199,7 @@ void OnTick()
         // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
         stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price/_Point);
         // открываем позицию на SELL
-        ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lot, stopLoss, 0, trailingType);
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lot, stopLoss, 0, /*trailingType*/0);
         // выставляем флаг открытия позиции SELL
         openedPosition = SELL;  
         // обнуляем индекс хэндлов индикатора Extremums для трейлинга

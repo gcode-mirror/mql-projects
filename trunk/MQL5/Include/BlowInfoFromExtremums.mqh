@@ -61,7 +61,6 @@ class CBlowInfoFromExtremums
      Print("Ошибка инициализации класса CBlowInfoFromExtremums. Не удалось создать хэндл индикатора DrawExtremums");
      return(false);
     }
-   Print("ЗАЕБИСЬ ПЕРИОД = ",PeriodToString(_period));
    return(true);
   }
  
@@ -81,19 +80,19 @@ class CBlowInfoFromExtremums
          {      
           copiedHigh     = CopyBuffer(_handleExtremums,0,start_time,historyDepth,_extrBufferHigh);
           copiedHighTime = CopyTime  (_symbol,_period,start_time,historyDepth,_timeBufferHigh);
-          Print("copiedHIGH = ",copiedHigh," copiedHighTime = ",copiedHighTime);
+          
          }
        if (extr_use != EXTR_HIGH) 
          {
           copiedLow      = CopyBuffer(_handleExtremums,1,start_time,historyDepth,_extrBufferLow); 
           copiedLowTime  = CopyTime  (_symbol,_period,start_time,historyDepth,_timeBufferLow);
-          Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime);
+          
           
          }
         Sleep(100);
        }
-     
-       
+      // Print("copiedHIGH = ",copiedHigh," copiedHighTime = ",copiedHighTime, " PERIOD = ",PeriodToString(_period));
+      // Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime, " PERIOD = ",PeriodToString(_period));
       if ( copiedHigh != historyDepth || copiedLow != historyDepth || copiedHighTime != historyDepth || copiedLowTime != historyDepth)
        {
         Print("Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums");
@@ -115,7 +114,6 @@ class CBlowInfoFromExtremums
      // проходим по всему буферу
      for (index=_historyDepth-1;index>0;index--)
       {
-       Print("PERIOD = ",PeriodToString(_period));
        // если в буфере найден экстремум
        if ( _extrBufferHigh[index] != 0 )
         {
