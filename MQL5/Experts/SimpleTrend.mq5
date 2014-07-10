@@ -54,7 +54,12 @@ double divMACD_M5[];                               // на пятиминутке
 double divMACD_M15[];                              // на 15-минутке
 double divMACD_H1[];                               // на часовике
 // буферы для проверки пробития экстремумов
-
+Extr             lastExtrHigh[4];                  // буфер последних экстремумов по HIGH
+Extr             lastExtrLow[4];                   // буфер последних экстремумов по LOW
+Extr             currentExtrHigh[4];               // буфер текущих экстремумов по HIGH
+Extr             currentExtrLow[4];                // буфер текущих экстремумов по LOW
+bool             extrHighBeaten[4];                // буфер флагов пробития экстремумов HIGH
+bool             extrLowBeaten[4];                 // буфер флагов пробития экстремумов LOW
 // описание системных функций робота
 ENUM_TENDENTION GetTendention(double priceOpen,double priceAfter);  // возвращает тенденцию 
 bool            IsMACDCompatible (int direction);  // проверяет совместимость расхождений MACD с текущей тенденцией
@@ -84,6 +89,12 @@ int OnInit()
    if (blowInfo[0] == NULL || blowInfo[1] == NULL || 
        blowInfo[2] == NULL || blowInfo[3] == NULL )
         return (INIT_FAILED);
+   // получаем первые экстремумы
+   for (int index=0;index<4;index++)
+     {
+      lastExtrHigh[index]   = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // сохраним значение последнего экстремума HIGH
+      lastExtrLow[index]    = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);   // сохраним значение последнего экстремума LOW
+     }
    return(errorValue);
   }
 void OnDeinit(const int reason)
@@ -112,7 +123,23 @@ void OnTick()
     ctm.DoTrailing(blowInfo[indexForTrail]);
     if (blowInfo[0].Upload() && blowInfo[1].Upload() &&
         blowInfo[2].Upload() && blowInfo[3].Upload() )
-        {    
+        {   
+    // получаем новые значения экстремумов
+    for (int index=0;index<4;index++)
+      {
+       currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);
+       currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);    
+       if (currentExtrHigh[index].time != lastExtrHigh[index].time)        // если пришел новый HIGH экстремум
+        {
+         lastExtrHigh[index] = currentExtrHigh[index];   // то сохраняем текущий экстремум в качестве последнего
+         extrHighBeaten[index] = false;                  // и выставляем флаг пробития  в false
+        }
+       if (currentExtrLow[index].time != lastExtrLow[index].time)          // если пришел новый LOW экстремум
+        {
+         lastExtrLow[index] = currentExtrLow[index];     // то сохраняем текущий экстремум в качестве последнего
+         extrLowBeaten[index] = false;                   // и выставляем флаг пробития в false
+        } 
+      } 
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену               
     // если это первый запуск эксперта или сформировался новый бар 
@@ -240,7 +267,25 @@ bool IsMACDCompatible(int direction)        // проверяет, не противоречит ли рас
  // dir = 1 или -1, div = -1 или 1; Если расхождение против направления, то рез-т будет 0 = false, в противном случае true
  return ((divMACD_M5[0]+direction) && (divMACD_M15[0]+direction) && (divMACD_H1[0]+direction));
 }
+
 bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой экстремума
  {
+  switch (direction)
+   {
+    case BUY:
+    if (LessDoubles(curPrice,lastExtrLow[index].price)&& GreatDoubles(prevPrice,lastExtrLow[index].price) && !extrLowBeaten[index])
+      {      
+       extrLowBeaten[index] = true;
+       return (true);    
+      }     
+    break;
+    case SELL:
+    if (GreatDoubles(curPrice,lastExtrHigh[index].price) && LessDoubles(prevPrice,lastExtrHigh[index].price) && !extrHighBeaten[index])
+      {
+       extrHighBeaten[index] = true;
+       return (true);
+      }     
+    break;
+   }
   return (false);
  }   
