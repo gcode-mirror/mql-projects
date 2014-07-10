@@ -19,6 +19,7 @@
 #include <CExtremum.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <CLog.mqh>
+#include <StringUtilities.mqh>
 //----------------------------------------------------------------
  
 //--- input параметры

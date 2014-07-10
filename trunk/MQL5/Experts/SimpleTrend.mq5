@@ -86,15 +86,24 @@ int OnInit()
    blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5);   // 5-ти минутка
    blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15);  // 15-ти минутка
    blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1);   // часовик    
-   if (blowInfo[0] == NULL || blowInfo[1] == NULL || 
-       blowInfo[2] == NULL || blowInfo[3] == NULL )
+   if (!blowInfo[0].IsInitFine() || !blowInfo[1].IsInitFine() ||
+       !blowInfo[2].IsInitFine() || !blowInfo[3].IsInitFine()
+       )
         return (INIT_FAILED);
-   // получаем первые экстремумы
-   for (int index=0;index<4;index++)
-     {
-      lastExtrHigh[index]   = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // сохраним значение последнего экстремума HIGH
-      lastExtrLow[index]    = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);   // сохраним значение последнего экстремума LOW
-     }
+   // пытаемся загрузить экстремумы
+   if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+       blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
+       )
+        {
+         // получаем первые экстремумы
+         for (int index=0;index<4;index++)
+           {
+            lastExtrHigh[index]   =  blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // сохраним значение последнего экстремума HIGH
+            lastExtrLow[index]    =  blowInfo[index].GetExtrByIndex(EXTR_LOW,0);   // сохраним значение последнего экстремума LOW
+           }
+       }
+   else
+     return (INIT_FAILED);
    return(errorValue);
   }
 void OnDeinit(const int reason)
@@ -121,8 +130,8 @@ void OnTick()
     ctm.OnTick(); 
     ctm.UpdateData();
     ctm.DoTrailing(blowInfo[indexForTrail]);
-    if (blowInfo[0].Upload() && blowInfo[1].Upload() &&
-        blowInfo[2].Upload() && blowInfo[3].Upload() )
+    if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000) )
         {   
     // получаем новые значения экстремумов
     for (int index=0;index<4;index++)

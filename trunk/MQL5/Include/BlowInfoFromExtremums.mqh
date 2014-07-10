@@ -9,6 +9,8 @@
 //|  Класс  для получения данных индикатора DrawExtremums            |
 //+------------------------------------------------------------------+
 
+#include <StringUtilities.mqh>
+
 // перечисление типов эктсремумов
 enum ENUM_EXTR_USE
  {
@@ -59,6 +61,7 @@ class CBlowInfoFromExtremums
      Print("Ошибка инициализации класса CBlowInfoFromExtremums. Не удалось создать хэндл индикатора DrawExtremums");
      return(false);
     }
+   Print("ЗАЕБИСЬ ПЕРИОД = ",PeriodToString(_period));
    return(true);
   }
  
@@ -78,13 +81,13 @@ class CBlowInfoFromExtremums
          {      
           copiedHigh     = CopyBuffer(_handleExtremums,0,start_time,historyDepth,_extrBufferHigh);
           copiedHighTime = CopyTime  (_symbol,_period,start_time,historyDepth,_timeBufferHigh);
-         // Print("copiedHIGH = ",copiedHigh," copiedHighTime = ",copiedHighTime);
+          Print("copiedHIGH = ",copiedHigh," copiedHighTime = ",copiedHighTime);
          }
        if (extr_use != EXTR_HIGH) 
          {
           copiedLow      = CopyBuffer(_handleExtremums,1,start_time,historyDepth,_extrBufferLow); 
           copiedLowTime  = CopyTime  (_symbol,_period,start_time,historyDepth,_timeBufferLow);
-         // Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime);
+          Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime);
           
          }
         Sleep(100);
@@ -112,6 +115,7 @@ class CBlowInfoFromExtremums
      // проходим по всему буферу
      for (index=_historyDepth-1;index>0;index--)
       {
+       Print("PERIOD = ",PeriodToString(_period));
        // если в буфере найден экстремум
        if ( _extrBufferHigh[index] != 0 )
         {
@@ -196,7 +200,7 @@ class CBlowInfoFromExtremums
      _historyDepth = historyDepth;
      _symbol       = symbol;
      _period       = period;
-     _handleExtremums = iCustom(symbol,period,"DrawExtremums",false,period,historyDepth,percentageATR,periodATR,period_average_ATR);
+     _handleExtremums = iCustom(symbol,period,"DrawExtremums",period,historyDepth,percentageATR,periodATR,period_average_ATR);
     }
     
    CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
