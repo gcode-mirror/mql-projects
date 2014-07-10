@@ -47,17 +47,8 @@ MqlRates lastBarD1[];                              // буфер цен на дневнике
 // объекты классов
 CTradeManager *ctm;                                // объект торговой библиотеки
 CisNewBar     *isNewBar_D1;                        // новый бар на D1
-CisNewBar     *isNewBar_M1;                        // новый бар на M1
-CisNewBar     *isNewBar_M5;                        // новый бар на M5
-CisNewBar     *isNewBar_M15;                       // новый бар на M15
-CisNewBar     *isNewBar_H1;                        // новый бар на H1
 
 CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
-
-bool blowInfoFlag0;
-bool blowInfoFlag1;
-bool blowInfoFlag2;
-bool blowInfoFlag3;
 
 // дополнительные системные переменные
 bool             firstLaunch       = true;         // флаг первого запуска эксперта
@@ -109,15 +100,12 @@ int OnInit()
    ctm = new CTradeManager();                    
    // создаем объекты класса CisNewBar
    isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
-   isNewBar_M1  = new CisNewBar(_Symbol,PERIOD_M1);
-   isNewBar_M5  = new CisNewBar(_Symbol,PERIOD_M5);
-   isNewBar_M15 = new CisNewBar(_Symbol,PERIOD_M15);
-   isNewBar_H1  = new CisNewBar(_Symbol,PERIOD_H1);
    // создаем объекты класса CBlowInfoFromExtremums
-   blowInfo[0] = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1);   // минутка
-   blowInfo[1] = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5);   // 5-ти минутка
-   blowInfo[2] = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15);  // 15-ти минутка
-   blowInfo[3] = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1);   // часовик      
+   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1);   // минутка
+   blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5);   // 5-ти минутка
+   blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15);  // 15-ти минутка
+   blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1);   // часовик    
+     
    return(errorValue);
   }
 
@@ -135,33 +123,24 @@ void OnDeinit(const int reason)
    // удаляем объекты классов
    delete ctm;
    delete isNewBar_D1;
-   delete isNewBar_H1;
-   delete isNewBar_M1;
-   delete isNewBar_M5;
-   delete isNewBar_M15;
-   delete isNewBar_H1;
+   delete blowInfo[0];
+   delete blowInfo[1];
+   delete blowInfo[2];
+   delete blowInfo[3];
   }
 
 void OnTick()
-  {
-   // blowInfoFlag0 = blowInfo[0].Upload();
-   // blowInfoFlag1 = blowInfo[1].Upload();
-   // blowInfoFlag2 = blowInfo[2].Upload();
-   // blowInfoFlag3 = blowInfo[3].Upload();
+  {  
     ctm.OnTick(); 
     ctm.UpdateData();
     ctm.DoTrailing(blowInfo[indexForTrail]);
+
+    if (blowInfo[0].Upload() && blowInfo[1].Upload() &&
+        blowInfo[2].Upload() && blowInfo[3].Upload() )
+        {    
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену
     
-    if (firstLaunch || isNewBar_M1.isNewBar() > 0)
-     blowInfoFlag0 = blowInfo[0].Upload();
-    if (firstLaunch || isNewBar_M5.isNewBar() > 0)
-     blowInfoFlag1 = blowInfo[1].Upload();
-    if (firstLaunch || isNewBar_M15.isNewBar() > 0)
-     blowInfoFlag2 = blowInfo[2].Upload();
-    if (firstLaunch || isNewBar_H1.isNewBar() > 0)
-     blowInfoFlag3 = blowInfo[3].Upload();   
                  
     // если это первый запуск эксперта или сформировался новый бар 
     if (firstLaunch || isNewBar_D1.isNewBar() > 0)
@@ -172,8 +151,6 @@ void OnTick()
        lastTendention = GetTendention(lastBarD1[0].open,lastBarD1[0].close);        // получаем предыдущую тенденцию 
       }
     }
-    if ( blowInfoFlag3 )
-     Comment("",blowInfo[3].ShowExtrType(blowInfo[3].GetLastExtrType()) );    
     
     // на каждом тике 
     if ( ctm.GetPositionCount() == 0 )   // если позиция еще не открыта
@@ -271,6 +248,9 @@ void OnTick()
        
        
     }
+    
+    }  // END OF UPLOAD EXTREMUMS
+    
    }
   
  // кодирование функций
