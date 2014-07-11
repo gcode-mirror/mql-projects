@@ -82,7 +82,7 @@ int OnInit()
    // создаем объекты класса CisNewBar
    isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
    // создаем объекты класса CBlowInfoFromExtremums
-   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1);   // минутка
+   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,200);   // минутка
    blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5);   // 5-ти минутка
    blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15);  // 15-ти минутка
    blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1);   // часовик    
@@ -91,12 +91,12 @@ int OnInit()
        )
         return (INIT_FAILED);
    // пытаемся загрузить экстремумы
-   if (/*blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && */blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+   if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),200) && blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
        )
         {
          // получаем первые экстремумы
-         for (int index=1;index<4;index++)
+         for (int index=0;index<4;index++)
            {
             lastExtrHigh[index]   =  blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // сохраним значение последнего экстремума HIGH
             lastExtrLow[index]    =  blowInfo[index].GetExtrByIndex(EXTR_LOW,0);   // сохраним значение последнего экстремума LOW
@@ -127,15 +127,15 @@ void OnDeinit(const int reason)
   }
 void OnTick()
   {  
+   
     ctm.OnTick(); 
     ctm.UpdateData();
-   // ctm.DoTrailing(blowInfo[indexForTrail]);
-  //  Print("НЕТ ТЕНДЕНЦИИ");
-    if (/*blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && */blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+    ctm.DoTrailing(blowInfo[indexForTrail]);
+    if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),200) && blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) && 
         blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) && blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000) )
         {   
     // получаем новые значения экстремумов
-    for (int index=1;index<4;index++)
+    for (int index=0;index<4;index++)
       {
        currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);
        currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);    
@@ -167,7 +167,6 @@ void OnTick()
      // если общая тенденция  - вверх
      if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_UP)
      {
-      Print("ТЕНДЕНЦИЯ ВВЕРХ");
       // если текущая цена пробила один из экстемумов на одном из таймфреймов
       if ( IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY) )
       {
@@ -177,7 +176,7 @@ void OnTick()
         // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
         stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_LOW,0).price/_Point);
         // открываем позицию на BUY
-        ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0,/* trailingType*/0);
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0, trailingType);
         // выставляем флаг открытия позиции BUY
         openedPosition = BUY;         
         // обнуляем индекс хэндлов индикатора Extremums для трейлинга
@@ -187,19 +186,17 @@ void OnTick()
      }
      // если общая тенденция - вниз
      if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_DOWN)
-     {        
-       Print("ТЕНДЕНЦИЯ ВНИЗ");    
+     {              
       // если текущая цена пробила один из экстемумов на одном из таймфреймов
-      if ( IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL)   )
-      {
-     //  Comment("Общая тенденция ВНИЗ"); 
+      if ( IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL)  )
+      {    
        // если текущее расхождение MACD НЕ противоречит текущему движению
        if (IsMACDCompatible(SELL))
        {
         // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
         stopLoss = int(blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price/_Point);
         // открываем позицию на SELL
-        ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lot, stopLoss, 0, /*trailingType*/0);
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lot, stopLoss, 0,trailingType);
         // выставляем флаг открытия позиции SELL
         openedPosition = SELL;  
         // обнуляем индекс хэндлов индикатора Extremums для трейлинга
@@ -210,11 +207,12 @@ void OnTick()
     }
     // если есть открытые позиции
     else
-    { 
+    {     
       // если позиция была открыта на BUY
       if (openedPosition == BUY) 
        {
-        if (countAddingToLot < 4)
+        // если счетчик доливок не перевалил за 3-ку
+        if (countAddingToLot < 4)   
           {
            // если цена пробила последний верхний экстремум на M1
            if ( IsExtremumBeaten(0,BUY) )
@@ -252,7 +250,8 @@ void OnTick()
             if (  IsExtremumBeaten (indexForTrail+1,SELL) )    // если цена пробила экстремум текущего таймфрейма
                indexForTrail ++; 
            }          
-       }         
+       } 
+               
     }
     }  // END OF UPLOAD EXTREMUMS
    }
