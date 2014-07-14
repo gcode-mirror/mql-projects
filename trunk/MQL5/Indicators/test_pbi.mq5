@@ -15,6 +15,8 @@
 //input double   percentage_ATR = 1;   
 //input double   difToTrend = 1.5;
 input ENUM_TIMEFRAMES tf = PERIOD_H4;
+input bool show_top = false;
+input bool is_it_top = false;
 input string file_name = "test_pbi";
 input string indicator_name = "PBI_alone";
 
@@ -34,7 +36,7 @@ int OnInit()
  file_handle = FileOpen(StringFormat("%s_%s_PBI_%d.csv", file_name, EnumToString((ENUM_TIMEFRAMES)Period()),rand()%1000), FILE_WRITE|FILE_CSV|FILE_COMMON);
  FileWrite(file_handle, "DATETIME;%s;%s", EnumToString((ENUM_TIMEFRAMES)tf), EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(tf)));
  
- handle_PBI = iCustom(Symbol(), tf, indicator_name, DEPTH);
+ handle_PBI = iCustom(Symbol(), tf, indicator_name, DEPTH, show_top, is_it_top);
 
  isNewBar = new CisNewBar(_Symbol, _Period);   // для проверки формирования нового бара на 15 минутах
  PrintFormat("Инициализация закончена. %d", DEPTH);
