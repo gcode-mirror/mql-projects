@@ -69,6 +69,8 @@ int OnInit()
    NewBarCurrent.SetPeriod(current_timeframe);
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
    trend    = new CColoredTrend(symbol,                  current_timeframe, depth);
+   //PrintFormat("GetTopTimeframe(current_timeframe) = %s", EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)));
+   
    if(!is_it_top) handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PBI_alone", depth, false, true);
 //--- indicator buffers mapping
    
@@ -140,7 +142,7 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
    static int buffer_index = 0;
-   double buffer_top_trend[1] = {MOVE_TYPE_UNKNOWN};
+   double buffer_top_trend[1] = {MOVE_TYPE_TREND_UP};
    SExtremum extr_cur[2] = {{0, -1}, {0, -1}};
    
    ArraySetAsSeries(open , series_order);
@@ -170,7 +172,6 @@ int OnCalculate(const int rates_total,
      ColorCandlesBuffer4[i] = close[i]; 
      ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
      ColorCandlesColorsTop[i] = buffer_top_trend[0];
-     //if(!is_it_top) PrintFormat("Time:%s, top move:%s", TimeToString(time[i]), MoveTypeToString((ENUM_MOVE_TYPE)ColorCandlesColorsTop[i]));
     
      if (extr_cur[0].direction > 0)
      {
@@ -218,11 +219,12 @@ int OnCalculate(const int rates_total,
        
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
    {
-    trend.PrintExtr();
+    //trend.PrintExtr();
     //PrintFormat("REAL %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[0]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
     //if(!is_it_top) PrintFormat("Time:%s, top move:%s", TimeToString(time[0]), MoveTypeToString((ENUM_MOVE_TYPE)ColorCandlesColorsTop[0]));
     buffer_index++; 
    }
+   
    return(rates_total);
   }
 
