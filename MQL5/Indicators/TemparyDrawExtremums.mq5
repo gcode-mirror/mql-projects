@@ -20,15 +20,18 @@
 #include <Lib CisNewBarDD.mqh>
 #include <CLog.mqh>
 #include <StringUtilities.mqh>
+#include <ChartObjects/ChartObjectsLines.mqh>      // для рисования линий расхождения
 //----------------------------------------------------------------
  
 //--- input параметры
 input  ENUM_TIMEFRAMES period = PERIOD_H4;   // период экстремумов
 input  int     history_depth  = 1000;        // сколько свечей показывать
+input  color   colorLineLow  =  clrRed;      // цвет индикатора нижних экстремумов
+input  color   colorLineHigh =  clrBlue;     // цвет индикатора верхних экстремумов
 input  double  percentage_ATR = 1;           // процент АТР для появления нового экстремума
 input  int     period_ATR     = 30;          // период ATR
 input  int     period_average_ATR = 1;       // период устреднения индикатора ATR
-input  color   arrowColor = clrCoral;        // цвет стрелок
+
 
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];
@@ -43,6 +46,8 @@ double lastExtrDownValue;                    // значение последнего экстемума
 
 CisNewBar NewBarCurrent;
 CExtremum *extr;
+CChartObjectHLine  *horLineUp;               // объект класса горизонтальной линии верхних экстремумов
+CChartObjectHLine  *horLineDown;             // объект класса горизонтальной линии нижних экстремумов  
 int handle_ATR;
               
 string symbol;
@@ -50,11 +55,15 @@ ENUM_TIMEFRAMES current_timeframe;
 ENUM_TIMEFRAMES tf_ATR = PERIOD_H4; // таймфрейм ATR
 int depth = history_depth;
 bool series_order = true;
+bool drawUpExtr = false;
+bool drawDownExtr = false;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
   {
+   horLineDown = new CChartObjectHLine();
+   horLineUp   = new CChartObjectHLine();
    PrintFormat("%s Init", __FUNCTION__);
    symbol = Symbol();
    if(Bars(symbol, period) < depth) depth = Bars(symbol, period);
@@ -88,7 +97,6 @@ int OnInit()
 
    PlotIndexSetInteger(0, PLOT_ARROW, 218);
    PlotIndexSetInteger(1, PLOT_ARROW, 217);
-   //PlotIndexSetInteger(
    
    ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
    ArraySetAsSeries( ExtDownArrowBuffer, series_order);
@@ -106,6 +114,8 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
+
+
 
 
 int OnCalculate(const int rates_total,
@@ -147,6 +157,8 @@ int OnCalculate(const int rates_total,
      if (jumper == -1)
       {
        ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
+       DrawIndicator(lastExtrDownValue,-1,colorLineLow);  
+       drawDownExtr = true;     
       }
      jumper = 1;
      indexPrevUp = i;  // обновляем предыдущий индекс
@@ -160,6 +172,8 @@ int OnCalculate(const int rates_total,
      if (jumper == 1)
       {
        ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
+       DrawIndicator(lastExtrUpValue,1,colorLineHigh);
+       drawUpExtr = true;
       }
      jumper = -1;
      indexPrevDown = i;  // обновляем предыдущий индекс      
@@ -185,6 +199,8 @@ int OnCalculate(const int rates_total,
     if (jumper == -1)
     {
      ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue; 
+       DrawIndicator(lastExtrDownValue,-1,colorLineLow);  
+       drawDownExtr = true;   
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
@@ -197,6 +213,8 @@ int OnCalculate(const int rates_total,
     if (jumper == 1)
     {
      ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
+       DrawIndicator(lastExtrUpValue,1,colorLineHigh);   
+       drawUpExtr = true;  
     }
     jumper = -1;
     indexPrevDown = rates_total-1;  // обновляем предыдущий индекс      
@@ -226,3 +244,30 @@ void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
   }     
  }
 }
+
+// функция отображения графических элементов индикатора
+void DrawIndicator (double price,int type,color colorLine)
+ { 
+   if (type == 1)
+    {
+     if (drawUpExtr)
+      {
+       delete horLineUp;
+       horLineUp = new CChartObjectHLine();
+      } 
+     horLineUp.Create(0,"upLine",0,price);
+     horLineUp.Color(colorLineHigh);   
+    }
+   if (type == -1)
+    {
+     if (drawDownExtr)
+      {
+       delete horLineDown;
+       horLineDown = new CChartObjectHLine();
+      }
+     horLineDown.Create(0,"downLine",0,price);
+     horLineDown.Color(colorLineLow);   
+    }    
+   
+    
+ }

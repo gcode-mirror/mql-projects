@@ -39,6 +39,8 @@ class CBlowInfoFromExtremums
    int _handleExtremums;        // хэндл индикатора DrawExtremums   
    int _historyDepth;           // глубина истории
    string _symbol;              // символ
+   color  _upColor;
+   color  _downColor;
    ENUM_TIMEFRAMES _period;     // период
   public:
   // методы класса
@@ -48,7 +50,7 @@ class CBlowInfoFromExtremums
    ENUM_EXTR_USE GetLastExtrType ();                                                           // возвращает тип последнего экстремума
    string ShowExtrType (ENUM_EXTR_USE extr_use);                                               // отображает в виде строки тип экстремумов 
   // конструкторы и деструкторы
-  CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,double percentageATR=1,int periodATR=30,int period_average_ATR=1);
+  CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,color upColor=clrLightBlue,color downColor=clrBlue,double percentageATR=1,int periodATR=30,int period_average_ATR=1);
  ~CBlowInfoFromExtremums ();
  };
  
@@ -193,12 +195,14 @@ class CBlowInfoFromExtremums
     }
    
 
-   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,double percentageATR=1,int periodATR=30,int period_average_ATR=1)   // конструктор класса 
+   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,color upColor=clrLightBlue,color downColor=clrBlue,double percentageATR=1,int periodATR=30,int period_average_ATR=1)   // конструктор класса 
     {
      _historyDepth = historyDepth;
      _symbol       = symbol;
      _period       = period;
-     _handleExtremums = iCustom(symbol,period,"DrawExtremums",period,historyDepth,percentageATR,periodATR,period_average_ATR);
+     _upColor      = upColor;
+     _downColor    = downColor;
+     _handleExtremums = iCustom(symbol,period,"TemparyDrawExtremums",period,historyDepth,percentageATR,periodATR,period_average_ATR);
     }
     
    CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
