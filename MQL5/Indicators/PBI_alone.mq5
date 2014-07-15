@@ -68,8 +68,8 @@ int OnInit()
    PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(current_timeframe);
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   trend    = new CColoredTrend(symbol,                  current_timeframe, depth);
-   //PrintFormat("GetTopTimeframe(current_timeframe) = %s", EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)));
+   int handle_atr = iCustom(symbol, current_timeframe, "AverageATR", 30, 100);
+   trend    = new CColoredTrend(symbol, current_timeframe, handle_atr, depth);
    
    if(!is_it_top) handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PBI_alone", depth, false, true);
 //--- indicator buffers mapping
@@ -142,7 +142,7 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
    static int buffer_index = 0;
-   double buffer_top_trend[1] = {MOVE_TYPE_TREND_UP};
+   double buffer_top_trend[1] = {MOVE_TYPE_UNKNOWN};
    SExtremum extr_cur[2] = {{0, -1}, {0, -1}};
    
    ArraySetAsSeries(open , series_order);
@@ -163,7 +163,9 @@ int OnCalculate(const int rates_total,
     
     for(int i = depth-1; i >= 0;  i--)    
     {
-     if(!is_it_top) CopyBuffer(handle_top_trend, 4, time[i], 1, buffer_top_trend);   
+     if(!is_it_top) 
+      if(CopyBuffer(handle_top_trend, 4, time[i], 1, buffer_top_trend) < 1)
+       PrintFormat("%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), GetLastError());   
      trend.CountMoveType(buffer_index, time[i], false, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
       
      ColorCandlesBuffer1[i] = open[i];

@@ -77,8 +77,8 @@ int OnCalculate(const int rates_total,
   
   //PrintFormat("Новый бар %s; загружено M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
   
-  PrintFormat("%s;%s;%s", TimeToString(time[0]),
-                          MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top[0]));
+  FileWrite(file_handle ,StringFormat("%s;%s;%s", TimeToString(time[0]),
+                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top[0])));
  }
  
  return(rates_total);
