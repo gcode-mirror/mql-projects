@@ -31,7 +31,7 @@
 #include <Lib CisNewBar.mqh>     // дл€ проверки формировани€ нового бара
 
 // входные параметры индикатора 
-input int ma_period   = 100;     // период усреднени€ 
+input int ma_period   = 30;     // период усреднени€ 
 input int aver_period = 100;     // период усреднени€ значений ATR
 
 
@@ -59,7 +59,7 @@ int OnInit()
    // если стартовый индекс превысил допустимое количество баров
    if (startIndex >= barsCount)
     {
-     Print("ќшибка инициализации индикатора AverageATR. Ќе корректно заданы периоды усреднени€");
+     PrintFormat("%s ќшибка инициализации индикатора AverageATR. Ќе корректно заданы периоды усреднени€ %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_Period));
      return (INIT_FAILED);
     }
    // задаем параметры индикаторных буферов
