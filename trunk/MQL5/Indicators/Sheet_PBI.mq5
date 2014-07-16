@@ -48,7 +48,7 @@ bool written = true;
 int OnInit()
 {
  file_handle = FileOpen(StringFormat("%s_%s_PBI_%d.csv", file_name, EnumToString((ENUM_TIMEFRAMES)Period()),rand()%1000), FILE_WRITE|FILE_CSV|FILE_COMMON);
- FileWrite(file_handle, "DATETIME;PERIOD_M15;PERIOD_H1;DATETIME;PERIOD_H1;PERIOD_H4;DATETIME;PERIOD_H4;PERIOD_D1;DATETIME;PERIOD_D1;PERIOD_W1;DATETIME;PERIOD_W1;PERIOD_MN1;DATETIME;PERIOD_MN1;PERIOD_MN1;DATETIME");
+ FileWrite(file_handle, "DATETIME;PERIOD_M15;PERIOD_H1;PERIOD_H1;PERIOD_H4;PERIOD_H4;PERIOD_D1;PERIOD_D1;PERIOD_W1;PERIOD_W1;PERIOD_MN1;PERIOD_MN1;PERIOD_MN1");
  
  handle_PBI_MN1 = iCustom(Symbol(), PERIOD_MN1, indicator_name, DEPTH);
  handle_PBI_W1  = iCustom(Symbol(), PERIOD_W1 , indicator_name, DEPTH);
@@ -121,13 +121,13 @@ int OnCalculate(const int rates_total,
   
   //PrintFormat("Новый бар %s; загружено M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
   
-  FileWrite(file_handle, StringFormat("%s;%s;%s;%d;%s;%s;%d;%s;%s;%d;%s;%s;%d;%s;%s;%d;%s;%s;%d", TimeToString(time[0]),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]), GetTickCount(),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H1 [0]), GetTickCount(),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H4 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H4 [0]), GetTickCount(),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_D1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_D1 [0]), GetTickCount(),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_W1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_W1 [0]), GetTickCount(),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_MN1[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_MN1[0]), GetTickCount()));
+  FileWrite(file_handle, StringFormat("%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s", TimeToString(time[0]),
+                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]),
+                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H1 [0]),
+                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H4 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H4 [0]),
+                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_D1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_D1 [0]),
+                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_W1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_W1 [0]),
+                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_MN1[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_MN1[0])));
  }
  
  return(rates_total);

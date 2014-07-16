@@ -5,6 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      ""
+#property version   "1.01"
 
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBarDD.mqh>
