@@ -197,7 +197,9 @@ int OnCalculate(const int rates_total,
     trend.PrintExtr();
    }
    
-   if(!is_it_top) CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend);   
+   if(!is_it_top)
+    if(CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
+       PrintFormat("%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), GetLastError());
    trend.CountMoveType(buffer_index, time[0], true, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
    
    //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
@@ -218,7 +220,8 @@ int OnCalculate(const int rates_total,
     ExtDownArrowBuffer[0] = extr_cur[1].price;// - 50*_Point;
     extr_cur[1].direction = 0;
    }
-       
+   datetime date = D'2014.05.09 23:15:00';
+   if(TimeCurrent() == date) PrintFormat("%s movetype = %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe),MoveTypeToString((ENUM_MOVE_TYPE)ColorCandlesColors[0]));
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
    {
     //trend.PrintExtr();
