@@ -10,11 +10,11 @@
 //| Робот, торгующий на простом тренде                               |
 //+------------------------------------------------------------------+
 // подключение необходимых библиотек
-#include <Lib CisNewBarDD.mqh>             // для проверки формирования нового бара
-#include <CompareDoubles.mqh>              // для сравнения вещественных чисел
-#include <TradeManager\TradeManager.mqh>   // торговая библиотека
-#include <BlowInfoFromExtremums.mqh>       // класс по работе с экстремумами индикатора DrawExtremums
-#include <SIMPLE_TREND\SimpleTrendLib.mqh> // библиотека робота Simple Trend
+#include <Lib CisNewBarDD.mqh>                     // для проверки формирования нового бара
+#include <CompareDoubles.mqh>                      // для сравнения вещественных чисел
+#include <TradeManager\TradeManager.mqh>           // торговая библиотека
+#include <BlowInfoFromExtremums.mqh>               // класс по работе с экстремумами индикатора DrawExtremums
+#include <SIMPLE_TREND\SimpleTrendLib.mqh>         // библиотека робота Simple Trend
 // хэндлы индикатора SmydMACD
 int handleSmydMACD_M5;                             // хэндл индикатора расхождений MACD на минутке
 int handleSmydMACD_M15;                            // хэндл индикатора расхождений MACD на 15 минутах
@@ -74,7 +74,7 @@ int OnInit()
        )
         {
          // получаем первые экстремумы
-         for (int index=0;index<1;index++)
+         for (int index=0;index<4;index++)
            {
             lastExtrHigh[index]   =  blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // сохраним значение последнего экстремума HIGH
             lastExtrLow[index]    =  blowInfo[index].GetExtrByIndex(EXTR_LOW,0);   // сохраним значение последнего экстремума LOW
