@@ -25,7 +25,7 @@ class CTrailingStop
 private:
    CSymbolInfo SymbInfo;
    bool UpdateSymbolInfo(string symbol);
-   
+   double _previewPrice;
    double PBI_colors[], PBI_Extrems[];
    
 public:
@@ -47,6 +47,7 @@ CTrailingStop::CTrailingStop()
   {
    ArraySetAsSeries(PBI_colors, true);
    ArraySetAsSeries(PBI_Extrems, true);
+   _previewPrice = 0;
   }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -198,11 +199,17 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
 {
  double stopLoss = 0;                                         // переменная для хранения нового стоп лосса 
  double currentPrice = SymbolInfoDouble(symbol, SYMBOL_BID);  // текущая цена
- Extr lastExtrHigh;                                           // последний экстремум HIGH
- Extr lastExtrLow;                                            // последний экстремум LOW
+ double tmpPrev;                                              // предыдущая цена
+ double lastExtrHigh;                                         // цена последнего экстремума по HIGH
+ double lastExtrLow;                                          // цена последнего экстремума по LOW
  ENUM_EXTR_USE last_extr;                                     // переменная для хранения последнего экстремума
+ tmpPrev = _previewPrice;
+ // сохраняем текущую цену в качестве предыдущей
+ _previewPrice = currentPrice;
+ if (tmpPrev == 0)
+  return (0.0);
  // пытаемся обновить данные об экстремумах
- if ( blowInfo.Upload(EXTR_BOTH) )     
+ if ( blowInfo.Upload(EXTR_BOTH,TimeCurrent(),1000) )     
   {
    // получаем тип последнего экстремума
    last_extr = blowInfo.GetLastExtrType();
@@ -210,36 +217,25 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
     return (0.0);
    if (type == OP_BUY)
     {
-     // если последним экстремумом был HIGH или BOTH
-     if (last_extr == EXTR_HIGH || last_extr == EXTR_BOTH)
-       lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,1);  // то берем для пробития предпоследний экстремум
+     // если последним экстремумов является LOW
      if (last_extr == EXTR_LOW)
-      lastExtrHigh  = blowInfo.GetExtrByIndex(EXTR_HIGH,0);  // то берем для пробития последний экстремум 
-     lastExtrLow = blowInfo.GetExtrByIndex(EXTR_LOW,0);      // получаем последний нижний экстремум
-     // если текущая цена пробила последний значимый HIGH экстремум и последний нижний экстремум выше последнего стоп лосса
-     if ( GreatDoubles(currentPrice,lastExtrHigh.price) && GreatDoubles(lastExtrLow.price,sl))
       {
-       // сохраним новое значение стоп лосса
-       stopLoss = lastExtrLow.price;
+       lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;  // то берем для пробития последний экстремум HIGH
+       lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW
+       Comment("LOW = ",DoubleToString(lastExtrLow) );
+       // если текущая цена пробила последний значимый HIGH экстремум и последний нижний экстремум выше последнего стоп лосса
+       if ( GreatDoubles(currentPrice,lastExtrHigh) &&  GreatDoubles(lastExtrLow,sl) && LessDoubles (tmpPrev,lastExtrHigh)  )
+        {
+         // сохраним новое значение стоп лосса
+         stopLoss = lastExtrLow;
+        }
       }
     }
     
-   if (type == OP_SELL)
-    {
-      // если последним экстремумом был LOW или BOTH
-      if (last_extr == EXTR_LOW || last_extr == EXTR_BOTH)
-       lastExtrLow = blowInfo.GetExtrByIndex(EXTR_LOW,1);  // то берем для пробития предпоследний экстремум
-      if (last_extr == EXTR_HIGH)
-       lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0);  // то берем для пробития последний экстремум 
-      lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0);  // получаем последний верхний экстремум
-      // если текущая цена пробила последний значимый HIGH экстремум и последний нижний экстремум выше последнего стоп лосса
-      if ( LessDoubles(currentPrice,lastExtrLow.price) && LessDoubles(lastExtrHigh.price,sl))
-       {
-        // сохраним новое значение стоп лосса
-        stopLoss = lastExtrHigh.price;
-       }
-    }
+  
+  
  }
+ 
  return (stopLoss);
 }
  
