@@ -12,9 +12,7 @@
 #include <ColoredTrend\ColoredTrendUtilities.mqh>
 #define DEPTH 1000
 
-//input double   percentage_ATR = 1;   
-//input double   difToTrend = 1.5;
-input ENUM_TIMEFRAMES tf = PERIOD_H4;
+input ENUM_TIMEFRAMES tf = PERIOD_H1;
 input bool show_top = false;
 input bool is_it_top = false;
 input string file_name = "test_pbi";
@@ -69,6 +67,8 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
 {
  ArraySetAsSeries(time, true);
+ 
+
  if(isNewBar.isNewBar())
  {
   
@@ -80,6 +80,10 @@ int OnCalculate(const int rates_total,
   FileWrite(file_handle ,StringFormat("%s;%s;%s", TimeToString(time[0]),
                                                   MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top[0])));
  }
+ 
+ datetime date = D'2014.05.09 23:15:00';
+ if(TimeCurrent() == date) PrintFormat("movetype = %s; movetype = %s", MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top[0]));
+ 
  
  return(rates_total);
 }

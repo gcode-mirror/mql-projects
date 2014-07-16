@@ -122,12 +122,12 @@ int OnCalculate(const int rates_total,
   //PrintFormat("Новый бар %s; загружено M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
   
   FileWrite(file_handle, StringFormat("%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s", TimeToString(time[0]),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H1 [0]),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H4 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H4 [0]),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_D1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_D1 [0]),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_W1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_W1 [0]),
-                                                                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_MN1[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_MN1[0])));
+                                                                                MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]),
+                                                                                MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H1 [0]),
+                                                                                MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H4 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H4 [0]),
+                                                                                MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_D1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_D1 [0]),
+                                                                                MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_W1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_W1 [0]),
+                                                                                MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_MN1[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_MN1[0])));
  }
  
  return(rates_total);
