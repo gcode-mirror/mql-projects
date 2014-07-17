@@ -31,11 +31,12 @@ class CExtremum
  //--параметры ATR для difToNewExtremum-----
  int _handle_ATR;
  double _percentage_ATR;
+ int    _periodATR;
  //-----------------------------------------
  SExtremum extremums[ARRAY_SIZE];
  
  public:
- CExtremum();
+ CExtremum(int periodATR=30);
  CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr);
 ~CExtremum();
 
@@ -52,12 +53,13 @@ class CExtremum
  void SetPercentageATR();
 };
 
-CExtremum::CExtremum(void)
+CExtremum::CExtremum(int periodATR=30)
            {
             _symbol = Symbol();
             _tf_period = Period();
             SetPercentageATR();
             _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
+            _periodATR = periodATR;
             //_handle_average_atr = iCustom(_symbol, _tf_ATR, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR, 50);
             //if(_handle_average_atr == INVALID_HANDLE) Alert("JI INVALID");
            }
@@ -171,14 +173,22 @@ int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now 
 
 double CExtremum::AverageBar (datetime start_pos)
 {
- double buffer_average_atr[1];
- if(CopyBuffer(_handle_ATR, 0, start_pos, 1, buffer_average_atr) == 1) 
-  return(buffer_average_atr[0]);
- else
- {
-  PrintFormat("%s ERROR. I have this error = %d, %s", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period));
-  return(0);
- }
+  int copiedRates;
+  double averBarSize=0;
+  MqlRates rates[];
+  copiedRates = CopyRates(_symbol,_tf_period,start_pos,_periodATR,rates);
+  if (copiedRates < _tf_period)
+   {
+    Print("Не удалось скопировать котировки");
+    return (0);
+   }
+  // проходим по всем скопированным данным и вычисляем средний размер бара
+  for (int index=0;index<_tf_period;index++)
+   {
+    averBarSize = averBarSize + rates[index].high-rates[index].low;
+   }
+  ArrayFree(rates);  // освобождаем память 
+  return (averBarSize / _tf_period);
 }
 
 int CExtremum::ExtrCount()

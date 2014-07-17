@@ -58,7 +58,7 @@ double  previewPrice;        // предыдущая цена
 bool    isLotClosed;         // закрылся ли объем позиции
 
 // буферы уровней 
-bufferLevel buffers[20];
+bufferLevel buffers[4];
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -80,7 +80,7 @@ int OnInit()
     }
    }
  
-    handle_19Lines = iCustom(symbol,timeframe,"NineteenLines");     
+    handle_19Lines = iCustom(symbol,timeframe,"NineteenLines",);     
     if (handle_19Lines == INVALID_HANDLE)
     {
      Print("Не удалось получить хэндл NineteenLines");
@@ -131,7 +131,7 @@ void OnTick()
  {
   ctm.OnTick();
   ctm.DoTrailing();
-
+  Comment("ОБЪЕМ = ",DoubleToString(lot) );
   // сохраняем предыдущую цену
   previewPrice = currentPrice;
   // сохраняем текущую цену
@@ -166,7 +166,10 @@ void OnTick()
   {
    isLotClosed =AllowToLowVolume();
    if (isLotClosed)
-    ctm.PositionChangeSize(symbol, lot*percentLowVolume);  // закрываем часть объема
+    {
+      Comment("ОБЪЕМ = ",DoubleToString(lot*percentLowVolume) );
+     ctm.PositionChangeSize(symbol, lot*percentLowVolume);  // закрываем часть объема
+    }
    if (!isLotClosed )  
     {
      profit = ctm.GetPositionPointsProfit(symbol);
@@ -256,7 +259,7 @@ bool UploadBuffers ()   // получает последние значения уровней
  {
   int copiedPrice;
   int copiedATR;
-  for (int index=0;index<20;index++)
+  for (int index=0;index<4;index++)
    {
     copiedPrice = CopyBuffer(handle_19Lines,index*2,  0,1,  buffers[index].price);
     copiedATR   = CopyBuffer(handle_19Lines,index*2+1,0,1,buffers[index].atr);
@@ -274,7 +277,7 @@ bool AllowToLowVolume ()    // вычисляет, можно ли изменять объем сделки
   if (previewPrice != 0)
    {
     // проходим по всем уровням и проверяем данное условие
-    for (int index=0;index < 20; index++)
+    for (int index=0;index < 4; index++)
      {
       // если текущая цена находится внутри уровня или на его границе
       if ( GreatOrEqualDoubles(currentPrice,buffers[index].price[0]-buffers[index].atr[0]) &&

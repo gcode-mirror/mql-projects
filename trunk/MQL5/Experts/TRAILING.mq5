@@ -45,7 +45,7 @@ int OnInit()
    ctm = new CTradeManager();
    blowInfo[0] = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,1000,clrLightYellow,clrYellow);
    blowInfo[1] = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,1000,clrLightBlue,clrBlue);
-   blowInfo[2] = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,1000,clrPink,clrRed);
+   blowInfo[2] = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,1000,clrPink,clrRed);
    if (!blowInfo[0].IsInitFine() || !blowInfo[1].IsInitFine() ||
        !blowInfo[2].IsInitFine())
         return (INIT_FAILED);
@@ -69,8 +69,8 @@ int OnInit()
    ArrayInitialize(extrHighBeaten,false);
    ArrayInitialize(extrLowBeaten,false);  
    iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M5,1000,clrLightBlue,clrBlue);
-   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
-   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);           
+   //iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
+   //iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);           
    return(INIT_SUCCEEDED);
   }
 void OnDeinit(const int reason)
@@ -83,7 +83,7 @@ void OnDeinit(const int reason)
 void OnTick()
   {
     ctm.OnTick();
-    ctm.DoTrailing(blowInfo[indexForTrail]);   
+    ctm.DoTrailing(blowInfo[0]);   
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену     
     if (!openedPos)
@@ -115,16 +115,15 @@ void OnTick()
       }
           
      // трейлим стоп лосс
-     if (indexForTrail < 2)  // если индекс трейлинга меньше 2-х  
+   /*  if (indexForTrail < 2)  // если индекс трейлинга меньше 2-х  
       {
        // если пробили экстремум на более старшем таймфрейме
        if (IsExtremumBeaten ( indexForTrail+1, BUY) )
         {
-         
           indexForTrail ++;  // то переходим на более старший таймфрейм
         }
       }
-   
+   */
     } //END OF UPLOADS
   }
   

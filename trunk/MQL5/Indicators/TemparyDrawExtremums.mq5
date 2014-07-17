@@ -78,16 +78,19 @@ int OnInit()
     {
      per = tf_ATR;
     }
-    
-   extr = new CExtremum(Symbol(), Period()/*, per, period_ATR, percentage_ATR*/);
- //  handle_ATR = iCustom(Symbol(), per,"AverageATR",
- //  handle_ATR = iATR(Symbol(), per, period_ATR);
+   
    handle_ATR = iCustom(Symbol(),per,"AverageATR",period_ATR,period_average_ATR); 
+   
    if (handle_ATR == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать хэндл индикатора AverageATR");
      return (INIT_FAILED);
-    }  
+    }   
+    
+   extr = new CExtremum(Symbol(), per, handle_ATR/*, per, period_ATR, percentage_ATR*/);
+ //  handle_ATR = iCustom(Symbol(), per,"AverageATR",
+ //  handle_ATR = iATR(Symbol(), per, period_ATR);
+
 //--- indicator buffers mapping
    SetIndexBuffer(0, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(1, ExtDownArrowBuffer, INDICATOR_DATA);

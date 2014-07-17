@@ -69,16 +69,18 @@ int OnInit()
     {
      per = tf_ATR;
     }
-    
-   extr = new CExtremum(Symbol(), Period()/*, per, period_ATR, percentage_ATR*/);
- //  handle_ATR = iCustom(Symbol(), per,"AverageATR",
- //  handle_ATR = iATR(Symbol(), per, period_ATR);
+ 
    handle_ATR = iCustom(Symbol(),per,"AverageATR",period_ATR,period_average_ATR); 
    if (handle_ATR == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать хэндл индикатора AverageATR");
      return (INIT_FAILED);
     }  
+    
+   extr = new CExtremum(Symbol(), Period(),handle_ATR/*, per, period_ATR, percentage_ATR*/);
+ //  handle_ATR = iCustom(Symbol(), per,"AverageATR",
+ //  handle_ATR = iATR(Symbol(), per, period_ATR);
+
 //--- indicator buffers mapping
    SetIndexBuffer(0, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(1, ExtDownArrowBuffer, INDICATOR_DATA);
@@ -225,4 +227,17 @@ void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
    else if(extr.getExtr(0).direction == -1) { ret_extremums[0] = extr.getExtr(1); ret_extremums[1] = extr.getExtr(0); }
   }     
  }
+}
+
+double AverageBar (double &high[],double &low[])
+{
+  double averBarSize = 0;
+  ArraySetAsSeries(high,true);
+  ArraySetAsSeries(low,true);
+  // проходим по всем скопированным данным и вычисляем средний размер бара
+  for (int index=0;index<period_ATR;index++)
+   {
+    averBarSize = averBarSize + high[index]-low[index];
+   }
+  return (averBarSize / period_ATR);
 }

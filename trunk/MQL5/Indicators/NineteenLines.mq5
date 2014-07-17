@@ -42,7 +42,7 @@ input int    period_average_ATR = 5;    //Период устреднения индикатора ATR
 sinput string levelStr = "";                 //ПАРАМЕТРЫ УРОВНЕЙ
 
 sinput string mn1Str   = "";                 //Месячные уровни
-input bool  flag1  = true;                  //Показывать экстремумы MN1
+input bool  flag1  = false;                  //Показывать экстремумы MN1
 input double PERCENTAGE_OF_ATR_FOR_MN = 1.5; //Процент от ATR для поиска экстремума
 input double channel_ATR_MN1  =  0.1;        //Ширина уровней
 
@@ -52,17 +52,17 @@ input double PERCENTAGE_OF_ATR_FOR_W1 = 1.5; //Процент от ATR для поиска экстрем
 input double channel_ATR_W1   =  0.15;       //Ширина уровней
 
 sinput string d1Str   = "";                  //Дневные уровни
-input bool  flag3  = true;                  //Показывать экстремумы D1
+input bool  flag3  = false;                  //Показывать экстремумы D1
 input double  PERCENTAGE_OF_ATR_FOR_D1 = 2;  //Процент от ATR для поиска экстремума
 input double channel_ATR_D1   =  0.25;        //Ширина уровней
 
 sinput string h1Str   = "";                  //4-х часовые уровни
-input bool   flag4  = true;                 //Показывать экстремумы H4
+input bool   flag4  = false;                 //Показывать экстремумы H4
 input double PERCENTAGE_OF_ATR_FOR_H4 = 3;   //Процент от ATR для поиска экстремума
 input double channel_ATR_H4   =  0.25;        //Ширина уровней 0.25 
 
 sinput string h4Str   = "";                  //Часовые уровни
-input bool  flag5  = true;                   //Показывать экстремумы H1
+input bool  flag5  = false;                   //Показывать экстремумы H1
 input double PERCENTAGE_OF_ATR_FOR_H1 = 1.5; //Процент от ATR для поиска экстремума
 input double channel_ATR_H1   =  0.25;        //Ширина уровней
  
