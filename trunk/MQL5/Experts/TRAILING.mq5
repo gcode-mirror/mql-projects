@@ -17,10 +17,13 @@
 #include <SIMPLE_TREND\SimpleTrendLib.mqh> // библиотека робота Simple Trend
 
 input  ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_EXTREMUMS;  // тип трейлинга
+input  double lot     = 0.1;                                       // начальный лот
+input  double lot_step = 0.1;                                      // шаг увеличения лота
 
 // системные переменные 
 double curPrice;          // текущая цена
 double prevPrice;         // предыдущая цена
+double lotNow = lot;      // изначальный лот
 int    stopLoss;          // стоп лосс
 bool   openedPos = false; // флаг открытой позиции
 int    indexForTrail = 0; // индекс для трейлинга
@@ -66,8 +69,8 @@ int OnInit()
    ArrayInitialize(extrHighBeaten,false);
    ArrayInitialize(extrLowBeaten,false);  
    iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M5,1000,clrLightBlue,clrBlue);
-   //iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
-   //iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);           
+   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
+   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);           
    return(INIT_SUCCEEDED);
   }
 void OnDeinit(const int reason)
@@ -80,7 +83,7 @@ void OnDeinit(const int reason)
 void OnTick()
   {
     ctm.OnTick();
-    ctm.DoTrailing(blowInfo[0]);   
+    ctm.DoTrailing(blowInfo[indexForTrail]);   
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену     
     if (!openedPos)
@@ -112,13 +115,16 @@ void OnTick()
       }
           
      // трейлим стоп лосс
-   /*  if (indexForTrail < 3)  // если индекс трейлинга 
+     if (indexForTrail < 2)  // если индекс трейлинга меньше 2-х  
       {
-       if (IsExtremumBeaten ( indexForTrail, BUY) )
+       // если пробили экстремум на более старшем таймфрейме
+       if (IsExtremumBeaten ( indexForTrail+1, BUY) )
+        {
+         
+          indexForTrail ++;  // то переходим на более старший таймфрейм
+        }
       }
-   */
-
-
+   
     } //END OF UPLOADS
   }
   
