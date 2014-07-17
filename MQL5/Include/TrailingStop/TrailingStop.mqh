@@ -220,9 +220,8 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
      // если последним экстремумов является LOW
      if (last_extr == EXTR_LOW)
       {
-       lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;  // то берем для пробития последний экстремум HIGH
-       lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW
-       Comment("\nLOW = ",DoubleToString(lastExtrLow) );
+       lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для пробития
+       lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для stopLoss
        // если текущая цена пробила последний значимый HIGH экстремум и последний нижний экстремум выше последнего стоп лосса
        if ( GreatDoubles(currentPrice,lastExtrHigh) &&  GreatDoubles(lastExtrLow,sl) && LessDoubles (tmpPrev,lastExtrHigh)  )
         {
@@ -231,11 +230,22 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
         }
       }
     }
-    
-  
-  
+   if (type == OP_SELL)
+    {
+     // если последним экстремумов является HIGH
+     if (last_extr == EXTR_HIGH)
+      {
+       lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхних экстремум HIGH для stopLoss
+       lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
+       // если текущая цена пробила последний значимый LOW экстремум и последний верхний экстремум ниже последнего стоп лосса
+       if ( LessDoubles(currentPrice,lastExtrLow) &&  LessDoubles(lastExtrHigh,sl) && GreatDoubles (tmpPrev,lastExtrLow)  )
+        {
+         // сохраним новое значение стоп лосса
+         stopLoss = lastExtrHigh;
+        }
+      }
+    }    
  }
- 
  return (stopLoss);
 }
  
