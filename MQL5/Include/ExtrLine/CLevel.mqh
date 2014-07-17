@@ -45,7 +45,7 @@ CLevel::CLevel(string symbol, ENUM_TIMEFRAMES tf, ENUM_TIMEFRAMES tf_ATR, double
                }
 CLevel::~CLevel()
                 {
-
+                  
                 }             
 
 //-----------------------------------------------------------------
