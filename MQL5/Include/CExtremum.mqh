@@ -188,7 +188,7 @@ double CExtremum::AverageBar (datetime start_pos)
     averBarSize = averBarSize + rates[index].high-rates[index].low;
    }
   ArrayFree(rates);  // освобождаем память 
-  return (averBarSize / _tf_period);
+  return(0);// (averBarSize / _tf_period);
 }
 
 int CExtremum::ExtrCount()
