@@ -15,7 +15,7 @@
 input ENUM_TIMEFRAMES tf_1 = PERIOD_M15;
 input ENUM_TIMEFRAMES tf_2 = PERIOD_H1;
 input string file_name = "test_pbi";
-input string indicator_name = "PBI_alone";
+input string indicator_name = "PriceBasedIndicator";
 
 CisNewBar *isNewBar;   // для проверки формирования нового бара на 15 минутах
 

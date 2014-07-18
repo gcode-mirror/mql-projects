@@ -70,8 +70,7 @@ int OnInit()
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
    int handle_atr = iCustom(symbol, current_timeframe, "AverageATR", 30, 100);
    trend    = new CColoredTrend(symbol, current_timeframe, handle_atr, depth);
-   
-   if(!is_it_top) handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PBI_alone", depth, false, true);
+   if(!is_it_top) handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PriceBasedIndicator", depth, false, true);
 //--- indicator buffers mapping
    
    SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
@@ -163,7 +162,10 @@ int OnCalculate(const int rates_total,
     {
      if(!is_it_top) 
       if(CopyBuffer(handle_top_trend, 4, time[i], 1, buffer_top_trend) < 1)
-       PrintFormat("%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), GetLastError());   
+      {
+       PrintFormat("%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), GetLastError());
+       return(0);
+      }
      trend.CountMoveType(buffer_index, time[i], false, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
       
      ColorCandlesBuffer1[i] = open[i];
@@ -197,7 +199,7 @@ int OnCalculate(const int rates_total,
    
    if(!is_it_top)
     if(CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
-       PrintFormat("%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), GetLastError());
+       PrintFormat("%s/%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), GetLastError());
     //else
        //if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("%s Загрузилось значение TOP TREND. %s", EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), MoveTypeToString((ENUM_MOVE_TYPE)buffer_top_trend[0]));
    trend.CountMoveType(buffer_index, time[0], true, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
