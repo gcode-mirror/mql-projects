@@ -15,7 +15,7 @@
 //input double   percentage_ATR = 1;   
 //input double   difToTrend = 1.5;
 input string file_name = "Sheet_PBI";
-input string indicator_name = "PBI_alone";
+input string indicator_name = "PriceBasedIndicator";
 
 CisNewBar *isNewBar;   // для проверки формирования нового бара на 15 минутах
 
