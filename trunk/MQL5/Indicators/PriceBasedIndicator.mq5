@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2011, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
-#property version   "1.00"
+#property version   "1.01"
  
 #property indicator_chart_window
 #property indicator_buffers 8
@@ -32,6 +32,7 @@
 //--- input параметры
 input int history_depth = 1000; // сколько свечей показывать
 input bool show_top = false;
+input bool is_it_top = false;
 
 //--- индикаторные буферы
 double ColorCandlesBuffer1[];
@@ -46,12 +47,12 @@ double ExtDownArrowBuffer[];
 CisNewBar NewBarCurrent, 
           NewBarTop;
 
-CColoredTrend *trend, 
-              *topTrend;
+CColoredTrend *trend;
               
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 int  digits;
+int handle_top_trend;
 int depth = history_depth;
 bool series_order = true;
 
@@ -66,10 +67,11 @@ int OnInit()
    if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe)-1;
    PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(current_timeframe);
-   NewBarTop.SetPeriod(GetTopTimeframe(current_timeframe));
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   topTrend = new CColoredTrend(symbol, GetTopTimeframe(current_timeframe), depth);
-   trend    = new CColoredTrend(symbol,                  current_timeframe, depth);
+   int handle_atr = iCustom(symbol, current_timeframe, "AverageATR", 30, 100);
+   trend    = new CColoredTrend(symbol, current_timeframe, handle_atr, depth);
+   
+   if(!is_it_top) handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PBI_alone", depth, false, true);
 //--- indicator buffers mapping
    
    SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
@@ -122,7 +124,7 @@ void OnDeinit(const int reason)
    ArrayFree(ColorCandlesBuffer4);
    ArrayFree(ColorCandlesColors);
    ArrayFree(ColorCandlesColorsTop);
-   delete topTrend;
+   if(!is_it_top) IndicatorRelease(handle_top_trend);
    delete trend;
 }
 //+------------------------------------------------------------------+
@@ -140,9 +142,8 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
    static int buffer_index = 0;
-   static int top_buffer_index = 0;
+   double buffer_top_trend[1] = {MOVE_TYPE_UNKNOWN};
    SExtremum extr_cur[2] = {{0, -1}, {0, -1}};
-   SExtremum extr_top[2] = {{0, -1}, {0, -1}};
    
    ArraySetAsSeries(open , series_order);
    ArraySetAsSeries(high , series_order);
@@ -153,29 +154,24 @@ int OnCalculate(const int rates_total,
    if(prev_calculated == 0) 
    {
     PrintFormat("%s Первый расчет индикатора", MakeFunctionPrefix(__FUNCTION__));
-    //if(!CheckATR(trend.GetATRtf(), topTrend.GetATRtf())) return(0);
     buffer_index = 0;
-    top_buffer_index = 0;
     trend.Zeros();
-    topTrend.Zeros();
     InitializeIndicatorBuffers();
-    //PrintFormat("%s %s depth = %d; history_depth = %d", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)current_timeframe), depth, history_depth);
     NewBarCurrent.isNewBar(time[depth]);
-    NewBarTop.isNewBar(time[depth]);
     
     for(int i = depth-1; i >= 0;  i--)    
     {
-     //PrintFormat("i= %d; buffer_index = %d; time = %s;", i, buffer_index, TimeToString(time[i]));   
-     topTrend.CountMoveType(top_buffer_index, time[i], false, extr_top);    
-        trend.CountMoveType(    buffer_index, time[i], false, extr_cur, topTrend.GetMoveType(top_buffer_index));
+     if(!is_it_top) 
+      if(CopyBuffer(handle_top_trend, 4, time[i], 1, buffer_top_trend) < 1)
+       PrintFormat("%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), GetLastError());   
+     trend.CountMoveType(buffer_index, time[i], false, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
       
      ColorCandlesBuffer1[i] = open[i];
      ColorCandlesBuffer2[i] = high[i];
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i]; 
-    
      ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
-     ColorCandlesColorsTop[i] = topTrend.GetMoveType(top_buffer_index);
+     ColorCandlesColorsTop[i] = buffer_top_trend[0];
     
      if (extr_cur[0].direction > 0)
      {
@@ -188,11 +184,6 @@ int OnCalculate(const int rates_total,
       extr_cur[1].direction = 0;
      }
     
-     if(    NewBarTop.isNewBar(time[i])) 
-     {
-      //topTrend.PrintExtr();
-      top_buffer_index++; //для того что бы считать на истории
-     }
      if(NewBarCurrent.isNewBar(time[i])) 
      {
       //trend.PrintExtr();
@@ -202,19 +193,23 @@ int OnCalculate(const int rates_total,
     }
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН", MakeFunctionPrefix(__FUNCTION__));
     trend.PrintExtr();
-    topTrend.PrintExtr();
    }
    
-   topTrend.CountMoveType(top_buffer_index, time[0], true, extr_top);
-   trend.CountMoveType(buffer_index, time[0], true, extr_cur, topTrend.GetMoveType(top_buffer_index));
+   if(!is_it_top)
+    if(CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
+       PrintFormat("%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), GetLastError());
+    //else
+       //if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("%s Загрузилось значение TOP TREND. %s", EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), MoveTypeToString((ENUM_MOVE_TYPE)buffer_top_trend[0]));
+   trend.CountMoveType(buffer_index, time[0], true, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
    
-   //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
    ColorCandlesBuffer1[0] = open[0];
    ColorCandlesBuffer2[0] = high[0];
    ColorCandlesBuffer3[0] = low [0];
    ColorCandlesBuffer4[0] = close[0]; 
    ColorCandlesColors[0] = trend.GetMoveType(buffer_index);
-   ColorCandlesColorsTop[0] = topTrend.GetMoveType(top_buffer_index);
+   ColorCandlesColorsTop[0] = buffer_top_trend[0];
+
+   //if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("я посчитал для вас %d %s movetype = %s", is_it_top, EnumToString((ENUM_TIMEFRAMES)current_timeframe), MoveTypeToString((ENUM_MOVE_TYPE)ColorCandlesColors[0]));
    
    if (extr_cur[0].direction > 0)
    {
@@ -226,18 +221,14 @@ int OnCalculate(const int rates_total,
     ExtDownArrowBuffer[0] = extr_cur[1].price;// - 50*_Point;
     extr_cur[1].direction = 0;
    }
-      
-   if(NewBarTop.isNewBar()  && prev_calculated != 0) 
-   {
-    //topTrend.PrintExtr();
-    top_buffer_index++;
-   }    
+   
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
    {
     //trend.PrintExtr();
     //PrintFormat("REAL %s %s current:%d %s; top: %d %s", EnumToString((ENUM_TIMEFRAMES)current_timeframe), TimeToString(time[0]), buffer_index, MoveTypeToString(trend.GetMoveType(buffer_index)), top_buffer_index, MoveTypeToString(topTrend.GetMoveType(top_buffer_index)));
     buffer_index++; 
    }
+   
    return(rates_total);
   }
 
@@ -253,19 +244,3 @@ void InitializeIndicatorBuffers()
  ArrayInitialize(ExtDownArrowBuffer , 0);
  ArrayInitialize(ColorCandlesColorsTop, 0);
 }
-
-/*bool CheckATR(ENUM_TIMEFRAMES cur, ENUM_TIMEFRAMES top)
-{
- double buffer_cur[];
- double buffer_top[];
- int handle_cur = iCustom(Symbol(), cur, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR, history_depth);
- int handle_top = iCustom(Symbol(), top, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR, history_depth);
- if(CopyBuffer(handle_cur, 0, 0, history_depth, buffer_cur) <= 0 &&
-    CopyBuffer(handle_top, 0, 0, history_depth, buffer_top) <= 0)
- {
-  PrintFormat("Не загрузил ФЕК");
-  return(false);
- }
- PrintFormat(" Загрузил ФЕК");
- return(true);
-}*/

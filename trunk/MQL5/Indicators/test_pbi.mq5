@@ -12,9 +12,8 @@
 #include <ColoredTrend\ColoredTrendUtilities.mqh>
 #define DEPTH 1000
 
-input ENUM_TIMEFRAMES tf = PERIOD_H1;
-input bool show_top = false;
-input bool is_it_top = false;
+input ENUM_TIMEFRAMES tf_1 = PERIOD_M15;
+input ENUM_TIMEFRAMES tf_2 = PERIOD_H1;
 input string file_name = "test_pbi";
 input string indicator_name = "PBI_alone";
 
@@ -22,9 +21,8 @@ CisNewBar *isNewBar;   // для проверки формирования нового бара на 15 минутах
 
 int file_handle;
 
-int handle_PBI;
-double buffer_PBI[];
-double buffer_PBI_top[];
+int handle_PBI_1;
+int handle_PBI_2;
 datetime buffer_time[];
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -32,9 +30,10 @@ datetime buffer_time[];
 int OnInit()
 {
  file_handle = FileOpen(StringFormat("%s_%s_PBI_%d.csv", file_name, EnumToString((ENUM_TIMEFRAMES)Period()),rand()%1000), FILE_WRITE|FILE_CSV|FILE_COMMON);
- FileWrite(file_handle, "DATETIME;%s;%s", EnumToString((ENUM_TIMEFRAMES)tf), EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(tf)));
+ FileWrite(file_handle, "DATETIME;%s;%s", EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(tf_1)), EnumToString((ENUM_TIMEFRAMES)tf_2));
  
- handle_PBI = iCustom(Symbol(), tf, indicator_name, DEPTH, show_top, is_it_top);
+ handle_PBI_1 = iCustom(Symbol(), tf_1, indicator_name, DEPTH);
+ handle_PBI_2 = iCustom(Symbol(), tf_2, indicator_name, DEPTH);
 
  isNewBar = new CisNewBar(_Symbol, _Period);   // для проверки формирования нового бара на 15 минутах
  PrintFormat("Инициализация закончена. %d", DEPTH);
@@ -46,9 +45,8 @@ void OnDeinit(const int reason)
  PrintFormat("REASON FOR DEINIT %d", reason);
  
  FileClose(file_handle);
- IndicatorRelease(handle_PBI);
- ArrayFree(buffer_PBI);
- ArrayFree(buffer_PBI_top);
+ IndicatorRelease(handle_PBI_1);
+ IndicatorRelease(handle_PBI_2);
  ArrayFree(buffer_time);
 }
 
@@ -67,23 +65,31 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
 {
  ArraySetAsSeries(time, true);
+ double buffer_PBI_1[1] = {MOVE_TYPE_UNKNOWN};
+ double buffer_PBI_top_1[1] = {MOVE_TYPE_UNKNOWN};
+ double buffer_PBI_2[1] = {MOVE_TYPE_UNKNOWN};
+ double buffer_PBI_top_2[1] = {MOVE_TYPE_UNKNOWN};
  
-
+ datetime date_from = D'2014.05.09 23:10:00';
+ datetime date_to   = D'2014.05.09 23:20:00';
+ 
  if(isNewBar.isNewBar())
  {
+  if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("запускаю копибуфер.до:  movetype_1 = %s; movetype_top_1 = %s; movetype_2 = %s; movetype_top_2 = %s",
+                                                                        MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_1[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_1[0]),
+                                                                        MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_2[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_2[0]));
+  CopyBuffer(handle_PBI_1, 4, 0, 1, buffer_PBI_1);
+  CopyBuffer(handle_PBI_1, 7, 0, 1, buffer_PBI_top_1);
+  CopyBuffer(handle_PBI_2, 4, 0, 1, buffer_PBI_2);
+  CopyBuffer(handle_PBI_2, 7, 0, 1, buffer_PBI_top_2);
   
-  CopyBuffer(handle_PBI, 4, 0, 1, buffer_PBI);
-  CopyBuffer(handle_PBI, 7, 0, 1, buffer_PBI_top);
-  
-  //PrintFormat("Новый бар %s; загружено M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
-  
-  FileWrite(file_handle ,StringFormat("%s;%s;%s", TimeToString(time[0]),
-                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top[0])));
+  if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("после: movetype_1 = %s; movetype_top_1 = %s; movetype_2 = %s; movetype_top_2 = %s",
+                                                                        MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_1[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_1[0]),
+                                                                        MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_2[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_2[0]));
+  FileWrite(file_handle ,StringFormat("%s;%s;%s;%s;%s", TimeToString(time[0]),
+                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_1[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_1[0]),
+                                                  MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_2[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_2[0])));
  }
- 
- datetime date = D'2014.05.09 23:15:00';
- if(TimeCurrent() == date) PrintFormat("movetype = %s; movetype = %s", MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top[0]));
- 
  
  return(rates_total);
 }
