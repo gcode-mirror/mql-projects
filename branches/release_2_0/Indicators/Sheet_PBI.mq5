@@ -104,9 +104,9 @@ int OnCalculate(const int rates_total,
 {
  ArraySetAsSeries(time, true);
  
-  datetime date = D'2014.05.09 23:15:00';
+ //datetime date = D'2014.05.09 23:15:00';
  
- if(TimeCurrent() == date) PrintFormat("ÏÅÐÅÄ %d movetype = %s; movetype = %s", GetTickCount(), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1[0]));
+ //if(TimeCurrent() == date) PrintFormat("ÏÅÐÅÄ %d movetype = %s; movetype = %s", GetTickCount(), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1[0]));
  
  if(isNewBar.isNewBar())
  {
@@ -125,7 +125,7 @@ int OnCalculate(const int rates_total,
   CopyBuffer(handle_PBI_M15, 7, 0, 1, buffer_PBI_top_M15);
   
   //PrintFormat("Íîâûé áàð %s; çàãðóæåíî M15 = %d (%f)", TimeToString(time[0]), err6, buffer_PBI_M15[0]);
-  if(TimeCurrent() == date) PrintFormat("ÂÎÂÐÅÌß %d movetype = %s; movetype = %s", GetTickCount(), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1[0]));
+  //if(TimeCurrent() == date) PrintFormat("ÂÎÂÐÅÌß %d movetype = %s; movetype = %s", GetTickCount(), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1[0]));
   FileWrite(file_handle, StringFormat("%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s", TimeToString(time[0]),
                                                                                 MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]),
                                                                                 MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1 [0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_H1 [0]),
@@ -135,7 +135,7 @@ int OnCalculate(const int rates_total,
                                                                                 MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_MN1[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_MN1[0])));
  }
  
- if(TimeCurrent() == date) PrintFormat("ïîñëå %d movetype = %s; movetype = %s", GetTickCount(), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1[0]));
+ //if(TimeCurrent() == date) PrintFormat("ïîñëå %d movetype = %s; movetype = %s", GetTickCount(), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_top_M15[0]), MoveTypeToString((ENUM_MOVE_TYPE)buffer_PBI_H1[0]));
  
  return(rates_total);
 }
