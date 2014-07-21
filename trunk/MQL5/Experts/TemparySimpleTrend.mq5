@@ -113,6 +113,7 @@ void OnTick()
   {  
    
     ctm.OnTick(); 
+    ctm.DoTrailing();
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену     
     if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && 
@@ -157,7 +158,7 @@ void OnTick()
         // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
         stopLoss = int(MathAbs(curPrice - blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price)/_Point);      
         // открываем позицию на BUY
-        ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, 1.0, stopLoss, 100);
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, 1.0, stopLoss, 100,TRAILING_TYPE_PBI);
         // выставляем флаг открытия позиции BUY
         openedPosition = BUY;                
        } 
@@ -175,7 +176,7 @@ void OnTick()
         // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
         stopLoss = int(MathAbs(curPrice-blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price)/_Point);
         // открываем позицию на SELL
-        ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, 1.0, stopLoss, 100);
+        ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, 1.0, stopLoss, 100,TRAILING_TYPE_PBI);
         // выставляем флаг открытия позиции SELL
         openedPosition = SELL;                                         
        } 
