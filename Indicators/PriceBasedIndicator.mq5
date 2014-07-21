@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2011, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
-#property version   "1.01"
+#property version   "1.02"
  
 #property indicator_chart_window
 #property indicator_buffers 8
@@ -160,19 +160,19 @@ int OnCalculate(const int rates_total,
     
     for(int i = depth-1; i >= 0;  i--)    
     {
+     trend.CountMoveType(buffer_index, time[i], false, extr_cur);
      if(!is_it_top) 
       if(CopyBuffer(handle_top_trend, 4, time[i], 1, buffer_top_trend) < 1)
       {
        PrintFormat("%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), GetLastError());
        return(0);
       }
-     trend.CountMoveType(buffer_index, time[i], false, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
-      
+       
      ColorCandlesBuffer1[i] = open[i];
      ColorCandlesBuffer2[i] = high[i];
      ColorCandlesBuffer3[i] = low[i];
      ColorCandlesBuffer4[i] = close[i]; 
-     ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
+     ColorCandlesColors[i] = CheckForForbidden(trend.GetMoveType(buffer_index), (ENUM_MOVE_TYPE)buffer_top_trend[0]);
      ColorCandlesColorsTop[i] = buffer_top_trend[0];
     
      if (extr_cur[0].direction > 0)
@@ -197,21 +197,30 @@ int OnCalculate(const int rates_total,
     trend.PrintExtr();
    }
    
+   datetime date_from = D'09.05.2014 23:14:59';
+   datetime date_to   = D'09.05.2014 23:15:00';
+   
+   trend.CountMoveType(buffer_index, time[0], true, extr_cur);
+   if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("Посчитано следующее значение для %d %s. %s", is_it_top,EnumToString((ENUM_TIMEFRAMES)current_timeframe), MoveTypeToString((ENUM_MOVE_TYPE)trend.GetMoveType(buffer_index)));        
+   
    if(!is_it_top)
     if(CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
        PrintFormat("%s/%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), GetLastError());
-    //else
-       //if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("%s Загрузилось значение TOP TREND. %s", EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), MoveTypeToString((ENUM_MOVE_TYPE)buffer_top_trend[0]));
-   trend.CountMoveType(buffer_index, time[0], true, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
-   
+    else
+       if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)
+       {
+        PrintFormat("1 Загружено следующее значени для %d %s. %s", is_it_top, EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), MoveTypeToString((ENUM_MOVE_TYPE)buffer_top_trend[0]));     
+        CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend);
+        PrintFormat("2 Загружено следующее значени для %d %s. %s", is_it_top, EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), MoveTypeToString((ENUM_MOVE_TYPE)buffer_top_trend[0]));     
+       }
    ColorCandlesBuffer1[0] = open[0];
    ColorCandlesBuffer2[0] = high[0];
    ColorCandlesBuffer3[0] = low [0];
    ColorCandlesBuffer4[0] = close[0]; 
-   ColorCandlesColors[0] = trend.GetMoveType(buffer_index);
+   ColorCandlesColors[0] = CheckForForbidden(trend.GetMoveType(buffer_index), (ENUM_MOVE_TYPE)buffer_top_trend[0]);
    ColorCandlesColorsTop[0] = buffer_top_trend[0];
-
-   //if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("я посчитал для вас %d %s movetype = %s", is_it_top, EnumToString((ENUM_TIMEFRAMES)current_timeframe), MoveTypeToString((ENUM_MOVE_TYPE)ColorCandlesColors[0]));
+    
+   if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("я посчитал для вас %d %s movetype = %s", is_it_top, EnumToString((ENUM_TIMEFRAMES)current_timeframe), MoveTypeToString((ENUM_MOVE_TYPE)ColorCandlesColors[0]));
    
    if (extr_cur[0].direction > 0)
    {
@@ -245,4 +254,16 @@ void InitializeIndicatorBuffers()
  ArrayInitialize(ExtUpArrowBuffer   , 0);
  ArrayInitialize(ExtDownArrowBuffer , 0);
  ArrayInitialize(ColorCandlesColorsTop, 0);
+}
+
+ENUM_MOVE_TYPE CheckForForbidden(ENUM_MOVE_TYPE current_move, ENUM_MOVE_TYPE top_move)
+{
+ if(top_move == MOVE_TYPE_FLAT)
+ {
+  if(current_move == MOVE_TYPE_TREND_UP)
+   return(MOVE_TYPE_TREND_UP_FORBIDEN);
+  if(current_move == MOVE_TYPE_TREND_DOWN)
+   return(MOVE_TYPE_TREND_DOWN_FORBIDEN);
+ }
+ return(current_move);
 }
