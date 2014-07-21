@@ -114,6 +114,7 @@ void OnTick()
   {  
    
     ctm.OnTick(); 
+    ctm.UpdateData();
     ctm.DoTrailing(blowInfo[indexForTrail]);
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену     
