@@ -202,7 +202,7 @@ class CBlowInfoFromExtremums
      _period       = period;
      _upColor      = upColor;
      _downColor    = downColor;
-     _handleExtremums = iCustom(symbol,period,"TemparyDrawExtremums",period,historyDepth,percentageATR,periodATR,period_average_ATR);
+     _handleExtremums = iCustom(symbol,period,"DrawExtremums",period,historyDepth,percentageATR,periodATR,period_average_ATR);
     }
     
    CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
