@@ -68,7 +68,7 @@ int OnInit()
    curPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID); 
    ArrayInitialize(extrHighBeaten,false);
    ArrayInitialize(extrLowBeaten,false);  
-   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M5,1000,clrLightBlue,clrBlue);
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M5,1000,clrLightBlue,clrBlue);
    //iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
    //iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);           
    return(INIT_SUCCEEDED);
@@ -98,7 +98,7 @@ void OnTick()
         blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000)  )
         {   
     // получаем новые значения экстремумов
-    for (int index=0;index<3;index++)
+    for (int index=0;index<1;index++)
       {
        currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);
        currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);    
@@ -115,7 +115,7 @@ void OnTick()
       }
           
      // трейлим стоп лосс
-   /*  if (indexForTrail < 2)  // если индекс трейлинга меньше 2-х  
+     if (indexForTrail < 2)  // если индекс трейлинга меньше 2-х  
       {
        // если пробили экстремум на более старшем таймфрейме
        if (IsExtremumBeaten ( indexForTrail+1, BUY) )
@@ -123,7 +123,7 @@ void OnTick()
           indexForTrail ++;  // то переходим на более старший таймфрейм
         }
       }
-   */
+   
     } //END OF UPLOADS
   }
   

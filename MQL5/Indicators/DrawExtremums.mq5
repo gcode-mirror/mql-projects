@@ -23,12 +23,13 @@
 //----------------------------------------------------------------
  
 //--- input параметры
-input  ENUM_TIMEFRAMES period = PERIOD_H4;   // период экстремумов
-input  int     history_depth  = 1000;        // сколько свечей показывать
-input  double  percentage_ATR = 1;           // процент АТР для появления нового экстремума
-input  int     period_ATR     = 30;          // период ATR
-input  int     period_average_ATR = 1;       // период устреднения индикатора ATR
-input  color   arrowColor = clrCoral;        // цвет стрелок
+input  ENUM_TIMEFRAMES period     = PERIOD_H4;   // период экстремумов
+input  int     history_depth      = 1000;        // сколько свечей показывать
+input  double  percentage_ATR     = 1;           // процент АТР для появления нового экстремума
+input  int     period_ATR         = 30;          // период ATR
+input  int     period_average_ATR = 1;           // период устреднения индикатора ATR
+input  color   arrowColor         = clrCoral;    // цвет стрелок
+input  int     codeSymbol         = 217;         // код символа
 
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];
@@ -47,8 +48,7 @@ int handle_ATR;
               
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
-//ENUM_TIMEFRAMES tf_ATR = PERIOD_H4; // таймфрейм ATR
-ENUM_TIMEFRAMES tf_ATR = period;
+ENUM_TIMEFRAMES tf_ATR = PERIOD_H4; // таймфрейм ATR
 int depth = history_depth;
 bool series_order = true;
 //+------------------------------------------------------------------+
@@ -70,13 +70,13 @@ int OnInit()
     {
      per = tf_ATR;
     }
- 
+    
    handle_ATR = iCustom(Symbol(),per,"AverageATR",period_ATR,period_average_ATR); 
    if (handle_ATR == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать хэндл индикатора AverageATR");
      return (INIT_FAILED);
-    }  
+    }      
     
    extr = new CExtremum(Symbol(), Period(),handle_ATR/*, per, period_ATR, percentage_ATR*/);
  //  handle_ATR = iCustom(Symbol(), per,"AverageATR",
@@ -89,9 +89,8 @@ int OnInit()
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
 
-   PlotIndexSetInteger(0, PLOT_ARROW, 218);
-   PlotIndexSetInteger(1, PLOT_ARROW, 217);
-   //PlotIndexSetInteger(
+   PlotIndexSetInteger(0, PLOT_ARROW, codeSymbol);
+   PlotIndexSetInteger(1, PLOT_ARROW, codeSymbol);
    
    ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
    ArraySetAsSeries( ExtDownArrowBuffer, series_order);
@@ -110,8 +109,6 @@ void OnDeinit(const int reason)
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
 
-double rat[];
-
 
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
@@ -125,13 +122,13 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
    SExtremum extr_cur[2] = {{0, -1}, {0, -1}};
-   CopyBuffer(handle_ATR,0,TimeCurrent(),1,rat);   
-   Comment("\nСреднее ATR = ",DoubleToString(rat[0]) );
-   
    
    if(prev_calculated == 0) 
    {
-   
+   if (BarsCalculated(handle_ATR) < 1)
+    {
+    return (0);
+    }
    ArraySetAsSeries(open , series_order);
    ArraySetAsSeries(high , series_order);
    ArraySetAsSeries(low  , series_order);
