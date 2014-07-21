@@ -47,7 +47,8 @@ int handle_ATR;
               
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
-ENUM_TIMEFRAMES tf_ATR = PERIOD_H4; // таймфрейм ATR
+//ENUM_TIMEFRAMES tf_ATR = PERIOD_H4; // таймфрейм ATR
+ENUM_TIMEFRAMES tf_ATR = period;
 int depth = history_depth;
 bool series_order = true;
 //+------------------------------------------------------------------+
@@ -109,6 +110,8 @@ void OnDeinit(const int reason)
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
 
+double rat[];
+
 
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
@@ -122,6 +125,9 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
    SExtremum extr_cur[2] = {{0, -1}, {0, -1}};
+   CopyBuffer(handle_ATR,0,TimeCurrent(),1,rat);   
+   Comment("\nСреднее ATR = ",DoubleToString(rat[0]) );
+   
    
    if(prev_calculated == 0) 
    {
@@ -227,17 +233,4 @@ void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
    else if(extr.getExtr(0).direction == -1) { ret_extremums[0] = extr.getExtr(1); ret_extremums[1] = extr.getExtr(0); }
   }     
  }
-}
-
-double AverageBar (double &high[],double &low[])
-{
-  double averBarSize = 0;
-  ArraySetAsSeries(high,true);
-  ArraySetAsSeries(low,true);
-  // проходим по всем скопированным данным и вычисляем средний размер бара
-  for (int index=0;index<period_ATR;index++)
-   {
-    averBarSize = averBarSize + high[index]-low[index];
-   }
-  return (averBarSize / period_ATR);
 }
