@@ -28,7 +28,6 @@ input  int     history_depth      = 1000;        // сколько свечей показывать
 input  double  percentage_ATR     = 1;           // процент АТР для появления нового экстремума
 input  int     period_ATR         = 30;          // период ATR
 input  int     period_average_ATR = 1;           // период устреднения индикатора ATR
-input  color   arrowColor         = clrCoral;    // цвет стрелок
 input  int     codeSymbol         = 217;         // код символа
 
 //--- индикаторные буферы

@@ -24,7 +24,7 @@ MqlRates lastBarD1[];                              // буфер цен на дневнике
 // объекты классов
 CTradeManager *ctm;                                // объект торговой библиотеки
 CisNewBar     *isNewBar_D1;                        // новый бар на D1
-CBlowInfoFromExtremums *blowInfo[3];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
+CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 // дополнительные системные переменные
 bool             firstLaunch       = true;         // флаг первого запуска эксперта
 int              openedPosition    = 0;            // тип открытой позиции 
@@ -62,20 +62,22 @@ int OnInit()
    // создаем объекты класса CisNewBar
    isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
    // создаем объекты класса CBlowInfoFromExtremums
-   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,1000,clrLightBlue,clrBlue);   // 5-ти минутка
-   blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,1000,clrPink,clrRed);  // 15-ти минутка
-   blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,1000,clrLightGreen,clrGreen);   // часовик    
+   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,1000,clrLightYellow,clrYellow); // минутка
+   blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,1000,clrLightBlue,clrBlue);     // 5-ти минутка
+   blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,1000,clrPink,clrRed);          // 15-ти минутка
+   blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,1000,clrLightGreen,clrGreen);   // часовик    
    if (!blowInfo[0].IsInitFine() || !blowInfo[1].IsInitFine() ||
-       !blowInfo[2].IsInitFine() )
+       !blowInfo[2].IsInitFine() || !blowInfo[3].IsInitFine()  )
         return (INIT_FAILED);
    // пытаемся загрузить экстремумы
    if ( blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
         blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) && 
-        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000)
+        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
        )
         {
          // получаем первые экстремумы
-         for (int index=0;index<3;index++)
+         for (int index=0;index<4;index++)
            {
             lastExtrHigh[index]   =  blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // сохраним значение последнего экстремума HIGH
             lastExtrLow[index]    =  blowInfo[index].GetExtrByIndex(EXTR_LOW,0);   // сохраним значение последнего экстремума LOW
@@ -84,9 +86,10 @@ int OnInit()
    else
      return (INIT_FAILED);
    curPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M5,1000,clrLightBlue,clrBlue);
-   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
-   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);   
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M1,1000);
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M5,1000);
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M15,1000);
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_H1,1000);   
    ArrayInitialize(extrHighBeaten,false);
    ArrayInitialize(extrLowBeaten,false);   
    return(errorValue);
@@ -108,6 +111,7 @@ void OnDeinit(const int reason)
    delete blowInfo[0];
    delete blowInfo[1];
    delete blowInfo[2];
+   delete blowInfo[3];
   }
 
 void OnTick()
@@ -120,10 +124,12 @@ void OnTick()
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену     
     if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && 
         blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
-        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000)  )
+        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
+         )
         {   
     // получаем новые значения экстремумов
-    for (int index=0;index<3;index++)
+    for (int index=0;index<4;index++)
       {
        currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);
        currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);    

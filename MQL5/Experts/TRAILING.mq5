@@ -69,8 +69,8 @@ int OnInit()
    ArrayInitialize(extrHighBeaten,false);
    ArrayInitialize(extrLowBeaten,false);  
    iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M5,1000,clrLightBlue,clrBlue);
-   //iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
-   //iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);           
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);           
    return(INIT_SUCCEEDED);
   }
 void OnDeinit(const int reason)
