@@ -258,7 +258,7 @@ bool UploadBuffers ()   // получает последние значения уровней
  double GetClosestLevel (int direction) 
   {
    double cuPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-   double len = 0;  //расстояние до цены от уровня
+   double len = -1;  //расстояние до цены от уровня
    double tmpLen; 
    bool   foundLevel = false;  // флаг найденного первого уровня
    int    index;
@@ -271,17 +271,9 @@ bool UploadBuffers ()   // получает последние значения уровней
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
          {
-          if (foundLevel)
-           {
-             tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
-             if (tmpLen < len)
-              len = tmpLen;  
-           }
-          else
-           {
-            len = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
-            foundLevel = true;
-           }
+          tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
+          if (tmpLen < len || len == -1)
+           len = tmpLen;  
          }
        }
      break;
@@ -291,19 +283,10 @@ bool UploadBuffers ()   // получает последние значения уровней
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
           {
-          if (foundLevel)
-           {
-             tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
-             if (tmpLen < len)
-              len = tmpLen;
-           }
-          else
-           {
-            len =  cuPrice - buffers[index].price[0] - buffers[index].atr[0];
-            foundLevel = true;
-           }
-         }
-
+           tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
+           if (tmpLen < len || len == -1)
+            len = tmpLen;
+          }
        }     
        
       break;

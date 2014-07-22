@@ -83,7 +83,7 @@ void OnDeinit(const int reason)
 void OnTick()
   {
     ctm.OnTick();
-    ctm.DoTrailing(blowInfo[0]);   
+    ctm.DoTrailing(blowInfo[indexForTrail]);   
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену     
     if (!openedPos)
@@ -98,7 +98,7 @@ void OnTick()
         blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000)  )
         {   
     // получаем новые значения экстремумов
-    for (int index=0;index<1;index++)
+    for (int index=0;index<3;index++)
       {
        currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);
        currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);    
@@ -113,14 +113,22 @@ void OnTick()
          extrLowBeaten[index] = false;                   // и выставляем флаг пробития в false
         } 
       }
-          
+     Comment("\nM5:  HIGH = ",DoubleToString(lastExtrHigh[0].price), " LOW = ",DoubleToString(lastExtrLow[0].price),
+             "\nM15: HIGH = ",DoubleToString(lastExtrHigh[1].price), " LOW = ",DoubleToString(lastExtrLow[1].price),  
+             "\nH1:  HIGH = ",DoubleToString(lastExtrHigh[2].price), " LOW = ",DoubleToString(lastExtrLow[2].price),
+             "\n Текущая цена = ",DoubleToString(curPrice)," пред. цена = ",DoubleToString(prevPrice)     
+      );
      // трейлим стоп лосс
      if (indexForTrail < 2)  // если индекс трейлинга меньше 2-х  
       {
-       // если пробили экстремум на более старшем таймфрейме
-       if (IsExtremumBeaten ( indexForTrail+1, BUY) )
+       // если последним экстремумов являлся низких экстремум
+       if (blowInfo[indexForTrail].GetLastExtrType() == EXTR_LOW)
         {
-          indexForTrail ++;  // то переходим на более старший таймфрейм
+         // если пробили экстремум на более старшем таймфрейме
+         if (IsExtremumBeaten ( indexForTrail+1, BUY) )
+           {
+             indexForTrail ++;  // то переходим на более старший таймфрейм
+           }
         }
       }
    
@@ -131,14 +139,14 @@ void OnTick()
  {
   switch (direction)
    {
-    case BUY:
+    case SELL:
     if (LessDoubles(curPrice,lastExtrLow[index].price)&& GreatDoubles(prevPrice,lastExtrLow[index].price) && !extrLowBeaten[index])
       {      
        extrLowBeaten[index] = true;
        return (true);    
       }     
     break;
-    case SELL:
+    case BUY:
     if (GreatDoubles(curPrice,lastExtrHigh[index].price) && LessDoubles(prevPrice,lastExtrHigh[index].price) && !extrHighBeaten[index])
       {
        extrHighBeaten[index] = true;
