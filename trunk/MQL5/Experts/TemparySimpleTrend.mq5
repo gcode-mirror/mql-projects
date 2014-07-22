@@ -83,9 +83,9 @@ int OnInit()
    else
      return (INIT_FAILED);
    curPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M5,1000,clrLightBlue,clrBlue);
-   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
-   iCustom(_Symbol,_Period,"TemparyDrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);   
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M5,1000);
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M15,1000);
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_H1,1000);   
    ArrayInitialize(extrHighBeaten,false);
    ArrayInitialize(extrLowBeaten,false);   
    return(errorValue);
