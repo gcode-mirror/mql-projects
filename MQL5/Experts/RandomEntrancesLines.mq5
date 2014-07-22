@@ -258,9 +258,8 @@ bool UploadBuffers ()   // получает последние значения уровней
  double GetClosestLevel (int direction) 
   {
    double cuPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-   double len = -1;  //расстояние до цены от уровня
+   double len = 0;  //расстояние до цены от уровня
    double tmpLen; 
-   bool   foundLevel = false;  // флаг найденного первого уровня
    int    index;
    
    switch (direction)
@@ -272,7 +271,7 @@ bool UploadBuffers ()   // получает последние значения уровней
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
          {
           tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
-          if (tmpLen < len || len == -1)
+          if (tmpLen < len || len == 0)
            len = tmpLen;  
          }
        }
@@ -284,7 +283,7 @@ bool UploadBuffers ()   // получает последние значения уровней
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
           {
            tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
-           if (tmpLen < len || len == -1)
+           if (tmpLen < len || len == 0)
             len = tmpLen;
           }
        }     
