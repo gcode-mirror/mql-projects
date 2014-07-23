@@ -73,17 +73,17 @@ int OnInit()
    // создаем объекты класса CisNewBar
    isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
    // создаем объекты класса CBlowInfoFromExtremums
-   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,200,clrLightYellow,clrYellow);  // M1 
-   blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,200,clrLightYellow,clrYellow);  // M5 
-   blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,200,clrLightYellow,clrYellow); // M15 
-   blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,200,clrLightYellow,clrYellow);  // H1          
+   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,1000,clrLightYellow,clrYellow);  // M1 
+   blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,1000,clrLightYellow,clrYellow);  // M5 
+   blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,1000,clrLightYellow,clrYellow); // M15 
+   blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,1000,clrLightYellow,clrYellow);  // H1          
    if (!blowInfo[0].IsInitFine() )
         return (INIT_FAILED);
    // пытаемс€ загрузить экстремумы
-   if ( blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),200) &&
-        blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),200) &&
-        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),200) &&
-        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),200)
+   if ( blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+        blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
     )
         {
          // получаем первые экстремумы
@@ -129,10 +129,10 @@ void OnTick()
     ctm.DoTrailing(blowInfo[indexForTrail]);
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену     
-    if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),200) &&
-        blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),200) &&
-        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),200) &&
-        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),200)
+    if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+        blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
+        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
      )
         {   
     // получаем новые значени€ экстремумов
@@ -188,7 +188,7 @@ void OnTick()
             if (IsMACDCompatible(BUY))
               {                 
                // вычисл€ем стоп лосс по последнему нижнему экстремуму, переводим в пункты
-               stopLoss = int(MathAbs(curPrice - blowInfo[1].GetExtrByIndex(EXTR_LOW,0).price)/_Point);      
+               stopLoss = int(MathAbs(curPrice - blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price)/_Point);      
                // открываем позицию на BUY
                ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, 1.0, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
                // выставл€ем флаг открыти€ позиции BUY
@@ -223,7 +223,7 @@ void OnTick()
            if (IsMACDCompatible(SELL))
              {
               // вычисл€ем стоп лосс по последнему экстремуму, переводим в пункты
-              stopLoss = int(MathAbs(curPrice-blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price)/_Point);
+              stopLoss = int(MathAbs(curPrice-blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price)/_Point);
               // открываем позицию на SELL
               ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, 1.0, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
               // выставл€ем флаг открыти€ позиции SELL
@@ -235,11 +235,26 @@ void OnTick()
           }      
         }
       } // END OF GetPositionCount
-    /* else  // если позици€ уже открыта
+     else  // если позици€ уже открыта
       {
+       FileWriteString(fileHandle,
+       "\n —топ Ћосс = "+DoubleToString(ctm.GetPositionStopLoss(_Symbol) )+
+       "\n Ёкстремум M1 HIGH = "+DoubleToString(lastExtrHigh[0].price) +
+       "\n Ёкстремум M1 LOW = "+DoubleToString(lastExtrLow[0].price) +
+       "\n Ёкстремум M5 HIGH = "+DoubleToString(lastExtrHigh[1].price) +
+       "\n Ёкстремум M5 LOW = "+DoubleToString(lastExtrLow[1].price) +
+       "\n Ёкстремум M15 HIGH = "+DoubleToString(lastExtrHigh[2].price) +
+       "\n Ёкстремум M15 LOW = "+DoubleToString(lastExtrLow[2].price) +
+       "\n Ёкстремум H1 HIGH = "+DoubleToString(lastExtrHigh[3].price) +
+       "\n Ёкстремум H1 LOW = "+DoubleToString(lastExtrLow[3].price) +
+       "\n »ндекс трейлинга = "+IntegerToString(indexForTrail) +
+       "\n ÷ена = "+DoubleToString(curPrice) +
+       "\n ѕред. цена = "+DoubleToString(prevPrice) +
+       "\n"
+       );
        ChangeTrailIndex();  // то мен€ем индекс трейлинга
       }
-*/
+
     }  // END OF UPLOAD EXTREMUMS
    }
   
