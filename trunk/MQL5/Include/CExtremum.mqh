@@ -92,6 +92,8 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  
  if(extremums[0].time == buffer[0].time && !now) return(0); //исключаем повторное определение экстремумов на истории
  
+ if(extremums[0].time == buffer[0].time && !now) return(0); //исключаем повторное определение экстремумов на истории
+
  if (now)
  {
   high = buffer[0].close;
