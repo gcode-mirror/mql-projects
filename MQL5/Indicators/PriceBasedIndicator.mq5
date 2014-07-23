@@ -87,7 +87,6 @@ int OnInit()
     SetIndexBuffer(4,    ColorCandlesColors, INDICATOR_DATA);
     SetIndexBuffer(7, ColorCandlesColorsTop, INDICATOR_CALCULATIONS);
    }
-   
    SetIndexBuffer(5,    ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6,  ExtDownArrowBuffer, INDICATOR_DATA);
 

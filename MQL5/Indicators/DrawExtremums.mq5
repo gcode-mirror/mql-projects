@@ -25,9 +25,8 @@
 //--- input параметры
 input  ENUM_TIMEFRAMES period     = PERIOD_H4;   // период экстремумов
 input  int     history_depth      = 1000;        // сколько свечей показывать
-input  double  percentage_ATR     = 1;           // процент АТР для появления нового экстремума
 input  int     period_ATR         = 30;          // период ATR
-input  int     period_average_ATR = 1;           // период устреднения индикатора ATR
+input  int     period_average_ATR = 30;           // период устреднения индикатора ATR
 input  int     codeSymbol         = 217;         // код символа
 
 //--- индикаторные буферы
@@ -61,16 +60,8 @@ int OnInit()
    PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(period);
    ENUM_TIMEFRAMES per;
-   if (period > tf_ATR)
-    {
-     per = period;
-    }
-   else
-    {
-     per = tf_ATR;
-    }
-    
-   handle_ATR = iCustom(Symbol(),per,"AverageATR",period_ATR,period_average_ATR); 
+
+   handle_ATR = iCustom(Symbol(),period,"AverageATR",period_ATR,period_average_ATR); 
    if (handle_ATR == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать хэндл индикатора AverageATR");
@@ -88,7 +79,7 @@ int OnInit()
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
 
-   PlotIndexSetInteger(0, PLOT_ARROW, codeSymbol);
+   PlotIndexSetInteger(0, PLOT_ARROW, codeSymbol+1);
    PlotIndexSetInteger(1, PLOT_ARROW, codeSymbol);
    
    ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   

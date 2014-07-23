@@ -59,7 +59,7 @@ int OnInit()
    // если стартовый индекс превысил допустимое количество баров
    if (startIndex >= barsCount)
     {
-     PrintFormat("%s Ошибка инициализации индикатора AverageATR. Не корректно заданы периоды усреднения %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_Period));
+     //PrintFormat("%s Ошибка инициализации индикатора AverageATR. Не корректно заданы периоды усреднения %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_Period));
      return (INIT_FAILED);
     }
    // задаем параметры индикаторных буферов

@@ -43,32 +43,26 @@ sinput string levelStr = "";                 //ПАРАМЕТРЫ УРОВНЕЙ
 
 sinput string mn1Str   = "";                 //Месячные уровни
 input bool  flag1  = false;                  //Показывать экстремумы MN1
-input double PERCENTAGE_OF_ATR_FOR_MN = 1.5; //Процент от ATR для поиска экстремума
-input double channel_ATR_MN1  =  0.1;        //Ширина уровней
+input double channel_ATR_MN1  =  0.1;        //Ширина уровня
 
 sinput string w1Str   = "";                  //Недельные уровни
-input bool  flag2  = true;                  //Показывать экстремумы W1
-input double PERCENTAGE_OF_ATR_FOR_W1 = 1.5; //Процент от ATR для поиска экстремума
-input double channel_ATR_W1   =  0.15;       //Ширина уровней
+input bool  flag2  = false;                  //Показывать экстремумы W1
+input double channel_ATR_W1   =  0.15;       //Ширина уровня
 
 sinput string d1Str   = "";                  //Дневные уровни
-input bool  flag3  = false;                  //Показывать экстремумы D1
-input double  PERCENTAGE_OF_ATR_FOR_D1 = 2;  //Процент от ATR для поиска экстремума
-input double channel_ATR_D1   =  0.25;        //Ширина уровней
+input bool  flag3  = true;                  //Показывать экстремумы D1
+input double channel_ATR_D1   =  0.25;        //Ширина уровня
 
 sinput string h1Str   = "";                  //4-х часовые уровни
-input bool   flag4  = false;                 //Показывать экстремумы H4
-input double PERCENTAGE_OF_ATR_FOR_H4 = 3;   //Процент от ATR для поиска экстремума
-input double channel_ATR_H4   =  0.25;        //Ширина уровней 0.25 
+input bool   flag4  = true;                 //Показывать экстремумы H4
+input double channel_ATR_H4   =  0.25;        //Ширина уровня 
 
 sinput string h4Str   = "";                  //Часовые уровни
-input bool  flag5  = false;                   //Показывать экстремумы H1
-input double PERCENTAGE_OF_ATR_FOR_H1 = 1.5; //Процент от ATR для поиска экстремума
-input double channel_ATR_H1   =  0.25;        //Ширина уровней
- 
+input bool  flag5  = true;                   //Показывать экстремумы H1
+input double channel_ATR_H1   =  0.25;        //Ширина уровня 
 
 sinput string dStr   = "";                   //Цены на дневнике
-input bool  flag6  = false;                  //Показывать цены D1
+input bool  flag6  = true;                  //Показывать цены D1
 
 //////////////////////////////
 
@@ -81,11 +75,11 @@ bool show_Extr_H1 = flag5;
 bool show_Price_D1 = flag6;
 
 
-CLevel calcMN (Symbol(), PERIOD_MN1, TF_PERIOD_ATR_FOR_MN, PERCENTAGE_OF_ATR_FOR_MN, period_ATR_channel, channel_ATR_MN1);
-CLevel calcW1 (Symbol(),  PERIOD_W1, TF_PERIOD_ATR_FOR_W1, PERCENTAGE_OF_ATR_FOR_W1, period_ATR_channel, channel_ATR_W1);
-CLevel calcD1 (Symbol(),  PERIOD_D1, TF_PERIOD_ATR_FOR_D1, PERCENTAGE_OF_ATR_FOR_D1, period_ATR_channel, channel_ATR_D1);
-CLevel calcH4 (Symbol(),  PERIOD_H4, TF_PERIOD_ATR_FOR_H4, PERCENTAGE_OF_ATR_FOR_H4, period_ATR_channel, channel_ATR_H4);
-CLevel calcH1 (Symbol(),  PERIOD_H1, TF_PERIOD_ATR_FOR_H1, PERCENTAGE_OF_ATR_FOR_H1, period_ATR_channel, channel_ATR_H1);
+CLevel calcMN (_Symbol, PERIOD_MN1, -1, period_ATR_channel, channel_ATR_MN1);   //инициализация хэндла атр происходит на онинит
+CLevel calcW1 (_Symbol,  PERIOD_W1, -1, period_ATR_channel, channel_ATR_W1);    //инициализация хэндла атр происходит на онинит
+CLevel calcD1 (_Symbol,  PERIOD_D1, -1, period_ATR_channel, channel_ATR_D1);    //инициализация хэндла атр происходит на онинит
+CLevel calcH4 (_Symbol,  PERIOD_H4, -1, period_ATR_channel, channel_ATR_H4);    //инициализация хэндла атр происходит на онинит
+CLevel calcH1 (_Symbol,  PERIOD_H1, -1, period_ATR_channel, channel_ATR_H1);    //инициализация хэндла атр происходит на онинит
 
 SLevel extr_levelMN[4];
 SLevel extr_levelW1[4];
@@ -308,7 +302,17 @@ int OnInit()
  InitializeExtrArray(extr_levelH1);
  InitializeExtrArray(price_levelD1);
  
- //ATR_handle_for_price_line = iATR(Symbol(), PERIOD_D1, period_ATR_channel);
+ int handle_atr_MN = iCustom(_Symbol, PERIOD_MN1, "AverageATR", period_ATR_channel, period_average_ATR);
+ int handle_atr_W1 = iCustom(_Symbol, PERIOD_W1, "AverageATR", period_ATR_channel, period_average_ATR);
+ int handle_atr_D1 = iCustom(_Symbol, PERIOD_D1, "AverageATR", period_ATR_channel, period_average_ATR);
+ int handle_atr_H4 = iCustom(_Symbol, PERIOD_H4, "AverageATR", period_ATR_channel, period_average_ATR);
+ int handle_atr_H1 = iCustom(_Symbol, PERIOD_H1, "AverageATR", period_ATR_channel, period_average_ATR);
+ calcMN.SetHandleATR(handle_atr_MN);
+ calcW1.SetHandleATR(handle_atr_W1);
+ calcD1.SetHandleATR(handle_atr_D1);
+ calcH4.SetHandleATR(handle_atr_H4);
+ calcH1.SetHandleATR(handle_atr_H1);
+ 
  ATR_handle_for_price_line = iCustom(Symbol(),PERIOD_D1,"AverageATR",period_ATR_channel,period_average_ATR);
  
  if(Period() > PERIOD_MN1 && show_Extr_MN)  show_Extr_MN = false;
