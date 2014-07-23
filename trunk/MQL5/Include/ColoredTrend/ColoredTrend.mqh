@@ -477,13 +477,13 @@ void CColoredTrend::SetDiffToTrend()
       _difToTrend = 1.5;
       break;
    case(PERIOD_M15):
-      _difToTrend = 1.0;
+      _difToTrend = 1.3;
       break;
    case(PERIOD_H1):
-      _difToTrend = 1.0;
+      _difToTrend = 1.3;
       break;
    case(PERIOD_H4):
-      _difToTrend = 1.0;
+      _difToTrend = 1.3;
       break;
    case(PERIOD_D1):
       _difToTrend = 0.8;
