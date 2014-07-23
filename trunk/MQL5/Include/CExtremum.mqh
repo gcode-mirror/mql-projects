@@ -214,6 +214,12 @@ void CExtremum::SetPercentageATR()
 {
  switch(_tf_period)
  {
+   case(PERIOD_M1):
+      _percentage_ATR = 4.3;
+      break;
+   case(PERIOD_M5):
+      _percentage_ATR = 4.3;
+      break;
    case(PERIOD_M15):
       _percentage_ATR = 2.2;
       break;

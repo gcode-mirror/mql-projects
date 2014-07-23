@@ -12,7 +12,7 @@
 //+------------------------------------------------------------------+
 #include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
 #include <CompareDoubles.mqh>
-#include <CIsNewBar.mqh>
+#include <Lib CIsNewBar.mqh>
 #include <TradeManager\TradeManager.mqh>
 #include <TradeManager\ReplayPosition.mqh>  
 
@@ -47,6 +47,9 @@ double takeProfit, stopLoss;
 double high_buf[], low_buf[], close_buf[1], open_buf[1], pbi_buf[1];
 ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
 CPosition *pos;            // указатель на позицию
+CisNewBar *isNewBarM1;
+CisNewBar *isNewBarM5;
+CisNewBar *isNewBarM15;
 
 int handle_PBI;
 int handle_19Lines;
@@ -83,7 +86,10 @@ int OnInit()
    }
    
    rp = new ReplayPosition(symbol, timeframe, percentATRforReadyToReplay, percentATRforTrailing);
-   handle_PBI     = iCustom(symbol, timeframe, "PriceBasedIndicator");
+   isNewBarM1  = new CisNewBar(symbol, PERIOD_M1);
+   isNewBarM5  = new CisNewBar(symbol, PERIOD_M5);
+   isNewBarM15 = new CisNewBar(symbol, PERIOD_M15);
+   handle_PBI     = iCustom(symbol, PERIOD_M15, "PriceBasedIndicator");
    handle_19Lines = iCustom(symbol, timeframe, "NineteenLines");     
    if (handle_PBI == INVALID_HANDLE || handle_19Lines == INVALID_HANDLE)
     {
@@ -116,76 +122,23 @@ void OnTick()
    if (replayPositions)
      rp.CustomPosition();
    //переменные для хранения результатов работы с ценовым графиком
-   int errLow = 0;                                                   
-   int errHigh = 0;                                                   
-   int errClose = 0;
-   int errOpen = 0;
-   int errPBI = 0;
-
    
-   double sum = 0;
-   double avgBar = 0;
-   double lastBar = 0;
-   int i = 0;   // счетчик
-   long positionType;
-
-   static CIsNewBar isNewBar;
-   
-   if(isNewBar.isNewBar(symbol, timeframe))
+   if(isNewBarM1.isNewBar())
    {
-    //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
-    errLow = CopyLow(symbol, timeframe, 1, historyDepth, low_buf);
-    errHigh = CopyHigh(symbol, timeframe, 1, historyDepth, high_buf);
-    errClose = CopyClose(symbol, timeframe, 1, 1, close_buf);          
-    errOpen = CopyOpen(symbol, timeframe, 1, 1, open_buf);
-    errPBI  = CopyBuffer(handle_PBI, 4, 1, 1, pbi_buf);
-    UploadBuffers();
-    
-    if(errLow < 0 || errHigh < 0 || errClose < 0 || errOpen < 0)         //если есть ошибки
-    {
-     Alert("Не удалось скопировать данные из буфера ценового графика");  //то выводим сообщение в лог об ошибке
-     return;                                                             //и выходим из функции
-    }
-    
-    if(errPBI < 0)                                                           //если есть ошибки
-    {
-     Alert("Не удалось скопировать данные из вспомогательного индикатора");  //то выводим сообщение в лог об ошибке
-     return;                                                                 //и выходим из функции
-    }
-    
-    for(i = 0; i < historyDepth; i++)
-    {
-     sum = sum + high_buf[i] - low_buf[i];  
-    }
-    avgBar = sum / historyDepth;
-    //lastBar = high_buf[i-1] - low_buf[i-1];
-    lastBar = MathAbs(open_buf[0] - close_buf[0]);
-    
-    if(GreatDoubles(lastBar, avgBar*(1 + supremacyPercent)))
-    {
-     double point = SymbolInfoDouble(symbol, SYMBOL_POINT);
-     int digits = SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-     double vol=MathPow(10.0, digits); 
-     if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
-     {  
-      pos_type = opSell;
-      stopLoss = CountStoploss(-1);
-      if(pbi_buf[0] == MOVE_TYPE_TREND_UP || pbi_buf[0] == MOVE_TYPE_TREND_UP_FORBIDEN ||
-          GetClosestLevel(-1) <= levelsKo*GetClosestLevel(1))
-       return;
-     }
-     if(GreatDoubles(close_buf[0], open_buf[0]))
-     { 
-      pos_type = opBuy;
-      stopLoss = CountStoploss(1);
-      if(pbi_buf[0] == MOVE_TYPE_TREND_DOWN || pbi_buf[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN ||
-         GetClosestLevel(1) <= levelsKo*GetClosestLevel(-1))
-       return;
-     }
-     takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
-     
-     ctm.OpenUniquePosition(symbol, timeframe, pos_type, DEFAULT_LOT, stopLoss, takeProfit, trailingType, minProfit, trailingStop, trailingStep, priceDifference);
-    }
+    CheckHugeBar(PERIOD_M1);
+    PrintFormat("Большой бар на М1. Открыл позицию");
+   }
+   
+   if(isNewBarM5.isNewBar())
+   {
+    CheckHugeBar(PERIOD_M5);
+    PrintFormat("Большой бар на М5. Открыл позицию");
+   }
+   
+   if(isNewBarM15.isNewBar())
+   {
+    CheckHugeBar(PERIOD_M15);
+    PrintFormat("Большой бар на М15. Открыл позицию");
    }
  
    return;   
@@ -202,7 +155,80 @@ void OnTrade()
    }
   }
   
-bool UploadBuffers()   // получает последние значения уровней
+bool CheckHugeBar(ENUM_TIMEFRAMES tf)
+{
+ int errLow = 0;                                                   
+ int errHigh = 0;                                                   
+ int errClose = 0;
+ int errOpen = 0;
+ int errPBI = 0;
+   
+ double sum = 0;
+ double avgBar = 0;
+ double lastBar = 0;
+ long positionType;
+
+ //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
+ errLow   =   CopyLow(symbol, tf, 1, historyDepth, low_buf);
+ errHigh  =  CopyHigh(symbol, tf, 1, historyDepth, high_buf);
+ errClose = CopyClose(symbol, tf, 1, 1, close_buf);          
+ errOpen  =  CopyOpen(symbol, tf, 1, 1, open_buf);
+ errPBI   = CopyBuffer(handle_PBI, 4, 1, 1, pbi_buf);
+ Upload19LinesBuffers();
+   
+ if(errLow < 0 || errHigh < 0 || errClose < 0 || errOpen < 0)         //если есть ошибки
+ {
+  Alert("Не удалось скопировать данные из буфера ценового графика");  //то выводим сообщение в лог об ошибке
+  return(false);                                                             //и выходим из функции
+ }
+   
+ if(errPBI < 0)                                                           //если есть ошибки
+ {
+  Alert("Не удалось скопировать данные из вспомогательного индикатора");  //то выводим сообщение в лог об ошибке
+  return(false);                                                                 //и выходим из функции
+ }
+   
+ for(int i = 0; i < historyDepth; i++)
+  sum = sum + high_buf[i] - low_buf[i];  
+ 
+ avgBar = sum / historyDepth;
+ lastBar = MathAbs(open_buf[0] - close_buf[0]);
+    
+ if(GreatDoubles(lastBar, avgBar*(1 + supremacyPercent)))
+ {
+  double point = SymbolInfoDouble(symbol, SYMBOL_POINT);
+  int digits  = SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+  double vol=MathPow(10.0, digits); 
+  if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
+  {  
+   pos_type = opSell;
+   stopLoss = CountStoploss(-1);
+   if(pbi_buf[0] == MOVE_TYPE_TREND_UP || pbi_buf[0] == MOVE_TYPE_TREND_UP_FORBIDEN ||
+      GetClosestLevel(-1) <= levelsKo*GetClosestLevel(1))
+    return(false);
+  }
+  if(GreatDoubles(close_buf[0], open_buf[0]))
+  { 
+   pos_type = opBuy;
+   stopLoss = CountStoploss(1);
+   if(pbi_buf[0] == MOVE_TYPE_TREND_DOWN || pbi_buf[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN ||
+      GetClosestLevel(1) <= levelsKo*GetClosestLevel(-1))
+    return(false);
+  }
+  takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
+    
+  ctm.OpenUniquePosition(symbol, timeframe, pos_type, DEFAULT_LOT, stopLoss, takeProfit, trailingType, minProfit, trailingStop, trailingStep, priceDifference);
+ }
+ ArrayInitialize(  low_buf, EMPTY_VALUE);
+ ArrayInitialize( high_buf, EMPTY_VALUE);
+ ArrayInitialize(close_buf, EMPTY_VALUE);
+ ArrayInitialize( open_buf, EMPTY_VALUE);
+ ArrayInitialize(  pbi_buf, EMPTY_VALUE);
+ Initialize19LinesBuffers();
+ return(true);
+}
+  
+bool Upload19LinesBuffers()   // получает последние значения уровней
 {
  int copiedPrice;
  int copiedATR;
@@ -218,6 +244,15 @@ bool UploadBuffers()   // получает последние значения уровней
   }
  }
  return(true);     
+}
+
+void Initialize19LinesBuffers()   // получает последние значения уровней
+{
+ for (int i = 0; i < 20; i++)
+ {
+  ArrayInitialize(buffers[i].price, EMPTY_VALUE);
+  ArrayInitialize(buffers[i].atr  , EMPTY_VALUE);  
+ } 
 }
 
 double GetClosestLevel(int direction)  // возвращает ближайший уровень к текущей цене
@@ -297,7 +332,8 @@ int CountStoploss(int point)
   {
    if (LessDoubles(direction*bufferStopLoss[i], direction*priceAB))
    {
-    stopLoss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point()) + ADD_TO_STOPPLOSS;
+    PrintFormat("Last extremum %f", bufferStopLoss[i]);
+    stopLoss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point());// + ADD_TO_STOPPLOSS;
     break;
    }
   }

@@ -474,7 +474,7 @@ void CColoredTrend::SetDiffToTrend()
  switch(_period)
  {
    case(PERIOD_M5):
-      _difToTrend = 1.0;
+      _difToTrend = 1.5;
       break;
    case(PERIOD_M15):
       _difToTrend = 1.0;

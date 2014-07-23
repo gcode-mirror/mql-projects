@@ -25,22 +25,22 @@ class CLevel: public CExtremum
  double _percentageATR_channel;
  
  public:
- CLevel(string symbol, ENUM_TIMEFRAMES tf, ENUM_TIMEFRAMES tf_ATR, double percentageATR_price, int period_ATR_channel, double percentageATR_channel);
+ CLevel(string symbol, ENUM_TIMEFRAMES tf, int handle_atr, int period_ATR_channel, double percentageATR_channel);
 ~CLevel();
 
  void RecountLevel(datetime start_pos_time = __DATETIME__, bool now = true);
  SLevel getLevel(int i);
+ void SetHandleATR(int handle);
 };
 
-CLevel::CLevel(string symbol, ENUM_TIMEFRAMES tf, ENUM_TIMEFRAMES tf_ATR, double percentageATR_price, int period_ATR_channel, double percentageATR_channel):
-               _period_ATR_channel (period_ATR_channel),
+CLevel::CLevel(string symbol, ENUM_TIMEFRAMES tf, int handle_atr, int period_atr_channel, double percentageATR_channel):
+               _period_ATR_channel (period_atr_channel),
                _percentageATR_channel (percentageATR_channel)
                {
                 _symbol = symbol;
                 _tf_period = tf;
-                _tf_ATR = tf_ATR;
-                _period_ATR = ATR_PERIOD;
-                _percentage_ATR = percentageATR_price;
+                _handle_ATR = handle_atr;
+                 SetPercentageATR();
                 _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
                }
 CLevel::~CLevel()
@@ -53,7 +53,7 @@ CLevel::~CLevel()
 void CLevel::RecountLevel(datetime start_pos_time = __DATETIME__, bool now = true)
 {
  int count_new_extrs = RecountExtremum(start_pos_time, now);
- double level_channel = (AverageBar(_tf_period, _period_ATR_channel, start_pos_time) * _percentageATR_channel)/2;
+ double level_channel = (AverageBar(start_pos_time) * _percentageATR_channel)/2;
  
  if(count_new_extrs == 1)               //в случае когда по€вилс€ один экстремум на одном баре
  {
@@ -85,4 +85,10 @@ SLevel CLevel::getLevel(int i)
  result.extr = extremums[i];
  result.channel = channel[i];
  return(result);
+}
+
+void CLevel::SetHandleATR(int handle)
+{
+ if(handle != INVALID_HANDLE)
+  _handle_ATR = handle;
 }
