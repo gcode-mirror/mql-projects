@@ -65,6 +65,7 @@ public:
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
   int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
   int    GetPositionPointsProfit(string symbol);
+  double GetPositionStopLoss(string symbol);                  // возвращает текущий стоп лосс позиции по символу
   ENUM_TM_POSITION_TYPE GetPositionType();
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
   
@@ -193,6 +194,26 @@ int CTradeManager::GetPositionPointsProfit(string symbol)
   {
    int profit = pos.getPositionPointsProfit();
    return(profit);
+  }
+ }
+ return(0);
+}
+
+
+//+------------------------------------------------------------------+
+//|  ¬озвращает текущий стоп лосс позиции по символу                 |
+//+------------------------------------------------------------------+
+double CTradeManager::GetPositionStopLoss(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   double stopLoss = pos.getStopLossPrice();
+   return(stopLoss);
   }
  }
  return(0);
