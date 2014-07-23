@@ -40,7 +40,7 @@ string symbol;           //переменная для хранения символа
 datetime history_start;
 
 CTradeManager ctm;       //торговый класс
-ReplayPosition *rp;      //класс отыгрыша убыточной позиции
+//ReplayPosition *rp;      //класс отыгрыша убыточной позиции
 MqlTick tick;
 
 double takeProfit, stopLoss;
@@ -85,7 +85,7 @@ int OnInit()
     break;
    }
    
-   rp = new ReplayPosition(symbol, timeframe, percentATRforReadyToReplay, percentATRforTrailing);
+   //rp = new ReplayPosition(symbol, timeframe, percentATRforReadyToReplay, percentATRforTrailing);
    isNewBarM1  = new CisNewBar(symbol, PERIOD_M1);
    isNewBarM5  = new CisNewBar(symbol, PERIOD_M5);
    isNewBarM15 = new CisNewBar(symbol, PERIOD_M15);
@@ -108,7 +108,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   delete rp;
+   //delete rp;
    // Освобождаем динамические массивы от данных
    ArrayFree(low_buf);
    ArrayFree(high_buf);
@@ -119,8 +119,7 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    ctm.OnTick();
-   if (replayPositions)
-     rp.CustomPosition();
+   //if (replayPositions) rp.CustomPosition();
    //переменные для хранения результатов работы с ценовым графиком
    
    if(isNewBarM1.isNewBar())
@@ -147,10 +146,10 @@ void OnTick()
 void OnTrade()
   {
    ctm.OnTrade();
-   if(replayPositions)rp.OnTrade();
+   //if(replayPositions)rp.OnTrade();
    if (history_start != TimeCurrent())
    {
-    rp.setArrayToReplay(ctm.GetPositionHistory(history_start));
+    //rp.setArrayToReplay(ctm.GetPositionHistory(history_start));
     history_start = TimeCurrent() + 1;
    }
   }
