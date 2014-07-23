@@ -16,23 +16,22 @@
 //----------------------------------------------------------------
 #include <CompareDoubles.mqh>
 #include <DrawExtemums/CDrawExtremums.mqh>
-#include <TMPCExtremum.mqh>
+#include <ChartObjects\ChartObjectsLines.mqh>
+#include <CExtremum.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <CLog.mqh>
 #include <StringUtilities.mqh>
-#include <ChartObjects/ChartObjectsLines.mqh>      // для рисования линий расхождения
-
 //----------------------------------------------------------------
  
 //--- input параметры
-input  ENUM_TIMEFRAMES period = PERIOD_H4;   // период экстремумов
-input  int     history_depth  = 1000;        // сколько свечей показывать
-input  color   colorLineLow  =  clrRed;      // цвет индикатора нижних экстремумов
-input  color   colorLineHigh =  clrBlue;     // цвет индикатора верхних экстремумов
-input  double  percentage_ATR = 1;           // процент АТР для появления нового экстремума
-input  int     period_ATR     = 30;          // период ATR
-input  int     period_average_ATR = 1;       // период устреднения индикатора ATR
-
+input  ENUM_TIMEFRAMES period     = PERIOD_H4;    // период экстремумов
+input  int     history_depth      = 1000;         // сколько свечей показывать
+input  double  percentage_ATR     = 1;            // процент АТР для появления нового экстремума
+input  int     period_ATR         = 30;           // период ATR
+input  int     period_average_ATR = 1;            // период устреднения индикатора ATR
+input  int     codeSymbol         = 217;          // код символа
+input  color   colorLineLow       = clrLightBlue; // цвет линии верхних экстремумов
+input  color   colorLineHigh      = clrBlue;      // цвет линий нижних экстремумов
 
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];
@@ -44,17 +43,17 @@ int jumper        = 0;                       // переменная-попрыгун. ня ^_^
 
 double lastExtrUpValue;                      // значение последнего экстремума
 double lastExtrDownValue;                    // значение последнего экстемума   
-int    handle_ATR;                           // хэндл ATR
-double bufferATR[];                          // буфер ATR
 
 CisNewBar NewBarCurrent;
 CExtremum *extr;
 CChartObjectHLine  *horLineUp;               // объект класса горизонтальной линии верхних экстремумов
-CChartObjectHLine  *horLineDown;             // объект класса горизонтальной линии нижних экстремумов        
+CChartObjectHLine  *horLineDown;             // объект класса горизонтальной линии нижних экстремумов
+
+int handle_ATR;
               
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
-ENUM_TIMEFRAMES tf_ATR = PERIOD_H4;          // таймфрейм ATR
+ENUM_TIMEFRAMES tf_ATR = PERIOD_H4; // таймфрейм ATR
 int depth = history_depth;
 bool series_order = true;
 bool drawUpExtr = false;
@@ -81,7 +80,14 @@ int OnInit()
      per = tf_ATR;
     }
     
-   extr = new CExtremum(Symbol(), per, handle_ATR/*, per, period_ATR, percentage_ATR*/);
+   handle_ATR = iCustom(Symbol(),per,"AverageATR",period_ATR,period_average_ATR); 
+   if (handle_ATR == INVALID_HANDLE)
+    {
+     Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать хэндл индикатора AverageATR");
+     return (INIT_FAILED);
+    }      
+    
+   extr = new CExtremum(Symbol(), Period(),handle_ATR/*, per, period_ATR, percentage_ATR*/);
  //  handle_ATR = iCustom(Symbol(), per,"AverageATR",
  //  handle_ATR = iATR(Symbol(), per, period_ATR);
 
@@ -92,18 +98,11 @@ int OnInit()
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
 
-   PlotIndexSetInteger(0, PLOT_ARROW, 218);
-   PlotIndexSetInteger(1, PLOT_ARROW, 217);
+   PlotIndexSetInteger(0, PLOT_ARROW, codeSymbol);
+   PlotIndexSetInteger(1, PLOT_ARROW, codeSymbol);
    
    ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
    ArraySetAsSeries( ExtDownArrowBuffer, series_order);
-   
-   handle_ATR = iATR(_Symbol,period,period_ATR);
-   if (handle_ATR == INVALID_HANDLE)
-    {
-     Print("Не удалось создать хэндл индикатора ATR");
-     return (INIT_FAILED);
-    }
    
    return(INIT_SUCCEEDED);
   }
@@ -120,8 +119,6 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 
 
-
-
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
                 const datetime &time[],
@@ -134,10 +131,13 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
    SExtremum extr_cur[2] = {{0, -1}, {0, -1}};
- 
+   
    if(prev_calculated == 0) 
    {
-   
+   if (BarsCalculated(handle_ATR) < 1)
+    {
+    return (0);
+    }
    ArraySetAsSeries(open , series_order);
    ArraySetAsSeries(high , series_order);
    ArraySetAsSeries(low  , series_order);
@@ -152,8 +152,6 @@ int OnCalculate(const int rates_total,
    
    for(int i = depth-1; i >= 0;  i--)    
    {
-    if (CopyBuffer(handle_ATR,0,i,1,bufferATR) < 1)
-     return (0);
     RecountUpdated(time[i], false, extr_cur);
     if (extr_cur[0].direction > 0)
     {
@@ -165,6 +163,7 @@ int OnCalculate(const int rates_total,
        ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
        DrawIndicator(lastExtrDownValue,-1,colorLineLow);  
        drawDownExtr = true;     
+       
       }
      jumper = 1;
      indexPrevUp = i;  // обновляем предыдущий индекс
@@ -178,8 +177,8 @@ int OnCalculate(const int rates_total,
      if (jumper == 1)
       {
        ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
-       DrawIndicator(lastExtrUpValue,1,colorLineHigh);
-       drawUpExtr = true;
+       DrawIndicator(lastExtrUpValue,1,colorLineHigh);   
+       drawUpExtr = true; 
       }
      jumper = -1;
      indexPrevDown = i;  // обновляем предыдущий индекс      
@@ -192,9 +191,6 @@ int OnCalculate(const int rates_total,
    PrintFormat("%s Первый расчет индикатора ОКОНЧЕН.", __FUNCTION__);
    return (rates_total);
   }
-
-   if (CopyBuffer(handle_ATR,0,0,1,bufferATR) < 1)
-    return (rates_total);
    
    //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
    RecountUpdated(time[rates_total-1], true, extr_cur);
@@ -208,8 +204,6 @@ int OnCalculate(const int rates_total,
     if (jumper == -1)
     {
      ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue; 
-       DrawIndicator(lastExtrDownValue,-1,colorLineLow);  
-       drawDownExtr = true;   
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
@@ -222,8 +216,6 @@ int OnCalculate(const int rates_total,
     if (jumper == 1)
     {
      ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
-       DrawIndicator(lastExtrUpValue,1,colorLineHigh);   
-       drawUpExtr = true;  
     }
     jumper = -1;
     indexPrevDown = rates_total-1;  // обновляем предыдущий индекс      
@@ -237,7 +229,7 @@ int OnCalculate(const int rates_total,
   
 void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
 {
- int count_new_extrs = extr.RecountExtremum(start_pos, now,bufferATR[0]);
+ int count_new_extrs = extr.RecountExtremum(start_pos, now);
  if (count_new_extrs > 0)
  { //В массиве возвращаемых экструмумов на 0 месте стоит max, на месте 1 стоит min
   if(count_new_extrs == 1)
@@ -277,6 +269,4 @@ void DrawIndicator (double price,int type,color colorLine)
      horLineDown.Create(0,"downLine",0,price);
      horLineDown.Color(colorLineLow);   
     }    
-   
-    
  }

@@ -68,9 +68,9 @@ int OnInit()
    curPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID); 
    ArrayInitialize(extrHighBeaten,false);
    ArrayInitialize(extrLowBeaten,false);  
-   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M5,1000,clrLightBlue,clrBlue);
-   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M15,1000,clrPink,clrRed);
-   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_H1,1000,clrLightGreen,clrGreen);           
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M5,1000);
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M15,1000);
+   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_H1,1000);           
    return(INIT_SUCCEEDED);
   }
 void OnDeinit(const int reason)
@@ -139,14 +139,14 @@ void OnTick()
  {
   switch (direction)
    {
-    case SELL:
+    case BUY:
     if (LessDoubles(curPrice,lastExtrLow[index].price)&& GreatDoubles(prevPrice,lastExtrLow[index].price) && !extrLowBeaten[index])
       {      
        extrLowBeaten[index] = true;
        return (true);    
       }     
     break;
-    case BUY:
+    case SELL:
     if (GreatDoubles(curPrice,lastExtrHigh[index].price) && LessDoubles(prevPrice,lastExtrHigh[index].price) && !extrHighBeaten[index])
       {
        extrHighBeaten[index] = true;

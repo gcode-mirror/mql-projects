@@ -44,9 +44,20 @@ Extr             currentExtrHigh[4];               // буфер текущих экстремумов 
 Extr             currentExtrLow[4];                // буфер текущих экстремумов по LOW
 bool             extrHighBeaten[4];                // буфер флагов пробития экстремумов HIGH
 bool             extrLowBeaten[4];                 // буфер флагов пробития экстремумов LOW
+
+// временные переменные
+int  fileHandle;
+int  count=0;
                            
 int OnInit()
   {
+   // создаем файл статистики на запись
+   fileHandle = FileOpen("STAT_SIMPLE_TREND.txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+   if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
+    {
+     Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось создать файл статистики");
+     return (INIT_FAILED);
+    }  
    int errorValue  = INIT_SUCCEEDED;  // результат инициализации эксперта
    // пытаемся инициализировать хэндлы расхождений MACD 
    handleSmydMACD_M5  = iCustom(_Symbol,PERIOD_M5,"TemparySMYDMACD","",clrBlue);  
@@ -62,19 +73,18 @@ int OnInit()
    // создаем объекты класса CisNewBar
    isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
    // создаем объекты класса CBlowInfoFromExtremums
-   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,1000,clrLightYellow,clrYellow); // минутка
-   blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,1000,clrLightBlue,clrBlue);     // 5-ти минутка
-   blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,1000,clrPink,clrRed);          // 15-ти минутка
-   blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,1000,clrLightGreen,clrGreen);   // часовик    
-   if (!blowInfo[0].IsInitFine() || !blowInfo[1].IsInitFine() ||
-       !blowInfo[2].IsInitFine() || !blowInfo[3].IsInitFine()  )
+   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,200,clrLightYellow,clrYellow);  // M1 
+   blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,200,clrLightYellow,clrYellow);  // M5 
+   blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,200,clrLightYellow,clrYellow); // M15 
+   blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,200,clrLightYellow,clrYellow);  // H1          
+   if (!blowInfo[0].IsInitFine() )
         return (INIT_FAILED);
    // пытаемся загрузить экстремумы
-   if ( blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
-        blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) && 
-        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
-        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
-       )
+   if ( blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),200) &&
+        blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),200) &&
+        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),200) &&
+        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),200)
+    )
         {
          // получаем первые экстремумы
          for (int index=0;index<4;index++)
@@ -85,11 +95,7 @@ int OnInit()
        }
    else
      return (INIT_FAILED);
-   curPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M1,1000);
-   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M5,1000);
-   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_M15,1000);
-   iCustom(_Symbol,_Period,"DrawExtremums",PERIOD_H1,1000);   
+   curPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
    ArrayInitialize(extrHighBeaten,false);
    ArrayInitialize(extrLowBeaten,false);   
    return(errorValue);
@@ -112,6 +118,7 @@ void OnDeinit(const int reason)
    delete blowInfo[1];
    delete blowInfo[2];
    delete blowInfo[3];
+   FileClose(fileHandle);
   }
 
 void OnTick()
@@ -122,29 +129,28 @@ void OnTick()
     ctm.DoTrailing(blowInfo[indexForTrail]);
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену     
-    if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) && 
-        blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
-        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
-        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
-         )
+    if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),200) &&
+        blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),200) &&
+        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),200) &&
+        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),200)
+     )
         {   
     // получаем новые значения экстремумов
     for (int index=0;index<4;index++)
       {
-       currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);
-       currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);    
-       if (currentExtrHigh[index].time != lastExtrHigh[index].time)          // если пришел новый HIGH экстремум
+       currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);
+       currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);    
+       if (currentExtrHigh[index].time != lastExtrHigh[index].time && currentExtrHigh[index].price)          // если пришел новый HIGH экстремум
         {
          lastExtrHigh[index] = currentExtrHigh[index];   // то сохраняем текущий экстремум в качестве последнего
          extrHighBeaten[index] = false;                  // и выставляем флаг пробития  в false     
         }
-       if (currentExtrLow[index].time != lastExtrLow[index].time)            // если пришел новый LOW экстремум
+       if (currentExtrLow[index].time != lastExtrLow[index].time && currentExtrLow[index].price)            // если пришел новый LOW экстремум
         {
          lastExtrLow[index] = currentExtrLow[index];     // то сохраняем текущий экстремум в качестве последнего
          extrLowBeaten[index] = false;                   // и выставляем флаг пробития в false
         } 
       } 
-              
     // если это первый запуск эксперта или сформировался новый бар 
     if (firstLaunch || isNewBar_D1.isNewBar() > 0)
     {
@@ -154,44 +160,86 @@ void OnTick()
        lastTendention = GetTendention(lastBarD1[0].open,lastBarD1[0].close);        // получаем предыдущую тенденцию 
       }
     }
-     // если общая тенденция  - вверх
-     if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_UP)
-     {   
-      // если текущая цена пробила один из экстемумов на одном из таймфреймов
-      if ( IsExtremumBeaten(0,BUY) || IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) )
+     // если позиция еще не открыта
+     if (ctm.GetPositionCount() == 0)
       {
-       // если текущее расхождение MACD НЕ противоречит текущему движению
-       if (IsMACDCompatible(BUY))
-       {                 
-        // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
-        stopLoss = int(MathAbs(curPrice - blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price)/_Point);      
-        // открываем позицию на BUY
-        ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, 1.0, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
-        // выставляем флаг открытия позиции BUY
-        openedPosition = BUY;                
-       } 
+       // если общая тенденция  - вверх
+       if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_UP)
+        {   
+             count++;
+             FileWriteString(fileHandle,"\n ["+count+"]"+
+             " Тенденция вверх "+
+             "\nЦена = "+DoubleToString(curPrice)+
+             "\nпред. Цена  = "+DoubleToString(prevPrice));
+         // если текущая цена пробила один из экстемумов на одном из таймфреймов
+         if ( IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY) )
+           {
+             
+             if (extrHighBeaten[1])
+               FileWriteString(fileHandle,"\nПробит верхний экстремум M5 : "+
+               " Экср = "+DoubleToString(lastExtrHigh[1].price));
+             if (extrHighBeaten[2])
+               FileWriteString(fileHandle,"\nПробит верхний экстремум M15 : "+
+               " Экср = "+DoubleToString(lastExtrHigh[2].price));
+             if (extrHighBeaten[3])
+               FileWriteString(fileHandle,"\nПробит верхний экстремум H1 : "+
+               " Экср = "+DoubleToString(lastExtrHigh[3].price));                              
+            // если текущее расхождение MACD НЕ противоречит текущему движению
+            if (IsMACDCompatible(BUY))
+              {                 
+               // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
+               stopLoss = int(MathAbs(curPrice - blowInfo[1].GetExtrByIndex(EXTR_LOW,0).price)/_Point);      
+               // открываем позицию на BUY
+               ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, 1.0, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
+               // выставляем флаг открытия позиции BUY
+               openedPosition = BUY;  
+               // обнуляем счетчик трейлинга
+               indexForTrail = 0;
+               FileWriteString(fileHandle,"\nОткрылись на BUY со стопом = "+DoubleToString(blowInfo[1].GetExtrByIndex(EXTR_LOW,0).price));              
+              } 
+           }
+        }
+      // если общая тенденция - вниз
+      if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_DOWN)
+       {              
+             count++;
+             FileWriteString(fileHandle,"\n ["+count+"]"+
+             " Тенденция вниз "+
+             "\nЦена = "+DoubleToString(curPrice)+
+             "\nпред. Цена  = "+DoubleToString(prevPrice));       
+        // если текущая цена пробила один из экстемумов на одном из таймфреймов
+        if ( IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL) )
+          {    
+             if (extrLowBeaten[1])
+               FileWriteString(fileHandle,"\nПробит нижний экстремум M5 : "+
+               " Экср = "+DoubleToString(lastExtrLow[1].price));
+             if (extrLowBeaten[2])
+               FileWriteString(fileHandle,"\nПробит нижний экстремум M15 : "+
+               " Экср = "+DoubleToString(lastExtrLow[2].price));
+             if (extrLowBeaten[3])
+               FileWriteString(fileHandle,"\nПробит нижний экстремум H1 : "+
+               " Экср = "+DoubleToString(lastExtrLow[3].price));            
+           // если текущее расхождение MACD НЕ противоречит текущему движению
+           if (IsMACDCompatible(SELL))
+             {
+              // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
+              stopLoss = int(MathAbs(curPrice-blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price)/_Point);
+              // открываем позицию на SELL
+              ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, 1.0, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
+              // выставляем флаг открытия позиции SELL
+              openedPosition = SELL;  
+              // обнуляем счетчик трейлинга
+              indexForTrail = 0; 
+              FileWriteString(fileHandle,"\nОткрылись на SELL со стопом = "+DoubleToString(blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price));                                                   
+             } 
+          }      
+        }
+      } // END OF GetPositionCount
+    /* else  // если позиция уже открыта
+      {
+       ChangeTrailIndex();  // то меняем индекс трейлинга
       }
-     }
-     // если общая тенденция - вниз
-     if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_DOWN)
-     {              
-      // если текущая цена пробила один из экстемумов на одном из таймфреймов
-      if ( IsExtremumBeaten(0,SELL) || IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL)  )
-      {    
-       // если текущее расхождение MACD НЕ противоречит текущему движению
-       if (IsMACDCompatible(SELL))
-       {
-        // вычисляем стоп лосс по последнему экстремуму, переводим в пункты
-        stopLoss = int(MathAbs(curPrice-blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price)/_Point);
-        // открываем позицию на SELL
-        ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, 1.0, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
-        // выставляем флаг открытия позиции SELL
-        openedPosition = SELL;                                         
-       } 
-      }      
-     }
-    
-
+*/
     }  // END OF UPLOAD EXTREMUMS
    }
   
@@ -214,6 +262,9 @@ bool IsMACDCompatible(int direction)        // проверяет, не противоречит ли рас
   Print("Ошибка эксперта SimpleTrend. Не удалось получить данные о расхождениях");
   return (false);
  }        
+ FileWriteString(fileHandle,"\nMACD_M5 = "+DoubleToString(divMACD_M5[0])+
+                            "\nMACD_M15 = "+DoubleToString(divMACD_M15[0])+
+                            "\nMACD_H1 = "+DoubleToString(divMACD_H1[0]));
  // dir = 1 или -1, div = -1 или 1; Если расхождение против направления, то рез-т будет 0 = false, в противном случае true
  return ((divMACD_M5[0]+direction) && (divMACD_M15[0]+direction) && (divMACD_H1[0]+direction));
 }
@@ -222,14 +273,14 @@ bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой эк
  {
   switch (direction)
    {
-    case BUY:
+    case SELL:
     if (LessDoubles(curPrice,lastExtrLow[index].price)&& GreatDoubles(prevPrice,lastExtrLow[index].price) && !extrLowBeaten[index])
       {      
        extrLowBeaten[index] = true;
        return (true);    
       }     
     break;
-    case SELL:
+    case BUY:
     if (GreatDoubles(curPrice,lastExtrHigh[index].price) && LessDoubles(prevPrice,lastExtrHigh[index].price) && !extrHighBeaten[index])
       {
        extrHighBeaten[index] = true;
