@@ -176,7 +176,7 @@ void OnTick()
         // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
         stopLoss = int(MathAbs(curPrice - blowInfo[1].GetExtrByIndex(EXTR_LOW,0).price)/_Point);
         // открываем позицию на BUY
-        Print("STOP LOSS = ",IntegerToString(stopLoss) );
+        Print("STOP LOSS = ",IntegerToString
         ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lot, stopLoss, 0/*, trailingType*/);
         // выставляем флаг открытия позиции BUY
         openedPosition = BUY;         
