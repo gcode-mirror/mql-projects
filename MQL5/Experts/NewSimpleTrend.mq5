@@ -173,7 +173,7 @@ void OnTick()
                // выставляем лот по умолчанию
                lotReal = lot;
                // открываем позицию на BUY
-               ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, 1.0, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
+               ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
                // выставляем флаг открытия позиции BUY
                openedPosition = BUY;  
                // обнуляем счетчик трейлинга
@@ -198,7 +198,7 @@ void OnTick()
               // выставляем лот по умолчанию
               lotReal = lot;
               // открываем позицию на SELL
-              ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, 1.0, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
+              ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
               // выставляем флаг открытия позиции SELL
               openedPosition = SELL;  
               // обнуляем счетчик трейлинга
@@ -213,7 +213,8 @@ void OnTick()
        if (countAdd < 4)                             // если было совершено меньше 4-х доливок
         {
          ChangeLot();                                // изменяем лот
-      //   ctm.PositionChangeSize(_Symbol, lotReal);   // сохраняем значение лота
+        // ctm.PositionChangeSize(_Symbol, lotReal);   // сохраняем значение лота
+        // Print("LOT = ",DoubleToString(lotReal));
         }
       }
 
