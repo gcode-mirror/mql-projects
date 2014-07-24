@@ -181,7 +181,8 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
    log_file.Write(LOG_DEBUG, StringFormat("%s Неправильный тип позиции", MakeFunctionPrefix(__FUNCTION__)));
    return(false);
  }
- PrintFormat("%s, Ордер на открытие %s, %s, %.02f, %.05f, %.05f, %.05f", MakeFunctionPrefix(__FUNCTION__), symbol, OrderTypeToString(order_type), volume, price, sl, tp);
+ PrintFormat("%s, Ордер на открытие %s, %s, %.02f, %.05f, %.05f, %.05f, %d", MakeFunctionPrefix(__FUNCTION__), symbol, OrderTypeToString(order_type), volume, price, sl, tp,m_deviation);
+ m_deviation = 0;
  return(PositionOpen(symbol, order_type, volume, price, sl, tp, comment));
 }                                     
 

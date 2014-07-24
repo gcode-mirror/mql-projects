@@ -138,7 +138,7 @@ int OnCalculate(const int rates_total,
     if (extr_cur[0].direction > 0)
     {
      
-    // ExtUpArrowBuffer[i] = extr_cur[0].price;
+     ExtUpArrowBuffer[i] = extr_cur[0].price;
      lastExtrUpValue = extr_cur[0].price;
      if (jumper == -1)
       {
@@ -151,7 +151,7 @@ int OnCalculate(const int rates_total,
     if (extr_cur[1].direction < 0)
     {
     
-   //  ExtDownArrowBuffer[i] = extr_cur[1].price;
+     ExtDownArrowBuffer[i] = extr_cur[1].price;
      lastExtrDownValue = extr_cur[1].price;
      if (jumper == 1)
       {
