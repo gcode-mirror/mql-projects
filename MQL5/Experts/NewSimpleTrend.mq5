@@ -213,7 +213,7 @@ void OnTick()
        if (countAdd < 4)                             // если было совершено меньше 4-х доливок
         {
          ChangeLot();                                // изменяем лот
-         ctm.PositionChangeSize(_Symbol, lotReal);  // сохраняем значение лота
+      //   ctm.PositionChangeSize(_Symbol, lotReal);   // сохраняем значение лота
         }
       }
 
