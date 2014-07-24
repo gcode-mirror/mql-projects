@@ -17,12 +17,12 @@
 #include <TradeManager\ReplayPosition.mqh>  
 
 #define DEFAULT_LOT 1
+#define DEPTH 30
 #define ADD_TO_STOPPLOSS 50
 //+------------------------------------------------------------------+
 //| Expert variables                                                 |
 //+------------------------------------------------------------------+
 input ENUM_TIMEFRAMES timeframe = PERIOD_H1;
-input int historyDepth = 40;
 input double supremacyPercent = 0.2;
 input double profitPercent = 0.5; 
 input double levelsKo = 3;
@@ -44,7 +44,7 @@ CTradeManager ctm;       //торговый класс
 MqlTick tick;
 
 double takeProfit, stopLoss;
-double high_buf[], low_buf[], close_buf[1], open_buf[1], pbi_buf[1];
+double ave_atr_buf[1], close_buf[1], open_buf[1], pbi_buf[1];
 ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
 CPosition *pos;            // указатель на позицию
 CisNewBar *isNewBarM1;
@@ -52,6 +52,9 @@ CisNewBar *isNewBarM5;
 CisNewBar *isNewBarM15;
 
 int handle_PBI;
+int handle_aATR_M1;
+int handle_aATR_M5;
+int handle_aATR_M15;
 int handle_19Lines;
 struct bufferLevel         // структура уровней
 {
@@ -90,14 +93,16 @@ int OnInit()
    isNewBarM5  = new CisNewBar(symbol, PERIOD_M5);
    isNewBarM15 = new CisNewBar(symbol, PERIOD_M15);
    handle_PBI     = iCustom(symbol, PERIOD_M15, "PriceBasedIndicator");
+   handle_aATR_M1  = iMA(symbol,  PERIOD_M1, 100, 0, MODE_EMA, iATR(symbol,  PERIOD_M1, 30));
+   handle_aATR_M5  = iMA(symbol,  PERIOD_M5, 100, 0, MODE_EMA, iATR(symbol,  PERIOD_M5, 30)); 
+   handle_aATR_M15 = iMA(symbol, PERIOD_M15, 100, 0, MODE_EMA, iATR(symbol, PERIOD_M15, 30));  
    handle_19Lines = iCustom(symbol, timeframe, "NineteenLines");     
    if (handle_PBI == INVALID_HANDLE || handle_19Lines == INVALID_HANDLE)
     {
      PrintFormat("%s Не удалось получить хэндл одного из вспомогательных индикаторов", MakeFunctionPrefix(__FUNCTION__));
     }       
    //устанавливаем индексацию для массивов ХХХ_buf
-   ArraySetAsSeries(low_buf, false);
-   ArraySetAsSeries(high_buf, false);
+   ArraySetAsSeries(ave_atr_buf, false);
    ArraySetAsSeries(close_buf, false);
    ArraySetAsSeries(open_buf, false);
  
@@ -110,8 +115,7 @@ void OnDeinit(const int reason)
   {
    //delete rp;
    // Освобождаем динамические массивы от данных
-   ArrayFree(low_buf);
-   ArrayFree(high_buf);
+   ArrayFree(ave_atr_buf);
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -124,19 +128,19 @@ void OnTick()
    
    if(isNewBarM1.isNewBar())
    {
-    CheckHugeBar(PERIOD_M1);
+    CheckHugeBar(PERIOD_M1, handle_aATR_M1);
     PrintFormat("Большой бар на М1. Открыл позицию");
    }
    
    if(isNewBarM5.isNewBar())
    {
-    CheckHugeBar(PERIOD_M5);
+    CheckHugeBar(PERIOD_M5, handle_aATR_M5);
     PrintFormat("Большой бар на М5. Открыл позицию");
    }
    
    if(isNewBarM15.isNewBar())
    {
-    CheckHugeBar(PERIOD_M15);
+    CheckHugeBar(PERIOD_M15, handle_aATR_M15);
     PrintFormat("Большой бар на М15. Открыл позицию");
    }
  
@@ -154,9 +158,9 @@ void OnTrade()
    }
   }
   
-bool CheckHugeBar(ENUM_TIMEFRAMES tf)
+bool CheckHugeBar(ENUM_TIMEFRAMES tf, int handle_atr)
 {
- int errLow = 0;                                                   
+ int errATR = 0;                                                   
  int errHigh = 0;                                                   
  int errClose = 0;
  int errOpen = 0;
@@ -168,14 +172,13 @@ bool CheckHugeBar(ENUM_TIMEFRAMES tf)
  long positionType;
 
  //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
- errLow   =   CopyLow(symbol, tf, 1, historyDepth, low_buf);
- errHigh  =  CopyHigh(symbol, tf, 1, historyDepth, high_buf);
  errClose = CopyClose(symbol, tf, 1, 1, close_buf);          
  errOpen  =  CopyOpen(symbol, tf, 1, 1, open_buf);
+ errATR   = CopyBuffer(handle_atr, 0, 0, 1, ave_atr_buf);
  errPBI   = CopyBuffer(handle_PBI, 4, 1, 1, pbi_buf);
  Upload19LinesBuffers();
    
- if(errLow < 0 || errHigh < 0 || errClose < 0 || errOpen < 0)         //если есть ошибки
+ if(errATR < 0 || errClose < 0 || errOpen < 0)         //если есть ошибки
  {
   Alert("Не удалось скопировать данные из буфера ценового графика");  //то выводим сообщение в лог об ошибке
   return(false);                                                             //и выходим из функции
@@ -186,11 +189,8 @@ bool CheckHugeBar(ENUM_TIMEFRAMES tf)
   Alert("Не удалось скопировать данные из вспомогательного индикатора");  //то выводим сообщение в лог об ошибке
   return(false);                                                                 //и выходим из функции
  }
-   
- for(int i = 0; i < historyDepth; i++)
-  sum = sum + high_buf[i] - low_buf[i];  
  
- avgBar = sum / historyDepth;
+ avgBar = ave_atr_buf[0];
  lastBar = MathAbs(open_buf[0] - close_buf[0]);
     
  if(GreatDoubles(lastBar, avgBar*(1 + supremacyPercent)))
@@ -218,11 +218,10 @@ bool CheckHugeBar(ENUM_TIMEFRAMES tf)
     
   ctm.OpenUniquePosition(symbol, timeframe, pos_type, DEFAULT_LOT, stopLoss, takeProfit, trailingType, minProfit, trailingStop, trailingStep, priceDifference);
  }
- ArrayInitialize(  low_buf, EMPTY_VALUE);
- ArrayInitialize( high_buf, EMPTY_VALUE);
- ArrayInitialize(close_buf, EMPTY_VALUE);
- ArrayInitialize( open_buf, EMPTY_VALUE);
- ArrayInitialize(  pbi_buf, EMPTY_VALUE);
+ ArrayInitialize(ave_atr_buf, EMPTY_VALUE);
+ ArrayInitialize(  close_buf, EMPTY_VALUE);
+ ArrayInitialize(   open_buf, EMPTY_VALUE);
+ ArrayInitialize(    pbi_buf, EMPTY_VALUE);
  Initialize19LinesBuffers();
  return(true);
 }
@@ -296,7 +295,7 @@ int CountStoploss(int point)
  double priceAB;
  double bufferStopLoss[];
  ArraySetAsSeries(bufferStopLoss, true);
- ArrayResize(bufferStopLoss, historyDepth);
+ ArrayResize(bufferStopLoss, DEPTH);
  
  int extrBufferNumber;
  if (point > 0)
@@ -316,16 +315,16 @@ int CountStoploss(int point)
  for(int attempts = 0; attempts < 25; attempts++)
  {
   Sleep(100);
-  copiedPBI = CopyBuffer(handle_PBI, extrBufferNumber, 0,historyDepth, bufferStopLoss);
+  copiedPBI = CopyBuffer(handle_PBI, extrBufferNumber, 0,DEPTH, bufferStopLoss);
 
  }
- if (copiedPBI < historyDepth)
+ if (copiedPBI < DEPTH)
  {
   PrintFormat("%s Не удалось скопировать буфер bufferStopLoss", MakeFunctionPrefix(__FUNCTION__));
   return(0);
  }
  
- for(int i = 0; i < historyDepth; i++)
+ for(int i = 0; i < DEPTH; i++)
  {
   if (bufferStopLoss[i] > 0)
   {
