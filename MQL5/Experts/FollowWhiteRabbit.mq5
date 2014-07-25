@@ -46,7 +46,6 @@ MqlTick tick;
 double takeProfit, stopLoss;
 double ave_atr_buf[1], close_buf[1], open_buf[1], pbi_buf[1];
 ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
-CPosition *pos;            // указатель на позицию
 CisNewBar *isNewBarM1;
 CisNewBar *isNewBarM5;
 CisNewBar *isNewBarM15;
@@ -129,19 +128,19 @@ void OnTick()
    if(isNewBarM1.isNewBar())
    {
     CheckHugeBar(PERIOD_M1, handle_aATR_M1);
-    PrintFormat("Большой бар на М1. Открыл позицию");
+     //PrintFormat("Большой бар на М1. Открыл позицию");
    }
    
    if(isNewBarM5.isNewBar())
    {
     CheckHugeBar(PERIOD_M5, handle_aATR_M5);
-    PrintFormat("Большой бар на М5. Открыл позицию");
+     //PrintFormat("Большой бар на М5. Открыл позицию");
    }
    
    if(isNewBarM15.isNewBar())
    {
     CheckHugeBar(PERIOD_M15, handle_aATR_M15);
-    PrintFormat("Большой бар на М15. Открыл позицию");
+     //PrintFormat("Большой бар на М15. Открыл позицию");
    }
  
    return;   
@@ -215,7 +214,7 @@ bool CheckHugeBar(ENUM_TIMEFRAMES tf, int handle_atr)
     return(false);
   }
   takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
-    
+  PrintFormat("%s открыта позиция %d sl:%f tp:%f", EnumToString((ENUM_TIMEFRAMES)tf), pos_type, stopLoss, takeProfit);  
   ctm.OpenUniquePosition(symbol, timeframe, pos_type, DEFAULT_LOT, stopLoss, takeProfit, trailingType, minProfit, trailingStop, trailingStep, priceDifference);
  }
  ArrayInitialize(ave_atr_buf, EMPTY_VALUE);
@@ -300,13 +299,13 @@ int CountStoploss(int point)
  int extrBufferNumber;
  if (point > 0)
  {
-  extrBufferNumber = 6;
+  extrBufferNumber = 6; //minimum
   priceAB = SymbolInfoDouble(symbol, SYMBOL_ASK);
   direction = 1;
  }
  else
  {
-  extrBufferNumber = 5; // Если point > 0 возьмем буфер с минимумами, иначе с максимумами
+  extrBufferNumber = 5; // maximum
   priceAB = SymbolInfoDouble(symbol, SYMBOL_BID);
   direction = -1;
  }
@@ -330,7 +329,8 @@ int CountStoploss(int point)
   {
    if (LessDoubles(direction*bufferStopLoss[i], direction*priceAB))
    {
-    PrintFormat("Last extremum %f", bufferStopLoss[i]);
+    //PrintFormat("Last extremum %f", bufferStopLoss[i]);
+    PrintFormat("price = %f; extr = %f", priceAB, bufferStopLoss[i]);
     stopLoss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point());// + ADD_TO_STOPPLOSS;
     break;
    }

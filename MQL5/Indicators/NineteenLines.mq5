@@ -302,18 +302,18 @@ int OnInit()
  InitializeExtrArray(extr_levelH1);
  InitializeExtrArray(price_levelD1);
  
- int handle_atr_MN = iCustom(_Symbol, PERIOD_MN1, "AverageATR", period_ATR_channel, period_average_ATR);
- int handle_atr_W1 = iCustom(_Symbol, PERIOD_W1, "AverageATR", period_ATR_channel, period_average_ATR);
- int handle_atr_D1 = iCustom(_Symbol, PERIOD_D1, "AverageATR", period_ATR_channel, period_average_ATR);
- int handle_atr_H4 = iCustom(_Symbol, PERIOD_H4, "AverageATR", period_ATR_channel, period_average_ATR);
- int handle_atr_H1 = iCustom(_Symbol, PERIOD_H1, "AverageATR", period_ATR_channel, period_average_ATR);
+ int handle_atr_MN = iMA(_Symbol,  PERIOD_MN1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,  PERIOD_MN1, period_ATR_channel));//iCustom(_Symbol, PERIOD_MN1, "AverageATR", period_ATR_channel, period_average_ATR);
+ int handle_atr_W1 = iMA(_Symbol,   PERIOD_W1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_W1, period_ATR_channel));//iCustom(_Symbol, PERIOD_W1, "AverageATR", period_ATR_channel, period_average_ATR);
+ int handle_atr_D1 = iMA(_Symbol,   PERIOD_D1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_D1, period_ATR_channel));//iCustom(_Symbol, PERIOD_D1, "AverageATR", period_ATR_channel, period_average_ATR);
+ int handle_atr_H4 = iMA(_Symbol,   PERIOD_H4, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H4, period_ATR_channel));//iCustom(_Symbol, PERIOD_H4, "AverageATR", period_ATR_channel, period_average_ATR);
+ int handle_atr_H1 = iMA(_Symbol,   PERIOD_H1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H1, period_ATR_channel));//iCustom(_Symbol, PERIOD_H1, "AverageATR", period_ATR_channel, period_average_ATR);
  calcMN.SetHandleATR(handle_atr_MN);
  calcW1.SetHandleATR(handle_atr_W1);
  calcD1.SetHandleATR(handle_atr_D1);
  calcH4.SetHandleATR(handle_atr_H4);
  calcH1.SetHandleATR(handle_atr_H1);
  
- ATR_handle_for_price_line = iCustom(Symbol(),PERIOD_D1,"AverageATR",period_ATR_channel,period_average_ATR);
+ ATR_handle_for_price_line = iMA(_Symbol,   PERIOD_D1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_D1, period_ATR_channel));//iCustom(Symbol(),PERIOD_D1,"AverageATR",period_ATR_channel,period_average_ATR);
  
  if(Period() > PERIOD_MN1 && show_Extr_MN)  show_Extr_MN = false;
  if(Period() > PERIOD_W1  && show_Extr_W1)  show_Extr_W1 = false;

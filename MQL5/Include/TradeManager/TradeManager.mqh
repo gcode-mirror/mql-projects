@@ -56,16 +56,17 @@ public:
   void ~CTradeManager(void);
     
   // GET
-  double GetCurrentDrawdown() {return(_current_drawdown); };  // возвращает  текущую просадку по балансу  
+  double GetCurrentDrawdown() {return(_current_drawdown); };  // возвращает текущую просадку по балансу  
   double GetCurrentProfit()   {return(_current_balance);};    // возвращает текущую прибыль
-  long   GetHistoryDepth();                                   //возвращает глубину истории
-  double GetMaxDrawdown()     {return(_max_drawdown); };      // возвращает  текущую просадку по балансу
-  double GetMaxProfit()       {return(_max_balance);};        // возвращает текущую прибыль
+  long   GetHistoryDepth();                                   // возвращает глубину истории
+  double GetMaxDrawdown()     {return(_max_drawdown); };      // возвращает максимальную просадку по балансу
+  double GetMaxProfit()       {return(_max_balance);};        // возвращает максимальную прибыль
   int    GetPositionCount()   {return (_openPositions.Total() + _positionsToReProcessing.Total());};  
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
   int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
   int    GetPositionPointsProfit(string symbol);
   double GetPositionStopLoss(string symbol);                  // возвращает текущий стоп лосс позиции по символу
+  double GetPositionTakeProfit(string symbol);                // возвращает текущий тейк профит позиции по символу
   ENUM_TM_POSITION_TYPE GetPositionType();
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
   
@@ -76,8 +77,8 @@ public:
   bool isMinProfit();
   bool isMinProfit(string symbol);
   bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменения истории 
-  void ModifyPosition(int sl = 0, int tp = 0);                        // Изменяет заранее выбранную позицию
-  void ModifyPosition(double sl = 0, double tp = 0);                        // Изменяет заранее выбранную позицию
+  void ModifyPosition(int sl = 0, int tp = 0);                // Изменяет заранее выбранную позицию
+  void ModifyPosition(string symbol, double sl = 0, double tp = 0); // Изменяет заранее выбранную позицию
   void OnTick();
   void OnTrade(datetime history_start);
   bool OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
@@ -212,8 +213,25 @@ double CTradeManager::GetPositionStopLoss(string symbol)
   pos = _openPositions.At(i);
   if (pos.getSymbol() == symbol)
   {
-   double stopLoss = pos.getStopLossPrice();
-   return(stopLoss);
+   return(pos.getStopLossPrice());
+  }
+ }
+ return(0);
+}
+
+//+------------------------------------------------------------------+
+//|  Возвращает текущий тейк профит позиции по символу                 |
+//+------------------------------------------------------------------+
+double CTradeManager::GetPositionTakeProfit(string symbol)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   return(pos.getTakeProfitPrice());
   }
  }
  return(0);
@@ -393,10 +411,19 @@ void CTradeManager::ModifyPosition(int sl = 0, int tp = 0)
 //+------------------------------------------------------------------+ 
 // Функция модификации позиции
 //+------------------------------------------------------------------+
-void CTradeManager::ModifyPosition(double sl = 0, double tp = 0)
+void CTradeManager::ModifyPosition(string symbol, double sl = 0, double tp = 0)
 {
- if (sl > 0){}
- if (tp > 0){}
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   if(sl > 0)
+    pos.ModifyPosition(sl, tp);
+  }
+ }
 }
 
 //+------------------------------------------------------------------+

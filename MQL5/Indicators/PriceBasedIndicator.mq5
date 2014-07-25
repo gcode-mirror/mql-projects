@@ -68,7 +68,7 @@ int OnInit()
    PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(current_timeframe);
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   int handle_atr = iCustom(symbol, current_timeframe, "AverageATR", 30, 100);
+   int handle_atr = iMA(symbol,  current_timeframe, 100, 0, MODE_EMA, iATR(symbol,  current_timeframe, 30));//iCustom(symbol, current_timeframe, "AverageATR", 30, 100);
    trend    = new CColoredTrend(symbol, current_timeframe, handle_atr, depth);
    if(!is_it_top) handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PriceBasedIndicator", depth, false, true);
 //--- indicator buffers mapping
