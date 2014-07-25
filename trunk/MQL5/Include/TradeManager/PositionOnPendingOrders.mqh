@@ -126,7 +126,7 @@ public:
    bool     CheckTakeProfit();
    bool     ClosePosition();
    bool     isMinProfit();
-   bool     ModifyPosition(double sl, int tp);
+   bool     ModifyPosition(double sl, int tp); //tp - не работате
    ulong    NewTicket();
    ENUM_POSITION_STATUS OpenPosition();
    double   OpenPriceByType(ENUM_TM_POSITION_TYPE type);     // вычисляет уровень открытия в зависимости от типа 
