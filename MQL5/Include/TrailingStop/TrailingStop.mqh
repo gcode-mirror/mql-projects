@@ -202,6 +202,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
  double tmpPrev;                                              // предыдущая цена
  double lastExtrHigh;                                         // цена последнего экстремума по HIGH
  double lastExtrLow;                                          // цена последнего экстремума по LOW
+ double stopLevel;                                            // размер стоп левела
  ENUM_EXTR_USE last_extr;                                     // переменная для хранения последнего экстремума
  tmpPrev = _previewPrice;
  // сохраняем текущую цену в качестве предыдущей
@@ -215,6 +216,8 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
    last_extr = blowInfo.GetLastExtrType();
    if (last_extr == EXTR_NO)
     return (0.0);
+   // сохраняем стоп левел
+   stopLevel = SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point;
    if (type == OP_BUY)
     {
      // если последним экстремумов является LOW
@@ -222,30 +225,54 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
       {
        lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для пробития
        lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для stopLoss
-       // если текущая цена пробила последний значимый HIGH экстремум и последний нижний экстремум выше последнего стоп лосса
-       if ( GreatDoubles(currentPrice,lastExtrHigh) &&  GreatDoubles(lastExtrLow,sl) && LessDoubles (tmpPrev,lastExtrHigh)  )
-        {
-         // сохраним новое значение стоп лосса
-         stopLoss = lastExtrLow;
-        }
-      }
+       // если текущая цена пробила последний значимый HIGH экстремум  
+       if ( GreatDoubles(currentPrice,lastExtrHigh) &&
+            LessDoubles (tmpPrev,lastExtrHigh) )
+          {
+           // если расстояние от цены до нового стоп лосса больше стоп левела
+           if ( GreatDoubles(currentPrice-lastExtrLow,stopLevel) )
+             {
+               // если новый стоп лосс больше предыдущего
+               if ( GreatDoubles(lastExtrLow,sl) )
+                  stopLoss = lastExtrLow;        
+             }
+          else
+             {
+               // если новый стоп лосс больше предыдущего
+               if ( GreatDoubles(currentPrice-stopLevel,sl) )
+                  stopLoss = currentPrice - stopLevel;
+             }
+          } 
+       }
     }
    if (type == OP_SELL)
     {
      // если последним экстремумов является HIGH
      if (last_extr == EXTR_HIGH)
       {
-       lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхних экстремум HIGH для stopLoss
+       lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
        lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
-       // если текущая цена пробила последний значимый LOW экстремум и последний верхний экстремум ниже последнего стоп лосса
-       if ( LessDoubles(currentPrice,lastExtrLow) &&  LessDoubles(lastExtrHigh,sl) && GreatDoubles (tmpPrev,lastExtrLow)  )
-        {
-         // сохраним новое значение стоп лосса
-         stopLoss = lastExtrHigh;
-        }
-      }
-    }    
- }
+       // если текущая цена пробила последний значимый LOW экстремум  
+       if ( LessDoubles(currentPrice,lastExtrLow) &&
+            GreatDoubles (tmpPrev,lastExtrLow) )
+          {
+           // если расстояние от цены до нового стоп лосса больше стоп левела
+           if ( GreatDoubles(lastExtrHigh - currentPrice,stopLevel) )
+             {
+               // если новый стоп лосс меньше предыдущего
+               if ( LessDoubles(lastExtrHigh,sl) )
+                  stopLoss = lastExtrHigh;        
+             }
+          else
+             {
+               // если новый стоп лосс меньше предыдущего
+               if ( LessDoubles(currentPrice+stopLevel,sl) )
+                  stopLoss = currentPrice + stopLevel;
+             }
+          } 
+      }    
+   }
+  }
  return (stopLoss);
 }
  
