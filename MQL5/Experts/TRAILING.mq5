@@ -66,7 +66,7 @@ void OnTick()
     if (!openedPos)
      {
       // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
-      stopLoss = int(MathAbs(curPrice - blowInfo.GetExtrByIndex(EXTR_LOW,0).price)/_Point)-200; 
+      stopLoss = int(MathAbs(curPrice - blowInfo.GetExtrByIndex(EXTR_LOW,0).price)/_Point); 
       ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,1.0,stopLoss,0,TRAILING_TYPE_EXTREMUMS);
       openedPos = true;
      }

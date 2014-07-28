@@ -39,9 +39,8 @@ class CBlowInfoFromExtremums
    int _handleExtremums;        // хэндл индикатора DrawExtremums   
    int _historyDepth;           // глубина истории
    string _symbol;              // символ
-   color  _upColor;
-   color  _downColor;
    ENUM_TIMEFRAMES _period;     // период
+   int _symbolCode;             // код символа экстремума
   public:
   // методы класса
    bool IsInitFine ();                                                                         // проверяет, хорошо ли проиницилизирован объект   
@@ -50,7 +49,7 @@ class CBlowInfoFromExtremums
    ENUM_EXTR_USE GetLastExtrType ();                                                           // возвращает тип последнего экстремума
    string ShowExtrType (ENUM_EXTR_USE extr_use);                                               // отображает в виде строки тип экстремумов 
   // конструкторы и деструкторы
-  CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,color upColor=clrLightBlue,color downColor=clrBlue,int periodATR=30,int period_average_ATR=1);
+  CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,int periodATR=30,int period_average_ATR=1,int symbolCode=217);
  ~CBlowInfoFromExtremums ();
  };
  
@@ -195,14 +194,13 @@ class CBlowInfoFromExtremums
     }
    
 
-   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,color upColor=clrLightBlue,color downColor=clrBlue,int periodATR=30,int period_average_ATR=1)   // конструктор класса 
+   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,int periodATR=30,int period_average_ATR=1,int symbolCode=217)   // конструктор класса 
     {
      _historyDepth = historyDepth;
      _symbol       = symbol;
      _period       = period;
-     _upColor      = upColor;
-     _downColor    = downColor;
-     _handleExtremums = iCustom(symbol,period,"DrawExtremums",period,historyDepth,periodATR,period_average_ATR,217);
+     _symbolCode   = symbolCode;
+     _handleExtremums = iCustom(symbol,period,"DrawExtremums",period,historyDepth,periodATR,period_average_ATR,symbolCode);
     }
     
    CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
