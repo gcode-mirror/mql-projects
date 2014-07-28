@@ -67,10 +67,10 @@ int OnInit()
    // создаем объекты класса CisNewBar
    isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
    // создаем объекты класса CBlowInfoFromExtremums
-   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,1000,clrLightYellow,clrYellow);  // M1 
-   blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,1000,clrLightYellow,clrYellow);  // M5 
-   blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,1000,clrLightYellow,clrYellow); // M15 
-   blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,1000,clrLightYellow,clrYellow);  // H1          
+   blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,1000,30,30,217);  // M1 
+   blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,1000,30,30,217);  // M5 
+   blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,1000,30,30,217); // M15 
+   blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,1000,30,30,217);  // H1          
    if (!blowInfo[0].IsInitFine() )
         return (INIT_FAILED);
    // пытаемся загрузить экстремумы
@@ -159,7 +159,6 @@ void OnTick()
        // если общая тенденция  - вверх
        if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_UP)
         {   
-         Comment("ТЕНДЕНЦИЯ ВВЕРХ, ВРЕМЯ = ",TimeToString(TimeCurrent()));
          // если текущая цена пробила один из экстемумов на одном из таймфреймов
          if ( IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY) )
            { 
@@ -184,7 +183,6 @@ void OnTick()
       // если общая тенденция - вниз
       if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPrice) == TENDENTION_DOWN)
        {                     
-        Comment("Тенденция ВНИЗ, Время = ",TimeToString(TimeCurrent()));
         // если текущая цена пробила один из экстемумов на одном из таймфреймов
         if ( IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL) )
           {                

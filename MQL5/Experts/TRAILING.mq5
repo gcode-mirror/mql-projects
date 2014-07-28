@@ -23,7 +23,7 @@ bool   openedPos = false; // флаг открытой позиции
 
 // объекты классов 
 CBlowInfoFromExtremums *blowInfo;               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
-CTradeManager *ctm;                                // торговая библиотека
+CTradeManager *ctm;                             // торговая библиотека
 
 // буферы для проверки пробития экстремумов
 Extr             lastExtrHigh;                  // буфер последних экстремумов по HIGH
@@ -36,7 +36,7 @@ bool             extrLowBeaten=false;           // буфер флагов пробития экстрем
 int OnInit()
   {
    ctm = new CTradeManager();
-   blowInfo = new CBlowInfoFromExtremums(_Symbol,_Period,1000,clrLightYellow,clrYellow);
+   blowInfo = new CBlowInfoFromExtremums(_Symbol,_Period,1000,30,30,217);
    if (!blowInfo.IsInitFine())
         return (INIT_FAILED);
    // пытаемся загрузить экстремумы
@@ -49,7 +49,7 @@ int OnInit()
    else
      return (INIT_FAILED);   
    curPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-   iCustom(_Symbol,_Period,"DrawExtremums",_Period,1000);
+   iCustom(_Symbol,_Period,"DrawExtremums",_Period,1000,30,30,217);
    return(INIT_SUCCEEDED);
   }
 void OnDeinit(const int reason)
@@ -60,11 +60,13 @@ void OnDeinit(const int reason)
 void OnTick()
   {
     ctm.OnTick();
+    ctm.UpdateData();
     ctm.DoTrailing(blowInfo);   
     prevPrice = curPrice;                                // сохраним предыдущую цену
     curPrice  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену     
-    if (!openedPos)
+    if (ctm.GetPositionCount() <= 0)
      {
+      blowInfo.Upload(EXTR_BOTH,TimeCurrent(),1000);      
       // вычисляем стоп лосс по последнему нижнему экстремуму, переводим в пункты
       stopLoss = int(MathAbs(curPrice - blowInfo.GetExtrByIndex(EXTR_LOW,0).price)/_Point); 
       ctm.OpenUniquePosition(_Symbol,_Period,OP_BUY,1.0,stopLoss,0,TRAILING_TYPE_EXTREMUMS);
