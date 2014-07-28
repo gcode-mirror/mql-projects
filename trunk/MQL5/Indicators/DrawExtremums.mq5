@@ -169,11 +169,15 @@ int OnCalculate(const int rates_total,
    return (rates_total);
   }
    
+   
    //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
    RecountUpdated(time[rates_total-1], true, extr_cur);
    
    ArraySetAsSeries(ExtUpArrowBuffer   , false);
    ArraySetAsSeries(ExtDownArrowBuffer , false);
+   
+   ExtDownArrowBuffer[rates_total-1] = 0;
+   ExtUpArrowBuffer[rates_total-1]   = 0;
      
    if (extr_cur[0].direction > 0)
    {
