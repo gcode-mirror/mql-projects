@@ -214,15 +214,11 @@ void OnTick()
      else  // если позиция уже открыта
       {
        ChangeTrailIndex();                            // то меняем индекс трейлинга
-    /*   if (countAdd < 4)                              // если было совершено меньше 4-х доливок
+       if (countAdd < 4)                              // если было совершено меньше 4-х доливок
         {
-         ChangeLot();                                 // проверяем условия 
-         if ( ctm.PositionChangeSize(_Symbol, 0.25) )  // сохраняем значение лота
-          Print("ДОЛИЛИИСЬ = ",countAdd);
-         
-        }
-    */    
-        
+         if ( ChangeLot() )                           // если получили сигнал на доливание 
+          ctm.PositionChangeSize(_Symbol, 0.25);      // доливаемся        
+        }       
       }
 
     }  // END OF UPLOAD EXTREMUMS
@@ -291,7 +287,7 @@ void  ChangeTrailIndex()   // функция меняет индекс таймфрейма для трейлинга
     }
  }   
  
-void  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливка)
+bool  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливка)
  {
     // в зависимости от типа открытой позиции
     switch (openedPosition)
@@ -302,6 +298,7 @@ void  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливк
             if (IsExtremumBeaten(0,BUY)) // если пробит экстремум 
              {
                countAdd++; // увеличиваем счетчик доливок
+               return (true);
              }
          } 
       break;
@@ -311,10 +308,12 @@ void  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливк
             if (IsExtremumBeaten(0,SELL)) // если пробит экстремум
              {
                countAdd++; // увеличиваем счетчик доливок
+               return (true);
              }   
          }
       break;
      }
+   return(false);
  }
  
  int  GetStopLoss ()     // вычисляет стоп лосс
