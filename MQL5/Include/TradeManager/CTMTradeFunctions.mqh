@@ -123,7 +123,7 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
       PrintFormat("%s Ордер БайСтоп не может быть ниже текущей цены", MakeFunctionPrefix(__FUNCTION__));
       return(false);
      }
-     if (GreatDoubles((sl - currentPrice)/Point(), SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)))
+     if (LessDoubles((sl - currentPrice)/Point(), SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)))
      {
       PrintFormat("%s Ордер БайСтоп слишком близко к текущей цене", MakeFunctionPrefix(__FUNCTION__));
       return(false);
@@ -136,15 +136,14 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
       PrintFormat("%s Ордер СеллСтоп не может быть выше текущей цены", MakeFunctionPrefix(__FUNCTION__));
       return(false);
      }
-     if (GreatDoubles((currentPrice - sl)/Point(), SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)))
+     if (LessDoubles((currentPrice - sl)/Point(), SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)))
      {
       PrintFormat("%s Ордер СеллСтоп слишком близко к текущей цене ", MakeFunctionPrefix(__FUNCTION__));
-      PrintFormat("%s ask %s bid %s стоп %s левел %s цена %s", MakeFunctionPrefix(__FUNCTION__),
-                                                           DoubleToString( SymbolInfoDouble(symbol,SYMBOL_ASK) ),
-                                                           DoubleToString(SymbolInfoDouble(symbol,SYMBOL_BID) ),
-                                                           DoubleToString(sl),
-                                                           DoubleToString(SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point ),
-                                                           DoubleToString(currentPrice)
+      PrintFormat("%s %s(цена) - %s(стоп) = %s > %s(стоп-левел) ", MakeFunctionPrefix(__FUNCTION__),
+                                                           DoubleToString(NormalizeDouble(currentPrice, Digits())),
+                                                           DoubleToString(NormalizeDouble(sl, Digits())),
+                                                           DoubleToString(NormalizeDouble(currentPrice - sl, Digits())),
+                                                           DoubleToString(SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point )
                                                            );
       return(false);
      }
