@@ -223,7 +223,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
    if (last_extr == EXTR_NO)
     return (0.0);
    // сохраняем стоп левел
-   stopLevel = SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point;
+   stopLevel = NormalizeDouble(SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point,_Digits);
    if (type == OP_BUY)
     {
      // если последним экстремумов является LOW
@@ -249,6 +249,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
                   stopLoss = currentPriceBid - stopLevel-0.0001;
              }
           } 
+          
        }
     }
    if (type == OP_SELL)
@@ -259,11 +260,11 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
        lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
        lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
        // если текущая цена пробила последний значимый LOW экстремум  
-       if ( LessDoubles(currentPriceAsk,lastExtrLow) &&
-            GreatDoubles (tmpPrevAsk,lastExtrLow) )
+       if ( LessDoubles(currentPriceBid,lastExtrLow) &&
+            GreatDoubles (tmpPrevBid,lastExtrLow) )
           {
            // если расстояние от цены до нового стоп лосса больше стоп левела
-           if ( GreatDoubles(lastExtrHigh - currentPriceAsk,stopLevel) )
+           if ( GreatDoubles(lastExtrHigh - currentPriceBid,stopLevel) )
              {
                // если новый стоп лосс меньше предыдущего
                if ( LessDoubles(lastExtrHigh,sl) )
@@ -272,8 +273,8 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
           else
              {
                // если новый стоп лосс меньше предыдущего
-               if ( LessDoubles(currentPriceAsk+stopLevel+0.0001,sl) )
-                  stopLoss = currentPriceAsk + stopLevel+0.0001;
+               if ( LessDoubles(currentPriceBid+stopLevel+0.0001,sl) )
+                  stopLoss = currentPriceBid + stopLevel+0.0001;
              }
           } 
       }    
@@ -292,6 +293,15 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
      " PRICE REAL = ",DoubleToString(SymbolInfoDouble(symbol,SYMBOL_BID)));
    }
    */
+   if (stopLoss != 0)
+       PrintFormat("ask %s bid %s стоп %s левел %s цена ask %s цена bid %s",DoubleToString( SymbolInfoDouble(OrderGetString(ORDER_SYMBOL),SYMBOL_ASK) ),
+                                                           DoubleToString(SymbolInfoDouble(OrderGetString(ORDER_SYMBOL),SYMBOL_BID) ),
+                                                           DoubleToString(sl),
+                                                           DoubleToString(SymbolInfoInteger(OrderGetString(ORDER_SYMBOL),SYMBOL_TRADE_STOPS_LEVEL)*_Point ),
+                                                           DoubleToString(currentPriceAsk),
+                                                           DoubleToString(currentPriceBid)
+                                                           ); 
+   
  return (NormalizeDouble(stopLoss,_Digits));
 }
  
