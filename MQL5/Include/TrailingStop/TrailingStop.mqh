@@ -25,7 +25,8 @@ class CTrailingStop
 private:
    CSymbolInfo SymbInfo;
    bool UpdateSymbolInfo(string symbol);
-   double _previewPrice;
+   double _previewPriceAsk;
+   double _previewPriceBid;
    double PBI_colors[], PBI_Extrems[];
    
 public:
@@ -47,7 +48,8 @@ CTrailingStop::CTrailingStop()
   {
    ArraySetAsSeries(PBI_colors, true);
    ArraySetAsSeries(PBI_Extrems, true);
-   _previewPrice = 0;
+   _previewPriceAsk = 0;
+   _previewPriceBid = 0;
   }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -197,17 +199,21 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
 // трейлинг по экстремумам
 double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl, CBlowInfoFromExtremums *blowInfo=NULL)
 {
- double stopLoss = 0;                                         // переменная для хранения нового стоп лосса 
- double currentPrice = SymbolInfoDouble(symbol, SYMBOL_BID);  // текущая цена
- double tmpPrev;                                              // предыдущая цена
- double lastExtrHigh;                                         // цена последнего экстремума по HIGH
- double lastExtrLow;                                          // цена последнего экстремума по LOW
- double stopLevel;                                            // размер стоп левела
- ENUM_EXTR_USE last_extr;                                     // переменная для хранения последнего экстремума
- tmpPrev = _previewPrice;
+ double stopLoss = 0;                                            // переменная для хранения нового стоп лосса 
+ double currentPriceBid = SymbolInfoDouble(symbol, SYMBOL_BID);  // текущая цена BID
+ double currentPriceAsk = SymbolInfoDouble(symbol, SYMBOL_ASK);  // текущая цена ASK
+ double tmpPrevBid;                                              // предыдущая цена BID
+ double tmpPrevAsk;                                              // предыдущая цена ASK
+ double lastExtrHigh;                                            // цена последнего экстремума по HIGH
+ double lastExtrLow;                                             // цена последнего экстремума по LOW
+ double stopLevel;                                               // размер стоп левела
+ ENUM_EXTR_USE last_extr;                                        // переменная для хранения последнего экстремума
+ tmpPrevAsk = _previewPriceAsk;
+ tmpPrevBid = _previewPriceBid;
  // сохраняем текущую цену в качестве предыдущей
- _previewPrice = currentPrice;
- if (tmpPrev == 0)
+ _previewPriceAsk = currentPriceAsk;
+ _previewPriceBid = currentPriceBid;
+ if (tmpPrevAsk == 0 || tmpPrevBid == 0)
   return (0.0);
  // пытаемся обновить данные об экстремумах
  if ( blowInfo.Upload(EXTR_BOTH,TimeCurrent(),1000) )     
@@ -226,11 +232,11 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
        lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для пробития
        lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для stopLoss
        // если текущая цена пробила последний значимый HIGH экстремум  
-       if ( GreatDoubles(currentPrice,lastExtrHigh) &&
-            LessDoubles (tmpPrev,lastExtrHigh) )
+       if ( GreatDoubles(currentPriceBid,lastExtrHigh) &&
+            LessDoubles (tmpPrevBid,lastExtrHigh) )
           {
            // если расстояние от цены до нового стоп лосса больше стоп левела
-           if ( GreatDoubles(currentPrice-lastExtrLow,stopLevel) )
+           if ( GreatDoubles(currentPriceBid-lastExtrLow,stopLevel) )
              {
                // если новый стоп лосс больше предыдущего
                if ( GreatDoubles(lastExtrLow,sl) )
@@ -239,8 +245,8 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
           else
              {
                // если новый стоп лосс больше предыдущего
-               if ( GreatDoubles(currentPrice-stopLevel,sl) )
-                  stopLoss = currentPrice - stopLevel;
+               if ( GreatDoubles(currentPriceBid-stopLevel-0.0001,sl) )
+                  stopLoss = currentPriceBid - stopLevel-0.0001;
              }
           } 
        }
@@ -253,11 +259,11 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
        lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
        lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
        // если текущая цена пробила последний значимый LOW экстремум  
-       if ( LessDoubles(currentPrice,lastExtrLow) &&
-            GreatDoubles (tmpPrev,lastExtrLow) )
+       if ( LessDoubles(currentPriceAsk,lastExtrLow) &&
+            GreatDoubles (tmpPrevAsk,lastExtrLow) )
           {
            // если расстояние от цены до нового стоп лосса больше стоп левела
-           if ( GreatDoubles(lastExtrHigh - currentPrice,stopLevel) )
+           if ( GreatDoubles(lastExtrHigh - currentPriceAsk,stopLevel) )
              {
                // если новый стоп лосс меньше предыдущего
                if ( LessDoubles(lastExtrHigh,sl) )
@@ -266,13 +272,26 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
           else
              {
                // если новый стоп лосс меньше предыдущего
-               if ( LessDoubles(currentPrice+stopLevel,sl) )
-                  stopLoss = currentPrice + stopLevel;
+               if ( LessDoubles(currentPriceAsk+stopLevel+0.0001,sl) )
+                  stopLoss = currentPriceAsk + stopLevel+0.0001;
              }
           } 
       }    
    }
   }
+  /*
+  datetime d1 = D'2012.07.12 10:00:57';
+  datetime d2 = D'2012.07.12 10:25:09';
+
+
+  if (TimeCurrent() >= d1 && TimeCurrent() <= d2) 
+   {
+     Print("STOP LOSS = ",DoubleToString(stopLoss),
+     " STOP LEVEL = ",DoubleToString(stopLevel),
+     " PRICE = ",DoubleToString(currentPrice),
+     " PRICE REAL = ",DoubleToString(SymbolInfoDouble(symbol,SYMBOL_BID)));
+   }
+   */
  return (stopLoss);
 }
  
