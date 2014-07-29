@@ -292,7 +292,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
      " PRICE REAL = ",DoubleToString(SymbolInfoDouble(symbol,SYMBOL_BID)));
    }
    */
- return (stopLoss);
+ return (NormalizeDouble(stopLoss,_Digits));
 }
  
 //+------------------------------------------------------------------+
