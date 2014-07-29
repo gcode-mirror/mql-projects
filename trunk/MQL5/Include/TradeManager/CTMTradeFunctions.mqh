@@ -123,12 +123,22 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
       PrintFormat("%s Ордер БайСтоп не может быть ниже текущей цены", MakeFunctionPrefix(__FUNCTION__));
       return(false);
      }
+     if (GreatDoubles((sl - currentPrice)/Point(), SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)))
+     {
+      PrintFormat("%s Ордер БайСтоп слишком близко к текущей цене", MakeFunctionPrefix(__FUNCTION__));
+      return(false);
+     }
     break;
     case ORDER_TYPE_SELL_STOP:
      currentPrice = SymbolInfoDouble(symbol, SYMBOL_BID);
      if (GreatDoubles(sl, currentPrice))
      {
       PrintFormat("%s Ордер СеллСтоп не может быть выше текущей цены", MakeFunctionPrefix(__FUNCTION__));
+      return(false);
+     }
+     if (GreatDoubles((currentPrice - sl)/Point(), SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)))
+     {
+      PrintFormat("%s Ордер СеллСтоп слишком близко к текущей цене", MakeFunctionPrefix(__FUNCTION__));
       return(false);
      }
     break;
