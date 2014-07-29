@@ -249,7 +249,6 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
                   stopLoss = currentPriceBid - stopLevel-0.0001;
              }
           } 
-          
        }
     }
    if (type == OP_SELL)
@@ -294,9 +293,10 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
    }
    */
    if (stopLoss != 0)
-       PrintFormat("ask %s bid %s стоп %s левел %s цена ask %s цена bid %s",DoubleToString( SymbolInfoDouble(OrderGetString(ORDER_SYMBOL),SYMBOL_ASK) ),
+       PrintFormat("%s ask %s bid %s стоп %s левел %s цена ask %s цена bid %s", MakeFunctionPrefix(__FUNCTION__),
+                                                           DoubleToString( SymbolInfoDouble(OrderGetString(ORDER_SYMBOL),SYMBOL_ASK) ),
                                                            DoubleToString(SymbolInfoDouble(OrderGetString(ORDER_SYMBOL),SYMBOL_BID) ),
-                                                           DoubleToString(sl),
+                                                           DoubleToString(stopLoss),
                                                            DoubleToString(SymbolInfoInteger(OrderGetString(ORDER_SYMBOL),SYMBOL_TRADE_STOPS_LEVEL)*_Point ),
                                                            DoubleToString(currentPriceAsk),
                                                            DoubleToString(currentPriceBid)
