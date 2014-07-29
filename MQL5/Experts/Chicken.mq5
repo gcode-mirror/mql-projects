@@ -12,11 +12,16 @@
 #include <TradeManager\TradeManager.mqh>
 
 #define DEPTH 20
-#define MIN_DEPTH 4
+#define ALLOW_INTERVAL 16
 #define DEFAULT_VOLUME 1
 //+------------------------------------------------------------------+
 //| Expert parametrs                                                 |
 //+------------------------------------------------------------------+
+input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
+input int minProfit = 250;
+input int trailingStop = 150;
+input int trailingStep = 5;
+
 CTradeManager ctm;       //торговый класс
 CisNewBar *isNewBar;
 
@@ -49,46 +54,64 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  ctm.OnTick();
- static int max = -1;
- static int min = -1;
- static ENUM_TM_POSITION_TYPE order_type = OP_UNKNOWN;
+ int sl;
+ static int index_max = -1;
+ static int index_min = -1;
+ double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+ double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+ int stoplevel_points = MathMax(50, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL));
+ double stoplevel = stoplevel_points*Point();
  CopyBuffer(handle_pbi, 4, 0, 1, buffer_pbi);
  if(isNewBar.isNewBar())
  {
   ArraySetAsSeries(buffer_high, false);
   ArraySetAsSeries(buffer_low, false);
-  if(CopyHigh(_Symbol, _Period, 0, DEPTH, buffer_high) < DEPTH &&
+  if(CopyHigh(_Symbol, _Period, 0, DEPTH, buffer_high) < DEPTH ||
       CopyLow(_Symbol, _Period, 0, DEPTH, buffer_low)  < DEPTH)
   {
-   max = -1;
-   min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
+   index_max = -1;
+   index_min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
   }
   
-  max = ArrayMaximum(buffer_high);
-  min = ArrayMinimum(buffer_low);
+  index_max = ArrayMaximum(buffer_high);
+  index_min = ArrayMinimum(buffer_low);
  }
  
- if(buffer_pbi[0] == MOVE_TYPE_FLAT && max != -1 && min != -1)
+ if(buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
  {
-  //Кто ты
-  if(max <= (DEPTH - 1 - MIN_DEPTH) && SymbolInfoDouble(_Symbol, SYMBOL_BID) > buffer_high[max] + SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL)*Point())
+  if(ctm.GetPositionCount() == 0)
   {
-   ctm.OpenUniquePosition(_Symbol, _Period, OP_SELLSTOP, DEFAULT_VOLUME);
+   if(index_max <= ALLOW_INTERVAL && bid > buffer_high[index_max] + stoplevel)
+   {
+    sl = (bid - buffer_high[index_max])/Point();
+    ctm.OpenUniquePosition(_Symbol, _Period, OP_SELLSTOP, DEFAULT_VOLUME, sl, 0, TRAILING_TYPE_PBI, minProfit, trailingStop, trailingStep, handle_pbi, stoplevel_points);
+    PrintFormat("SELLSTOP: sl = %d; bid = %f max = %f; point = %f", sl, bid, buffer_high[index_max], Point());
+   }
+   
+   if(index_min <= ALLOW_INTERVAL && ask < buffer_low[index_min] - stoplevel)
+   {
+    sl = (buffer_low[index_min] - ask)/Point();
+    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUYSTOP, DEFAULT_VOLUME, sl, 0, TRAILING_TYPE_PBI, minProfit, trailingStop, trailingStep, handle_pbi, stoplevel_points);
+    PrintFormat("BUYSTOP: sl = %d; min = %f ask = %f; point = %f", sl, buffer_low[index_min], ask, Point());
+   }
   }
-  if(min <= (DEPTH - 1 - MIN_DEPTH) && SymbolInfoDouble(_Symbol, SYMBOL_ASK) < buffer_low[min] - SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL)*Point())
+  else
   {
-   ctm.OpenUniquePosition(_Symbol, _Period, OP_BUYSTOP, DEFAULT_VOLUME);
+   if(ctm.GetPositionType(_Symbol) == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < ask) 
+   {
+    sl = ask;
+    ctm.ModifyPosition(_Symbol, sl, 0); 
+   }
+   if(ctm.GetPositionType(_Symbol) == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > bid) 
+   {
+    sl = bid;
+    ctm.ModifyPosition(_Symbol, sl, 0); 
+   }
   }
-  
-  //ChangeStopLoss
-  //ctm.ModifyPosition(_Symbol, 
  }
  else
  {
-  max = -1;
-  min = -1;
-  order_type = OP_UNKNOWN;
-  ctm.ClosePosition(_Symbol);
+  ctm.ClosePendingPosition(_Symbol);
  }
 }
 //+------------------------------------------------------------------+
