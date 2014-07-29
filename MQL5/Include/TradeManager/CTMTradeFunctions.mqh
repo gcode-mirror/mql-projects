@@ -139,7 +139,8 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
      if (GreatDoubles((currentPrice - sl)/Point(), SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL)))
      {
       PrintFormat("%s Ордер СеллСтоп слишком близко к текущей цене ", MakeFunctionPrefix(__FUNCTION__));
-      PrintFormat("ask %s bid %s стоп %s левел %s цена %s",DoubleToString( SymbolInfoDouble(symbol,SYMBOL_ASK) ),
+      PrintFormat("%s ask %s bid %s стоп %s левел %s цена %s", MakeFunctionPrefix(__FUNCTION__),
+                                                           DoubleToString( SymbolInfoDouble(symbol,SYMBOL_ASK) ),
                                                            DoubleToString(SymbolInfoDouble(symbol,SYMBOL_BID) ),
                                                            DoubleToString(sl),
                                                            DoubleToString(SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point ),
