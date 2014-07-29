@@ -214,13 +214,14 @@ void OnTick()
      else  // если позици€ уже открыта
       {
        ChangeTrailIndex();                            // то мен€ем индекс трейлинга
-       if (countAdd < 4)                              // если было совершено меньше 4-х доливок
+    /*   if (countAdd < 4)                              // если было совершено меньше 4-х доливок
         {
          ChangeLot();                                 // провер€ем услови€ 
-         if ( ctm.PositionChangeSize(_Symbol, 0.1) )  // сохран€ем значение лота
+         if ( ctm.PositionChangeSize(_Symbol, 0.25) )  // сохран€ем значение лота
           Print("ƒќЋ»Ћ»»—№ = ",countAdd);
          
         }
+    */    
         
       }
 
