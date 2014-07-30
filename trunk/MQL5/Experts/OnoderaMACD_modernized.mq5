@@ -72,7 +72,7 @@ struct bufferLevel
  };
 
 // буферы уровней 
-bufferLevel buffers[10];     // буфер уровней
+bufferLevel buffers[2];     // буфер уровней
 
 // дополнительные переменные
 double lenClosestUp;         // расстояние до ближайшего уровня сверху
@@ -145,6 +145,7 @@ void OnTick()
  // если не удалось прогрузить буферы уровней
  if (!UploadBuffers())
   return;
+GetClosestLevel(BUY);  
  // выставляем переменную проверки копирования буфера сигналов в начальное значение
  copiedSmydMACD = -1;
  // если сформирован новый бар
@@ -162,8 +163,8 @@ void OnTick()
      { 
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
       // получаем расстояния до ближайших уровней снизу и сверху
-      lenClosestUp   = GetClosestLevel(BUY);
-      lenClosestDown = GetClosestLevel(SELL);
+      lenClosestUp   = 0;//GetClosestLevel(BUY);
+      lenClosestDown = 0;//GetClosestLevel(SELL);
       stopLoss = CountStoploss(BUY);
       // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
       if (lenClosestUp == 0 || 
@@ -177,8 +178,8 @@ void OnTick()
      {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
       // получаем расстояния до ближайших уровней снизу и сверху
-      lenClosestUp   = GetClosestLevel(BUY);
-      lenClosestDown = GetClosestLevel(SELL);      
+      lenClosestUp   = 0;//GetClosestLevel(BUY);
+      lenClosestDown = 0;//GetClosestLevel(SELL);      
       stopLoss = CountStoploss(SELL);
       // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
       if (lenClosestDown == 0 ||
@@ -259,7 +260,7 @@ bool UploadBuffers ()   // получает последние значения уровней
   int indexPer;
   int indexBuff;
   int indexLines = 0;
-  for (indexPer=0;indexPer<5;indexPer++)
+  for (indexPer=1;indexPer<2;indexPer++)
    {
     for (indexBuff=0;indexBuff<2;indexBuff++)
      {
@@ -283,33 +284,41 @@ bool UploadBuffers ()   // получает последние значения уровней
    double len = 0;  //расстояние до цены от уровня
    double tmpLen; 
    int    index;
+   int    savedInd;
    
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<10;index++)
+      for (index=0;index<2;index++)
        {
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
          {
           tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
           if (tmpLen < len || len == 0)
-           len = tmpLen;  
+           {
+            savedInd = index;
+            len = tmpLen;
+           }  
          }
        }
+       Comment("BUY: ",DoubleToString(buffers[savedInd].price[0]-buffers[savedInd].atr[0]) );
      break;
      case SELL: // ближний снизу
-      for (index=0;index<10;index++)
+      for (index=0;index<2;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
           {
            tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
            if (tmpLen < len || len == 0)
-            len = tmpLen;
+            {
+             savedInd = index;
+             len = tmpLen;
+            }
           }
        }     
-       
+       Comment("SELL: ",DoubleToString(buffers[savedInd].price[0]-buffers[savedInd].atr[0]) );
       break;
    }
    return (len);
