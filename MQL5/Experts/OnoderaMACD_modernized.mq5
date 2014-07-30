@@ -29,7 +29,7 @@ input  int    TakeProfit                           = 0;                  // Тейк
 input  double Lot                                  = 1;                  // Лот
 input  ENUM_USE_PENDING_ORDERS pending_orders_type = USE_NO_ORDERS;      // Тип отложенного ордера                    
 input  int    priceDifference                      = 50;                 // Price Difference
-input  int    backlogValue                         = 2;                  // максимальное отставание сигнала расхождения
+input  int    koLock                               = 2;                  // коэффициент запрета на вход
 
 sinput string trailingStr                          = "";                 // ПАРАМЕТРЫ трейлинга
 input         ENUM_TRAILING_TYPE trailingType      = TRAILING_TYPE_PBI;  // тип трейлинга
@@ -40,6 +40,7 @@ input int     minProfit                            = 250;                // мини
 sinput string PriceBasedIndicator                  = "";                 // ПАРАМЕТРЫ PBI
 input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
 input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
+
 
 // объекты
 CTradeManager * ctm;                                                     // указатель на объект торговой библиотеки
@@ -57,12 +58,25 @@ string symbol;
 ENUM_TIMEFRAMES period;
 int historyDepth;
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
-double backlogBuffer[];                                                  // буфер для получения отставания сигнала от последнего экстремума
 
 int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
 int    copiedSmydMACD;                                                   // переменная для проверки копирования буфера сигналов расхождения
-int    copiedBacklog;                                                    // переменная для проверки копирования буфера отставания сигнала от последнего экстремума
-bool   catchedDiv = false;                                               // флаг пойманного расхождения
+
+int handle_19Lines;
+
+// структура уровней
+struct bufferLevel
+ {
+  double price[];            // цена уровня
+  double atr[];              // ширина уровня
+ };
+
+// буферы уровней 
+bufferLevel buffers[10];     // буфер уровней
+
+// дополнительные переменные
+double lenClosestUp;         // расстояние до ближайшего уровня сверху
+double lenClosestDown;       // расстояние до ближайшего уровня снизу                 
 
 int OnInit()
 {
@@ -81,8 +95,15 @@ int OnInit()
    Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
   }
  }
+ 
+ handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines");     
+ if (handle_19Lines == INVALID_HANDLE)
+   {
+    Print("Не удалось получить хэндл NineteenLines");
+   }    
+ 
  // создаем хэндл индикатора ShowMeYourDivMACD
- handleSmydMACD = iCustom (symbol,period,"smydMACD_modernized");   
+ handleSmydMACD = iCustom (symbol,period,"smydMACD");   
    
  if ( handleSmydMACD == INVALID_HANDLE )
  {
@@ -121,36 +142,53 @@ void OnTick()
 {
  ctm.OnTick();
  ctm.DoTrailing();
+ // если не удалось прогрузить буферы уровней
+ if (!UploadBuffers())
+  return;
  // выставляем переменную проверки копирования буфера сигналов в начальное значение
  copiedSmydMACD = -1;
- copiedBacklog  = -1;
  // если сформирован новый бар
  if (isNewBar.isNewBar() > 0)
-  catchedDiv = false;
- // {
+  {
    copiedSmydMACD = CopyBuffer(handleSmydMACD,1,0,1,signalBuffer);
-   copiedBacklog  = CopyBuffer(handleSmydMACD,2,0,1,backlogBuffer);
-   if (copiedSmydMACD < 1 || copiedBacklog < 1)
+
+   if (copiedSmydMACD < 1)
     {
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }   
  
-   if ( signalBuffer[0] == BUY && backlogBuffer[0] <= backlogValue && !catchedDiv)  // получили расхождение на покупку и отставание сигнала меньше или равно заданному числу
+   if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
      { 
-      catchedDiv = true;
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
-      stopLoss = CountStoploss(1);
-      ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
+      // получаем расстояния до ближайших уровней снизу и сверху
+      lenClosestUp   = GetClosestLevel(BUY);
+      lenClosestDown = GetClosestLevel(SELL);
+      stopLoss = CountStoploss(BUY);
+      // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
+      if (lenClosestUp == 0 || 
+          GreatDoubles(lenClosestUp, lenClosestDown*koLock) )
+         {
+          // то открываем позицию на BUY
+          ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
+         }
      }
-   if ( signalBuffer[0] == SELL && backlogBuffer[0] <= backlogValue && !catchedDiv) // получили расхождение на продажу и отставание сигнала меньше или равно заданному числу
+   if ( signalBuffer[0] == SELL) // получили расхождение на продажу
      {
-      catchedDiv = true;
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
-      stopLoss = CountStoploss(-1);
-      ctm.OpenUniquePosition(symbol,period, opSell, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
+      // получаем расстояния до ближайших уровней снизу и сверху
+      lenClosestUp   = GetClosestLevel(BUY);
+      lenClosestDown = GetClosestLevel(SELL);      
+      stopLoss = CountStoploss(SELL);
+      // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
+      if (lenClosestDown == 0 ||
+          GreatDoubles(lenClosestDown, lenClosestUp*koLock) )
+         {
+          // то открываем позицию на SELL
+          ctm.OpenUniquePosition(symbol,period, opSell, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
+         }
      }
-   //}  
+   }  
 }
 
 int CountStoploss(int point)
@@ -212,3 +250,69 @@ int CountStoploss(int point)
  //PrintFormat("%s StopLoss = %d",MakeFunctionPrefix(__FUNCTION__), stopLoss);
  return(stopLoss);
 }
+
+
+bool UploadBuffers ()   // получает последние значения уровней
+ {
+  int copiedPrice;
+  int copiedATR;
+  int indexPer;
+  int indexBuff;
+  int indexLines = 0;
+  for (indexPer=0;indexPer<5;indexPer++)
+   {
+    for (indexBuff=0;indexBuff<2;indexBuff++)
+     {
+      copiedPrice = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+4,  0,1,  buffers[indexLines].price);
+      copiedATR   = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+5,  0,1,buffers[indexLines].atr);
+      if (copiedPrice < 1 || copiedATR < 1)
+       {
+        Print("Не удалось прогрузить буферы индикатора NineTeenLines");
+        return (false);
+       }
+      indexLines++;
+     }
+   }
+  return(true);     
+ }
+ 
+ // возвращает ближайший уровень к текущей цене
+ double GetClosestLevel (int direction) 
+  {
+   double cuPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
+   double len = 0;  //расстояние до цены от уровня
+   double tmpLen; 
+   int    index;
+   
+   switch (direction)
+    {
+     case BUY:  // ближний сверху
+      for (index=0;index<10;index++)
+       {
+        // если уровень выше
+        if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
+         {
+          tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
+          if (tmpLen < len || len == 0)
+           len = tmpLen;  
+         }
+       }
+     break;
+     case SELL: // ближний снизу
+      for (index=0;index<10;index++)
+       {
+        // если уровень ниже
+        if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
+          {
+           tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
+           if (tmpLen < len || len == 0)
+            len = tmpLen;
+          }
+       }     
+       
+      break;
+   }
+   return (len);
+  }
+  
+  
