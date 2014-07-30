@@ -145,7 +145,6 @@ void OnTick()
  // если не удалось прогрузить буферы уровней
  if (!UploadBuffers())
   return;
-GetClosestLevel(BUY);  
  // выставляем переменную проверки копирования буфера сигналов в начальное значение
  copiedSmydMACD = -1;
  // если сформирован новый бар
@@ -163,8 +162,8 @@ GetClosestLevel(BUY);
      { 
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
       // получаем расстояния до ближайших уровней снизу и сверху
-      lenClosestUp   = 0;//GetClosestLevel(BUY);
-      lenClosestDown = 0;//GetClosestLevel(SELL);
+      lenClosestUp   = GetClosestLevel(BUY);
+      lenClosestDown = GetClosestLevel(SELL);
       stopLoss = CountStoploss(BUY);
       // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
       if (lenClosestUp == 0 || 
@@ -178,8 +177,8 @@ GetClosestLevel(BUY);
      {
       currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
       // получаем расстояния до ближайших уровней снизу и сверху
-      lenClosestUp   = 0;//GetClosestLevel(BUY);
-      lenClosestDown = 0;//GetClosestLevel(SELL);      
+      lenClosestUp   = GetClosestLevel(BUY);
+      lenClosestDown = GetClosestLevel(SELL);      
       stopLoss = CountStoploss(SELL);
       // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
       if (lenClosestDown == 0 ||
@@ -302,7 +301,8 @@ bool UploadBuffers ()   // получает последние значения уровней
            }  
          }
        }
-       Comment("BUY: ",DoubleToString(buffers[savedInd].price[0]-buffers[savedInd].atr[0]) );
+       Print("BUY: ",DoubleToString(buffers[savedInd].price[0]-buffers[savedInd].atr[0]),
+             " LEN = ",DoubleToString(len));
      break;
      case SELL: // ближний снизу
       for (index=0;index<2;index++)
@@ -318,7 +318,9 @@ bool UploadBuffers ()   // получает последние значения уровней
             }
           }
        }     
-       Comment("SELL: ",DoubleToString(buffers[savedInd].price[0]-buffers[savedInd].atr[0]) );
+       Print("SELL: ",DoubleToString(buffers[savedInd].price[0]+buffers[savedInd].atr[0]),
+             " LEN = ",DoubleToString(len)
+        );
       break;
    }
    return (len);
