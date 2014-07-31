@@ -72,7 +72,7 @@ struct bufferLevel
  };
 
 // буферы уровней 
-bufferLevel buffers[2];     // буфер уровней
+bufferLevel buffers[10];     // буфер уровней
 
 // дополнительные переменные
 double lenClosestUp;         // расстояние до ближайшего уровня сверху
@@ -259,7 +259,7 @@ bool UploadBuffers ()   // получает последние значения уровней
   int indexPer;
   int indexBuff;
   int indexLines = 0;
-  for (indexPer=1;indexPer<2;indexPer++)
+  for (indexPer=0;indexPer<5;indexPer++)
    {
     for (indexBuff=0;indexBuff<2;indexBuff++)
      {
@@ -288,7 +288,7 @@ bool UploadBuffers ()   // получает последние значения уровней
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<2;index++)
+      for (index=0;index<10;index++)
        {
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
@@ -301,11 +301,11 @@ bool UploadBuffers ()   // получает последние значения уровней
            }  
          }
        }
-       Print("BUY: ",DoubleToString(buffers[savedInd].price[0]-buffers[savedInd].atr[0]),
-             " LEN = ",DoubleToString(len));
+      // Print("BUY: ",DoubleToString(buffers[savedInd].price[0]-buffers[savedInd].atr[0]),
+        //     " LEN = ",DoubleToString(len));
      break;
      case SELL: // ближний снизу
-      for (index=0;index<2;index++)
+      for (index=0;index<10;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
@@ -318,9 +318,8 @@ bool UploadBuffers ()   // получает последние значения уровней
             }
           }
        }     
-       Print("SELL: ",DoubleToString(buffers[savedInd].price[0]+buffers[savedInd].atr[0]),
-             " LEN = ",DoubleToString(len)
-        );
+      // Print("SELL: ",DoubleToString(buffers[savedInd].price[0]+buffers[savedInd].atr[0]),
+       //      " LEN = ",DoubleToString(len) );
       break;
    }
    return (len);
