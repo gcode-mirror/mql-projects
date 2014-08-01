@@ -217,7 +217,7 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period
  if(sl > 0) _sl = (sl < SymbInfo.StopsLevel()) ? SymbInfo.StopsLevel() : sl;
  if(tp > 0) _tp = (tp < SymbInfo.StopsLevel()) ? SymbInfo.StopsLevel() : tp;
  if (trailingStop > 0) _trailingStop = (trailingStop < SymbInfo.StopsLevel()) ? SymbInfo.StopsLevel() : trailingStop;
- _expiration = TimeCurrent()+2*PeriodSeconds(Period());
+ _expiration = 0;//TimeCurrent()+2*PeriodSeconds(Period());  помимио прочего нужно поменять во всем коде ORDER_TIME_SPECIFIED на ORDER_TIME_GTC 
  trade = new CTMTradeFunctions();
  _pos_status = POSITION_STATUS_NOT_INITIALISED;
  _sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
@@ -379,7 +379,7 @@ bool CPosition::ChangeSize(double additionalVolume)
  {
   if (trade.OrderDelete(_orderTicket))
   {
-   if (trade.OrderOpen(_symbol, OrderType(getType()), additionalVolume, openPrice, ORDER_TIME_SPECIFIED, _expiration))
+   if (trade.OrderOpen(_symbol, OrderType(getType()), additionalVolume, openPrice, ORDER_TIME_GTC, _expiration)) // Отложенный ордер живет пока нам не надоест
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Изменен ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, TimeToString(_expiration)));
    }
@@ -506,10 +506,11 @@ bool CPosition::isMinProfit(void)
 //+------------------------------------------------------------------+
 bool CPosition::ModifyPosition(double sl, int tp)
 {
- if (trade.StopOrderModify(_slTicket, sl))
+ if (((_type == OP_BUY || _type == OP_SELL) && trade.StopOrderModify(_slTicket, sl)) ||                //если позиция реальная то меняем отложенный ордер sl
+      (_type == OP_BUYSTOP  || _type == OP_SELLSTOP || _type == OP_BUYLIMIT || _type == OP_SELLLIMIT)) //если пендинг то меняем просто цену
  {
   _slPrice = sl;
-  PrintFormat("%s Изменили СтопЛосс, новый стоплосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice);
+  //PrintFormat("%s Изменили СтопЛосс, новый стоплосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice);
   return (true);
  }
  else
@@ -578,7 +579,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_BUYLIMIT:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posOpenPrice, ORDER_TIME_SPECIFIED, _expiration))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration))
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;             
@@ -586,7 +587,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_SELLLIMIT:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posOpenPrice, ORDER_TIME_SPECIFIED, _expiration))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration))
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;
@@ -594,7 +595,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_BUYSTOP:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posOpenPrice, ORDER_TIME_SPECIFIED, _expiration))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration))
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;  
@@ -602,7 +603,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_SELLSTOP:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posOpenPrice, ORDER_TIME_SPECIFIED, _expiration))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration))
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;

@@ -54,7 +54,7 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  ctm.OnTick();
- int sl;
+ double sl, tp;
  static int index_max = -1;
  static int index_min = -1;
  double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
@@ -62,12 +62,13 @@ void OnTick()
  int stoplevel_points = MathMax(50, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL));
  double stoplevel = stoplevel_points*Point();
  CopyBuffer(handle_pbi, 4, 0, 1, buffer_pbi);
+
  if(isNewBar.isNewBar())
  {
   ArraySetAsSeries(buffer_high, false);
   ArraySetAsSeries(buffer_low, false);
   if(CopyHigh(_Symbol, _Period, 0, DEPTH, buffer_high) < DEPTH ||
-      CopyLow(_Symbol, _Period, 0, DEPTH, buffer_low)  < DEPTH)
+      CopyLow(_Symbol, _Period, 0, DEPTH, buffer_low)  < DEPTH )
   {
    index_max = -1;
    index_min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
@@ -81,18 +82,19 @@ void OnTick()
  {
   if(ctm.GetPositionCount() == 0)
   {
-   if(index_max <= ALLOW_INTERVAL && bid > buffer_high[index_max] + stoplevel)
+   tp = (buffer_high[index_max] -  buffer_low[index_min])/Point();
+   if(index_max < ALLOW_INTERVAL && bid > buffer_high[index_max] + stoplevel)
    {
     sl = (bid - buffer_high[index_max])/Point();
-    ctm.OpenUniquePosition(_Symbol, _Period, OP_SELLSTOP, DEFAULT_VOLUME, sl, 0, TRAILING_TYPE_PBI, minProfit, trailingStop, trailingStep, handle_pbi, stoplevel_points);
-    PrintFormat("SELLSTOP: sl = %d; bid = %f max = %f; point = %f", sl, bid, buffer_high[index_max], Point());
+    ctm.OpenUniquePosition(_Symbol, _Period, OP_SELLSTOP, DEFAULT_VOLUME, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handle_pbi, sl);
+    PrintFormat("—лучилс€ пробой %d %d(%f %f) SELLSTOP: sl = %f; bid = %f max = %f", index_max, index_min, buffer_high[index_max], buffer_low[index_min], sl, bid, buffer_high[index_max]);
    }
    
-   if(index_min <= ALLOW_INTERVAL && ask < buffer_low[index_min] - stoplevel)
+   if(index_min < ALLOW_INTERVAL && ask < buffer_low[index_min] - stoplevel)
    {
-    sl = (buffer_low[index_min] - ask)/Point();
-    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUYSTOP, DEFAULT_VOLUME, sl, 0, TRAILING_TYPE_PBI, minProfit, trailingStop, trailingStep, handle_pbi, stoplevel_points);
-    PrintFormat("BUYSTOP: sl = %d; min = %f ask = %f; point = %f", sl, buffer_low[index_min], ask, Point());
+    sl = ( buffer_low[index_min] - ask)/Point();
+    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUYSTOP, DEFAULT_VOLUME, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handle_pbi, sl);
+    PrintFormat("—лучилс€ пробой %d %d(%f %f) SBUYSTOP: sl = %f; min = %f ask = %f", index_max, index_min, buffer_high[index_max], buffer_low[index_min], sl, buffer_low[index_min], ask);
    }
   }
   else
@@ -100,11 +102,14 @@ void OnTick()
    if(ctm.GetPositionType(_Symbol) == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < ask) 
    {
     sl = ask;
+    //PrintFormat("MODIFYYY sl = ask = %f", sl);
     ctm.ModifyPosition(_Symbol, sl, 0); 
    }
    if(ctm.GetPositionType(_Symbol) == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > bid) 
    {
     sl = bid;
+    
+    //PrintFormat("MODIFYYY sl = bid = %f", sl);
     ctm.ModifyPosition(_Symbol, sl, 0); 
    }
   }
