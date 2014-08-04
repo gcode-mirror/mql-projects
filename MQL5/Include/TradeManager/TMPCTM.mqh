@@ -19,8 +19,16 @@ class CTMTradeFunctions : public CTrade
 {
  private:
   // системные пол€ торговой библиотеки
+  
+  // переменные-параметры открытой позиции
   ENUM_POSITION_TYPE _typePosition;       // тип открытого ордера
   bool            _positionOpened;        // флаг отрыти€ позиции
+  double          _stopLoss;              // цена стоп лосса
+  double          _takeProfit;            // цена тейк профита
+  string          _symbol;                // символ, на котором открыта позици€
+  
+  // другие системные переменные
+  
  public:
   void CTMTradeFunctions(void):_positionOpened(false){};
   void ~CTMTradeFunctions(void){};
@@ -30,9 +38,10 @@ class CTMTradeFunctions : public CTrade
   bool OrderDelete(const ulong ticket);
   bool StopOrderModify(const ulong ticket, const double sl = 0.0);
   bool PositionOpen(const string symbol,const ENUM_POSITION_TYPE type,const double volume,
-                                        const double sl = 0.0,const double tp = 0.0,const string comment = "");
+                                        const double sl = 0.0,const double tp = 0.0,const string comment = "");                                     
   bool PositionClose(const string symbol, const double volume, const ulong deviation=ULONG_MAX);
-  
+  void OnTick();  
+  bool IsPositionOpened() { return(_positionOpened); };
 };
 
 //+------------------------------------------------------------------+
@@ -190,7 +199,8 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
 {
  ENUM_ORDER_TYPE order_type;
  bool openedSuccess = false;
- double price; 
+ double price;
+ double stopLevel; 
  // если позици€ еще не открыта либо тип позиции - противоположный
  if (!_positionOpened || type != _typePosition)
   {
@@ -200,15 +210,27 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
      m_result.retcode=TRADE_RETCODE_INVALID_VOLUME;
      return(false); 
     }
+   // вычисл€ем стоп левел
+   stopLevel = SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point;
    switch(type)
     {
      case POSITION_TYPE_BUY:
       order_type = ORDER_TYPE_BUY;
       price = SymbolInfoDouble(symbol,SYMBOL_ASK);
+      // если стоп лосс задан не корректно
+      if ( LessOrEqualDoubles(price - sl,stopLevel) )
+       return(false);
+      if ( GreatOrEqualDoubles(stopLevel,tp - price) )
+       return(false); 
      break;
      case POSITION_TYPE_SELL:
       order_type = ORDER_TYPE_SELL;
       price = SymbolInfoDouble(symbol,SYMBOL_BID);
+      // если стоп лосс задан не корректно
+      if ( LessOrEqualDoubles(sl - price,stopLevel) )
+       return(false);
+      if ( GreatOrEqualDoubles(stopLevel,price - tp) )
+       return(false);             
      break;
      default:
       log_file.Write(LOG_DEBUG, StringFormat("%s Ќеправильный тип позиции", MakeFunctionPrefix(__FUNCTION__)));
@@ -220,8 +242,11 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
    // если удалось успешно открыть позицию
    if (openedSuccess)
     {
-     _positionOpened = true;
-     _typePosition   = type;
+     _positionOpened = true;     // флаг открытой позиции
+     _typePosition   = type;     // тип открытой позиции
+     _stopLoss       = sl;       // цена стоп лосса
+     _takeProfit     = tp;       // цена тейк профита
+     _symbol         = symbol;   // символ, на котором открыта позици€
     }
   }
  return (openedSuccess);
@@ -278,3 +303,44 @@ bool CTMTradeFunctions::PositionClose(const string symbol, const double volume, 
   } 
  return(false);
 }
+
+// функци€, вызываема€ на каждом тике
+void CTMTradeFunctions::OnTick(void)
+ {
+  double price;
+  /*
+  // если есть открыта€ позици€
+  if (_positionOpened)
+   {
+     switch (_typePosition)
+      {
+       case POSITION_TYPE_BUY:
+        price = SymbolInfoDouble(_symbol,SYMBOL_BID);
+        // если текуща€ цена перешла уровень стоп лосса
+        if ( LessOrEqualDoubles(price,_stopLoss) )
+         {
+          _positionOpened = false;
+         }
+        // если текуща€ цена перешла уровень тейк профита
+        if ( GreatOrEqualDoubles(price,_takeProfit) )
+         {
+          _positionOpened = false;
+         }
+       break;
+       case POSITION_TYPE_SELL:
+        price = SymbolInfoDouble(_symbol,SYMBOL_ASK);
+        // если текуща€ цена перешла уровень стоп лосса
+        if ( GreatOrEqualDoubles(price,_stopLoss) )
+         {
+          _positionOpened = false;
+         }
+        // если текуща€ цена перешла уровень тейк профита
+        if ( LessOrEqualDoubles(price,_takeProfit) )
+         {
+          _positionOpened = false;
+         }       
+       break;
+      }
+   }
+   */
+ }
