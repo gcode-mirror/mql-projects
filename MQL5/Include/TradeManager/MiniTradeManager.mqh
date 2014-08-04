@@ -73,18 +73,100 @@ bool PositionOpen(string symbol,
    {
     case POSITION_TYPE_BUY:
      if (!openedPosition || mtm_req.order == ORDER_TYPE_SELL)
-     return ( OrderOpen(symbol,ORDER_TYPE_BUY,lot,stopLoss,takeProfit,deviation) );
+       {
+        if (OrderOpen(symbol,ORDER_TYPE_BUY,lot,stopLoss,takeProfit,deviation))
+          {
+           openedPosition = true;
+           return (true);
+          }
+       }
     case POSITION_TYPE_SELL:
      if (!openedPosition || mtm_req.order == ORDER_TYPE_BUY)
-     return ( OrderOpen(symbol,ORDER_TYPE_SELL,lot,stopLoss,takeProfit,deviation) );
+       {
+        if (OrderOpen(symbol,ORDER_TYPE_SELL,lot,stopLoss,takeProfit,deviation))
+          {
+           openedPosition = true;
+           return (true);
+          }
+       }
    }
   return (false);
  }
  
 bool PositionClose() // функция закрытия позиции
  {
+  // если есть открытая позиция
+  if (openedPosition)
+   {
+    if ( BuyOrSell(mtm_req.type) )  // если BUY
+      {
+       PositionOpen(mtm_req.symbol, POSITION_TYPE_SELL,
+                    mtm_req.volume, 0,0,mtm_req.deviation);
+      }
+    else                            // если SELL
+      {
+       PositionOpen(mtm_req.symbol, POSITION_TYPE_BUY,
+                    mtm_req.volume, 0,0,mtm_req.deviation);   
+      }
+   }
   return (false);
  }
+ 
+bool ChangeStopLoss (double stopLoss)  // функция изменяет стоп лосс позиции
+ {
+  double prevStop = mtm_req.sl;
+  // если есть открытая позиция
+  if (openedPosition)
+   {
+    mtm_req.action=TRADE_ACTION_SLTP;       
+    mtm_req.sl = stopLoss;
+    if ( OrderSend(mtm_req,mtm_res) )
+     {
+      Print("Стоп лосс изменен");
+      return (true);
+     }
+    mtm_req.sl = prevStop; 
+   }
+  return (false); // не удалось изменить стоп лосс
+ } 
+ 
+bool ChangeTakeProfit (double takeProfit)  // функция изменяет тейк профит позиции
+ {
+  double prevTake = mtm_req.tp;
+  // если есть открытая позиция
+  if (openedPosition)
+   {
+    mtm_req.action=TRADE_ACTION_SLTP;       
+    mtm_req.tp = takeProfit;
+    if ( OrderSend(mtm_req,mtm_res) )
+     {
+      Print("Тейк профит изменен");
+      return (true);
+     }
+    mtm_req.tp = prevTake; 
+   }
+  return (false); // не удалось изменить тейк профит
+ }  
+ 
+bool ChangeLot (double lot)  // функция изменяет лот позиции
+ {
+  double prevLot = mtm_req.volume;
+  // если есть открытая позиция
+  if (openedPosition)
+   {
+    mtm_req.action=TRADE_ACTION_MODIFY;       
+    mtm_req.volume = lot;
+    mtm_req.sl = 1.373;
+    mtm_req.tp = 1.38;
+    if ( OrderSend(mtm_req,mtm_res) )
+     {
+      Print("Объем позиции изменен");
+      return (true);
+     }
+    mtm_req.volume = lot; 
+   }
+  return (false); // не удалось изменить тейк профит
+ }   
  
 bool BuyOrSell (ENUM_ORDER_TYPE type) // возвращает true - если buy, и false, если sell
  {
