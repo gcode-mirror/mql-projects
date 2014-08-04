@@ -11,8 +11,10 @@
 
 // системные переменные торговой библиотеки
 
-MqlTradeRequest    mtm_req;        // структура открытия ордера
-MqlTradeResult     mtm_res;        // для хранения результатов
+MqlTradeRequest    mtm_req;              // структура открытия ордера
+MqlTradeResult     mtm_res;              // для хранения результатов
+bool               openedPosition=false; // флаг открытой позиции
+
 
 bool OrderOpen (string symbol,
                 ENUM_ORDER_TYPE type,double lot,
@@ -25,10 +27,11 @@ bool OrderOpen (string symbol,
    mtm_req.volume       = lot;                                 // лот
    mtm_req.type         = type;                                // тип ордера
    mtm_req.type_filling = ORDER_FILLING_FOK;                   // тип заполнения
-   mtm_req.sl=stopLoss;                                        // стоп лосс
-   mtm_req.tp=takeProfit;                                      // тейк профит
-   mtm_req.deviation=deviation;                                // отклонение
-   mtm_req.comment="Everything is okay";                       // комментарий
+   mtm_req.sl           = stopLoss;                            // стоп лосс
+   mtm_req.tp           = takeProfit;                          // тейк профит
+   mtm_req.deviation    = deviation;                           // отклонение
+  // mtm_req.magic        = ;                                    // 
+   mtm_req.comment      = "Everything is okay";                // комментарий
    if (BuyOrSell (type) )  // если BUY                 
     {
      mtm_req.price   = SymbolInfoDouble(symbol,SYMBOL_ASK);   
@@ -63,10 +66,19 @@ bool OrderOpen (string symbol,
  }
  
 bool PositionOpen(string symbol,
-                ENUM_POINTER_TYPE type,double lot,
-                double stopLoss,double takeProfit,int deviation=3)  // функиция открывает позицию
+                ENUM_POSITION_TYPE type,double lot,
+                double stopLoss,double takeProfit,int deviation=3)  // функция открывает позицию
  {
-  return ( OrderOpen(
+  switch (type)
+   {
+    case POSITION_TYPE_BUY:
+     if (!openedPosition || mtm_req.order == ORDER_TYPE_SELL)
+     return ( OrderOpen(symbol,ORDER_TYPE_BUY,lot,stopLoss,takeProfit,deviation) );
+    case POSITION_TYPE_SELL:
+     if (!openedPosition || mtm_req.order == ORDER_TYPE_BUY)
+     return ( OrderOpen(symbol,ORDER_TYPE_SELL,lot,stopLoss,takeProfit,deviation) );
+   }
+  return (false);
  }
  
 bool PositionClose() // функция закрытия позиции
