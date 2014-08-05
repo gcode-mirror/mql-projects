@@ -11,162 +11,112 @@
 
 // системные переменные торговой библиотеки
 
-MqlTradeRequest    mtm_req;              // структура открытия ордера
-MqlTradeResult     mtm_res;              // для хранения результатов
+MqlTradeRequest    mtm_pos_req;              // структура открытия позиции
+MqlTradeResult     mtm_pos_res;              // для хранения результатов открытия позиции
 bool               openedPosition=false; // флаг открытой позиции
 
-
-bool OrderOpen (string symbol,
-                ENUM_ORDER_TYPE type,double lot,
-                double stopLoss,double takeProfit,int deviation=3
-                ) 
-                   // функция открытия позиции
- {  
-   mtm_req.action       = TypeOfOrder(type);                   // тип ордера (немедленный или отложенник)
-   mtm_req.symbol       = symbol;                              // символ
-   mtm_req.volume       = lot;                                 // лот
-   mtm_req.type         = type;                                // тип ордера
-   mtm_req.type_filling = ORDER_FILLING_FOK;                   // тип заполнения
-   mtm_req.sl           = stopLoss;                            // стоп лосс
-   mtm_req.tp           = takeProfit;                          // тейк профит
-   mtm_req.deviation    = deviation;                           // отклонение
-  // mtm_req.magic        = ;                                    // 
-   mtm_req.comment      = "Everything is okay";                // комментарий
+// возвращает структуру данных об ордерах
+void  SetTradeRequest (MqlTradeRequest &mtr,string symbol, ENUM_ORDER_TYPE type,
+                                 double lot, double stopLoss,double takeProfit,
+                                 int deviation=3, string comment="ok"                               
+                                 )
+  {
+    mtr.action          = TypeOfOrder(type);
+    mtr.symbol          = symbol;
+    mtr.volume          = lot;
+    mtr.type_filling    = ORDER_FILLING_FOK;
+    mtr.sl              = stopLoss;
+    mtr.tp              = takeProfit;
+    mtr.deviation       = deviation;
+    mtr.comment         = comment; 
+    
    if (BuyOrSell (type) )  // если BUY                 
     {
-     mtm_req.price   = SymbolInfoDouble(symbol,SYMBOL_ASK);   
+     mtr.price   = SymbolInfoDouble(symbol,SYMBOL_ASK);   
     }
    else                    // если SELL
     {
-     mtm_req.price   = SymbolInfoDouble(symbol,SYMBOL_BID);
-    }
-   // отправляем ордер на заявку 
-   if(OrderSend(mtm_req,mtm_res))
-     {
-      Print("Sent...");
-     }
-   Print("ticket =",mtm_res.order,"   retcode =",mtm_res.retcode);
-   if(mtm_res.order != 0)
-     {
-      datetime tm=TimeCurrent();
-      HistorySelect(0,tm);
-      string comment;
-      bool result=HistoryOrderGetString(mtm_res.order,ORDER_COMMENT,comment);
-      if(result)
-        {
-         Print("ticket:",mtm_res.order,"    Comment:",comment);
-        }
-      else
-        {
-         Print("failed");  
-         return (false);   // ордер не исполнен
-        }
-     }
-   return (true);   // ордер успешно отправлен на заявку
+     mtr.price   = SymbolInfoDouble(symbol,SYMBOL_BID);
+    }    
+  }
+  
+// создает ордер и возвращает его тикет в случае успеха
+ulong OrderCreate ( MqlTradeRequest &mtr,MqlTradeResult &mt_res)
+ {
+  ulong ticket = 0;
+  if ( OrderSend(mtr,mt_res) ) // если был успешно отправлен ордер
+   {
+    ticket = mt_res.order;     // сохраняем ордер
+   }
+  return (ticket);
+ }
+// модифицирует ордер по тикету 
+bool OrderModify( ulong ticket, MqlTradeRequest &mtr)
+ {
+  MqlTradeResult tmp_res;
+  // если был успешно выбран тикет
+  if (OrderSelect(ticket)) 
+   {
+    return (OrderSend(mtr,tmp_res));
+   }
+   return (false);
  }
  
-bool PositionOpen(string symbol,
+// открывает позицию
+ulong PositionOpen( string symbol,
                 ENUM_POSITION_TYPE type,double lot,
-                double stopLoss,double takeProfit,int deviation=3)  // функция открывает позицию
+                double stopLoss,double takeProfit,int deviation=3 )
  {
-  switch (type)
-   {
-    case POSITION_TYPE_BUY:
-     if (!openedPosition || mtm_req.order == ORDER_TYPE_SELL)
-       {
-        if (OrderOpen(symbol,ORDER_TYPE_BUY,lot,stopLoss,takeProfit,deviation))
-          {
-           openedPosition = true;
-           return (true);
-          }
-       }
-    case POSITION_TYPE_SELL:
-     if (!openedPosition || mtm_req.order == ORDER_TYPE_BUY)
-       {
-        if (OrderOpen(symbol,ORDER_TYPE_SELL,lot,stopLoss,takeProfit,deviation))
-          {
-           openedPosition = true;
-           return (true);
-          }
-       }
-   }
-  return (false);
+   ENUM_ORDER_TYPE ot;
+   MqlTradeRequest pos_req;
+   MqlTradeResult  pos_res;
+   
+   switch (type)
+    {
+     case POSITION_TYPE_BUY:
+      ot = ORDER_TYPE_BUY;
+     break;
+     case POSITION_TYPE_SELL:
+      ot = ORDER_TYPE_SELL;
+     break;
+    }
+   // если позиция уже существует по данному символу
+   if ( PositionSelect (symbol) )
+    {
+     // если знак позиции такой же, как у уже открытой
+     if (ENUM_POSITION_TYPE(PositionGetInteger(POSITION_TYPE)) != type)
+      return (0); // то вернем нулевой тикет и ничего не делаем
+     
+    }
+   SetTradeRequest(pos_req,symbol,ot,lot,stopLoss,takeProfit,deviation);
+   return (OrderCreate (pos_req,pos_res) );
  }
- 
-bool PositionClose() // функция закрытия позиции
+
+// закрывает позицию
+  
+bool PositionClose (string symbol)
  {
-  // если есть открытая позиция
-  if (openedPosition)
+  ulong ticket;
+  MqlTradeRequest pos_req;
+  MqlTradeResult  pos_res;
+  if ( PositionSelect(symbol) )
    {
-    if ( BuyOrSell(mtm_req.type) )  // если BUY
+     if ( ENUM_POSITION_TYPE( PositionGetInteger(POSITION_TYPE) ) == POSITION_TYPE_BUY)
       {
-       PositionOpen(mtm_req.symbol, POSITION_TYPE_SELL,
-                    mtm_req.volume, 0,0,mtm_req.deviation);
-      }
-    else                            // если SELL
+       if (PositionOpen(symbol,POSITION_TYPE_SELL,PositionGetDouble(POSITION_VOLUME),
+                       PositionGetDouble(POSITION_SL),PositionGetDouble(POSITION_TP) ) )
+          return (true);             
+      }  
+     else if ( ENUM_POSITION_TYPE( PositionGetInteger(POSITION_TYPE) ) == POSITION_TYPE_SELL)
       {
-       PositionOpen(mtm_req.symbol, POSITION_TYPE_BUY,
-                    mtm_req.volume, 0,0,mtm_req.deviation);   
-      }
+        if ( PositionOpen(symbol,POSITION_TYPE_BUY,PositionGetDouble(POSITION_VOLUME),
+                       PositionGetDouble(POSITION_SL),PositionGetDouble(POSITION_TP) ) )
+          return (true);             
+      }  
    }
-  return (false);
- }
- 
-bool ChangeStopLoss (double stopLoss)  // функция изменяет стоп лосс позиции
- {
-  double prevStop = mtm_req.sl;
-  // если есть открытая позиция
-  if (openedPosition)
-   {
-    mtm_req.action=TRADE_ACTION_SLTP;       
-    mtm_req.sl = stopLoss;
-    if ( OrderSend(mtm_req,mtm_res) )
-     {
-      Print("Стоп лосс изменен");
-      return (true);
-     }
-    mtm_req.sl = prevStop; 
-   }
-  return (false); // не удалось изменить стоп лосс
+  return (false);  // не удалось закрыть позицию
  } 
  
-bool ChangeTakeProfit (double takeProfit)  // функция изменяет тейк профит позиции
- {
-  double prevTake = mtm_req.tp;
-  // если есть открытая позиция
-  if (openedPosition)
-   {
-    mtm_req.action=TRADE_ACTION_SLTP;       
-    mtm_req.tp = takeProfit;
-    if ( OrderSend(mtm_req,mtm_res) )
-     {
-      Print("Тейк профит изменен");
-      return (true);
-     }
-    mtm_req.tp = prevTake; 
-   }
-  return (false); // не удалось изменить тейк профит
- }  
- 
-bool ChangeLot (double lot)  // функция изменяет лот позиции
- {
-  double prevLot = mtm_req.volume;
-  // если есть открытая позиция
-  if (openedPosition)
-   {
-    mtm_req.action=TRADE_ACTION_MODIFY;       
-    mtm_req.volume = lot;
-    mtm_req.sl = 1.373;
-    mtm_req.tp = 1.38;
-    if ( OrderSend(mtm_req,mtm_res) )
-     {
-      Print("Объем позиции изменен");
-      return (true);
-     }
-    mtm_req.volume = lot; 
-   }
-  return (false); // не удалось изменить тейк профит
- }   
  
 bool BuyOrSell (ENUM_ORDER_TYPE type) // возвращает true - если buy, и false, если sell
  {
