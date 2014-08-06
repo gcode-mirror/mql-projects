@@ -18,30 +18,23 @@
 class CTMTradeFunctions : public CTrade
 {
  private:
-  // системные поля торговой библиотеки
-  
-  // переменные-параметры открытой позиции
-  ENUM_POSITION_TYPE _typePosition;       // тип открытого ордера
-  bool            _positionOpened;        // флаг отрытия позиции
-  double          _stopLoss;              // цена стоп лосса
-  double          _takeProfit;            // цена тейк профита
-  string          _symbol;                // символ, на котором открыта позиция
-  
-  // другие системные переменные
-  
+  MqlTradeRequest _positionRequest;
+  MqlTradeResult  _positionResult;
  public:
-  void CTMTradeFunctions(void):_positionOpened(false){};
+  void CTMTradeFunctions(void){};
   void ~CTMTradeFunctions(void){};
    
   bool OrderOpen(const string symbol,const ENUM_ORDER_TYPE type, const double volume, const double price,
                  const ENUM_ORDER_TYPE_TIME type_time=ORDER_TIME_GTC,const datetime expiration=0,const string comment="");
   bool OrderDelete(const ulong ticket);
   bool StopOrderModify(const ulong ticket, const double sl = 0.0);
+
   bool PositionOpen(const string symbol,const ENUM_POSITION_TYPE type,const double volume,
-                                        const double sl = 0.0,const double tp = 0.0,const string comment = "");                                     
-  bool PositionClose(const string symbol, const double volume, const ulong deviation=ULONG_MAX);
-  void OnTick();  
-  bool IsPositionOpened() { return(_positionOpened); };
+                    const double price,const double sl = 0.0,const double tp = 0.0,const string comment = "");
+  bool PositionClose(const string symbol, const ENUM_POSITION_TYPE type, const double volume, const ulong deviation=ULONG_MAX);
+  
+  bool PositionModify(string symbol,const double sl, const double tp);   // изменение стопов позиции
+  bool PositionModify(string symbol,const double volume);                // изменение объема позиции
 };
 
 //+------------------------------------------------------------------+
@@ -57,7 +50,7 @@ bool CTMTradeFunctions::OrderOpen(const string symbol, const ENUM_ORDER_TYPE typ
   return(false);
  }
  
- return (OrderOpen(symbol,type,volume,0.0,price,sl,tp,type_time,expiration,comment));
+ return (OrderOpen(symbol,type,volume,SymbolInfoDouble(symbol,SYMBOL_ASK),price,sl,tp,type_time,expiration,comment)); 
 }
 //+------------------------------------------------------------------+
 //| Удаление отложника                                               |
@@ -194,153 +187,138 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
 //+-------------------------------------------------------------------------+
 //| Открытие CTM-позиции                                                    |
 //+-------------------------------------------------------------------------+
-bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYPE type,const double volume
-                                    ,const double sl = 0.0,const double tp = 0.0,const string comment = "")
+bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYPE type,const double volume,
+                                     const double price,const double sl = 0.0,const double tp = 0.0,const string comment = "")
 {
  ENUM_ORDER_TYPE order_type;
- bool openedSuccess = false;
- double price;
- double stopLevel; 
- // если позиция еще не открыта либо тип позиции - противоположный
- if (!_positionOpened || type != _typePosition)
+ ENUM_POSITION_TYPE pos_type;
+ bool               pos_opened = false;  // флаг открытия позиции 
+ // если есть открытая позиция
+ if ( pos_opened =  PositionSelect(_Symbol) )
+  {      
+   pos_type = ENUM_POSITION_TYPE(PositionGetInteger(POSITION_TYPE));
+  }
+ if (!pos_opened || pos_type != type)
   {
-   if(volume <= 0.0)
+   // заполняем поля для дальнейшего изменения позиции
+   _positionRequest.symbol          = symbol;
+   _positionRequest.volume          = volume;
+   _positionRequest.type_filling    = ORDER_FILLING_FOK;
+   _positionRequest.sl              = sl;
+   _positionRequest.tp              = tp;
+   _positionRequest.comment         = comment;
+   _positionRequest.action          = TRADE_ACTION_DEAL;
+       
+   if (type == POSITION_TYPE_BUY)  // если BUY                 
     {
-     PrintFormat("%s Неправильный объем", MakeFunctionPrefix(__FUNCTION__));
-     m_result.retcode=TRADE_RETCODE_INVALID_VOLUME;
-     return(false); 
+     _positionRequest.price   = SymbolInfoDouble(symbol,SYMBOL_ASK); 
+     _positionRequest.type    = ORDER_TYPE_BUY;
     }
-   // вычисляем стоп левел
-   stopLevel = SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point;
+   else                            // если SELL
+    {
+     _positionRequest.price   = SymbolInfoDouble(symbol,SYMBOL_BID);
+     _positionRequest.type    = ORDER_TYPE_SELL;
+    }   
+   if (volume <= 0.0)
+     {
+      PrintFormat("%s Неправильный объем", MakeFunctionPrefix(__FUNCTION__));
+      m_result.retcode=TRADE_RETCODE_INVALID_VOLUME;
+      return(false);
+     }
    switch(type)
-    {
-     case POSITION_TYPE_BUY:
-      order_type = ORDER_TYPE_BUY;
-      price = SymbolInfoDouble(symbol,SYMBOL_ASK);
-      // если стоп лосс задан не корректно
-      if ( LessOrEqualDoubles(price - sl,stopLevel) )
-       return(false);
-      if ( GreatOrEqualDoubles(stopLevel,tp - price) )
-       return(false); 
-     break;
-     case POSITION_TYPE_SELL:
-      order_type = ORDER_TYPE_SELL;
-      price = SymbolInfoDouble(symbol,SYMBOL_BID);
-      // если стоп лосс задан не корректно
-      if ( LessOrEqualDoubles(sl - price,stopLevel) )
-       return(false);
-      if ( GreatOrEqualDoubles(stopLevel,price - tp) )
-       return(false);             
-     break;
-     default:
-      log_file.Write(LOG_DEBUG, StringFormat("%s Неправильный тип позиции", MakeFunctionPrefix(__FUNCTION__)));
-     return(false);
-    }
+     {
+      case POSITION_TYPE_BUY:
+       order_type = ORDER_TYPE_BUY;
+      break;
+      case POSITION_TYPE_SELL:
+       order_type = ORDER_TYPE_SELL;
+      break;
+      default:
+       log_file.Write(LOG_DEBUG, StringFormat("%s Неправильный тип позиции", MakeFunctionPrefix(__FUNCTION__)));
+      return(false);
+     }
    PrintFormat("%s, Ордер на открытие %s, %s, %.02f, %.05f, %.05f, %.05f, %d", MakeFunctionPrefix(__FUNCTION__), symbol, OrderTypeToString(order_type), volume, price, sl, tp,m_deviation);
    m_deviation = 0;
-   openedSuccess = PositionOpen(symbol, order_type, volume, price, sl, tp, comment);
-   // если удалось успешно открыть позицию
-   if (openedSuccess)
-    {
-     _positionOpened = true;     // флаг открытой позиции
-     _typePosition   = type;     // тип открытой позиции
-     _stopLoss       = sl;       // цена стоп лосса
-     _takeProfit     = tp;       // цена тейк профита
-     _symbol         = symbol;   // символ, на котором открыта позиция
-    }
   }
- return (openedSuccess);
+ return(PositionOpen(symbol, order_type, volume, _positionRequest.price, sl, tp, comment));
 }                                     
 
 //+-------------------------------------------------------------------------+
 //| Удаление CTM-позиции (выставляем противоположный ордер равного объема)  |
 //+-------------------------------------------------------------------------+
-bool CTMTradeFunctions::PositionClose(const string symbol, const double volume, const ulong deviation=ULONG_MAX)
+bool CTMTradeFunctions::PositionClose(const string symbol, const ENUM_POSITION_TYPE type, const double volume, const ulong deviation=ULONG_MAX)
 {
  int tryNumber = 5;
- // если позиция была открыта 
- if (_positionOpened)
-  {  
-   ZeroMemory(m_request);
-   ZeroMemory(m_result);
-   ZeroMemory(m_check_result); 
-   while (0 <= tryNumber)
-    {
-     if (_typePosition == POSITION_TYPE_BUY)
-       {
-        //--- prepare request for close BUY position
-        m_request.type =ORDER_TYPE_SELL;
-        m_request.price=SymbolInfoDouble(symbol,SYMBOL_BID);
-        _positionOpened = false;
-       }
-    else
-       {
-        //--- prepare request for close SELL position
-        m_request.type =ORDER_TYPE_BUY;
-        m_request.price=SymbolInfoDouble(symbol,SYMBOL_ASK);
-        _positionOpened = false;
-       }
 
-     //--- setting request
-     m_request.action      =TRADE_ACTION_DEAL;
-     m_request.symbol      =symbol;
-     m_request.magic       =m_magic;
-     m_request.deviation   =(deviation==ULONG_MAX) ? m_deviation : deviation;
-     //--- check filling
-     if(!FillingCheck(symbol))
-      return(false);
-     m_request.volume = volume;
-     //--- order send
-     if (OrderSend(m_request,m_result))
-       {
-        return(true);
-       }
-     else
-       {
-        --tryNumber;
-       }
-   }
-  } 
+ ZeroMemory(m_request);
+ ZeroMemory(m_result);
+ ZeroMemory(m_check_result);
+ 
+ while (0 <= tryNumber)
+ {
+  if(type == POSITION_TYPE_BUY)
+  {
+   //--- prepare request for close BUY position
+   m_request.type =ORDER_TYPE_SELL;
+   m_request.price=SymbolInfoDouble(symbol,SYMBOL_BID);
+  }
+  else
+  {
+   //--- prepare request for close SELL position
+   m_request.type =ORDER_TYPE_BUY;
+   m_request.price=SymbolInfoDouble(symbol,SYMBOL_ASK);
+  }
+
+  //--- setting request
+  m_request.action      =TRADE_ACTION_DEAL;
+  m_request.symbol      =symbol;
+  m_request.magic       =m_magic;
+  m_request.deviation   =(deviation==ULONG_MAX) ? m_deviation : deviation;
+  //--- check filling
+  if(!FillingCheck(symbol))
+   return(false);
+  m_request.volume = volume;
+  //--- order send
+  if(OrderSend(m_request,m_result))
+  {
+   return(true);
+  }
+  else
+  {
+   --tryNumber;
+  }
+ }
+ 
  return(false);
 }
 
-// функция, вызываемая на каждом тике
-void CTMTradeFunctions::OnTick(void)
+// модифицирует стоп лосс и тейк профит позиции
+bool CTMTradeFunctions::PositionModify(string symbol,const double sl,const double tp)
  {
-  double price;
-  /*
-  // если есть открытая позиция
-  if (_positionOpened)
+   // если удалось выбрать позицию 
+   if ( PositionSelect(symbol) )
+    {
+      // то сохраним в структуру последней позиции данные
+      _positionRequest.sl     = sl;
+      _positionRequest.tp     = tp;
+      _positionRequest.action = TRADE_ACTION_SLTP;   // изменение тейк профита и стоп лосса
+      return (OrderSend (_positionRequest,_positionResult) );  // отправляем ордер на изменение
+    }
+   return (false);
+ }
+ 
+// модифицирует объем позиции
+bool CTMTradeFunctions::PositionModify(string symbol,const double volume)
+ {
+  // если удалось выбрать позицию
+  if ( PositionSelect(symbol) )
    {
-     switch (_typePosition)
-      {
-       case POSITION_TYPE_BUY:
-        price = SymbolInfoDouble(_symbol,SYMBOL_BID);
-        // если текущая цена перешла уровень стоп лосса
-        if ( LessOrEqualDoubles(price,_stopLoss) )
-         {
-          _positionOpened = false;
-         }
-        // если текущая цена перешла уровень тейк профита
-        if ( GreatOrEqualDoubles(price,_takeProfit) )
-         {
-          _positionOpened = false;
-         }
-       break;
-       case POSITION_TYPE_SELL:
-        price = SymbolInfoDouble(_symbol,SYMBOL_ASK);
-        // если текущая цена перешла уровень стоп лосса
-        if ( GreatOrEqualDoubles(price,_stopLoss) )
-         {
-          _positionOpened = false;
-         }
-        // если текущая цена перешла уровень тейк профита
-        if ( LessOrEqualDoubles(price,_takeProfit) )
-         {
-          _positionOpened = false;
-         }       
-       break;
-      }
+     // то сохраним в структуру последней позиции данные
+     _positionRequest.sl     = _positionRequest.sl;
+     _positionRequest.tp     = _positionRequest.tp;
+     _positionRequest.volume = volume;
+     _positionRequest.action = TRADE_ACTION_MODIFY;
+     return (OrderSend (_positionRequest,_positionResult) );  // отправляем ордер на изменение 
    }
-   */
+  return (false);
  }
