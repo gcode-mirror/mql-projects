@@ -22,16 +22,16 @@ int OnInit()
    panel.AddElement (PE_BUTTON,"buy_limit","BUY LIMIT",30,100,150,15);             // кнопка на buy limit
    panel.AddElement (PE_BUTTON,"sell_limit","SELL LIMIT",30,125,150,15);           // кнопка на sell limit
    panel.AddElement (PE_LABEL, "label_price","цена отложенника",30,150,150,15);    
-   panel.AddElement (PE_INPUT, "price","",30,175,150,15);                          // цена для отложенников
+   panel.AddElement (PE_INPUT, "price","1.34130",30,175,150,15);                          // цена для отложенников
    
    panel.AddElement (PE_LABEL, "new_stoploss_label","новый стоп лосс",30,200,150,15);
-   panel.AddElement (PE_INPUT, "new_stoploss","",30,225,150,15);                   // новое значение стоп лосса    
+   panel.AddElement (PE_INPUT, "new_stoploss","0.0",30,225,150,15);                   // новое значение стоп лосса    
    
    panel.AddElement (PE_LABEL, "new_takeprofit_label","новый тейк профит",30,250,150,15);
-   panel.AddElement (PE_INPUT, "new_takeprofit","",30,275,150,15);                 // новое значение тейк профита     
+   panel.AddElement (PE_INPUT, "new_takeprofit","0.0",30,275,150,15);                 // новое значение тейк профита     
    
    panel.AddElement (PE_LABEL, "new_volume_label","новый объем",30,300,150,15);
-   panel.AddElement (PE_INPUT, "new_volume","",30,325,150,15);                     // новый объем
+   panel.AddElement (PE_INPUT, "new_volume","1.0",30,325,150,15);                     // новый объем
    
    panel.AddElement (PE_BUTTON,"close_position","Закрыть позицию",30,350,150,15);  // закрытие позиции  
          
@@ -70,14 +70,20 @@ void OnChartEvent(const int id,
 
        if (sparam == "panel_inst_buy")     // кнопка немедленная покупка
         {
-         ctm.PositionOpen(_Symbol,POSITION_TYPE_BUY,1.0,SymbolInfoDouble(_Symbol,SYMBOL_ASK),
-          0.0,0.0,"немедленно купили");     
+         ctm.PositionOpen(_Symbol,POSITION_TYPE_BUY,StringToDouble(ObjectGetString(0,"panel_new_volume",OBJPROP_TEXT))
+         ,SymbolInfoDouble(_Symbol,SYMBOL_ASK),
+          StringToDouble(ObjectGetString(0,"panel_new_stoploss",OBJPROP_TEXT)),
+          StringToDouble(ObjectGetString(0,"panel_new_takeprofit",OBJPROP_TEXT)),
+          "немедленно купили");     
          Print("BUY");
         }
        if (sparam == "panel_inst_sell")     // кнопка немедленная продажа
         {
-         ctm.PositionOpen(_Symbol,POSITION_TYPE_SELL,1.0,SymbolInfoDouble(_Symbol,SYMBOL_BID),
-          0.0,0.0,"немедленно продали");     
+         ctm.PositionOpen(_Symbol,POSITION_TYPE_SELL,StringToDouble(ObjectGetString(0,"panel_new_volume",OBJPROP_TEXT))
+         ,SymbolInfoDouble(_Symbol,SYMBOL_BID),
+          StringToDouble(ObjectGetString(0,"panel_new_stoploss",OBJPROP_TEXT)),
+          StringToDouble(ObjectGetString(0,"panel_new_takeprofit",OBJPROP_TEXT)),
+          "немедленно купили");    
          Print("SELL");
         }
        if (sparam == "panel_buy_stop")
@@ -111,6 +117,12 @@ void OnChartEvent(const int id,
             ctm.OrderDelete(OrderGetTicket(ind));  // удаляем последний ордер
             return;
           }
+        }
+       if (sparam == "panel_change_sltp")          // изменяет стоп лосс и тейк профит позиции
+        {
+         ctm.PositionModify(_Symbol,StringToDouble(ObjectGetString(0,"panel_new_stoploss",OBJPROP_TEXT)),
+                                    StringToDouble(ObjectGetString(0,"panel_new_takeprofit",OBJPROP_TEXT))
+                                    );
         }
     }
   } 
