@@ -56,11 +56,15 @@ class Input
       ObjectSetInteger(_chart_id, _name,OBJPROP_XDISTANCE,_x);                    // установка координаты X
       ObjectSetInteger(_chart_id, _name,OBJPROP_YDISTANCE,_y);                    // установка координаты Y
       ObjectSetInteger(_chart_id, _name,OBJPROP_XSIZE,_width);                    // установка ширины
-      ObjectSetInteger(_chart_id, _name,OBJPROP_YSIZE,_height);                    // установка высоты                 
+      ObjectSetInteger(_chart_id, _name,OBJPROP_YSIZE,_height);                   // установка высоты                 
       ObjectSetInteger(_chart_id, _name,OBJPROP_SELECTABLE,false);                // нельзя выделить объект, если FALSE
       ObjectSetInteger(_chart_id, _name,OBJPROP_ZORDER,_z_order);                 // приоритет объекта
       ObjectSetString (_chart_id, _name,OBJPROP_TOOLTIP,"\n");                    // нет всплывающей подсказки, если "\n"
-      
+      ObjectSetInteger(_chart_id, _name,OBJPROP_BGCOLOR,clrSilver);               // цвет фона - серебряный
+      ObjectSetInteger(_chart_id, _name,OBJPROP_COLOR,clrBlack);                  // цвет шрифта и линий
+      ObjectSetInteger(_chart_id, _name,OBJPROP_BORDER_COLOR,clrGray);            // цвет рамки         
+      ObjectSetInteger(_chart_id, _name,OBJPROP_ALIGN,ALIGN_CENTER);              // расположение по центру лота
+      ObjectSetInteger(_chart_id, _name,OBJPROP_BORDER_TYPE,BORDER_SUNKEN);
      }
    }
   };  //конструктор класса кнопка

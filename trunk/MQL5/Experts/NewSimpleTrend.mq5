@@ -293,9 +293,10 @@ bool  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливк
     switch (openedPosition)
      {
       case BUY:  // если позиция открыта на BUY
+    //  Print("Last StopLoss BUY = ",DoubleToString(ctm.GetPositionStopLoss(_Symbol)));
        if ( blowInfo[0].GetLastExtrType() == EXTR_LOW )  // если последний экстремум LOW
          {
-            if (IsExtremumBeaten(0,BUY)) // если пробит экстремум 
+            if (IsExtremumBeaten(0,BUY) && GreatDoubles(blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price,ctm.GetPositionStopLoss(_Symbol)) ) // если пробит экстремум 
              {
                countAdd++; // увеличиваем счетчик доливок
                return (true);
@@ -303,9 +304,10 @@ bool  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливк
          } 
       break;
       case SELL: // если позиция открыта на SELL
+    //  Print("Last StopLoss SELL = ",DoubleToString(ctm.GetPositionStopLoss(_Symbol)));      
        if ( blowInfo[0].GetLastExtrType() == EXTR_HIGH ) // если последний экстремум HIGH
          {
-            if (IsExtremumBeaten(0,SELL)) // если пробит экстремум
+            if (IsExtremumBeaten(0,SELL) && LessDoubles(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price,ctm.GetPositionStopLoss(_Symbol))) // если пробит экстремум
              {
                countAdd++; // увеличиваем счетчик доливок
                return (true);

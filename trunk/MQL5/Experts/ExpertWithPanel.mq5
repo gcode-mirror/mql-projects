@@ -39,7 +39,9 @@ int OnInit()
    
    panel.AddElement (PE_BUTTON,"change_sltp","Изменить стоп и тейк",30,400,150,15);  // изменить стоп лосс и тейк профит  
    
-   panel.AddElement (PE_BUTTON,"change_volume","Изменить объем",30,425,150,15);  // изменить объем     
+   panel.AddElement (PE_BUTTON,"change_volume","Изменить объем",30,425,150,15);  // изменить объем   
+   
+   panel.AddElement (PE_BUTTON,"change_order","Изменить ордер",30,450,150,15);   // изменить отложенный ордер  
    
    ctm = new CTMTradeFunctions();
    
@@ -123,6 +125,13 @@ void OnChartEvent(const int id,
          ctm.PositionModify(_Symbol,StringToDouble(ObjectGetString(0,"panel_new_stoploss",OBJPROP_TEXT)),
                                     StringToDouble(ObjectGetString(0,"panel_new_takeprofit",OBJPROP_TEXT))
                                     );
+        }
+       if (sparam == "panel_change_order")        // изменяет отложенный ордер
+        {
+         if (OrdersTotal()>0)
+          {
+         //  ctm.OrderModify(OrderGetTicket(0),
+          }
         }
     }
   } 
