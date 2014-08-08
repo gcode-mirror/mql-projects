@@ -129,7 +129,8 @@ class Panel
  void AddElement (PANEL_ELEMENTS elem_type, string elem_name,string caption,uint x,uint y,uint w,uint h);
  //---   перемещает панель на координаты x, y
  void MoveTo(int x,int y);
- 
+ //---   показана ли панель или нет
+ bool IsPanelShown(){ return (_show_panel); };
 };
 
 //описание методов класса Panel

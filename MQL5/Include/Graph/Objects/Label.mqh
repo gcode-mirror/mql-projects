@@ -60,7 +60,8 @@ class Label
       ObjectSetInteger(_chart_id, _name,OBJPROP_SELECTABLE,false);                // нельзя выделить объект, если FALSE
       ObjectSetInteger(_chart_id, _name,OBJPROP_ZORDER,_z_order);                 // приоритет объекта
       ObjectSetString (_chart_id, _name,OBJPROP_TOOLTIP,"\n");                    // нет всплывающей подсказки, если "\n"
-        
+      ObjectSetInteger(_chart_id, _name,OBJPROP_COLOR,clrBlack);                  // цвет шрифта
+      ObjectSetInteger(_chart_id, _name,OBJPROP_ALIGN,ALIGN_CENTER);              // расположение текста
      }
    }
   };  //конструктор класса кнопка
