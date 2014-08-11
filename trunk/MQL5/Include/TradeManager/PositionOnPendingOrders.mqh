@@ -289,6 +289,7 @@ double CPosition::getPosProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
+ //PrintFormat("Выставляем стоп-лосс %.05f", _slPrice );
  if (_sl > 0 && _sl_status != STOPLEVEL_STATUS_PLACED)
  {
   if (_slPrice <= 0) _slPrice = SLPriceByType(_type);
@@ -506,16 +507,28 @@ bool CPosition::isMinProfit(void)
 //+------------------------------------------------------------------+
 bool CPosition::ModifyPosition(double sl, int tp)
 {
- if (((_type == OP_BUY || _type == OP_SELL) && trade.StopOrderModify(_slTicket, sl)) ||                //если позиция реальная то меняем отложенный ордер sl
-      (_type == OP_BUYSTOP  || _type == OP_SELLSTOP || _type == OP_BUYLIMIT || _type == OP_SELLLIMIT)) //если пендинг то меняем просто цену
+ //PrintFormat("Изменяем стоп-лосс");
+  //если позиция реальная, то меняем отложенный ордер sl
+ if (_type == OP_BUY || _type == OP_SELL)
+ {
+  if (trade.StopOrderModify(_slTicket, sl))
+  {
+   _slPrice = sl;
+   //PrintFormat("%s Изменили СтопЛосс, новый стоплосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice);
+   return (true);
+  }
+  else
+  {
+   PrintFormat("%s Не удалось изменить СтопЛосс",MakeFunctionPrefix(__FUNCTION__));
+  }
+ }
+ //else
+//если позиция задана отложенным ордером, то меняем просто цену
+ if (_type == OP_BUYSTOP  || _type == OP_SELLSTOP || _type == OP_BUYLIMIT || _type == OP_SELLLIMIT) 
  {
   _slPrice = sl;
   //PrintFormat("%s Изменили СтопЛосс, новый стоплосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice);
   return (true);
- }
- else
- {
-  PrintFormat("%s Не удалось изменить СтопЛосс",MakeFunctionPrefix(__FUNCTION__));
  }
  return(false);
 }
