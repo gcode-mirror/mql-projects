@@ -93,14 +93,14 @@ class Panel
      {
       ObjectSetInteger(_chart_id, _name,OBJPROP_CORNER,_corner);                  // установка угла графика
     //  ObjectSetInteger(_chart_id, _name,OBJPROP_FONTSIZE,_style.font_size);     // установка размера шрифта
-      ObjectSetInteger(_chart_id, _name,OBJPROP_XDISTANCE,_x);                  // установка координаты X
+      ObjectSetInteger(_chart_id, _name,OBJPROP_XDISTANCE,_x);                    // установка координаты X
       ObjectSetInteger(_chart_id, _name,OBJPROP_YDISTANCE,_y);                    // установка координаты Y
       ObjectSetInteger(_chart_id, _name,OBJPROP_XSIZE,_width);                    // установка ширины
       ObjectSetInteger(_chart_id, _name,OBJPROP_YSIZE,_height);                   // установка высоты шапки         
       ObjectSetInteger(_chart_id, _name,OBJPROP_SELECTABLE,false);                // нельзя выделить объект, если FALSE
       ObjectSetInteger(_chart_id, _name,OBJPROP_ZORDER,_z_order);                 // приоритет объекта
       ObjectSetString (_chart_id, _name,OBJPROP_TOOLTIP,"\n");                    // нет всплывающей подсказки, если "\n"
-        
+      ObjectSetInteger(_chart_id, _name,OBJPROP_BGCOLOR,clrSilver);               // цвет заднего фона  
      }     
    }
   };  //конструктор класса кнопка
@@ -108,6 +108,17 @@ class Panel
   {
    int  sub_window=0;      // Возвращаемый номер подокна, в котором находится объект
    bool res       =false;  // Результат после попытки удалить объект
+   // проходим по всем объектам на панеле и удаляем их
+   for (int index=0;index<ArraySize(_object_name);index++)
+    {
+     sub_window=ObjectFind(ChartID(),_object_name[index]);
+     if(sub_window>=0) 
+       {
+        res=ObjectDelete(ChartID(),_object_name[index]); // ...удалим его
+        if(!res)
+         Print("Ошибка при удалении объекта: ",_object_name[index]);
+       }     
+    }
    sub_window=ObjectFind(ChartID(),_name);
    if(sub_window>=0) 
      {
