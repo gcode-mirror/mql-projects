@@ -65,7 +65,7 @@ class Panel
   _corner(corner),
   _z_order(z_order),
   _n_objects(0),
-  _show_panel(false)
+  _show_panel(true)
   {
    bool objectCreated;
    //проверка уникальности имени объекта
@@ -153,7 +153,7 @@ class Panel
  void Panel::DrawPanel(bool show_panel)
   {
    int index;
-   _show_panel = show_panel;
+   _show_panel = !show_panel;
    // изменение видимости панели
    ObjectSetInteger(_chart_id, _name,OBJPROP_HIDDEN,show_panel);
     for (index=0;index<_n_objects;index++)
