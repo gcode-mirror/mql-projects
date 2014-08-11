@@ -58,27 +58,36 @@
       _sub_window = sub_window;
       _z_order = z_order;
       // создаем объект панели виджета
-      _wTradeWidget = new Panel(name, caption, x, y, 200, 70, chart_id, sub_window, CORNER_LEFT_UPPER, z_order);
+      _wTradeWidget = new Panel(name, caption, x, y, 200, 200, chart_id, sub_window, CORNER_LEFT_UPPER, z_order);
       // создаем панель дополнительных параметров
-      _subPanel     = new Panel(name+"_subPanel","",x,y+70,200,200,chart_id,sub_window,CORNER_LEFT_UPPER,z_order);
+      _subPanel     = new Panel(name+"_subPanel","",x,y+130,200,200,chart_id,sub_window,CORNER_LEFT_UPPER,z_order);
       // создаем элементы основной панели
-      _wTradeWidget.AddElement (PE_BUTTON,"inst_buy","BUY",0,0,100,50);           // кнопка на немедленную покупку
-      _wTradeWidget.AddElement (PE_BUTTON,"inst_sell","SELL",100,0,100,50);       // кнопка на немедленную продажу   
-      _wTradeWidget.AddElement (PE_INPUT, "volume","1.0",70,0,60,25);             // лот      
-      _wTradeWidget.AddElement (PE_BUTTON,"close","CLOSE",70,25,60,25);           // кнопка закрытия позиции   
-      _wTradeWidget.AddElement (PE_LABEL,"ask","0.0",0,30,70,20);                 // лейбл цены ASK
-      _wTradeWidget.AddElement (PE_LABEL,"bid","0.0",130,30,70,20);               // лейбл цены BID
-      _wTradeWidget.AddElement (PE_INPUT,"stoploss","0.0",0,50,100,30);           // stop loss
-      _wTradeWidget.AddElement (PE_INPUT,"takeprofit","0.0",100,50,100,30);           // take profit      
-      _wTradeWidget.AddElement (PE_BUTTON,"showall","дополнительно",0,80,200,20); // кнопка дополнительных возможностей      
+      _wTradeWidget.AddElement (PE_BUTTON,"inst_buy","BUY",0,0,100,50);             // кнопка на немедленную покупку
+      _wTradeWidget.AddElement (PE_BUTTON,"inst_sell","SELL",100,0,100,50);         // кнопка на немедленную продажу   
+      _wTradeWidget.AddElement (PE_INPUT, "volume","1.0",70,0,60,25);               // лот      
+      _wTradeWidget.AddElement (PE_BUTTON,"close","CLOSE",70,25,60,25);             // кнопка закрытия позиции   
+      _wTradeWidget.AddElement (PE_LABEL, "ask","0.0",0,30,70,20);                  // лейбл цены ASK
+      _wTradeWidget.AddElement (PE_LABEL, "bid","0.0",130,30,70,20);                // лейбл цены BID
+      _wTradeWidget.AddElement (PE_LABEL, "sl_label","stop loss",0,50,100,30);      // лейбл стоп лосса
+      _wTradeWidget.AddElement (PE_LABEL, "tp_label","take profit",100,50,100,30);  // лейбл тейк профита           
+      _wTradeWidget.AddElement (PE_INPUT, "stoploss","0.0",0,80,100,30);            // stop loss
+      _wTradeWidget.AddElement (PE_INPUT, "takeprofit","0.0",100,80,100,30);        // take profit      
+      _wTradeWidget.AddElement (PE_BUTTON,"showall","дополнительно",0,110,200,20);  // кнопка дополнительных возможностей      
       // создаем элементы дополнительной панели
-      _subPanel.AddElement (PE_BUTTON,"buy_stop","BUY STOP",0,0,100,60);          // кнопка BUY STOP
-      _subPanel.AddElement (PE_BUTTON,"sell_stop","SELL STOP",100,0,100,60);      // кнопка SELL STOP
-      _subPanel.AddElement (PE_INPUT,"price_stop","0.0",70,0,60,25);              // цена ордер стопа
+      _subPanel.AddElement (PE_BUTTON,"buy_stop","BUY STOP",0,0,100,60);            // кнопка BUY STOP
+      _subPanel.AddElement (PE_BUTTON,"sell_stop","SELL STOP",100,0,100,60);        // кнопка SELL STOP
+      _subPanel.AddElement (PE_INPUT,"price_stop","0.0",70,0,60,25);                // цена ордер стопа
 
-      _subPanel.AddElement (PE_BUTTON,"buy_limit","BUY LIMIT",0,60,100,60);       // кнопка BUY LIMIT
-      _subPanel.AddElement (PE_BUTTON,"sell_limit","SELL LIMIT",100,60,100,60);   // кнопка SELL LIMIT
-      _subPanel.AddElement (PE_INPUT,"price_limit","0.0",70,60,60,25);            // цена ордер стопа      
+      _subPanel.AddElement (PE_BUTTON,"buy_limit","BUY LIMIT",0,60,100,60);         // кнопка BUY LIMIT
+      _subPanel.AddElement (PE_BUTTON,"sell_limit","SELL LIMIT",100,60,100,60);     // кнопка SELL LIMIT
+      _subPanel.AddElement (PE_INPUT,"price_limit","0.0",70,60,60,25);              // цена ордер стопа      
+     };
+    // деструктор класса виджета
+    ~WTradeWidget()
+     {
+      // удаляем объекты виджета
+      delete _wTradeWidget;
+      delete _subPanel;
      };
   };   
   
@@ -92,22 +101,76 @@
   // метод действий панели
   void WTradeWidget::Action(string sparam)
    {
+    int stopLoss;
+    int takeProfit;
+    double sl,tp;
     if (sparam == _name+"_inst_buy")
      {
+     
+       stopLoss = StringToInteger(ObjectGetString(_chart_id,_name+"_stoploss",OBJPROP_TEXT));
+       if (stopLoss > 0)
+        {
+         if (stopLoss < SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL) )
+          stopLoss = SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL);
+         sl = SymbolInfoDouble(_symbol,SYMBOL_ASK)-stopLoss*_Point;
+        }
+       else if (stopLoss == 0)
+         sl = 0.0;
+       else 
+         Print("Ошибка отправки ордера BUY. Не корректно задан стоп лосс");
+         
+          
+       takeProfit = StringToInteger(ObjectGetString(_chart_id,_name+"_takeprofit",OBJPROP_TEXT));
+       if (takeProfit > 0)
+        {
+         if (takeProfit < SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL) )
+          takeProfit = SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL);
+         tp = SymbolInfoDouble(_symbol,SYMBOL_ASK)+takeProfit*_Point;       
+        }
+       else if (takeProfit == 0)
+        tp = 0.0;       
+       else 
+        Print("Ошибка отправки ордера BUT. Не корректно задан тейк профит");
+         
        _ctm.PositionOpen(_symbol,POSITION_TYPE_BUY,
                          StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
                          SymbolInfoDouble(_symbol,SYMBOL_ASK),
-                         StringToDouble(ObjectGetString(_chart_id,_name+"_stoploss",OBJPROP_TEXT)),
-                         StringToDouble(ObjectGetString(_chart_id,_name+"_takeprofit",OBJPROP_TEXT)),
+                         sl,
+                         tp,
                          "немедленно купили"); 
      }
     if (sparam == _name+"_inst_sell")
      {
+     
+       stopLoss = StringToInteger(ObjectGetString(_chart_id,_name+"_stoploss",OBJPROP_TEXT));
+       if (stopLoss > 0)
+        {
+         if (stopLoss < SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL) )
+          stopLoss = SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL);
+         sl = SymbolInfoDouble(_symbol,SYMBOL_BID)+stopLoss*_Point;
+        }
+       else if (stopLoss == 0)
+        sl = 0.0;
+       else 
+        Print("Ошибка отправки оредера SELL. Не корректно задан стоп лосс");
+        
+       takeProfit = StringToInteger(ObjectGetString(_chart_id,_name+"_takeprofit",OBJPROP_TEXT));
+       if (takeProfit > 0)
+        {
+         if (takeProfit < SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL) )
+          takeProfit = SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL);
+         tp = SymbolInfoDouble(_symbol,SYMBOL_BID)-takeProfit*_Point;       
+        }
+       else if (takeProfit == 0)
+        tp = 0.0;
+       else
+        Print("Ошибка отправки ордера SELL. Не корректно задан тейк профит");
+        
        _ctm.PositionOpen(_symbol,POSITION_TYPE_SELL,
                          StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
                          SymbolInfoDouble(_symbol,SYMBOL_BID),
-                         StringToDouble(ObjectGetString(_chart_id,_name+"_stoploss",OBJPROP_TEXT)),
-                         StringToDouble(ObjectGetString(_chart_id,_name+"_takeprofit",OBJPROP_TEXT)),
+                         sl,
+                         tp,
                          "немедленно купили");     
      }
     if (sparam == _name+"_close")
