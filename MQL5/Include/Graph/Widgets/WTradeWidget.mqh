@@ -62,11 +62,12 @@
       _z_order = z_order;
       _widgetMove = false;
       // создаем объект панели виджета
-      _wTradeWidget = new Panel(name, caption, x, y, 200, 200, chart_id, sub_window, CORNER_LEFT_UPPER, z_order);
+      _wTradeWidget = new Panel(name, caption, x, y, 200, 170, chart_id, sub_window, CORNER_LEFT_UPPER, z_order);
       // создаем панель дополнительных параметров
-      _subPanel     = new Panel(name+"_subPanel","",x,y+160,200,200,chart_id,sub_window,CORNER_LEFT_UPPER,z_order);
+      _subPanel     = new Panel(name+"_subPanel","",x,y+140,200,130,chart_id,sub_window,CORNER_LEFT_UPPER,z_order);
       // создаем элементы основной панели
       _wTradeWidget.AddElement (PE_BUTTON,"move","",0,0,200,10);                       // кнопка перемещения панели
+      _wTradeWidget.AddElement (PE_BUTTON,"close_widget","",190,2,8,8);                // кнопка закрытия панели
       _wTradeWidget.AddElement (PE_BUTTON,"inst_buy","BUY",0,10,100,50);               // кнопка на немедленную покупку
       _wTradeWidget.AddElement (PE_BUTTON,"inst_sell","SELL",100,10,100,50);           // кнопка на немедленную продажу   
       _wTradeWidget.AddElement (PE_INPUT, "volume","1.0",70,10,60,25);                 // лот      
@@ -77,8 +78,7 @@
       _wTradeWidget.AddElement (PE_LABEL, "tp_label","take profit",100,60,100,30);     // лейбл тейк профита           
       _wTradeWidget.AddElement (PE_INPUT, "stoploss","0.0",0,90,100,30);               // stop loss
       _wTradeWidget.AddElement (PE_INPUT, "takeprofit","0.0",100,90,100,30);           // take profit      
-      _wTradeWidget.AddElement (PE_BUTTON,"edit_pos","изменить позицию",0,120,200,20); // изменяет позицию
-      _wTradeWidget.AddElement (PE_BUTTON,"showall","дополнительно",0,140,200,20);     // кнопка дополнительных возможностей      
+      _wTradeWidget.AddElement (PE_BUTTON,"edit_pos","изменить позицию",0,120,200,20); // изменяет позицию\     
       // создаем элементы дополнительной панели
       _subPanel.AddElement (PE_BUTTON,"buy_stop","BUY STOP",0,0,100,60);               // кнопка BUY STOP
       _subPanel.AddElement (PE_BUTTON,"sell_stop","SELL STOP",100,0,100,60);           // кнопка SELL STOP
@@ -88,7 +88,8 @@
       
       _subPanel.AddElement (PE_INPUT,"price_stop_limit","0.0",70,45,60,30);            // цена ордер стопа и лимит ордера
       
-     // _subPanel.AddElement (PE_BUTTON,"delete_order","удалить ордер",          
+     // _subPanel.AddElement (PE_LIST,"list_orders","",0,120,100,50);                    // список ордеров
+      _subPanel.AddElement (PE_BUTTON,"delete_orders","удалить все ордера",0,120,200,20); // удалть все ордера          
      };
     // деструктор класса виджета
     ~WTradeWidget()
@@ -216,13 +217,13 @@
        _ctm.PositionModify(_Symbol,sl,tp);
               
      }
-    if (sparam == _name+"_showall")
+ 
+    if (sparam == _name+"_close_widget")
      {
-     if (_subPanel.IsPanelShown())
-       _subPanel.HidePanel();
-     else
-       _subPanel.ShowPanel();
-     }
+      delete _subPanel;
+      delete _wTradeWidget;
+     }     
+     
     if (sparam ==  _name+"_subPanel_buy_stop")
      {
       _ctm.OrderOpen(_symbol,ORDER_TYPE_BUY_STOP,
@@ -230,6 +231,7 @@
                      StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0))
                       );            
      }
+
     if (sparam ==  _name+"_subPanel_sell_stop")
      {
       _ctm.OrderOpen(_symbol,ORDER_TYPE_SELL_STOP,
@@ -251,6 +253,12 @@
                      StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0))
                       );            
      }        
+    if (sparam == _name+"_delete_orders")
+     {
+      Print("Удаляем ордера");
+      if ( !_ctm.DeleteAllOrders() )
+        Print("Не удалось удалить все отложенные ордеры");
+     }
    }
     
   

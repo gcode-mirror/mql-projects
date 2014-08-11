@@ -27,6 +27,7 @@ class CTMTradeFunctions : public CTrade
   bool OrderOpen(const string symbol,const ENUM_ORDER_TYPE type, const double volume, const double price,
                  const ENUM_ORDER_TYPE_TIME type_time=ORDER_TIME_GTC,const datetime expiration=0,const string comment="");
   bool OrderDelete(const ulong ticket);
+  bool DeleteAllOrders(); 
   bool StopOrderModify(const ulong ticket, const double sl = 0.0);
 
   bool PositionOpen(const string symbol,const ENUM_POSITION_TYPE type,const double volume,
@@ -111,6 +112,18 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
   }
   return(res);
 }
+
+bool CTMTradeFunctions::DeleteAllOrders(void)
+ {
+  int total = OrdersTotal();
+  for (int index=0;index<total;index++)
+   {
+    Print("Удален = ",index);
+    if ( !OrderDelete(OrderGetTicket(index) ) )
+     return (false);
+   }
+  return (true);
+ }
 
 bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.0)
 {
