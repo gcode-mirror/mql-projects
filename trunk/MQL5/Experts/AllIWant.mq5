@@ -53,4 +53,8 @@ void OnChartEvent(const int id,
     {
      widget.Action(sparam);  
     }
+   if(id==CHARTEVENT_MOUSE_MOVE)
+    {
+     
+    }
  }
