@@ -107,6 +107,7 @@ bool CTMTradeFunctions::OrderDelete(ulong ticket)
 
 bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.0)
 {
+ 
  double currentPrice = 0;
  if (sl > 0)
  {
