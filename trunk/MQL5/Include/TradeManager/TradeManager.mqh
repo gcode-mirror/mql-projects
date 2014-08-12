@@ -392,7 +392,7 @@ bool CTradeManager::DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL)
     sl = _trailingStop.PBITrailing(pos.getSymbol(), pos.getPeriod(), pos.getType(), pos.getStopLossPrice(), pos.getHandlePBI());  
     break;
    case TRAILING_TYPE_EXTREMUMS :
-    if (blowInfo != NULL) sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), blowInfo);
+    if (blowInfo != NULL) sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), pos.getPriceOpen(),blowInfo);
     break;
    case TRAILING_TYPE_NONE :
    default:
