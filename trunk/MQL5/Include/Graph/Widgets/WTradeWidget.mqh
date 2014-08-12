@@ -113,6 +113,7 @@
     int stopLoss;
     int takeProfit;
     double sl,tp;
+    double orderPrice;
     if (sparam == _name+"_inst_buy")
      {
      
@@ -226,32 +227,50 @@
      
     if (sparam ==  _name+"_subPanel_buy_stop")
      {
-      _ctm.OrderOpen(_symbol,ORDER_TYPE_BUY_STOP,
-                     StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
-                     StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0))
-                      );            
+      orderPrice = StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0) ); 
+      if ( GreatDoubles (orderPrice,SymbolInfoDouble(_symbol,SYMBOL_ASK)+SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point) )
+        {
+          _ctm.OrderOpen(_symbol,ORDER_TYPE_BUY_STOP,
+                         StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
+                         orderPrice
+                         );            
+        }
+      else
+        Print("Не улалось утановить Buy Stop");
      }
 
     if (sparam ==  _name+"_subPanel_sell_stop")
      {
-      _ctm.OrderOpen(_symbol,ORDER_TYPE_SELL_STOP,
-                     StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
-                     StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0))
-                      );            
+      orderPrice = StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0) );
+      if (LessDoubles (orderPrice,SymbolInfoDouble(_symbol,SYMBOL_BID)-SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point) )
+        {
+         _ctm.OrderOpen(_symbol,ORDER_TYPE_SELL_STOP,
+                        StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
+                        orderPrice
+                       );            
+        }
      }    
     if (sparam ==  _name+"_subPanel_buy_limit")
      {
-      _ctm.OrderOpen(_symbol,ORDER_TYPE_BUY_LIMIT,
-                     StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
-                     StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0))
-                      );            
+      orderPrice = StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0) );     
+      if (LessDoubles (orderPrice,SymbolInfoDouble(_symbol,SYMBOL_BID)-SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point) )
+        {      
+         _ctm.OrderOpen(_symbol,ORDER_TYPE_BUY_LIMIT,
+                        StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
+                        orderPrice
+                       );            
+        }
      }
     if (sparam ==  _name+"_subPanel_sell_limit")
      {
-      _ctm.OrderOpen(_symbol,ORDER_TYPE_SELL_LIMIT,
-                     StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
-                     StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0))
-                      );            
+      orderPrice = StringToDouble(ObjectGetString(_chart_id,_name+"_subPanel_price_stop_limit",OBJPROP_TEXT,0) );     
+      if (GreatDoubles (orderPrice,SymbolInfoDouble(_symbol,SYMBOL_ASK)+SymbolInfoInteger(_symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point) )
+        {
+         _ctm.OrderOpen(_symbol,ORDER_TYPE_SELL_LIMIT,
+                        StringToDouble(ObjectGetString(_chart_id,_name+"_volume",OBJPROP_TEXT)),
+                        orderPrice
+                       );            
+        }
      }        
     if (sparam == _name+"_delete_orders")
      {
