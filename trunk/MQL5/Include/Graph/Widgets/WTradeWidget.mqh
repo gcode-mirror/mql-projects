@@ -213,7 +213,7 @@
        else if (takeProfit == 0)
         tp = 0.0;       
        else 
-        Print("Ошибка отправки ордера BUT. Не корректно задан тейк профит");
+        Print("Ошибка отправки ордера BUY. Не корректно задан тейк профит");
      
        _ctm.PositionModify(_Symbol,sl,tp);
               
@@ -249,6 +249,8 @@
                         orderPrice
                        );            
         }
+      else 
+        Print("Не удалось установать Sell Stop");
      }    
     if (sparam ==  _name+"_subPanel_buy_limit")
      {
@@ -260,6 +262,8 @@
                         orderPrice
                        );            
         }
+      else
+        Print("Не удалось установить Buy Limit");
      }
     if (sparam ==  _name+"_subPanel_sell_limit")
      {
@@ -271,6 +275,8 @@
                         orderPrice
                        );            
         }
+      else
+        Print("Не удалось установить Sell Limit");
      }        
     if (sparam == _name+"_delete_orders")
      {
