@@ -40,6 +40,7 @@ double           curPriceBid       = 0;            // для хранения текущей цены 
 double           prevPriceAsk      = 0;            // для хранения предыдущей цены Ask
 double           prevPriceBid      = 0;            // для хранения предыдущей цены Bid
 double           lotReal;                          // действительный лот
+double           priceOpen;                        // цена открытия позиции
 ENUM_TENDENTION  lastTendention;                   // переменная для хранения последней тенденции
 // буферы для хранения расхождений на MACD
 double divMACD_M5[];                               // на пятиминутке
@@ -56,9 +57,9 @@ bool             extrLowBeaten[4];                 // буфер флагов пробития экст
 int OnInit()
   {
    // пытаемся инициализировать хэндлы расхождений MACD 
-   handleSmydMACD_M5  = iCustom(_Symbol,PERIOD_M5,"TemparySMYDMACD","",clrBlue);  
-   handleSmydMACD_M15 = iCustom(_Symbol,PERIOD_M15,"TemparySMYDMACD","",clrRed);    
-   handleSmydMACD_H1  = iCustom(_Symbol,PERIOD_H1,"TemparySMYDMACD","",clrGreen);   
+   handleSmydMACD_M5  = iCustom(_Symbol,PERIOD_M5,"smydMACD","");  
+   handleSmydMACD_M15 = iCustom(_Symbol,PERIOD_M15,"smydMACD","");    
+   handleSmydMACD_H1  = iCustom(_Symbol,PERIOD_H1,"smydMACD","");   
    if (handleSmydMACD_M5  == INVALID_HANDLE || handleSmydMACD_M15 == INVALID_HANDLE || handleSmydMACD_H1 == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора SmydMACD ");
@@ -177,7 +178,9 @@ void OnTick()
                // выставляем флаг открытия позиции BUY
                openedPosition = BUY; 
                // вычисляем стоп лосс
-               stopLoss = GetStopLoss();               
+               stopLoss = GetStopLoss();  
+               // сохраняем цену открытия
+               priceOpen = curPriceAsk;             
                // открываем позицию на BUY
                ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
  
@@ -202,7 +205,9 @@ void OnTick()
               // выставляем флаг открытия позиции SELL
               openedPosition = SELL;      
               // вычисляем стоп лосс
-              stopLoss = GetStopLoss();        
+              stopLoss = GetStopLoss();   
+              // сохраняем текущую цену открытия
+              priceOpen = curPriceBid;     
               // открываем позицию на SELL
               ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
               // обнуляем счетчик трейлинга
@@ -222,6 +227,8 @@ void OnTick()
       }
 
     }  // END OF UPLOAD EXTREMUMS
+    
+ //   Comment("Trailing index = ",indexForTrail);
    }
   
  // кодирование функций
@@ -289,14 +296,19 @@ void  ChangeTrailIndex()   // функция меняет индекс таймфрейма для трейлинга
  
 bool  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливка)
  {
+    double pricePos = ctm.GetPositionPrice(_Symbol);
     // в зависимости от типа открытой позиции
     switch (openedPosition)
      {
       case BUY:  // если позиция открыта на BUY
-    //  Print("Last StopLoss BUY = ",DoubleToString(ctm.GetPositionStopLoss(_Symbol)));
+
        if ( blowInfo[0].GetLastExtrType() == EXTR_LOW )  // если последний экстремум LOW
          {
-            if (IsExtremumBeaten(0,BUY) && GreatDoubles(blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price,ctm.GetPositionStopLoss(_Symbol)) ) // если пробит экстремум 
+
+            if (IsExtremumBeaten(0,BUY) && 
+                GreatDoubles(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price,ctm.GetPositionStopLoss(_Symbol)) &&
+                GreatDoubles(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price,pricePos)
+                ) // если пробит экстремум 
              {
                countAdd++; // увеличиваем счетчик доливок
                return (true);
@@ -304,10 +316,13 @@ bool  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливк
          } 
       break;
       case SELL: // если позиция открыта на SELL
-    //  Print("Last StopLoss SELL = ",DoubleToString(ctm.GetPositionStopLoss(_Symbol)));      
        if ( blowInfo[0].GetLastExtrType() == EXTR_HIGH ) // если последний экстремум HIGH
          {
-            if (IsExtremumBeaten(0,SELL) && LessDoubles(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price,ctm.GetPositionStopLoss(_Symbol))) // если пробит экстремум
+
+            if (IsExtremumBeaten(0,SELL) &&
+                LessDoubles(blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price,ctm.GetPositionStopLoss(_Symbol)) &&
+                LessDoubles(blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price,pricePos)
+                ) // если пробит экстремум
              {
                countAdd++; // увеличиваем счетчик доливок
                return (true);
@@ -327,6 +342,9 @@ bool  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливк
     {
      case BUY:
       slValue = curPriceBid - blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price;
+      
+      Comment("LAST LOW EXTR = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price ) );
+      
       if ( GreatDoubles(slValue,stopLevel) )
        return ( slValue/_Point );
       else
@@ -340,3 +358,4 @@ bool  ChangeLot ()    // функция изменяет размер лота, если это возможно (доливк
     }
    return (0.0);
   }
+  
