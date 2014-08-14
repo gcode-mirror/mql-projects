@@ -238,8 +238,8 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
            // если расстояние от цены до нового стоп лосса больше стоп левела
            if ( GreatDoubles(currentPriceBid-lastExtrLow,stopLevel) )
              {
-               // если новый стоп лосс больше предыдущего 
-               if ( GreatDoubles(lastExtrLow,sl) )
+               // если новый стоп лосс больше предыдущего и мы в безубытке
+               if ( GreatDoubles(lastExtrLow,sl) && GreatDoubles(lastExtrLow,priceOpen) )
                   stopLoss = lastExtrLow;        
              }
           else
@@ -265,8 +265,8 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
            // если расстояние от цены до нового стоп лосса больше стоп левела
            if ( GreatDoubles(lastExtrHigh - currentPriceAsk,stopLevel) )
              {             
-               // если новый стоп лосс меньше предыдущего
-               if ( LessDoubles(lastExtrHigh,sl) )
+               // если новый стоп лосс меньше предыдущего и мы в безубытке
+               if ( LessDoubles(lastExtrHigh,sl) && LessDoubles(lastExtrHigh,priceOpen) )
                   stopLoss = lastExtrHigh;        
              }
           else
@@ -279,32 +279,6 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
       }    
    }
   }
-  /*
-  datetime d1 = D'2012.07.12 10:00:57';
-  datetime d2 = D'2012.07.12 10:25:09';
-
-
-  if (TimeCurrent() >= d1 && TimeCurrent() <= d2) 
-   {
-     Print("STOP LOSS = ",DoubleToString(stopLoss),
-     " STOP LEVEL = ",DoubleToString(stopLevel),
-     " PRICE = ",DoubleToString(currentPrice),
-     " PRICE REAL = ",DoubleToString(SymbolInfoDouble(symbol,SYMBOL_BID)));
-   }
-   */
-   
-   /*
-   if (stopLoss != 0)
-       PrintFormat("%s ask %s bid %s стоп %s левел %s цена ask %s цена bid %s", MakeFunctionPrefix(__FUNCTION__),
-                                                           DoubleToString( SymbolInfoDouble(OrderGetString(ORDER_SYMBOL),SYMBOL_ASK) ),
-                                                           DoubleToString(SymbolInfoDouble(OrderGetString(ORDER_SYMBOL),SYMBOL_BID) ),
-                                                           DoubleToString(stopLoss),
-                                                           DoubleToString(SymbolInfoInteger(OrderGetString(ORDER_SYMBOL),SYMBOL_TRADE_STOPS_LEVEL)*_Point ),
-                                                           DoubleToString(currentPriceAsk),
-                                                           DoubleToString(currentPriceBid)
-                                                           ); 
-   
-*/
  return (stopLoss);
 }
  
