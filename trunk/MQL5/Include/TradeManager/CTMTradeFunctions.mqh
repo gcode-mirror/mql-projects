@@ -206,7 +206,8 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
  }
  PrintFormat("%s, Ордер на открытие %s, %s, %.02f, %.05f, %.05f, %.05f, %d", MakeFunctionPrefix(__FUNCTION__), symbol, OrderTypeToString(order_type), volume, price, sl, tp,m_deviation);
  m_deviation = 0;
- return(PositionOpen(symbol, order_type, volume, price, sl, tp, comment));
+ string tmpComment = MQL5InfoString(MQL5_PROGRAM_NAME)+"_"+symbol+"_"+PeriodToString(_Period);
+ return(PositionOpen(symbol, order_type, volume, price, sl, tp, tmpComment));
 }                                     
 
 //+-------------------------------------------------------------------------+
