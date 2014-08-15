@@ -54,6 +54,7 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  ctm.OnTick();
+ ctm.DoTrailing();
  int sl, tp;
  double slPrice;
  static int index_max = -1;

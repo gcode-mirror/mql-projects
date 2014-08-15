@@ -38,7 +38,7 @@ public:
                        
    double LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl
                        , int _minProfit, int _trailingStop, int _trailingStep);
-   double PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI);
+   double PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI);
    double ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, CBlowInfoFromExtremums *blowInfo=NULL);                    
   };
 //+------------------------------------------------------------------+
@@ -136,12 +136,9 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
 //+------------------------------------------------------------------+
 // Трейлинг по индикатору PBI
 //+------------------------------------------------------------------+
-double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI)
+double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI)
 {
- datetime buffer_date[];
  int errcolors = CopyBuffer(handle_PBI, 4, 0, DEPTH_PBI, PBI_colors);
- int errdate = CopyTime(symbol, timeframe, 0, DEPTH_PBI, buffer_date);
- ArraySetAsSeries(buffer_date, true);
  int errextrems, direction;
  int mainTrend, forbidenTrend;
  
@@ -188,10 +185,9 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TIMEFRAMES timeframe, ENUM
  
  if (newExtr > 0 && GreatDoubles(direction * sl, direction * (newExtr + direction * 50.0*Point()), 5))
  {
-  PrintFormat("%s %s currentMoving = %s, extremum_from_last_coor_or_trend = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), TimeToString(buffer_date[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[index]), sl, (newExtr + direction*50.0*Point()));
+  PrintFormat("%s currentMoving = %s, extremum_from_last_coor_or_trend = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[index]), sl, (newExtr + direction*50.0*Point()));
   return (newExtr + direction*50.0*Point());
  }
- ArrayFree(buffer_date);
  return(0.0);
 };
 
