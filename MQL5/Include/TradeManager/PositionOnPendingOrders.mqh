@@ -290,11 +290,16 @@ double CPosition::getPosProfit()
 ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
  //PrintFormat("Выставляем стоп-лосс %.05f", _slPrice );
+  //формируем комментарий
+ MqlDateTime mdt;
+ TimeToStruct(_posOpenTime, mdt);
+ string slComment = StringFormat("%s_%d%02d%02d",log_file.MakeExpertNameBase(),mdt.year,mdt.mon,mdt.day);
+
  if (_sl > 0 && _sl_status != STOPLEVEL_STATUS_PLACED)
  {
   if (_slPrice <= 0) _slPrice = SLPriceByType(_type);
   _slType = SLOrderType((int)_type);
-  if (trade.OrderOpen(_symbol, _slType, _lots, _slPrice)) //, sl + stopLevel, sl - stopLevel);
+  if (trade.OrderOpen(_symbol, _slType, _lots, _slPrice, ORDER_TIME_GTC, 0, slComment)) //, sl + stopLevel, sl - stopLevel);
   {
    _slTicket = trade.ResultOrder();
    _sl_status = STOPLEVEL_STATUS_PLACED;
@@ -394,7 +399,7 @@ bool CPosition::ChangeSize(double additionalVolume)
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::ChangeStopLossVolume()
 {
-/*A*/ if (RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
+ if (RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
  {
   setStopLoss();
  }
@@ -468,7 +473,7 @@ bool CPosition::ClosePosition()
   
   if (_sl_status == STOPLEVEL_STATUS_PLACED)
   {
-/*A*/   _sl_status = RemoveStopLoss();
+   _sl_status = RemoveStopLoss();
   }
  }
  
@@ -556,11 +561,16 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
  _posOpenTime = TimeCurrent(); //сохраняем время открытия позиции    
  _posProfit = 0;
  
+ //формируем комментарий
+ MqlDateTime mdt;
+ TimeToStruct(_posOpenTime, mdt);
+ string orderComment = StringFormat("%s_%d%02d%02d",log_file.MakeExpertNameBase(),mdt.year,mdt.mon,mdt.day);
+ 
  switch(_type)
  {
   case OP_BUY:
    PrintFormat("%s, Открываем позицию Бай", MakeFunctionPrefix(__FUNCTION__));
-   if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _lots, _posOpenPrice))
+   if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _lots, _posOpenPrice, orderComment))
    {
     _orderTicket = 0;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__)));
@@ -576,7 +586,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_SELL:
-   if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _lots, _posOpenPrice))
+   if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _lots, _posOpenPrice, orderComment))
    {
     _orderTicket = 0;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция ", MakeFunctionPrefix(__FUNCTION__)));
@@ -592,7 +602,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_BUYLIMIT:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration, orderComment))
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;             
@@ -600,7 +610,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_SELLLIMIT:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration, orderComment))
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;
@@ -608,7 +618,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_BUYSTOP:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration, orderComment))
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;  
@@ -616,7 +626,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_SELLSTOP:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration))
+   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _lots, _posOpenPrice, ORDER_TIME_GTC, _expiration, orderComment))
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;
