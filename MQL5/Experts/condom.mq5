@@ -44,8 +44,8 @@ datetime history_start;
 CTradeManager ctm();
 MqlTick tick;
 
-int handleMACD, handlePBI;
-double MACD_buf[1], high_buf[], low_buf[], close_buf[2];
+int  handlePBI;
+double  high_buf[], low_buf[], close_buf[2];
 ENUM_TM_POSITION_TYPE opBuy, opSell;
 int priceDifference;
 
@@ -82,16 +82,6 @@ int OnInit()
          priceDifference = 0;
         }
    
-   if (tradeOnTrend)
-   {
-    handleMACD = iMACD(symbol, timeframe, fastMACDPeriod, slowMACDPeriod, signalPeriod, PRICE_CLOSE);  //подключаем индикатор и получаем его хендл
-    if(handleMACD == INVALID_HANDLE)                                  //проверяем наличие хендла индикатора
-    {
-     Print("Не удалось получить хендл MACD");               //если хендл не получен, то выводим сообщение в лог об ошибке
-     return(-1);                                                  //завершаем работу с ошибкой
-    }
-   }
-
    //устанавливаем индексацию для массивов ХХХ_buf
    ArraySetAsSeries(low_buf, false);
    ArraySetAsSeries(high_buf, false);
@@ -128,16 +118,6 @@ void OnTick()
    
    if(isNewBar.isNewBar() > 0)
    {
-    if (tradeOnTrend)
-    {
-     //копируем данные из индикаторного массива в динамический массив MACD_buf для дальнейшей работы с ними
-     errMACD=CopyBuffer(handleMACD, 0, 1, 1, MACD_buf);
-     if(errMACD < 0)
-     {
-      Alert("Не удалось скопировать данные из индикаторного буфера"); 
-      return; 
-     }
-    } 
     //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
     errLow=CopyLow(symbol, timeframe, 2, historyDepth, low_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
     errHigh=CopyHigh(symbol, timeframe, 2, historyDepth, high_buf); // (0 - тек. бар, 1 - посл. сформ. 2 - начинаем копир.)
