@@ -49,6 +49,7 @@ class CLog
   bool Check();
   void Write(ENUM_LOGLEVEL level, string str);
   string CreateNameBase();
+  string MakeExpertNameBase();
   string MakeLogFilenameBase();
   string CreateNameDate();
   string MakeLogFilename(datetime dt);
@@ -204,6 +205,16 @@ void CLog::DeleteLogFile()
   PrintFormat("Отсутствуют файлы с маской: ",filter);
 }
 //+------------------------------------------------------------------+
+//+------------------------------------------------------------------+
+/// Creates a filename base.
+/// Used for creating log file wildcard and in constructing log filename
+/// \return    The filename base EAlogs\\<EAname>\\<EAname>_<symbol>_<period>
+//+------------------------------------------------------------------+
+string CLog::MakeExpertNameBase()
+  {
+   string strName=MQL5InfoString(MQL5_PROGRAM_NAME);
+   return(StringFormat("%s_%s_%s", strName,StringSubstr(_Symbol,0,6),PeriodString()));
+  }
 //+------------------------------------------------------------------+
 /// Creates a filename base.
 /// Used for creating log file wildcard and in constructing log filename
