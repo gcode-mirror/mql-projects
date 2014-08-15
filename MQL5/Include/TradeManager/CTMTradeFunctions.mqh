@@ -206,8 +206,13 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
  }
  PrintFormat("%s, Ордер на открытие %s, %s, %.02f, %.05f, %.05f, %.05f, %d", MakeFunctionPrefix(__FUNCTION__), symbol, OrderTypeToString(order_type), volume, price, sl, tp,m_deviation);
  m_deviation = 0;
- string tmpComment = MQL5InfoString(MQL5_PROGRAM_NAME)+"_"+symbol+"_"+PeriodToString(_Period);
- return(PositionOpen(symbol, order_type, volume, price, sl, tp, tmpComment));
+ 
+ //формируем комментарий
+ MqlDateTime mdt;
+ TimeToStruct(TimeCurrent(),mdt);
+ string orderComment = StringFormat("%s_%d%02d%02d_log.txt",log_file.MakeLogFilenameBase(),mdt.year,mdt.mon,mdt.day);
+ 
+ return(PositionOpen(symbol, order_type, volume, price, sl, tp, orderComment));
 }                                     
 
 //+-------------------------------------------------------------------------+
