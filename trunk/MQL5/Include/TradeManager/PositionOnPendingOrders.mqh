@@ -394,7 +394,7 @@ bool CPosition::ChangeSize(double additionalVolume)
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::ChangeStopLossVolume()
 {
- if (RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
+/*A*/ if (RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
  {
   setStopLoss();
  }
@@ -468,7 +468,7 @@ bool CPosition::ClosePosition()
   
   if (_sl_status == STOPLEVEL_STATUS_PLACED)
   {
-   _sl_status = RemoveStopLoss();
+/*A*/   _sl_status = RemoveStopLoss();
   }
  }
  

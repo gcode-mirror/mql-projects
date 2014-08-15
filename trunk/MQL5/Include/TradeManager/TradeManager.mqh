@@ -956,7 +956,7 @@ void CTradeManager::UpdateData(CPositionArray *positionsHistory = NULL)
 bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
 {
  CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее индексу
- if (pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
+ /*A*/if (pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
   _positionsHistory.Add(_positionsToReProcessing.Detach(i));
