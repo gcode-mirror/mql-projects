@@ -142,6 +142,8 @@ double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int han
  int errextrems, direction;
  int mainTrend, forbidenTrend;
  
+ //GetTopTimeframe(timeframe
+ 
  if (type == OP_SELL)
  {
   //Print("PBI_Trailing, позиция СЕЛЛ, тип движения ", PBI_colors[0]);
