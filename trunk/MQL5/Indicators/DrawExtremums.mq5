@@ -61,7 +61,8 @@ int OnInit()
    NewBarCurrent.SetPeriod(period);
    ENUM_TIMEFRAMES per;
 
-   handle_ATR = iCustom(Symbol(),period,"AverageATR",period_ATR,period_average_ATR); 
+  // handle_ATR = iCustom(Symbol(),period,"AverageATR",period_ATR,period_average_ATR); 
+   handle_ATR = iMA(Symbol(), period, 100, 0, MODE_EMA, iATR(Symbol(), period, 30));
    if (handle_ATR == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать хэндл индикатора AverageATR");
