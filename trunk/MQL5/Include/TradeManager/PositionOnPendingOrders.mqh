@@ -340,7 +340,7 @@ bool CPosition::ChangeSize(double additionalVolume)
  ENUM_TM_POSITION_TYPE type = this.getType();
  if (additionalVolume < 0) type = type + MathPow(-1, type);
  double openPrice = OpenPriceByType(type);
- _posAveragePrice = (_lots*_posOpenPrice + additionalVolume*openPrice)/(_lots + additionalVolume);
+ _posAveragePrice = (_lots*_posAveragePrice + additionalVolume*openPrice)/(_lots + additionalVolume);
  
  if (type == OP_BUY || type == OP_SELL)
  {
