@@ -27,8 +27,8 @@ enum ENUM_TENDENTION
  TENDENTION_UP,         // тенденция вверх
  TENDENTION_DOWN        // тенденция вниз
 };
- 
-// входные параметры
+
+/// входные параметры
 input double lot      = 0.20;                      // размер лота
 input double lotStep  = 0.20;                      // размер шага увеличения лота
 input int    lotCount = 4;                         // количество доливок
@@ -138,6 +138,8 @@ void OnDeinit(const int reason)
    delete blowInfo[3];
   }
 
+bool M5,M15,H1;
+
 void OnTick()
 {     
  ctm.OnTick(); 
@@ -148,121 +150,119 @@ void OnTick()
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
  curPriceAsk  = SymbolInfoDouble(_Symbol, SYMBOL_ASK);   // получаем текущую цену Ask
- if (blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
-     blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
-     blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) &&
-     blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
+ 
+ if (!blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
+     !blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
+     !blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
+     !blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
     )
  {   
+  return;
+ }
+ 
  // получаем новые значения экстремумов
-  for (int index = 0; index < 4; index++)
+ for (int index = 0; index < 4; index++)
+ {
+  currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);
+  currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);    
+  if (currentExtrHigh[index].time != lastExtrHigh[index].time && currentExtrHigh[index].price)          // если пришел новый HIGH экстремум
   {
-   currentExtrHigh[index]  = blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);
-   currentExtrLow[index]   = blowInfo[index].GetExtrByIndex(EXTR_LOW,0);    
-   if (currentExtrHigh[index].time != lastExtrHigh[index].time && currentExtrHigh[index].price)          // если пришел новый HIGH экстремум
-   {
-    lastExtrHigh[index] = currentExtrHigh[index];   // то сохраняем текущий экстремум в качестве последнего
-    extrHighBeaten[index] = false;                  // и выставляем флаг пробития  в false     
-   }
-   if (currentExtrLow[index].time != lastExtrLow[index].time && currentExtrLow[index].price)            // если пришел новый LOW экстремум
-   {
-    lastExtrLow[index] = currentExtrLow[index];     // то сохраняем текущий экстремум в качестве последнего
-    extrLowBeaten[index] = false;                   // и выставляем флаг пробития в false
-   } 
+   lastExtrHigh[index] = currentExtrHigh[index];   // то сохраняем текущий экстремум в качестве последнего
+   extrHighBeaten[index] = false;                  // и выставляем флаг пробития  в false     
+  }
+  if (currentExtrLow[index].time != lastExtrLow[index].time && currentExtrLow[index].price)            // если пришел новый LOW экстремум
+  {
+   lastExtrLow[index] = currentExtrLow[index];     // то сохраняем текущий экстремум в качестве последнего
+   extrLowBeaten[index] = false;                   // и выставляем флаг пробития в false
   } 
-  // если это первый запуск эксперта или сформировался новый бар 
-  if (firstLaunch || isNewBar_D1.isNewBar() > 0)
+ } 
+ 
+ // если это первый запуск эксперта или сформировался новый бар 
+ if (firstLaunch || isNewBar_D1.isNewBar() > 0)
+ {
+  firstLaunch = false;
+  if ( CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1) == 2 )     
   {
-   firstLaunch = false;
-   if ( CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1) == 2 )     
+   lastTendention = GetTendention(lastBarD1[0].open,lastBarD1[0].close);        // получаем предыдущую тенденцию 
+  }
+ }
+ 
+ // если нет открытых позиций
+ if (ctm.GetPositionCount() == 0)
+  openedPosition = NO_POSITION;
+ else    // иначе меняем индекс трейлинга и доливаемся, если это возможно
+ {
+  ChangeTrailIndex();                            // то меняем индекс трейлинга
+  if (countAdd < 4 && changeLotValid)            // если было совершено меньше 4-х доливок и есть разрешение на доливку
+  {
+   if (ChangeLot())                           // если получили сигнал на доливание 
    {
-    lastTendention = GetTendention(lastBarD1[0].open,lastBarD1[0].close);        // получаем предыдущую тенденцию 
+    ctm.PositionChangeSize(_Symbol, lotStep);   // доливаемся 
+   }       
+  }        
+ }
+ 
+ // если общая тенденция  - вверх
+ if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPriceBid) == TENDENTION_UP)
+ {   
+  // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
+  if ((IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY)) && IsMACDCompatible(BUY))
+  { 
+   // если спред не превышает заданное число пунктов
+   if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
+   {
+    // если позиция не была уже открыта на BUY   
+    if (openedPosition != BUY)
+    {
+     // обнуляем счетчик трейлинга
+     indexForTrail = 0; 
+     // обнуляем счетчик доливок, если 
+     countAdd = 0;                                   
+    }
+    // разрешаем возможность доливаться
+    changeLotValid = true; 
+    // выставляем флаг открытия позиции BUY
+    openedPosition = BUY;                 
+    // выставляем лот по умолчанию
+    lotReal = lot;
+    // вычисляем стоп лосс
+    stopLoss = GetStopLoss();             
+    // открываем позицию на BUY
+    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
    }
   }
-  
-  // если нет открытых позиций
-  if (ctm.GetPositionCount() == 0)
-   openedPosition = NO_POSITION;
-  else    // иначе меняем индекс трейлинга и доливаемся, если это возможно
-  {
-   ChangeTrailIndex();                            // то меняем индекс трейлинга
-   if (countAdd < 4 && changeLotValid)            // если было совершено меньше 4-х доливок и есть разрешение на доливку
-   {
-    if (ChangeLot())                           // если получили сигнал на доливание 
+ }
+ 
+ // если общая тенденция - вниз
+ if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPriceAsk) == TENDENTION_DOWN)
+ {                     
+  // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
+  if ((IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL)) && IsMACDCompatible(SELL))
+  {                
+   // если спред не превышает заданное число пунктов
+   if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
+   {             
+    // если позиция не была уже открыта на SELL
+    if (openedPosition != SELL)
     {
-     ctm.PositionChangeSize(_Symbol, lotStep);   // доливаемся 
-    }       
-   }        
-  }
-  // если общая тенденция  - вверх
-  if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPriceBid) == TENDENTION_UP)
-  {   
-   // если текущая цена пробила один из экстемумов на одном из таймфреймов
-   if ( IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY) )
-   { 
-    // если текущее расхождение MACD НЕ противоречит текущему движению
-    if (IsMACDCompatible(BUY))
-    {                       
-     // если спред не превышает заданное число пунктов
-     if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
-     {
-      // если позиция не была уже открыта на BUY   
-      if (openedPosition != BUY)
-      {
-       // обнуляем счетчик трейлинга
-       indexForTrail = 0; 
-       // обнуляем счетчик доливок, если 
-       countAdd = 0;                                   
-      }
-      // разрешаем возможность доливаться
-      changeLotValid = true; 
-      // выставляем флаг открытия позиции BUY
-      openedPosition = BUY;                 
-      // выставляем лот по умолчанию
-      lotReal = lot;
-      // вычисляем стоп лосс
-      stopLoss = GetStopLoss();             
-      // открываем позицию на BUY
-      ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
-     }
-    } 
+     // обнуляем счетчик трейлинга
+     indexForTrail = 0; 
+     // обнуляем счетчик доливок
+     countAdd = 0;  
+    }
    }
+   // разрешаем возможность доливаться
+   changeLotValid = true; 
+   // выставляем флаг открытия позиции SELL
+   openedPosition = SELL;                 
+   // выставляем лот по умолчанию
+   lotReal = lot;    
+   // вычисляем стоп лосс
+   stopLoss = GetStopLoss();    
+   // открываем позицию на SELL
+   ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
   }
-  // если общая тенденция - вниз
-  if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPriceAsk) == TENDENTION_DOWN)
-  {                     
-   // если текущая цена пробила один из экстемумов на одном из таймфреймов
-   if ( IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL) )
-   {                
-    // если текущее расхождение MACD НЕ противоречит текущему движению
-    if (IsMACDCompatible(SELL))
-    {
-     // если спред не превышает заданное число пунктов
-     if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
-     {             
-      // если позиция не была уже открыта на SELL
-      if (openedPosition != SELL)
-      {
-       // обнуляем счетчик трейлинга
-       indexForTrail = 0; 
-       // обнуляем счетчик доливок
-       countAdd = 0;  
-      }
-      // разрешаем возможность доливаться
-      changeLotValid = true; 
-      // выставляем флаг открытия позиции SELL
-      openedPosition = SELL;                 
-      // выставляем лот по умолчанию
-      lotReal = lot;    
-      // вычисляем стоп лосс
-      stopLoss = GetStopLoss();    
-      // открываем позицию на SELL
-      ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
-     }
-    } 
-   }      
-  }
- }  // END OF UPLOAD EXTREMUMS
+ } 
 }
   
 // кодирование функций
@@ -316,18 +316,22 @@ void  ChangeTrailIndex()   // функция меняет индекс таймфрейма для трейлинга
  // трейлим стоп лосс
  if (indexForTrail < 3)  // переходим на старший таймфрейм в случае, если сейчас не H1
  {
-  // если пробили экстремум на более старшем таймфрейме
-  if (IsExtremumBeaten ( indexForTrail+1, openedPosition) )
+  // трейлим стоп лосс
+  if (indexForTrail < (lotCount-1))  // переходим на старший таймфрейм в случае, если сейчас не H1
   {
-   indexForTrail ++;  // то переходим на более старший таймфрейм
-   changeLotValid = false; // запрещаем доливаться
+   // если пробили экстремум на более старшем таймфрейме
+   if (IsExtremumBeaten ( indexForTrail+1, openedPosition) )
+   {
+    indexForTrail ++;  // то переходим на более старший таймфрейм
+    changeLotValid = false; // запрещаем доливаться
+   }
+   else if (countAdd == lotCount)  // если было сделано 4 доливки
+        {
+         indexForTrail ++;  // то переходим на более старший таймфрейм 
+         changeLotValid = false; // запрещаем доливаться
+         countAdd = lotCount+1;
+        }
   }
-  else if (countAdd == 4)  // если было сделано 4 доливки
-       {
-        indexForTrail ++;  // то переходим на более старший таймфрейм 
-        changeLotValid = false; // запрещаем доливаться
-        countAdd = 5;
-       }
  }
 }
    
