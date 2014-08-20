@@ -29,10 +29,10 @@ enum ENUM_TENDENTION
 };
  
 // входные параметры
-input double lot = 1.0;                            // размер лота
-input double lotStep = 0.25;                       // размер шага увеличения лота
-input int    nStepsLot = 4;                        // количество доликов
-input int    spread = 30;                          // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
+input double lot      = 0.20;                      // размер лота
+input double lotStep  = 0.20;                      // размер шага увеличения лота
+input int    lotCount = 4;                         // количество доливок
+input int    spread   = 30;                        // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 
 // хэндлы индикатора SmydMACD
 int handleSmydMACD_M5;                             // хэндл индикатора расхождений MACD на минутке
@@ -102,7 +102,7 @@ int OnInit()
     )
     {
      // получаем первые экстремумы
-     for (int index=0;index<4;index++)
+     for (int index = 0; index < 4; index++)
      {
       lastExtrHigh[index]   =  blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // сохраним значение последнего экстремума HIGH
       lastExtrLow[index]    =  blowInfo[index].GetExtrByIndex(EXTR_LOW,0);   // сохраним значение последнего экстремума LOW

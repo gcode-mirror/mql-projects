@@ -14,8 +14,21 @@
 #include <CompareDoubles.mqh>                      // для сравнения вещественных чисел
 #include <TradeManager\TradeManager.mqh>           // торговая библиотека
 #include <BlowInfoFromExtremums.mqh>               // класс по работе с экстремумами индикатора DrawExtremums
-#include <SIMPLE_TREND\SimpleTrendLib.mqh>         // библиотека робота Simple Trend
-// входные параметры
+
+// константы сигналов
+#define BUY   1    
+#define SELL -1 
+#define NO_POSITION 0
+
+// перечисления и константы
+enum ENUM_TENDENTION
+{
+ TENDENTION_NO = 0,     // нет тенденции
+ TENDENTION_UP,         // тенденция вверх
+ TENDENTION_DOWN        // тенденция вниз
+};
+
+/// входные параметры
 input double lot      = 0.20;                      // размер лота
 input double lotStep  = 0.20;                      // размер шага увеличения лота
 input int    lotCount = 4;                         // количество доливок
