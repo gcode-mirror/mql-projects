@@ -387,9 +387,21 @@ bool CPosition::ChangeSize(double additionalVolume)
   {
    if (trade.OrderOpen(_symbol, OrderType(getType()), additionalVolume, openPrice, ORDER_TIME_GTC, _expiration)) // Отложенный ордер живет пока нам не надоест
    {
+    PrintFormat("%s Изменен ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, TimeToString(_expiration));
     log_file.Write(LOG_DEBUG, StringFormat("%s Изменен ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, TimeToString(_expiration)));
    }
+   else
+   {
+    PrintFormat("%s Не удалось установить новый ордер при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось установить новый ордер при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__)));
+   }
   }
+  else
+  {
+   PrintFormat("%s Не удалось удалить ордер %d при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__), _tmTicket);
+   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось удалить ордер %d при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__), _tmTicket));
+  }
+  
  }
  return(true);
 }
@@ -475,6 +487,11 @@ bool CPosition::ClosePosition()
   {
    _sl_status = RemoveStopLoss();
   }
+ }
+ 
+ if (_pos_status == POSITION_STATUS_NOT_COMPLETE)
+ { 
+  
  }
  
  if (_pos_status == POSITION_STATUS_CLOSED)
