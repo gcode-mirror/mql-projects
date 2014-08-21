@@ -78,7 +78,7 @@ double CTrailingStop::UsualTrailing(string symbol, ENUM_TM_POSITION_TYPE type, d
       LessDoubles(openPrice, bid - minProfit*point) &&
       (LessDoubles(sl, bid - (trailingStop+trailingStep-1)*point) || sl == 0))
   {
-   Print("UsualTrailing");
+   //Print("UsualTrailing");   
    newSL = NormalizeDouble(bid - trailingStop*point, digits);
   }
  
@@ -86,7 +86,7 @@ double CTrailingStop::UsualTrailing(string symbol, ENUM_TM_POSITION_TYPE type, d
       GreatDoubles(openPrice, ask + minProfit*point) &&
       (GreatDoubles(sl, ask + (trailingStop+trailingStep-1)*point) || sl == 0))
   {
-   Print("UsualTrailing");
+   //Print("UsualTrailing");
    newSL = NormalizeDouble(ask + trailingStop*point, digits);
   }
  }
@@ -162,7 +162,8 @@ double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int han
  }
  if(errcolors < 0 || errextrems < 0)
  {
-  PrintFormat("%s Не удалось скопировать данные из индикаторного буфера", MakeFunctionPrefix(__FUNCTION__)); 
+  //PrintFormat("%s Не удалось скопировать данные из индикаторного буфера", MakeFunctionPrefix(__FUNCTION__)); 
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось скопировать данные из индикаторного буфера", MakeFunctionPrefix(__FUNCTION__)));     
   return(0.0); 
  }
  
@@ -187,7 +188,8 @@ double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int han
  
  if (newExtr > 0 && GreatDoubles(direction * sl, direction * (newExtr + direction * 50.0*Point()), 5))
  {
-  PrintFormat("%s currentMoving = %s, extremum_from_last_coor_or_trend = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[index]), sl, (newExtr + direction*50.0*Point()));
+  log_file.Write(LOG_DEBUG, StringFormat("%s currentMoving = %s, extremum_from_last_coor_or_trend = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[index]), sl, (newExtr + direction*50.0*Point())) );
+ 
   return (newExtr + direction*50.0*Point());
  }
  return(0.0);

@@ -387,7 +387,8 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
   SaveArrayToFile(historyDataFileName,_positionsHistory); 
   SaveArrayToFile(rescueDataFileName,_openPositions);   
   //log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
-  PrintFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i);
+ // PrintFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i);
+  log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__),i ) );     
   return(true);
  }
  else
@@ -561,11 +562,11 @@ void CTradeManager::OnTick()
   
   if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING && pos.getStopLossStatus() != STOPLEVEL_STATUS_NOT_DEFINED) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
-   PrintFormat("%s Стоп-лосс тикет = %d, Статус позиции = %s, Статус стоп-лосса = %s"
+   log_file.Write(LOG_DEBUG, StringFormat("%s Стоп-лосс тикет = %d, Статус позиции = %s, Статус стоп-лосса = %s"
                 , MakeFunctionPrefix(__FUNCTION__)
                     , pos.getStopLossTicket()
                                          , PositionStatusToStr(pos.getPositionStatus())
-                                                              , StoplevelStatusToStr(pos.getStopLossStatus()));
+                                                              , StoplevelStatusToStr(pos.getStopLossStatus()))  );
    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
    pos.setPositionStatus(POSITION_STATUS_CLOSED);
    ClosePosition(i);
@@ -575,7 +576,7 @@ void CTradeManager::OnTick()
   if (pos.CheckTakeProfit())    //проверяем условие выполнения TP
   {
    //log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()));
-   PrintFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice());
+   log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()) );
    ClosePosition(i);
    break;             
   }
@@ -784,7 +785,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
  if (total <= 0)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
-  PrintFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__));
+ // PrintFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__));
   pos = new CPosition(_magic, symbol, timeframe, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handlePBI, priceDifferense);
   ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
@@ -826,9 +827,9 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe,
  //log_file.Write(LOG_DEBUG
  //             ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
  //                           , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
- PrintFormat("%s, Открываем мульти-позицию %s. Открытых позиций на данный момент: %d"
-                            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total); 
- log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
+ log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем мульти-позицию %s. Открытых позиций на данный момент: %d"
+                            , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total) ); 
+// log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
  
  pos = new CPosition(_magic, symbol, timeframe, type, volume, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handlePBI, priceDifferense);
  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
@@ -873,24 +874,24 @@ bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
    {
     if (pos.getVolume() + additionalVolume != 0)
     {
-     PrintFormat("%s Изменим объем текущей позиции", MakeFunctionPrefix(__FUNCTION__));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Изменим объем текущей позиции", MakeFunctionPrefix(__FUNCTION__)) );
      if (pos.ChangeSize(additionalVolume))
      {
-      PrintFormat("%s Объем позиции успешно изменен", MakeFunctionPrefix(__FUNCTION__));
+      log_file.Write(LOG_DEBUG, StringFormat("%s Объем позиции успешно изменен", MakeFunctionPrefix(__FUNCTION__)) );
       return (true);
      }
      else
      {
       if (pos.getPositionStatus() == POSITION_STATUS_NOT_COMPLETE)
       {
-       PrintFormat("%s Не удалось изменить стоп-лосс при изменении объема позиции", MakeFunctionPrefix(__FUNCTION__));
+       log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось изменить стоп-лосс при изменении объема позиции", MakeFunctionPrefix(__FUNCTION__)) );
        _positionsToReProcessing.Add(_openPositions.Detach(i));
       }
      }
     }
     else
     {
-     PrintFormat("%s Изменение позиции. Итоговый объем равен 0, закрываем позицию", MakeFunctionPrefix(__FUNCTION__));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Изменение позиции. Итоговый объем равен 0, закрываем позицию", MakeFunctionPrefix(__FUNCTION__)) );
      if (ClosePosition(i)) return (true);
     }
    }
@@ -982,7 +983,7 @@ void CTradeManager::UpdateData(CPositionArray *positionsHistory = NULL)
 bool CTradeManager::CloseReProcessingPosition(int i,color Color=CLR_NONE)
 {
  CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее индексу
- /*A*/if (pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
+ if (pos.RemoveStopLoss() == STOPLEVEL_STATUS_DELETED)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалили сработавший стоп-ордер", MakeFunctionPrefix(__FUNCTION__)));
   _positionsHistory.Add(_positionsToReProcessing.Detach(i));
@@ -1029,7 +1030,7 @@ bool CTradeManager::LoadArrayFromFile(string file_url,CPositionArray *array)
  int file_handle;   //файловый хэндл  
  if (!FileIsExist(file_url, FILE_COMMON) ) //проверка существования файла истории 
  {
-  PrintFormat("%s File %s doesn't exist", MakeFunctionPrefix(__FUNCTION__),file_url);
+  log_file.Write(LOG_DEBUG, StringFormat("%s Файл %s не существует", MakeFunctionPrefix(__FUNCTION__),file_url) );
   return (true);
  }  
  file_handle = FileOpen(file_url, FILE_READ|FILE_COMMON|FILE_CSV|FILE_ANSI, ";");
