@@ -354,30 +354,30 @@ bool CPosition::ChangeSize(double additionalVolume)
     _type = (ENUM_TM_POSITION_TYPE)(_type + MathPow(-1, _type));
     _lots = -_lots;
     //PrintFormat("%s Позиция была перевернута, новый тип = %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(this.getType()));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Позиция была перевернута, новый тип = %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(this.getType()) ));      
    }
    
-   log_file.Write(LOG_DEBUG, StringFormat("%s Изменена позиция %d", MakeFunctionPrefix(__FUNCTION__), _tmTicket));
-   PrintFormat("%s Изменена позиция %d, текущий тип = %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, GetNameOP(this.getType()));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Изменена позиция %d, текущий тип = %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, GetNameOP(this.getType()) ) );
    
    if (_sl_status == STOPLEVEL_STATUS_PLACED)
    {
     if (ChangeStopLossVolume() == STOPLEVEL_STATUS_PLACED)
     {
      _pos_status = POSITION_STATUS_OPEN;
-     PrintFormat("%s Изменили позицию и стоплосс", MakeFunctionPrefix(__FUNCTION__));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Изменили позицию и стоплосс", MakeFunctionPrefix(__FUNCTION__)) );
      return(true);
     }
     else
     {
      _pos_status = POSITION_STATUS_NOT_COMPLETE;
-     PrintFormat("%s Не удалось изменить стоплосс", MakeFunctionPrefix(__FUNCTION__));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось изменить стоплосс", MakeFunctionPrefix(__FUNCTION__) ));
      return (false);
     }
    }
   }
   else
   {
-   PrintFormat("%s Не удалось изменить позицию", MakeFunctionPrefix(__FUNCTION__));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось изменить позицию", MakeFunctionPrefix(__FUNCTION__) ));
    return (false);
   }
  }
@@ -387,18 +387,18 @@ bool CPosition::ChangeSize(double additionalVolume)
   {
    if (trade.OrderOpen(_symbol, OrderType(getType()), additionalVolume, openPrice, ORDER_TIME_GTC, _expiration)) // Отложенный ордер живет пока нам не надоест
    {
-    PrintFormat("%s Изменен ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, TimeToString(_expiration));
+   // PrintFormat("%s Изменен ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, TimeToString(_expiration));
     log_file.Write(LOG_DEBUG, StringFormat("%s Изменен ордер %d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _tmTicket, TimeToString(_expiration)));
    }
    else
    {
-    PrintFormat("%s Не удалось установить новый ордер при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__));
+ //   PrintFormat("%s Не удалось установить новый ордер при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__));
     log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось установить новый ордер при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__)));
    }
   }
   else
   {
-   PrintFormat("%s Не удалось удалить ордер %d при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__), _tmTicket);
+  // PrintFormat("%s Не удалось удалить ордер %d при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__), _tmTicket);
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось удалить ордер %d при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__), _tmTicket));
   }
   
@@ -428,11 +428,11 @@ bool CPosition::CheckTakeProfit(void)
   UpdateSymbolInfo();
   if (_type == OP_SELL && _tpPrice >= SymbInfo.Ask())
   {
-   PrintFormat("Позиция Селл, пройден уровень тейкпрофит");
+   log_file.Write(LOG_DEBUG, StringFormat("%s Позиция Селл, пройден уровень тейкпрофит ",MakeFunctionPrefix(__FUNCTION__))  );
   }
   if (_type == OP_BUY  && _tpPrice <= SymbInfo.Bid())
   {
-   PrintFormat("Позиция Бай, пройден уровень тейкпрофит");
+   log_file.Write(LOG_DEBUG, StringFormat("%s Позиция Бай, пройден уровень тейкпрофит ",MakeFunctionPrefix(__FUNCTION__)) );
   }
   return ((_type == OP_SELL && _tpPrice >= SymbInfo.Ask()) || 
           (_type == OP_BUY  && _tpPrice <= SymbInfo.Bid()) );
@@ -536,12 +536,12 @@ bool CPosition::ModifyPosition(double sl, int tp)
   if (trade.StopOrderModify(_slTicket, sl))
   {
    _slPrice = sl;
-   //PrintFormat("%s Изменили СтопЛосс, новый стоплосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice);
+   log_file.Write(LOG_DEBUG, StringFormat("%s Изменили СтопЛосс, новый стоплосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice) ) ;
    return (true);
   }
   else
   {
-   PrintFormat("%s Не удалось изменить СтопЛосс",MakeFunctionPrefix(__FUNCTION__));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось изменить СтопЛосс",MakeFunctionPrefix(__FUNCTION__)) );
   }
  }
  //else
@@ -549,7 +549,7 @@ bool CPosition::ModifyPosition(double sl, int tp)
  if (_type == OP_BUYSTOP  || _type == OP_SELLSTOP || _type == OP_BUYLIMIT || _type == OP_SELLLIMIT) 
  {
   _slPrice = sl;
-  //PrintFormat("%s Изменили СтопЛосс, новый стоплосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice);
+  log_file.Write(LOG_DEBUG, StringFormat("%s Изменили СтопЛосс, новый стоплосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice) );
   return (true);
  }
  return(false);
@@ -586,12 +586,12 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
  switch(_type)
  {
   case OP_BUY:
-   PrintFormat("%s, Открываем позицию Бай", MakeFunctionPrefix(__FUNCTION__));
+   log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Бай", MakeFunctionPrefix(__FUNCTION__)) );
    if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _lots, _posOpenPrice, orderComment))
    {
     _orderTicket = 0;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__)));
-    PrintFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__));
+   // log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
      _pos_status = POSITION_STATUS_OPEN;
@@ -607,7 +607,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _orderTicket = 0;
     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция ", MakeFunctionPrefix(__FUNCTION__)));
-    PrintFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__));
+   // PrintFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__));
     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
     {
      _pos_status = POSITION_STATUS_OPEN;   
@@ -651,7 +651,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   default:
-   Print("Задан неверный тип позиции");
+   log_file.Write(LOG_DEBUG, StringFormat("%s Задан неверный тип позиции",MakeFunctionPrefix(__FUNCTION__)) );
    break;
  }
 
@@ -772,7 +772,7 @@ bool CPosition::ReadFromFile(int  handle)
  if(FileIsEnding(handle)) return false;    
   _priceDifference      = StringToInteger(FileReadString(handle));                //разница между позицией и отложенником
  // Alert("> POS CLOSE TIME = ",_posCloseTime); 
-                                //пропуск пустого символа  
+                                //пропуск пустого символа                                  
   return true;
  }
  return false;
@@ -788,10 +788,12 @@ ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
   if (trade.OrderDelete(_orderTicket))
   {
    _pos_status = POSITION_STATUS_DELETED;
+   log_file.Write(LOG_DEBUG, StringFormat("%s Удалось удалить отложенный ордер по тикету %i",MakeFunctionPrefix(__FUNCTION__), _orderTicket   ) );   
   }
   else
   {
    _pos_status = POSITION_STATUS_NOT_DELETED;
+   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось удалить отложенный ордер по тикету %i",MakeFunctionPrefix(__FUNCTION__), _orderTicket   ) );      
   }
  }
  return(_pos_status);

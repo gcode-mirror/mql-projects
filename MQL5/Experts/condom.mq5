@@ -62,7 +62,18 @@ int OnInit()
   {
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
-         
+   
+   // если задан тип трейлинга PBI      
+   if (trailingType == TRAILING_TYPE_PBI)
+    {
+     // создаем хэндл PBI
+     handlePBI = iCustom(_Symbol,_Period,"PriceBasedIndicator");
+     if (handlePBI == INVALID_HANDLE)
+      {
+       Print("Ошибка инициализации эксперат Condom. Не удалось создать хэндл PriceBasedIndicator");
+       return (INIT_FAILED);        
+      }
+    }   
    if (useLimitOrders)
    {
     opBuy = OP_BUYLIMIT;
@@ -101,6 +112,8 @@ void OnDeinit(const int reason)
    // Освобождаем динамические массивы от данных
    ArrayFree(low_buf);
    ArrayFree(high_buf);
+   // освобождаем хэндлы индикаторов 
+   IndicatorRelease(handlePBI);
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -108,12 +121,13 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    ctm.OnTick();
+   ctm.DoTrailing();
    //переменные для хранения результатов работы с ценовым графиком
    int errLow = 0;                                                   
    int errHigh = 0;                                                   
    int errClose = 0;
    int errMACD = 0;
-   
+   bool openPos;    // флаг успешно открытой позиции
    static CisNewBar isNewBar(symbol, timeframe);
    
    if(isNewBar.isNewBar() > 0)
@@ -155,7 +169,11 @@ void OnTick()
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
     {
-     if (ctm.OpenUniquePosition(symbol, timeframe, opBuy, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, priceDifference))
+     if (trailingType == TRAILING_TYPE_PBI)
+      openPos = ctm.OpenUniquePosition(symbol, timeframe, opBuy, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, handlePBI, priceDifference);
+     else
+      openPos = ctm.OpenUniquePosition(symbol, timeframe, opBuy, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, priceDifference);
+     if (openPos)
      {
       waitForBuy = false;
       waitForSell = false;
@@ -167,7 +185,11 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (ctm.OpenUniquePosition(symbol, timeframe, opSell, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, priceDifference))
+     if (trailingType == TRAILING_TYPE_PBI)
+      openPos = ctm.OpenUniquePosition(symbol, timeframe, opSell, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep,handlePBI, priceDifference);     
+     else
+      openPos = ctm.OpenUniquePosition(symbol, timeframe, opSell, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, priceDifference); 
+     if (openPos)
      {
       waitForBuy = false;
       waitForSell = false;
