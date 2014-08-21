@@ -29,13 +29,10 @@ enum ENUM_TENDENTION
 };
 
 /// входные параметры
-input string baseParam = "";                       // Базовые параметры
 input double lot      = 0.20;                      // размер лота
 input double lotStep  = 0.20;                      // размер шага увеличения лота
 input int    lotCount = 4;                         // количество доливок
 input int    spread   = 30;                        // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
-input string addParam = "";                        // Настройки
-input bool   useMultiFill=true;                    // Использовать доливки при переходе на старш. период
 
 // хэндлы индикатора SmydMACD
 int handleSmydMACD_M5;                             // хэндл индикатора расхождений MACD на минутке
@@ -207,7 +204,7 @@ void OnTick()
  if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPriceBid) == TENDENTION_UP)
  {   
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if ((IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY)) && IsMACDCompatible(BUY))
+  if ( IsExtremumBeaten(2,BUY) && IsMACDCompatible(BUY))
   { 
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
@@ -220,7 +217,6 @@ void OnTick()
      // обнуляем счетчик доливок, если 
      countAdd = 0;                                   
     }
-    if (useMultiFill || openedPosition!=BUY)
     // разрешаем возможность доливаться
     changeLotValid = true; 
     // выставляем флаг открытия позиции BUY
@@ -230,7 +226,7 @@ void OnTick()
     // вычисляем стоп лосс
     stopLoss = GetStopLoss();             
     // открываем позицию на BUY
-    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lotReal, stopLoss, 0, TRAILING_TYPE_EXTREMUMS);
+    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
    }
   }
  }
@@ -239,7 +235,7 @@ void OnTick()
  if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPriceAsk) == TENDENTION_DOWN)
  {                     
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if ((IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL)) && IsMACDCompatible(SELL))
+  if ( IsExtremumBeaten(2,SELL) && IsMACDCompatible(SELL))
   {                
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
@@ -253,7 +249,6 @@ void OnTick()
      countAdd = 0;  
     }
    }
-   if (useMultiFill || openedPosition!=SELL)
    // разрешаем возможность доливаться
    changeLotValid = true; 
    // выставляем флаг открытия позиции SELL

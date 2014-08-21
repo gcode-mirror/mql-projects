@@ -125,7 +125,7 @@ void CTradeManager::CTradeManager():
 void CTradeManager::~CTradeManager(void)
 {
  log_file.Write(LOG_DEBUG, StringFormat("%s Запущен процесс деинициализации.", MakeFunctionPrefix(__FUNCTION__)));
- PrintFormat( "%s Запущен процесс деинициализации.", MakeFunctionPrefix(__FUNCTION__));
+ //PrintFormat( "%s Запущен процесс деинициализации.", MakeFunctionPrefix(__FUNCTION__));
  int size = _openPositions.Total();
  int attempts = 0;
  while (attempts < 25)
@@ -145,7 +145,8 @@ void CTradeManager::~CTradeManager(void)
  delete _positionsHistory;
  //log_file.Write(LOG_DEBUG, StringFormat("%s Процесс деинициализации завершен.", MakeFunctionPrefix(__FUNCTION__)));
  if(!FileDelete(rescueDataFileName, FILE_COMMON))
-  Alert(StringFormat("Не удалось удалить rescue-файл: %s", rescueDataFileName));
+ log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось удалить rescue-файл: %s", MakeFunctionPrefix(__FUNCTION__), rescueDataFileName)); 
+ // Alert(StringFormat("Не удалось удалить rescue-файл: %s", rescueDataFileName));
 };
 
 //+----------------------------------------------------
@@ -309,8 +310,16 @@ bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
    pos = _openPositions.At(i);
    if (pos.getSymbol() == symbol)
    {
-    if (ClosePosition(i)) return (true);
-    else return (false);
+    if (ClosePosition(i)) 
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s Успешно закрыта позиция", MakeFunctionPrefix(__FUNCTION__)));
+       return (true);
+      }
+     else
+      {
+       log_file.Write(LOG_DEBUG, StringFormat("%s Не удачно закрыта позиция", MakeFunctionPrefix(__FUNCTION__)));      
+       return (false);
+      }
    }
   }
  }
