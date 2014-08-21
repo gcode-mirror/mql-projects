@@ -10,6 +10,7 @@
 //+------------------------------------------------------------------+
 
 #include <StringUtilities.mqh>
+#include <CLog.mqh>
 
 // перечисление типов эктсремумов
 enum ENUM_EXTR_USE
@@ -59,7 +60,8 @@ class CBlowInfoFromExtremums
   {
    if (_handleExtremums == INVALID_HANDLE)
     {
-     Print("Ошибка инициализации класса CBlowInfoFromExtremums. Не удалось создать хэндл индикатора DrawExtremums");
+    // Print("Ошибка инициализации класса CBlowInfoFromExtremums. Не удалось создать хэндл индикатора DrawExtremums");
+     log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка инициализации класса CBlowInfoFromExtremums. Не удалось создать хэндл индикатора DrawExtremums", MakeFunctionPrefix(__FUNCTION__)));     
      return(false);
     }
    return(true);
@@ -96,7 +98,8 @@ class CBlowInfoFromExtremums
       // Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime, " PERIOD = ",PeriodToString(_period));
       if ( copiedHigh != historyDepth || copiedLow != historyDepth || copiedHighTime != historyDepth || copiedLowTime != historyDepth)
        {
-        Print("Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums ",PeriodToString(_period));
+     //   Print("Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums ",PeriodToString(_period));
+        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);
        }
        
