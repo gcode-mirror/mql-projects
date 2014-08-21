@@ -226,7 +226,7 @@ void OnTick()
     // вычисляем стоп лосс
     stopLoss = GetStopLoss();             
     // открываем позицию на BUY
-    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
+    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lotReal, stopLoss, 0, TRAILING_TYPE_EXTREMUMS);
    }
   }
  }

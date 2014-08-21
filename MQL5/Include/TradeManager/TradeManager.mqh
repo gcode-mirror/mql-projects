@@ -552,6 +552,11 @@ void CTradeManager::OnTick()
   
   if (!OrderSelect(pos.getStopLossTicket()) && pos.getPositionStatus() != POSITION_STATUS_PENDING && pos.getStopLossStatus() != STOPLEVEL_STATUS_NOT_DEFINED) // Если мы не можем выбрать стоп по его тикету, значит он сработал
   {
+   PrintFormat("%s Стоп-лосс тикет = %d, Статус позиции = %s, Статус стоп-лосса = %s"
+                , MakeFunctionPrefix(__FUNCTION__)
+                    , pos.getStopLossTicket()
+                                         , PositionStatusToStr(pos.getPositionStatus())
+                                                              , StoplevelStatusToStr(pos.getStopLossStatus()));
    log_file.Write(LOG_DEBUG, StringFormat("%s Нет ордера-StopLoss, удаляем позицию [%d]", MakeFunctionPrefix(__FUNCTION__), i));
    pos.setPositionStatus(POSITION_STATUS_CLOSED);
    ClosePosition(i);
@@ -860,11 +865,23 @@ bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
     if (pos.getVolume() + additionalVolume != 0)
     {
      PrintFormat("%s Изменим объем текущей позиции", MakeFunctionPrefix(__FUNCTION__));
-     if (pos.ChangeSize(additionalVolume)) return (true);
-     PrintFormat("%s Не удалось изменить объем текущей позиции", MakeFunctionPrefix(__FUNCTION__));
+     if (pos.ChangeSize(additionalVolume))
+     {
+      PrintFormat("%s Объем позиции успешно изменен", MakeFunctionPrefix(__FUNCTION__));
+      return (true);
+     }
+     else
+     {
+      if (pos.getPositionStatus() == POSITION_STATUS_NOT_COMPLETE)
+      {
+       PrintFormat("%s Не удалось изменить стоп-лосс при изменении объема позиции", MakeFunctionPrefix(__FUNCTION__));
+       _positionsToReProcessing.Add(_openPositions.Detach(i));
+      }
+     }
     }
     else
     {
+     PrintFormat("%s Изменение позиции. Итоговый объем равен 0, закрываем позицию", MakeFunctionPrefix(__FUNCTION__));
      if (ClosePosition(i)) return (true);
     }
    }

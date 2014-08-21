@@ -15,20 +15,20 @@
 //-----------------Global-variables----------------------------------+
 enum ENUM_OUTPUT
 {
- OUT_FILE = 0,        // Создает log-файл
- OUT_ALERT = 1,       // Выводит log алертами
- OUT_COMMENT = 2,     // Выводит log комментариями
+ OUT_FILE = 0,       // Создает log-файл
+ OUT_ALERT = 1,      // Выводит log алертами
+ OUT_PRINT = 2,      // Выводит log В журнал
 };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-enum ENUM_LOGLEVEL     //уровень логирования
-{
- LOG_NONE = 0,        //никакой информации
- LOG_MAIN = 1,        //ключевая информация
+enum ENUM_LOGLEVEL   //уровень логирования
+{                    
+ LOG_NONE = 0,       //никакой информации
+ LOG_MAIN = 1,       //ключевая информация
  LOG_DEBUG = 2       //информация для дебага
-};
-
+};                   
+                     
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -36,11 +36,11 @@ class CLog
 {
  private:
   ENUM_OUTPUT _output_type;    // тип вывода информации
-  ENUM_LOGLEVEL _level;          // уровень логирования
-  uint _limit_size;               // предельный размер log-файла в Mb
-  string _catalog_name;          // имя каталога для хранения логов
-  int _expiration_time;          // время жизни лога в днях
-  string _current_filename;
+  ENUM_LOGLEVEL _level;        // уровень логирования
+  uint _limit_size;            // предельный размер log-файла в Mb
+  string _catalog_name;        // имя каталога для хранения логов
+  int _expiration_time;        // время жизни лога в днях
+  string _current_filename;    
 
  public:
   CLog();
@@ -69,7 +69,14 @@ class CLog
 //+------------------------------------------------------------------+
 CLog::CLog()
 {
- _output_type = OUT_FILE;
+ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
+ {
+  _output_type = OUT_PRINT;
+ }
+ else
+ {
+  _output_type = OUT_FILE;
+ }
  _level = LOG_DEBUG;         
  _limit_size = 50;          
  _catalog_name = "Log";   
@@ -148,7 +155,7 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
      Alert("Bad filehandle.Name file:", _current_filename);
     break;
    }
-   case OUT_COMMENT:
+   case OUT_PRINT:
     Print(str);
     break;
    case OUT_ALERT:
