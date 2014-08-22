@@ -36,7 +36,7 @@ input int    lotCount = 3;                         // количество доливок
 input int    spread   = 30;                        // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input string addParam = "";                        // Ќастройки
 input bool   useMultiFill=true;                    // »спользовать доливки при переходе на старш. период
-input int    pbiDepth = 100;                       // глубина вычислени€ индикатора PBI
+input int    pbiDepth = 1000;                       // глубина вычислени€ индикатора PBI
 
 // хэндлы индикатора SmydMACD
 int handleSmydMACD_M5;                             // хэндл индикатора расхождений MACD на минутке
@@ -229,13 +229,22 @@ void OnTick()
   
    // если пробит верхний экстремум на H1, но последний тренд на H1 в противоположную сторону      
    if (H1 && !LastTrendDirection(1,handlePBI_H1) )
+    {
+     Comment("ѕробит H1");    
      return;
+    }
    // если пробит верхний экстремум на M15, но последний тренд на M15 в противоположную сторону      
    if (M15 && !LastTrendDirection(1,handlePBI_M15) )
+    {
+     Comment("ѕробит M15");    
      return;
+    }
    // если пробит верхний экстремум на M5, но последний тренд на M5 в противоположную сторону      
    if (M5 && !LastTrendDirection(1,handlePBI_M5) )
+    {
+     Comment("ѕробит M5");     
      return;
+    }
        
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
@@ -272,14 +281,22 @@ void OnTick()
    
    // если пробит нижний экстремум на H1, но последний тренд на H1 в противоположную сторону      
    if (H1 && !LastTrendDirection(-1,handlePBI_H1) )
+    {
+     Comment("ѕробит H1");
      return;
+    }
    // если пробит нижний экстремум на M15, но последний тренд на M15 в противоположную сторону      
    if (M15 && !LastTrendDirection(-1,handlePBI_M15) )
+    {
+     Comment("ѕробит M15");    
      return;
+    }
    // если пробит нижний экстремум на M5, но последний тренд на M5 в противоположную сторону      
    if (M5 && !LastTrendDirection(-1,handlePBI_M5) )
+    {
+     Comment("ѕробит M5");    
      return;
-                   
+    }              
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
    {             
@@ -446,7 +463,7 @@ bool LastTrendDirection (int tendention,int handle)   // возвращает true, если т
   ArraySetAsSeries(pbiBuf,true);
   for(int attempts=0;attempts<5;attempts++)
    {
-    copiedPBI = CopyBuffer(handle,0,4,pbiDepth,pbiBuf);
+    copiedPBI = CopyBuffer(handle,4,1,pbiDepth,pbiBuf);
     Sleep(100);
    }
   if (copiedPBI < pbiDepth)
@@ -466,3 +483,43 @@ bool LastTrendDirection (int tendention,int handle)   // возвращает true, если т
    }
   return (true);
  }
+ 
+ /*
+ bool LastTrendDirection2 (int tendention,int handle)   // возвращает true, если тендекци€ не противоречит последнему тренду на текущем таймфрейме
+ {
+  int copiedPBI=-1;  // количество скопированных данных PriceBasedIndicator
+  int signTrend=-1;     // переменна€ дл€ хранени€ знака последнего тренда
+  int index=1;
+  ArraySetAsSeries(pbiBuf,true);
+
+  while (signTrend!=1 && signTrend!=2 && signTrend!=3 && signTrend!=4)
+   {
+    copiedPBI = CopyBuffer(handle,4,index,1,pbiBuf);
+    signTrend = int(pbiBuf[index]);    
+    index++;
+   }
+  if (
+  
+  for(int attempts=0;attempts<5;attempts++)
+   {
+    copiedPBI = CopyBuffer(handle,4,1,pbiDepth,pbiBuf);
+    Sleep(100);
+   }
+  if (copiedPBI < pbiDepth)
+   {
+    Print("Ќе удалось загрузить буфер индикатора PriceBasedIndicator");
+    return (false);
+   }
+  // если успешно загрузили буферы, то ищем тип последнего тренда
+  for (int index=0;index<pbiDepth;index++)
+   {
+    signTrend = int(pbiBuf[index]);
+    // услови€ остановки - противоположные движени€
+    if ( (signTrend == 1 || signTrend == 2) && tendention == -1)
+     return (false);
+    if ( (signTrend == 3 || signTrend == 4) && tendention == 1)
+     return (false);     
+   }
+  return (true);
+ }
+ */
