@@ -30,24 +30,30 @@ enum ENUM_TENDENTION
 
 /// входные параметры
 input string baseParam = "";                       // Базовые параметры
-input double lot      = 0.20;                      // размер лота
-input double lotStep  = 0.20;                      // размер шага увеличения лота
-input int    lotCount = 4;                         // количество доливок
+input double lot      = 1;                         // размер лота
+input double lotStep  = 1;                         // размер шага увеличения лота
+input int    lotCount = 3;                         // количество доливок
 input int    spread   = 30;                        // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input string addParam = "";                        // Настройки
 input bool   useMultiFill=true;                    // Использовать доливки при переходе на старш. период
+input int    pbiDepth = 100;                       // глубина вычисления индикатора PBI
 
 // хэндлы индикатора SmydMACD
 int handleSmydMACD_M5;                             // хэндл индикатора расхождений MACD на минутке
 int handleSmydMACD_M15;                            // хэндл индикатора расхождений MACD на 15 минутах
 int handleSmydMACD_H1;                             // хэндл индикатора расхождений MACD на часовике
-
+// хэндлы Price Based Indicator
+int handlePBI_M5;                                  // хэндл PriceBasedIndicator M5
+int handlePBI_M15;                                 // хэндл PriceBasedIndicator M15
+int handlePBI_H1;                                  // хэндл PriceBasedIndicator MH1
 // необходимые буферы
 MqlRates lastBarD1[];                              // буфер цен на дневнике
 // буферы для хранения расхождений на MACD
 double divMACD_M5[];                               // на пятиминутке
 double divMACD_M15[];                              // на 15-минутке
 double divMACD_H1[];                               // на часовике
+// буфер для хранения PriceBasedIndicator
+double pbiBuf[];
 // буферы для проверки пробития экстремумов
 Extr             lastExtrHigh[4];                  // буфер последних экстремумов по HIGH
 Extr             lastExtrLow[4];                   // буфер последних экстремумов по LOW
@@ -74,6 +80,8 @@ double           prevPriceAsk      = 0;            // для хранения предыдущей це
 double           prevPriceBid      = 0;            // для хранения предыдущей цены Bid
 double           lotReal;                          // действительный лот
 ENUM_TENDENTION  lastTendention;                   // переменная для хранения последней тенденции
+// флаги пробития экстремумов для получения сигнала
+bool             M5,M15,H1;
                            
 int OnInit()
   {
@@ -85,7 +93,16 @@ int OnInit()
     {
      Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора SmydMACD ");
      return (INIT_FAILED);
-    }              
+    }      
+   // пытаемся инициализировать хэндл PriceBasedIndicator
+   handlePBI_M5  = iCustom(_Symbol,PERIOD_M5,"PriceBasedIndicator");
+   handlePBI_M15 = iCustom(_Symbol,PERIOD_M15,"PriceBasedIndicator");    
+   handlePBI_H1  = iCustom(_Symbol,PERIOD_H1,"PriceBasedIndicator");   
+   if (handlePBI_M5 == INVALID_HANDLE || handlePBI_M15 == INVALID_HANDLE || handlePBI_H1 == INVALID_HANDLE)
+    {
+     Print("Ошибка при иниализации эксперта SimpleTrend. Не удалось создать хэндл индикатора PriceBasedIndicator");
+     return (INIT_FAILED);
+    }     
    // создаем объект класса TradeManager
    ctm = new CTradeManager();                    
    // создаем объекты класса CisNewBar
@@ -146,7 +163,7 @@ void OnTick()
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(blowInfo[indexForTrail]);
- Comment("Индекс трейла = ",indexForTrail);
+
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
@@ -207,8 +224,19 @@ void OnTick()
  if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPriceBid) == TENDENTION_UP)
  {   
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if ((IsExtremumBeaten(1,BUY) || IsExtremumBeaten(2,BUY) || IsExtremumBeaten(3,BUY)) && IsMACDCompatible(BUY))
+  if (( (M5=IsExtremumBeaten(1,BUY)) || (M15=IsExtremumBeaten(2,BUY)) || (H1=IsExtremumBeaten(3,BUY)) ) /*&& IsMACDCompatible(BUY) */)
   { 
+  
+   // если пробит верхний экстремум на H1, но последний тренд на H1 в противоположную сторону      
+   if (H1 && !LastTrendDirection(1,handlePBI_H1) )
+     return;
+   // если пробит верхний экстремум на M15, но последний тренд на M15 в противоположную сторону      
+   if (M15 && !LastTrendDirection(1,handlePBI_M15) )
+     return;
+   // если пробит верхний экстремум на M5, но последний тренд на M5 в противоположную сторону      
+   if (M5 && !LastTrendDirection(1,handlePBI_M5) )
+     return;
+       
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
    {
@@ -239,8 +267,19 @@ void OnTick()
  if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPriceAsk) == TENDENTION_DOWN)
  {                     
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if ((IsExtremumBeaten(1,SELL) || IsExtremumBeaten(2,SELL) || IsExtremumBeaten(3,SELL)) && IsMACDCompatible(SELL))
-  {                
+  if (( (M5=IsExtremumBeaten(1,SELL)) || (M15=IsExtremumBeaten(2,SELL)) || (H1=IsExtremumBeaten(3,SELL)) ) /*&& IsMACDCompatible(SELL)*/)
+  {    
+   
+   // если пробит нижний экстремум на H1, но последний тренд на H1 в противоположную сторону      
+   if (H1 && !LastTrendDirection(-1,handlePBI_H1) )
+     return;
+   // если пробит нижний экстремум на M15, но последний тренд на M15 в противоположную сторону      
+   if (M15 && !LastTrendDirection(-1,handlePBI_M15) )
+     return;
+   // если пробит нижний экстремум на M5, но последний тренд на M5 в противоположную сторону      
+   if (M5 && !LastTrendDirection(-1,handlePBI_M5) )
+     return;
+                   
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
    {             
@@ -400,3 +439,30 @@ int GetStopLoss()     // вычисляет стоп лосс
  return (0.0);
 }
   
+bool LastTrendDirection (int tendention,int handle)   // возвращает true, если тендекция не противоречит последнему тренду на текущем таймфрейме
+ {
+  int copiedPBI=-1;  // количество скопированных данных PriceBasedIndicator
+  int signTrend;     // переменная для хранения знака последнего тренда
+  ArraySetAsSeries(pbiBuf,true);
+  for(int attempts=0;attempts<5;attempts++)
+   {
+    copiedPBI = CopyBuffer(handle,0,4,pbiDepth,pbiBuf);
+    Sleep(100);
+   }
+  if (copiedPBI < pbiDepth)
+   {
+    Print("Не удалось загрузить буфер индикатора PriceBasedIndicator");
+    return (false);
+   }
+  // если успешно загрузили буферы, то ищем тип последнего тренда
+  for (int index=0;index<pbiDepth;index++)
+   {
+    signTrend = int(pbiBuf[index]);
+    // условия остановки - противоположные движения
+    if ( (signTrend == 1 || signTrend == 2) && tendention == -1)
+     return (false);
+    if ( (signTrend == 3 || signTrend == 4) && tendention == 1)
+     return (false);     
+   }
+  return (true);
+ }
