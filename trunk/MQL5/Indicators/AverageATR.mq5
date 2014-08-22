@@ -29,6 +29,7 @@
 
 // подключаем необходимые библиотеки
 #include <Lib CisNewBar.mqh>     // для проверки формирования нового бара
+#include <CLog.mqh>
 
 // входные параметры индикатора 
 input int ma_period   = 30;     // период усреднения 
@@ -59,7 +60,8 @@ int OnInit()
    // если стартовый индекс превысил допустимое количество баров
    if (startIndex >= barsCount)
     {
-     PrintFormat("%s Ошибка инициализации индикатора AverageATR. Не корректно заданы периоды усреднения %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_Period));
+     log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка инициализации индикатора AverageATR. Не корректно заданы периоды усреднения %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_Period)) );
+ //  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось скопировать данные из индикаторного буфера", MakeFunctionPrefix(__FUNCTION__)));      
      return (INIT_FAILED);
     }
    // задаем параметры индикаторных буферов
@@ -71,7 +73,7 @@ int OnInit()
    isNewBar = new CisNewBar(_Symbol,_Period);
    if (handleATR == INVALID_HANDLE)
     {
-     Print("Ошибка инициализации индикатора AverageATR. Не удалось создать индикатор ATR");
+     log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка инициализации индикатора AverageATR. Не удалось создать индикатор ATR ");
      return(INIT_FAILED);
     }
    return(INIT_SUCCEEDED);
