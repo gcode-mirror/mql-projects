@@ -74,6 +74,12 @@ int              openedPosition    = NO_POSITION;  // тип открытой позиции
 int              stopLoss;                         // стоп лосс
 int              indexForTrail     = 0;            // индекс для трейлинга
 int              countAdd          = 0;            // количество доливок
+
+int              lastTrendM5       = 0;            // тип последнего тренда по PBI M5
+int              lastTrendM15      = 0;            // тип последнего тренда по PBI M15
+int              lastTrendH1       = 0;            // тип последнего тренда по PBI H1
+int              tmpLastBar;
+
 double           curPriceAsk       = 0;            // для хранения текущей цены Ask
 double           curPriceBid       = 0;            // для хранения текущей цены Bid 
 double           prevPriceAsk      = 0;            // для хранения предыдущей цены Ask
@@ -89,6 +95,8 @@ int OnInit()
    handleSmydMACD_M5  = iCustom(_Symbol,PERIOD_M5,"smydMACD","");  
    handleSmydMACD_M15 = iCustom(_Symbol,PERIOD_M15,"smydMACD","");    
    handleSmydMACD_H1  = iCustom(_Symbol,PERIOD_H1,"smydMACD","");   
+
+          
    if (handleSmydMACD_M5  == INVALID_HANDLE || handleSmydMACD_M15 == INVALID_HANDLE || handleSmydMACD_H1 == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл индикатора SmydMACD ");
@@ -102,7 +110,11 @@ int OnInit()
     {
      Print("Ошибка при иниализации эксперта SimpleTrend. Не удалось создать хэндл индикатора PriceBasedIndicator");
      return (INIT_FAILED);
-    }     
+    } 
+   // получаем последний тип тренда на 3-х таймфреймах
+   lastTrendM5  = GetLastTrendDirection(handlePBI_M5,PERIOD_M5);
+   lastTrendM15 = GetLastTrendDirection(handlePBI_M15,PERIOD_M15);
+   lastTrendH1  = GetLastTrendDirection(handlePBI_H1,PERIOD_H1);            
    // создаем объект класса TradeManager
    ctm = new CTradeManager();                    
    // создаем объекты класса CisNewBar
@@ -195,6 +207,26 @@ void OnTick()
   } 
  } 
  
+ // обновляем значения последних трендов
+ tmpLastBar = GetLastMoveType(handlePBI_M5);
+ if (tmpLastBar != 0)
+  lastTrendM5 = tmpLastBar;
+  
+ tmpLastBar = GetLastMoveType(handlePBI_M15);
+ if (tmpLastBar != 0)
+  lastTrendM15 = tmpLastBar;
+  
+ tmpLastBar = GetLastMoveType(handlePBI_H1);
+ if (tmpLastBar != 0)
+  lastTrendH1 = tmpLastBar;    
+ 
+ /*
+ Comment(
+  "последний тренд на M5 = ",GetLT(lastTrendM5),
+  "\nпоследний тренд на M15 = ",GetLT(lastTrendM15),
+  "\nпоследний тренд на H1 = ",GetLT(lastTrendH1)
+ );
+ */
  // если это первый запуск эксперта или сформировался новый бар 
  if (firstLaunch || isNewBar_D1.isNewBar() > 0)
  {
@@ -228,19 +260,19 @@ void OnTick()
   { 
   
    // если пробит верхний экстремум на H1, но последний тренд на H1 в противоположную сторону      
-   if (H1 && !LastTrendDirection(1,handlePBI_H1) )
+   if (H1 && lastTrendH1==-1 )
     {
      Comment("Пробит H1");    
      return;
     }
    // если пробит верхний экстремум на M15, но последний тренд на M15 в противоположную сторону      
-   if (M15 && !LastTrendDirection(1,handlePBI_M15) )
+   if (M15 && lastTrendM15==-1 )
     {
      Comment("Пробит M15");    
      return;
     }
    // если пробит верхний экстремум на M5, но последний тренд на M5 в противоположную сторону      
-   if (M5 && !LastTrendDirection(1,handlePBI_M5) )
+   if (M5 && lastTrendM5==-1 )
     {
      Comment("Пробит M5");     
      return;
@@ -280,19 +312,19 @@ void OnTick()
   {    
    
    // если пробит нижний экстремум на H1, но последний тренд на H1 в противоположную сторону      
-   if (H1 && !LastTrendDirection(-1,handlePBI_H1) )
+   if (H1 && lastTrendH1==1 )
     {
      Comment("Пробит H1");
      return;
     }
    // если пробит нижний экстремум на M15, но последний тренд на M15 в противоположную сторону      
-   if (M15 && !LastTrendDirection(-1,handlePBI_M15) )
+   if (M15 && lastTrendM15==1 )
     {
      Comment("Пробит M15");    
      return;
     }
    // если пробит нижний экстремум на M5, но последний тренд на M5 в противоположную сторону      
-   if (M5 && !LastTrendDirection(-1,handlePBI_M5) )
+   if (M5 && lastTrendM5==1 )
     {
      Comment("Пробит M5");    
      return;
@@ -421,7 +453,6 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
         LessDoubles(ctm.GetPositionStopLoss(_Symbol),pricePos)
        ) // если пробит экстремум и стоп лосс в безубытке
     {
-     Comment("Пробит экстремум = ",cont);
      cont++;
      countAdd++; // увеличиваем счетчик доливок
      return (true);
@@ -452,74 +483,59 @@ int GetStopLoss()     // вычисляет стоп лосс
    else
     return ( (stopLevel+0.0001)/_Point );     
  }
- Alert("А стопа нет");
  return (0.0);
 }
   
-bool LastTrendDirection (int tendention,int handle)   // возвращает true, если тендекция не противоречит последнему тренду на текущем таймфрейме
+ int GetLastTrendDirection (int handle,ENUM_TIMEFRAMES period)   // возвращает true, если тендекция не противоречит последнему тренду на текущем таймфрейме
  {
-  int copiedPBI=-1;  // количество скопированных данных PriceBasedIndicator
-  int signTrend;     // переменная для хранения знака последнего тренда
-  ArraySetAsSeries(pbiBuf,true);
-  for(int attempts=0;attempts<5;attempts++)
-   {
-    copiedPBI = CopyBuffer(handle,4,1,pbiDepth,pbiBuf);
-    Sleep(100);
-   }
-  if (copiedPBI < pbiDepth)
-   {
-    Print("Не удалось загрузить буфер индикатора PriceBasedIndicator");
-    return (false);
-   }
-  // если успешно загрузили буферы, то ищем тип последнего тренда
-  for (int index=0;index<pbiDepth;index++)
-   {
-    signTrend = int(pbiBuf[index]);
-    // условия остановки - противоположные движения
-    if ( (signTrend == 1 || signTrend == 2) && tendention == -1)
-     return (false);
-    if ( (signTrend == 3 || signTrend == 4) && tendention == 1)
-     return (false);     
-   }
-  return (true);
- }
- 
- /*
- bool LastTrendDirection2 (int tendention,int handle)   // возвращает true, если тендекция не противоречит последнему тренду на текущем таймфрейме
- {
-  int copiedPBI=-1;  // количество скопированных данных PriceBasedIndicator
+  int copiedPBI=-1;     // количество скопированных данных PriceBasedIndicator
   int signTrend=-1;     // переменная для хранения знака последнего тренда
-  int index=1;
+  int index=1;          // индекс бара
+  int nBars;            // количество баров
+  
   ArraySetAsSeries(pbiBuf,true);
-
-  while (signTrend!=1 && signTrend!=2 && signTrend!=3 && signTrend!=4)
+  
+  nBars = Bars(_Symbol,period);
+  
+  for (index=1;index<nBars;index++)
    {
     copiedPBI = CopyBuffer(handle,4,index,1,pbiBuf);
-    signTrend = int(pbiBuf[index]);    
-    index++;
+    if (copiedPBI < 1)
+     return(0);
+    signTrend = int(pbiBuf[0]);
+    // если найден последний тренд вверх
+    if (signTrend == 1 || signTrend == 2)
+     return (1);
+    // если найден последний тренд вниз
+    if (signTrend == 3 || signTrend == 4)
+     return (-1);
    }
-  if (
   
-  for(int attempts=0;attempts<5;attempts++)
-   {
-    copiedPBI = CopyBuffer(handle,4,1,pbiDepth,pbiBuf);
-    Sleep(100);
-   }
-  if (copiedPBI < pbiDepth)
-   {
-    Print("Не удалось загрузить буфер индикатора PriceBasedIndicator");
-    return (false);
-   }
-  // если успешно загрузили буферы, то ищем тип последнего тренда
-  for (int index=0;index<pbiDepth;index++)
-   {
-    signTrend = int(pbiBuf[index]);
-    // условия остановки - противоположные движения
-    if ( (signTrend == 1 || signTrend == 2) && tendention == -1)
-     return (false);
-    if ( (signTrend == 3 || signTrend == 4) && tendention == 1)
-     return (false);     
-   }
-  return (true);
+  return (0);
  }
- */
+ 
+ int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndicator
+  {
+   int copiedPBI;
+   int signTrend;
+   copiedPBI = CopyBuffer(handle,4,1,1,pbiBuf);
+   if (copiedPBI < 1)
+    return (0);
+   signTrend = int(pbiBuf[0]);
+   // если тренд вверх
+   if (signTrend == 1 || signTrend == 2)
+    return (1);
+   // если тренд вниз
+   if (signTrend == 3 || signTrend == 4)
+    return (-1);
+   return (0);
+  }
+  
+  string GetLT(int type)
+   {
+    if (type == 1)
+     return "тренд вверх";
+    if (type == -1)
+     return "тренд вниз";
+    return "нет тренда";
+   }

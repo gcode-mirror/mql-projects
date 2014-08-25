@@ -6,13 +6,11 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
-
 // подсключение библиотек 
 #include <TradeManager\TradeManager.mqh>        // подключение торговой библиотеки
 #include <Lib CisNewBar.mqh>                    // для проверки формирования нового бара
 #include <CompareDoubles.mqh>                   // для проверки соотношения  цен
 #include <Constants.mqh>                        // библиотека констант
-
 #define ADD_TO_STOPPLOSS 50
 // константы сигналов
 #define BUY   1    
@@ -26,106 +24,58 @@
 sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
 input  int    StopLoss                             = 0;                  // Стоп Лосс
 input  int    TakeProfit                           = 0;                  // Тейк Профит
-input  double Lot                                  = 1;                  // Лот
-input  ENUM_USE_PENDING_ORDERS pending_orders_type = USE_NO_ORDERS;      // Тип отложенного ордера                    
+input  double Lot                                  = 1;                  // Лот                
 input  int    priceDifference                      = 50;                 // Price Difference
 input  int    koLock                               = 2;                  // коэффициент запрета на вход
-
 sinput string trailingStr                          = "";                 // ПАРАМЕТРЫ трейлинга
-input         ENUM_TRAILING_TYPE trailingType      = TRAILING_TYPE_PBI;  // тип трейлинга
 input int     trStop                               = 100;                // Trailing Stop
 input int     trStep                               = 100;                // Trailing Step
 input int     minProfit                            = 250;                // минимальная прибыль
-
-sinput string PriceBasedIndicator                  = "";                 // ПАРАМЕТРЫ PBI
-input double   percentage_ATR = 1;   // процент АТР для появления нового экстремума
-input double   difToTrend = 1.5;     // разница между экстремумами для появления тренда
-
-
-// объекты
-CTradeManager * ctm;                                                     // указатель на объект торговой библиотеки
-static CisNewBar *isNewBar;                                              // для проверки формирования нового бара
-
-// хэндлы индикаторов 
-int handleSmydMACD;                                                      // хэндл индикатора ShowMeYourDivMACD
-int handle_PBI;
-
-// переменные эксперта
-int divSignal;                                                           // сигнал на расхождение
-double currentPrice;                                                     // текущая цена
-ENUM_TM_POSITION_TYPE opBuy,opSell;                                      // типы ордеров 
-string symbol;
-ENUM_TIMEFRAMES period;
-int historyDepth;
-double signalBuffer[];                                                   // буфер для получения сигнала из индикатора
-
-int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
-int    copiedSmydMACD;                                                   // переменная для проверки копирования буфера сигналов расхождения
-
-int handle_19Lines;
-
 // структура уровней
 struct bufferLevel
  {
-  double price[];            // цена уровня
-  double atr[];              // ширина уровня
+  double price[];  // цена уровня
+  double atr[];    // ширина уровня
  };
-
-// буферы уровней 
-bufferLevel buffers[10];     // буфер уровней
-
-// дополнительные переменные
-double lenClosestUp;         // расстояние до ближайшего уровня сверху
-double lenClosestDown;       // расстояние до ближайшего уровня снизу                 
+// объекты
+CTradeManager    *ctm;                                                   // указатель на объект торговой библиотеки
+static CisNewBar *isNewBar;                                              // для проверки формирования нового бара
+// хэндлы индикаторов 
+int handleSmydMACD;                                                      // хэндл индикатора ShowMeYourDivMACD
+int handle_PBI;                                                          // хэндл PriceBasedIndicator
+int handle_19Lines;                                                      // хэндл 19 Lines
+// переменные эксперта
+int    stopLoss;                                                         // переменная для хранения действительного стоп лосса
+double currentPrice;                                                     // текущая цена
+double lenClosestUp;                                                     // расстояние до ближайшего уровня сверху
+double lenClosestDown;                                                   // расстояние до ближайшего уровня снизу    
+// буферы 
+double signalBuffer[];                                                   // буфер для получения сигнала из индикатора smydMACD
+bufferLevel buffers[10];                                                 // буфер уровней
 
 int OnInit()
 {
- symbol = Symbol();
- period = Period();
- 
- historyDepth = 1000;
  // выделяем память под объект тороговой библиотеки
- isNewBar = new CisNewBar(symbol, period);
+ isNewBar = new CisNewBar(_Symbol, _Period);
  ctm = new CTradeManager(); 
- if (trailingType == TRAILING_TYPE_PBI)
- {
-  handle_PBI = iCustom(symbol, period, "PriceBasedIndicator", historyDepth, percentage_ATR, difToTrend);
-  if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+ handle_PBI = iCustom(_Symbol, _Period, "PriceBasedIndicator", 1000, 1, 1.5);
+ if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
   {
    Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
   }
- }
  
  handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines");     
  if (handle_19Lines == INVALID_HANDLE)
-   {
-    Print("Не удалось получить хэндл NineteenLines");
-   }    
- 
+  {
+   Print("Не удалось получить хэндл NineteenLines");
+  }    
  // создаем хэндл индикатора ShowMeYourDivMACD
- handleSmydMACD = iCustom (symbol,period,"smydMACD");   
-   
+ handleSmydMACD = iCustom (_Symbol,_Period,"smydMACD");   
  if ( handleSmydMACD == INVALID_HANDLE )
  {
   Print("Ошибка при инициализации эксперта ONODERA. Не удалось создать хэндл ShowMeYourDivMACD");
   return(INIT_FAILED);
- }
- // сохранение типов ордеров
- switch (pending_orders_type)  
- {
-  case USE_LIMIT_ORDERS: 
-   opBuy  = OP_BUYLIMIT;
-   opSell = OP_SELLLIMIT;
-   break;
-  case USE_STOP_ORDERS:
-   opBuy  = OP_BUYSTOP;
-   opSell = OP_SELLSTOP;
-   break;
-  case USE_NO_ORDERS:
-   opBuy  = OP_BUY;
-   opSell = OP_SELL;      
-   break;
- }          
+ }     
  return(INIT_SUCCEEDED);
 }
 
@@ -136,6 +86,8 @@ void OnDeinit(const int reason)
  delete ctm;
  // удаляем индикатор 
  IndicatorRelease(handleSmydMACD);
+ IndicatorRelease(handle_19Lines);
+ IndicatorRelease(handle_PBI);
 }
 
 void OnTick()
@@ -145,22 +97,17 @@ void OnTick()
  // если не удалось прогрузить буферы уровней
  if (!UploadBuffers())
   return;
- // выставляем переменную проверки копирования буфера сигналов в начальное значение
- copiedSmydMACD = -1;
  // если сформирован новый бар
  if (isNewBar.isNewBar() > 0)
   {
-   copiedSmydMACD = CopyBuffer(handleSmydMACD,1,0,1,signalBuffer);
-
-   if (copiedSmydMACD < 1)
+   if (CopyBuffer(handleSmydMACD,1,0,1,signalBuffer) < 1)
     {
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }   
- 
    if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
      { 
-      currentPrice = SymbolInfoDouble(symbol,SYMBOL_ASK);
+      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
       lenClosestDown = GetClosestLevel(SELL);
@@ -170,12 +117,12 @@ void OnTick()
           GreatDoubles(lenClosestUp, lenClosestDown*koLock) )
          {
           // то открываем позицию на BUY
-          ctm.OpenUniquePosition(symbol,period, opBuy, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
+          ctm.OpenUniquePosition(_Symbol,_Period, OP_BUY, Lot, stopLoss, TakeProfit, TRAILING_TYPE_PBI, minProfit, trStop, trStep, handle_PBI, priceDifference);        
          }
      }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
      {
-      currentPrice = SymbolInfoDouble(symbol,SYMBOL_BID);  
+      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
       lenClosestDown = GetClosestLevel(SELL);      
@@ -185,7 +132,7 @@ void OnTick()
           GreatDoubles(lenClosestDown, lenClosestUp*koLock) )
          {
           // то открываем позицию на SELL
-          ctm.OpenUniquePosition(symbol,period, opSell, Lot, stopLoss, TakeProfit, trailingType, minProfit, trStop, trStep, handle_PBI, priceDifference);        
+          ctm.OpenUniquePosition(_Symbol,_Period, OP_SELL, Lot, stopLoss, TakeProfit, TRAILING_TYPE_PBI, minProfit, trStop, trStep, handle_PBI, priceDifference);        
          }
      }
    }  
@@ -198,19 +145,19 @@ int CountStoploss(int point)
  double priceAB;
  double bufferStopLoss[];
  ArraySetAsSeries(bufferStopLoss, true);
- ArrayResize(bufferStopLoss, historyDepth);
+ ArrayResize(bufferStopLoss, 1000);
  
  int extrBufferNumber;
  if (point > 0)
  {
   extrBufferNumber = 6;
-  priceAB = SymbolInfoDouble(symbol, SYMBOL_ASK);
+  priceAB = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
   direction = 1;
  }
  else
  {
   extrBufferNumber = 5; // Если point > 0 возьмем буфер с минимумами, иначе с максимумами
-  priceAB = SymbolInfoDouble(symbol, SYMBOL_BID);
+  priceAB = SymbolInfoDouble(_Symbol, SYMBOL_BID);
   direction = -1;
  }
  
@@ -218,15 +165,14 @@ int CountStoploss(int point)
  for(int attempts = 0; attempts < 25; attempts++)
  {
   Sleep(100);
-  copiedPBI = CopyBuffer(handle_PBI, extrBufferNumber, 0,historyDepth, bufferStopLoss);
+  copiedPBI = CopyBuffer(handle_PBI, extrBufferNumber, 0,1000, bufferStopLoss);
  }
- if (copiedPBI < historyDepth)
+ if (copiedPBI < 1000)
  {
   PrintFormat("%s Не удалось скопировать буфер bufferStopLoss", MakeFunctionPrefix(__FUNCTION__));
   return(0);
  }
- 
- for(int i = 0; i < historyDepth; i++)
+ for(int i = 0; i < 1000; i++)
  {
   if (bufferStopLoss[i] > 0)
   {
@@ -237,20 +183,13 @@ int CountStoploss(int point)
    }
   }
  }
- // на случай сбоя матрицы, в которой мы живем, а возможно и не живем
- // возможно всё вокруг - это лишь результат работы моего больного воображения
- // так или иначе, мы не можем исключать, что stopLoss может быть отрицательным числом
- // хотя гарантировать, что он будет положительным не из-за сбоя матрицы, мы опять таки не можем
- // к чему вообще вся эта дискуссия, пойду напьюсь ;) 
  if (stopLoss <= 0)  
  {
   PrintFormat("Не поставили стоп на экстремуме");
-  stopLoss = SymbolInfoInteger(symbol, SYMBOL_SPREAD) + ADD_TO_STOPPLOSS;
+  stopLoss = SymbolInfoInteger(_Symbol, SYMBOL_SPREAD) + ADD_TO_STOPPLOSS;
  }
- //PrintFormat("%s StopLoss = %d",MakeFunctionPrefix(__FUNCTION__), stopLoss);
  return(stopLoss);
 }
-
 
 bool UploadBuffers ()   // получает последние значения уровней
  {
@@ -275,7 +214,6 @@ bool UploadBuffers ()   // получает последние значения уровней
    }
   return(true);     
  }
- 
  // возвращает ближайший уровень к текущей цене
  double GetClosestLevel (int direction) 
   {
@@ -284,7 +222,6 @@ bool UploadBuffers ()   // получает последние значения уровней
    double tmpLen; 
    int    index;
    int    savedInd;
-   
    switch (direction)
     {
      case BUY:  // ближний сверху
@@ -301,8 +238,6 @@ bool UploadBuffers ()   // получает последние значения уровней
            }  
          }
        }
-      // Print("BUY: ",DoubleToString(buffers[savedInd].price[0]-buffers[savedInd].atr[0]),
-        //     " LEN = ",DoubleToString(len));
      break;
      case SELL: // ближний снизу
       for (index=0;index<10;index++)
@@ -318,8 +253,6 @@ bool UploadBuffers ()   // получает последние значения уровней
             }
           }
        }     
-      // Print("SELL: ",DoubleToString(buffers[savedInd].price[0]+buffers[savedInd].atr[0]),
-       //      " LEN = ",DoubleToString(len) );
       break;
    }
    return (len);
