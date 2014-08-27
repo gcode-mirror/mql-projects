@@ -24,6 +24,8 @@ input int trailingStep = 5;
 
 CTradeManager ctm;       //торговый класс
 CisNewBar *isNewBar;
+SPositionInfo pos_info;
+STrailing trailing;
 
 int handle_pbi;
 double buffer_pbi[1];
@@ -37,6 +39,14 @@ int OnInit()
  isNewBar = new CisNewBar(_Symbol, _Period);
  handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
  
+ pos_info.volume = DEFAULT_VOLUME;
+ pos_info.expiration = 0;
+ 
+ trailing.trailingType = trailingType;
+ trailing.minProfit    = minProfit;
+ trailing.trailingStop = trailingStop;
+ trailing.trailingStep = trailingStep;
+ trailing.handlePBI    = handle_pbi;
  return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
@@ -55,7 +65,7 @@ void OnTick()
 {
  ctm.OnTick();
  ctm.DoTrailing();
- int sl, tp;
+ int diff;
  double slPrice;
  static int index_max = -1;
  static int index_min = -1;
@@ -84,17 +94,25 @@ void OnTick()
  {
   if(ctm.GetPositionCount() == 0)
   {
-   tp = 0; //(buffer_high[index_max] -  buffer_low[index_min])/Point();
+   pos_info.tp = 0;//(buffer_high[index_max] -  buffer_low[index_min])/Point();
    if(index_max < ALLOW_INTERVAL && bid > buffer_high[index_max] + stoplevel)
    {
-    sl = (bid - buffer_high[index_max])/Point();
-    ctm.OpenUniquePosition(_Symbol, _Period, OP_SELLSTOP, DEFAULT_VOLUME, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handle_pbi, sl);
+    diff = (bid - buffer_high[index_max])/Point();
+    pos_info.type = OP_SELLSTOP;
+    pos_info.sl = diff;
+    pos_info.priceDifference = diff;
+    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
+    //ctm.OpenUniquePosition(_Symbol, _Period, OP_SELLSTOP, DEFAULT_VOLUME, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handle_pbi, sl);
    }
    
    if(index_min < ALLOW_INTERVAL && ask < buffer_low[index_min] - stoplevel)
    {
-    sl = ( buffer_low[index_min] - ask)/Point();
-    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUYSTOP, DEFAULT_VOLUME, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handle_pbi, sl);
+    diff = ( buffer_low[index_min] - ask)/Point();
+    pos_info.type = OP_BUYSTOP;
+    pos_info.sl = diff;
+    pos_info.priceDifference = diff;
+    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
+    //ctm.OpenUniquePosition(_Symbol, _Period, OP_BUYSTOP, DEFAULT_VOLUME, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handle_pbi, sl);
    }
   }
   else

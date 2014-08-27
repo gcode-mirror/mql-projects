@@ -22,7 +22,6 @@
 
 // входные параметры
 sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
-input  int    StopLoss                             = 0;                  // Стоп Лосс
 input  int    TakeProfit                           = 0;                  // Тейк Профит
 input  double Lot                                  = 1;                  // Лот                
 input  int    priceDifference                      = 50;                 // Price Difference
@@ -40,6 +39,8 @@ struct bufferLevel
 // объекты
 CTradeManager    *ctm;                                                   // указатель на объект торговой библиотеки
 static CisNewBar *isNewBar;                                              // для проверки формирования нового бара
+SPositionInfo pos_info;
+STrailing trailing;
 // хэндлы индикаторов 
 int handleSmydMACD;                                                      // хэндл индикатора ShowMeYourDivMACD
 int handle_PBI;                                                          // хэндл PriceBasedIndicator
@@ -74,6 +75,17 @@ int OnInit()
  if ( handleSmydMACD == INVALID_HANDLE )
  {
   Print("Ошибка при инициализации эксперта ONODERA. Не удалось создать хэндл ShowMeYourDivMACD");
+ 
+ pos_info.tp = TakeProfit;
+ pos_info.volume = Lot;
+ pos_info.expiration = 0;
+ pos_info.priceDifference = priceDifference;
+  
+ trailing.trailingType = TRAILING_TYPE_PBI;
+ trailing.minProfit    = minProfit;
+ trailing.trailingStop = trStop;
+ trailing.trailingStep = trStep;
+ trailing.handlePBI    = handle_PBI;
   return(INIT_FAILED);
  }     
  return(INIT_SUCCEEDED);
@@ -117,7 +129,9 @@ void OnTick()
           GreatDoubles(lenClosestUp, lenClosestDown*koLock) )
          {
           // то открываем позицию на BUY
-          ctm.OpenUniquePosition(_Symbol,_Period, OP_BUY, Lot, stopLoss, TakeProfit, TRAILING_TYPE_PBI, minProfit, trStop, trStep, handle_PBI, priceDifference);        
+          pos_info.type = OP_BUY;
+          pos_info.sl = stopLoss;
+          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing);        
          }
      }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
@@ -132,7 +146,9 @@ void OnTick()
           GreatDoubles(lenClosestDown, lenClosestUp*koLock) )
          {
           // то открываем позицию на SELL
-          ctm.OpenUniquePosition(_Symbol,_Period, OP_SELL, Lot, stopLoss, TakeProfit, TRAILING_TYPE_PBI, minProfit, trStop, trStep, handle_PBI, priceDifference);        
+          pos_info.type = OP_SELL;
+          pos_info.sl = stopLoss;
+          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing);        
          }
      }
    }  

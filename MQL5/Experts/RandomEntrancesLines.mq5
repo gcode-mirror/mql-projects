@@ -52,6 +52,8 @@ struct bufferLevel
 // буферы уровней 
 bufferLevel buffers[20];
 
+SPositionInfo pos_info;
+STrailing trailing;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -105,7 +107,17 @@ int OnInit()
    {
     PrintFormat("aDeg[%d] = %.02f", i, aDeg[i]);
    }
-         
+   
+   pos_info.tp = 0;
+   pos_info.expiration = 0;
+   pos_info.priceDifference = 0;
+  
+   trailing.trailingType = trailingType;
+   trailing.minProfit    = minProfit;
+   trailing.trailingStop = trStop;
+   trailing.trailingStep = trStep;
+   trailing.handlePBI    = handle_PBI;
+   
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -134,13 +146,12 @@ void OnTick()
    count = 1;
    rnd = (double)MathRand()/32767;
   
-   ENUM_TM_POSITION_TYPE operation;
    if ( GreatDoubles(rnd,0.5,5) )
    {
    // Comment("СНИЗУ = ",DoubleToString(GetClosestLevel(-1))," СВЕРХУ = ",DoubleToString(GetClosestLevel(1)));
     if (GetClosestLevel(-1) <= levelsKo*GetClosestLevel(1) )
      return;   
-    operation = OP_SELL;
+    pos_info.type = OP_SELL;
     stoploss = CountStoploss(-1);
    } 
    else
@@ -148,10 +159,12 @@ void OnTick()
    // Comment("СНИЗУ = ",DoubleToString(GetClosestLevel(-1))," СВЕРХУ = ",DoubleToString(GetClosestLevel(1)));   
     if (GetClosestLevel(1) <= levelsKo*GetClosestLevel(-1) )
      return;   
-    operation = OP_BUY;
+    pos_info.type = OP_BUY;
     stoploss = CountStoploss(1);
    }
-   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, MathMax(stoploss, 0), 0, trailingType,minProfit, trStop, trStep, handle_PBI);
+   pos_info.volume = lot;
+   pos_info.sl = MathMax(stoploss, 0);
+   ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing);
   }
 
   // если есть открытая позиция

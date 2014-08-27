@@ -62,7 +62,8 @@ struct bufferLevel         // структура уровней
 };
 bufferLevel buffers[20];   // буферы уровней
 
-
+SPositionInfo pos_info;
+STrailing trailing;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -104,6 +105,16 @@ int OnInit()
    ArraySetAsSeries(ave_atr_buf, false);
    ArraySetAsSeries(close_buf, false);
    ArraySetAsSeries(open_buf, false);
+   
+   pos_info.volume = DEFAULT_LOT;
+   pos_info.expiration = 0;
+   pos_info.priceDifference = priceDifference;
+   
+   trailing.trailingType = trailingType;
+   trailing.minProfit    = minProfit;
+   trailing.trailingStop = trailingStop;
+   trailing.trailingStep = trailingStep;
+   trailing.handlePBI    = handle_PBI;
  
    return(0);
   }
@@ -196,10 +207,10 @@ bool CheckHugeBar(ENUM_TIMEFRAMES tf, int handle_atr)
  {
   double point = SymbolInfoDouble(symbol, SYMBOL_POINT);
   int digits  = SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-  double vol=MathPow(10.0, digits); 
+  double vol = MathPow(10.0, digits); 
   if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
   {  
-   pos_type = opSell;
+   pos_info.type = opSell;
    stopLoss = CountStoploss(-1);
    if(pbi_buf[0] == MOVE_TYPE_TREND_UP || pbi_buf[0] == MOVE_TYPE_TREND_UP_FORBIDEN ||
       GetClosestLevel(-1) <= levelsKo*GetClosestLevel(1))
@@ -207,15 +218,16 @@ bool CheckHugeBar(ENUM_TIMEFRAMES tf, int handle_atr)
   }
   if(GreatDoubles(close_buf[0], open_buf[0]))
   { 
-   pos_type = opBuy;
+   pos_info.type = opBuy;
    stopLoss = CountStoploss(1);
    if(pbi_buf[0] == MOVE_TYPE_TREND_DOWN || pbi_buf[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN ||
       GetClosestLevel(1) <= levelsKo*GetClosestLevel(-1))
     return(false);
   }
-  takeProfit = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
-  PrintFormat("%s открыта позиция %d sl:%f tp:%f", EnumToString((ENUM_TIMEFRAMES)tf), pos_type, stopLoss, takeProfit);  
-  ctm.OpenUniquePosition(symbol, timeframe, pos_type, DEFAULT_LOT, stopLoss, takeProfit, trailingType, minProfit, trailingStop, trailingStep, priceDifference);
+  pos_info.tp = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
+  pos_info.sl = stopLoss;
+  ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing);
+  PrintFormat("%s открыта позиция %d sl:%f tp:%f", EnumToString((ENUM_TIMEFRAMES)tf), pos_type, stopLoss, takeProfit); 
  }
  ArrayInitialize(ave_atr_buf, EMPTY_VALUE);
  ArrayInitialize(  close_buf, EMPTY_VALUE);
