@@ -38,6 +38,7 @@ input string addParam = "";                        // Ќастройки
 input bool   useMultiFill=true;                    // »спользовать доливки при переходе на старш. период
 input int    pbiDepth = 1000;                      // глубина вычислени€ индикатора PBI
 input int    addToStopLoss = 50;                   // прибавка пунктов к начальному стоп лоссу 
+
 // хэндлы индикатора SmydMACD
 int handleSmydMACD_M5;                             // хэндл индикатора расхождений MACD на минутке
 int handleSmydMACD_M15;                            // хэндл индикатора расхождений MACD на 15 минутах
@@ -89,6 +90,9 @@ double           lotReal;                          // действительный лот
 ENUM_TENDENTION  lastTendention;                   // переменна€ дл€ хранени€ последней тенденции
 // флаги пробити€ экстремумов дл€ получени€ сигнала
 bool             M5,M15,H1;
+                           
+SPositionInfo pos_info;
+STrailing trailing;                           
                            
 int OnInit()
   {
@@ -152,6 +156,17 @@ int OnInit()
    ArrayInitialize(extrHighBeaten,false);
    ArrayInitialize(extrLowBeaten,false);   
    lotReal = lot;
+   
+   pos_info.tp = 0;
+   pos_info.volume = lotReal;
+   pos_info.expiration = 0;
+   pos_info.priceDifference = 0;
+ 
+   trailing.trailingType = TRAILING_TYPE_EXTREMUMS;
+   trailing.minProfit    = 0;
+   trailing.trailingStop = 0;
+   trailing.trailingStep = 0;
+   trailing.handlePBI    = 0;
    return(INIT_SUCCEEDED);
   }
 void OnDeinit(const int reason)
@@ -267,19 +282,19 @@ void OnTick()
    if (H1 && lastTrendH1==-1 )
     {
      Comment("ѕробит H1");    
-     return;
+   //  return;
     }
    // если пробит верхний экстремум на M15, но последний тренд на M15 в противоположную сторону      
    if (M15 && lastTrendM15==-1 )
     {
      Comment("ѕробит M15");    
-     return;
+   //  return;
     }
    // если пробит верхний экстремум на M5, но последний тренд на M5 в противоположную сторону      
    if (M5 && lastTrendM5==-1 )
     {
-     Comment("ѕробит M5");     
-     return;
+    Comment("ѕробит M5");     
+   //  return;
     }
        
    // если спред не превышает заданное число пунктов
@@ -303,7 +318,9 @@ void OnTick()
     // вычисл€ем стоп лосс
     stopLoss = GetStopLoss();             
     // открываем позицию на BUY
-    ctm.OpenUniquePosition(_Symbol, _Period, OP_BUY, lotReal, stopLoss, 0, TRAILING_TYPE_EXTREMUMS);
+    pos_info.type = OP_BUY;
+    pos_info.sl = stopLoss;
+    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
    }
   }
  }
@@ -319,19 +336,19 @@ void OnTick()
    if (H1 && lastTrendH1==1 )
     {
      Comment("ѕробит H1");
-     return;
+  //   return;
     }
    // если пробит нижний экстремум на M15, но последний тренд на M15 в противоположную сторону      
    if (M15 && lastTrendM15==1 )
     {
      Comment("ѕробит M15");    
-     return;
+   //  return;
     }
    // если пробит нижний экстремум на M5, но последний тренд на M5 в противоположную сторону      
    if (M5 && lastTrendM5==1 )
     {
      Comment("ѕробит M5");    
-     return;
+   //  return;
     }              
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
@@ -355,7 +372,9 @@ void OnTick()
    // вычисл€ем стоп лосс
    stopLoss = GetStopLoss();    
    // открываем позицию на SELL
-   ctm.OpenUniquePosition(_Symbol, _Period, OP_SELL, lotReal, stopLoss, 0,TRAILING_TYPE_EXTREMUMS);
+   pos_info.type = OP_SELL;
+   pos_info.sl = stopLoss;
+   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
   }
  } 
 }

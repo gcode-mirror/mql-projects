@@ -168,7 +168,7 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
 //+------------------------------------------------------------------+
 bool CLog::CreateLogFile(datetime dt)
 {
- int error=0;
+ int error = 0;
  _current_filename = MakeLogFilename(dt);
  int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_TXT|FILE_COMMON);
  

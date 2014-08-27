@@ -124,8 +124,8 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
   {
    newSL = openPrice*point;                                                  // переносим СЛ в безубыток 
   }
-  if (GreatDoubles(direction*openPrice, direction*price + minProfit*point)
-     && GreatDoubles(direction*sl, direction*price + (trailingStop+trailingStep-1)*point) || sl == 0)
+  if ((GreatDoubles(direction*openPrice, direction*price + minProfit*point)
+     && GreatDoubles(direction*sl, direction*price + (trailingStop+trailingStep-1)*point)) || sl == 0)
   {
    newSL = NormalizeDouble(price + direction*trailingStop*point, digits);
   }
@@ -138,32 +138,39 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
 //+------------------------------------------------------------------+
 double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI)
 {
- int errcolors = CopyBuffer(handle_PBI, 4, 0, DEPTH_PBI, PBI_colors);
- int errextrems, direction;
+ int buffer_num;
+ int direction;
  int mainTrend, forbidenTrend;
  
  //GetTopTimeframe(timeframe
  
- if (type == OP_SELL)
+ switch(type)
  {
-  //Print("PBI_Trailing, позиция СЕЛЛ, тип движения ", PBI_colors[0]);
-  errextrems = CopyBuffer(handle_PBI, 5, 0, DEPTH_PBI, PBI_Extrems); // Копируем максимумы
-  direction = 1;
-  mainTrend = 3;
-  forbidenTrend = 4;
+  case OP_SELL:
+   //Print("PBI_Trailing, позиция СЕЛЛ, тип движения ", PBI_colors[0]);
+   buffer_num = 5; // номер буфера максимумов
+   direction = 1;
+   mainTrend = 3;
+   forbidenTrend = 4;
+   break;
+  case OP_BUY:
+   //Print("PBI_Trailing, позиция БАЙ, тип движения ", PBI_colors[0]);
+   buffer_num = 6; // номер буферов минимумов
+   direction = -1;
+   mainTrend = 1;
+   forbidenTrend = 2;
+   break;
+  default:
+   log_file.Write(LOG_DEBUG, StringFormat("%s Неверный тип позиции для трейлинга %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type)));
+   return(0.0);
  }
- if (type == OP_BUY)
- {
-  //Print("PBI_Trailing, позиция БАЙ, тип движения ", PBI_colors[0]);
-  errextrems = CopyBuffer(handle_PBI, 6, 0, DEPTH_PBI, PBI_Extrems); // Копируем минимумы
-  direction = -1;
-  mainTrend = 1;
-  forbidenTrend = 2;
- }
- if(errcolors < 0 || errextrems < 0)
+ 
+ int errcolors = CopyBuffer(handle_PBI, 4, 0, DEPTH_PBI, PBI_colors);
+ int errextrems = CopyBuffer(handle_PBI, buffer_num, 0, DEPTH_PBI, PBI_Extrems);
+ if(errcolors < DEPTH_PBI || errextrems < DEPTH_PBI)
  {
   //PrintFormat("%s Не удалось скопировать данные из индикаторного буфера", MakeFunctionPrefix(__FUNCTION__)); 
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось скопировать данные из индикаторного буфера", MakeFunctionPrefix(__FUNCTION__)));     
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось скопировать данные из индикаторного буфера. Errcolors = %d(%d); Errextrems = %d(%d);", MakeFunctionPrefix(__FUNCTION__), errcolors, DEPTH_PBI, errextrems, DEPTH_PBI));     
   return(0.0); 
  }
  
@@ -189,7 +196,6 @@ double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int han
  if (newExtr > 0 && GreatDoubles(direction * sl, direction * (newExtr + direction * 50.0*Point()), 5))
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s currentMoving = %s, extremum_from_last_coor_or_trend = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[index]), sl, (newExtr + direction*50.0*Point())) );
- 
   return (newExtr + direction*50.0*Point());
  }
  return(0.0);

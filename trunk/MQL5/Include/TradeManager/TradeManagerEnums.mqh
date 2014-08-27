@@ -101,12 +101,12 @@ enum ENUM_POSITION_STATUS
    POSITION_STATUS_PENDING,
    POSITION_STATUS_CLOSED,
    POSITION_STATUS_DELETED,
-   POSITION_STATUS_NOT_DELETED,
-   POSITION_STATUS_NOT_CHANGED,
-   POSITION_STATUS_NOT_INITIALISED,
-   POSITION_STATUS_NOT_COMPLETE,      //не смогли установить стоп-лосс или тейк-профит  
-   POSITION_STATUS_MUST_BE_REPLAYED,  //позиция должна отыграться
-   POSITION_STATUS_READY_TO_REPLAY,   //позиция готова к отыгрышу
+   POSITION_STATUS_NOT_DELETED,       
+   POSITION_STATUS_NOT_CHANGED,       // не удалось изменить стоплосс при изменении объема позиции
+   POSITION_STATUS_NOT_INITIALISED,   // объект позиции существует, но реальной позиции нет
+   POSITION_STATUS_NOT_COMPLETE,      // не смогли установить стоп-лосс или тейк-профит  
+   POSITION_STATUS_MUST_BE_REPLAYED,  // позиция должна отыграться
+   POSITION_STATUS_READY_TO_REPLAY,   // позиция готова к отыгрышу
    POSITION_STATUS_ON_REPLAY
   };
 //+------------------------------------------------------------------+
@@ -140,21 +140,6 @@ ENUM_POSITION_STATUS StringToPositionStatus(string posStatus)
    if(posStatus=="closed") return(POSITION_STATUS_CLOSED);
    if(posStatus=="deleted")return(POSITION_STATUS_DELETED);
    return(POSITION_STATUS_NOT_INITIALISED);
-  }
-  
-//+------------------------------------------------------------------+
-/// Returns string description of ENUM_VIRTUAL_ORDER_TYPE.                                                                 
-/// \param [in]      ENUM_VIRTUAL_ORDER_TYPE VirtualOrderType
-/// \return string   description of VirtualOrderType
-//+------------------------------------------------------------------+
-string PositionTypeToStr(ENUM_POSITION_TYPE enumPositionType)
-  {
-   switch(enumPositionType)
-     {
-      case POSITION_TYPE_BUY: return("position buy");
-      case POSITION_TYPE_SELL: return("position sell");
-      default: return("Error: unknown position type "+(string)enumPositionType);
-     }
   }
 
 //+------------------------------------------------------------------+
@@ -276,4 +261,31 @@ class ReplayPos
   ENUM_POSITION_STATUS status; //статус позиции
   ENUM_TM_POSITION_TYPE type;  //тип позиции
 };
+
+//+------------------------------------------------------------------+
+/// Структура информации по позиции
+//+------------------------------------------------------------------+
+struct SPositionInfo
+{
+ ENUM_TM_POSITION_TYPE type;   // тип позиции/ордера
+ double volume;                // объем позиции/ордера
+ int sl;                       // стоплосс в пунктах
+ int tp;                       // тейкпрофит
+ int priceDifference;          // отличие от цены для отложенных ордеров в пунктах
+ int expiration;               // время жизни отложенного ордера в барах (0 - живет до тех пор пока сами не удалим)
+ datetime expiration_time;     // время окончания жизни отложенного ордера(вычисляется в конструкторе CPosition)
+};
+
+//+------------------------------------------------------------------+
+/// Структура свойств трейлинга
+//+------------------------------------------------------------------+
+struct STrailing
+{
+ ENUM_TRAILING_TYPE trailingType;
+ int minProfit;
+ int trailingStop;
+ int trailingStep;
+ int handlePBI;
+};
+
 

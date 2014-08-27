@@ -237,7 +237,17 @@ void ReplayPosition::CustomPosition()
     sl = MathMax(SymbolInfoInteger(symbol, SYMBOL_TRADE_STOPS_LEVEL), (profit/_Point));
     int trailParam = ATR_buf[0]*_ATRforTrailing/_Point;
     
-    if (ctm.OpenMultiPosition(symbol, PERIOD_H1, pos.getType(), pos.getVolume(), sl, tp, _trailingType, trailParam, trailParam, trailParam)) //открываем позицию
+    SPositionInfo pos_info = pos.getPositionInfo();
+    pos_info.sl = sl;
+    pos_info.tp = tp;
+    STrailing trailing;
+    trailing.trailingType = _trailingType;
+    trailing.minProfit = trailParam;
+    trailing.trailingStop = trailParam;
+    trailing.trailingStep = trailParam;
+    trailing.handlePBI = 0;
+    
+    if (ctm.OpenMultiPosition(symbol, PERIOD_H1, pos_info, trailing)) //открываем позицию
     {
      log_file.Write(LOG_DEBUG, StringFormat("%s Открыли позицию для отыгрыша type=%s, profit=%.05f, sl=%d, tp=%d",MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos.getType()), NormalizeDouble((profit/_Point), SymbolInfoInteger(symbol, SYMBOL_DIGITS)), sl, tp) );
      pos.setPositionStatus(POSITION_STATUS_ON_REPLAY);

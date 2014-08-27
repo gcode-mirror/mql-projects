@@ -181,7 +181,7 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
   return (true);
  }
  
- //Начало коррекции вниз если цена предыдущего бара закрытия меньше цены открытия 
+ //Начало коррекции вниз если цена закрытия предыдущего бара меньше цены открытия 
  if ((enumMoveType[bar-1] == MOVE_TYPE_TREND_UP || enumMoveType[bar-1] == MOVE_TYPE_TREND_UP_FORBIDEN) &&
      (enumMoveType[bar]   == MOVE_TYPE_TREND_UP || enumMoveType[bar]   == MOVE_TYPE_TREND_UP_FORBIDEN) &&
      previous_move_type != MOVE_TYPE_FLAT)

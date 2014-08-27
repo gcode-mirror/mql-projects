@@ -58,6 +58,9 @@ int stoploss=0;
 
 double lowVolumeValue;       // размер пониженного лота 
 bool   flagNotLow = true;    // флаг НЕ уменьшения объема
+
+SPositionInfo pos_info;
+STrailing trailing;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -111,7 +114,17 @@ int OnInit()
    {
     PrintFormat("aDeg[%d] = %.02f", i, aDeg[i]);
    }
-   currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);  // сохраняем текущую цену      
+   currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);  // сохраняем текущую цену 
+   
+   pos_info.tp = 0;
+   pos_info.expiration = 0;
+   pos_info.priceDifference = 0;
+  
+   trailing.trailingType = trailingType;
+   trailing.minProfit    = minProfit;
+   trailing.trailingStop = trStop;
+   trailing.trailingStep = trStep;
+   trailing.handlePBI    = handle_PBI;     
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -142,20 +155,21 @@ void OnTick()
    lot = aDeg[0];
    count = 1;
    rnd = (double)MathRand()/32767;
-   ENUM_TM_POSITION_TYPE operation;
    if ( GreatDoubles(rnd,0.5,5) )
    {
-    operation = OP_SELL;
+    pos_info.type = OP_SELL;
     stoploss = CountStoploss(-1);
    } 
    else
    {
-    operation = OP_BUY;
+    pos_info.type = OP_BUY;
     stoploss = CountStoploss(1);
    }
    lowVolumeValue = lot - sizeLow;  // размер уменьешенного лота
    flagNotLow = true;
-   ctm.OpenUniquePosition(symbol, timeframe, operation, lot, MathMax(stoploss, 0), 0, trailingType,minProfit, trStop, trStep, handle_PBI);
+   pos_info.volume = lot;
+   pos_info.sl = MathMax(stoploss, 0);
+   ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing);
   }
 
   // если есть открытая позиция
