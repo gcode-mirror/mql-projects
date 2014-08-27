@@ -97,6 +97,7 @@ int OnInit()
    handleSmydMACD_M15 = iCustom(_Symbol,PERIOD_M15,"smydMACD","");    
    handleSmydMACD_H1  = iCustom(_Symbol,PERIOD_H1,"smydMACD","");   
 
+   //iCustom(_Symbol,_Period,"NineteenLines");  
           
    if (handleSmydMACD_M5  == INVALID_HANDLE || handleSmydMACD_M15 == INVALID_HANDLE || handleSmydMACD_H1 == INVALID_HANDLE)
     {
@@ -104,11 +105,11 @@ int OnInit()
      return (INIT_FAILED);
     }      
    // пытаемся инициализировать хэндл PriceBasedIndicator
-   handlePBI_M1  = iCustom(_Symbol,PERIOD_M1,"PriceBasedIndicator");
+   //handlePBI_M1  = iCustom(_Symbol,PERIOD_M1,"PriceBasedIndicator");
    handlePBI_M5  = iCustom(_Symbol,PERIOD_M5,"PriceBasedIndicator");
    handlePBI_M15 = iCustom(_Symbol,PERIOD_M15,"PriceBasedIndicator");    
    handlePBI_H1  = iCustom(_Symbol,PERIOD_H1,"PriceBasedIndicator");   
-   if (handlePBI_M1 == INVALID_HANDLE || handlePBI_M5 == INVALID_HANDLE || 
+   if (/*handlePBI_M1 == INVALID_HANDLE ||*/ handlePBI_M5 == INVALID_HANDLE || 
        handlePBI_M15 == INVALID_HANDLE || handlePBI_H1 == INVALID_HANDLE)
     {
      Print("Ошибка при иниализации эксперта SimpleTrend. Не удалось создать хэндл индикатора PriceBasedIndicator");
