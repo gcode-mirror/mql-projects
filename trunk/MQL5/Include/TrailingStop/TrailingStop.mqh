@@ -239,7 +239,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
            if ( GreatDoubles(currentPriceBid-lastExtrLow,stopLevel) )
              {
                // если новый стоп лосс больше предыдущего и мы в безубытке
-               if ( GreatDoubles(lastExtrLow,sl) && GreatDoubles(lastExtrLow,priceOpen) )
+               if ( GreatDoubles(lastExtrLow,sl) /*&& GreatDoubles(lastExtrLow,priceOpen)*/ )
                   stopLoss = lastExtrLow;        
              }
           else
@@ -266,7 +266,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
            if ( GreatDoubles(lastExtrHigh - currentPriceAsk,stopLevel) )
              {             
                // если новый стоп лосс меньше предыдущего и мы в безубытке
-               if ( LessDoubles(lastExtrHigh,sl) && LessDoubles(lastExtrHigh,priceOpen) )
+               if ( LessDoubles(lastExtrHigh,sl) /*&& LessDoubles(lastExtrHigh,priceOpen)*/ )
                   stopLoss = lastExtrHigh;        
              }
           else
