@@ -6,7 +6,7 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #include <Graph\Objects\Panel.mqh>  //подключаем библиотеку панели
-#include <TradeManager\TMPCTM.mqh>  //подключаем торговую библиотеку 
+#include <MiniTradeManager\TMPCTM.mqh>  //подключаем торговую библиотеку 
 //+------------------------------------------------------------------+
 //| Торговый виджет                                                  |
 //+------------------------------------------------------------------+
@@ -37,6 +37,8 @@
     void   ShowPanel (){_wTradeWidget.ShowPanel();};  // отображает панель на графике
     void   OnTick();                                  // для обновления данных на панели
     void   Action(string sparam);                     // действия панели
+    void   MoveTo (long lparam,
+                   double dparam);                    // перемещает виджет на графике         
     
     // конструктор класса виджета
     WTradeWidget (
@@ -270,7 +272,7 @@
                        );            
         }
      }        
-    if (sparam == _name+"_delete_orders")
+    if (sparam == _name+"_subPanel_delete_orders")
      {
       Print("Удаляем ордера");
       if ( !_ctm.DeleteAllOrders() )
@@ -278,4 +280,11 @@
      }
    }
     
-  
+  void WTradeWidget::MoveTo(long lparam,double dparam)
+   {
+    datetime md;
+    double   mp;
+   // ChartXYToTimePrice(0,(int)lparam,(int)dparam,_sub_window,md,mp);
+    _subPanel.MoveTo((int)lparam,(int)dparam);
+    
+   }

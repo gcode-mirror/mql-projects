@@ -36,13 +36,14 @@ input int    lotCount = 3;                         // количество доливок
 input int    spread   = 30;                        // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input string addParam = "";                        // Настройки
 input bool   useMultiFill=true;                    // Использовать доливки при переходе на старш. период
-input int    pbiDepth = 1000;                       // глубина вычисления индикатора PBI
-
+input int    pbiDepth = 1000;                      // глубина вычисления индикатора PBI
+input int    addToStopLoss = 50;                   // прибавка пунктов к начальному стоп лоссу 
 // хэндлы индикатора SmydMACD
 int handleSmydMACD_M5;                             // хэндл индикатора расхождений MACD на минутке
 int handleSmydMACD_M15;                            // хэндл индикатора расхождений MACD на 15 минутах
 int handleSmydMACD_H1;                             // хэндл индикатора расхождений MACD на часовике
 // хэндлы Price Based Indicator
+int handlePBI_M1;                                  // хэндл PriceBasedIndicator M1
 int handlePBI_M5;                                  // хэндл PriceBasedIndicator M5
 int handlePBI_M15;                                 // хэндл PriceBasedIndicator M15
 int handlePBI_H1;                                  // хэндл PriceBasedIndicator MH1
@@ -103,10 +104,12 @@ int OnInit()
      return (INIT_FAILED);
     }      
    // пытаемся инициализировать хэндл PriceBasedIndicator
+   handlePBI_M1  = iCustom(_Symbol,PERIOD_M1,"PriceBasedIndicator");
    handlePBI_M5  = iCustom(_Symbol,PERIOD_M5,"PriceBasedIndicator");
    handlePBI_M15 = iCustom(_Symbol,PERIOD_M15,"PriceBasedIndicator");    
    handlePBI_H1  = iCustom(_Symbol,PERIOD_H1,"PriceBasedIndicator");   
-   if (handlePBI_M5 == INVALID_HANDLE || handlePBI_M15 == INVALID_HANDLE || handlePBI_H1 == INVALID_HANDLE)
+   if (handlePBI_M1 == INVALID_HANDLE || handlePBI_M5 == INVALID_HANDLE || 
+       handlePBI_M15 == INVALID_HANDLE || handlePBI_H1 == INVALID_HANDLE)
     {
      Print("Ошибка при иниализации эксперта SimpleTrend. Не удалось создать хэндл индикатора PriceBasedIndicator");
      return (INIT_FAILED);
@@ -473,15 +476,15 @@ int GetStopLoss()     // вычисляет стоп лосс
   case BUY:
    slValue = curPriceBid - blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price; 
    if ( GreatDoubles(slValue,stopLevel) )
-    return ( slValue/_Point );
+    return ( (slValue/_Point)+addToStopLoss );
    else
-    return ( (stopLevel+0.0001)/_Point );
+    return ( ((stopLevel+0.0001)/_Point)+addToStopLoss );
   case SELL:
    slValue = blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk;
    if ( GreatDoubles(slValue,stopLevel) )
-    return ( slValue/_Point );     
+    return ( (slValue/_Point)+addToStopLoss );     
    else
-    return ( (stopLevel+0.0001)/_Point );     
+    return ( ((stopLevel+0.0001)/_Point)+addToStopLoss );     
  }
  return (0.0);
 }

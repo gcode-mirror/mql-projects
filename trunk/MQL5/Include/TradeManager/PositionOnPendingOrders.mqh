@@ -781,6 +781,7 @@ bool CPosition::ReadFromFile(int  handle)
 //+------------------------------------------------------------------+
 //| Удалить отложенный ордер
 //+------------------------------------------------------------------+
+
 ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
 {
  if (_pos_status == POSITION_STATUS_PENDING || _pos_status == POSITION_STATUS_NOT_DELETED)
