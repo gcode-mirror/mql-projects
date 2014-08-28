@@ -13,10 +13,10 @@
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 16
-#define DEFAULT_VOLUME 1
 //+------------------------------------------------------------------+
 //| Expert parametrs                                                 |
 //+------------------------------------------------------------------+
+input double volume = 0.1;
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 input int minProfit = 250;
 input int trailingStop = 150;
@@ -39,7 +39,7 @@ int OnInit()
  isNewBar = new CisNewBar(_Symbol, _Period);
  handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
  
- pos_info.volume = DEFAULT_VOLUME;
+ pos_info.volume = volume;
  pos_info.expiration = 0;
  
  trailing.trailingType = trailingType;
