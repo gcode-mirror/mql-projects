@@ -325,18 +325,19 @@ bool CPosition::ChangeSize(double additionalVolume)
  if (additionalVolume < 0) type = type + MathPow(-1, type);
  double openPrice = OpenPriceByType(type);
  _posAveragePrice = (_pos_info.volume*_posAveragePrice + additionalVolume*openPrice)/(_pos_info.volume + additionalVolume);
- 
+  string orderComment = StringFormat("%s_%s", StringSubstr(MQL5InfoString(MQL5_PROGRAM_NAME), 0, 27), log_file.PeriodString());
+  
  if (type == OP_BUY || type == OP_SELL)
  {
   //PrintFormat("%s Текущий тип = %s, Отправляем ордер типа = %s, объем ордера = %.02f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(this.getType()), GetNameOP(type), additionalVolume);
-  if(trade.PositionOpen(_symbol, PositionType(type), MathAbs(additionalVolume), openPrice))
+  if(trade.PositionOpen(_symbol, PositionType(type), MathAbs(additionalVolume), openPrice, 0, 0, orderComment))
   {
    _pos_info.volume += additionalVolume;
    //PrintFormat("%s новый объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _lots);
    if (_pos_info.volume < 0)
    {
     _pos_info.type = (ENUM_TM_POSITION_TYPE)(_pos_info.type + MathPow(-1, _pos_info.type));
-    _pos_info.volume *= -1;
+    _pos_info.volume = MathAbs(_pos_info.volume);
     //PrintFormat("%s Позиция была перевернута, новый тип = %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(this.getType()));
     log_file.Write(LOG_DEBUG, StringFormat("%s Позиция была перевернута, новый тип = %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(this.getType()) ));      
    }
@@ -560,7 +561,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
  //формируем комментарий
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);
- string orderComment = StringFormat("%s_%d%02d%02d",log_file.MakeExpertNameBase(),mdt.year,mdt.mon,mdt.day);
+ string orderComment = StringFormat("%s_%s", StringSubstr(MQL5InfoString(MQL5_PROGRAM_NAME), 0, 27), log_file.PeriodString());
  
  switch(_pos_info.type)
  {

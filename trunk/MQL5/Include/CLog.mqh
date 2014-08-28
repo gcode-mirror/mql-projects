@@ -229,7 +229,7 @@ string CLog::MakeExpertNameBase()
 //+------------------------------------------------------------------+
 string CLog::MakeLogFilenameBase()
   {
-   string strName=MQL5InfoString(MQL5_PROGRAM_NAME);
+   string strName = MQL5InfoString(MQL5_PROGRAM_NAME);
    return(StringFormat("%s\\%s\\%s_%s_%s", strName, _catalog_name, strName,StringSubstr(_Symbol,0,6),PeriodString()));
   }
 //+------------------------------------------------------------------+

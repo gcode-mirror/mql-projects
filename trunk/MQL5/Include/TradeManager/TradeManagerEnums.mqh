@@ -131,6 +131,7 @@ string PositionStatusToStr(ENUM_POSITION_STATUS enumPositionStatus)
       default: return("Error: unknown virtual order status "+(string)enumPositionStatus);
      }
   }
+  
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+

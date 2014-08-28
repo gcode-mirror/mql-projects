@@ -34,8 +34,8 @@ protected:
   CExtremum *extremums;
   SExtremum lastOnTrend;       // последний экстремум текущего тренда
   SExtremum firstOnTrend;      // цена начала тренда и его направление  
-  double _difToTrend;     // ¬о столько раз новый бар должен превышать предыдущий экстремум, что бы началс€ тренд.
-  int _depth;            //  оличество баров дл€ расчета индикатора 
+  double _difToTrend;          // ¬о столько раз новый бар должен превышать предыдущий экстремум, что бы началс€ тренд.
+  int _depth;                  //  оличество баров дл€ расчета индикатора 
   int ATR_handle;
   double buffer_ATR[];
   MqlRates buffer_Rates[];
