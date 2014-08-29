@@ -13,11 +13,10 @@
 #include "ColoredTrendUtilities.mqh"
 #include <StringUtilities.mqh>
 
-#define AMOUNT_OF_PRICE 2
-#define AMOUNT_BARS_FOR_HUGE 100
-#define DEFAULT_DIFF_TO_TREND 1.5
-
-#define FACTOR_OF_SUPERIORITY 2
+#define AMOUNT_OF_PRICE 2           // количество баров с которых нам нужно знать цены. дл€ вычислени€ типа движени€ нам интересны цены с текущего и последнего бара.
+#define AMOUNT_BARS_FOR_HUGE 100    // количество баров по которым считаетс€ средний бар на младшем таймфрейме
+#define DEFAULT_DIFF_TO_TREND 1.5   // значение коэфицента роста движени€ по умолчанию
+#define FACTOR_OF_SUPERIORITY 2     // во сколько раз бар должен быть больше среднего чтобы быть большим
 //CLog log_output(OUT_COMMENT, LOG_NONE, 50, "PBI", 30);
 
 //+------------------------------------------------------------------+
@@ -36,7 +35,6 @@ protected:
   SExtremum firstOnTrend;      // цена начала тренда и его направление  
   double _difToTrend;          // ¬о столько раз новый бар должен превышать предыдущий экстремум, что бы началс€ тренд.
   int _depth;                  //  оличество баров дл€ расчета индикатора 
-  int ATR_handle;
   double buffer_ATR[];
   MqlRates buffer_Rates[];
   datetime time_buffer[];
