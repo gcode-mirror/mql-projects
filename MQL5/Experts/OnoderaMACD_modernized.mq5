@@ -22,11 +22,10 @@
 
 // входные параметры
 sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
-input  int    TakeProfit                           = 0;                  // Тейк Профит
-input  double Lot                                  = 1;                  // Лот                
-input  int    priceDifference                      = 50;                 // Price Difference
+input  double lot                                  = 0.1;                // Лот                
 input  int    koLock                               = 2;                  // коэффициент запрета на вход
 sinput string trailingStr                          = "";                 // ПАРАМЕТРЫ трейлинга
+input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;               // тип трейлинга
 input int     trStop                               = 100;                // Trailing Stop
 input int     trStep                               = 100;                // Trailing Step
 input int     minProfit                            = 250;                // минимальная прибыль
@@ -76,12 +75,12 @@ int OnInit()
  {
   Print("Ошибка при инициализации эксперта ONODERA. Не удалось создать хэндл ShowMeYourDivMACD");
  
- pos_info.tp = TakeProfit;
- pos_info.volume = Lot;
+ pos_info.tp = 0;
+ pos_info.volume = lot;
  pos_info.expiration = 0;
- pos_info.priceDifference = priceDifference;
+ pos_info.priceDifference = 0;
   
- trailing.trailingType = TRAILING_TYPE_PBI;
+ trailing.trailingType = trailingType;
  trailing.minProfit    = minProfit;
  trailing.trailingStop = trStop;
  trailing.trailingStep = trStep;

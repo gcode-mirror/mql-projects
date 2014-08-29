@@ -71,10 +71,12 @@ CLog::CLog()
 {
  if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
  {
+  Comment("Будем писать в принты");
   _output_type = OUT_PRINT;
  }
  else
  {
+  Comment("Будем писать в файл");
   _output_type = OUT_FILE;
  }
  _level = LOG_DEBUG;         
