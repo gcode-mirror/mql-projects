@@ -196,8 +196,8 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
  UpdateSymbolInfo();
  _pos_info = pi;
  _trailing = tr;
- if(_pos_info.sl < SymbInfo.StopsLevel()) _pos_info.sl = SymbInfo.StopsLevel();
- if(_pos_info.tp < SymbInfo.StopsLevel()) _pos_info.tp = SymbInfo.StopsLevel();
+ if(_pos_info.sl > 0 && _pos_info.sl < SymbInfo.StopsLevel()) _pos_info.sl = SymbInfo.StopsLevel();
+ if(_pos_info.tp > 0 && _pos_info.tp < SymbInfo.StopsLevel()) _pos_info.tp = SymbInfo.StopsLevel();
  if (_trailing.trailingStop < SymbInfo.StopsLevel()) _trailing.trailingStop = SymbInfo.StopsLevel();
  if(_pos_info.expiration <= 0) _type_time = ORDER_TIME_GTC;
  else _type_time = ORDER_TIME_SPECIFIED;
@@ -277,7 +277,7 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
   //формируем комментарий
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);
- string slComment = StringFormat("%s_%d%02d%02d",log_file.MakeExpertNameBase(),mdt.year,mdt.mon,mdt.day);
+ string slComment = StringFormat("%s_%s_STOP", StringSubstr(MQL5InfoString(MQL5_PROGRAM_NAME), 0, 27), log_file.PeriodString());
 
  if (_pos_info.sl > 0 && _sl_status != STOPLEVEL_STATUS_PLACED)
  {

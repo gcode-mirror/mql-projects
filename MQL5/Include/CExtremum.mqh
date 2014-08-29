@@ -10,10 +10,8 @@
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBarDD.mqh>
 
-#define ARRAY_SIZE 4
-#define DEFAULT_TF_ATR PERIOD_H4
-#define DEFAULT_PERIOD_ATR 30
-#define DEFAULT_PERCENTAGE_ATR 1.0
+#define ARRAY_SIZE 4                 // количество хранимых экстремумов
+#define DEFAULT_PERCENTAGE_ATR 1.0   // по умолчанию новый экстремум появляется когда разница больше среднего бара
 
 struct SExtremum
 {
@@ -53,13 +51,11 @@ class CExtremum
 };
 
 CExtremum::CExtremum(void)
-           {
+           { //так как _handle_ATR не определен то экстремумы будут еа каждом баре
             _symbol = Symbol();
             _tf_period = Period();
             SetPercentageATR();
             _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
-            //_handle_average_atr = iCustom(_symbol, _tf_ATR, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR, 50);
-            //if(_handle_average_atr == INVALID_HANDLE) Alert("JI INVALID");
            }
 
 CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr):
@@ -69,8 +65,6 @@ CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr):
             {
              SetPercentageATR();
              _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
-             //_handle_average_atr = iCustom(_symbol, _tf_ATR, "AverageATR", DEFAULT_PERIOD_ATR, DEFAULT_PERIOD_ATR, 50);
-             //if(_handle_average_atr == INVALID_HANDLE) Alert("JI INVALID");
             }
 CExtremum::~CExtremum()
            {
