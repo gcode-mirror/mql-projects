@@ -141,7 +141,7 @@ int OnCalculate(const int rates_total,
   {
    static int buffer_index = 0;
    double buffer_top_trend[1] = {MOVE_TYPE_UNKNOWN};  // масссив для хранения типа движения на старшем таймфреме
-   SExtremum extr_cur[2] = {{0, -1}, {0, -1}};        // вспомогательный масссив для получения экстремумов из ColoredTrend
+   SExtremum extr_cur[2] = {{0, -1}, {0, -1}};        // вспомогательный масссив для получения экстремумов из ColoredTrend. [0] - максимум, [1] - минимум
    
    ArraySetAsSeries(open , series_order);
    ArraySetAsSeries(high , series_order);
