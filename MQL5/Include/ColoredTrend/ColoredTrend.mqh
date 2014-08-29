@@ -216,7 +216,7 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
  }
  
  //коррекция меняется на тренд вниз при наступлении условия isCorrectionEnds
- //если последняя цена больше последнего экстремум или на младшем тф "большой" бар
+ //если последняя цена меньше последнего экстремум или на младшем тф "большой" бар
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && 
       isCorrectionEnds(buffer_Rates[0].close, enumMoveType[bar], start_pos))                       
  {
@@ -230,7 +230,7 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
  }
  
  //коррекция меняется на тренд вверх при наступлении условия isCorrectionEnds
- //если последняя цена меньше последнего экстремум или на младшем тф "большой" бар
+ //если последняя цена больше последнего экстремум или на младшем тф "большой" бар
  if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_DOWN) && 
       isCorrectionEnds(buffer_Rates[0].close, enumMoveType[bar], start_pos))
  {
@@ -243,6 +243,7 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
   return (true);
  }
  
+ // разница между первым и вторым экстремумом меньше разницы между вторым и третьим*коэфицент тренда
  if (((previous_move_type == MOVE_TYPE_TREND_DOWN || previous_move_type == MOVE_TYPE_TREND_DOWN_FORBIDEN || previous_move_type == MOVE_TYPE_CORRECTION_DOWN) && isEndTrend() ==  1) || 
      ((previous_move_type == MOVE_TYPE_TREND_UP   || previous_move_type == MOVE_TYPE_TREND_UP_FORBIDEN   || previous_move_type == MOVE_TYPE_CORRECTION_UP  ) && isEndTrend() == -1))   
  {
@@ -313,53 +314,46 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, datetime start_pos,
  return(copied);
 }
 
-//+----------------------------------------------------+
-//| Функция проверяет условия выхода из коррекции      |
-//+----------------------------------------------------+
+//+------------------------------------------------------------------------+
+//| Функция проверяет условия выхода из коррекции и продолжения тренда     |
+//+------------------------------------------------------------------------+
 bool CColoredTrend::isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, datetime start_pos)
 {
- bool extremum_condition = false, 
-      bottomTF_condition = false,
-      newTrend_condition = false;
  if (move_type == MOVE_TYPE_CORRECTION_UP)
  {
-  extremum_condition = LessDoubles(price, lastOnTrend.price, _digits);  // цена ушла ниже последнего экстремума на тренде
-  //if(extremum_condition) log_file.Write(LOG_DEBUG, StringFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price));
-  if(isLastBarHuge(start_pos) > 0)                                      // появление большого бара. такой что он превышает размер среднего бара за некоторый промежуток времени
+  if(LessDoubles(price, lastOnTrend.price, _digits))  // цена ушла ниже последнего экстремума на тренде
+  {
+   //if(extremum_condition) log_file.Write(LOG_DEBUG, StringFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price));
+   return(true);
+  }
+  if(isLastBarHuge(start_pos) > 0)                    // появление большого бара на младшем тф. большой бар - такой что он превышает размер среднего бара за некоторый промежуток времени
   {
    //PrintFormat("%s IS_CORRECTION_ENDS : LAST BAR HUGE", EnumToString((ENUM_TIMEFRAMES)_period));
-   bottomTF_condition = true;
+   return(true);
   }
-  if(extremums.getExtr(2).price == lastOnTrend.price && isNewTrend() == -1) //появился новый экстремум того же направления что и 
-  {
-   PrintFormat("newTrend : коррекция вверх заканчивается трендом вниз");  
-   newTrend_condition = true;
-  } 
  }
  else if (move_type == MOVE_TYPE_CORRECTION_DOWN)
  {
-  extremum_condition = GreatDoubles(price, lastOnTrend.price, _digits);
-  //if(extremum_condition) PrintFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price);
-  if(isLastBarHuge(start_pos) < 0) 
+  if(GreatDoubles(price, lastOnTrend.price, _digits)) // цена ушла выше последнего экстремума на тренд
+  {
+   //if(extremum_condition) PrintFormat("IS_CORRECTION_ENDS : GreatDouble price = %.05f > %.05f = lastOnTrend.price", price, lastOnTrend.price);
+   return(true);
+  }
+  if(isLastBarHuge(start_pos) < 0)                   // появление большого бара на младшем тф. большой бар - такой что он превышает размер среднего бара за некоторый промежуток времени
   {
    //PrintFormat("%s IS_CORRECTION_ENDS : LAST BAR HUGE", EnumToString((ENUM_TIMEFRAMES)_period));
-   bottomTF_condition = true;
-  }
-  if(extremums.getExtr(2).price == lastOnTrend.price && isNewTrend() == 1) 
-  {
-   PrintFormat("newTrend : коррекция вниз заканчивается трендом вверх"); 
-   newTrend_condition = true;
+   return(true);
   }
  }
  else
   PrintFormat("%s %s Неверный тип движения!", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_period));
  
- return ((extremum_condition) || (bottomTF_condition) || (newTrend_condition) );
+ return (false);
 }
 
-//+----------------------------------------------------+
-//| Функция проверяет условия выхода из коррекции      |
-//+----------------------------------------------------+
+//+----------------------------------------------------------+
+//| Функция проверяет условия выхода из коррекции во флэт.   |
+//+----------------------------------------------------------+
 bool CColoredTrend::isCorrectionWrong(double price, ENUM_MOVE_TYPE move_type, datetime start_pos)
 {
  //PrintFormat("%s: price = %.05f @ firstOnTrend = %.05f [%d; %s]", __FUNCTION__,price, firstOnTrend.price, firstOnTrend.direction, TimeToString(firstOnTrend.time));
