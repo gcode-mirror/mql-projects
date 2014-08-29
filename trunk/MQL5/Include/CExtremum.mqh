@@ -15,9 +15,9 @@
 
 struct SExtremum
 {
- int direction;
- double price;
- datetime time;
+ int direction;                      // направление экстремума: 1 - max; -1 -min; 0 - null
+ double price;                       // цена экстремума: для max - high; для min - low
+ datetime time;                      // время бара на котором возникает экстремум
 };
 
 class CExtremum
