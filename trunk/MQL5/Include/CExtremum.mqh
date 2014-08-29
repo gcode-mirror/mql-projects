@@ -30,7 +30,7 @@ class CExtremum
  ENUM_TIMEFRAMES _tf_period;
  //--параметры ATR для difToNewExtremum-----
  int _handle_ATR;
- double _percentage_ATR;
+ double _percentage_ATR;   // коэфицент отвечающий за то во сколько раз движение цены должно превысить средний бар что бы появился новый экстремум
  //-----------------------------------------
  SExtremum extremums[ARRAY_SIZE];
  
@@ -39,8 +39,8 @@ class CExtremum
  CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr);
 ~CExtremum();
 
- int isExtremum(SExtremum& extr_array[], datetime start_pos_time = __DATETIME__,  bool now = true);
- int RecountExtremum(datetime start_pos_time = __DATETIME__, bool now = true);
+ int isExtremum(SExtremum& extr_array[], datetime start_pos_time = __DATETIME__,  bool now = true);  // есть ли экстремум на данном баре
+ int RecountExtremum(datetime start_pos_time = __DATETIME__, bool now = true);                       // обновить массив экстремумов
  double AverageBar (datetime start_pos);
  SExtremum getExtr(int i);
  void PrintExtremums();
@@ -54,7 +54,6 @@ class CExtremum
 
 CExtremum::CExtremum(void)
            {
-
             _symbol = Symbol();
             _tf_period = Period();
             SetPercentageATR();
@@ -78,7 +77,8 @@ CExtremum::~CExtremum()
            }             
 
 //-----------------------------------------------------------------
-
+//функция возвращает количество новых экстремумов на данном баре
+//-----------------------------------------------------------------
 int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __DATETIME__, bool now = true)
 {
  SExtremum result1 = {0, -1};
@@ -88,27 +88,25 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
 
  if(CopyRates(_symbol, _tf_period, start_pos_time, 1, buffer) < 1)
   PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
- double difToNewExtremum = AverageBar(start_pos_time) * _percentage_ATR;
+ double difToNewExtremum = AverageBar(start_pos_time) * _percentage_ATR;  // минимальное расстояние между экстремумами
  double high = 0, low = 0;
  
  if(extremums[0].time == buffer[0].time && !now) return(0); //исключаем повторное определение экстремумов на истории
  
- if(extremums[0].time == buffer[0].time && !now) return(0); //исключаем повторное определение экстремумов на истории
-
- if (now)
- {
+ if (now) // за время жизни бара цена close проходит все его значения от low до high
+ {        // соответсвено если на данном баре есть верхний экстремум то он будет достигнут когда close будет max  и наобот с low
   high = buffer[0].close;
   low = buffer[0].close;
  }
- else
+ else    // во время работы на истории мы смотрим на бар один раз соотвественно нам сразу нужно узнать его максимум и минимум
  {
   high = buffer[0].high;
   low = buffer[0].low;
  }
  
- if ((extremums[0].direction == 0 && (GreatDoubles(high, 2*difToNewExtremum, _digits))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
-   ||(extremums[0].direction >  0 && (GreatDoubles(high, extremums[0].price, _digits)))
-   ||(extremums[0].direction <  0 && (GreatDoubles(high, extremums[0].price + difToNewExtremum, _digits))))
+ if ((extremums[0].direction == 0 ) // Если экстремумов еще нет то говорим что сейчас экстремум
+   ||(extremums[0].direction >  0 && (GreatDoubles(high, extremums[0].price, _digits))) // Если цена пробила экстремум 
+   ||(extremums[0].direction <  0 && (GreatDoubles(high, extremums[0].price + difToNewExtremum, _digits)))) // Если цена отошла от экстремума на минимальное расстояние
  {
   result1.direction = 1;
   result1.price = high;
@@ -117,9 +115,9 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
   //PrintFormat("%s %s start_pos_time = %s; max %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_tf_period), TimeToString(start_pos_time), high);
  }
  
- if ((extremums[0].direction == 0 && (LessDoubles(low, 2*difToNewExtremum, _digits))) // Если экстремумов еще нет и есть 2 шага от стартовой цены
-   ||(extremums[0].direction <  0 && (LessDoubles(low, extremums[0].price, _digits)))
-   ||(extremums[0].direction >  0 && (LessDoubles(low, extremums[0].price - difToNewExtremum, _digits))))
+ if ((extremums[0].direction == 0 ) // Если экстремумов еще нет то говорим что сейчас экстремум
+   ||(extremums[0].direction <  0 && (LessDoubles(low, extremums[0].price, _digits))) //Если цена пробила экстремумо                    
+   ||(extremums[0].direction >  0 && (LessDoubles(low, extremums[0].price - difToNewExtremum, _digits)))) // Если цена отошла от экстремума на минимальное расстояние
  {
   result2.direction = -1;
   result2.price = low;
@@ -148,17 +146,17 @@ int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now 
  SExtremum new_extr[2] = {{0, -1}, {0, -1}};
  int count_new_extrs = isExtremum(new_extr, start_pos_time, now);
  
- if(count_new_extrs > 0)
+ if(count_new_extrs > 0)   // если появились новые экстремумы
  {
-  for(int i = 0; i < 2; i++)
+  for(int i = 0; i < 2; i++) // идем по массиву экстремумов
   {
    if (new_extr[i].direction != 0)
    {
-    if (new_extr[i].direction == extremums[0].direction) // если новый экстремум в том же напрвлении, что старый
+    if (new_extr[i].direction == extremums[0].direction) // если новый экстремум в том же напрвлении, что и последний, то обновляем
     {
      extremums[0] = new_extr[i];
     }
-    else
+    else                                                 // если новый экстремум в противоположном напрвлении, от последнего, сдвигаем все и добавляем новый
     {
      for(int j = ARRAY_SIZE-1; j >= 1; j--)
      {
@@ -172,7 +170,7 @@ int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now 
  return(count_new_extrs);
 }
 
-double CExtremum::AverageBar (datetime start_pos)
+double CExtremum::AverageBar (datetime start_pos)  // подгружаем значения с индикатора
 {
  double buffer_average_atr[1];
  if(CopyBuffer(_handle_ATR, 0, start_pos, 1, buffer_average_atr) == 1) 
@@ -184,7 +182,7 @@ double CExtremum::AverageBar (datetime start_pos)
  }
 }
 
-int CExtremum::ExtrCount()
+int CExtremum::ExtrCount()      
 {
  int count = 0;
  for(int i = 0; i < ARRAY_SIZE; i++)

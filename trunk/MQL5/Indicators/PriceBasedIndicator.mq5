@@ -31,8 +31,8 @@
  
 //--- input параметры
 input int history_depth = 1000; // сколько свечей показывать
-input bool show_top = false;
-input bool is_it_top = false;
+input bool show_top = false;    // показывать текущий таймфрейм или старший
+input bool is_it_top = false;   // если true вычисляется только текущий таймфрейм; false вычислятеся дополнительный индикатор для старшего таймфрейма
 
 //--- индикаторные буферы
 double ColorCandlesBuffer1[];
@@ -68,7 +68,7 @@ int OnInit()
    PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(current_timeframe);
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-   int handle_atr = iMA(symbol,  current_timeframe, 100, 0, MODE_EMA, iATR(symbol,  current_timeframe, 30));//iCustom(symbol, current_timeframe, "AverageATR", 30, 100);
+   int handle_atr = iMA(symbol,  current_timeframe, 100, 0, MODE_EMA, iATR(symbol,  current_timeframe, 30));
    trend    = new CColoredTrend(symbol, current_timeframe, handle_atr, depth);
    if(!is_it_top) handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PriceBasedIndicator", depth, false, true);
 //--- indicator buffers mapping
@@ -77,7 +77,7 @@ int OnInit()
    SetIndexBuffer(1, ColorCandlesBuffer2, INDICATOR_DATA);
    SetIndexBuffer(2, ColorCandlesBuffer3, INDICATOR_DATA);
    SetIndexBuffer(3, ColorCandlesBuffer4, INDICATOR_DATA);
-   if(show_top) 
+   if(show_top)    //выбор раскраску с какого таймфрейма мы показываем: current или top
    {
     SetIndexBuffer(4, ColorCandlesColorsTop, INDICATOR_DATA);
     SetIndexBuffer(7,    ColorCandlesColors, INDICATOR_CALCULATIONS);
@@ -140,8 +140,8 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
    static int buffer_index = 0;
-   double buffer_top_trend[1] = {MOVE_TYPE_UNKNOWN};
-   SExtremum extr_cur[2] = {{0, -1}, {0, -1}};
+   double buffer_top_trend[1] = {MOVE_TYPE_UNKNOWN};  // масссив для хранения типа движения на старшем таймфреме
+   SExtremum extr_cur[2] = {{0, -1}, {0, -1}};        // вспомогательный масссив для получения экстремумов из ColoredTrend
    
    ArraySetAsSeries(open , series_order);
    ArraySetAsSeries(high , series_order);
@@ -149,7 +149,7 @@ int OnCalculate(const int rates_total,
    ArraySetAsSeries(close, series_order);
    ArraySetAsSeries(time , series_order);
    
-   if(prev_calculated == 0) 
+   if(prev_calculated == 0) // расчет раскраски на истории
    {
     PrintFormat("%s Первый расчет индикатора", MakeFunctionPrefix(__FUNCTION__));
     buffer_index = 0;
@@ -174,12 +174,12 @@ int OnCalculate(const int rates_total,
      ColorCandlesColors[i] = trend.GetMoveType(buffer_index);
      ColorCandlesColorsTop[i] = buffer_top_trend[0];
     
-     if (extr_cur[0].direction > 0)
+     if (extr_cur[0].direction > 0) // если в текущий момент есть максимум
      {
       ExtUpArrowBuffer[i] = extr_cur[0].price;// + 50*_Point;
       extr_cur[0].direction = 0;
      }
-     if (extr_cur[1].direction < 0)
+     if (extr_cur[1].direction < 0) // если в текущий момент есть минимум
      {
       ExtDownArrowBuffer[i] = extr_cur[1].price;// - 50*_Point;
       extr_cur[1].direction = 0;
@@ -196,6 +196,7 @@ int OnCalculate(const int rates_total,
     trend.PrintExtr();
    }
    
+   // вычисление типа движения в текущий момент
    if(!is_it_top)
     if(CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
        PrintFormat("%s/%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), GetLastError());

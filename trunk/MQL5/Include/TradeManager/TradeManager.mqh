@@ -377,7 +377,7 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  {
   //Print("ѕеремещаем позицию в хистори");
   _positionsHistory.Add(_openPositions.Detach(i)); //добавл€ем позицию в историю и удал€ем из массива открытых позиций
-  _historyChanged = true; // мен€ем флаг, что истори€ увеличилась 
+  _historyChanged = true;                          // мен€ем флаг, что истори€ увеличилась 
   SaveArrayToFile(historyDataFileName,_positionsHistory); 
   SaveArrayToFile(rescueDataFileName,_openPositions);   
   //log_file.Write(LOG_DEBUG, StringFormat("%s ”далена позици€ [%d]", MakeFunctionPrefix(__FUNCTION__), i));
