@@ -42,7 +42,7 @@ input int    period_average_ATR = 5;    //Период устреднения индикатора ATR
 sinput string levelStr = "";                 //ПАРАМЕТРЫ УРОВНЕЙ
 
 sinput string mn1Str   = "";                 //Месячные уровни
-input bool  flag1  = true;                   //Показывать экстремумы MN1
+input bool  flag1  = false;                   //Показывать экстремумы MN1
 input double channel_ATR_MN1  =  0.1;        //Ширина уровня
 
 sinput string w1Str   = "";                  //Недельные уровни
@@ -50,15 +50,15 @@ input bool  flag2  = true;                   //Показывать экстремумы W1
 input double channel_ATR_W1   =  0.15;       //Ширина уровня
 
 sinput string d1Str   = "";                  //Дневные уровни
-input bool  flag3  = true;                   //Показывать экстремумы D1
+input bool  flag3  = false;                   //Показывать экстремумы D1
 input double channel_ATR_D1   =  0.25;       //Ширина уровня
 
 sinput string h1Str   = "";                  //4-х часовые уровни
-input bool   flag4  = true;                  //Показывать экстремумы H4
+input bool   flag4  = false;                  //Показывать экстремумы H4
 input double channel_ATR_H4   =  0.25;       //Ширина уровня 
 
 sinput string h4Str   = "";                  //Часовые уровни
-input bool  flag5  = true;                   //Показывать экстремумы H1
+input bool  flag5  = false;                   //Показывать экстремумы H1
 input double channel_ATR_H1   =  0.25;       //Ширина уровня 
 
 sinput string dStr   = "";                   //Цены на дневнике
