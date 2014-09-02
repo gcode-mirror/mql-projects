@@ -50,15 +50,15 @@ input bool  flag2  = true;                   //Показывать экстремумы W1
 input double channel_ATR_W1   =  0.15;       //Ширина уровня
 
 sinput string d1Str   = "";                  //Дневные уровни
-input bool  flag3  = false;                   //Показывать экстремумы D1
+input bool  flag3  = true;                   //Показывать экстремумы D1
 input double channel_ATR_D1   =  0.25;       //Ширина уровня
 
 sinput string h1Str   = "";                  //4-х часовые уровни
-input bool   flag4  = false;                  //Показывать экстремумы H4
+input bool   flag4  = true;                  //Показывать экстремумы H4
 input double channel_ATR_H4   =  0.25;       //Ширина уровня 
 
 sinput string h4Str   = "";                  //Часовые уровни
-input bool  flag5  = false;                   //Показывать экстремумы H1
+input bool  flag5  = true;                   //Показывать экстремумы H1
 input double channel_ATR_H1   =  0.25;       //Ширина уровня 
 
 sinput string dStr   = "";                   //Цены на дневнике
@@ -307,6 +307,12 @@ int OnInit()
  int handle_atr_D1 = iMA(_Symbol,   PERIOD_D1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_D1, period_ATR_channel));//iCustom(_Symbol, PERIOD_D1, "AverageATR", period_ATR_channel, period_average_ATR);
  int handle_atr_H4 = iMA(_Symbol,   PERIOD_H4, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H4, period_ATR_channel));//iCustom(_Symbol, PERIOD_H4, "AverageATR", period_ATR_channel, period_average_ATR);
  int handle_atr_H1 = iMA(_Symbol,   PERIOD_H1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H1, period_ATR_channel));//iCustom(_Symbol, PERIOD_H1, "AverageATR", period_ATR_channel, period_average_ATR);
+ 
+ if(handle_atr_MN == INVALID_HANDLE)
+  {
+   Comment("ГАВНО А НЕ ХЕЭНДЛ MN1");
+  }
+ 
  calcMN.SetHandleATR(handle_atr_MN);
  calcW1.SetHandleATR(handle_atr_W1);
  calcD1.SetHandleATR(handle_atr_D1);

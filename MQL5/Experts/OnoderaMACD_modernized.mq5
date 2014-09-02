@@ -18,8 +18,8 @@
 
 //+------------------------------------------------------------------+
 //| Ёксперт, основанный на расхождении MACD                          |
-//+------------------------------------------------------------------+
-
+//+------------------------------------------------------------------+                                                                 
+   
 // входные параметры
 sinput string base_param                           = "";                 // Ѕј«ќ¬џ≈ ѕј–јћ≈“–џ Ё —ѕ≈–“ј
 input  double lot                                  = 0.1;                // Ћот                
@@ -51,7 +51,7 @@ double lenClosestUp;                                                     // расс
 double lenClosestDown;                                                   // рассто€ние до ближайшего уровн€ снизу    
 // буферы 
 double signalBuffer[];                                                   // буфер дл€ получени€ сигнала из индикатора smydMACD
-bufferLevel buffers[10];                                                 // буфер уровней
+bufferLevel buffers[8];                                                 // буфер уровней
 
 int OnInit()
 {
@@ -213,7 +213,7 @@ bool UploadBuffers ()   // получает последние значени€ уровней
   int indexPer;
   int indexBuff;
   int indexLines = 0;
-  for (indexPer=0;indexPer<5;indexPer++)
+  for (indexPer=1;indexPer<5;indexPer++)
    {
     for (indexBuff=0;indexBuff<2;indexBuff++)
      {
@@ -240,7 +240,7 @@ bool UploadBuffers ()   // получает последние значени€ уровней
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<10;index++)
+      for (index=0;index<8;index++)
        {
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
@@ -255,7 +255,7 @@ bool UploadBuffers ()   // получает последние значени€ уровней
        }
      break;
      case SELL: // ближний снизу
-      for (index=0;index<10;index++)
+      for (index=0;index<8;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
