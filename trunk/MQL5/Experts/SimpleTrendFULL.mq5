@@ -47,8 +47,8 @@ input bool   useMultiFill=true;                    // использовать доливки при п
 input string pbiParam = "";                        // Параметры PriceBasedIndicator
 input ENUM_PBI  usePBI=PBI_NO;                     // тип  использования PBI
 input ENUM_TIMEFRAMES pbiPeriod = PERIOD_H1;       // период PBI
-input bool   useSecondPos = true;                  // использовать дополнительную позицию
-input int    tpSecondPos  = 100;                   // тейк профит дополнительной позиции
+//input bool   useSecondPos = true;                  // использовать дополнительную позицию
+//input int    tpSecondPos  = 100;                   // тейк профит дополнительной позиции
 
 // хэндлы PriceBasedIndicator
 int handlePBI_1;
@@ -68,7 +68,7 @@ bool             extrLowBeaten[4];                 // буфер флагов пробития экст
 
 // объекты классов
 CTradeManager *ctm;                                // объект торговой библиотеки
-CTradeManager *ctm2;                              
+//CTradeManager *ctm2;                              
 CisNewBar     *isNewBar_D1;                        // новый бар на D1
 CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 
@@ -97,8 +97,8 @@ ENUM_TENDENTION  lastTendention;                   // переменная для хранения по
 SPositionInfo pos_info;                            // информация об открытии позиции 
 STrailing trailing;                                // параметры трейлинга
 
-SPositionInfo pos_info2;                            // информация об открытии позиции 
-STrailing trailing2;                                // параметры трейлинга
+//SPositionInfo pos_info2;                            // информация об открытии позиции 
+//STrailing trailing2;                                // параметры трейлинга
                            
 int OnInit()
   {     
@@ -132,13 +132,17 @@ int OnInit()
      // получаем последний тип тренда на 3-х таймфреймах
      lastTrendPBI_1  = GetLastTrendDirection(handlePBI_1,PERIOD_M5);
      lastTrendPBI_2  = GetLastTrendDirection(handlePBI_2,PERIOD_M15);
-     lastTrendPBI_3  = GetLastTrendDirection(handlePBI_3,PERIOD_H1);     
+     lastTrendPBI_3  = GetLastTrendDirection(handlePBI_3,PERIOD_H1); 
    }
    // создаем объект класса TradeManager
    ctm = new CTradeManager(); 
    // если используется дополнительная позиция
+   
+   /*
    if (useSecondPos)
     ctm2 = new CTradeManager();                   
+   */
+   
    // создаем объекты класса CisNewBar
    isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
    // создаем объекты класса CBlowInfoFromExtremums
@@ -182,6 +186,7 @@ int OnInit()
    trailing.trailingStep = 0;
    trailing.handlePBI    = 0;  
    
+   /*
    pos_info2.tp = tpSecondPos;
    pos_info2.volume = lotReal;
    pos_info2.expiration = 0;
@@ -192,7 +197,7 @@ int OnInit()
    trailing2.trailingStop = 0;
    trailing2.trailingStep = 0;
    trailing2.handlePBI    = 0;  
-    
+   */    
    return(INIT_SUCCEEDED);
   }
 void OnDeinit(const int reason)
@@ -202,8 +207,9 @@ void OnDeinit(const int reason)
    // удаляем объекты классов
    delete ctm;
    // если использовалась дополнительная позиция
-   if (useSecondPos)
+  /* if (useSecondPos)
     delete ctm2;
+  */
    delete isNewBar_D1;
    delete blowInfo[0];
    delete blowInfo[1];
@@ -216,12 +222,13 @@ void OnTick()
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(blowInfo[indexForTrail]);
+ /*
  if (useSecondPos)
   {
    ctm2.OnTick();
    ctm2.UpdateData();
   }
-
+ */
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
@@ -344,6 +351,7 @@ void OnTick()
     pos_info.sl = stopLoss;            
     // открываем позицию на BUY
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
+    /*
     if (useSecondPos)
      {
       pos_info2.type = OP_BUY;
@@ -351,6 +359,7 @@ void OnTick()
       // открываем позицию на BUY
       ctm2.OpenUniquePosition(_Symbol, _Period, pos_info2, trailing2);    
      }
+    */
    }
   }
  }
@@ -390,6 +399,7 @@ void OnTick()
    pos_info.sl = stopLoss;    
    // открываем позицию на SELL
    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
+   /*
    if (useSecondPos)
     {
      pos_info2.type = OP_SELL;
@@ -397,6 +407,7 @@ void OnTick()
      // открываем позицию на SELL
      ctm2.OpenUniquePosition(_Symbol, _Period, pos_info2, trailing2);   
     }
+    */
   }
  } 
 }
@@ -524,12 +535,19 @@ int GetStopLoss()     // вычисляет стоп лосс
   
   nBars = Bars(_Symbol,period);
   
-  for (index=1;index<nBars;index++)
+  for (int attempts=0;attempts<25;attempts++)
    {
-    copiedPBI = CopyBuffer(handle,4,index,1,pbiBuf);
-    if (copiedPBI < 1)
-     return(0);
-    signTrend = int(pbiBuf[0]);
+     copiedPBI = CopyBuffer(handle,4,1,nBars-1,pbiBuf);
+     Sleep(100);
+   }
+  if (copiedPBI < (nBars-1))
+   {
+   // Comment("Не удалось скопировать все бары");
+    return (0);
+   }
+  for (index=0;index<nBars-1;index++)
+   {
+    signTrend = int(pbiBuf[index]);
     // если найден последний тренд вверх
     if (signTrend == 1 || signTrend == 2)
      return (1);
