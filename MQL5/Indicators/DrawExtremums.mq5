@@ -100,6 +100,7 @@ void OnDeinit(const int reason)
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
 
+int count=0;
 
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
@@ -185,7 +186,10 @@ int OnCalculate(const int rates_total,
     lastExtrUpValue = extr_cur[0].price;
     if (jumper == -1)
     {
-     ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue; 
+     ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
+     if (count == 1) 
+     Comment("",count," Ёкстремум = ",DoubleToString(ExtDownArrowBuffer[indexPrevDown]));     
+     count++;
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновл€ем предыдущий индекс
@@ -198,6 +202,9 @@ int OnCalculate(const int rates_total,
     if (jumper == 1)
     {
      ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
+     if (count == 1)
+     Comment("",count, " Ёкстремум = ",DoubleToString(ExtUpArrowBuffer[indexPrevUp]));
+     count++;
     }
     jumper = -1;
     indexPrevDown = rates_total-1;  // обновл€ем предыдущий индекс      
