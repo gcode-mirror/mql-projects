@@ -404,23 +404,26 @@ bool CTradeManager::DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL)
  for(int i = total - 1; i >= 0; i--) 
  {
   pos = _openPositions.At(i);   // выберем позицию по ее индексу
-  switch(pos.getTrailingType())
+  if (pos.getPositionInfo().type == OP_BUY || pos.getPositionInfo().type == OP_SELL)
   {
-   case TRAILING_TYPE_USUAL :
-    sl =  _trailingStop.UsualTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
-    break;
-   case TRAILING_TYPE_LOSSLESS :
-    sl = _trailingStop.LosslessTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
-    break;
-   case TRAILING_TYPE_PBI :
-    sl = _trailingStop.PBITrailing(pos.getType(), pos.getStopLossPrice(), pos.getHandlePBI());  
-    break;
-   case TRAILING_TYPE_EXTREMUMS :
-    if (blowInfo != NULL) sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), pos.getPositionPrice(),blowInfo);
-    break;
-   case TRAILING_TYPE_NONE :
-   default:
-    break;
+   switch(pos.getTrailingType())
+   {
+    case TRAILING_TYPE_USUAL :
+     sl =  _trailingStop.UsualTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
+     break;
+    case TRAILING_TYPE_LOSSLESS :
+     sl = _trailingStop.LosslessTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
+     break;
+    case TRAILING_TYPE_PBI :
+     sl = _trailingStop.PBITrailing(pos.getType(), pos.getStopLossPrice(), pos.getHandlePBI());  
+     break;
+    case TRAILING_TYPE_EXTREMUMS :
+     if (blowInfo != NULL) sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), pos.getPositionPrice(),blowInfo);
+     break;
+    case TRAILING_TYPE_NONE :
+    default:
+     break;
+   }
   }
   if (sl > 0) pos.ModifyPosition(sl, 0);
  }
