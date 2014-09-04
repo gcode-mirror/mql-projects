@@ -96,6 +96,7 @@ class CBlowInfoFromExtremums
        }
       // Print("copiedHIGH = ",copiedHigh," copiedHighTime = ",copiedHighTime, " PERIOD = ",PeriodToString(_period));
       // Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime, " PERIOD = ",PeriodToString(_period));
+     // Print("HIGH = ",copiedHigh," LOW = ",copiedLow," HTime = ",copiedHighTime," LTime = ",copiedLowTime," depth=",historyDepth);
       if ( copiedHigh != historyDepth || copiedLow != historyDepth || copiedHighTime != historyDepth || copiedLowTime != historyDepth)
        {
      //   Print("Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums ",PeriodToString(_period));

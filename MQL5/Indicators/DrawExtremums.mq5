@@ -132,7 +132,8 @@ int OnCalculate(const int rates_total,
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
    //Print("DRAW EXTREMUMS: N = ",IntegerToString(ArraySize(time))," DEPTH = ",IntegerToString(depth));
-   NewBarCurrent.isNewBar(time[depth]);
+  // Print("DEPTH = ",depth, " time = ",ArraySize(time));
+   NewBarCurrent.isNewBar(time[depth-1]);
    
    for(int i = depth-1; i >= 0;  i--)    
    {
