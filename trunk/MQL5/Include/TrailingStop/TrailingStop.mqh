@@ -264,10 +264,13 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
       {
        lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH дл€ stopLoss
        lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW дл€ пробити€
+       log_file.Write(LOG_DEBUG, StringFormat("ѕоследний значимый эстремум %s", EnumToString(last_extr) ));
+       log_file.Write(LOG_DEBUG, StringFormat("÷ена (%.05f), < последний значимый эстремум (%.05f)", currentPriceAsk, lastExtrLow ));
        // если текуща€ цена пробила последний значимый LOW экстремум  
        if ( LessDoubles(currentPriceAsk,lastExtrLow) &&
             GreatDoubles (tmpPrevAsk,lastExtrLow) )
           {
+           log_file.Write(LOG_DEBUG, StringFormat("ѕробили (%.05f) последний значимый эстремум (%.05f)", currentPriceAsk, lastExtrLow ));
            // если рассто€ние от цены до нового стоп лосса больше стоп левела
            if ( GreatDoubles(lastExtrHigh - currentPriceAsk,stopLevel) )
              {             

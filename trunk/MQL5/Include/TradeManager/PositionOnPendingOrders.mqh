@@ -126,6 +126,7 @@ public:
    ENUM_POSITION_STATUS  RemovePendingPosition();
    ENUM_STOPLEVEL_STATUS RemoveStopLoss();         
    double   SLPriceByType(ENUM_TM_POSITION_TYPE type);        // вычисл€ет уровень стоп-лосса в зависимости от типа
+   double   StopLevelByType(ENUM_TM_POSITION_TYPE type);          // вычисл€ет уровень спреда в зависимости от типа
    double   TPPriceByType(ENUM_TM_POSITION_TYPE type);        // вычисл€ет уровень тейк-профита в зависимости от типа
    bool     UpdateSymbolInfo();        // ѕолучение актуальной информации по торговому инструменту 
    void     WriteToFile (int handle);
@@ -273,7 +274,7 @@ double CPosition::getPosProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
- //PrintFormat("¬ыставл€ем стоп-лосс %.05f", _slPrice );
+ PrintFormat("¬ыставл€ем стоп-лосс %.05f", _slPrice );
   //формируем комментарий
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);
@@ -282,6 +283,8 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
  if (_pos_info.sl > 0 && _sl_status != STOPLEVEL_STATUS_PLACED)
  {
   if (_slPrice <= 0) _slPrice = SLPriceByType(_pos_info.type);
+  if (MathAbs(_slPrice - PriceByType(_pos_info.type)) <= SymbInfo.StopsLevel()) _slPrice = StopLevelByType(_pos_info.type);
+  
   _slType = SLOrderType((int)_pos_info.type);
   if (trade.OrderOpen(_symbol, _slType, _pos_info.volume, _slPrice, _type_time, _pos_info.expiration_time, slComment)) //, sl + stopLevel, sl - stopLevel);
   {
@@ -325,7 +328,7 @@ bool CPosition::ChangeSize(double additionalVolume)
  if (additionalVolume < 0) type = type + MathPow(-1, type);
  double openPrice = OpenPriceByType(type);
  _posAveragePrice = (_pos_info.volume*_posAveragePrice + additionalVolume*openPrice)/(_pos_info.volume + additionalVolume);
-  string orderComment = StringFormat("%s_%s", StringSubstr(MQL5InfoString(MQL5_PROGRAM_NAME), 0, 27), log_file.PeriodString());
+ string orderComment = StringFormat("%s_%s", StringSubstr(MQL5InfoString(MQL5_PROGRAM_NAME), 0, 27), log_file.PeriodString());
   
  if (type == OP_BUY || type == OP_SELL)
  {
@@ -761,7 +764,6 @@ bool CPosition::ReadFromFile(int  handle)
 //+------------------------------------------------------------------+
 //| ”далить отложенный ордер
 //+------------------------------------------------------------------+
-
 ENUM_POSITION_STATUS CPosition::RemovePendingPosition()
 {
  if (_pos_status == POSITION_STATUS_PENDING || _pos_status == POSITION_STATUS_NOT_DELETED)
@@ -853,6 +855,17 @@ double CPosition::SLPriceByType(ENUM_TM_POSITION_TYPE type)
  UpdateSymbolInfo();
  if(type == 0 || type == 2 || type == 4) return(SymbInfo.Bid()-_pos_info.sl*SymbInfo.Point()); // Buy
  if(type == 1 || type == 3 || type == 5) return(SymbInfo.Ask()+_pos_info.sl*SymbInfo.Point()); // Sell
+ return(0);
+}
+
+//+------------------------------------------------------------------+
+//| ¬ычисл€ет уровень открыти€ в зависимости от типа                 |
+//+------------------------------------------------------------------+
+double CPosition::StopLevelByType(ENUM_TM_POSITION_TYPE type)
+{
+ UpdateSymbolInfo();
+ if(type == 0 || type == 2 || type == 4) return(SymbInfo.Bid()-SymbInfo.StopsLevel()*SymbInfo.Point()); // Buy
+ if(type == 1 || type == 3 || type == 5) return(SymbInfo.Ask()+SymbInfo.StopsLevel()*SymbInfo.Point()); // Sell
  return(0);
 }
 
