@@ -161,7 +161,7 @@ double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int han
    forbidenTrend = 2;
    break;
   default:
-   //log_file.Write(LOG_DEBUG, StringFormat("%s Неверный тип позиции для трейлинга %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type)));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Неверный тип позиции для трейлинга %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type)));
    return(0.0);
  }
  

@@ -71,8 +71,7 @@ void OnTick()
  static int index_min = -1;
  double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
  double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
- int stoplevel_points = MathMax(50, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL));
- double stoplevel = stoplevel_points*Point();
+ double stoplevel = MathMax(50, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
  CopyBuffer(handle_pbi, 4, 0, 1, buffer_pbi);
 
  if(isNewBar.isNewBar())
@@ -94,7 +93,7 @@ void OnTick()
  {
   if(ctm.GetPositionCount() == 0)
   {
-   pos_info.tp = 0;//(buffer_high[index_max] -  buffer_low[index_min])/Point();
+   pos_info.tp = 0;
    if(index_max < ALLOW_INTERVAL && bid > buffer_high[index_max] + stoplevel)
    {
     diff = (bid - buffer_high[index_max])/Point();
@@ -102,7 +101,6 @@ void OnTick()
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
-    //ctm.OpenUniquePosition(_Symbol, _Period, OP_SELLSTOP, DEFAULT_VOLUME, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handle_pbi, sl);
    }
    
    if(index_min < ALLOW_INTERVAL && ask < buffer_low[index_min] - stoplevel)
@@ -112,7 +110,6 @@ void OnTick()
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
-    //ctm.OpenUniquePosition(_Symbol, _Period, OP_BUYSTOP, DEFAULT_VOLUME, sl, tp, trailingType, minProfit, trailingStop, trailingStep, handle_pbi, sl);
    }
   }
   else
