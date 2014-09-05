@@ -116,13 +116,13 @@ void OnTick()
   {
    if(ctm.GetPositionType(_Symbol) == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < ask) 
    {
-    log_file.Write(LOG_DEBUG, StringFormat("ask %.05f ",ask));
+    //log_file.Write(LOG_DEBUG, StringFormat("ask %.05f ",ask));
     slPrice = ask;
     ctm.ModifyPosition(_Symbol, slPrice, 0); 
    }
    if(ctm.GetPositionType(_Symbol) == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > bid) 
    {
-    log_file.Write(LOG_DEBUG, StringFormat("bid %.05f",bid));
+    //log_file.Write(LOG_DEBUG, StringFormat("bid %.05f",bid));
     slPrice = bid;
     ctm.ModifyPosition(_Symbol, slPrice, 0); 
    }
