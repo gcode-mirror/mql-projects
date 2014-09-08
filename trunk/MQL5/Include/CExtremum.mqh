@@ -29,7 +29,7 @@ class CExtremum
  ENUM_TIMEFRAMES _tf_period;
  //--параметры ATR дл€ difToNewExtremum-----
  int _handle_ATR;
- double _percentage_ATR;   // коэфицент отвечающий за то во сколько раз движение цены должно превысить средний бар что бы по€вилс€ новый экстремум
+ double _percentage_ATR;   // коэфициент отвечающий за то во сколько раз движение цены должно превысить средний бар что бы по€вилс€ новый экстремум
  //-----------------------------------------
  SExtremum extremums[ARRAY_SIZE];
  
@@ -81,14 +81,14 @@ CExtremum::~CExtremum()
 //-----------------------------------------------------------------
 int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __DATETIME__, bool now = true)
 {
- SExtremum result1 = {0, -1};
- SExtremum result2 = {0, -1};
- int count = 0;
+ SExtremum result1 = {0, -1}; // временна€ переменна€ дл€ записи max если он есть
+ SExtremum result2 = {0, -1}; // временна€ переменна€ дл€ записи min если он есть
+ int count = 0;               // считаем сколько по€вилось экстремумов
  MqlRates buffer[1];
 
  if(CopyRates(_symbol, _tf_period, start_pos_time, 1, buffer) < 1)
-  PrintFormat("%s Rates buffer: error = %d, calculated = %d, start_index = %s", EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
- double difToNewExtremum = AverageBar(start_pos_time) * _percentage_ATR;  // минимальное рассто€ние между экстремумами
+  PrintFormat("%s %s Rates buffer: error = %d, calculated = %d, start_index = %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
+ double difToNewExtremum = AverageBar(start_pos_time) * _percentage_ATR;  // расчет минимального рассто€ние между экстремумами
  double high = 0, low = 0;
  
  if(extremums[0].time == buffer[0].time && !now) return(0); //исключаем повторное определение экстремумов на истории
@@ -108,7 +108,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
    ||(extremums[0].direction >  0 && (GreatDoubles(high, extremums[0].price, _digits))) // ≈сли цена пробила экстремум 
    ||(extremums[0].direction <  0 && (GreatDoubles(high, extremums[0].price + difToNewExtremum, _digits)))) // ≈сли цена отошла от экстремума на минимальное рассто€ние
  {
-  result1.direction = 1;
+  result1.direction = 1;       // запоминаем направление, цену и врем€ по€влени€ экстремума
   result1.price = high;
   result1.time = buffer[0].time;
   count++;
@@ -119,19 +119,19 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
    ||(extremums[0].direction <  0 && (LessDoubles(low, extremums[0].price, _digits))) //≈сли цена пробила экстремумо                    
    ||(extremums[0].direction >  0 && (LessDoubles(low, extremums[0].price - difToNewExtremum, _digits)))) // ≈сли цена отошла от экстремума на минимальное рассто€ние
  {
-  result2.direction = -1;
+  result2.direction = -1;     // запоминаем направление, цену и врем€ по€влени€ экстремума
   result2.price = low;
   result2.time = buffer[0].time;
   count++;
   //PrintFormat("%s %s start_pos_time = %s; min  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), TimeToString(start_pos_time), low);
  }
  
- if(buffer[0].close <= buffer[0].open) //если close ниже open то сначала пишем high потом low
+ if(buffer[0].close <= buffer[0].open) //если close ниже open то сначала пишем max потом min
  {
   extr_array[0] = result1;
   extr_array[1] = result2;
  }
- else                                  //если close выше open то сначала пишем low потом high
+ else                                  //если close выше open то сначала пишем min потом max
  {
   extr_array[0] = result2;
   extr_array[1] = result1;
@@ -146,7 +146,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
 //-------------------------------------------------------------------------------------
 int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now = true)
 {
- SExtremum new_extr[2] = {{0, -1}, {0, -1}};
+ SExtremum new_extr[2] = {{0, -1}, {0, -1}}; //временна€ переменна€ в которую isExtremum запишет те экстремумы что у него по€вились
  int count_new_extrs = isExtremum(new_extr, start_pos_time, now);
  
  if(count_new_extrs > 0)   // если по€вились новые экстремумы
@@ -200,7 +200,8 @@ int CExtremum::ExtrCount()
  int count = 0;
  for(int i = 0; i < ARRAY_SIZE; i++)
  {
-  if(extremums[i].direction != 0) count++;
+  if(extremums[i].direction != 0) 
+    count++;      // если у элемента массива экстремумов ненулевое направление значит это сохраненный экстремум
  }
  return(count);
 }
@@ -212,7 +213,7 @@ SExtremum CExtremum::getExtr(int i)
 {
  SExtremum zero = {0, 0};
  if(i < 0 || i >= ARRAY_SIZE)
-  return zero;
+  return zero;     // в случае неверного индекса вовзвращаем дефолтный элемент
  return(extremums[i]);
 }
 
