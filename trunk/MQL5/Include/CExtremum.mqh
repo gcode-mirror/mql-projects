@@ -76,7 +76,7 @@ CExtremum::~CExtremum()
 // функция возвращает количество новых экстремумов на данном баре
 // параметры
 // SExtremum& extr_array [] - массив в который записываются новые экстремумы в порядке их появления
-// datetime start_pos_time  - время бара на котором ищем экстремумы
+// datetime start_pos_time  - время на котором ищем экстремумы
 // bool now - флаг для того что бы отличать работает мы на истории или в реальном времени(на истории на один бар заходим только один раз)
 //-----------------------------------------------------------------
 int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __DATETIME__, bool now = true)
@@ -84,54 +84,56 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  SExtremum result1 = {0, -1}; // временная переменная для записи max если он есть
  SExtremum result2 = {0, -1}; // временная переменная для записи min если он есть
  int count = 0;               // считаем сколько появилось экстремумов
- MqlRates buffer[1];
+ MqlRates bufferRates[1];
 
- if(CopyRates(_symbol, _tf_period, start_pos_time, 1, buffer) < 1)
+ if(CopyRates(_symbol, _tf_period, start_pos_time, 1, bufferRates) < 1)
   PrintFormat("%s %s Rates buffer: error = %d, calculated = %d, start_index = %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
  double difToNewExtremum = AverageBar(start_pos_time) * _percentage_ATR;  // расчет минимального расстояние между экстремумами
  double high = 0, low = 0;    // временная переменная в которой будет хранится цена для расчета max и min соответственно
  
- if(extremums[0].time == buffer[0].time && !now) return(0); //исключаем повторное определение экстремумов на истории
+ if(extremums[0].time == bufferRates[0].time && !now) return(0); // на истории сравниваем время последнего экстремума и время текущего бара, исключая тем самым повторное определение экстремумов
  
  if (now) // за время жизни бара цена close проходит все его значения от low до high
  {        // соответсвено если на данном баре есть верхний экстремум то он будет достигнут когда close будет max  и наоборот с low
-  high = buffer[0].close;
-  low = buffer[0].close;
+  high = bufferRates[0].close;
+  low = bufferRates[0].close;
  }
  else    // во время работы на истории мы смотрим на бар один раз соотвественно нам сразу нужно узнать его максимум и минимум
  {
-  high = buffer[0].high;
-  low = buffer[0].low;
+  high = bufferRates[0].high;
+  low = bufferRates[0].low;
  }
  
  if ((extremums[0].direction == 0 ) // Если экстремумов еще нет то говорим что сейчас экстремум
-   ||(extremums[0].direction >  0 && (GreatDoubles(high, extremums[0].price, _digits))) // Если цена пробила экстремум 
-   ||(extremums[0].direction <  0 && (GreatDoubles(high, extremums[0].price + difToNewExtremum, _digits)))) // Если цена отошла от экстремума на минимальное расстояние
- {
+   ||(extremums[0].direction >  0 && (GreatDoubles(high, extremums[0].price, _digits))) // Если цена пробила экстремум в ту же сторону
+   ||(extremums[0].direction <  0 && (GreatDoubles(high, extremums[0].price + difToNewExtremum, _digits)))) // Если цена отошла от экстремума на минимальное расстояние в обратную сторону
+ { 
   result1.direction = 1;       // запоминаем направление, цену и время появления экстремума
   result1.price = high;
-  result1.time = buffer[0].time;
+  result1.time = bufferRates[0].time;
   count++;
   //PrintFormat("%s %s start_pos_time = %s; max %0.5f", __FUNCTION__,  EnumToString((ENUM_TIMEFRAMES)_tf_period), TimeToString(start_pos_time), high);
  }
  
  if ((extremums[0].direction == 0 ) // Если экстремумов еще нет то говорим что сейчас экстремум
-   ||(extremums[0].direction <  0 && (LessDoubles(low, extremums[0].price, _digits))) //Если цена пробила экстремумо                    
-   ||(extremums[0].direction >  0 && (LessDoubles(low, extremums[0].price - difToNewExtremum, _digits)))) // Если цена отошла от экстремума на минимальное расстояние
+   ||(extremums[0].direction <  0 && (LessDoubles(low, extremums[0].price, _digits))) //Если цена пробила экстремумо в ту же сторону                    
+   ||(extremums[0].direction >  0 && (LessDoubles(low, extremums[0].price - difToNewExtremum, _digits)))) // Если цена отошла от экстремума на минимальное расстояние в обратную сторону
  {
   result2.direction = -1;     // запоминаем направление, цену и время появления экстремума
   result2.price = low;
-  result2.time = buffer[0].time;
+  result2.time = bufferRates[0].time;
   count++;
   //PrintFormat("%s %s start_pos_time = %s; min  %0.5f", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), TimeToString(start_pos_time), low);
  }
  
- if(buffer[0].close <= buffer[0].open) //если close ниже open то сначала пишем max потом min
+ // на истории может возникнуть ситуации когда одновременно на одном баре поялвентся два экстремума
+ // так как нам важен порядок их появления, то было взято следующее правило для определения кто первый появился, а кто второй
+ if(bufferRates[0].close <= bufferRates[0].open && !now) //если close ниже open то сначала пишем max потом min
  {
   extr_array[0] = result1;
   extr_array[1] = result2;
  }
- else                                  //если close выше open то сначала пишем min потом max
+ else                                                    //если close выше open то сначала пишем min потом max
  {
   extr_array[0] = result2;
   extr_array[1] = result1;
