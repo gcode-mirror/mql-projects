@@ -47,13 +47,25 @@ input bool   useMultiFill=true;                    // использовать доливки при п
 input string pbiParam = "";                        // Параметры PriceBasedIndicator
 input ENUM_PBI  usePBI=PBI_NO;                     // тип  использования PBI
 input ENUM_TIMEFRAMES pbiPeriod = PERIOD_H1;       // период PBI
-//input bool   useSecondPos = true;                  // использовать дополнительную позицию
-//input int    tpSecondPos  = 100;                   // тейк профит дополнительной позиции
+input string lockParams="";                        // Параметры запротов на вход
+input bool useLinesLock=false;                     // флаг включения запрета на вход по индикатора NineTeenLines
+input  int    koLock  = 2;                         // коэффициент запрета на вход
+input bool useMACDLock=false;                      // флаг включения запрета на вход по расхождению на MACD
 
+// структура уровней
+struct bufferLevel
+ {
+  double price[];  // цена уровня
+  double atr[];    // ширина уровня
+ };
 // хэндлы PriceBasedIndicator
 int handlePBI_1;
 int handlePBI_2;
 int handlePBI_3;
+// хэндл индикатора NineTeenLines
+int handle_19Lines;                                // хэндл 19 Lines
+// хэндл индикатора smydMACD
+int handleMACD;                                    // хэндл smydMACD 
 // необходимые буферы
 MqlRates lastBarD1[];                              // буфер цен на дневнике
 // буфер для хранения PriceBasedIndicator
@@ -71,7 +83,9 @@ CTradeManager *ctm;                                // объект торговой библиотеки
 //CTradeManager *ctm2;                              
 CisNewBar     *isNewBar_D1;                        // новый бар на D1
 CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
-
+// буферы 
+double signalBuffer[];                             // буфер для получения сигнала из индикатора smydMACD
+bufferLevel buffers[2];                            // буфер уровней
 // дополнительные системные переменные
 bool             firstLaunch       = true;         // флаг первого запуска эксперта
 bool             changeLotValid;                   // флаг возможности доливки на M1
@@ -91,14 +105,13 @@ double           curPriceBid       = 0;            // для хранения текущей цены 
 double           prevPriceAsk      = 0;            // для хранения предыдущей цены Ask
 double           prevPriceBid      = 0;            // для хранения предыдущей цены Bid
 double           lotReal;                          // действительный лот
+double           lenClosestUp;                     // расстояние до ближайшего уровня сверху
+double           lenClosestDown;                   // расстояние до ближайшего уровня снизу 
 ENUM_TENDENTION  lastTendention;                   // переменная для хранения последней тенденции
 
 // структуры для работы с позициями            
 SPositionInfo pos_info;                            // информация об открытии позиции 
 STrailing trailing;                                // параметры трейлинга
-
-//SPositionInfo pos_info2;                            // информация об открытии позиции 
-//STrailing trailing2;                                // параметры трейлинга
                            
 int OnInit()
   {     
@@ -134,15 +147,29 @@ int OnInit()
      lastTrendPBI_2  = GetLastTrendDirection(handlePBI_2,PERIOD_M15);
      lastTrendPBI_3  = GetLastTrendDirection(handlePBI_3,PERIOD_H1); 
    }
+  // если использовать запреты на вход по NineTeenLines
+  if (useLinesLock)
+   {
+    handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines");     
+    if (handle_19Lines == INVALID_HANDLE)
+     {
+      Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось получить хэндл NineteenLines");
+      return (INIT_FAILED);
+     }    
+   }
+  // если использовать запрет на вход на MACD
+  if (useMACDLock)
+   {
+   // создаем хэндл индикатора ShowMeYourDivMACD
+   handleMACD = iCustom (_Symbol,_Period,"smydMACD");   
+   if ( handleMACD == INVALID_HANDLE )
+    {
+     Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл ShowMeYourDivMACD");
+     return (INIT_FAILED);
+    }
+   } 
    // создаем объект класса TradeManager
-   ctm = new CTradeManager(); 
-   // если используется дополнительная позиция
-   
-   /*
-   if (useSecondPos)
-    ctm2 = new CTradeManager();                   
-   */
-   
+   ctm = new CTradeManager();  
    // создаем объекты класса CisNewBar
    isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
    // создаем объекты класса CBlowInfoFromExtremums
@@ -186,18 +213,6 @@ int OnInit()
    trailing.trailingStep = 0;
    trailing.handlePBI    = 0;  
    
-   /*
-   pos_info2.tp = tpSecondPos;
-   pos_info2.volume = lotReal;
-   pos_info2.expiration = 0;
-   pos_info2.priceDifference = 0;
- 
-   trailing2.trailingType = TRAILING_TYPE_NONE;
-   trailing2.minProfit    = 0;
-   trailing2.trailingStop = 0;
-   trailing2.trailingStep = 0;
-   trailing2.handlePBI    = 0;  
-   */    
    return(INIT_SUCCEEDED);
   }
 void OnDeinit(const int reason)
@@ -206,10 +221,9 @@ void OnDeinit(const int reason)
    ArrayFree(pbiBuf);
    // удаляем объекты классов
    delete ctm;
-   // если использовалась дополнительная позиция
-  /* if (useSecondPos)
-    delete ctm2;
-  */
+   // освобождаем хэндлы индикаторов
+   IndicatorRelease(handleMACD);
+   IndicatorRelease(handle_19Lines);
    delete isNewBar_D1;
    delete blowInfo[0];
    delete blowInfo[1];
@@ -221,14 +235,8 @@ void OnTick()
 {     
  ctm.OnTick(); 
  ctm.UpdateData();
- ctm.DoTrailing(blowInfo[indexForTrail]);
- /*
- if (useSecondPos)
-  {
-   ctm2.OnTick();
-   ctm2.UpdateData();
-  }
- */
+ ctm.DoTrailing(blowInfo[indexForTrail]); 
+
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
@@ -242,7 +250,13 @@ void OnTick()
  {   
   return;
  }
- 
+ // если мы используем запрет на вход по NineTeenLines
+ if (useLinesLock)
+  {
+   // если не удалось прогрузить буферы NineTeenLines
+   if ( !Upload19LinesBuffers () ) 
+    return;
+  }
  // получаем новые значения экстремумов
  for (int index = 0; index < 4; index++)
  {
@@ -309,10 +323,11 @@ void OnTick()
  else    // иначе меняем индекс трейлинга и доливаемся, если это возможно
  {
   ChangeTrailIndex();                            // то меняем индекс трейлинга
-  if (countAdd < 4 && changeLotValid)            // если было совершено меньше 4-х доливок и есть разрешение на доливку
+  if (countAdd < lotCount && changeLotValid)     // если было совершено меньше lotCount доливок и есть разрешение на доливку
   {
    if (ChangeLot())                           // если получили сигнал на доливание 
    {
+
     ctm.PositionChangeSize(_Symbol, lotStep);   // доливаемся 
    }       
   }        
@@ -329,6 +344,20 @@ void OnTick()
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
    {
+    // если используются запреты по NineTeenLines
+    if (useLinesLock)
+     {
+      // получаем расстояния до ближайших уровней снизу и сверху
+      lenClosestUp   = GetClosestLevel(BUY);
+      lenClosestDown = GetClosestLevel(SELL);
+      Comment();
+      // если получили сигнал на запрет на вход
+      if (lenClosestUp != 0 && 
+        LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
+         {
+          return;
+         }   
+     }
     // если позиция не была уже открыта на BUY   
     if (openedPosition != BUY)
     {
@@ -350,16 +379,8 @@ void OnTick()
     pos_info.type = OP_BUY;
     pos_info.sl = stopLoss;            
     // открываем позицию на BUY
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
-    /*
-    if (useSecondPos)
-     {
-      pos_info2.type = OP_BUY;
-      pos_info2.sl = stopLoss;            
-      // открываем позицию на BUY
-      ctm2.OpenUniquePosition(_Symbol, _Period, pos_info2, trailing2);    
-     }
-    */
+    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
+
    }
   }
  }
@@ -375,7 +396,20 @@ void OnTick()
   {                
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
-   {             
+   {    
+    // если используются зарпеты по NineTeenLines
+    if (useLinesLock)
+     {
+     // получаем расстояния до ближайших уровней снизу и сверху
+     lenClosestUp   = GetClosestLevel(BUY);
+     lenClosestDown = GetClosestLevel(SELL);    
+     // если получили сигнал запрета на вход
+     if (lenClosestDown != 0 &&
+         LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
+         {            
+          return;
+         }
+     }
     // если позиция не была уже открыта на SELL
     if (openedPosition != SELL)
     {
@@ -398,16 +432,7 @@ void OnTick()
    pos_info.type = OP_SELL;
    pos_info.sl = stopLoss;    
    // открываем позицию на SELL
-   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
-   /*
-   if (useSecondPos)
-    {
-     pos_info2.type = OP_SELL;
-     pos_info2.sl = stopLoss;    
-     // открываем позицию на SELL
-     ctm2.OpenUniquePosition(_Symbol, _Period, pos_info2, trailing2);   
-    }
-    */
+   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
   }
  } 
 }
@@ -575,3 +600,70 @@ int GetStopLoss()     // вычисляет стоп лосс
     return (-1);
    return (0);
   }
+  
+bool Upload19LinesBuffers ()   // получает последние значения уровней
+ {
+  int copiedPrice;
+  int copiedATR;
+  int indexPer;
+  int indexBuff;
+  int indexLines = 0;
+  for (indexPer=1;indexPer<2;indexPer++)
+   {
+    for (indexBuff=0;indexBuff<2;indexBuff++)
+     {
+      copiedPrice = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+4,  0,1,  buffers[indexLines].price);
+      copiedATR   = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+5,  0,1,buffers[indexLines].atr);
+      if (copiedPrice < 1 || copiedATR < 1)
+       {
+        Print("Не удалось прогрузить буферы индикатора NineTeenLines");
+        return (false);
+       }
+      indexLines++;
+     }
+   }
+  return(true);     
+ }
+ // возвращает ближайший уровень к текущей цене
+ double GetClosestLevel (int direction) 
+  {
+   double cuPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
+   double len = 0;  //расстояние до цены от уровня
+   double tmpLen; 
+   int    index;
+   int    savedInd;
+   switch (direction)
+    {
+     case BUY:  // ближний сверху
+      for (index=0;index<2;index++)
+       {
+        // если уровень выше
+        if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
+         {
+          tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
+          if (tmpLen < len || len == 0)
+           {
+            savedInd = index;
+            len = tmpLen;
+           }  
+         }
+       }
+     break;
+     case SELL: // ближний снизу
+      for (index=0;index<2;index++)
+       {
+        // если уровень ниже
+        if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
+          {
+           tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
+           if (tmpLen < len || len == 0)
+            {
+             savedInd = index;
+             len = tmpLen;
+            }
+          }
+       }     
+      break;
+   }
+   return (len);
+  }  

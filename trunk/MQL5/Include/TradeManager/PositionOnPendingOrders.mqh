@@ -283,7 +283,7 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
  if (_pos_info.sl > 0 && _sl_status != STOPLEVEL_STATUS_PLACED)
  {
   if (_slPrice <= 0) _slPrice = SLPriceByType(_pos_info.type);
-  if (MathAbs(_slPrice - PriceByType(_pos_info.type)) <= SymbInfo.StopsLevel()) _slPrice = StopLevelByType(_pos_info.type);
+  //if (MathAbs(_slPrice - PriceByType(_pos_info.type)) <= SymbInfo.StopsLevel()) _slPrice = StopLevelByType(_pos_info.type);
   
   _slType = SLOrderType((int)_pos_info.type);
   if (trade.OrderOpen(_symbol, _slType, _pos_info.volume, _slPrice, _type_time, _pos_info.expiration_time, slComment)) //, sl + stopLevel, sl - stopLevel);
