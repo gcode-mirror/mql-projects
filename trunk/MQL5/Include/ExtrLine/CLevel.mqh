@@ -17,6 +17,7 @@ struct SLevel
  double channel;
 };
 
+// Класс для линии уровня в индикаторе NineteenLines
 class CLevel: public CExtremum
 {
  private:
@@ -28,7 +29,7 @@ class CLevel: public CExtremum
  CLevel(string symbol, ENUM_TIMEFRAMES tf, int handle_atr, int period_ATR_channel, double percentageATR_channel);
 ~CLevel();
 
- void RecountLevel(datetime start_pos_time = __DATETIME__, bool now = true);
+ bool RecountLevel(datetime start_pos_time = __DATETIME__, bool now = true);
  SLevel getLevel(int i);
  void SetHandleATR(int handle);
 };
@@ -49,13 +50,15 @@ CLevel::~CLevel()
                 }             
 
 //-----------------------------------------------------------------
-
-void CLevel::RecountLevel(datetime start_pos_time = __DATETIME__, bool now = true)
+// Функция проверяет наличие новых экстремумов и в случае появления высчитывает для них ширину канала
+//-----------------------------------------------------------------
+bool CLevel::RecountLevel(datetime start_pos_time = __DATETIME__, bool now = true)
 {
  int count_new_extrs = RecountExtremum(start_pos_time, now);
  double level_channel = (AverageBar(start_pos_time) * _percentageATR_channel)/2;
+ if(level_channel == 0) return(false); // если не удалось посчитать канал считаем вызов неуспешным
  
- if(count_new_extrs == 1)               //в случае когда появился один экстремум на одном баре
+ if(count_new_extrs == 1)               // в случае когда появился один экстремум на одном баре
  {
   for(int j = ARRAY_SIZE-1; j >= 1; j--)
   {
@@ -64,7 +67,7 @@ void CLevel::RecountLevel(datetime start_pos_time = __DATETIME__, bool now = tru
   channel[0] = level_channel;
  }
  
- if(count_new_extrs == 2)                //в случае когда появилось два экстремума на одном баре
+ if(count_new_extrs == 2)                // в случае когда появилось два экстремума на одном баре
  {
   for(int j = ARRAY_SIZE-1; j >= 2; j--)
   {
@@ -72,10 +75,13 @@ void CLevel::RecountLevel(datetime start_pos_time = __DATETIME__, bool now = tru
   }
   channel[1] = level_channel;
   channel[0] = level_channel;
- }       
+ }
+ return(true);     
 }
 
-
+//-----------------------------------------------------------------
+// возвращает уровень
+//-----------------------------------------------------------------
 SLevel CLevel::getLevel(int i)
 {
  SLevel result = {{0, -1}, 0};
