@@ -7,7 +7,17 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
-
+/* NB !!!
+ Как бы страшно не выглядел дальше код, не стоит его бояться, потому что это вынужденная необходимость.
+ Дело в том что буферы индикатора имеют только тип double и для того что бы нам хранить всю ту информацию этого не хватает
+ Поэтому на каждый уровень приходиться 2 буфера (цена и ширина канала). 
+ Всего у нас буферов 2(количество буферов на один уровень) * 
+                     4(количество уровней на одном таймфрейме) *
+                     5(количество таймфреймов) +
+                     4(количество буферов для последних цен(high, low, open, close) на дневнике)+
+                     1(буфер для канала на дневнике) = 45 буферов
+ Выглядит страшно, но по большей части текст индикатора это инициализация, присвание значений и очищение этих буферов
+*/
 
 #property indicator_chart_window
 #property indicator_buffers 45  
@@ -36,9 +46,6 @@ sinput string mainStr = "";             //Базовые параметры индикатора
 input int    period_ATR_channel = 30;   //Период ATR для канала
 input int    period_average_ATR = 5;    //Период устреднения индикатора ATR
 
-
-//input double percent_ATR_channel = 0.1; //Ширина канала уровня в процентах от ATR
-
 sinput string levelStr = "";                 //ПАРАМЕТРЫ УРОВНЕЙ
 
 sinput string mn1Str   = "";                 //Месячные уровни
@@ -62,11 +69,13 @@ input bool  flag5  = true;                   //Показывать экстремумы H1
 input double channel_ATR_H1   =  0.25;       //Ширина уровня 
 
 sinput string dStr   = "";                   //Цены на дневнике
-input bool  flag6  = true;                  //Показывать цены D1
+input bool  flag6  = true;                   //Показывать цены D1
 
-//////////////////////////////
+//---------------------------------------------------------------------
 
-
+// переменные отвечающие за отображение уровней определенных таймфреймов
+// сделано через пары flag# - show_Extr_* так как это должны быть переменные которые мы можем изменить в зависимости от текущего тф
+// так как мы не показываем уровни с тф младше чем текущий
 bool show_Extr_MN = flag1;
 bool show_Extr_W1 = flag2;
 bool show_Extr_D1 = flag3;
@@ -75,12 +84,14 @@ bool show_Extr_H1 = flag5;
 bool show_Price_D1 = flag6;
 
 
-CLevel calcMN (_Symbol, PERIOD_MN1, -1, period_ATR_channel, channel_ATR_MN1);   //инициализация хэндла атр происходит на онинит
-CLevel calcW1 (_Symbol,  PERIOD_W1, -1, period_ATR_channel, channel_ATR_W1);    //инициализация хэндла атр происходит на онинит
-CLevel calcD1 (_Symbol,  PERIOD_D1, -1, period_ATR_channel, channel_ATR_D1);    //инициализация хэндла атр происходит на онинит
-CLevel calcH4 (_Symbol,  PERIOD_H4, -1, period_ATR_channel, channel_ATR_H4);    //инициализация хэндла атр происходит на онинит
-CLevel calcH1 (_Symbol,  PERIOD_H1, -1, period_ATR_channel, channel_ATR_H1);    //инициализация хэндла атр происходит на онинит
+// классы для расчета экстремумов и ширины канала
+CLevel calcMN (_Symbol, PERIOD_MN1, -1, period_ATR_channel, channel_ATR_MN1);   //инициализация хэндла атр происходит на OnInit
+CLevel calcW1 (_Symbol,  PERIOD_W1, -1, period_ATR_channel, channel_ATR_W1);    //инициализация хэндла атр происходит на OnInit
+CLevel calcD1 (_Symbol,  PERIOD_D1, -1, period_ATR_channel, channel_ATR_D1);    //инициализация хэндла атр происходит на OnInit
+CLevel calcH4 (_Symbol,  PERIOD_H4, -1, period_ATR_channel, channel_ATR_H4);    //инициализация хэндла атр происходит на OnInit
+CLevel calcH1 (_Symbol,  PERIOD_H1, -1, period_ATR_channel, channel_ATR_H1);    //инициализация хэндла атр происходит на OnInit
 
+// массивы структур хранящие уровни
 SLevel extr_levelMN[4];
 SLevel extr_levelW1[4];
 SLevel extr_levelD1[4];
@@ -134,9 +145,11 @@ double Price_D1_Buffer3[];
 double Price_D1_Buffer4[];
 double   ATR_D1_Buffer [];
 
-int ATR_handle_for_price_line;
-
-bool series_order = true;
+int handle_atr_MN;
+int handle_atr_W1;
+int handle_atr_D1;
+int handle_atr_H4;
+int handle_atr_H1;
 
 CisNewBar isNewBarMN (_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
 CisNewBar isNewBarW1 (_Symbol, PERIOD_W1 );   // для проверки формирования нового бара на неделе
@@ -248,51 +261,51 @@ int OnInit()
  ArrayInitialize(Price_D1_Buffer4, 0);
  ArrayInitialize(  ATR_D1_Buffer , 0);
  
- ArraySetAsSeries(Extr_MN_Buffer1,  series_order);
- ArraySetAsSeries(Extr_MN_Buffer2,  series_order);
- ArraySetAsSeries(Extr_MN_Buffer3,  series_order);
- ArraySetAsSeries(Extr_MN_Buffer4,  series_order);
- ArraySetAsSeries( ATR_MN_Buffer1,  series_order);
- ArraySetAsSeries( ATR_MN_Buffer2,  series_order);
- ArraySetAsSeries( ATR_MN_Buffer3,  series_order);
- ArraySetAsSeries( ATR_MN_Buffer4,  series_order);
- ArraySetAsSeries(Extr_W1_Buffer1,  series_order);
- ArraySetAsSeries(Extr_W1_Buffer2,  series_order);
- ArraySetAsSeries(Extr_W1_Buffer3,  series_order);
- ArraySetAsSeries(Extr_W1_Buffer4,  series_order);
- ArraySetAsSeries( ATR_W1_Buffer1,  series_order);
- ArraySetAsSeries( ATR_W1_Buffer2,  series_order);
- ArraySetAsSeries( ATR_W1_Buffer3,  series_order);
- ArraySetAsSeries( ATR_W1_Buffer4,  series_order);
- ArraySetAsSeries(Extr_D1_Buffer1,  series_order);
- ArraySetAsSeries(Extr_D1_Buffer2,  series_order);
- ArraySetAsSeries(Extr_D1_Buffer3,  series_order);
- ArraySetAsSeries(Extr_D1_Buffer4,  series_order);
- ArraySetAsSeries( ATR_D1_Buffer1,  series_order);
- ArraySetAsSeries( ATR_D1_Buffer2,  series_order);
- ArraySetAsSeries( ATR_D1_Buffer3,  series_order);
- ArraySetAsSeries( ATR_D1_Buffer4,  series_order);
- ArraySetAsSeries(Extr_H4_Buffer1,  series_order);
- ArraySetAsSeries(Extr_H4_Buffer2,  series_order);
- ArraySetAsSeries(Extr_H4_Buffer3,  series_order);
- ArraySetAsSeries(Extr_H4_Buffer4,  series_order);
- ArraySetAsSeries( ATR_H4_Buffer1,  series_order);
- ArraySetAsSeries( ATR_H4_Buffer2,  series_order);
- ArraySetAsSeries( ATR_H4_Buffer3,  series_order);
- ArraySetAsSeries( ATR_H4_Buffer4,  series_order);
- ArraySetAsSeries(Extr_H1_Buffer1,  series_order);
- ArraySetAsSeries(Extr_H1_Buffer2,  series_order);
- ArraySetAsSeries(Extr_H1_Buffer3,  series_order);
- ArraySetAsSeries(Extr_H1_Buffer4,  series_order);
- ArraySetAsSeries( ATR_H1_Buffer1,  series_order);
- ArraySetAsSeries( ATR_H1_Buffer2,  series_order);
- ArraySetAsSeries( ATR_H1_Buffer3,  series_order);
- ArraySetAsSeries( ATR_H1_Buffer4,  series_order);
- ArraySetAsSeries(Price_D1_Buffer1, series_order);
- ArraySetAsSeries(Price_D1_Buffer2, series_order);
- ArraySetAsSeries(Price_D1_Buffer3, series_order);
- ArraySetAsSeries(Price_D1_Buffer4, series_order);
- ArraySetAsSeries(  ATR_D1_Buffer , series_order);
+ ArraySetAsSeries(Extr_MN_Buffer1,  true);
+ ArraySetAsSeries(Extr_MN_Buffer2,  true);
+ ArraySetAsSeries(Extr_MN_Buffer3,  true);
+ ArraySetAsSeries(Extr_MN_Buffer4,  true);
+ ArraySetAsSeries( ATR_MN_Buffer1,  true);
+ ArraySetAsSeries( ATR_MN_Buffer2,  true);
+ ArraySetAsSeries( ATR_MN_Buffer3,  true);
+ ArraySetAsSeries( ATR_MN_Buffer4,  true);
+ ArraySetAsSeries(Extr_W1_Buffer1,  true);
+ ArraySetAsSeries(Extr_W1_Buffer2,  true);
+ ArraySetAsSeries(Extr_W1_Buffer3,  true);
+ ArraySetAsSeries(Extr_W1_Buffer4,  true);
+ ArraySetAsSeries( ATR_W1_Buffer1,  true);
+ ArraySetAsSeries( ATR_W1_Buffer2,  true);
+ ArraySetAsSeries( ATR_W1_Buffer3,  true);
+ ArraySetAsSeries( ATR_W1_Buffer4,  true);
+ ArraySetAsSeries(Extr_D1_Buffer1,  true);
+ ArraySetAsSeries(Extr_D1_Buffer2,  true);
+ ArraySetAsSeries(Extr_D1_Buffer3,  true);
+ ArraySetAsSeries(Extr_D1_Buffer4,  true);
+ ArraySetAsSeries( ATR_D1_Buffer1,  true);
+ ArraySetAsSeries( ATR_D1_Buffer2,  true);
+ ArraySetAsSeries( ATR_D1_Buffer3,  true);
+ ArraySetAsSeries( ATR_D1_Buffer4,  true);
+ ArraySetAsSeries(Extr_H4_Buffer1,  true);
+ ArraySetAsSeries(Extr_H4_Buffer2,  true);
+ ArraySetAsSeries(Extr_H4_Buffer3,  true);
+ ArraySetAsSeries(Extr_H4_Buffer4,  true);
+ ArraySetAsSeries( ATR_H4_Buffer1,  true);
+ ArraySetAsSeries( ATR_H4_Buffer2,  true);
+ ArraySetAsSeries( ATR_H4_Buffer3,  true);
+ ArraySetAsSeries( ATR_H4_Buffer4,  true);
+ ArraySetAsSeries(Extr_H1_Buffer1,  true);
+ ArraySetAsSeries(Extr_H1_Buffer2,  true);
+ ArraySetAsSeries(Extr_H1_Buffer3,  true);
+ ArraySetAsSeries(Extr_H1_Buffer4,  true);
+ ArraySetAsSeries( ATR_H1_Buffer1,  true);
+ ArraySetAsSeries( ATR_H1_Buffer2,  true);
+ ArraySetAsSeries( ATR_H1_Buffer3,  true);
+ ArraySetAsSeries( ATR_H1_Buffer4,  true);
+ ArraySetAsSeries(Price_D1_Buffer1, true);
+ ArraySetAsSeries(Price_D1_Buffer2, true);
+ ArraySetAsSeries(Price_D1_Buffer3, true);
+ ArraySetAsSeries(Price_D1_Buffer4, true);
+ ArraySetAsSeries(  ATR_D1_Buffer , true);
   
  InitializeExtrArray(extr_levelMN);
  InitializeExtrArray(extr_levelW1);
@@ -301,32 +314,29 @@ int OnInit()
  InitializeExtrArray(extr_levelH1);
  InitializeExtrArray(price_levelD1);
  
- int handle_atr_MN = iMA(_Symbol,  PERIOD_MN1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,  PERIOD_MN1, period_ATR_channel));//iCustom(_Symbol, PERIOD_MN1, "AverageATR", period_ATR_channel, period_average_ATR);
- int handle_atr_W1 = iMA(_Symbol,   PERIOD_W1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_W1, period_ATR_channel));//iCustom(_Symbol, PERIOD_W1, "AverageATR", period_ATR_channel, period_average_ATR);
- int handle_atr_D1 = iMA(_Symbol,   PERIOD_D1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_D1, period_ATR_channel));//iCustom(_Symbol, PERIOD_D1, "AverageATR", period_ATR_channel, period_average_ATR);
- int handle_atr_H4 = iMA(_Symbol,   PERIOD_H4, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H4, period_ATR_channel));//iCustom(_Symbol, PERIOD_H4, "AverageATR", period_ATR_channel, period_average_ATR);
- int handle_atr_H1 = iMA(_Symbol,   PERIOD_H1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H1, period_ATR_channel));//iCustom(_Symbol, PERIOD_H1, "AverageATR", period_ATR_channel, period_average_ATR);
+ handle_atr_MN = iMA(_Symbol,  PERIOD_MN1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,  PERIOD_MN1, period_ATR_channel));
+ handle_atr_W1 = iMA(_Symbol,   PERIOD_W1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_W1, period_ATR_channel));
+ handle_atr_D1 = iMA(_Symbol,   PERIOD_D1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_D1, period_ATR_channel));
+ handle_atr_H4 = iMA(_Symbol,   PERIOD_H4, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H4, period_ATR_channel));
+ handle_atr_H1 = iMA(_Symbol,   PERIOD_H1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H1, period_ATR_channel));
  
- if(handle_atr_MN == INVALID_HANDLE)
-  {
-   Comment("ГАВНО А НЕ ХЕЭНДЛ MN1");
-  }
- 
+ // создание и присваивание хэндлов индикаторов идет здесь, так как при создании и инициализации хэндла внутри класса
+ // наблюдаются ошибки свзяанные тем что требуемый индикатор не успевает посчитаться
  calcMN.SetHandleATR(handle_atr_MN);
  calcW1.SetHandleATR(handle_atr_W1);
  calcD1.SetHandleATR(handle_atr_D1);
  calcH4.SetHandleATR(handle_atr_H4);
- calcH1.SetHandleATR(handle_atr_H1);
+ calcH1.SetHandleATR(handle_atr_H1); 
  
- ATR_handle_for_price_line = iMA(_Symbol,   PERIOD_D1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_D1, period_ATR_channel));//iCustom(Symbol(),PERIOD_D1,"AverageATR",period_ATR_channel,period_average_ATR);
- 
+ // показываем только уровни текущего таймфрейма или выше
  if(Period() > PERIOD_MN1 && show_Extr_MN)  show_Extr_MN = false;
  if(Period() > PERIOD_W1  && show_Extr_W1)  show_Extr_W1 = false;
  if(Period() > PERIOD_D1  && show_Extr_D1)  show_Extr_D1 = false;
  if(Period() > PERIOD_H4  && show_Extr_H4)  show_Extr_H4 = false;
  if(Period() > PERIOD_H1  && show_Extr_H1)  show_Extr_H1 = false;
  if(Period() > PERIOD_D1  && show_Price_D1) show_Price_D1 = false;
-  
+ 
+ // создаем горизонтальные линии для каждого уровня
  if(show_Extr_MN) CreateExtrLines (extr_levelMN, PERIOD_MN1, clrRed);
  if(show_Extr_W1) CreateExtrLines (extr_levelW1, PERIOD_W1 , clrOrange);
  if(show_Extr_D1) CreateExtrLines (extr_levelD1, PERIOD_D1 , clrYellow);
@@ -340,8 +350,12 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
+ IndicatorRelease(handle_atr_MN);
+ IndicatorRelease(handle_atr_W1);
+ IndicatorRelease(handle_atr_D1);
+ IndicatorRelease(handle_atr_H4);
+ IndicatorRelease(handle_atr_H1);
  
- IndicatorRelease(ATR_handle_for_price_line);
  //-------MN-LEVEL
  ArrayFree(Extr_MN_Buffer1);
  ArrayFree(Extr_MN_Buffer2);
@@ -418,17 +432,17 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
-//--- 
-   ArraySetAsSeries(open , series_order);
-   ArraySetAsSeries(high , series_order);
-   ArraySetAsSeries(low  , series_order);
-   ArraySetAsSeries(close, series_order);
-   ArraySetAsSeries(time , series_order);
+   ArraySetAsSeries(open , true);
+   ArraySetAsSeries(high , true);
+   ArraySetAsSeries(low  , true);
+   ArraySetAsSeries(close, true);
+   ArraySetAsSeries(time , true);
     
    if(prev_calculated == 0)
    {
     PrintFormat("%s Рассчет на истории. %s / %s", __FUNCTION__, TimeToString(time[rates_total-2]), TimeToString(time[0]));
     
+    // для всей глубины истории считаем уровни и после этого изменяем положение соответствующих горизонтальных линий
     for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
     {
      //PrintFormat("%s %s", __FUNCTION__, TimeToString(time[i]));
@@ -515,6 +529,7 @@ int OnCalculate(const int rates_total,
    }//end prev_calculated == 0
    else
    {     
+    // действуем аналогично работе на истории, только теперь пишет в текущую ячейку буферов
     if(show_Extr_MN)
     {
      Extr_MN_Buffer1[0] = extr_levelMN[0].extr.price;
@@ -600,6 +615,11 @@ int OnCalculate(const int rates_total,
 
 //---------------------------------------------
 // Пересчет экстремумов для заданного ТФ
+// входные параметры:
+// СLevel &extrcalc - класс рассчитывающий уровни
+// SLevel &resArray[] - возвращаемый массив перерасчитынных уровней
+// datetime start_pos_time  - время для которого перерасчитываем уровни
+// bool now - флаг для того что бы отличать работает мы на истории или в реальном времени(нужен для корректного расчета экстремумов)
 //---------------------------------------------
 bool CalcExtr(CLevel &extrcalc, SLevel &resArray[], datetime start_pos_time, bool now = false)
 {
@@ -613,12 +633,15 @@ bool CalcExtr(CLevel &extrcalc, SLevel &resArray[], datetime start_pos_time, boo
  //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f}; num3: {%d, %0.5f};", __FUNCTION__, resArray[0].extr.direction, resArray[0].extr.price, resArray[1].extr.direction, resArray[1].extr.price, resArray[2].extr.direction, resArray[2].extr.price, resArray[3].extr.direction, resArray[3].extr.price);
 }
 
+//---------------------------------------------
+// Расчет последних 4 цен: high, low, close, open
+//---------------------------------------------
 void CalcPrice(ENUM_TIMEFRAMES tf, datetime start_pos)
 {
  double  buffer_ATR[1];
  MqlRates rates_buffer[1];
  
- CopyBuffer(ATR_handle_for_price_line, 0, start_pos-PeriodSeconds(tf), 1, buffer_ATR);
+ CopyBuffer(handle_atr_D1, 0, start_pos-PeriodSeconds(tf), 1, buffer_ATR);
  CopyRates(Symbol(), tf, start_pos-PeriodSeconds(tf), 1, rates_buffer);
  
  price_levelD1[0].extr.price = rates_buffer[0].open;
@@ -630,8 +653,9 @@ void CalcPrice(ENUM_TIMEFRAMES tf, datetime start_pos)
  price_levelD1[3].extr.price = rates_buffer[0].close;
  price_levelD1[3].channel = (buffer_ATR[0]*channel_ATR_D1)/2;
 }
+
 //---------------------------------------------
-// Создание линий
+// Создание горизонтальных линий для 4 уровней
 //---------------------------------------------
 void CreateExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf, color clr)
 {
@@ -652,7 +676,7 @@ void CreateExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf, color clr)
 }
 
 //---------------------------------------------
-// Сдвиг линий на заданный уровень
+// Сдвиг горизонтаьных линий всех 4 уровней на новые места
 //---------------------------------------------
 void MoveExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf)
 {
@@ -672,7 +696,7 @@ void MoveExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf)
 }
 
 //---------------------------------------------
-// Удаление линий
+// Удаление горизонтальных линий 4 уровней
 //---------------------------------------------
 void DeleteExtrLines(ENUM_TIMEFRAMES tf)
 {
@@ -691,6 +715,9 @@ void DeleteExtrLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"four-");
 }
 
+//---------------------------------------------
+// Создание горизонтальных линий для 4 цен
+//---------------------------------------------
 void CreatePriceLines(const SLevel &te[], ENUM_TIMEFRAMES tf,color clr)
 {
  string name = "price_" + EnumToString(tf) + "_";
@@ -708,6 +735,9 @@ void CreatePriceLines(const SLevel &te[], ENUM_TIMEFRAMES tf,color clr)
  HLineCreate(0, name+"close-", 0, te[3].extr.price-te[3].channel, clr, 2);
 }
 
+//---------------------------------------------
+// Сдвиг горизонтаьных линий всех 4 цен на новые места
+//---------------------------------------------
 void MovePriceLines(const SLevel &te[], ENUM_TIMEFRAMES tf)
 {
  string name = "price_" + EnumToString(tf) + "_";
@@ -725,6 +755,9 @@ void MovePriceLines(const SLevel &te[], ENUM_TIMEFRAMES tf)
  HLineMove(0, name+"close-", te[3].extr.price-te[3].channel);   
 }
 
+//---------------------------------------------
+// Удаление горизонтальных линий 4 цен
+//---------------------------------------------
 void DeletePriceLines(ENUM_TIMEFRAMES tf)
 {
  string name = "price_" + EnumToString(tf) + "_";
@@ -742,7 +775,9 @@ void DeletePriceLines(ENUM_TIMEFRAMES tf)
  HLineDelete(0, name+"low-");
 }
 
-//CREATE AND DELETE LABEL AND RECTLABEL
+//---------------------------------------------------------------------------------------------
+// Создание информационной рамки с подсказкой о цветах каждого таймфрема в левом верхнем углу
+//---------------------------------------------------------------------------------------------
 void SetInfoTabel()
 {
  int X = 10;
@@ -757,6 +792,9 @@ void SetInfoTabel()
  ChartRedraw();
 }
 
+//------------------------------------
+// Удаление информационной рамки 
+//------------------------------------
 void DeleteInfoTabel()
 {
  RectLabelDelete(0, "Extr_Title");
@@ -769,6 +807,9 @@ void DeleteInfoTabel()
  ChartRedraw();
 }
 
+//----------------------------------------------------
+// Инициализация массива уровней дефолтными значениями
+//----------------------------------------------------
 void InitializeExtrArray (SLevel &te[])
 {
  int size = ArraySize(te);
@@ -780,6 +821,9 @@ void InitializeExtrArray (SLevel &te[])
  }
 }
 
+//------------------------------------
+// Распечатка массива уровней
+//------------------------------------
 void PrintExtrArray(SLevel &te[], ENUM_TIMEFRAMES tf)
 {
  PrintFormat("%s {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f}; {%.05f, %d, %.05f};", EnumToString((ENUM_TIMEFRAMES)tf),
