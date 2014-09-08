@@ -179,6 +179,10 @@ int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now 
 double CExtremum::AverageBar (datetime start_pos)  // подгружаем значения с индикатора
 {
  double buffer_average_atr[1];
+ if (_handle_ATR == INVALID_HANDLE)
+ {
+  PrintFormat("%s ERROR. I have INVALID HANDLE = %d, %s", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period));
+ }
  if(CopyBuffer(_handle_ATR, 0, start_pos, 1, buffer_average_atr) == 1) 
   return(buffer_average_atr[0]);
  else
