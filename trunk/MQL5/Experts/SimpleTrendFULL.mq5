@@ -64,8 +64,10 @@ int handlePBI_2;
 int handlePBI_3;
 // хэндл индикатора NineTeenLines
 int handle_19Lines;                                // хэндл 19 Lines
-// хэндл индикатора smydMACD
-int handleMACD;                                    // хэндл smydMACD 
+// хэндлы индикатора smydMACD
+int handleMACDM5;                                  // хэндл smydMACD M5
+int handleMACDM15;                                 // хэндл smydMACD M15
+int handleMACDH1;                                  // хэндл smydMACD H1 
 // необходимые буферы
 MqlRates lastBarD1[];                              // буфер цен на дневнике
 // буфер для хранения PriceBasedIndicator
@@ -89,6 +91,9 @@ bufferLevel buffers[2];                            // буфер уровней
 // дополнительные системные переменные
 bool             firstLaunch       = true;         // флаг первого запуска эксперта
 bool             changeLotValid;                   // флаг возможности доливки на M1
+bool             beatM5;                           // флаг пробития на M5
+bool             beatM15;                          // флаг пробития на M15
+bool             beatH1;                           // флаг пробития на H1
 int              openedPosition    = NO_POSITION;  // тип открытой позиции 
 int              stopLoss;                         // стоп лосс
 int              indexForTrail     = 0;            // индекс для трейлинга
@@ -161,8 +166,10 @@ int OnInit()
   if (useMACDLock)
    {
    // создаем хэндл индикатора ShowMeYourDivMACD
-   handleMACD = iCustom (_Symbol,_Period,"smydMACD");   
-   if ( handleMACD == INVALID_HANDLE )
+   handleMACDM5  = iCustom (_Symbol,PERIOD_M5,"smydMACD");
+   handleMACDM15 = iCustom (_Symbol,PERIOD_M15,"smydMACD");
+   handleMACDH1  = iCustom (_Symbol,PERIOD_H1,"smydMACD");   
+   if ( handleMACDM5 == INVALID_HANDLE || handleMACDM15 == INVALID_HANDLE || handleMACDH1 == INVALID_HANDLE )
     {
      Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось создать хэндл ShowMeYourDivMACD");
      return (INIT_FAILED);
@@ -222,7 +229,9 @@ void OnDeinit(const int reason)
    // удаляем объекты классов
    delete ctm;
    // освобождаем хэндлы индикаторов
-   IndicatorRelease(handleMACD);
+   IndicatorRelease(handleMACDM5);
+   IndicatorRelease(handleMACDM15);
+   IndicatorRelease(handleMACDH1);
    IndicatorRelease(handle_19Lines);
    delete isNewBar_D1;
    delete blowInfo[0];
@@ -337,20 +346,35 @@ void OnTick()
  if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPriceBid) == TENDENTION_UP)
  {   
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if (  IsExtremumBeaten(1,BUY)&&(lastTrendPBI_1==BUY||usePBI==PBI_NO) || 
-        IsExtremumBeaten(2,BUY)&&(lastTrendPBI_2==BUY||usePBI==PBI_NO) || 
-        IsExtremumBeaten(3,BUY)&&(lastTrendPBI_3==BUY||usePBI==PBI_NO)  )
+  if (  (beatM5=IsExtremumBeaten(1,BUY))&&(lastTrendPBI_1==BUY||usePBI==PBI_NO) || 
+        (beatM15=IsExtremumBeaten(2,BUY))&&(lastTrendPBI_2==BUY||usePBI==PBI_NO) || 
+        (beatH1=IsExtremumBeaten(3,BUY))&&(lastTrendPBI_3==BUY||usePBI==PBI_NO)  )
   {        
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
    {
+    // если используются запреты по smydMACD
+    if (useMACDLock)
+     {
+      // если пробили M5 и сигнал MACD на M5 противоположный, то зарпещаем открываться
+      if (beatM5&&GetMACDSignal(handleMACDM5)==SELL)
+       return;
+      // если пробили M15 и сигнал MACD на M15 противоположный, то запрещаем открываться
+      if (beatM15&&GetMACDSignal(handleMACDM15)==SELL)
+       return;
+      // если пробили H1 и сигнал MACD на H1 противоположный, то запрещаем открываться
+      if (beatH1&&GetMACDSignal(handleMACDH1)==SELL)
+       return;
+     }
     // если используются запреты по NineTeenLines
     if (useLinesLock)
      {
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
       lenClosestDown = GetClosestLevel(SELL);
-      Comment();
+      Comment("\nTO UP = ",DoubleToString(lenClosestUp),
+              "\nCLOSEST DOWN = ",DoubleToString(lenClosestDown)
+       );
       // если получили сигнал на запрет на вход
       if (lenClosestUp != 0 && 
         LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
@@ -389,20 +413,36 @@ void OnTick()
  if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPriceAsk) == TENDENTION_DOWN)
  {                     
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if ( IsExtremumBeaten(1,SELL)&&(lastTrendPBI_1==SELL||usePBI==PBI_NO) || 
-       IsExtremumBeaten(2,SELL)&&(lastTrendPBI_2==SELL||usePBI==PBI_NO) || 
-       IsExtremumBeaten(3,SELL)&&(lastTrendPBI_3==SELL||usePBI==PBI_NO)  
+  if ( (beatM5=IsExtremumBeaten(1,SELL))&&(lastTrendPBI_1==SELL||usePBI==PBI_NO) || 
+       (beatM15=IsExtremumBeaten(2,SELL))&&(lastTrendPBI_2==SELL||usePBI==PBI_NO) || 
+       (beatH1=IsExtremumBeaten(3,SELL))&&(lastTrendPBI_3==SELL||usePBI==PBI_NO)  
         )
   {                
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
    {    
+    // если используются запреты по smydMACD
+    if (useMACDLock)
+     {
+      // если пробили M5 и сигнал MACD на M5 противоположный, то зарпещаем открываться
+      if (beatM5&&GetMACDSignal(handleMACDM5)==BUY)
+       return;
+      // если пробили M15 и сигнал MACD на M15 противоположный, то запрещаем открываться
+      if (beatM15&&GetMACDSignal(handleMACDM15)==BUY)
+       return;
+      // если пробили H1 и сигнал MACD на H1 противоположный, то запрещаем открываться
+      if (beatH1&&GetMACDSignal(handleMACDH1)==BUY)
+       return;
+     }   
     // если используются зарпеты по NineTeenLines
     if (useLinesLock)
      {
      // получаем расстояния до ближайших уровней снизу и сверху
      lenClosestUp   = GetClosestLevel(BUY);
      lenClosestDown = GetClosestLevel(SELL);    
+      Comment("\nTO UP = ",DoubleToString(lenClosestUp),
+              "\nCLOSEST DOWN = ",DoubleToString(lenClosestDown)
+       );     
      // если получили сигнал запрета на вход
      if (lenClosestDown != 0 &&
          LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
@@ -608,7 +648,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
   int indexPer;
   int indexBuff;
   int indexLines = 0;
-  for (indexPer=1;indexPer<2;indexPer++)
+  for (indexPer=1;indexPer<5;indexPer++)
    {
     for (indexBuff=0;indexBuff<2;indexBuff++)
      {
@@ -635,7 +675,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<2;index++)
+      for (index=0;index<8;index++)
        {
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
@@ -650,7 +690,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
        }
      break;
      case SELL: // ближний снизу
-      for (index=0;index<2;index++)
+      for (index=0;index<8;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
@@ -667,3 +707,15 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
    }
    return (len);
   }  
+  // фунция возвращает сигнал на MACD
+  int  GetMACDSignal (int handleMACD)
+   {
+    double bufMACD[];
+    int copiedMACD = CopyBuffer(handleMACD,0,1,1,bufMACD);
+    if (copiedMACD < 1)
+     {
+      Print("Ошибка! Не удалось прогрузить буфер smydMACD");
+      return (2);
+     }
+    return (int(bufMACD[0]));
+   }
