@@ -245,7 +245,7 @@ void OnTick()
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(blowInfo[indexForTrail]); 
-
+GetMACDSignal(handleMACDM5);
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
@@ -334,10 +334,10 @@ void OnTick()
   ChangeTrailIndex();                            // то меняем индекс трейлинга
   if (countAdd < lotCount && changeLotValid)     // если было совершено меньше lotCount доливок и есть разрешение на доливку
   {
-   if (ChangeLot())                           // если получили сигнал на доливание 
+   if (ChangeLot())                              // если получили сигнал на доливание 
    {
 
-    ctm.PositionChangeSize(_Symbol, lotStep);   // доливаемся 
+    ctm.PositionChangeSize(_Symbol, lotStep);    // доливаемся 
    }       
   }        
  }
@@ -372,9 +372,6 @@ void OnTick()
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
       lenClosestDown = GetClosestLevel(SELL);
-      Comment("\nTO UP = ",DoubleToString(lenClosestUp),
-              "\nCLOSEST DOWN = ",DoubleToString(lenClosestDown)
-       );
       // если получили сигнал на запрет на вход
       if (lenClosestUp != 0 && 
         LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
@@ -440,9 +437,6 @@ void OnTick()
      // получаем расстояния до ближайших уровней снизу и сверху
      lenClosestUp   = GetClosestLevel(BUY);
      lenClosestDown = GetClosestLevel(SELL);    
-      Comment("\nTO UP = ",DoubleToString(lenClosestUp),
-              "\nCLOSEST DOWN = ",DoubleToString(lenClosestDown)
-       );     
      // если получили сигнал запрета на вход
      if (lenClosestDown != 0 &&
          LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
@@ -715,7 +709,9 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
     if (copiedMACD < 1)
      {
       Print("Ошибка! Не удалось прогрузить буфер smydMACD");
-      return (2);
+      return (0);
      }
+    if (int(bufMACD[0])!=0)
+    Print("сигнал = ",int(bufMACD[0])," время = ",TimeToString(TimeCurrent()) );
     return (int(bufMACD[0]));
    }
