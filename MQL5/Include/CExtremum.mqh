@@ -20,7 +20,6 @@ struct SExtremum
  datetime time;                      // время бара на котором возникает экстремум
 };
 
-
 // Класс который хранит и вычисляет последние ARRAY_SIZE экстремумов
 class CExtremum
 {

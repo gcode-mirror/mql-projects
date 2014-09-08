@@ -42,7 +42,7 @@ input int    period_average_ATR = 5;    //Период устреднения индикатора ATR
 sinput string levelStr = "";                 //ПАРАМЕТРЫ УРОВНЕЙ
 
 sinput string mn1Str   = "";                 //Месячные уровни
-input bool  flag1  = false;                   //Показывать экстремумы MN1
+input bool  flag1  = true;                   //Показывать экстремумы MN1
 input double channel_ATR_MN1  =  0.1;        //Ширина уровня
 
 sinput string w1Str   = "";                  //Недельные уровни
@@ -62,7 +62,7 @@ input bool  flag5  = true;                   //Показывать экстремумы H1
 input double channel_ATR_H1   =  0.25;       //Ширина уровня 
 
 sinput string dStr   = "";                   //Цены на дневнике
-input bool  flag6  = false;                  //Показывать цены D1
+input bool  flag6  = true;                  //Показывать цены D1
 
 //////////////////////////////
 
@@ -137,7 +137,6 @@ double   ATR_D1_Buffer [];
 int ATR_handle_for_price_line;
 
 bool series_order = true;
-bool first = true;
 
 CisNewBar isNewBarMN (_Symbol, PERIOD_MN1);   // для проверки формирования нового бара на месяце
 CisNewBar isNewBarW1 (_Symbol, PERIOD_W1 );   // для проверки формирования нового бара на неделе
@@ -419,233 +418,198 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
-//---
-   bool load = true;//FillATRBuffer();
-   
+//--- 
    ArraySetAsSeries(open , series_order);
    ArraySetAsSeries(high , series_order);
    ArraySetAsSeries(low  , series_order);
    ArraySetAsSeries(close, series_order);
    ArraySetAsSeries(time , series_order);
     
-   if(load)
+   if(prev_calculated == 0)
    {
-    if(first)
+    PrintFormat("%s Рассчет на истории. %s / %s", __FUNCTION__, TimeToString(time[rates_total-2]), TimeToString(time[0]));
+    
+    for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
     {
-     PrintFormat("%s Рассчет на истории. %s / %s", __FUNCTION__, TimeToString(time[rates_total-2]), TimeToString(time[0]));
-     
-     for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
-     {
-      //PrintFormat("%s %s", __FUNCTION__, TimeToString(time[i]));
-      if(show_Extr_MN  && isNewBarMN.isNewBar(time[i]) > 0) CalcExtr(calcMN, extr_levelMN, time[i], false);
-      if(show_Extr_W1  && isNewBarW1.isNewBar(time[i]) > 0) CalcExtr(calcW1, extr_levelW1, time[i], false);
-      if(show_Extr_D1  && isNewBarD1.isNewBar(time[i]) > 0) CalcExtr(calcD1, extr_levelD1, time[i], false);
-      if(show_Extr_H4  && isNewBarH4.isNewBar(time[i]) > 0) CalcExtr(calcH4, extr_levelH4, time[i], false);
-      if(show_Extr_H1  && isNewBarH1.isNewBar(time[i]) > 0) CalcExtr(calcH1, extr_levelH1, time[i], false);     
-      if(show_Price_D1 && isNewBarD1.isNewBar(time[i]) > 0) CalcPrice(PERIOD_D1, time[i]);
+     //PrintFormat("%s %s", __FUNCTION__, TimeToString(time[i]));
+     if(show_Extr_MN  && (isNewBarMN.isNewBar(time[i]) > 0 || prev_calculated == 0)) { if(!CalcExtr(calcMN, extr_levelMN, time[i], false)) return(0); }
+     if(show_Extr_W1  && (isNewBarW1.isNewBar(time[i]) > 0 || prev_calculated == 0)) { if(!CalcExtr(calcW1, extr_levelW1, time[i], false)) return(0); }
+     if(show_Extr_D1  && (isNewBarD1.isNewBar(time[i]) > 0 || prev_calculated == 0)) { if(!CalcExtr(calcD1, extr_levelD1, time[i], false)) return(0); }
+     if(show_Extr_H4  && (isNewBarH4.isNewBar(time[i]) > 0 || prev_calculated == 0)) { if(!CalcExtr(calcH4, extr_levelH4, time[i], false)) return(0); }
+     if(show_Extr_H1  && (isNewBarH1.isNewBar(time[i]) > 0 || prev_calculated == 0)) { if(!CalcExtr(calcH1, extr_levelH1, time[i], false)) return(0); }     
+     if(show_Price_D1 && (isNewBarD1.isNewBar(time[i]) > 0 || prev_calculated == 0)) CalcPrice(PERIOD_D1, time[i]);
 
-      if(show_Extr_MN)
-      {
-       Extr_MN_Buffer1[i] = extr_levelMN[0].extr.price;
-        ATR_MN_Buffer1[i] = extr_levelMN[0].channel;
-       Extr_MN_Buffer2[i] = extr_levelMN[1].extr.price;
-        ATR_MN_Buffer2[i] = extr_levelMN[1].channel;
-       Extr_MN_Buffer3[i] = extr_levelMN[2].extr.price;
-        ATR_MN_Buffer3[i] = extr_levelMN[2].channel;
-       Extr_MN_Buffer4[i] = extr_levelMN[3].extr.price;
-        ATR_MN_Buffer4[i] = extr_levelMN[3].channel;
-      }//end show_Extr_MN
-      if(show_Extr_W1)
-      { 
-       Extr_W1_Buffer1[i] = extr_levelW1[0].extr.price;
-        ATR_W1_Buffer1[i] = extr_levelW1[0].channel;
-       Extr_W1_Buffer2[i] = extr_levelW1[1].extr.price;
-        ATR_W1_Buffer2[i] = extr_levelW1[1].channel;
-       Extr_W1_Buffer3[i] = extr_levelW1[2].extr.price;
-        ATR_W1_Buffer3[i] = extr_levelW1[2].channel;
-       Extr_W1_Buffer4[i] = extr_levelW1[3].extr.price;
-        ATR_W1_Buffer4[i] = extr_levelW1[3].channel;
-           
-
-      }//end show_Extr_W1
-      if(show_Extr_D1)
-      { 
-       Extr_D1_Buffer1[i] = extr_levelD1[0].extr.price;
-        ATR_D1_Buffer1[i] = extr_levelD1[0].channel;
-       Extr_D1_Buffer2[i] = extr_levelD1[1].extr.price;
-        ATR_D1_Buffer2[i] = extr_levelD1[1].channel;
-       Extr_D1_Buffer3[i] = extr_levelD1[2].extr.price;
-        ATR_D1_Buffer3[i] = extr_levelD1[2].channel;
-       Extr_D1_Buffer4[i] = extr_levelD1[3].extr.price;
-        ATR_D1_Buffer4[i] = extr_levelD1[3].channel;
-      }//end show_Extr_D1
-      if(show_Extr_H4)
-      {      
-       Extr_H4_Buffer1[i] = extr_levelH4[0].extr.price;
-        ATR_H4_Buffer1[i] = extr_levelH4[0].channel;
-       Extr_H4_Buffer2[i] = extr_levelH4[1].extr.price;
-        ATR_H4_Buffer2[i] = extr_levelH4[1].channel;
-       Extr_H4_Buffer3[i] = extr_levelH4[2].extr.price;
-        ATR_H4_Buffer3[i] = extr_levelH4[2].channel;
-       Extr_H4_Buffer4[i] = extr_levelH4[3].extr.price;
-        ATR_H4_Buffer4[i] = extr_levelH4[3].channel;
-      }// end show_Extr_H4
-      if(show_Extr_H1)
-      {  
-       Extr_H1_Buffer1[i] = extr_levelH1[0].extr.price;
-        ATR_H1_Buffer1[i] = extr_levelH1[0].channel;
-       Extr_H1_Buffer2[i] = extr_levelH1[1].extr.price;
-        ATR_H1_Buffer2[i] = extr_levelH1[1].channel;
-       Extr_H1_Buffer3[i] = extr_levelH1[2].extr.price;
-        ATR_H1_Buffer3[i] = extr_levelH1[2].channel;
-       Extr_H1_Buffer4[i] = extr_levelH1[3].extr.price;
-        ATR_H1_Buffer4[i] = extr_levelH1[3].channel;        
-      }//end show_Extr_H1
-      if(show_Price_D1)
-      {         
-       Price_D1_Buffer1[i] = price_levelD1[0].extr.price;
-       Price_D1_Buffer2[i] = price_levelD1[1].extr.price;
-       Price_D1_Buffer3[i] = price_levelD1[2].extr.price;
-       Price_D1_Buffer4[i] = price_levelD1[3].extr.price;
-          ATR_D1_Buffer[i] = price_levelD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
-      }
-     }//end fro
-     
-     if(show_Extr_MN) MoveExtrLines (extr_levelMN, PERIOD_MN1);
-     if(show_Extr_W1) MoveExtrLines (extr_levelW1, PERIOD_W1 ); 
-     if(show_Extr_D1) MoveExtrLines (extr_levelD1, PERIOD_D1 );
-     if(show_Extr_H4) MoveExtrLines (extr_levelH4, PERIOD_H4 );
-     if(show_Extr_H1) MoveExtrLines (extr_levelH1, PERIOD_H1 );
-     if(show_Price_D1)MovePriceLines(price_levelD1, PERIOD_D1 );
-     
-     PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
-     first = false; 
-    }//end prev_calculated == 0
-    else
-    {     
      if(show_Extr_MN)
      {
-      Extr_MN_Buffer1[0] = extr_levelMN[0].extr.price;
-       ATR_MN_Buffer1[0] = extr_levelMN[0].channel;
-      Extr_MN_Buffer2[0] = extr_levelMN[1].extr.price;
-       ATR_MN_Buffer2[0] = extr_levelMN[1].channel;
-      Extr_MN_Buffer3[0] = extr_levelMN[2].extr.price;
-       ATR_MN_Buffer3[0] = extr_levelMN[2].channel;
-      Extr_MN_Buffer4[0] = extr_levelMN[3].extr.price;
-       ATR_MN_Buffer4[0] = extr_levelMN[3].channel;
+      Extr_MN_Buffer1[i] = extr_levelMN[0].extr.price;
+       ATR_MN_Buffer1[i] = extr_levelMN[0].channel;
+      Extr_MN_Buffer2[i] = extr_levelMN[1].extr.price;
+       ATR_MN_Buffer2[i] = extr_levelMN[1].channel;
+      Extr_MN_Buffer3[i] = extr_levelMN[2].extr.price;
+       ATR_MN_Buffer3[i] = extr_levelMN[2].channel;
+      Extr_MN_Buffer4[i] = extr_levelMN[3].extr.price;
+       ATR_MN_Buffer4[i] = extr_levelMN[3].channel;
      }//end show_Extr_MN
      if(show_Extr_W1)
      { 
-      Extr_W1_Buffer1[0] = extr_levelW1[0].extr.price;
-       ATR_W1_Buffer1[0] = extr_levelW1[0].channel;
-      Extr_W1_Buffer2[0] = extr_levelW1[1].extr.price;
-       ATR_W1_Buffer2[0] = extr_levelW1[1].channel;
-      Extr_W1_Buffer3[0] = extr_levelW1[2].extr.price;
-       ATR_W1_Buffer3[0] = extr_levelW1[2].channel;
-      Extr_W1_Buffer4[0] = extr_levelW1[3].extr.price;
-       ATR_W1_Buffer4[0] = extr_levelW1[3].channel;
-       
+      Extr_W1_Buffer1[i] = extr_levelW1[0].extr.price;
+       ATR_W1_Buffer1[i] = extr_levelW1[0].channel;
+      Extr_W1_Buffer2[i] = extr_levelW1[1].extr.price;
+       ATR_W1_Buffer2[i] = extr_levelW1[1].channel;
+      Extr_W1_Buffer3[i] = extr_levelW1[2].extr.price;
+       ATR_W1_Buffer3[i] = extr_levelW1[2].channel;
+      Extr_W1_Buffer4[i] = extr_levelW1[3].extr.price;
+       ATR_W1_Buffer4[i] = extr_levelW1[3].channel;         
      }//end show_Extr_W1
      if(show_Extr_D1)
      { 
-      Extr_D1_Buffer1[0] = extr_levelD1[0].extr.price;
-       ATR_D1_Buffer1[0] = extr_levelD1[0].channel;
-      Extr_D1_Buffer2[0] = extr_levelD1[1].extr.price;
-       ATR_D1_Buffer2[0] = extr_levelD1[1].channel;
-      Extr_D1_Buffer3[0] = extr_levelD1[2].extr.price;
-       ATR_D1_Buffer3[0] = extr_levelD1[2].channel;
-      Extr_D1_Buffer4[0] = extr_levelD1[3].extr.price;
-       ATR_D1_Buffer4[0] = extr_levelD1[3].channel;
+      Extr_D1_Buffer1[i] = extr_levelD1[0].extr.price;
+       ATR_D1_Buffer1[i] = extr_levelD1[0].channel;
+      Extr_D1_Buffer2[i] = extr_levelD1[1].extr.price;
+       ATR_D1_Buffer2[i] = extr_levelD1[1].channel;
+      Extr_D1_Buffer3[i] = extr_levelD1[2].extr.price;
+       ATR_D1_Buffer3[i] = extr_levelD1[2].channel;
+      Extr_D1_Buffer4[i] = extr_levelD1[3].extr.price;
+       ATR_D1_Buffer4[i] = extr_levelD1[3].channel;
      }//end show_Extr_D1
      if(show_Extr_H4)
      {      
-      Extr_H4_Buffer1[0] = extr_levelH4[0].extr.price;
-       ATR_H4_Buffer1[0] = extr_levelH4[0].channel;
-      Extr_H4_Buffer2[0] = extr_levelH4[1].extr.price;
-       ATR_H4_Buffer2[0] = extr_levelH4[1].channel;
-      Extr_H4_Buffer3[0] = extr_levelH4[2].extr.price;
-       ATR_H4_Buffer3[0] = extr_levelH4[2].channel;
-      Extr_H4_Buffer4[0] = extr_levelH4[3].extr.price;
-       ATR_H4_Buffer4[0] = extr_levelH4[3].channel;
+      Extr_H4_Buffer1[i] = extr_levelH4[0].extr.price;
+       ATR_H4_Buffer1[i] = extr_levelH4[0].channel;
+      Extr_H4_Buffer2[i] = extr_levelH4[1].extr.price;
+       ATR_H4_Buffer2[i] = extr_levelH4[1].channel;
+      Extr_H4_Buffer3[i] = extr_levelH4[2].extr.price;
+       ATR_H4_Buffer3[i] = extr_levelH4[2].channel;
+      Extr_H4_Buffer4[i] = extr_levelH4[3].extr.price;
+       ATR_H4_Buffer4[i] = extr_levelH4[3].channel;
      }// end show_Extr_H4
      if(show_Extr_H1)
      {  
-      Extr_H1_Buffer1[0] = extr_levelH1[0].extr.price;
-       ATR_H1_Buffer1[0] = extr_levelH1[0].channel;
-      Extr_H1_Buffer2[0] = extr_levelH1[1].extr.price;
-       ATR_H1_Buffer2[0] = extr_levelH1[1].channel;
-      Extr_H1_Buffer3[0] = extr_levelH1[2].extr.price;
-       ATR_H1_Buffer3[0] = extr_levelH1[2].channel;
-      Extr_H1_Buffer4[0] = extr_levelH1[3].extr.price;
-       ATR_H1_Buffer4[0] = extr_levelH1[3].channel;        
+      Extr_H1_Buffer1[i] = extr_levelH1[0].extr.price;
+       ATR_H1_Buffer1[i] = extr_levelH1[0].channel;
+      Extr_H1_Buffer2[i] = extr_levelH1[1].extr.price;
+       ATR_H1_Buffer2[i] = extr_levelH1[1].channel;
+      Extr_H1_Buffer3[i] = extr_levelH1[2].extr.price;
+       ATR_H1_Buffer3[i] = extr_levelH1[2].channel;
+      Extr_H1_Buffer4[i] = extr_levelH1[3].extr.price;
+       ATR_H1_Buffer4[i] = extr_levelH1[3].channel;        
      }//end show_Extr_H1
      if(show_Price_D1)
-     {
-      Price_D1_Buffer1[0] = price_levelD1[0].extr.price;
-      Price_D1_Buffer2[0] = price_levelD1[1].extr.price;
-      Price_D1_Buffer3[0] = price_levelD1[2].extr.price;
-      Price_D1_Buffer4[0] = price_levelD1[3].extr.price;
-         ATR_D1_Buffer[0] = price_levelD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
+     {         
+      Price_D1_Buffer1[i] = price_levelD1[0].extr.price;
+      Price_D1_Buffer2[i] = price_levelD1[1].extr.price;
+      Price_D1_Buffer3[i] = price_levelD1[2].extr.price;
+      Price_D1_Buffer4[i] = price_levelD1[3].extr.price;
+         ATR_D1_Buffer[i] = price_levelD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
      }
+    }//end fro
      
-     //while(!FillATRBuffer()) {PrintFormat("REAL STOPIKI");} 
-     if(show_Extr_MN) CalcExtr(calcMN, extr_levelMN, time[0], true); 
-     if(show_Extr_W1) CalcExtr(calcW1, extr_levelW1, time[0], true);  
-     if(show_Extr_D1) CalcExtr(calcD1, extr_levelD1, time[0], true);    
-     if(show_Extr_H4) CalcExtr(calcH4, extr_levelH4, time[0], true);
-     if(show_Extr_H1) CalcExtr(calcH1, extr_levelH1, time[0], true);
-     if(show_Price_D1)CalcPrice(PERIOD_D1, time[0]);
-      
-     if(show_Extr_MN) MoveExtrLines (extr_levelMN, PERIOD_MN1);
-     if(show_Extr_W1) MoveExtrLines (extr_levelW1, PERIOD_W1 ); 
-     if(show_Extr_D1) MoveExtrLines (extr_levelD1, PERIOD_D1 );
-     if(show_Extr_H4) MoveExtrLines (extr_levelH4, PERIOD_H4 );
-     if(show_Extr_H1) MoveExtrLines (extr_levelH1, PERIOD_H1 );
-     if(show_Price_D1)MovePriceLines(price_levelD1, PERIOD_D1 );
+    if(show_Extr_MN) MoveExtrLines (extr_levelMN, PERIOD_MN1);
+    if(show_Extr_W1) MoveExtrLines (extr_levelW1, PERIOD_W1 ); 
+    if(show_Extr_D1) MoveExtrLines (extr_levelD1, PERIOD_D1 );
+    if(show_Extr_H4) MoveExtrLines (extr_levelH4, PERIOD_H4 );
+    if(show_Extr_H1) MoveExtrLines (extr_levelH1, PERIOD_H1 );
+    if(show_Price_D1)MovePriceLines(price_levelD1, PERIOD_D1 );
+    
+    PrintFormat("Закончен расчет на истории. (prev_calculated == 0)");
+   }//end prev_calculated == 0
+   else
+   {     
+    if(show_Extr_MN)
+    {
+     Extr_MN_Buffer1[0] = extr_levelMN[0].extr.price;
+      ATR_MN_Buffer1[0] = extr_levelMN[0].channel;
+     Extr_MN_Buffer2[0] = extr_levelMN[1].extr.price;
+      ATR_MN_Buffer2[0] = extr_levelMN[1].channel;
+     Extr_MN_Buffer3[0] = extr_levelMN[2].extr.price;
+      ATR_MN_Buffer3[0] = extr_levelMN[2].channel;
+     Extr_MN_Buffer4[0] = extr_levelMN[3].extr.price;
+      ATR_MN_Buffer4[0] = extr_levelMN[3].channel;
+    }//end show_Extr_MN
+    if(show_Extr_W1)
+    { 
+     Extr_W1_Buffer1[0] = extr_levelW1[0].extr.price;
+      ATR_W1_Buffer1[0] = extr_levelW1[0].channel;
+     Extr_W1_Buffer2[0] = extr_levelW1[1].extr.price;
+      ATR_W1_Buffer2[0] = extr_levelW1[1].channel;
+     Extr_W1_Buffer3[0] = extr_levelW1[2].extr.price;
+      ATR_W1_Buffer3[0] = extr_levelW1[2].channel;
+     Extr_W1_Buffer4[0] = extr_levelW1[3].extr.price;
+      ATR_W1_Buffer4[0] = extr_levelW1[3].channel;    
+    }//end show_Extr_W1
+    if(show_Extr_D1)
+    { 
+     Extr_D1_Buffer1[0] = extr_levelD1[0].extr.price;
+      ATR_D1_Buffer1[0] = extr_levelD1[0].channel;
+     Extr_D1_Buffer2[0] = extr_levelD1[1].extr.price;
+      ATR_D1_Buffer2[0] = extr_levelD1[1].channel;
+     Extr_D1_Buffer3[0] = extr_levelD1[2].extr.price;
+      ATR_D1_Buffer3[0] = extr_levelD1[2].channel;
+     Extr_D1_Buffer4[0] = extr_levelD1[3].extr.price;
+      ATR_D1_Buffer4[0] = extr_levelD1[3].channel;
+    }//end show_Extr_D1
+    if(show_Extr_H4)
+    {      
+     Extr_H4_Buffer1[0] = extr_levelH4[0].extr.price;
+      ATR_H4_Buffer1[0] = extr_levelH4[0].channel;
+     Extr_H4_Buffer2[0] = extr_levelH4[1].extr.price;
+      ATR_H4_Buffer2[0] = extr_levelH4[1].channel;
+     Extr_H4_Buffer3[0] = extr_levelH4[2].extr.price;
+      ATR_H4_Buffer3[0] = extr_levelH4[2].channel;
+     Extr_H4_Buffer4[0] = extr_levelH4[3].extr.price;
+      ATR_H4_Buffer4[0] = extr_levelH4[3].channel;
+    }// end show_Extr_H4
+    if(show_Extr_H1)
+    {  
+     Extr_H1_Buffer1[0] = extr_levelH1[0].extr.price;
+      ATR_H1_Buffer1[0] = extr_levelH1[0].channel;
+     Extr_H1_Buffer2[0] = extr_levelH1[1].extr.price;
+      ATR_H1_Buffer2[0] = extr_levelH1[1].channel;
+     Extr_H1_Buffer3[0] = extr_levelH1[2].extr.price;
+      ATR_H1_Buffer3[0] = extr_levelH1[2].channel;
+     Extr_H1_Buffer4[0] = extr_levelH1[3].extr.price;
+      ATR_H1_Buffer4[0] = extr_levelH1[3].channel;        
+    }//end show_Extr_H1
+    if(show_Price_D1)
+    {
+     Price_D1_Buffer1[0] = price_levelD1[0].extr.price;
+     Price_D1_Buffer2[0] = price_levelD1[1].extr.price;
+     Price_D1_Buffer3[0] = price_levelD1[2].extr.price;
+     Price_D1_Buffer4[0] = price_levelD1[3].extr.price;
+        ATR_D1_Buffer[0] = price_levelD1[0].channel; // берем от 0 элемента так как у всех уровней цены ширина одинаковая
     }
+     
+    //while(!FillATRBuffer()) {PrintFormat("REAL STOPIKI");} 
+    if(show_Extr_MN) CalcExtr(calcMN, extr_levelMN, time[0], true); 
+    if(show_Extr_W1) CalcExtr(calcW1, extr_levelW1, time[0], true);  
+    if(show_Extr_D1) CalcExtr(calcD1, extr_levelD1, time[0], true);    
+    if(show_Extr_H4) CalcExtr(calcH4, extr_levelH4, time[0], true);
+    if(show_Extr_H1) CalcExtr(calcH1, extr_levelH1, time[0], true);
+    if(show_Price_D1)CalcPrice(PERIOD_D1, time[0]);
+     
+    if(show_Extr_MN) MoveExtrLines (extr_levelMN, PERIOD_MN1);
+    if(show_Extr_W1) MoveExtrLines (extr_levelW1, PERIOD_W1 ); 
+    if(show_Extr_D1) MoveExtrLines (extr_levelD1, PERIOD_D1 );
+    if(show_Extr_H4) MoveExtrLines (extr_levelH4, PERIOD_H4 );
+    if(show_Extr_H1) MoveExtrLines (extr_levelH1, PERIOD_H1 );
+    if(show_Price_D1)MovePriceLines(price_levelD1, PERIOD_D1 );
    }
 //--- return value of prev_calculated for next call
    return(rates_total);
   }
-  
-  
-//-------------------------------------------------------------------+
-/*bool FillATRBuffer()
-{
- bool result = true;
- 
- PrintFormat("Bars(MN1) = %d; SeriesInfoInteger = %d", Bars(Symbol(), PERIOD_MN1), SeriesInfoInteger(Symbol(), PERIOD_MN1, SERIES_BARS_COUNT));
- if(show_Extr_MN && !calcMN.isATRCalculated(Bars(Symbol(), PERIOD_MN1) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_MN) - ATR_PERIOD))
-  result = false;
-   
- if(show_Extr_W1 && !calcW1.isATRCalculated(Bars(Symbol(), PERIOD_W1) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_W1) - ATR_PERIOD))
-   result = false;
-   
- if((show_Extr_D1 || show_Price_D1) && !calcD1.isATRCalculated(Bars(Symbol(), PERIOD_D1) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_D1) - ATR_PERIOD))
-   result = false;
-   
- if(show_Extr_H4 && !calcH4.isATRCalculated(Bars(Symbol(), PERIOD_H4) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_H4) - ATR_PERIOD))
-   result = false;
-   
- if(show_Extr_H1 && !calcH1.isATRCalculated(Bars(Symbol(), PERIOD_H1) - period_ATR_channel, Bars(Symbol(), TF_PERIOD_ATR_FOR_H1) - ATR_PERIOD))
-   result = false;   
-   
- if(!result)
-  PrintFormat("%s Не получилось загрузить буфера ATR, подожди чутка братан. Ошибочка вышла %d", __FUNCTION__, GetLastError()); 
- return(result);
-}*/
-
 
 //---------------------------------------------
 // Пересчет экстремумов для заданного ТФ
 //---------------------------------------------
-void CalcExtr(CLevel &extrcalc, SLevel &resArray[], datetime start_pos_time, bool now = false)
+bool CalcExtr(CLevel &extrcalc, SLevel &resArray[], datetime start_pos_time, bool now = false)
 {
- extrcalc.RecountLevel(start_pos_time, now);
+ if(!extrcalc.RecountLevel(start_pos_time, now)) return(false); // если не удалось пересчитать уровни считаем что вызов функции неуспешен и его нужно повторить
+ 
  for(int j = 0; j < 4; j++)
  {
   resArray[j] = extrcalc.getLevel(j);
  }
+ return(true);
  //PrintFormat("%s num0: {%d, %0.5f}; num1: {%d, %0.5f}; num2: {%d, %0.5f}; num3: {%d, %0.5f};", __FUNCTION__, resArray[0].extr.direction, resArray[0].extr.price, resArray[1].extr.direction, resArray[1].extr.price, resArray[2].extr.direction, resArray[2].extr.price, resArray[3].extr.direction, resArray[3].extr.price);
 }
 
