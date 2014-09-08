@@ -89,7 +89,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  if(CopyRates(_symbol, _tf_period, start_pos_time, 1, buffer) < 1)
   PrintFormat("%s %s Rates buffer: error = %d, calculated = %d, start_index = %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
  double difToNewExtremum = AverageBar(start_pos_time) * _percentage_ATR;  // расчет минимального расстояние между экстремумами
- double high = 0, low = 0;
+ double high = 0, low = 0;    // временная переменная в которой будет хранится цена для расчета max и min соответственно
  
  if(extremums[0].time == buffer[0].time && !now) return(0); //исключаем повторное определение экстремумов на истории
  
