@@ -130,7 +130,7 @@ void OnTick()
           // то открываем позицию на BUY
           pos_info.type = OP_BUY;
           pos_info.sl = stopLoss;
-          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing);        
+          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100);        
          }
      }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
@@ -147,7 +147,7 @@ void OnTick()
           // то открываем позицию на SELL
           pos_info.type = OP_SELL;
           pos_info.sl = stopLoss;
-          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing);        
+          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100);        
          }
      }
    }  

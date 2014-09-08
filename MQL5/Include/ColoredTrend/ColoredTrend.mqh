@@ -99,7 +99,7 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
   return (false);
  
  CopyTime(_symbol, _period, start_pos, 1, time_buffer);  
- enumMoveType[bar] = previous_move_type;
+ enumMoveType[bar] = previous_move_type;             // текущее движение равно предыдущему движению
  
  int newTrend = 0;
  int count_new_extrs = extremums.RecountExtremum(start_pos, now);
@@ -191,8 +191,8 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
     lastOnTrend = extremums.getExtr(1);
   
    previous_move_type = enumMoveType[bar];
-  }
-  return (true);
+   return (true);
+  } 
  }
 //Начало коррекции вверх если у предыдущего бара цена закрытия больше цены открытия и при этом тренд продолжается с предыдущего бара 
  if ((enumMoveType[bar-1] == MOVE_TYPE_TREND_DOWN || enumMoveType[bar-1] == MOVE_TYPE_TREND_DOWN_FORBIDEN) &&
@@ -209,8 +209,8 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_pos, bool now, SExtrem
     lastOnTrend = extremums.getExtr(1);
     
    previous_move_type = enumMoveType[bar];
+   return(true);
   }
-  return(true);
  }
  
  //коррекция меняется на тренд вниз при наступлении условия isCorrectionEnds

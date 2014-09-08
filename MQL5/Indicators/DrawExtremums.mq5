@@ -189,7 +189,7 @@ int OnCalculate(const int rates_total,
     {
      ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
      if (count == 1) 
-     Comment("",count," Ёкстремум = ",DoubleToString(ExtDownArrowBuffer[indexPrevDown]));     
+     //Comment("",count," Ёкстремум = ",DoubleToString(ExtDownArrowBuffer[indexPrevDown]));     
      count++;
     }
     jumper = 1;
@@ -204,7 +204,7 @@ int OnCalculate(const int rates_total,
     {
      ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
      if (count == 1)
-     Comment("",count, " Ёкстремум = ",DoubleToString(ExtUpArrowBuffer[indexPrevUp]));
+     //Comment("",count, " Ёкстремум = ",DoubleToString(ExtUpArrowBuffer[indexPrevUp]));
      count++;
     }
     jumper = -1;

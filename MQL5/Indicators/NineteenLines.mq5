@@ -50,15 +50,15 @@ input bool  flag2  = true;                   //Показывать экстремумы W1
 input double channel_ATR_W1   =  0.15;       //Ширина уровня
 
 sinput string d1Str   = "";                  //Дневные уровни
-input bool  flag3  = true;                   //Показывать экстремумы D1
+input bool  flag3  = false;                   //Показывать экстремумы D1
 input double channel_ATR_D1   =  0.25;       //Ширина уровня
 
 sinput string h1Str   = "";                  //4-х часовые уровни
-input bool   flag4  = true;                  //Показывать экстремумы H4
+input bool   flag4  = false;                  //Показывать экстремумы H4
 input double channel_ATR_H4   =  0.25;       //Ширина уровня 
 
 sinput string h4Str   = "";                  //Часовые уровни
-input bool  flag5  = true;                   //Показывать экстремумы H1
+input bool  flag5  = false;                   //Показывать экстремумы H1
 input double channel_ATR_H1   =  0.25;       //Ширина уровня 
 
 sinput string dStr   = "";                   //Цены на дневнике

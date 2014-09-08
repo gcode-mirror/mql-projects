@@ -20,6 +20,8 @@ struct SExtremum
  datetime time;                      // время бара на котором возникает экстремум
 };
 
+
+// Класс который хранит и вычисляет последние ARRAY_SIZE экстремумов
 class CExtremum
 {
  protected:
@@ -93,7 +95,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  if(extremums[0].time == buffer[0].time && !now) return(0); //исключаем повторное определение экстремумов на истории
  
  if (now) // за время жизни бара цена close проходит все его значения от low до high
- {        // соответсвено если на данном баре есть верхний экстремум то он будет достигнут когда close будет max  и наобот с low
+ {        // соответсвено если на данном баре есть верхний экстремум то он будет достигнут когда close будет max  и наоборот с low
   high = buffer[0].close;
   low = buffer[0].close;
  }
