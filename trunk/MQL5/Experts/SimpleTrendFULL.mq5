@@ -596,7 +596,7 @@ int GetStopLoss()     // вычисляет стоп лосс
   for (int attempts=0;attempts<25;attempts++)
    {
      copiedPBI = CopyBuffer(handle,4,1,nBars-1,pbiBuf);
-    // Sleep(100);
+     Sleep(100);
    }
   if (copiedPBI < (nBars-1))
    {
