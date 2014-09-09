@@ -572,7 +572,6 @@ void CTradeManager::OnTick()
   
   if (pos.CheckTakeProfit())    //проверяем условие выполнения TP
   {
-   //log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()));
    log_file.Write(LOG_DEBUG, StringFormat("%s Цена дошла до уровня TP, закрываем позицию type = %s, TPprice = %f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type),  pos.getTakeProfitPrice()) );
    ClosePosition(i);
    break;             
