@@ -245,7 +245,11 @@ void OnTick()
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(blowInfo[indexForTrail]); 
- GetMACDSignal(handleMACDM15);
+ if (useMACDLock)
+ {
+  GetMACDSignal(handleMACDM15);
+ }
+ 
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
@@ -261,11 +265,12 @@ void OnTick()
  }
  // если мы используем запрет на вход по NineTeenLines
  if (useLinesLock)
-  {
-   // если не удалось прогрузить буферы NineTeenLines
-   if ( !Upload19LinesBuffers () ) 
-    return;
-  }
+ {
+  // если не удалось прогрузить буферы NineTeenLines
+  if ( !Upload19LinesBuffers () ) 
+   return;
+ }
+ 
  // получаем новые значения экстремумов
  for (int index = 0; index < 4; index++)
  {
@@ -284,38 +289,38 @@ void OnTick()
  } 
  // если используется PriceBasedIndicator с выбранным таймфреймом
  if (usePBI == PBI_SELECTED)
+ {
+  // обновляем значение последнего тренда
+  tmpLastBar = GetLastMoveType(handlePBI_1);
+  if (tmpLastBar != 0)
   {
-   // обновляем значение последнего тренда
-   tmpLastBar = GetLastMoveType(handlePBI_1);
-   if (tmpLastBar != 0)
-    {
-     lastTrendPBI_1 = tmpLastBar;
-     lastTrendPBI_2 = tmpLastBar;
-     lastTrendPBI_3 = tmpLastBar;
-    }   
-  }
+   lastTrendPBI_1 = tmpLastBar;
+   lastTrendPBI_2 = tmpLastBar;
+   lastTrendPBI_3 = tmpLastBar;
+  }   
+ }
  // если используется PriceBasedIndicator с фиксированными таймфреймами
  else if (usePBI == PBI_FIXED)
+ {
+  // обновляем значение последнего тренда
+  tmpLastBar = GetLastMoveType(handlePBI_1);
+  if (tmpLastBar != 0)
   {
-   // обновляем значение последнего тренда
-   tmpLastBar = GetLastMoveType(handlePBI_1);
-   if (tmpLastBar != 0)
-    {
-     lastTrendPBI_1 = tmpLastBar;
-    }   
-   // обновляем значение последнего тренда
-   tmpLastBar = GetLastMoveType(handlePBI_2);
-   if (tmpLastBar != 0)
-    {
-     lastTrendPBI_2 = tmpLastBar;
-    }   
-   // обновляем значение последнего тренда
-   tmpLastBar = GetLastMoveType(handlePBI_3);
-   if (tmpLastBar != 0)
-    {
-     lastTrendPBI_3 = tmpLastBar;
-    }           
-  } 
+   lastTrendPBI_1 = tmpLastBar;
+  }   
+  // обновляем значение последнего тренда
+  tmpLastBar = GetLastMoveType(handlePBI_2);
+  if (tmpLastBar != 0)
+  {
+   lastTrendPBI_2 = tmpLastBar;
+  }   
+  // обновляем значение последнего тренда
+  tmpLastBar = GetLastMoveType(handlePBI_3);
+  if (tmpLastBar != 0)
+  {
+   lastTrendPBI_3 = tmpLastBar;
+  }           
+ } 
  // если это первый запуск эксперта или сформировался новый бар 
  if (firstLaunch || isNewBar_D1.isNewBar() > 0)
  {
@@ -346,9 +351,9 @@ void OnTick()
  if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPriceBid) == TENDENTION_UP)
  {   
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if (  ((beatM5=IsExtremumBeaten(1,BUY))&&(lastTrendPBI_1==BUY||usePBI==PBI_NO)) || 
-        ((beatM15=IsExtremumBeaten(2,BUY))&&(lastTrendPBI_2==BUY||usePBI==PBI_NO)) || 
-        ((beatH1=IsExtremumBeaten(3,BUY))&&(lastTrendPBI_3==BUY||usePBI==PBI_NO))  )
+  if (  ((beatM5=IsExtremumBeaten(1,BUY)) && (lastTrendPBI_1==BUY||usePBI==PBI_NO)) || 
+        ((beatM15=IsExtremumBeaten(2,BUY))&& (lastTrendPBI_2==BUY||usePBI==PBI_NO)) || 
+        ((beatH1=IsExtremumBeaten(3,BUY)) && (lastTrendPBI_3==BUY||usePBI==PBI_NO))  )
   {        
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
@@ -411,7 +416,7 @@ void OnTick()
  {                     
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
   if ( ((beatM5=IsExtremumBeaten(1,SELL)) && (lastTrendPBI_1==SELL||usePBI==PBI_NO)) || 
-       ((beatM15=IsExtremumBeaten(2,SELL)) && (lastTrendPBI_2==SELL||usePBI==PBI_NO)) || 
+       ((beatM15=IsExtremumBeaten(2,SELL))&& (lastTrendPBI_2==SELL||usePBI==PBI_NO)) || 
        ((beatH1=IsExtremumBeaten(3,SELL)) && (lastTrendPBI_3==SELL||usePBI==PBI_NO)))  
   {                
    // если спред не превышает заданное число пунктов
@@ -421,13 +426,13 @@ void OnTick()
     if (useMACDLock)
      {
       // если пробили M5 и сигнал MACD на M5 противоположный, то зарпещаем открываться
-      if (beatM5&&GetMACDSignal(handleMACDM5)==BUY)
+      if (beatM5 && GetMACDSignal(handleMACDM5)==BUY)
        return;
       // если пробили M15 и сигнал MACD на M15 противоположный, то запрещаем открываться
-      if (beatM15&&GetMACDSignal(handleMACDM15)==BUY)
+      if (beatM15 && GetMACDSignal(handleMACDM15)==BUY)
        return;
       // если пробили H1 и сигнал MACD на H1 противоположный, то запрещаем открываться
-      if (beatH1&&GetMACDSignal(handleMACDH1)==BUY)
+      if (beatH1 && GetMACDSignal(handleMACDH1)==BUY)
        return;
      }   
     // если используются зарпеты по NineTeenLines
@@ -700,6 +705,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
    }
    return (len);
   }  
+  
   // фунция возвращает сигнал на MACD
   int  GetMACDSignal (int handleMACD)
    {
