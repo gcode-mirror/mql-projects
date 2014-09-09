@@ -77,6 +77,7 @@ public:
    ulong    getMagic()           {return(_magic);};
    int      getMinProfit()       {return(_trailing.minProfit);};
    datetime getOpenPosDT()       {return(_posOpenTime);};     //получает дату открытия позиции
+   ENUM_TM_POSITION_TYPE getOppositeType(ENUM_TM_POSITION_TYPE type);
    ulong    getOrderTicket()     {return(_orderTicket);};
    ENUM_TIMEFRAMES getPeriod()   {return(_period);};
    SPositionInfo getPositionInfo(){return(_pos_info);};
@@ -325,14 +326,14 @@ ENUM_STOPLEVEL_STATUS CPosition::setTakeProfit()
 bool CPosition::ChangeSize(double additionalVolume)
 {
  ENUM_TM_POSITION_TYPE type = this.getType();
- if (additionalVolume < 0) type = type + MathPow(-1, type);
+ if (additionalVolume < 0) type = getOppositeType(type);
  double openPrice = OpenPriceByType(type);
- _posAveragePrice = (_pos_info.volume*_posAveragePrice + additionalVolume*openPrice)/(_pos_info.volume + additionalVolume);
  string orderComment = StringFormat("%s_%s", StringSubstr(MQL5InfoString(MQL5_PROGRAM_NAME), 0, 27), log_file.PeriodString());
   
  if (type == OP_BUY || type == OP_SELL)
  {
-  //PrintFormat("%s Текущий тип = %s, Отправляем ордер типа = %s, объем ордера = %.02f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(this.getType()), GetNameOP(type), additionalVolume);
+  _posAveragePrice = (_pos_info.volume*_posAveragePrice + additionalVolume*openPrice)/(_pos_info.volume + additionalVolume);
+ 
   if(trade.PositionOpen(_symbol, PositionType(type), MathAbs(additionalVolume), openPrice, 0, 0, orderComment))
   {
    _pos_info.volume += additionalVolume;
@@ -716,25 +717,25 @@ bool CPosition::ReadFromFile(int  handle)
  // Alert("> STOP LOSS PRICE = ",_slPrice);    
   if(FileIsEnding(handle)) return false;    
   _pos_info.sl     = StringToInteger(FileReadString(handle));                     //считываем стоп лосс
- // Alert("> STOP LOSS = ",_sl); 
+ // Alert("> STOP LOSS = ",_pos_info.sl); 
   if(FileIsEnding(handle)) return false;    
   _pos_info.tp     = StringToInteger(FileReadString(handle));                     //считываем тейк профит
- // Alert("> STOP LOSS = ",_sl);
+ // Alert("> TAKE PROFIT = ",_pos_info.tp);
   if(FileIsEnding(handle)) return false;  
   _tpPrice         = StringToDouble(FileReadString(handle));                      //считываем цену тейк профита
  // Alert("> TAKE PROFIT PRICE = ",_tpPrice);  
   if(FileIsEnding(handle)) return false;  
   _trailing.trailingType = StringToTrailingType(FileReadString(handle));          //считываем тип трейлинга
- // Alert("> Trailing type = ",_trailingType);
+ // Alert("> Trailing type = ",_trailing.trailingType);
   if(FileIsEnding(handle)) return false;    
   _trailing.minProfit    = StringToInteger(FileReadString(handle));               //Мин профит
- // Alert("> TRAILING STOP = ",_trailingStop);  
+ // Alert("> MIN PROFIT = ",_trailing.minProfit);  
   if(FileIsEnding(handle)) return false;    
   _trailing.trailingStop = StringToInteger(FileReadString(handle));               //Трейлинг стоп
- // Alert("> TRAILING STOP = ",_trailingStop); 
+ // Alert("> TRAILING STOP = ",_trailing.trailingStop); 
   if(FileIsEnding(handle)) return false;    
   _trailing.trailingStep = StringToInteger(FileReadString(handle));               //Трейлинг степ
- // Alert("> TRAILING STEP = ",_trailingStep); 
+ // Alert("> TRAILING STEP = ",_trailing.trailingStep); 
   if(FileIsEnding(handle)) return false;    
   _posOpenPrice    = StringToDouble(FileReadString(handle));                      //цена открытия позиции
  // Alert("> POS OPEN PRICE = ",_posOpenPrice); 
@@ -749,10 +750,10 @@ bool CPosition::ReadFromFile(int  handle)
  // Alert("> POS CLOSE TIME = ",_posCloseTime); 
   if(FileIsEnding(handle)) return false;    
   _posAveragePrice = StringToDouble(FileReadString(handle));                      //средняя цена позиции
- // Alert("> POS PROFIT = ",_posProfit);
+ // Alert("> POS AVERAGE PRICE = ",_posAveragePrice);
  if(FileIsEnding(handle)) return false;    
   _pos_info.priceDifference = StringToInteger(FileReadString(handle));            //разница между позицией и отложенником
- // Alert("> POS CLOSE TIME = ",_posCloseTime); 
+ // Alert("> POS PRICE DIFFERENCE = ",_pos_info.priceDifference); 
                                 //пропуск пустого символа                                  
   return true;
  }
@@ -935,13 +936,46 @@ void CPosition::WriteToFile(int handle)
 //---------------PRIVATE-----------------------------
 
 //+------------------------------------------------------------------+
+//| Возвращает тип позиции, противоположный переданному
+//+------------------------------------------------------------------+
+ENUM_TM_POSITION_TYPE CPosition::getOppositeType(ENUM_TM_POSITION_TYPE type)
+{
+ ENUM_TM_POSITION_TYPE res;
+ switch (type)
+ {
+  case OP_BUY:
+   res = OP_SELL;
+   break;
+  case OP_SELL:
+   res = OP_BUY;
+   break;
+  case OP_BUYLIMIT:
+   res = OP_SELLLIMIT;
+   break;
+  case OP_SELLLIMIT:
+   res = OP_BUYLIMIT;
+   break;
+  case OP_BUYSTOP:
+   res = OP_SELLSTOP;
+   break;
+  case OP_SELLSTOP:
+   res = OP_BUYSTOP;
+   break;
+  default:
+   res = -1;
+   break;
+ }
+ return(res);
+}
+
+//+------------------------------------------------------------------+
 //| Возвращает тип ордера StopLoss
 //+------------------------------------------------------------------+
 ENUM_ORDER_TYPE CPosition::SLOrderType(int type)
 {
  ENUM_ORDER_TYPE res;
  if(type == 0 || type == 2 || type == 4) res = ORDER_TYPE_SELL_STOP; // Buy
- if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_STOP; // Sell
+ if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_STOP;  // Sell
  return(res);
 }
 
@@ -952,7 +986,7 @@ ENUM_ORDER_TYPE CPosition::TPOrderType(int type)
 {
  ENUM_ORDER_TYPE res;
  if(type == 0 || type == 2 || type == 4) res = ORDER_TYPE_SELL_LIMIT; // Buy
- if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_LIMIT; // Sell
+ if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_LIMIT;  // Sell
  return(res);
 }
 

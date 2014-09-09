@@ -346,9 +346,9 @@ void OnTick()
  if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPriceBid) == TENDENTION_UP)
  {   
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if (  (beatM5=IsExtremumBeaten(1,BUY))&&(lastTrendPBI_1==BUY||usePBI==PBI_NO) || 
-        (beatM15=IsExtremumBeaten(2,BUY))&&(lastTrendPBI_2==BUY||usePBI==PBI_NO) || 
-        (beatH1=IsExtremumBeaten(3,BUY))&&(lastTrendPBI_3==BUY||usePBI==PBI_NO)  )
+  if (  ((beatM5=IsExtremumBeaten(1,BUY))&&(lastTrendPBI_1==BUY||usePBI==PBI_NO)) || 
+        ((beatM15=IsExtremumBeaten(2,BUY))&&(lastTrendPBI_2==BUY||usePBI==PBI_NO)) || 
+        ((beatH1=IsExtremumBeaten(3,BUY))&&(lastTrendPBI_3==BUY||usePBI==PBI_NO))  )
   {        
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
@@ -410,10 +410,9 @@ void OnTick()
  if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPriceAsk) == TENDENTION_DOWN)
  {                     
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if ( (beatM5=IsExtremumBeaten(1,SELL))&&(lastTrendPBI_1==SELL||usePBI==PBI_NO) || 
-       (beatM15=IsExtremumBeaten(2,SELL))&&(lastTrendPBI_2==SELL||usePBI==PBI_NO) || 
-       (beatH1=IsExtremumBeaten(3,SELL))&&(lastTrendPBI_3==SELL||usePBI==PBI_NO)  
-        )
+  if ( ((beatM5=IsExtremumBeaten(1,SELL)) && (lastTrendPBI_1==SELL||usePBI==PBI_NO)) || 
+       ((beatM15=IsExtremumBeaten(2,SELL)) && (lastTrendPBI_2==SELL||usePBI==PBI_NO)) || 
+       ((beatH1=IsExtremumBeaten(3,SELL)) && (lastTrendPBI_3==SELL||usePBI==PBI_NO)))  
   {                
    // если спред не превышает заданное число пунктов
    if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
