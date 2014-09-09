@@ -245,7 +245,7 @@ void OnTick()
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(blowInfo[indexForTrail]); 
-GetMACDSignal(handleMACDM5);
+ GetMACDSignal(handleMACDM15);
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
@@ -597,7 +597,7 @@ int GetStopLoss()     // вычисляет стоп лосс
   for (int attempts=0;attempts<25;attempts++)
    {
      copiedPBI = CopyBuffer(handle,4,1,nBars-1,pbiBuf);
-     Sleep(100);
+    // Sleep(100);
    }
   if (copiedPBI < (nBars-1))
    {
@@ -705,13 +705,13 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
   int  GetMACDSignal (int handleMACD)
    {
     double bufMACD[];
-    int copiedMACD = CopyBuffer(handleMACD,0,1,1,bufMACD);
+    int copiedMACD = CopyBuffer(handleMACD,1,1,1,bufMACD);
     if (copiedMACD < 1)
      {
       Print("Ошибка! Не удалось прогрузить буфер smydMACD");
       return (0);
      }
     if (int(bufMACD[0])!=0)
-    Print("сигнал = ",int(bufMACD[0])," время = ",TimeToString(TimeCurrent()) );
+    Comment("сигнал = ",int(bufMACD[0])," время = ",TimeToString(TimeCurrent()) );
     return (int(bufMACD[0]));
    }
