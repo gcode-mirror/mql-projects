@@ -197,11 +197,11 @@ int OnCalculate(const int rates_total,
    }
    
    // вычисление типа движения в текущий момент
-   if(!is_it_top)
-    if(CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
-       PrintFormat("%s/%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), GetLastError());
-    //else
-       //if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("%s Загрузилось значение TOP TREND. %s", EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), MoveTypeToString((ENUM_MOVE_TYPE)buffer_top_trend[0]));
+   if(!is_it_top && CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s/%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)current_timeframe), EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(current_timeframe)), GetLastError()));
+   }
+   
    trend.CountMoveType(buffer_index, time[0], true, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
    
    ColorCandlesBuffer1[0] = open[0];
@@ -211,8 +211,6 @@ int OnCalculate(const int rates_total,
    ColorCandlesColors[0] = trend.GetMoveType(buffer_index);
    ColorCandlesColorsTop[0] = buffer_top_trend[0];
 
-   //if(TimeCurrent() >= date_from && TimeCurrent() <= date_to)PrintFormat("я посчитал для вас %d %s movetype = %s", is_it_top, EnumToString((ENUM_TIMEFRAMES)current_timeframe), MoveTypeToString((ENUM_MOVE_TYPE)ColorCandlesColors[0]));
-   
    if (extr_cur[0].direction > 0)
    {
     ExtUpArrowBuffer[0] = extr_cur[0].price;// + 50*_Point;
