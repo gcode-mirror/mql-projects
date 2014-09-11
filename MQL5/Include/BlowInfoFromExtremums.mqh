@@ -88,11 +88,8 @@ class CBlowInfoFromExtremums
        if (extr_use != EXTR_HIGH) 
          {
           copiedLow      = CopyBuffer(_handleExtremums,1,start_time,historyDepth,_extrBufferLow); 
-          copiedLowTime  = CopyTime  (_symbol,_period,start_time,historyDepth,_timeBufferLow);
-          
-          
+          copiedLowTime  = CopyTime  (_symbol,_period,start_time,historyDepth,_timeBufferLow);   
          }
-        //Sleep(100);
        }
       // Print("copiedHIGH = ",copiedHigh," copiedHighTime = ",copiedHighTime, " PERIOD = ",PeriodToString(_period));
       // Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime, " PERIOD = ",PeriodToString(_period));

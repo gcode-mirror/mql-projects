@@ -186,25 +186,6 @@ int OnInit()
    blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,100,30,30,217);  // H1          
    if (!blowInfo[0].IsInitFine() )
         return (INIT_FAILED);
-        
- /*       
-   // пытаемся загрузить экстремумы
-   if ( blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),100) &&
-        blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),100) &&
-        blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),100) &&
-        blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),100)
-    )
-    {
-     // получаем первые экстремумы
-     for (int index = 0; index < 4; index++)
-     {
-      lastExtrHigh[index]   =  blowInfo[index].GetExtrByIndex(EXTR_HIGH,0);  // сохраним значение последнего экс                       тремума HIGH
-      lastExtrLow[index]    =  blowInfo[index].GetExtrByIndex(EXTR_LOW,0);   // сохраним значение последнего экстремума LOW
-     }
-    }
-   else
-     return (INIT_FAILED);
-  */   
    curPriceAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);  
    curPriceBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
    ArrayInitialize(extrHighBeaten,false);
@@ -265,6 +246,7 @@ void OnTick()
  {   
   return;
  }
+ 
  // если мы используем запрет на вход по NineTeenLines
  if (useLinesLock)
  {
@@ -472,6 +454,7 @@ void OnTick()
    pos_info.type = OP_SELL;
    pos_info.sl = stopLoss;    
    // открываем позицию на SELL
+
    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
   }
  } 
