@@ -275,7 +275,6 @@ double CPosition::getPosProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
- PrintFormat("Выставляем стоп-лосс %.05f", _slPrice );
   //формируем комментарий
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);

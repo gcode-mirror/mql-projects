@@ -92,7 +92,7 @@ class CBlowInfoFromExtremums
           
           
          }
-        Sleep(1000);
+        //Sleep(100);
        }
       // Print("copiedHIGH = ",copiedHigh," copiedHighTime = ",copiedHighTime, " PERIOD = ",PeriodToString(_period));
       // Print("copiedLOW = ",copiedLow," copiedLowTime = ",copiedLowTime, " PERIOD = ",PeriodToString(_period));
