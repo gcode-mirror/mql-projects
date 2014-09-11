@@ -69,7 +69,7 @@ input bool  flag5  = true;                   //Показывать экстремумы H1
 input double channel_ATR_H1   =  0.25;       //Ширина уровня 
 
 sinput string dStr   = "";                   //Цены на дневнике
-input bool  flag6  = true;                   //Показывать цены D1
+input bool  flag6  = false;                   //Показывать цены D1
 
 //---------------------------------------------------------------------
 
@@ -440,7 +440,7 @@ int OnCalculate(const int rates_total,
     
    if(prev_calculated == 0)
    {
-    PrintFormat("%s Рассчет на истории. %s / %s", __FUNCTION__, TimeToString(time[rates_total-2]), TimeToString(time[0]));
+   // PrintFormat("%s Рассчет на истории. %s / %s", __FUNCTION__, TimeToString(time[rates_total-2]), TimeToString(time[0]));
     
     // для всей глубины истории считаем уровни и после этого изменяем положение соответствующих горизонтальных линий
     for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
