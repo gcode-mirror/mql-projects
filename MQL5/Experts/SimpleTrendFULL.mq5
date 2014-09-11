@@ -186,6 +186,8 @@ int OnInit()
    blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,100,30,30,217);  // H1          
    if (!blowInfo[0].IsInitFine() )
         return (INIT_FAILED);
+        
+ /*       
    // пытаемся загрузить экстремумы
    if ( blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),100) &&
         blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),100) &&
@@ -202,7 +204,7 @@ int OnInit()
     }
    else
      return (INIT_FAILED);
-     
+  */   
    curPriceAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);  
    curPriceBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
    ArrayInitialize(extrHighBeaten,false);
@@ -601,7 +603,7 @@ int GetStopLoss()     // вычисляет стоп лосс
   for (int attempts=0;attempts<25;attempts++)
    {
      copiedPBI = CopyBuffer(handle,4,1,nBars-1,pbiBuf);
-     Sleep(100);
+     //Sleep(100);
    }
   if (copiedPBI < (nBars-1))
    {
