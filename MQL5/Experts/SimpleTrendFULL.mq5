@@ -52,7 +52,6 @@ input bool useLinesLock=false;                     // флаг включения запрета на 
 input  int    koLock  = 2;                         // коэффициент запрета на вход
 input bool useMACDLock=false;                      // флаг включения запрета на вход по расхождению на MACD
 input  int lenToMACD = 5;                          // расстояние до поиска сигнала на MACD
-
 // структура уровней
 struct bufferLevel
  {
@@ -88,7 +87,7 @@ CisNewBar     *isNewBar_D1;                        // новый бар на D1
 CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 // буферы 
 double signalBuffer[];                             // буфер для получения сигнала из индикатора smydMACD
-bufferLevel buffers[2];                            // буфер уровней
+bufferLevel buffers[8];                            // буфер уровней
 // дополнительные системные переменные
 bool             firstLaunch       = true;         // флаг первого запуска эксперта
 bool             changeLotValid;                   // флаг возможности доливки на M1
@@ -221,7 +220,7 @@ void OnDeinit(const int reason)
    delete blowInfo[0];
    delete blowInfo[1];
    delete blowInfo[2];
-   delete blowInfo[3];
+   delete blowInfo[3];  
   }
 
 void OnTick()
@@ -358,9 +357,6 @@ void OnTick()
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
       lenClosestDown = GetClosestLevel(SELL);
-      Comment("UP = ",DoubleToString(lenClosestUp),
-              "\nDOWN = ",DoubleToString(lenClosestDown)
-      );
       // если получили сигнал на запрет на вход
       if (lenClosestUp != 0 && 
         LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
@@ -387,7 +383,7 @@ void OnTick()
     stopLoss = GetStopLoss();        
     // заполняем параметры открытия позиции
     pos_info.type = OP_BUY;
-    pos_info.sl = stopLoss;            
+    pos_info.sl = stopLoss;    
     // открываем позицию на BUY
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
 
@@ -421,10 +417,7 @@ void OnTick()
      }   
     // если используются зарпеты по NineTeenLines
     if (useLinesLock)
-     {
-      Comment("UP = ",DoubleToString(lenClosestUp),
-              "\nDOWN = ",DoubleToString(lenClosestDown)
-      );     
+     { 
      // получаем расстояния до ближайших уровней снизу и сверху
      lenClosestUp   = GetClosestLevel(BUY);
      lenClosestDown = GetClosestLevel(SELL);    
@@ -456,8 +449,7 @@ void OnTick()
    // заполняем параметры открытия позиции
    pos_info.type = OP_SELL;
    pos_info.sl = stopLoss;    
-   // открываем позицию на SELL
-
+   // открываем позицию на SELL 
    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
   }
  } 
@@ -634,7 +626,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
   int indexPer;
   int indexBuff;
   int indexLines = 0;
-  for (indexPer=1;indexPer<2;indexPer++)
+  for (indexPer=1;indexPer<5;indexPer++)
    {
     for (indexBuff=0;indexBuff<2;indexBuff++)
      {
@@ -661,7 +653,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<2;index++)
+      for (index=0;index<8;index++)
        {
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
@@ -676,7 +668,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
        }
      break;
      case SELL: // ближний снизу
-      for (index=0;index<2;index++)
+      for (index=0;index<8;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
