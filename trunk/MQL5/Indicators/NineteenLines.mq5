@@ -49,7 +49,7 @@ input int    period_average_ATR = 5;    //Период устреднения индикатора ATR
 sinput string levelStr = "";                 //ПАРАМЕТРЫ УРОВНЕЙ
 
 sinput string mn1Str   = "";                 //Месячные уровни
-input bool  flag1  = true;                   //Показывать экстремумы MN1
+input bool  flag1  = false;                   //Показывать экстремумы MN1
 input double channel_ATR_MN1  =  0.1;        //Ширина уровня
 
 sinput string w1Str   = "";                  //Недельные уровни
