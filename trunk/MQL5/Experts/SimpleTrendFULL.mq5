@@ -47,10 +47,11 @@ input bool   useMultiFill=true;                    // использовать доливки при п
 input string pbiParam = "";                        // Параметры PriceBasedIndicator
 input ENUM_PBI  usePBI=PBI_NO;                     // тип  использования PBI
 input ENUM_TIMEFRAMES pbiPeriod = PERIOD_H1;       // период PBI
-input string lockParams="";                        // Параметры запротов на вход
+input string lockParams="";                        // Параметры запретов на вход
 input bool useLinesLock=false;                     // флаг включения запрета на вход по индикатора NineTeenLines
 input  int    koLock  = 2;                         // коэффициент запрета на вход
 input bool useMACDLock=false;                      // флаг включения запрета на вход по расхождению на MACD
+input  int lenToMACD = 5;                          // расстояние до поиска сигнала на MACD
 
 // структура уровней
 struct bufferLevel
@@ -228,10 +229,6 @@ void OnTick()
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(blowInfo[indexForTrail]); 
- if (useMACDLock)
- {
-  GetMACDSignal(handleMACDM15);
- }
  
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
@@ -361,6 +358,9 @@ void OnTick()
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
       lenClosestDown = GetClosestLevel(SELL);
+      Comment("UP = ",DoubleToString(lenClosestUp),
+              "\nDOWN = ",DoubleToString(lenClosestDown)
+      );
       // если получили сигнал на запрет на вход
       if (lenClosestUp != 0 && 
         LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
@@ -422,6 +422,9 @@ void OnTick()
     // если используются зарпеты по NineTeenLines
     if (useLinesLock)
      {
+      Comment("UP = ",DoubleToString(lenClosestUp),
+              "\nDOWN = ",DoubleToString(lenClosestDown)
+      );     
      // получаем расстояния до ближайших уровней снизу и сверху
      lenClosestUp   = GetClosestLevel(BUY);
      lenClosestDown = GetClosestLevel(SELL);    
@@ -631,7 +634,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
   int indexPer;
   int indexBuff;
   int indexLines = 0;
-  for (indexPer=1;indexPer<5;indexPer++)
+  for (indexPer=1;indexPer<2;indexPer++)
    {
     for (indexBuff=0;indexBuff<2;indexBuff++)
      {
@@ -658,7 +661,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<8;index++)
+      for (index=0;index<2;index++)
        {
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
@@ -673,7 +676,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
        }
      break;
      case SELL: // ближний снизу
-      for (index=0;index<8;index++)
+      for (index=0;index<2;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
@@ -695,13 +698,25 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
   int  GetMACDSignal (int handleMACD)
    {
     double bufMACD[];
-    int copiedMACD = CopyBuffer(handleMACD,1,1,1,bufMACD);
-    if (copiedMACD < 1)
+    int copiedMACD;
+    for (int attempts = 0; attempts < 5; attempts ++)
+     {
+       copiedMACD = CopyBuffer(handleMACD,1,1,lenToMACD,bufMACD);
+     }
+    if (copiedMACD < lenToMACD)
      {
       Print("Ошибка! Не удалось прогрузить буфер smydMACD");
       return (0);
      }
-    if (int(bufMACD[0])!=0)
-    Comment("сигнал = ",int(bufMACD[0])," время = ",TimeToString(TimeCurrent()) );
-    return (int(bufMACD[0]));
+    // проходим по массиву сигналов MACD и ищем последнее расхождение
+    for (int ind=lenToMACD-1;ind>=0;ind--)
+     {
+      if (int(bufMACD[ind])!=0)
+       {
+        //Comment("сигнал = ",int(bufMACD[ind])," индекс = ",ind );     
+        return ( int(bufMACD[ind]) );
+       }
+     }
+     //Comment("Нет сигнала");
+    return (0);
    }
