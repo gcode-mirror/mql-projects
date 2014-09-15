@@ -717,7 +717,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
     return (0);
    }
    
-   /*
+   
   // функция возвращает хэндл индикатора NineTeenLines
   int Get19LinesHandle ()
    {
@@ -729,4 +729,4 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
                           "",false);
     return (handle19);                       
    }
-   */
+  

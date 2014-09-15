@@ -74,19 +74,19 @@ int OnInit()
  if ( handleSmydMACD == INVALID_HANDLE )
  {
   Print("Ошибка при инициализации эксперта ONODERA. Не удалось создать хэндл ShowMeYourDivMACD");
- 
- pos_info.tp = 0;
- pos_info.volume = lot;
- pos_info.expiration = 0;
- pos_info.priceDifference = 0;
-  
- trailing.trailingType = trailingType;
- trailing.minProfit    = minProfit;
- trailing.trailingStop = trStop;
- trailing.trailingStep = trStep;
- trailing.handlePBI    = handle_PBI;
   return(INIT_FAILED);
- }     
+ }
+   pos_info.tp = 0;
+   pos_info.volume = lot;
+   pos_info.expiration = 0;
+   pos_info.priceDifference = 0;
+ 
+   trailing.trailingType = TRAILING_TYPE_NONE;
+   trailing.minProfit    = 0;
+   trailing.trailingStop = 0;
+   trailing.trailingStep = 0;
+   trailing.handlePBI    = 0;  
+         
  return(INIT_SUCCEEDED);
 }
 
@@ -116,8 +116,10 @@ void OnTick()
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }   
+
    if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
      { 
+
       currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
@@ -130,11 +132,12 @@ void OnTick()
           // то открываем позицию на BUY
           pos_info.type = OP_BUY;
           pos_info.sl = stopLoss;
-          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100);        
+          if ( ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100) )
+           Comment("BUY OK");        
          }
      }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
-     {
+     {     
       currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
@@ -143,11 +146,12 @@ void OnTick()
       // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
       if (lenClosestDown == 0 ||
           GreatDoubles(lenClosestDown, lenClosestUp*koLock) )
-         {
+         {    
           // то открываем позицию на SELL
           pos_info.type = OP_SELL;
           pos_info.sl = stopLoss;
-          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100);        
+          if (ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100) )
+           Comment("SELL OK");        
          }
      }
    }  
