@@ -50,6 +50,10 @@ input ENUM_TIMEFRAMES pbiPeriod = PERIOD_H1;       // период PBI
 input string lockParams="";                        // Параметры запретов на вход
 input bool useLinesLock=false;                     // флаг включения запрета на вход по индикатора NineTeenLines
 input  int    koLock  = 2;                         // коэффициент запрета на вход
+input  bool   useW1 = true;                        // использовать недельные уровни
+input  bool   useD1 = true;                        // использовать дневные уровни
+input  bool   useH4 = true;                        // использовать 4-х часовые уровни
+input  bool   useH1 = true;                        // использовать часовые уровни 
 input bool useMACDLock=false;                      // флаг включения запрета на вход по расхождению на MACD
 input  int lenToMACD = 5;                          // расстояние до поиска сигнала на MACD
 // структура уровней
@@ -712,3 +716,17 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
      //Comment("Нет сигнала");
     return (0);
    }
+   
+   /*
+  // функция возвращает хэндл индикатора NineTeenLines
+  int Get19LinesHandle ()
+   {
+    int handle19 = iCustom(_Symbol,_Period,"NineteenLines","",30,5,"","",false,0.1,   
+                          "",useW1,0.15,
+                          "",useD1,0.25,
+                          "",useH4,0.25,
+                          "",useH1,0.25,
+                          "",false);
+    return (handle19);                       
+   }
+   */
