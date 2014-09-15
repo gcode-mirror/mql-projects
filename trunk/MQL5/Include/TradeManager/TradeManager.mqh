@@ -798,6 +798,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
   }
   else
   {
+   Print("OPEN RESULT = ",openingResult);
    error = GetLastError();
    if(pos.getType() == OP_SELL || pos.getType() == OP_BUY) _positionsToReProcessing.Add(pos);
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось открыть позицию. Error{%d} = %s. Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(pos.getPositionStatus())));
