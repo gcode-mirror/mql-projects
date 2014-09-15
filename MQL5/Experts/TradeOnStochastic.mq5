@@ -11,6 +11,7 @@
 #include <Lib CisNewBar.mqh>                    // дл€ проверки формировани€ нового бара
 #include <CompareDoubles.mqh>                   // дл€ проверки соотношени€  цен
 #include <Constants.mqh>                        // библиотека констант
+#include <ChartObjects/ChartObjectsLines.mqh>      // дл€ рисовани€ линий расхождени€
 #define ADD_TO_STOPPLOSS 50
 // константы сигналов
 #define BUY   1    
@@ -51,8 +52,9 @@ double lenClosestUp;                                                     // расс
 double lenClosestDown;                                                   // рассто€ние до ближайшего уровн€ снизу    
 // буферы 
 double signalBuffer[];                                                   // буфер дл€ получени€ сигнала из индикатора smydMACD
-bufferLevel buffers[8];                                                 // буфер уровней
+bufferLevel buffers[8];                                                  // буфер уровней
 
+CChartObjectHLine  horLine;                                              // объект класса вертикальной линии
 int OnInit()
 {
  // выдел€ем пам€ть под объект тороговой библиотеки
@@ -127,11 +129,10 @@ void OnTick()
       if (lenClosestUp == 0 || 
           GreatDoubles(lenClosestUp, lenClosestDown*koLock) )
          {
-         
           // то открываем позицию на BUY
           pos_info.type = OP_BUY;
           pos_info.sl = stopLoss;
-          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100);        
+          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100);                  
          }
      }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
@@ -146,11 +147,10 @@ void OnTick()
       if (lenClosestDown == 0 ||
           GreatDoubles(lenClosestDown, lenClosestUp*koLock) )
          {
-          
           // то открываем позицию на SELL
           pos_info.type = OP_SELL;
           pos_info.sl = stopLoss;
-          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100);        
+          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100);                   
          }
      }
    }  
@@ -275,5 +275,3 @@ bool UploadBuffers ()   // получает последние значени€ уровней
    }
    return (len);
   }
-  
-  
