@@ -232,6 +232,7 @@ void OnTick()
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(blowInfo[indexForTrail]); 
+
  
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
@@ -388,6 +389,15 @@ void OnTick()
     // заполняем параметры открытия позиции
     pos_info.type = OP_BUY;
     pos_info.sl = stopLoss;    
+    Comment( "beatM5 = ",beatM5,
+ "\nbeatM15 = ",beatM15,
+ "\nbeatH1 = ",beatH1,     
+ "\nextr M5 = ",DoubleToString(blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price),
+ "\nextr M15 = ",DoubleToString(blowInfo[2].GetExtrByIndex(EXTR_HIGH,0).price),
+ "\nextr H1 = ",DoubleToString(blowInfo[3].GetExtrByIndex(EXTR_HIGH,0).price),    
+ "\nextr M1 = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price),
+ "\nstopLoss = ",DoubleToString(stopLoss*_Point)  
+    );
     // открываем позицию на BUY
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
 

@@ -187,13 +187,14 @@ int OnCalculate(const int rates_total,
     lastExtrUpValue = extr_cur[0].price;
     if (jumper == -1)
     {
-     ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
+     //ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
      if (count == 1) 
      //Comment("",count," Ёкстремум = ",DoubleToString(ExtDownArrowBuffer[indexPrevDown]));     
      count++;
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновл€ем предыдущий индекс
+    ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;  // внесенна€ строчка
     extr_cur[0].direction = 0;    
    }
    
@@ -202,13 +203,14 @@ int OnCalculate(const int rates_total,
     lastExtrDownValue = extr_cur[1].price;
     if (jumper == 1)
     {
-     ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
+     //ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
      if (count == 1)
      //Comment("",count, " Ёкстремум = ",DoubleToString(ExtUpArrowBuffer[indexPrevUp]));
      count++;
     }
     jumper = -1;
     indexPrevDown = rates_total-1;  // обновл€ем предыдущий индекс      
+    ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;  // внесенна€ строчка    
     extr_cur[1].direction = 0;    
    }
  
