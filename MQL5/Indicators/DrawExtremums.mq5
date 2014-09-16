@@ -7,7 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_chart_window
-#property indicator_buffers 2
+#property indicator_buffers 3
 #property indicator_plots   2
 
 #property indicator_type1   DRAW_ARROW
@@ -30,8 +30,9 @@ input  int     period_average_ATR = 30;           // период устреднени€ индикато
 input  int     codeSymbol         = 217;         // код символа
 
 //--- индикаторные буферы
-double ExtUpArrowBuffer[];
-double ExtDownArrowBuffer[];
+double ExtUpArrowBuffer[];                       // буфер верхних экстремумов
+double ExtDownArrowBuffer[];                     // буфер нижних экстремумов
+double LastExtrSignal[];                         // сигнал последего экстремума
 
 int indexPrevUp   = -1;                      // индекс последнего верхнего экстремума, которого нужно затереть
 int indexPrevDown = -1;                      // индекс последнего нижнего экстремума, которого нужно затереть 
@@ -76,15 +77,18 @@ int OnInit()
 //--- indicator buffers mapping
    SetIndexBuffer(0, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(1, ExtDownArrowBuffer, INDICATOR_DATA);
+   SetIndexBuffer(2, LastExtrSignal,INDICATOR_CALCULATIONS);
 
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
+   ArrayInitialize(LastExtrSignal, 0);
 
    PlotIndexSetInteger(0, PLOT_ARROW, codeSymbol+1);
    PlotIndexSetInteger(1, PLOT_ARROW, codeSymbol);
    
    ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
    ArraySetAsSeries( ExtDownArrowBuffer, series_order);
+   ArraySetAsSeries ( LastExtrSignal, true);
    
    return(INIT_SUCCEEDED);
   }
@@ -95,6 +99,7 @@ void OnDeinit(const int reason)
    Print(__FUNCTION__,"_ од причины деинициализации = ",reason);
    ArrayFree(ExtUpArrowBuffer);
    ArrayFree(ExtDownArrowBuffer);
+   ArrayFree(LastExtrSignal);
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -148,6 +153,7 @@ int OnCalculate(const int rates_total,
        ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
       }
      jumper = 1;
+   
      indexPrevUp = i;  // обновл€ем предыдущий индекс
      extr_cur[0].direction = 0;
     }
@@ -161,6 +167,7 @@ int OnCalculate(const int rates_total,
        ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
       }
      jumper = -1;
+   
      indexPrevDown = i;  // обновл€ем предыдущий индекс      
      extr_cur[1].direction = 0;
     }
@@ -187,14 +194,14 @@ int OnCalculate(const int rates_total,
     lastExtrUpValue = extr_cur[0].price;
     if (jumper == -1)
     {
-     //ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
+     ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
      if (count == 1) 
      //Comment("",count," Ёкстремум = ",DoubleToString(ExtDownArrowBuffer[indexPrevDown]));     
      count++;
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновл€ем предыдущий индекс
-    ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;  // внесенна€ строчка
+    //ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;  // внесенна€ строчка
     extr_cur[0].direction = 0;    
    }
    
@@ -203,17 +210,20 @@ int OnCalculate(const int rates_total,
     lastExtrDownValue = extr_cur[1].price;
     if (jumper == 1)
     {
-     //ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
+     ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
      if (count == 1)
      //Comment("",count, " Ёкстремум = ",DoubleToString(ExtUpArrowBuffer[indexPrevUp]));
      count++;
     }
+   
     jumper = -1;
+    
     indexPrevDown = rates_total-1;  // обновл€ем предыдущий индекс      
-    ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;  // внесенна€ строчка    
+    //ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;  // внесенна€ строчка    
     extr_cur[1].direction = 0;    
    }
- 
+   
+   LastExtrSignal[0] = jumper;
    
    return(rates_total);
   }

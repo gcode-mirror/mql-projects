@@ -54,8 +54,9 @@ input  bool   useW1 = true;                        // использовать недельные уро
 input  bool   useD1 = true;                        // использовать дневные уровни
 input  bool   useH4 = true;                        // использовать 4-х часовые уровни
 input  bool   useH1 = true;                        // использовать часовые уровни 
-input bool useMACDLock=false;                      // флаг включени€ запрета на вход по расхождению на MACD
-input  int lenToMACD = 5;                          // рассто€ние до поиска сигнала на MACD
+input  bool   useMACDLock=false;                   // флаг включени€ запрета на вход по расхождению на MACD
+input  int    lenToMACD = 5;                       // рассто€ние до поиска сигнала на MACD
+
 // структура уровней
 struct bufferLevel
  {
@@ -92,6 +93,7 @@ CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса пол
 // буферы 
 double signalBuffer[];                             // буфер дл€ получени€ сигнала из индикатора smydMACD
 bufferLevel buffers[8];                            // буфер уровней
+bool        useLines[4];                           // массив использовани€ уровней
 // дополнительные системные переменные
 bool             firstLaunch       = true;         // флаг первого запуска эксперта
 bool             changeLotValid;                   // флаг возможности доливки на M1
@@ -207,6 +209,12 @@ int OnInit()
    trailing.trailingStep = 0;
    trailing.handlePBI    = 0;  
    
+   // заполн€ем массив флагов использовани€ уровней
+   useLines[0] = useW1;
+   useLines[1] = useD1;
+   useLines[2] = useH4;
+   useLines[3] = useH1;   
+   
    return(INIT_SUCCEEDED);
   }
 void OnDeinit(const int reason)
@@ -247,6 +255,8 @@ void OnTick()
  {   
   return;
  }
+ 
+// Comment("ѕоследний экстремум тип = ",blowInfo[1].ShowExtrType(blowInfo[1].GetLastExtrType()) );
  
  // если мы используем запрет на вход по NineTeenLines
  if (useLinesLock)
@@ -464,7 +474,7 @@ void OnTick()
    pos_info.type = OP_SELL;
    pos_info.sl = stopLoss;    
    // открываем позицию на SELL 
-   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
+  // ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
   }
  } 
 }
@@ -642,17 +652,21 @@ bool Upload19LinesBuffers ()   // получает последние значени€ уровней
   int indexLines = 0;
   for (indexPer=1;indexPer<5;indexPer++)
    {
-    for (indexBuff=0;indexBuff<2;indexBuff++)
-     {
-      copiedPrice = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+4,  0,1,  buffers[indexLines].price);
-      copiedATR   = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+5,  0,1,buffers[indexLines].atr);
-      if (copiedPrice < 1 || copiedATR < 1)
-       {
-        Print("Ќе удалось прогрузить буферы индикатора NineTeenLines");
-        return (false);
-       }
-      indexLines++;
+    // если включен уровень 
+    if (useLines[indexPer-1])
+    {
+     for (indexBuff=0;indexBuff<2;indexBuff++)
+      {
+       copiedPrice = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+4,  0,1,  buffers[indexLines].price);
+       copiedATR   = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+5,  0,1,buffers[indexLines].atr);
+       if (copiedPrice < 1 || copiedATR < 1)
+        {
+         Print("Ќе удалось прогрузить буферы индикатора NineTeenLines");
+         return (false);
+        }
+       indexLines++;
      }
+    }
    }
   return(true);     
  }
@@ -667,22 +681,38 @@ bool Upload19LinesBuffers ()   // получает последние значени€ уровней
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<8;index++)
+      for (index=0;index<4;index++)
        {
-        // если уровень выше
-        if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
+        // если уровень используетс€
+        if (useLines[index])
          {
-          tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
-          if (tmpLen < len || len == 0)
-           {
-            savedInd = index;
-            len = tmpLen;
-           }  
-         }
+         
+          // если уровень выше
+          if ( GreatDoubles((buffers[index*2].price[0]-buffers[index*2].atr[0]),cuPrice)  )
+            {
+             tmpLen = buffers[index*2].price[0] - buffers[index*2].atr[0] - cuPrice;
+             if (tmpLen < len || len == 0)
+               {
+                savedInd = index*2;
+                len = tmpLen;
+               }  
+            }
+          // если уровень выше
+          if ( GreatDoubles((buffers[index*2+1].price[0]-buffers[index*2+1].atr[0]),cuPrice)  )
+            {
+             tmpLen = buffers[index*2].price[0] - buffers[index*2].atr[0] - cuPrice;
+             if (tmpLen < len || len == 0)
+               {
+                savedInd = index*2;
+                len = tmpLen;
+               }  
+            }            
+            
+          }
        }
      break;
      case SELL: // ближний снизу
-      for (index=0;index<8;index++)
+      for (index=0;index<4;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
@@ -739,4 +769,3 @@ bool Upload19LinesBuffers ()   // получает последние значени€ уровней
                           "",false);
     return (handle19);                       
    }
-  

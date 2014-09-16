@@ -34,6 +34,7 @@ class CBlowInfoFromExtremums
    // буферы класса
    double   _extrBufferHigh[];  // буфер высоких экстремумов
    double   _extrBufferLow [];  // буфер низких эксремумов
+   double   _lastExtrSignal[];  // буфера типа последнего пришедшего экстремума
    datetime _timeBufferHigh[];  // время появления верхних экстремумов
    datetime _timeBufferLow [];  // время появления нижних экстремумов
    // приватные поля класса
@@ -47,6 +48,7 @@ class CBlowInfoFromExtremums
    bool IsInitFine ();                                                                         // проверяет, хорошо ли проиницилизирован объект   
    bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime start_time=0,int historyDepth=1000); // функция обновляет экстремумы
    Extr GetExtrByIndex (ENUM_EXTR_USE extr_use,int extr_index);                                // возвращает значение экстремума по индексу
+  // ENUM_EXTR_USE GetLastExtrType ();                                                           // возвращает тип последнего экстремума
    ENUM_EXTR_USE GetLastExtrType ();                                                           // возвращает тип последнего экстремума
    string ShowExtrType (ENUM_EXTR_USE extr_use);                                               // отображает в виде строки тип экстремумов 
   // конструкторы и деструкторы
@@ -76,7 +78,11 @@ class CBlowInfoFromExtremums
    _historyDepth = historyDepth;
     if (extr_use == EXTR_NO)
      return (false);
-     
+      if ( CopyBuffer(_handleExtremums,2,0,1,_lastExtrSignal) < 1 )
+       {
+        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        return (false);       
+       }
       for (int attempts = 0; attempts < 25; attempts ++)
        {
        if (extr_use != EXTR_LOW) 
@@ -152,7 +158,7 @@ class CBlowInfoFromExtremums
   }
   
    
-   ENUM_EXTR_USE CBlowInfoFromExtremums::GetLastExtrType(void)
+  /* ENUM_EXTR_USE CBlowInfoFromExtremums::GetLastExtrType(void)
     {
      // проходим от конца глубины истории до первого попавшегося экстремума
      for (int index=_historyDepth-1;index>0;index--)
@@ -168,6 +174,18 @@ class CBlowInfoFromExtremums
          return EXTR_LOW;
       } 
       return EXTR_NO;
+    }
+    */
+   ENUM_EXTR_USE CBlowInfoFromExtremums::GetLastExtrType(void)
+    {
+     switch ( int(_lastExtrSignal[0]) )
+      {
+       case 1:
+        return EXTR_HIGH;
+       case -1:
+        return EXTR_LOW;
+      }
+     return EXTR_NO;
     }
   
    
