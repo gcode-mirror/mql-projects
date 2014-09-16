@@ -23,6 +23,7 @@
 // входные параметры
 sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
 input  double lot                                  = 0.1;                // Лот                
+input  int    spread                               = 300;                // Размер спреда 
 input  int    koLock                               = 2;                  // коэффициент запрета на вход
 sinput string trailingStr                          = "";                 // ПАРАМЕТРЫ трейлинга
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;               // тип трейлинга
@@ -132,7 +133,7 @@ void OnTick()
           // то открываем позицию на BUY
           pos_info.type = OP_BUY;
           pos_info.sl = stopLoss;
-          if ( ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100) )
+          if ( ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread) )
            Comment("BUY OK");        
          }
      }
@@ -150,7 +151,7 @@ void OnTick()
           // то открываем позицию на SELL
           pos_info.type = OP_SELL;
           pos_info.sl = stopLoss;
-          if (ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,100) )
+          if (ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread) )
            Comment("SELL OK");        
          }
      }
