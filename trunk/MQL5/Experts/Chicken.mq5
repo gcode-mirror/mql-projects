@@ -17,6 +17,7 @@
 //| Expert parametrs                                                 |
 //+------------------------------------------------------------------+
 input double volume = 0.1;
+input int    spread   = 30;         // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 input int minProfit = 250;
 input int trailingStop = 150;
@@ -100,7 +101,7 @@ void OnTick()
     pos_info.type = OP_SELLSTOP;
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
+    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
    
    if(index_min < ALLOW_INTERVAL && ask < buffer_low[index_min] - stoplevel)
@@ -109,7 +110,7 @@ void OnTick()
     pos_info.type = OP_BUYSTOP;
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing);
+    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
   }
   else

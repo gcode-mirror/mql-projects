@@ -690,7 +690,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
  int i = 0;
  int total = _openPositions.Total();
  CPosition *pos;
- log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), total));
+ log_file.Write(LOG_DEBUG, StringFormat("%s Открываем позицию %s. Открытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), total));
  log_file.Write(LOG_DEBUG, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
  switch(pos_info.type)
  {

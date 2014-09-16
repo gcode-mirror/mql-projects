@@ -42,9 +42,9 @@
 #define PERCENTAGE_OF_ATR_FOR_H1  1.5
 */
 
-sinput string mainStr = "";             //Базовые параметры индикатора
-input int    period_ATR_channel = 30;   //Период ATR для канала
-input int    period_average_ATR = 5;    //Период устреднения индикатора ATR
+sinput string mainStr = "";              //Базовые параметры индикатора
+input int    period_ATR_channel = 3;    //Период ATR для канала
+input int    period_average_ATR = 3;    //Период устреднения индикатора ATR
 
 sinput string levelStr = "";                 //ПАРАМЕТРЫ УРОВНЕЙ
 
@@ -320,6 +320,8 @@ int OnInit()
  handle_atr_H4 = iMA(_Symbol,   PERIOD_H4, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H4, period_ATR_channel));
  handle_atr_H1 = iMA(_Symbol,   PERIOD_H1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H1, period_ATR_channel));
  
+ PrintFormat("handle_atr_MN = %d, handle_atr_W1 = %d, handle_atr_D1 = %d, handle_atr_H4 = %d, handle_atr_H1 = %d", handle_atr_MN, handle_atr_W1, handle_atr_D1, handle_atr_H4, handle_atr_H1);
+ 
  // создание и присваивание хэндлов индикаторов идет здесь, так как при создании и инициализации хэндла внутри класса
  // наблюдаются ошибки свзяанные тем что требуемый индикатор не успевает посчитаться
  calcMN.SetHandleATR(handle_atr_MN);
@@ -432,6 +434,15 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
+  
+   if (BarsCalculated( handle_atr_MN) < 1||
+BarsCalculated( handle_atr_W1) < 1 || 
+BarsCalculated( handle_atr_D1) < 1 ||
+BarsCalculated( handle_atr_H4) < 1 || 
+BarsCalculated( handle_atr_H1) < 1)
+    {
+    return (0);
+    }
    ArraySetAsSeries(open , true);
    ArraySetAsSeries(high , true);
    ArraySetAsSeries(low  , true);
@@ -440,7 +451,7 @@ int OnCalculate(const int rates_total,
     
    if(prev_calculated == 0)
    {
-   // PrintFormat("%s Рассчет на истории. %s / %s", __FUNCTION__, TimeToString(time[rates_total-2]), TimeToString(time[0]));
+    PrintFormat("%s Рассчет на истории. %s / %s rates_total = %d", __FUNCTION__, TimeToString(time[rates_total-2]), TimeToString(time[0]), rates_total);
     
     // для всей глубины истории считаем уровни и после этого изменяем положение соответствующих горизонтальных линий
     for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу

@@ -190,7 +190,7 @@ double CExtremum::AverageBar (datetime start_pos)  // подгружаем значения с инди
   return(buffer_average_atr[0]);
  else
  {
-  PrintFormat("%s ERROR. I have this error = %d, %s. copied = %d, calculated = %d", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period), copied, BarsCalculated(_handle_ATR));
+  PrintFormat("%s ERROR. I have this error = %d, %s. copied = %d, calculated = %d, buf_num = %d", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period), copied, BarsCalculated(_handle_ATR), _handle_ATR);
   return(0);
  }
 }

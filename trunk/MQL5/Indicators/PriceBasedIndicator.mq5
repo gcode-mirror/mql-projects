@@ -64,12 +64,14 @@ int OnInit()
    PrintFormat("%s Init", MakeFunctionPrefix(__FUNCTION__));
    symbol = Symbol();
    current_timeframe = Period();
+   digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+   
    if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe)-1;
    PrintFormat("Глубина поиска равна: %d", depth);
+   
    NewBarCurrent.SetPeriod(current_timeframe);
-   digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
    int handle_atr = iMA(symbol,  current_timeframe, 100, 0, MODE_EMA, iATR(symbol,  current_timeframe, 30));
-   trend    = new CColoredTrend(symbol, current_timeframe, handle_atr, depth);
+   trend = new CColoredTrend(symbol, current_timeframe, handle_atr, depth);
    if(!is_it_top) handle_top_trend = iCustom(Symbol(), GetTopTimeframe(current_timeframe), "PriceBasedIndicator", depth, false, true);
 //--- indicator buffers mapping
    
