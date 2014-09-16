@@ -585,6 +585,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_SELL:
+   log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Селл, объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _pos_info.volume) );
    if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _pos_info.volume, _posOpenPrice, 0, 0, orderComment))
    {
     _orderTicket = 0;

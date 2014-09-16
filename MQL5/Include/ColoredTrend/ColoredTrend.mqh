@@ -7,7 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.01"
 
-//#include <CLog.mqh>
+#include <CLog.mqh>
 #include <CompareDoubles.mqh>
 #include <CExtremum.mqh>
 #include "ColoredTrendUtilities.mqh"
@@ -295,18 +295,26 @@ int CColoredTrend::FillTimeSeries(ENUM_TF tfType, int count, datetime start_pos,
 //--- если не удалось скопировать достаточное количество баров
  if(copied < count)
  {
-  string comm = StringFormat("%s ƒл€ символа %s получено %d баров из %d затребованных Rates. Period = %s. Error = %d | start = %d count = %d",
+  //--- ѕолучим кол-во рассчитанных значений индикатора
+  //calculated_values=BarsCalculated(symbol_handles[s]);
+  //--- ѕолучим первую дату данных текущего периода в терминале
+  datetime firstdate_terminal=(datetime)SeriesInfoInteger(_symbol ,Period(), SERIES_TERMINAL_FIRSTDATE);
+  //--- ѕолучим количество доступных баров от указанной даты
+  int available_bars=Bars(_symbol,Period(),firstdate_terminal,TimeCurrent());
+  string comm = StringFormat("%s ƒл€ символа %s получено %d баров из %d затребованных Rates. Period = %s. Error = %d | first date = %s, available = %d, start = %s, count = %d",
                              MakeFunctionPrefix(__FUNCTION__),
                              _symbol,
                              copied,
                              count,
                              EnumToString((ENUM_TIMEFRAMES)period),
                              GetLastError(),
-                             start_pos,
+                             TimeToString(firstdate_terminal, TIME_DATE|TIME_MINUTES|TIME_SECONDS),
+                             available_bars,
+                             TimeToString(start_pos, TIME_DATE|TIME_MINUTES|TIME_SECONDS),
                              count
                             );
   //--- выведем сообщение в комментарий на главное окно графика
-  Print(comm);
+  log_file.Write(LOG_DEBUG, comm);
  }
  ArraySetAsSeries(array, true);
  return(copied);
