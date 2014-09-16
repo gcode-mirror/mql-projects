@@ -178,7 +178,7 @@ int OnCalculate(const int rates_total,
    PrintFormat("%s Первый расчет индикатора ОКОНЧЕН.", __FUNCTION__);
    return (rates_total);
   }
-   
+   LastExtrSignal[0] = jumper;
    
    //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
    RecountUpdated(time[rates_total-1], true, extr_cur);
@@ -192,6 +192,7 @@ int OnCalculate(const int rates_total,
    if (extr_cur[0].direction > 0)
    {
     lastExtrUpValue = extr_cur[0].price;
+    Comment("Пришел верхний экстремум");
     if (jumper == -1)
     {
      ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
@@ -208,6 +209,7 @@ int OnCalculate(const int rates_total,
    if (extr_cur[1].direction < 0)
    {
     lastExtrDownValue = extr_cur[1].price;
+    Comment("Пришел нижний экстремум");
     if (jumper == 1)
     {
      ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
