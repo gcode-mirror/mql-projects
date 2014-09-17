@@ -201,9 +201,24 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
  if(_pos_info.sl > 0 && _pos_info.sl < SymbInfo.StopsLevel()) _pos_info.sl = SymbInfo.StopsLevel();
  if(_pos_info.tp > 0 && _pos_info.tp < SymbInfo.StopsLevel()) _pos_info.tp = SymbInfo.StopsLevel();
  if (_trailing.trailingStop < SymbInfo.StopsLevel()) _trailing.trailingStop = SymbInfo.StopsLevel();
- if(_pos_info.expiration <= 0) _type_time = ORDER_TIME_GTC;
- else _type_time = ORDER_TIME_SPECIFIED;
- _pos_info.expiration_time = TimeCurrent()+_pos_info.expiration*PeriodSeconds(Period());  //помимио прочего нужно поменять во всем коде ORDER_TIME_SPECIFIED на ORDER_TIME_GTC 
+ if(_pos_info.expiration <= 0)
+ {
+  _type_time = ORDER_TIME_GTC;
+  _pos_info.expiration_time = 0;
+  
+//--- check order expiration
+  int exp=(int)SymbolInfoInteger(symbol,SYMBOL_EXPIRATION_MODE);
+  if((exp&SYMBOL_EXPIRATION_GTC)!=SYMBOL_EXPIRATION_GTC)
+  {
+   _type_time = ORDER_TIME_SPECIFIED;
+   _pos_info.expiration_time = TimeCurrent()+31104000;
+  }
+ }
+ else
+ {
+  _type_time = ORDER_TIME_SPECIFIED;
+  _pos_info.expiration_time = TimeCurrent()+_pos_info.expiration*PeriodSeconds(Period());  //помимио прочего нужно поменять во всем коде ORDER_TIME_SPECIFIED на ORDER_TIME_GTC 
+ }
  trade = new CTMTradeFunctions();
  _pos_status = POSITION_STATUS_NOT_INITIALISED;
  _sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
