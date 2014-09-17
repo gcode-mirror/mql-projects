@@ -105,8 +105,6 @@ void OnDeinit(const int reason)
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
 
-int count=0;
-
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
                 const datetime &time[],
@@ -144,8 +142,7 @@ int OnCalculate(const int rates_total,
    {
     RecountUpdated(time[i], false, extr_cur);
     if (extr_cur[0].direction > 0)
-    {
-     
+    {     
    //  ExtUpArrowBuffer[i] = extr_cur[0].price;
      lastExtrUpValue = extr_cur[0].price;
      if (jumper == -1)
@@ -153,13 +150,11 @@ int OnCalculate(const int rates_total,
        ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
       }
      jumper = 1;
-   
      indexPrevUp = i;  // обновляем предыдущий индекс
      extr_cur[0].direction = 0;
     }
     if (extr_cur[1].direction < 0)
     {
-    
     // ExtDownArrowBuffer[i] = extr_cur[1].price;
      lastExtrDownValue = extr_cur[1].price;
      if (jumper == 1)
@@ -176,52 +171,46 @@ int OnCalculate(const int rates_total,
    indexPrevDown = rates_total - 1 - indexPrevDown;
    indexPrevUp   = rates_total - 1 - indexPrevUp;
    PrintFormat("%s Первый расчет индикатора ОКОНЧЕН.", __FUNCTION__);
+   jumper = jumper*-1;
    return (rates_total);
   }
    LastExtrSignal[0] = jumper;
    
-   //PrintFormat("buffer_index = %d; time = %s;", buffer_index, TimeToString(time[0]));   
    RecountUpdated(time[rates_total-1], true, extr_cur);
    
    ArraySetAsSeries(ExtUpArrowBuffer   , false);
    ArraySetAsSeries(ExtDownArrowBuffer , false);
-   
-   ExtDownArrowBuffer[rates_total-1] = 0;
-   ExtUpArrowBuffer[rates_total-1]   = 0;
      
    if (extr_cur[0].direction > 0)
    {
+ //   ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
+ //   ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;    
     lastExtrUpValue = extr_cur[0].price;
-    Comment("Пришел верхний экстремум");
+
+    
     if (jumper == -1)
     {
      ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
-     if (count == 1) 
-     //Comment("",count," Экстремум = ",DoubleToString(ExtDownArrowBuffer[indexPrevDown]));     
-     count++;
+    //Comment("Пришел верхний экстремум, записываем нижний ", DoubleToString(ExtDownArrowBuffer[indexPrevDown])," jumper = ",jumper," время = ",TimeToString(TimeCurrent()) );    
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
-    //ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;  // внесенная строчка
     extr_cur[0].direction = 0;    
    }
    
    if (extr_cur[1].direction < 0)
    {
+  //  ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
+  //  ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;    
     lastExtrDownValue = extr_cur[1].price;
-    Comment("Пришел нижний экстремум");
+
     if (jumper == 1)
     {
      ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
-     if (count == 1)
-     //Comment("",count, " Экстремум = ",DoubleToString(ExtUpArrowBuffer[indexPrevUp]));
-     count++;
+  //  Comment("Пришел нижний экстремум, записываем верхний ",DoubleToString(ExtUpArrowBuffer[indexPrevUp])," jumper = ",jumper," время = ",TimeToString(TimeCurrent()) );
     }
-   
     jumper = -1;
-    
-    indexPrevDown = rates_total-1;  // обновляем предыдущий индекс      
-    //ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;  // внесенная строчка    
+    indexPrevDown = rates_total-1;  // обновляем предыдущий индекс        
     extr_cur[1].direction = 0;    
    }
    
