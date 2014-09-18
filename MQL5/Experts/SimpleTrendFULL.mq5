@@ -50,10 +50,6 @@ input ENUM_TIMEFRAMES pbiPeriod = PERIOD_H1;       // период PBI
 input string lockParams="";                        // Параметры запретов на вход
 input bool useLinesLock=false;                     // флаг включения запрета на вход по индикатора NineTeenLines
 input  int    koLock  = 2;                         // коэффициент запрета на вход
-input  bool   useW1 = true;                        // использовать недельные уровни
-input  bool   useD1 = true;                        // использовать дневные уровни
-input  bool   useH4 = true;                        // использовать 4-х часовые уровни
-input  bool   useH1 = true;                        // использовать часовые уровни 
 input  bool   useMACDLock=false;                   // флаг включения запрета на вход по расхождению на MACD
 input  int    lenToMACD = 5;                       // расстояние до поиска сигнала на MACD
 
@@ -93,7 +89,6 @@ CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса пол
 // буферы 
 double signalBuffer[];                             // буфер для получения сигнала из индикатора smydMACD
 bufferLevel buffers[8];                            // буфер уровней
-bool        useLines[4];                           // массив использования уровней
 // дополнительные системные переменные
 bool             firstLaunch       = true;         // флаг первого запуска эксперта
 bool             changeLotValid;                   // флаг возможности доливки на M1
@@ -208,12 +203,6 @@ int OnInit()
    trailing.trailingStop = 0;
    trailing.trailingStep = 0;
    trailing.handlePBI    = 0;  
-   
-   // заполняем массив флагов использования уровней
-   useLines[0] = useW1;
-   useLines[1] = useD1;
-   useLines[2] = useH4;
-   useLines[3] = useH1;   
    
    return(INIT_SUCCEEDED);
   }
@@ -645,9 +634,6 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
   int indexLines = 0;
   for (indexPer=1;indexPer<5;indexPer++)
    {
-    // если включен уровень 
-    if (useLines[indexPer-1])
-    {
      for (indexBuff=0;indexBuff<2;indexBuff++)
       {
        copiedPrice = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+4,  0,1,  buffers[indexLines].price);
@@ -659,7 +645,6 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
         }
        indexLines++;
      }
-    }
    }
   return(true);     
  }
@@ -674,12 +659,8 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<4;index++)
-       {
-        // если уровень используется
-        if (useLines[index])
-         {
-         
+      for (index=0;index<8;index++)
+       {         
           // если уровень выше
           if ( GreatDoubles((buffers[index*2].price[0]-buffers[index*2].atr[0]),cuPrice)  )
             {
@@ -689,19 +670,8 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
                 savedInd = index*2;
                 len = tmpLen;
                }  
-            }
-          // если уровень выше
-          if ( GreatDoubles((buffers[index*2+1].price[0]-buffers[index*2+1].atr[0]),cuPrice)  )
-            {
-             tmpLen = buffers[index*2].price[0] - buffers[index*2].atr[0] - cuPrice;
-             if (tmpLen < len || len == 0)
-               {
-                savedInd = index*2;
-                len = tmpLen;
-               }  
-            }            
+            }           
             
-          }
        }
      break;
      case SELL: // ближний снизу
@@ -751,14 +721,3 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
    }
    
    
-  // функция возвращает хэндл индикатора NineTeenLines
-  int Get19LinesHandle ()
-   {
-    int handle19 = iCustom(_Symbol,_Period,"NineteenLines","",30,5,"","",false,0.1,   
-                          "",useW1,0.15,
-                          "",useD1,0.25,
-                          "",useH4,0.25,
-                          "",useH1,0.25,
-                          "",false);
-    return (handle19);                       
-   }
