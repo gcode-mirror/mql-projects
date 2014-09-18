@@ -662,12 +662,12 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
       for (index=0;index<8;index++)
        {         
           // если уровень выше
-          if ( GreatDoubles((buffers[index*2].price[0]-buffers[index*2].atr[0]),cuPrice)  )
+          if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
             {
-             tmpLen = buffers[index*2].price[0] - buffers[index*2].atr[0] - cuPrice;
+             tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
              if (tmpLen < len || len == 0)
                {
-                savedInd = index*2;
+                savedInd = index;
                 len = tmpLen;
                }  
             }           
@@ -675,7 +675,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
        }
      break;
      case SELL: // ближний снизу
-      for (index=0;index<4;index++)
+      for (index=0;index<8;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
