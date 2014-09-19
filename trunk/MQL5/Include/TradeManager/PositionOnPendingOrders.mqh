@@ -211,7 +211,7 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
   if((exp&SYMBOL_EXPIRATION_GTC)!=SYMBOL_EXPIRATION_GTC)
   {
    _type_time = ORDER_TIME_SPECIFIED;
-   _pos_info.expiration_time = TimeCurrent()+31104000;
+   _pos_info.expiration_time = TimeCurrent()+31536000;
   }
  }
  else
@@ -290,9 +290,10 @@ double CPosition::getPosProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
-  //формируем комментарий
+log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice ));
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);
+ //формируем комментарий
  string slComment = StringFormat("%s_%s_STOP", StringSubstr(MQL5InfoString(MQL5_PROGRAM_NAME), 0, 27), log_file.PeriodString());
 
  if (_pos_info.sl > 0 && _sl_status != STOPLEVEL_STATUS_PLACED)
@@ -301,11 +302,14 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
   //if (MathAbs(_slPrice - PriceByType(_pos_info.type)) <= SymbInfo.StopsLevel()) _slPrice = StopLevelByType(_pos_info.type);
   
   _slType = SLOrderType((int)_pos_info.type);
-  if (trade.OrderOpen(_symbol, _slType, _pos_info.volume, _slPrice, _type_time, _pos_info.expiration_time, slComment)) //, sl + stopLevel, sl - stopLevel);
+  
+  log_file.Write(LOG_DEBUG, StringFormat("%s тип времени истечения %s", MakeFunctionPrefix(__FUNCTION__), EnumToString(_type_time) ));
+  if (trade.OrderOpen(_symbol, _slType, _pos_info.volume, _slPrice, _type_time, 0, slComment))
   {
    _slTicket = trade.ResultOrder();
    _sl_status = STOPLEVEL_STATUS_PLACED;
-   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d c с ценой %0.6f", MakeFunctionPrefix(__FUNCTION__), _slTicket, _slPrice));     
+   OrderSelect(_slTicket);
+   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d c ценой %0.6f, время экспирации %s, тип времени истечения %d", MakeFunctionPrefix(__FUNCTION__), _slTicket, _slPrice, TimeToString(OrderGetInteger(ORDER_TIME_EXPIRATION), TIME_DATE), OrderGetInteger(ORDER_TYPE_TIME)));     
   }
   else
   {
