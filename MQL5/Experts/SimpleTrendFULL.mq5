@@ -28,6 +28,23 @@ enum ENUM_TENDENTION
  TENDENTION_DOWN        // тенденция вниз
 };
 
+string TendentionToString(ENUM_TENDENTION t)
+{
+ string res = "";
+ switch(t)
+ {
+  case TENDENTION_NO: 
+   res = "нет тенденции";
+   break;
+  case TENDENTION_UP:
+   res = "тенденция вверх";
+   break;
+  case TENDENTION_DOWN:
+   res = "тенденция вниз";
+   break;
+ }
+ return (res);
+}
 // перечисления режимов PriceBasedIndicator
 enum ENUM_PBI
 {
@@ -50,7 +67,7 @@ input ENUM_TIMEFRAMES pbiPeriod = PERIOD_H1;       // период PBI
 input string lockParams="";                        // Параметры запретов на вход
 input bool useLinesLock=false;                     // флаг включения запрета на вход по индикатора NineTeenLines
 input  int    koLock  = 2;                         // коэффициент запрета на вход
-input  bool   useMACDLock=false;                   // флаг включения запрета на вход по расхождению на MACD
+input bool useMACDLock=false;                      // флаг включения запрета на вход по расхождению на MACD
 input  int    lenToMACD = 5;                       // расстояние до поиска сигнала на MACD
 
 // структура уровней
@@ -90,30 +107,30 @@ CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса пол
 double signalBuffer[];                             // буфер для получения сигнала из индикатора smydMACD
 bufferLevel buffers[8];                            // буфер уровней
 // дополнительные системные переменные
-bool             firstLaunch       = true;         // флаг первого запуска эксперта
-bool             changeLotValid;                   // флаг возможности доливки на M1
-bool             beatM5;                           // флаг пробития на M5
-bool             beatM15;                          // флаг пробития на M15
-bool             beatH1;                           // флаг пробития на H1
-int              openedPosition    = NO_POSITION;  // тип открытой позиции 
-int              stopLoss;                         // стоп лосс
-int              indexForTrail     = 0;            // индекс для трейлинга
-int              countAdd          = 0;            // количество доливок
+bool            firstLaunch       = true;         // флаг первого запуска эксперта
+bool            changeLotValid;                   // флаг возможности доливки на M1
+bool            beatM5;                           // флаг пробития на M5
+bool            beatM15;                          // флаг пробития на M15
+bool            beatH1;                           // флаг пробития на H1
+int             openedPosition    = NO_POSITION;  // тип открытой позиции 
+int             stopLoss;                         // стоп лосс
+int             indexForTrail     = 0;            // индекс для трейлинга
+int             countAdd          = 0;            // количество доливок
 
-int              lastTrendPBI_1    = 0;            // тип последнего тренда по PBI 
-int              lastTrendPBI_2    = 0;            // тип последнего тренда по PBI
-int              lastTrendPBI_3    = 0;            // тип последнего тренда по PBI
+int             lastTrendPBI_1    = 0;            // тип последнего тренда по PBI 
+int             lastTrendPBI_2    = 0;            // тип последнего тренда по PBI
+int             lastTrendPBI_3    = 0;            // тип последнего тренда по PBI
   
-int              tmpLastBar;
+int             tmpLastBar;
 
-double           curPriceAsk       = 0;            // для хранения текущей цены Ask
-double           curPriceBid       = 0;            // для хранения текущей цены Bid 
-double           prevPriceAsk      = 0;            // для хранения предыдущей цены Ask
-double           prevPriceBid      = 0;            // для хранения предыдущей цены Bid
-double           lotReal;                          // действительный лот
-double           lenClosestUp;                     // расстояние до ближайшего уровня сверху
-double           lenClosestDown;                   // расстояние до ближайшего уровня снизу 
-ENUM_TENDENTION  lastTendention;                   // переменная для хранения последней тенденции
+double          curPriceAsk       = 0;            // для хранения текущей цены Ask
+double          curPriceBid       = 0;            // для хранения текущей цены Bid 
+double          prevPriceAsk      = 0;            // для хранения предыдущей цены Ask
+double          prevPriceBid      = 0;            // для хранения предыдущей цены Bid
+double          lotReal;                          // действительный лот
+double          lenClosestUp;                     // расстояние до ближайшего уровня сверху
+double          lenClosestDown;                   // расстояние до ближайшего уровня снизу 
+ENUM_TENDENTION lastTendention, currentTendention;  // переменные для хранения направления предыдущего и текущего баров
 
 // структуры для работы с позициями            
 SPositionInfo pos_info;                            // информация об открытии позиции 
@@ -185,7 +202,7 @@ int OnInit()
    blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,100,30,30,217);  // M5 
    blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,100,30,30,217); // M15 
    blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,100,30,30,217);  // H1          
-   if (!blowInfo[0].IsInitFine() )
+   if (!blowInfo[0].IsInitFine())
         return (INIT_FAILED);
    curPriceAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);  
    curPriceBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
@@ -226,11 +243,13 @@ void OnDeinit(const int reason)
 
 void OnTick()
 {     
+ int copied = 0;        // Количество скопированных данных из буфера
+ int attempts = 0;      // Количество попыток копирования данных из буфера
+ 
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(blowInfo[indexForTrail]); 
 
- 
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
@@ -244,11 +263,7 @@ void OnTick()
  {   
   return;
  }
- /*
-Comment("Последний экстремум тип = ",blowInfo[1].ShowExtrType(blowInfo[1].GetLastExtrType()) ,
-        "\n последний экстремум = ",DoubleToString( blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price )
-  );
- */
+
  // если мы используем запрет на вход по NineTeenLines
  if (useLinesLock)
  {
@@ -311,9 +326,19 @@ Comment("Последний экстремум тип = ",blowInfo[1].ShowExtrType(blowInfo[1].GetLas
  if (firstLaunch || isNewBar_D1.isNewBar() > 0)
  {
   firstLaunch = false;
-  if ( CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1) == 2 )     
+  do
   {
-   lastTendention = GetTendention(lastBarD1[0].open,lastBarD1[0].close);        // получаем предыдущую тенденцию 
+   copied = CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1);
+   attempts++;
+   PrintFormat("attempts = %d, copied = %d", attempts, copied);
+  }
+  while (copied < 2 && attempts < 5 && !IsStopped());
+  
+  if (copied == 2 )     
+  {
+   lastTendention = GetTendention(lastBarD1[0].open, lastBarD1[0].close);        // получаем предыдущую тенденцию 
+   copied = 0;
+   attempts = 0;
   }
  }
  
@@ -327,125 +352,131 @@ Comment("Последний экстремум тип = ",blowInfo[1].ShowExtrType(blowInfo[1].GetLas
   {
    if (ChangeLot())                              // если получили сигнал на доливание 
    {
-
     ctm.PositionChangeSize(_Symbol, lotStep);    // доливаемся 
    }       
   }        
  }
  
+ currentTendention = GetTendention(lastBarD1[1].open, curPriceBid);
+ Comment(StringFormat("lastTendention = %s, currentTendention = %s", TendentionToString(lastTendention), TendentionToString(currentTendention)));
  // если общая тенденция  - вверх
- if (lastTendention == TENDENTION_UP && GetTendention (lastBarD1[1].open,curPriceBid) == TENDENTION_UP)
+ if (lastTendention == TENDENTION_UP && currentTendention == TENDENTION_UP)
  {   
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
   if (  ((beatM5=IsExtremumBeaten(1,BUY)) && (lastTrendPBI_1==BUY||usePBI==PBI_NO)) || 
         ((beatM15=IsExtremumBeaten(2,BUY))&& (lastTrendPBI_2==BUY||usePBI==PBI_NO)) || 
         ((beatH1=IsExtremumBeaten(3,BUY)) && (lastTrendPBI_3==BUY||usePBI==PBI_NO))  )
-  {        
-   // если спред не превышает заданное число пунктов
-   if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
+  {
+   Print("Пробили экстремум в нужную сторону");        
+   // если используются запреты по smydMACD
+   if (useMACDLock)
    {
-    // если используются запреты по smydMACD
-    if (useMACDLock)
-     {
-      // если пробили M5 и сигнал MACD на M5 противоположный, то зарпещаем открываться
-      if (beatM5&&GetMACDSignal(handleMACDM5)==SELL)
-       return;
-      // если пробили M15 и сигнал MACD на M15 противоположный, то запрещаем открываться
-      if (beatM15&&GetMACDSignal(handleMACDM15)==SELL)
-       return;
-      // если пробили H1 и сигнал MACD на H1 противоположный, то запрещаем открываться
-      if (beatH1&&GetMACDSignal(handleMACDH1)==SELL)
-       return;
-     }
-    // если используются запреты по NineTeenLines
-    if (useLinesLock)
-     {
-      // получаем расстояния до ближайших уровней снизу и сверху
-      lenClosestUp   = GetClosestLevel(BUY);
-      lenClosestDown = GetClosestLevel(SELL);
-      // если получили сигнал на запрет на вход
-      if (lenClosestUp != 0 && 
+    Print("Используем запрет по MACD");
+    // если пробили M5 и сигнал MACD на M5 противоположный, то запрещаем открываться
+    if (beatM5&&GetMACDSignal(handleMACDM5)==SELL)
+     return;
+    // если пробили M15 и сигнал MACD на M15 противоположный, то запрещаем открываться
+    if (beatM15&&GetMACDSignal(handleMACDM15)==SELL)
+     return;
+    // если пробили H1 и сигнал MACD на H1 противоположный, то запрещаем открываться
+    if (beatH1&&GetMACDSignal(handleMACDH1)==SELL)
+     return;
+   }
+
+   // если используются запреты по NineTeenLines
+   if (useLinesLock)
+   {
+    Print("Используем запрет по 19 линиям");
+    // получаем расстояния до ближайших уровней снизу и сверху
+    lenClosestUp   = GetClosestLevel(BUY);
+    lenClosestDown = GetClosestLevel(SELL);
+    // если получили сигнал на запрет на вход
+    if (lenClosestUp != 0 && 
         LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
-         {
-          return;
-         }   
-     }
-    // если позиция не была уже открыта на BUY   
-    if (openedPosition != BUY)
-    {
-     // обнуляем счетчик трейлинга
-     indexForTrail = 0; 
-     // обнуляем счетчик доливок, если 
-     countAdd = 0;                                   
-    }
-    if (useMultiFill || openedPosition!=BUY)
+       {
+        return;
+       }   
+   }
+   
+   // если позиция не была уже открыта на BUY   
+   if (openedPosition != BUY)
+   {
+    // обнуляем счетчик трейлинга
+    indexForTrail = 0; 
+    // обнуляем счетчик доливок, если 
+    countAdd = 0;                                   
+   }
+   
+   if (useMultiFill || openedPosition!=BUY)
+   {
     // разрешаем возможность доливаться
     changeLotValid = true; 
-    // выставляем флаг открытия позиции BUY
-    openedPosition = BUY;                 
-    // выставляем лот по умолчанию
-    lotReal = lot;
-    // вычисляем стоп лосс
-    stopLoss = GetStopLoss();        
-    // заполняем параметры открытия позиции
-    pos_info.type = OP_BUY;
-    pos_info.sl = stopLoss;    
-    // открываем позицию на BUY
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
-
    }
+   // выставляем флаг открытия позиции BUY
+   openedPosition = BUY;                 
+   // выставляем лот по умолчанию
+   lotReal = lot;
+   // вычисляем стоп лосс
+   stopLoss = GetStopLoss();        
+   // заполняем параметры открытия позиции
+   pos_info.type = OP_BUY;
+    pos_info.sl = stopLoss;    
+   // открываем позицию на BUY
+   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
   }
  }
  
  // если общая тенденция - вниз
- if (lastTendention == TENDENTION_DOWN && GetTendention (lastBarD1[1].open,curPriceAsk) == TENDENTION_DOWN)
+ if (lastTendention == TENDENTION_DOWN && currentTendention == TENDENTION_DOWN)
  {                     
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
   if ( ((beatM5=IsExtremumBeaten(1,SELL)) && (lastTrendPBI_1==SELL||usePBI==PBI_NO)) || 
        ((beatM15=IsExtremumBeaten(2,SELL))&& (lastTrendPBI_2==SELL||usePBI==PBI_NO)) || 
        ((beatH1=IsExtremumBeaten(3,SELL)) && (lastTrendPBI_3==SELL||usePBI==PBI_NO)))  
-  {                
-   // если спред не превышает заданное число пунктов
-   if (LessDoubles(SymbolInfoInteger(_Symbol, SYMBOL_SPREAD), spread))
-   {    
-    // если используются запреты по smydMACD
-    if (useMACDLock)
-     {
-      // если пробили M5 и сигнал MACD на M5 противоположный, то зарпещаем открываться
-      if (beatM5 && GetMACDSignal(handleMACDM5)==BUY)
-       return;
-      // если пробили M15 и сигнал MACD на M15 противоположный, то запрещаем открываться
-      if (beatM15 && GetMACDSignal(handleMACDM15)==BUY)
-       return;
-      // если пробили H1 и сигнал MACD на H1 противоположный, то запрещаем открываться
-      if (beatH1 && GetMACDSignal(handleMACDH1)==BUY)
-       return;
-     }   
+  {      
+   Print("Пробили экстремум в нужную сторону");        
+   // если используются запреты по smydMACD
+   if (useMACDLock)
+   {
+    Print("Используем запрет по MACD");
+    // если пробили M5 и сигнал MACD на M5 противоположный, то зарпещаем открываться
+    if (beatM5 && GetMACDSignal(handleMACDM5)==BUY)
+     return;
+    // если пробили M15 и сигнал MACD на M15 противоположный, то запрещаем открываться
+    if (beatM15 && GetMACDSignal(handleMACDM15)==BUY)
+     return;
+    // если пробили H1 и сигнал MACD на H1 противоположный, то запрещаем открываться
+    if (beatH1 && GetMACDSignal(handleMACDH1)==BUY)
+     return;
+   }   
     // если используются зарпеты по NineTeenLines
-    if (useLinesLock)
-     { 
-     // получаем расстояния до ближайших уровней снизу и сверху
-     lenClosestUp   = GetClosestLevel(BUY);
-     lenClosestDown = GetClosestLevel(SELL);    
-     // если получили сигнал запрета на вход
-     if (lenClosestDown != 0 &&
-         LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
-         {            
-          return;
-         }
-     }
-    // если позиция не была уже открыта на SELL
-    if (openedPosition != SELL)
-    {
-     // обнуляем счетчик трейлинга
-     indexForTrail = 0; 
-     // обнуляем счетчик доливок
-     countAdd = 0;  
-    }
+   if (useLinesLock)
+   { 
+    Print("Используем запрет по 19 линиям");
+   // получаем расстояния до ближайших уровней снизу и сверху
+    lenClosestUp   = GetClosestLevel(BUY);
+    lenClosestDown = GetClosestLevel(SELL);    
+    // если получили сигнал запрета на вход
+    if (lenClosestDown != 0 &&
+        LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
+        {            
+         return;
+        }
    }
+   // если позиция не была уже открыта на SELL
+   if (openedPosition != SELL)
+   {
+    // обнуляем счетчик трейлинга
+    indexForTrail = 0; 
+    // обнуляем счетчик доливок
+    countAdd = 0;  
+   }
+   
    if (useMultiFill || openedPosition!=SELL)
-   // разрешаем возможность доливаться
-   changeLotValid = true; 
+   {
+    // разрешаем возможность доливаться
+    changeLotValid = true;
+   } 
    // выставляем флаг открытия позиции SELL
    openedPosition = SELL;                 
    // выставляем лот по умолчанию
@@ -456,17 +487,17 @@ Comment("Последний экстремум тип = ",blowInfo[1].ShowExtrType(blowInfo[1].GetLas
    pos_info.type = OP_SELL;
    pos_info.sl = stopLoss;    
    // открываем позицию на SELL 
-  // ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
-  }
- } 
+   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
+  } 
+ }
 }
   
 // кодирование функций
 ENUM_TENDENTION GetTendention (double priceOpen,double priceAfter)            // возвращает тенденцию по двум ценам
 {
- if ( GreatDoubles (priceAfter,priceOpen) )
+ if (GreatDoubles (priceAfter, priceOpen))
   return (TENDENTION_UP);
- if ( LessDoubles  (priceAfter,priceOpen) )
+ if (LessDoubles  (priceAfter, priceOpen))
   return (TENDENTION_DOWN); 
  return (TENDENTION_NO); 
 }
@@ -477,7 +508,7 @@ bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой эк
  {
   case SELL:
    if (LessDoubles(curPriceAsk,lastExtrLow[index].price)&& GreatDoubles(prevPriceAsk,lastExtrLow[index].price) && !extrLowBeaten[index])
-   {      
+   {
     extrLowBeaten[index] = true;
     return (true);    
    }     
@@ -634,16 +665,16 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
   int indexLines = 0;
   for (indexPer=1;indexPer<5;indexPer++)
    {
-     for (indexBuff=0;indexBuff<2;indexBuff++)
-      {
-       copiedPrice = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+4,  0,1,  buffers[indexLines].price);
-       copiedATR   = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+5,  0,1,buffers[indexLines].atr);
-       if (copiedPrice < 1 || copiedATR < 1)
-        {
-         Print("Не удалось прогрузить буферы индикатора NineTeenLines");
-         return (false);
-        }
-       indexLines++;
+    for (indexBuff=0;indexBuff<2;indexBuff++)
+     {
+      copiedPrice = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+4,  0,1,  buffers[indexLines].price);
+      copiedATR   = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+5,  0,1,buffers[indexLines].atr);
+      if (copiedPrice < 1 || copiedATR < 1)
+       {
+        Print("Не удалось прогрузить буферы индикатора NineTeenLines");
+        return (false);
+       }
+      indexLines++;
      }
    }
   return(true);     
@@ -661,18 +692,18 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
      case BUY:  // ближний сверху
       for (index=0;index<8;index++)
        {         
-          // если уровень выше
-          if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
-            {
-             tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
-             if (tmpLen < len || len == 0)
-               {
-                savedInd = index;
-                len = tmpLen;
-               }  
+        // если уровень выше
+        if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
+         {
+          tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
+          if (tmpLen < len || len == 0)
+           {
+            savedInd = index;
+            len = tmpLen;
+           }  
             }           
             
-       }
+         }
      break;
      case SELL: // ближний снизу
       for (index=0;index<8;index++)

@@ -678,12 +678,12 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
 {
  if ( SymbolInfoInteger(symbol,SYMBOL_SPREAD) > maxSpread)
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Невозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
+  //log_file.Write(LOG_DEBUG, StringFormat("%s Невозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
   return false;  
  }
  if (_positionsToReProcessing.OrderCount(symbol, _magic) > 0) 
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Невозможно открыть позицию так как еще есть позиции в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));
+  //log_file.Write(LOG_DEBUG, StringFormat("%s Невозможно открыть позицию так как еще есть позиции в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));
   return false;
  }
 
