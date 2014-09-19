@@ -367,7 +367,7 @@ void OnTick()
         ((beatM15=IsExtremumBeaten(2,BUY))&& (lastTrendPBI_2==BUY||usePBI==PBI_NO)) || 
         ((beatH1=IsExtremumBeaten(3,BUY)) && (lastTrendPBI_3==BUY||usePBI==PBI_NO))  )
   {
-   Print("Пробили экстремум в нужную сторону");        
+   Print("Пробили экстремум в нужную сторону (BUY)");        
    // если используются запреты по smydMACD
    if (useMACDLock)
    {
@@ -422,7 +422,7 @@ void OnTick()
    pos_info.type = OP_BUY;
     pos_info.sl = stopLoss;    
    // открываем позицию на BUY
-   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
+   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
   }
  }
  
@@ -434,7 +434,7 @@ void OnTick()
        ((beatM15=IsExtremumBeaten(2,SELL))&& (lastTrendPBI_2==SELL||usePBI==PBI_NO)) || 
        ((beatH1=IsExtremumBeaten(3,SELL)) && (lastTrendPBI_3==SELL||usePBI==PBI_NO)))  
   {      
-   Print("Пробили экстремум в нужную сторону");        
+   Print("Пробили экстремум в нужную сторону (SELL)");        
    // если используются запреты по smydMACD
    if (useMACDLock)
    {
@@ -487,7 +487,8 @@ void OnTick()
    pos_info.type = OP_SELL;
    pos_info.sl = stopLoss;    
    // открываем позицию на SELL 
-   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,100);
+   Print("открываем позицию на SELL");
+   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
   } 
  }
 }

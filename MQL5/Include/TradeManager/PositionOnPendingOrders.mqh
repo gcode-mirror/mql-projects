@@ -309,7 +309,7 @@ log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс %.05f", MakeFunc
    _slTicket = trade.ResultOrder();
    _sl_status = STOPLEVEL_STATUS_PLACED;
    OrderSelect(_slTicket);
-   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d c ценой %0.6f, время экспирации %s, тип времени истечения %d", MakeFunctionPrefix(__FUNCTION__), _slTicket, _slPrice, TimeToString(OrderGetInteger(ORDER_TIME_EXPIRATION), TIME_DATE), OrderGetInteger(ORDER_TYPE_TIME)));     
+   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d c ценой %0.6f, время экспирации %s, тип времени истечения %s", MakeFunctionPrefix(__FUNCTION__), _slTicket, _slPrice, TimeToString(OrderGetInteger(ORDER_TIME_EXPIRATION), TIME_DATE), EnumToString((ENUM_ORDER_TYPE_TIME)OrderGetInteger(ORDER_TYPE_TIME))));     
   }
   else
   {
