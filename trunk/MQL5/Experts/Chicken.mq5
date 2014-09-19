@@ -37,6 +37,26 @@ double buffer_low[];
 //+------------------------------------------------------------------+
 int OnInit()
 {
+ int exp=(int)SymbolInfoInteger(_Symbol,SYMBOL_EXPIRATION_MODE);
+ 
+ if((exp&SYMBOL_EXPIRATION_GTC)!=SYMBOL_EXPIRATION_GTC)
+ {
+  Print("Разрешен SYMBOL_EXPIRATION_GTC");
+ }
+ if((exp&SYMBOL_EXPIRATION_DAY)!=SYMBOL_EXPIRATION_DAY)
+ {
+  Print("Разрешен SYMBOL_EXPIRATION_DAY");
+ }
+ if((exp&SYMBOL_EXPIRATION_SPECIFIED)!=SYMBOL_EXPIRATION_SPECIFIED)
+ {
+  Print("Разрешен SYMBOL_EXPIRATION_SPECIFIED");
+ }
+ if((exp&SYMBOL_EXPIRATION_SPECIFIED_DAY)!=SYMBOL_EXPIRATION_SPECIFIED_DAY)
+ {
+  Print("Разрешен SYMBOL_EXPIRATION_SPECIFIED_DAY");
+ }
+ 
+ Print("exp = ", exp );
  isNewBar = new CisNewBar(_Symbol, _Period);
  handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
  
