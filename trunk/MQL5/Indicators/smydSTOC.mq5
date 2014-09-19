@@ -176,10 +176,10 @@ int OnCalculate(const int rates_total,
              return (0);
            }
           // если BUY и точки экстремумов цены не совпадают с предыдущим расхождением 
-          if (retCode == BUY && divergencePoints.timeExtrPrice1 != onePointBuy
-                           && divergencePoints.timeExtrPrice2 != onePointBuy
-                           && divergencePoints.timeExtrPrice1 != twoPointBuy
-                           && divergencePoints.timeExtrPrice2 != twoPointBuy
+          if (retCode == BUY && datetime(divergencePoints.timeExtrPrice1) != onePointBuy
+                           && datetime(divergencePoints.timeExtrPrice2) != onePointBuy
+                           && datetime(divergencePoints.timeExtrPrice1) != twoPointBuy
+                           && datetime(divergencePoints.timeExtrPrice2) != twoPointBuy
                               
                  )
            {             
@@ -194,10 +194,10 @@ int OnCalculate(const int rates_total,
              twoPointBuy =  divergencePoints.timeExtrPrice2;
            }
           // если SELL и точки экстремумов цены не совпадают с предыдущим расхождением 
-          if (retCode == SELL && divergencePoints.timeExtrPrice1 != onePointSell
-                            && divergencePoints.timeExtrPrice2 != onePointSell
-                            && divergencePoints.timeExtrPrice1 != twoPointSell
-                            && divergencePoints.timeExtrPrice2 != twoPointSell
+          if (retCode == SELL && datetime(divergencePoints.timeExtrPrice1) != onePointSell
+                            && datetime(divergencePoints.timeExtrPrice2) != onePointSell
+                            && datetime(divergencePoints.timeExtrPrice1) != twoPointSell
+                            && datetime(divergencePoints.timeExtrPrice2) != twoPointSell
                               
                  )
            {             
@@ -231,6 +231,9 @@ int OnCalculate(const int rates_total,
               }
           // обнуляем буфер сигнала расхождений
           bufferDiv[0] = 0;
+         // обнуляем буферы экстремумов
+          bufferExtrLeft[0]  = 0;
+          bufferExtrRight[0] = 0;          
           if ( CopyBuffer(handleSTOC,0,0,rates_total,bufferTopLevel)    < 0 ||
                CopyBuffer(handleSTOC,1,0,rates_total,bufferBottomLevel) < 0 )
            {
@@ -247,37 +250,37 @@ int OnCalculate(const int rates_total,
            }
 
           // если BUY и точки экстремумов цены не совпадают с предыдущим расхождением 
-          if (retCode == BUY && divergencePoints.timeExtrPrice1 != onePointBuy
-                           && divergencePoints.timeExtrPrice2 != onePointBuy
-                           && divergencePoints.timeExtrPrice1 != twoPointBuy
-                           && divergencePoints.timeExtrPrice2 != twoPointBuy
+          if (retCode == BUY && datetime(divergencePoints.timeExtrPrice1) != onePointBuy
+                           && datetime(divergencePoints.timeExtrPrice2) != onePointBuy
+                           && datetime(divergencePoints.timeExtrPrice1) != twoPointBuy
+                           && datetime(divergencePoints.timeExtrPrice2) != twoPointBuy
                               
                  )
            {             
                                         
              DrawIndicator (time[0]);   // отображаем графические элементы индикатора     
-             bufferDiv[lastBarIndex] = retCode;                               // сохраняем в буфер значение    
-             bufferExtrLeft[lastBarIndex]  = double(divergencePoints.timeExtrPrice2); // сохраним время левого  экстремума
-             bufferExtrRight[lastBarIndex] = double(divergencePoints.timeExtrPrice1); // сохраним время правого экстремума  
+             bufferDiv[0] = retCode;                               // сохраняем в буфер значение    
+             bufferExtrLeft[0]  = double(divergencePoints.timeExtrPrice2); // сохраним время левого  экстремума
+             bufferExtrRight[0] = double(divergencePoints.timeExtrPrice1); // сохраним время правого экстремума  
       
              // сохраняем время экстремумов цен
              onePointBuy =  divergencePoints.timeExtrPrice1;
              twoPointBuy =  divergencePoints.timeExtrPrice2;
            }
           // если SELL и точки экстремумов цены не совпадают с предыдущим расхождением 
-          if (retCode == SELL && divergencePoints.timeExtrPrice1 != onePointSell
-                            && divergencePoints.timeExtrPrice2 != onePointSell
-                            && divergencePoints.timeExtrPrice1 != twoPointSell
-                            && divergencePoints.timeExtrPrice2 != twoPointSell
+          if (retCode == SELL && datetime(divergencePoints.timeExtrPrice1) != onePointSell
+                            && datetime(divergencePoints.timeExtrPrice2) != onePointSell
+                            && datetime(divergencePoints.timeExtrPrice1) != twoPointSell
+                            && datetime(divergencePoints.timeExtrPrice2) != twoPointSell
                               
                  )
            {             
                                         
              DrawIndicator (time[0]);   // отображаем графические элементы индикатора     
-             bufferDiv[lastBarIndex] = retCode;    // сохраняем в буфер значение
-             bufferExtrLeft[lastBarIndex]  = double(divergencePoints.timeExtrPrice2); // сохраним время левого  экстремума
-             bufferExtrRight[lastBarIndex] = double(divergencePoints.timeExtrPrice1); // сохраним время правого экстремума      
-       
+             bufferDiv[0] = retCode;    // сохраняем в буфер значение
+             bufferExtrLeft[0]  = double(divergencePoints.timeExtrPrice2); // сохраним время левого  экстремума
+             bufferExtrRight[0] = double(divergencePoints.timeExtrPrice1); // сохраним время правого экстремума      
+       //lastBarIndex
              // сохраняем время экстремумов цен
              onePointSell =  divergencePoints.timeExtrPrice1;
              twoPointSell =  divergencePoints.timeExtrPrice2;

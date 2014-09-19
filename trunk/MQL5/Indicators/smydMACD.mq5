@@ -141,7 +141,7 @@ int OnCalculate(const int rates_total,
             return (0);
           }
        // проходим по всем барам истории и ищем расхождения MACD
-       for (lastBarIndex = rates_total-2;lastBarIndex > 1; lastBarIndex--)
+       for (lastBarIndex = rates_total-2;lastBarIndex >= 1; lastBarIndex--)
         {
           // обнуляем буфер сигналов расхождений MACD
           bufferDiv[lastBarIndex] = 0;        
@@ -169,7 +169,7 @@ int OnCalculate(const int rates_total,
             // если расхождение на SELL и время минуса MACD последнего расхождения отличается от времени последнего минуса
             if (retCode == _Sell && divSellLastMinus != lastMinusMACD)
               {                                          
-               DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
+               DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора    
                bufferDiv[lastBarIndex] = _Sell;    // сохраняем в буфер значение       
                divSellLastMinus = lastMinusMACD;     // сохраняем время последнего минуса MACD
               }
@@ -187,10 +187,8 @@ int OnCalculate(const int rates_total,
     }
     else    // если это не первый вызов индикатора 
      {
-       // если сформировался новый бар
-       if (isNewBar.isNewBar() > 0 )
-        {
-              // положим индексацию нужных массивов как в таймсерии
+
+           // положим индексацию нужных массивов как в таймсерии
           if ( !ArraySetAsSeries (time, true) || 
                !ArraySetAsSeries (open, true) || 
                !ArraySetAsSeries (high, true) ||
@@ -229,7 +227,7 @@ int OnCalculate(const int rates_total,
              return (0);
            }
           // если расхождение на SELL и время последнего минуса расхождения отличается от последнего минуса MACD
-          if (retCode == _Sell && divSellLastMinus != lastMinusMACD)
+          if (retCode == _Sell && divSellLastMinus != lastMinusMACD )
            {                                        
              DrawIndicator (time[0]);          // отображаем графические элементы индикатора    
              bufferDiv[0] = _Sell;           // сохраняем текущий сигнал
@@ -243,7 +241,7 @@ int OnCalculate(const int rates_total,
              divBuyLastPlus = lastPlusMACD;    // сохраняем время последнего плюса
            }                  
             
-        }
+        
      }
    return(rates_total);
   }

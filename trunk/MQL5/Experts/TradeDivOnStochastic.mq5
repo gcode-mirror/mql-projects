@@ -52,8 +52,10 @@ int    stopLoss;                                                         // пере
 double currentPrice;                                                     // текущая цена
 double lenClosestUp;                                                     // расстояние до ближайшего уровня сверху
 double lenClosestDown;                                                   // расстояние до ближайшего уровня снизу    
+double lastRightExtr=0;                                                  // значение последней даты правого экстремума расхождения
 // буферы 
-double signalBuffer[];                                                   // буфер для получения сигнала из индикатора smydMACD
+double signalBuffer[];                                                   // буфер для получения сигнала из индикатора smydStochastic
+double dateRightExtr[];                                                  // буфер для получения времени прихода правого экстремума расхождения
 bufferLevel buffers[8];                                                  // буфер уровней
 
 CChartObjectHLine  horLine;                                              // объект класса вертикальной линии
@@ -122,9 +124,7 @@ void OnTick()
     return;
   }
  // если сформирован новый бар
- if (isNewBar.isNewBar() > 0)
-  {
-   if (CopyBuffer(handleSmydSTOC,2,0,1,signalBuffer) < 1)
+   if (CopyBuffer(handleSmydSTOC,2,0,1,signalBuffer) < 1 || CopyBuffer(handleSmydSTOC,4,0,1,dateRightExtr) < 1 )
     {
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
@@ -132,46 +132,54 @@ void OnTick()
   
    if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
      { 
-    //  Comment("BUY");
-      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-      // если используются уровни для запрета на вход
-      if (use19Lines)
+      // если последний полученный сигнал не равен предыдущему
+      if ( !EqualDoubles( lastRightExtr,dateRightExtr[0]) ) 
        {
-        // получаем расстояния до ближайших уровней снизу и сверху
-        lenClosestUp   = GetClosestLevel(BUY);
-        lenClosestDown = GetClosestLevel(SELL);
-        // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
-        if (lenClosestUp != 0 && LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
-          return;
-        }
+        currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+        // если используются уровни для запрета на вход
+        if (use19Lines)
+         {
+          // получаем расстояния до ближайших уровней снизу и сверху
+          lenClosestUp   = GetClosestLevel(BUY);
+          lenClosestDown = GetClosestLevel(SELL);
+          // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
+          if (lenClosestUp != 0 && LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
+           return;
+         }
           stopLoss = CountStoploss(BUY);        
           // то открываем позицию на BUY
           pos_info.type = OP_BUY;
           pos_info.sl = stopLoss;
           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                  
+        }
+       // сохраняем последний сигнал
+       lastRightExtr = dateRightExtr[0];
      }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
      {
-  //   Comment("SELL");
-      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
-      // если используются уровни для запрета на вход
-      if (use19Lines)
-       {      
-        // получаем расстояния до ближайших уровней снизу и сверху
-        lenClosestUp   = GetClosestLevel(BUY);
-        lenClosestDown = GetClosestLevel(SELL);      
-        // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
-        if (lenClosestDown != 0 && LessOrEqualDoubles(lenClosestDown,lenClosestUp*koLock) )
-          return;
-       }
+      // если последний полученный сигнал не равен предыдущему
+      if ( !EqualDoubles( lastRightExtr,dateRightExtr[0]) )
+       {
+        currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
+        // если используются уровни для запрета на вход
+        if (use19Lines)
+         {      
+         // получаем расстояния до ближайших уровней снизу и сверху
+         lenClosestUp   = GetClosestLevel(BUY);
+         lenClosestDown = GetClosestLevel(SELL);      
+         // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
+         if (lenClosestDown != 0 && LessOrEqualDoubles(lenClosestDown,lenClosestUp*koLock) )
+           return;
+         }
           stopLoss = CountStoploss(SELL);
           // то открываем позицию на SELL
           pos_info.type = OP_SELL;
           pos_info.sl = stopLoss;
           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                   
-       
+       }
+      //сохраняем последний правый экстремум расхождения
+      lastRightExtr = dateRightExtr[0]; 
      }
-   }
 }
 
 int CountStoploss(int point)
@@ -200,7 +208,7 @@ int CountStoploss(int point)
  int copiedPBI = -1;
  for(int attempts = 0; attempts < 25; attempts++)
  {
-  Sleep(100);
+  //Sleep(100);
   copiedPBI = CopyBuffer(handle_PBI, extrBufferNumber, 0,1000, bufferStopLoss);
  }
  if (copiedPBI < 1000)
