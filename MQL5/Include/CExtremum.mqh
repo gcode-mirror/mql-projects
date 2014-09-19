@@ -189,11 +189,11 @@ double CExtremum::AverageBar (datetime start_pos)  // подгружаем значения с инди
  {
   PrintFormat("%s ERROR. I have INVALID HANDLE = %d, %s", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period));
  }
- if(copied = CopyBuffer(_handle_ATR, 0, start_pos, 1, buffer_average_atr) == 1) 
+ if (copied = CopyBuffer(_handle_ATR, 0, start_pos, 1, buffer_average_atr) == 1) 
   return(buffer_average_atr[0]);
  else
  {
-  PrintFormat("%s ERROR. I have this error = %d, %s. copied = %d, calculated = %d, buf_num = %d", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period), copied, BarsCalculated(_handle_ATR), _handle_ATR);
+  PrintFormat("%s ERROR. I have this error = %d, %s. copied = %d, calculated = %d, buf_num = %d start_pos = %s", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period), copied, BarsCalculated(_handle_ATR), _handle_ATR,TimeToString(start_pos));
   return(0);
  }
 }

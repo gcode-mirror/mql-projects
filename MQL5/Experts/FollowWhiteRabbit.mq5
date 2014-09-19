@@ -10,8 +10,8 @@
 //+------------------------------------------------------------------+
 //| Expert includes                                                  |
 //+------------------------------------------------------------------+
-#include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
-#include <CompareDoubles.mqh>
+//#include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
+//#include <CompareDoubles.mqh>
 #include <Lib CIsNewBar.mqh>
 #include <TradeManager\TradeManager.mqh>
 #include <TradeManager\ReplayPosition.mqh>  
