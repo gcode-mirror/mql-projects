@@ -203,16 +203,29 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
  if (_trailing.trailingStop < SymbInfo.StopsLevel()) _trailing.trailingStop = SymbInfo.StopsLevel();
  if(_pos_info.expiration <= 0)
  {
-  _type_time = ORDER_TIME_GTC;
-  _pos_info.expiration_time = 0;
   
 //--- check order expiration
   int exp=(int)SymbolInfoInteger(symbol,SYMBOL_EXPIRATION_MODE);
-  if((exp&SYMBOL_EXPIRATION_GTC)!=SYMBOL_EXPIRATION_GTC)
+  if((exp&SYMBOL_EXPIRATION_GTC)==SYMBOL_EXPIRATION_GTC)
   {
-   _type_time = ORDER_TIME_SPECIFIED;
-   _pos_info.expiration_time = TimeCurrent()+31536000;
+   _type_time = ORDER_TIME_GTC;
+   _pos_info.expiration_time = 0;
   }
+  else if((exp&SYMBOL_EXPIRATION_SPECIFIED)==SYMBOL_EXPIRATION_SPECIFIED)
+       {
+        _type_time = ORDER_TIME_SPECIFIED;
+        _pos_info.expiration_time = TimeCurrent()+31536000;
+       }
+       else if ((exp&SYMBOL_EXPIRATION_SPECIFIED_DAY)==SYMBOL_EXPIRATION_SPECIFIED_DAY)
+            {
+             _type_time = ORDER_TIME_SPECIFIED_DAY;
+             _pos_info.expiration_time = SymbolInfoInteger(symbol, SYMBOL_EXPIRATION_TIME) - PeriodSeconds(PERIOD_D1);
+            }
+            else 
+            {
+             _type_time = ORDER_TIME_DAY;
+             _pos_info.expiration_time = 0;
+            }
  }
  else
  {
@@ -303,8 +316,8 @@ log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс %.05f", MakeFunc
   
   _slType = SLOrderType((int)_pos_info.type);
   
-  log_file.Write(LOG_DEBUG, StringFormat("%s тип времени истечения %s", MakeFunctionPrefix(__FUNCTION__), EnumToString(_type_time) ));
-  if (trade.OrderOpen(_symbol, _slType, _pos_info.volume, _slPrice, _type_time, 0, slComment))
+  log_file.Write(LOG_DEBUG, StringFormat("%s тип времени истечения %s, время истечения %s", MakeFunctionPrefix(__FUNCTION__), EnumToString(_type_time), TimeToString(_pos_info.expiration_time)));
+  if (trade.OrderOpen(_symbol, _slType, _pos_info.volume, _slPrice, _type_time, _pos_info.expiration_time, slComment))
   {
    _slTicket = trade.ResultOrder();
    _sl_status = STOPLEVEL_STATUS_PLACED;
@@ -313,8 +326,10 @@ log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс %.05f", MakeFunc
   }
   else
   {
+   MqlTradeResult tradeResult;
+   trade.Result(tradeResult);
    _sl_status = STOPLEVEL_STATUS_NOT_PLACED;
-   log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при установке стоплосса", MakeFunctionPrefix(__FUNCTION__)));
+   log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при установке стоплосса %d", MakeFunctionPrefix(__FUNCTION__), tradeResult.retcode));
   }
  }
  return(_sl_status);
@@ -648,7 +663,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыт отложенный ордер #%d; время истечения %s", MakeFunctionPrefix(__FUNCTION__), _orderTicket, TimeToString(_pos_info.expiration_time)));
+    log_file.Write(LOG_DEBUG, StringFormat("%s Открыт отложенный ордер #%d; тип истечения %s, время истечения %s", MakeFunctionPrefix(__FUNCTION__), _orderTicket,  EnumToString(_type_time), TimeToString(_pos_info.expiration_time)));
    }
    break;
   default:
