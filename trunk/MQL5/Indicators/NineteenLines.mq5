@@ -26,7 +26,7 @@
 #include <ExtrLine\CLevel.mqh>
 #include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBarDD.mqh>
-
+#include <StringUtilities.mqh>
 
 #define TF_PERIOD_ATR_FOR_MN PERIOD_MN1
 #define TF_PERIOD_ATR_FOR_W1 PERIOD_W1
@@ -82,7 +82,6 @@ bool show_Extr_D1 = flag3;
 bool show_Extr_H4 = flag4;
 bool show_Extr_H1 = flag5;
 bool show_Price_D1 = flag6;
-
 
 // классы для расчета экстремумов и ширины канала
 CLevel calcMN (_Symbol, PERIOD_MN1, -1, period_ATR_channel, channel_ATR_MN1);   //инициализация хэндла атр происходит на OnInit
@@ -161,152 +160,14 @@ CisNewBar isNewBarH1 (_Symbol, PERIOD_H1 );   // для проверки формирования новог
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 
-
 int OnInit()
 {  
-
  SetInfoTabel();
  PrintFormat("INITIALIZATION");
+ 
+ SetIndexBuffers();
+ ArraysInit();
 
- SetIndexBuffer( 0, Extr_MN_Buffer1, INDICATOR_DATA);
- SetIndexBuffer( 1,  ATR_MN_Buffer1, INDICATOR_DATA);
- SetIndexBuffer( 2, Extr_MN_Buffer2, INDICATOR_DATA);
- SetIndexBuffer( 3,  ATR_MN_Buffer2, INDICATOR_DATA);
- SetIndexBuffer( 4, Extr_MN_Buffer3, INDICATOR_DATA);
- SetIndexBuffer( 5,  ATR_MN_Buffer3, INDICATOR_DATA);
- SetIndexBuffer( 6, Extr_MN_Buffer4, INDICATOR_DATA);
- SetIndexBuffer( 7,  ATR_MN_Buffer4, INDICATOR_DATA);
- SetIndexBuffer( 8, Extr_W1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer( 9,  ATR_W1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(10, Extr_W1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(11,  ATR_W1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(12, Extr_W1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(13,  ATR_W1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(14, Extr_W1_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(15,  ATR_W1_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(16, Extr_D1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(17,  ATR_D1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(18, Extr_D1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(19,  ATR_D1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(20, Extr_D1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(21,  ATR_D1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(22, Extr_D1_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(23,  ATR_D1_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(24, Extr_H4_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(25,  ATR_H4_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(26, Extr_H4_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(27,  ATR_H4_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(28, Extr_H4_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(29,  ATR_H4_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(30, Extr_H4_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(31,  ATR_H4_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(32, Extr_H1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(33,  ATR_H1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(34, Extr_H1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(35,  ATR_H1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(36, Extr_H1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(37,  ATR_H1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(38, Extr_H1_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(39,  ATR_H1_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(40, Price_D1_Buffer1, INDICATOR_DATA);
- SetIndexBuffer(41, Price_D1_Buffer2, INDICATOR_DATA);
- SetIndexBuffer(42, Price_D1_Buffer3, INDICATOR_DATA);
- SetIndexBuffer(43, Price_D1_Buffer4, INDICATOR_DATA);
- SetIndexBuffer(44,   ATR_D1_Buffer , INDICATOR_DATA);
- 
- 
- ArrayInitialize(Extr_MN_Buffer1,  0);
- ArrayInitialize(Extr_MN_Buffer2,  0);
- ArrayInitialize(Extr_MN_Buffer3,  0);
- ArrayInitialize(Extr_MN_Buffer4,  0); 
- ArrayInitialize( ATR_MN_Buffer1,  0);
- ArrayInitialize( ATR_MN_Buffer2,  0);
- ArrayInitialize( ATR_MN_Buffer3,  0);
- ArrayInitialize( ATR_MN_Buffer4,  0);
- ArrayInitialize(Extr_W1_Buffer1,  0);
- ArrayInitialize(Extr_W1_Buffer2,  0);
- ArrayInitialize(Extr_W1_Buffer3,  0);
- ArrayInitialize(Extr_W1_Buffer4,  0);
- ArrayInitialize( ATR_W1_Buffer1,  0);
- ArrayInitialize( ATR_W1_Buffer2,  0);
- ArrayInitialize( ATR_W1_Buffer3,  0);
- ArrayInitialize( ATR_W1_Buffer4,  0);
- ArrayInitialize(Extr_D1_Buffer1,  0);
- ArrayInitialize(Extr_D1_Buffer2,  0);
- ArrayInitialize(Extr_D1_Buffer3,  0);
- ArrayInitialize(Extr_D1_Buffer4,  0);
- ArrayInitialize( ATR_D1_Buffer1,  0);
- ArrayInitialize( ATR_D1_Buffer2,  0);
- ArrayInitialize( ATR_D1_Buffer3,  0);
- ArrayInitialize( ATR_D1_Buffer4,  0);
- ArrayInitialize(Extr_H4_Buffer1,  0);
- ArrayInitialize(Extr_H4_Buffer2,  0);
- ArrayInitialize(Extr_H4_Buffer3,  0);
- ArrayInitialize(Extr_H4_Buffer4,  0);
- ArrayInitialize( ATR_H4_Buffer1,  0);
- ArrayInitialize( ATR_H4_Buffer2,  0);
- ArrayInitialize( ATR_H4_Buffer3,  0);
- ArrayInitialize( ATR_H4_Buffer4,  0);
- ArrayInitialize(Extr_H1_Buffer1,  0);
- ArrayInitialize(Extr_H1_Buffer2,  0);
- ArrayInitialize(Extr_H1_Buffer3,  0);
- ArrayInitialize(Extr_H1_Buffer4,  0);
- ArrayInitialize( ATR_H1_Buffer1,  0);
- ArrayInitialize( ATR_H1_Buffer2,  0);
- ArrayInitialize( ATR_H1_Buffer3,  0);
- ArrayInitialize( ATR_H1_Buffer4,  0);
- ArrayInitialize(Price_D1_Buffer1, 0);
- ArrayInitialize(Price_D1_Buffer2, 0);
- ArrayInitialize(Price_D1_Buffer3, 0);
- ArrayInitialize(Price_D1_Buffer4, 0);
- ArrayInitialize(  ATR_D1_Buffer , 0);
- 
- ArraySetAsSeries(Extr_MN_Buffer1,  true);
- ArraySetAsSeries(Extr_MN_Buffer2,  true);
- ArraySetAsSeries(Extr_MN_Buffer3,  true);
- ArraySetAsSeries(Extr_MN_Buffer4,  true);
- ArraySetAsSeries( ATR_MN_Buffer1,  true);
- ArraySetAsSeries( ATR_MN_Buffer2,  true);
- ArraySetAsSeries( ATR_MN_Buffer3,  true);
- ArraySetAsSeries( ATR_MN_Buffer4,  true);
- ArraySetAsSeries(Extr_W1_Buffer1,  true);
- ArraySetAsSeries(Extr_W1_Buffer2,  true);
- ArraySetAsSeries(Extr_W1_Buffer3,  true);
- ArraySetAsSeries(Extr_W1_Buffer4,  true);
- ArraySetAsSeries( ATR_W1_Buffer1,  true);
- ArraySetAsSeries( ATR_W1_Buffer2,  true);
- ArraySetAsSeries( ATR_W1_Buffer3,  true);
- ArraySetAsSeries( ATR_W1_Buffer4,  true);
- ArraySetAsSeries(Extr_D1_Buffer1,  true);
- ArraySetAsSeries(Extr_D1_Buffer2,  true);
- ArraySetAsSeries(Extr_D1_Buffer3,  true);
- ArraySetAsSeries(Extr_D1_Buffer4,  true);
- ArraySetAsSeries( ATR_D1_Buffer1,  true);
- ArraySetAsSeries( ATR_D1_Buffer2,  true);
- ArraySetAsSeries( ATR_D1_Buffer3,  true);
- ArraySetAsSeries( ATR_D1_Buffer4,  true);
- ArraySetAsSeries(Extr_H4_Buffer1,  true);
- ArraySetAsSeries(Extr_H4_Buffer2,  true);
- ArraySetAsSeries(Extr_H4_Buffer3,  true);
- ArraySetAsSeries(Extr_H4_Buffer4,  true);
- ArraySetAsSeries( ATR_H4_Buffer1,  true);
- ArraySetAsSeries( ATR_H4_Buffer2,  true);
- ArraySetAsSeries( ATR_H4_Buffer3,  true);
- ArraySetAsSeries( ATR_H4_Buffer4,  true);
- ArraySetAsSeries(Extr_H1_Buffer1,  true);
- ArraySetAsSeries(Extr_H1_Buffer2,  true);
- ArraySetAsSeries(Extr_H1_Buffer3,  true);
- ArraySetAsSeries(Extr_H1_Buffer4,  true);
- ArraySetAsSeries( ATR_H1_Buffer1,  true);
- ArraySetAsSeries( ATR_H1_Buffer2,  true);
- ArraySetAsSeries( ATR_H1_Buffer3,  true);
- ArraySetAsSeries( ATR_H1_Buffer4,  true);
- ArraySetAsSeries(Price_D1_Buffer1, true);
- ArraySetAsSeries(Price_D1_Buffer2, true);
- ArraySetAsSeries(Price_D1_Buffer3, true);
- ArraySetAsSeries(Price_D1_Buffer4, true);
- ArraySetAsSeries(  ATR_D1_Buffer , true);
-  
  InitializeExtrArray(extr_levelMN);
  InitializeExtrArray(extr_levelW1);
  InitializeExtrArray(extr_levelD1);
@@ -314,14 +175,8 @@ int OnInit()
  InitializeExtrArray(extr_levelH1);
  InitializeExtrArray(price_levelD1);
  
- handle_atr_MN = iMA(_Symbol,  PERIOD_MN1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,  PERIOD_MN1, period_ATR_channel));
- handle_atr_W1 = iMA(_Symbol,   PERIOD_W1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_W1, period_ATR_channel));
- handle_atr_D1 = iMA(_Symbol,   PERIOD_D1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_D1, period_ATR_channel));
- handle_atr_H4 = iMA(_Symbol,   PERIOD_H4, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H4, period_ATR_channel));
- handle_atr_H1 = iMA(_Symbol,   PERIOD_H1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H1, period_ATR_channel));
- 
- PrintFormat("handle_atr_MN = %d, handle_atr_W1 = %d, handle_atr_D1 = %d, handle_atr_H4 = %d, handle_atr_H1 = %d", handle_atr_MN, handle_atr_W1, handle_atr_D1, handle_atr_H4, handle_atr_H1);
- 
+ CreateHandles();
+  
  // создание и присваивание хэндлов индикаторов идет здесь, так как при создании и инициализации хэндла внутри класса
  // наблюдаются ошибки свзяанные тем что требуемый индикатор не успевает посчитаться
  calcMN.SetHandleATR(handle_atr_MN);
@@ -352,65 +207,15 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
+ PrintFormat("DEINITIALIZATION");
  IndicatorRelease(handle_atr_MN);
  IndicatorRelease(handle_atr_W1);
  IndicatorRelease(handle_atr_D1);
  IndicatorRelease(handle_atr_H4);
  IndicatorRelease(handle_atr_H1);
  
- //-------MN-LEVEL
- ArrayFree(Extr_MN_Buffer1);
- ArrayFree(Extr_MN_Buffer2);
- ArrayFree(Extr_MN_Buffer3);
- ArrayFree(Extr_MN_Buffer4);
- ArrayFree( ATR_MN_Buffer1);
- ArrayFree( ATR_MN_Buffer2);
- ArrayFree( ATR_MN_Buffer3);
- ArrayFree( ATR_MN_Buffer4);
- //-------W1-LEVEL
- ArrayFree(Extr_W1_Buffer1);
- ArrayFree(Extr_W1_Buffer2);
- ArrayFree(Extr_W1_Buffer3);
- ArrayFree(Extr_W1_Buffer4);
- ArrayFree( ATR_W1_Buffer1);
- ArrayFree( ATR_W1_Buffer2);
- ArrayFree( ATR_W1_Buffer3);
- ArrayFree( ATR_W1_Buffer4);
- //-------D1-LEVEL
- ArrayFree(Extr_D1_Buffer1);
- ArrayFree(Extr_D1_Buffer2);
- ArrayFree(Extr_D1_Buffer3);
- ArrayFree(Extr_D1_Buffer4);
- ArrayFree( ATR_D1_Buffer1);
- ArrayFree( ATR_D1_Buffer2);
- ArrayFree( ATR_D1_Buffer3);
- ArrayFree( ATR_D1_Buffer4);
- //-------H4-LEVEL
- ArrayFree(Extr_H4_Buffer1);
- ArrayFree(Extr_H4_Buffer2);
- ArrayFree(Extr_H4_Buffer3);
- ArrayFree(Extr_H4_Buffer4);
- ArrayFree( ATR_H4_Buffer1);
- ArrayFree( ATR_H4_Buffer2);
- ArrayFree( ATR_H4_Buffer3);
- ArrayFree( ATR_H4_Buffer4);
- //-------H1-LEVEL
- ArrayFree(Extr_H1_Buffer1);
- ArrayFree(Extr_H1_Buffer2);
- ArrayFree(Extr_H1_Buffer3);
- ArrayFree(Extr_H1_Buffer4);
- ArrayFree( ATR_H1_Buffer1);
- ArrayFree( ATR_H1_Buffer2);
- ArrayFree( ATR_H1_Buffer3);
- ArrayFree( ATR_H1_Buffer4);
- //-------D1-LEVEL-PRICE
- ArrayFree(Price_D1_Buffer1);
- ArrayFree(Price_D1_Buffer2);
- ArrayFree(Price_D1_Buffer3);
- ArrayFree(Price_D1_Buffer4);
- ArrayFree(  ATR_D1_Buffer );
-  
-  
+ ArrayFreeing();
+ 
  if(show_Extr_MN) DeleteExtrLines (PERIOD_MN1);
  if(show_Extr_W1) DeleteExtrLines (PERIOD_W1);
  if(show_Extr_D1) DeleteExtrLines (PERIOD_D1);
@@ -435,14 +240,15 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
   
-   if (BarsCalculated( handle_atr_MN) < 1||
-BarsCalculated( handle_atr_W1) < 1 || 
-BarsCalculated( handle_atr_D1) < 1 ||
-BarsCalculated( handle_atr_H4) < 1 || 
-BarsCalculated( handle_atr_H1) < 1)
-    {
+   if (BarsCalculated( handle_atr_MN) < 1 ||
+       BarsCalculated( handle_atr_W1) < 1 || 
+       BarsCalculated( handle_atr_D1) < 1 ||
+       BarsCalculated( handle_atr_H4) < 1 || 
+       BarsCalculated( handle_atr_H1) < 1)
+   {
     return (0);
-    }
+   }
+   
    ArraySetAsSeries(open , true);
    ArraySetAsSeries(high , true);
    ArraySetAsSeries(low  , true);
@@ -452,6 +258,7 @@ BarsCalculated( handle_atr_H1) < 1)
    if(prev_calculated == 0)
    {
     PrintFormat("%s Рассчет на истории. %s / %s rates_total = %d", __FUNCTION__, TimeToString(time[rates_total-2]), TimeToString(time[0]), rates_total);
+    ArraysInit();
     
     // для всей глубины истории считаем уровни и после этого изменяем положение соответствующих горизонтальных линий
     for(int i = rates_total-2; i >= 0; i--)  //rates_total-2 т.к. идет обращение к i+1 элементу
@@ -842,4 +649,222 @@ void PrintExtrArray(SLevel &te[], ENUM_TIMEFRAMES tf)
                                                                                                    te[1].extr.price, te[1].extr.direction, te[1].channel,
                                                                                                    te[2].extr.price, te[2].extr.direction, te[2].channel,
                                                                                                    te[3].extr.price, te[3].extr.direction, te[3].channel);
+}
+
+void SetIndexBuffers()
+{
+ SetIndexBuffer( 0, Extr_MN_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer( 1,  ATR_MN_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer( 2, Extr_MN_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer( 3,  ATR_MN_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer( 4, Extr_MN_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer( 5,  ATR_MN_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer( 6, Extr_MN_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer( 7,  ATR_MN_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer( 8, Extr_W1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer( 9,  ATR_W1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(10, Extr_W1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(11,  ATR_W1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(12, Extr_W1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(13,  ATR_W1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(14, Extr_W1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(15,  ATR_W1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(16, Extr_D1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(17,  ATR_D1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(18, Extr_D1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(19,  ATR_D1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(20, Extr_D1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(21,  ATR_D1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(22, Extr_D1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(23,  ATR_D1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(24, Extr_H4_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(25,  ATR_H4_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(26, Extr_H4_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(27,  ATR_H4_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(28, Extr_H4_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(29,  ATR_H4_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(30, Extr_H4_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(31,  ATR_H4_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(32, Extr_H1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(33,  ATR_H1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(34, Extr_H1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(35,  ATR_H1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(36, Extr_H1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(37,  ATR_H1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(38, Extr_H1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(39,  ATR_H1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(40, Price_D1_Buffer1, INDICATOR_DATA);
+ SetIndexBuffer(41, Price_D1_Buffer2, INDICATOR_DATA);
+ SetIndexBuffer(42, Price_D1_Buffer3, INDICATOR_DATA);
+ SetIndexBuffer(43, Price_D1_Buffer4, INDICATOR_DATA);
+ SetIndexBuffer(44,   ATR_D1_Buffer , INDICATOR_DATA);
+}
+
+void ArraysInit()
+{
+ ArrayInitialize(Extr_MN_Buffer1,  0);
+ ArrayInitialize(Extr_MN_Buffer2,  0);
+ ArrayInitialize(Extr_MN_Buffer3,  0);
+ ArrayInitialize(Extr_MN_Buffer4,  0); 
+ ArrayInitialize( ATR_MN_Buffer1,  0);
+ ArrayInitialize( ATR_MN_Buffer2,  0);
+ ArrayInitialize( ATR_MN_Buffer3,  0);
+ ArrayInitialize( ATR_MN_Buffer4,  0);
+ ArrayInitialize(Extr_W1_Buffer1,  0);
+ ArrayInitialize(Extr_W1_Buffer2,  0);
+ ArrayInitialize(Extr_W1_Buffer3,  0);
+ ArrayInitialize(Extr_W1_Buffer4,  0);
+ ArrayInitialize( ATR_W1_Buffer1,  0);
+ ArrayInitialize( ATR_W1_Buffer2,  0);
+ ArrayInitialize( ATR_W1_Buffer3,  0);
+ ArrayInitialize( ATR_W1_Buffer4,  0);
+ ArrayInitialize(Extr_D1_Buffer1,  0);
+ ArrayInitialize(Extr_D1_Buffer2,  0);
+ ArrayInitialize(Extr_D1_Buffer3,  0);
+ ArrayInitialize(Extr_D1_Buffer4,  0);
+ ArrayInitialize( ATR_D1_Buffer1,  0);
+ ArrayInitialize( ATR_D1_Buffer2,  0);
+ ArrayInitialize( ATR_D1_Buffer3,  0);
+ ArrayInitialize( ATR_D1_Buffer4,  0);
+ ArrayInitialize(Extr_H4_Buffer1,  0);
+ ArrayInitialize(Extr_H4_Buffer2,  0);
+ ArrayInitialize(Extr_H4_Buffer3,  0);
+ ArrayInitialize(Extr_H4_Buffer4,  0);
+ ArrayInitialize( ATR_H4_Buffer1,  0);
+ ArrayInitialize( ATR_H4_Buffer2,  0);
+ ArrayInitialize( ATR_H4_Buffer3,  0);
+ ArrayInitialize( ATR_H4_Buffer4,  0);
+ ArrayInitialize(Extr_H1_Buffer1,  0);
+ ArrayInitialize(Extr_H1_Buffer2,  0);
+ ArrayInitialize(Extr_H1_Buffer3,  0);
+ ArrayInitialize(Extr_H1_Buffer4,  0);
+ ArrayInitialize( ATR_H1_Buffer1,  0);
+ ArrayInitialize( ATR_H1_Buffer2,  0);
+ ArrayInitialize( ATR_H1_Buffer3,  0);
+ ArrayInitialize( ATR_H1_Buffer4,  0);
+ ArrayInitialize(Price_D1_Buffer1, 0);
+ ArrayInitialize(Price_D1_Buffer2, 0);
+ ArrayInitialize(Price_D1_Buffer3, 0);
+ ArrayInitialize(Price_D1_Buffer4, 0);
+ ArrayInitialize(  ATR_D1_Buffer , 0);
+ 
+ ArraySetAsSeries(Extr_MN_Buffer1,  true);
+ ArraySetAsSeries(Extr_MN_Buffer2,  true);
+ ArraySetAsSeries(Extr_MN_Buffer3,  true);
+ ArraySetAsSeries(Extr_MN_Buffer4,  true);
+ ArraySetAsSeries( ATR_MN_Buffer1,  true);
+ ArraySetAsSeries( ATR_MN_Buffer2,  true);
+ ArraySetAsSeries( ATR_MN_Buffer3,  true);
+ ArraySetAsSeries( ATR_MN_Buffer4,  true);
+ ArraySetAsSeries(Extr_W1_Buffer1,  true);
+ ArraySetAsSeries(Extr_W1_Buffer2,  true);
+ ArraySetAsSeries(Extr_W1_Buffer3,  true);
+ ArraySetAsSeries(Extr_W1_Buffer4,  true);
+ ArraySetAsSeries( ATR_W1_Buffer1,  true);
+ ArraySetAsSeries( ATR_W1_Buffer2,  true);
+ ArraySetAsSeries( ATR_W1_Buffer3,  true);
+ ArraySetAsSeries( ATR_W1_Buffer4,  true);
+ ArraySetAsSeries(Extr_D1_Buffer1,  true);
+ ArraySetAsSeries(Extr_D1_Buffer2,  true);
+ ArraySetAsSeries(Extr_D1_Buffer3,  true);
+ ArraySetAsSeries(Extr_D1_Buffer4,  true);
+ ArraySetAsSeries( ATR_D1_Buffer1,  true);
+ ArraySetAsSeries( ATR_D1_Buffer2,  true);
+ ArraySetAsSeries( ATR_D1_Buffer3,  true);
+ ArraySetAsSeries( ATR_D1_Buffer4,  true);
+ ArraySetAsSeries(Extr_H4_Buffer1,  true);
+ ArraySetAsSeries(Extr_H4_Buffer2,  true);
+ ArraySetAsSeries(Extr_H4_Buffer3,  true);
+ ArraySetAsSeries(Extr_H4_Buffer4,  true);
+ ArraySetAsSeries( ATR_H4_Buffer1,  true);
+ ArraySetAsSeries( ATR_H4_Buffer2,  true);
+ ArraySetAsSeries( ATR_H4_Buffer3,  true);
+ ArraySetAsSeries( ATR_H4_Buffer4,  true);
+ ArraySetAsSeries(Extr_H1_Buffer1,  true);
+ ArraySetAsSeries(Extr_H1_Buffer2,  true);
+ ArraySetAsSeries(Extr_H1_Buffer3,  true);
+ ArraySetAsSeries(Extr_H1_Buffer4,  true);
+ ArraySetAsSeries( ATR_H1_Buffer1,  true);
+ ArraySetAsSeries( ATR_H1_Buffer2,  true);
+ ArraySetAsSeries( ATR_H1_Buffer3,  true);
+ ArraySetAsSeries( ATR_H1_Buffer4,  true);
+ ArraySetAsSeries(Price_D1_Buffer1, true);
+ ArraySetAsSeries(Price_D1_Buffer2, true);
+ ArraySetAsSeries(Price_D1_Buffer3, true);
+ ArraySetAsSeries(Price_D1_Buffer4, true);
+ ArraySetAsSeries(  ATR_D1_Buffer , true);
+}
+
+bool CreateHandles()
+{
+ handle_atr_MN = iMA(_Symbol,  PERIOD_MN1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,  PERIOD_MN1, period_ATR_channel));
+ handle_atr_W1 = iMA(_Symbol,   PERIOD_W1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_W1, period_ATR_channel));
+ handle_atr_D1 = iMA(_Symbol,   PERIOD_D1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_D1, period_ATR_channel));
+ handle_atr_H4 = iMA(_Symbol,   PERIOD_H4, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H4, period_ATR_channel));
+ handle_atr_H1 = iMA(_Symbol,   PERIOD_H1, period_average_ATR, 0, MODE_EMA, iATR(_Symbol,   PERIOD_H1, period_ATR_channel));
+ 
+ if(handle_atr_MN == INVALID_HANDLE || handle_atr_W1 == INVALID_HANDLE || handle_atr_D1 == INVALID_HANDLE ||
+    handle_atr_H4 == INVALID_HANDLE || handle_atr_H1 == INVALID_HANDLE)
+ {
+  PrintFormat("%s Инвалидный хендл ATR", MakeFunctionPrefix(__FUNCTION__));
+  return(false);
+ }
+
+ PrintFormat("handle_atr_MN = %d, handle_atr_W1 = %d, handle_atr_D1 = %d, handle_atr_H4 = %d, handle_atr_H1 = %d", handle_atr_MN, handle_atr_W1, handle_atr_D1, handle_atr_H4, handle_atr_H1);
+ return(true);
+}
+
+void ArrayFreeing()
+{ 
+ //-------MN-LEVEL
+ ArrayFree(Extr_MN_Buffer1);
+ ArrayFree(Extr_MN_Buffer2);
+ ArrayFree(Extr_MN_Buffer3);
+ ArrayFree(Extr_MN_Buffer4);
+ ArrayFree( ATR_MN_Buffer1);
+ ArrayFree( ATR_MN_Buffer2);
+ ArrayFree( ATR_MN_Buffer3);
+ ArrayFree( ATR_MN_Buffer4);
+ //-------W1-LEVEL
+ ArrayFree(Extr_W1_Buffer1);
+ ArrayFree(Extr_W1_Buffer2);
+ ArrayFree(Extr_W1_Buffer3);
+ ArrayFree(Extr_W1_Buffer4);
+ ArrayFree( ATR_W1_Buffer1);
+ ArrayFree( ATR_W1_Buffer2);
+ ArrayFree( ATR_W1_Buffer3);
+ ArrayFree( ATR_W1_Buffer4);
+ //-------D1-LEVEL
+ ArrayFree(Extr_D1_Buffer1);
+ ArrayFree(Extr_D1_Buffer2);
+ ArrayFree(Extr_D1_Buffer3);
+ ArrayFree(Extr_D1_Buffer4);
+ ArrayFree( ATR_D1_Buffer1);
+ ArrayFree( ATR_D1_Buffer2);
+ ArrayFree( ATR_D1_Buffer3);
+ ArrayFree( ATR_D1_Buffer4);
+ //-------H4-LEVEL
+ ArrayFree(Extr_H4_Buffer1);
+ ArrayFree(Extr_H4_Buffer2);
+ ArrayFree(Extr_H4_Buffer3);
+ ArrayFree(Extr_H4_Buffer4);
+ ArrayFree( ATR_H4_Buffer1);
+ ArrayFree( ATR_H4_Buffer2);
+ ArrayFree( ATR_H4_Buffer3);
+ ArrayFree( ATR_H4_Buffer4);
+ //-------H1-LEVEL
+ ArrayFree(Extr_H1_Buffer1);
+ ArrayFree(Extr_H1_Buffer2);
+ ArrayFree(Extr_H1_Buffer3);
+ ArrayFree(Extr_H1_Buffer4);
+ ArrayFree( ATR_H1_Buffer1);
+ ArrayFree( ATR_H1_Buffer2);
+ ArrayFree( ATR_H1_Buffer3);
+ ArrayFree( ATR_H1_Buffer4);
+ //-------D1-LEVEL-PRICE
+ ArrayFree(Price_D1_Buffer1);
+ ArrayFree(Price_D1_Buffer2);
+ ArrayFree(Price_D1_Buffer3);
+ ArrayFree(Price_D1_Buffer4);
+ ArrayFree(  ATR_D1_Buffer );
 }
