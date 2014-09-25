@@ -30,6 +30,7 @@ class CExtremum
  //--параметры ATR для difToNewExtremum-----
  int _handle_ATR;
  double _percentage_ATR;   // коэфициент отвечающий за то во сколько раз движение цены должно превысить средний бар что бы появился новый экстремум
+ double _averageATR;       // храним среднее значение АТР
  //-----------------------------------------
  SExtremum extremums[ARRAY_SIZE];
  
@@ -66,6 +67,7 @@ CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr):
             _handle_ATR(handle_atr)
             {
              SetPercentageATR();
+             _averageATR = AverageBar(TimeCurrent());
              _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
             }
 CExtremum::~CExtremum()
@@ -84,15 +86,19 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  SExtremum result1 = {0, -1}; // временная переменная для записи max если он есть
  SExtremum result2 = {0, -1}; // временная переменная для записи min если он есть
  int count = 0;               // считаем сколько появилось экстремумов
+ double high = 0, low = 0;    // временная переменная в которой будет хранится цена для расчета max и min соответственно
  MqlRates bufferRates[1];
 
  if(CopyRates(_symbol, _tf_period, start_pos_time, 1, bufferRates) < 1)
-  PrintFormat("%s %s Rates buffer: error = %d, calculated = %d, start_index = %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
+ {
+ // PrintFormat("%s %s Rates buffer: error = %d, calculated = %d, start_index = %s", __FUNCTION__, EnumToString((ENUM_TIMEFRAMES)_tf_period), GetLastError(), Bars(_symbol, _tf_period), TimeToString(start_pos_time));
+  return(-1); 
+ }
+ //CopyRates(_symbol, _tf_period, start_pos_time, 1, bufferRates);
  
  double aveBar = AverageBar(start_pos_time);
- if (aveBar <= 0) return(0); 
- double difToNewExtremum = aveBar * _percentage_ATR;  // расчет минимального расстояния между экстремумами
- double high = 0, low = 0;    // временная переменная в которой будет хранится цена для расчета max и min соответственно
+ if (aveBar > 0) _averageATR = aveBar; 
+ double difToNewExtremum = _averageATR * _percentage_ATR;  // расчет минимального расстояния между экстремумами
  
  if(extremums[0].time == bufferRates[0].time && !now) return(0); // на истории сравниваем время последнего экстремума и время текущего бара, исключая тем самым повторное определение экстремумов
  
@@ -189,7 +195,9 @@ double CExtremum::AverageBar (datetime start_pos)  // подгружаем значения с инди
  {
   PrintFormat("%s ERROR. I have INVALID HANDLE = %d, %s", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period));
  }
- if (copied = CopyBuffer(_handle_ATR, 0, start_pos, 1, buffer_average_atr) == 1) 
+ 
+ copied = CopyBuffer(_handle_ATR, 0, start_pos, 1, buffer_average_atr);
+ if (copied == 1) 
   return(buffer_average_atr[0]);
  else
  {

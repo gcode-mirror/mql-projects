@@ -55,7 +55,12 @@ CLevel::~CLevel()
 bool CLevel::RecountLevel(datetime start_pos_time = __DATETIME__, bool now = true)
 {
  int count_new_extrs = RecountExtremum(start_pos_time, now);
- double level_channel = (AverageBar(start_pos_time) * _percentageATR_channel)/2;
+ if (count_new_extrs < 0) return(false);
+ 
+ double aveBar = AverageBar(start_pos_time);
+ if (aveBar > 0) _averageATR = aveBar; 
+ double level_channel = (_averageATR * _percentageATR_channel)/2;
+ 
  if(level_channel == 0) return(false); // если не удалось посчитать канал считаем вызов неуспешным
  
  if(count_new_extrs == 1)               // в случае когда появился один экстремум на одном баре
