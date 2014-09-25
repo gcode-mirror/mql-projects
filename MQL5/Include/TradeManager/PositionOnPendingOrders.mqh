@@ -219,7 +219,7 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
        else if ((exp&SYMBOL_EXPIRATION_SPECIFIED_DAY)==SYMBOL_EXPIRATION_SPECIFIED_DAY)
             {
              _type_time = ORDER_TIME_SPECIFIED_DAY;
-             _pos_info.expiration_time = SymbolInfoInteger(symbol, SYMBOL_EXPIRATION_TIME) - PeriodSeconds(PERIOD_D1);
+             _pos_info.expiration_time = SymbolInfoInteger(symbol, SYMBOL_EXPIRATION_TIME) - PeriodSeconds(PERIOD_M1);
             }
             else 
             {
