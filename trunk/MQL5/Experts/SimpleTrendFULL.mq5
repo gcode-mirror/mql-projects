@@ -245,7 +245,7 @@ void OnTick()
 {     
  int copied = 0;        // Количество скопированных данных из буфера
  int attempts = 0;      // Количество попыток копирования данных из буфера
- 
+
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(blowInfo[indexForTrail]); 
@@ -752,4 +752,10 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
     return (0);
    }
    
-   
+/*   // функция возвращает положение цены закрытия последнего сформированного бара относительно предыдущих двух с учетом типа последнего экстремума
+   int GetLastCloseDirection ()
+    {
+     ENUM_EXTR_USE last
+    }
+    
+    */
