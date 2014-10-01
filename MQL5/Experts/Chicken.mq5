@@ -32,33 +32,17 @@ int handle_pbi;
 double buffer_pbi[1];
 double buffer_high[];
 double buffer_low[];
+
+double prevAsk, prevBid, curAsk, curBid;
+bool recountInterval;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
 {
- int exp=(int)SymbolInfoInteger(_Symbol,SYMBOL_EXPIRATION_MODE);
- 
- if((exp&SYMBOL_EXPIRATION_GTC)==SYMBOL_EXPIRATION_GTC)
- {
-  Print("Разрешен SYMBOL_EXPIRATION_GTC");
- }
- if((exp&SYMBOL_EXPIRATION_DAY)==SYMBOL_EXPIRATION_DAY)
- {
-  Print("Разрешен SYMBOL_EXPIRATION_DAY");
- }
- if((exp&SYMBOL_EXPIRATION_SPECIFIED)==SYMBOL_EXPIRATION_SPECIFIED)
- {
-  Print("Разрешен SYMBOL_EXPIRATION_SPECIFIED");
- }
- if((exp&SYMBOL_EXPIRATION_SPECIFIED_DAY)==SYMBOL_EXPIRATION_SPECIFIED_DAY)
- {
-  Print("Разрешен SYMBOL_EXPIRATION_SPECIFIED_DAY");
- }
- 
- Print("exp = ", exp );
  isNewBar = new CisNewBar(_Symbol, _Period);
  handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
+ recountInterval = false;
  
  pos_info.volume = volume;
  pos_info.expiration = 0;
@@ -90,12 +74,14 @@ void OnTick()
  double slPrice;
  static int index_max = -1;
  static int index_min = -1;
- double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
- double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+ prevAsk = curAsk;
+ prevBid = curBid;
+ curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+ curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
  double stoplevel = MathMax(50, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
  CopyBuffer(handle_pbi, 4, 0, 1, buffer_pbi);
 
- if(isNewBar.isNewBar())
+ if(isNewBar.isNewBar() || recountInterval)
  {
   ArraySetAsSeries(buffer_high, false);
   ArraySetAsSeries(buffer_low, false);
@@ -108,6 +94,7 @@ void OnTick()
   
   index_max = ArrayMaximum(buffer_high);
   index_min = ArrayMinimum(buffer_low);
+  recountInterval = false;
  }
  
  if(buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
@@ -115,18 +102,22 @@ void OnTick()
   if(ctm.GetPositionCount() == 0)
   {
    pos_info.tp = 0;
-   if(index_max < ALLOW_INTERVAL && bid > buffer_high[index_max] + stoplevel)
-   {
-    diff = (bid - buffer_high[index_max])/Point();
+   if(index_max < ALLOW_INTERVAL && curBid > buffer_high[index_max] + stoplevel && prevBid < buffer_high[index_max] + stoplevel)
+   { 
+    PrintFormat("индекс = %d, значение = %.05f", index_max, buffer_high[index_max]);
+    recountInterval = true;
+    diff = (curBid - buffer_high[index_max])/Point();
     pos_info.type = OP_SELLSTOP;
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
    
-   if(index_min < ALLOW_INTERVAL && ask < buffer_low[index_min] - stoplevel)
+   if(index_min < ALLOW_INTERVAL && curAsk < buffer_low[index_min] - stoplevel && prevAsk > buffer_low[index_min] - stoplevel)
    {
-    diff = ( buffer_low[index_min] - ask)/Point();
+    PrintFormat("индекс = %d, значение = %.05f", index_min, buffer_low[index_min]);
+    recountInterval = true;
+    diff = (buffer_low[index_min] - curAsk)/Point();
     pos_info.type = OP_BUYSTOP;
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
@@ -135,16 +126,23 @@ void OnTick()
   }
   else
   {
-   if(ctm.GetPositionType(_Symbol) == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < ask) 
+   //PrintFormat(" Есть позиция стоп = %.05f, бид = %.05f", ctm.GetPositionStopLoss(_Symbol), curBid);
+   /*
+   if (ctm.GetPositionStopLoss(_Symbol) > curBid)
    {
-    //log_file.Write(LOG_DEBUG, StringFormat("ask %.05f ",ask));
-    slPrice = ask;
+    PrintFormat(" Есть позиция. Стоп = %.05f, бид = %.05f", ctm.GetPositionStopLoss(_Symbol), curBid);
+   } 
+   */ 
+   if(ctm.GetPositionType(_Symbol) == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
+   {
+    log_file.Write(LOG_DEBUG, StringFormat(" Есть позиция. Стоп = %.05f, аск = %.05f", ctm.GetPositionStopLoss(_Symbol), curAsk));
+    slPrice = curAsk;
     ctm.ModifyPosition(_Symbol, slPrice, 0); 
    }
-   if(ctm.GetPositionType(_Symbol) == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > bid) 
+   if(ctm.GetPositionType(_Symbol) == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > curBid) 
    {
-    //log_file.Write(LOG_DEBUG, StringFormat("bid %.05f",bid));
-    slPrice = bid;
+    log_file.Write(LOG_DEBUG, StringFormat(" Есть позиция. Стоп = %.05f, бид = %.05f", ctm.GetPositionStopLoss(_Symbol), curBid));
+    slPrice = curBid;
     ctm.ModifyPosition(_Symbol, slPrice, 0); 
    }
   }
