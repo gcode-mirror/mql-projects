@@ -7,6 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
+
 /* NB !!!
   ак бы страшно не выгл€дел дальше код, не стоит его бо€тьс€, потому что это вынужденна€ необходимость.
  ƒело в том что буферы индикатора имеют только тип double и дл€ того что бы нам хранить всю ту информацию этого не хватает
@@ -27,7 +28,7 @@
 #include <ExtrLine\HLine.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <StringUtilities.mqh>
-#include <NineTeenLines/CDrawLevel.mqh>
+#include <NineTeenLines\CNineTeenLines.mqh>
 
 #define TF_PERIOD_ATR_FOR_MN PERIOD_MN1
 #define TF_PERIOD_ATR_FOR_W1 PERIOD_W1
@@ -157,7 +158,13 @@ CisNewBar isNewBarD1 (_Symbol, PERIOD_D1 );   // дл€ проверки формировани€ новог
 CisNewBar isNewBarH4 (_Symbol, PERIOD_H4 );   // дл€ проверки формировани€ нового бара на 4 часах
 CisNewBar isNewBarH1 (_Symbol, PERIOD_H1 );   // дл€ проверки формировани€ нового бара на часе
 
-CDrawLevel * level;
+// объекты класса уровней 
+CNineTeenLines *levelMN1;
+CNineTeenLines *levelW1;
+CNineTeenLines *levelD1;
+CNineTeenLines *levelH4;
+CNineTeenLines *levelH1;
+CNineTeenLines *levelD1Prices;
 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -165,8 +172,6 @@ CDrawLevel * level;
 
 int OnInit()
 {  
-
- level = new CDrawLevel(0,0,true);  
  
  SetInfoTabel();
  PrintFormat("INITIALIZATION");
@@ -199,14 +204,13 @@ int OnInit()
  if(Period() > PERIOD_H1  && show_Extr_H1)  show_Extr_H1 = false;
  if(Period() > PERIOD_D1  && show_Price_D1) show_Price_D1 = false;
  
- // создаем горизонтальные линии дл€ каждого уровн€
- if(show_Extr_MN) CreateExtrLines (extr_levelMN, PERIOD_MN1, clrRed);
- if(show_Extr_W1) CreateExtrLines (extr_levelW1, PERIOD_W1 , clrOrange);
- if(show_Extr_D1) CreateExtrLines (extr_levelD1, PERIOD_D1 , clrYellow);
- if(show_Extr_H4) CreateExtrLines (extr_levelH4, PERIOD_H4 , clrBlue);
- if(show_Extr_H1) CreateExtrLines (extr_levelH1, PERIOD_H1 , clrAqua);
- if(show_Price_D1)CreatePriceLines(price_levelD1, PERIOD_D1 ,clrDarkKhaki); 
- 
+ // создаем горизонтальные линии дл€ каждого уровн€  
+ if(show_Extr_MN)  levelMN1 = new CNineTeenLines(PERIOD_MN1,extr_levelMN,clrRed); 
+ if(show_Extr_W1)  levelW1  = new CNineTeenLines(PERIOD_W1,extr_levelW1,clrOrange); 
+ if(show_Extr_D1)  levelD1  = new CNineTeenLines(PERIOD_D1,extr_levelD1,clrYellow); 
+ if(show_Extr_H4)  levelH4  = new CNineTeenLines(PERIOD_H4,extr_levelH4,clrBlue); 
+ if(show_Extr_H1)  levelH1  = new CNineTeenLines(PERIOD_H1,extr_levelH1,clrAqua); 
+ if(show_Price_D1) levelD1Prices  = new CNineTeenLines(PERIOD_D1,price_levelD1,clrDarkKhaki);     
 //---
  return(INIT_SUCCEEDED);
 }
@@ -221,17 +225,17 @@ void OnDeinit(const int reason)
  IndicatorRelease(handle_atr_H1);
  
  ArrayFreeing();
+ // удал€ем уровни
+ if(show_Extr_MN) levelMN1.DeleteExtrLines();
+ if(show_Extr_W1) levelW1.DeleteExtrLines();
+ if(show_Extr_D1) levelD1.DeleteExtrLines();
+ if(show_Extr_H4) levelH4.DeleteExtrLines();
+ if(show_Extr_H1) levelH1.DeleteExtrLines();
+ if(show_Price_D1)levelD1Prices.DeleteExtrLines();
  
- if(show_Extr_MN) DeleteExtrLines (PERIOD_MN1);
- if(show_Extr_W1) DeleteExtrLines (PERIOD_W1);
- if(show_Extr_D1) DeleteExtrLines (PERIOD_D1);
- if(show_Extr_H4) DeleteExtrLines (PERIOD_H4);
- if(show_Extr_H1) DeleteExtrLines (PERIOD_H1);
- if(show_Price_D1)DeletePriceLines(PERIOD_D1);
  DeleteInfoTabel();
  
- delete level; 
- 
+
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -345,12 +349,12 @@ int OnCalculate(const int rates_total,
      }
     }//end fro
      
-    if(show_Extr_MN) MoveExtrLines (extr_levelMN, PERIOD_MN1);
-    if(show_Extr_W1) MoveExtrLines (extr_levelW1, PERIOD_W1 ); 
-    if(show_Extr_D1) MoveExtrLines (extr_levelD1, PERIOD_D1 );
-    if(show_Extr_H4) MoveExtrLines (extr_levelH4, PERIOD_H4 );
-    if(show_Extr_H1) MoveExtrLines (extr_levelH1, PERIOD_H1 );
-    if(show_Price_D1)MovePriceLines(price_levelD1, PERIOD_D1 );
+    if(show_Extr_MN) levelMN1.MoveExtrLines(extr_levelMN);
+    if(show_Extr_W1) levelW1.MoveExtrLines(extr_levelW1); 
+    if(show_Extr_D1) levelD1.MoveExtrLines(extr_levelD1);
+    if(show_Extr_H4) levelH4.MoveExtrLines(extr_levelH4);
+    if(show_Extr_H1) levelH1.MoveExtrLines(extr_levelH1);
+    if(show_Price_D1)levelD1Prices.MoveExtrLines(price_levelD1);    
     
     PrintFormat("«акончен расчет на истории. (prev_calculated == 0)");
    }//end prev_calculated == 0
@@ -428,13 +432,13 @@ int OnCalculate(const int rates_total,
     if(show_Extr_H4) CalcExtr(calcH4, extr_levelH4, time[0], true);
     if(show_Extr_H1) CalcExtr(calcH1, extr_levelH1, time[0], true);
     if(show_Price_D1)CalcPrice(PERIOD_D1, time[0]);
-     
-    if(show_Extr_MN) MoveExtrLines (extr_levelMN, PERIOD_MN1);
-    if(show_Extr_W1) MoveExtrLines (extr_levelW1, PERIOD_W1 ); 
-    if(show_Extr_D1) MoveExtrLines (extr_levelD1, PERIOD_D1 );
-    if(show_Extr_H4) MoveExtrLines (extr_levelH4, PERIOD_H4 );
-    if(show_Extr_H1) MoveExtrLines (extr_levelH1, PERIOD_H1 );
-    if(show_Price_D1)MovePriceLines(price_levelD1, PERIOD_D1 );
+
+    if(show_Extr_MN) levelMN1.MoveExtrLines(extr_levelMN);
+    if(show_Extr_W1) levelW1.MoveExtrLines(extr_levelW1);
+    if(show_Extr_D1) levelD1.MoveExtrLines(extr_levelD1);
+    if(show_Extr_H4) levelH4.MoveExtrLines(extr_levelH4);
+    if(show_Extr_H1) levelH1.MoveExtrLines(extr_levelH1);
+    if(show_Price_D1)levelD1Prices.MoveExtrLines(price_levelD1);    
    }
 //--- return value of prev_calculated for next call
    return(rates_total);
@@ -479,82 +483,6 @@ void CalcPrice(ENUM_TIMEFRAMES tf, datetime start_pos)
  price_levelD1[2].channel = (buffer_ATR[0]*channel_ATR_D1)/2;
  price_levelD1[3].extr.price = rates_buffer[0].close;
  price_levelD1[3].channel = (buffer_ATR[0]*channel_ATR_D1)/2;
-}
-
-//---------------------------------------------
-// —оздание горизонтальных линий дл€ 4 уровней
-//---------------------------------------------
-void CreateExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf, color clr)
-{
- string name = "extr_" + EnumToString(tf) + "_"; 
- level.SetLevel(name+"one",te[0].extr.price,te[0].channel,clr);    // первый уровень
- level.SetLevel(name+"two",te[1].extr.price,te[1].channel,clr);    // второй уровень
- level.SetLevel(name+"three",te[2].extr.price,te[2].channel,clr);  // третий уровень
- level.SetLevel(name+"four",te[3].extr.price,te[3].channel,clr);   // четвертный уровень 
-}
-
-//---------------------------------------------
-// —двиг горизонтаьных линий всех 4 уровней на новые места
-//---------------------------------------------
-void MoveExtrLines(const SLevel &te[], ENUM_TIMEFRAMES tf)
-{
- string name = "extr_" + EnumToString(tf) + "_";
- level.MoveLevel(name+"one",te[0].extr.price);
- level.ChangeLevel(name+"one",te[0].channel);
- level.MoveLevel(name+"two",te[1].extr.price);
- level.ChangeLevel(name+"two",te[1].channel); 
- level.MoveLevel(name+"three",te[2].extr.price);
- level.ChangeLevel(name+"three",te[2].channel); 
- level.MoveLevel(name+"four",te[3].extr.price);
- level.ChangeLevel(name+"four",te[3].channel);   
-}
-
-//---------------------------------------------
-// ”даление горизонтальных линий 4 уровней
-//---------------------------------------------
-void DeleteExtrLines(ENUM_TIMEFRAMES tf)
-{
- string name = "extr_" + EnumToString(tf) + "_";
- level.DeleteLevel(name+"one");
- level.DeleteLevel(name+"two");
- level.DeleteLevel(name+"three");
- level.DeleteLevel(name+"four");
-}
-
-//---------------------------------------------
-// —оздание горизонтальных линий дл€ 4 цен
-//---------------------------------------------
-void CreatePriceLines(const SLevel &te[], ENUM_TIMEFRAMES tf,color clr)
-{
- string name = "price_" + EnumToString(tf) + "_";
- level.SetLevel(name+"open",te[0].extr.price,te[0].channel,clr);
- level.SetLevel(name+"high",te[1].extr.price,te[1].channel,clr);
- level.SetLevel(name+"low",te[2].extr.price,te[2].channel,clr);
- level.SetLevel(name+"close",te[3].extr.price,te[3].channel,clr);   
-}
-
-//---------------------------------------------
-// —двиг горизонтаьных линий всех 4 цен на новые места
-//---------------------------------------------
-void MovePriceLines(const SLevel &te[], ENUM_TIMEFRAMES tf)
-{
- string name = "price_" + EnumToString(tf) + "_";
- level.MoveLevel(name+"open",te[0].extr.price); 
- level.MoveLevel(name+"high",te[1].extr.price); 
- level.MoveLevel(name+"low",te[2].extr.price); 
- level.MoveLevel(name+"close",te[3].extr.price);    
-}
-
-//---------------------------------------------
-// ”даление горизонтальных линий 4 цен
-//---------------------------------------------
-void DeletePriceLines(ENUM_TIMEFRAMES tf)
-{
- string name = "price_" + EnumToString(tf) + "_";
- level.DeleteLevel(name+"open");
- level.DeleteLevel(name+"high");
- level.DeleteLevel(name+"low");
- level.DeleteLevel(name+"close");   
 }
 
 //---------------------------------------------------------------------------------------------
