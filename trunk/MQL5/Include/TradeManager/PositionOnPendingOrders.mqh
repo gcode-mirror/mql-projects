@@ -303,7 +303,7 @@ double CPosition::getPosProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
-log_file.Write(LOG_DEBUG, StringFormat("%s ¬ыставл€ем стоп-лосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice ));
+ log_file.Write(LOG_DEBUG, StringFormat("%s ¬ыставл€ем стоп-лосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice ));
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);
  //формируем комментарий
@@ -595,6 +595,8 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
  _posOpenTime = TimeCurrent(); //сохран€ем врем€ открыти€ позиции    
  _posProfit = 0;
  
+ ENUM_ORDER_TYPE oType = OrderType(_pos_info.type);
+ 
  //формируем комментарий
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);
@@ -635,34 +637,14 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_BUYLIMIT:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_LIMIT, _pos_info.volume, _posOpenPrice, _type_time, _pos_info.expiration_time, orderComment))
-   {
-    _orderTicket = trade.ResultOrder();
-    _pos_status = POSITION_STATUS_PENDING;             
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт отложенный ордер #%d; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), _orderTicket, TimeToString(_pos_info.expiration_time)));
-   }
-   break;
   case OP_SELLLIMIT:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_LIMIT, _pos_info.volume, _posOpenPrice, _type_time, _pos_info.expiration_time, orderComment))
-   {
-    _orderTicket = trade.ResultOrder();
-    _pos_status = POSITION_STATUS_PENDING;
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт отложенный ордер #%d; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), _orderTicket, TimeToString(_pos_info.expiration_time)));
-   }
-   break;
   case OP_BUYSTOP:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_BUY_STOP, _pos_info.volume, _posOpenPrice, _type_time, _pos_info.expiration_time, orderComment))
-   {
-    _orderTicket = trade.ResultOrder();
-    _pos_status = POSITION_STATUS_PENDING;  
-    log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт отложенный ордер #%d; врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), _orderTicket, TimeToString(_pos_info.expiration_time)));
-   }
-   break;
   case OP_SELLSTOP:
-   if (trade.OrderOpen(_symbol, ORDER_TYPE_SELL_STOP, _pos_info.volume, _posOpenPrice, _type_time, _pos_info.expiration_time, orderComment))
+   if (trade.OrderOpen(_symbol, oType, _pos_info.volume, _posOpenPrice, _type_time, _pos_info.expiration_time, orderComment))
    {
     _orderTicket = trade.ResultOrder();
     _pos_status = POSITION_STATUS_PENDING;
+    if (_pos_info.sl > 0) _slPrice = SLPriceByType(_pos_info.type);
     log_file.Write(LOG_DEBUG, StringFormat("%s ќткрыт отложенный ордер #%d; тип истечени€ %s, врем€ истечени€ %s", MakeFunctionPrefix(__FUNCTION__), _orderTicket,  EnumToString(_type_time), TimeToString(_pos_info.expiration_time)));
    }
    break;

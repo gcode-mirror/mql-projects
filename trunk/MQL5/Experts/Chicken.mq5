@@ -101,8 +101,15 @@ void OnTick()
  {
   if(ctm.GetPositionCount() == 0)
   {
+   
+   if(index_max < ALLOW_INTERVAL && curBid > buffer_high[index_max] + stoplevel && prevBid <= buffer_high[index_max] + stoplevel)
+   {
+    PrintFormat("(curBid)%.05f > %.05f + %.05f ",curBid, buffer_high[index_max], stoplevel);
+    PrintFormat("(prevBid)%.05f > %.05f + %.05f ",prevBid, buffer_high[index_max], stoplevel);
+   }
+   
    pos_info.tp = 0;
-   if(index_max < ALLOW_INTERVAL && curBid > buffer_high[index_max] + stoplevel && prevBid < buffer_high[index_max] + stoplevel)
+   if(index_max < ALLOW_INTERVAL && curBid > buffer_high[index_max] + stoplevel && prevBid <= buffer_high[index_max] + stoplevel)
    { 
     PrintFormat("индекс = %d, значение = %.05f", index_max, buffer_high[index_max]);
     recountInterval = true;
@@ -126,23 +133,16 @@ void OnTick()
   }
   else
   {
-   //PrintFormat(" Есть позиция стоп = %.05f, бид = %.05f", ctm.GetPositionStopLoss(_Symbol), curBid);
-   /*
-   if (ctm.GetPositionStopLoss(_Symbol) > curBid)
-   {
-    PrintFormat(" Есть позиция. Стоп = %.05f, бид = %.05f", ctm.GetPositionStopLoss(_Symbol), curBid);
-   } 
-   */ 
    if(ctm.GetPositionType(_Symbol) == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
    {
-    log_file.Write(LOG_DEBUG, StringFormat(" Есть позиция. Стоп = %.05f, аск = %.05f", ctm.GetPositionStopLoss(_Symbol), curAsk));
     slPrice = curAsk;
+    log_file.Write(LOG_DEBUG, StringFormat(" Есть позиция. Стоп = %.05f, аск = %.05f", ctm.GetPositionStopLoss(_Symbol), curAsk));
     ctm.ModifyPosition(_Symbol, slPrice, 0); 
    }
    if(ctm.GetPositionType(_Symbol) == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > curBid) 
    {
-    log_file.Write(LOG_DEBUG, StringFormat(" Есть позиция. Стоп = %.05f, бид = %.05f", ctm.GetPositionStopLoss(_Symbol), curBid));
     slPrice = curBid;
+    log_file.Write(LOG_DEBUG, StringFormat(" Есть позиция. Стоп = %.05f, бид = %.05f", ctm.GetPositionStopLoss(_Symbol), curBid));
     ctm.ModifyPosition(_Symbol, slPrice, 0); 
    }
   }
