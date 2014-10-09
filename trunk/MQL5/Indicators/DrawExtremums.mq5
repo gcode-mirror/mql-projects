@@ -7,7 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_chart_window
-#property indicator_buffers 3
+#property indicator_buffers 6
 #property indicator_plots   2
 
 #property indicator_type1   DRAW_ARROW
@@ -26,20 +26,26 @@
 input  ENUM_TIMEFRAMES period     = PERIOD_H4;   // период экстремумов
 input  int     history_depth      = 1000;        // сколько свечей показывать
 input  int     period_ATR         = 30;          // период ATR
-input  int     period_average_ATR = 30;           // период устреднения индикатора ATR
+input  int     period_average_ATR = 30;          // период устреднения индикатора ATR
 input  int     codeSymbol         = 217;         // код символа
 
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];                       // буфер верхних экстремумов
 double ExtDownArrowBuffer[];                     // буфер нижних экстремумов
-double LastExtrSignal[];                         // сигнал последего экстремума
+double LastExtrSignal[];                         // сигнал формирующегося экстремума
+double PrevExtrSignal[];                         // сигнал сформированного экстремума
+double ExtrNumberHigh[];                         // буфер счетчик экстремумов HIGH
+double ExtrNumberLow[];                          // буфер счетчки экстремумов LOW
 
-int indexPrevUp   = -1;                      // индекс последнего верхнего экстремума, которого нужно затереть
-int indexPrevDown = -1;                      // индекс последнего нижнего экстремума, которого нужно затереть 
-int jumper        = 0;                       // переменная-попрыгун. ня ^_^
+int indexPrevUp   = -1;                          // индекс последнего верхнего экстремума, которого нужно затереть
+int indexPrevDown = -1;                          // индекс последнего нижнего экстремума, которого нужно затереть 
+int jumper        = 0;                           // переменная-попрыгун. ня ^_^
+int prevJumper    = 0;                           // предыдущее значение переменной-попгрыгуна, и опять таки 
+int countExtrHigh = 0;                           // счетчик экстремумов HIGH
+int countExtrLow  = 0;                           // счетчки экстремумов LOW
 
-double lastExtrUpValue;                      // значение последнего экстремума
-double lastExtrDownValue;                    // значение последнего экстемума   
+double lastExtrUpValue;                          // значение последнего экстремума
+double lastExtrDownValue;                        // значение последнего экстемума   
 
 CisNewBar NewBarCurrent;
 CExtremum *extr;
@@ -62,7 +68,6 @@ int OnInit()
    NewBarCurrent.SetPeriod(period);
    ENUM_TIMEFRAMES per;
 
-  // handle_ATR = iCustom(Symbol(),period,"AverageATR",period_ATR,period_average_ATR); 
    handle_ATR = iMA(Symbol(), period, 100, 0, MODE_EMA, iATR(Symbol(), period, 30));
    if (handle_ATR == INVALID_HANDLE)
     {
@@ -78,17 +83,26 @@ int OnInit()
    SetIndexBuffer(0, ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(1, ExtDownArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(2, LastExtrSignal,INDICATOR_CALCULATIONS);
+   SetIndexBuffer(3, PrevExtrSignal,INDICATOR_CALCULATIONS);
+   SetIndexBuffer(4, ExtrNumberHigh,INDICATOR_CALCULATIONS);
+   SetIndexBuffer(5, ExtrNumberLow,INDICATOR_CALCULATIONS);
 
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
    ArrayInitialize(LastExtrSignal, 0);
+   ArrayInitialize(PrevExtrSignal, 0);
+   ArrayInitialize(ExtrNumberHigh,0);
+   ArrayInitialize(ExtrNumberLow,0);
 
    PlotIndexSetInteger(0, PLOT_ARROW, codeSymbol+1);
    PlotIndexSetInteger(1, PLOT_ARROW, codeSymbol);
    
-   ArraySetAsSeries(   ExtUpArrowBuffer, series_order);   
-   ArraySetAsSeries( ExtDownArrowBuffer, series_order);
-   ArraySetAsSeries ( LastExtrSignal, true);
+   ArraySetAsSeries( ExtUpArrowBuffer,    series_order);   
+   ArraySetAsSeries( ExtDownArrowBuffer,  series_order);
+   ArraySetAsSeries( LastExtrSignal,      true);
+   ArraySetAsSeries( PrevExtrSignal,      true);
+   ArraySetAsSeries( ExtrNumberHigh,      true);
+   ArraySetAsSeries( ExtrNumberLow,       true);
    
    return(INIT_SUCCEEDED);
   }
@@ -100,6 +114,9 @@ void OnDeinit(const int reason)
    ArrayFree(ExtUpArrowBuffer);
    ArrayFree(ExtDownArrowBuffer);
    ArrayFree(LastExtrSignal);
+   ArrayFree(PrevExtrSignal);
+   ArrayFree(ExtrNumberHigh);
+   ArrayFree(ExtrNumberLow);
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -134,8 +151,7 @@ int OnCalculate(const int rates_total,
     
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
-   //Print("DRAW EXTREMUMS: N = ",IntegerToString(ArraySize(time))," DEPTH = ",IntegerToString(depth));
-  // Print("DEPTH = ",depth, " time = ",ArraySize(time));
+
    NewBarCurrent.isNewBar(time[depth-1]);
    
    for(int i = depth-1; i >= 0;  i--)    
@@ -143,11 +159,12 @@ int OnCalculate(const int rates_total,
     RecountUpdated(time[i], false, extr_cur);
     if (extr_cur[0].direction > 0)
     {     
-   //  ExtUpArrowBuffer[i] = extr_cur[0].price;
      lastExtrUpValue = extr_cur[0].price;
      if (jumper == -1)
       {
        ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
+       countExtrLow ++;     // увеличиваем количество экстремумов HIGH    
+       prevJumper = jumper;   
       }
      jumper = 1;
      indexPrevUp = i;  // обновляем предыдущий индекс
@@ -160,12 +177,16 @@ int OnCalculate(const int rates_total,
      if (jumper == 1)
       {
        ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
+       countExtrHigh ++;       // увеличиваем количество экстремумов LOW     
+       prevJumper = jumper;
       }
      jumper = -1;
    
      indexPrevDown = i;  // обновляем предыдущий индекс      
      extr_cur[1].direction = 0;
     }
+    ExtrNumberHigh[0] = countExtrHigh;
+    ExtrNumberLow[0]  = countExtrLow;    
    }
    // переворачиваем индексы
    indexPrevDown = rates_total - 1 - indexPrevDown;
@@ -175,7 +196,7 @@ int OnCalculate(const int rates_total,
    return (rates_total);
   }
    LastExtrSignal[0] = jumper;
-   
+   PrevExtrSignal[0] = prevJumper;
    RecountUpdated(time[rates_total-1], true, extr_cur);
    
    ArraySetAsSeries(ExtUpArrowBuffer   , false);
@@ -183,15 +204,15 @@ int OnCalculate(const int rates_total,
      
    if (extr_cur[0].direction > 0)
    {
- //   ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
- //   ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;    
+    
     lastExtrUpValue = extr_cur[0].price;
 
     
     if (jumper == -1)
     {
      ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
-    //Comment("Пришел верхний экстремум, записываем нижний ", DoubleToString(ExtDownArrowBuffer[indexPrevDown])," jumper = ",jumper," время = ",TimeToString(TimeCurrent()) );    
+     countExtrLow ++;                 // увеличиваем количество экстремумов на единицу  HIGH
+     prevJumper = jumper;
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
@@ -200,22 +221,25 @@ int OnCalculate(const int rates_total,
    
    if (extr_cur[1].direction < 0)
    {
-  //  ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
-  //  ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;    
+
     lastExtrDownValue = extr_cur[1].price;
 
     if (jumper == 1)
     {
      ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
-  //  Comment("Пришел нижний экстремум, записываем верхний ",DoubleToString(ExtUpArrowBuffer[indexPrevUp])," jumper = ",jumper," время = ",TimeToString(TimeCurrent()) );
+     countExtrHigh ++;                   // увеличиваем количество экстремумов на единицу LOW      
+     prevJumper = jumper;     
     }
     jumper = -1;
     indexPrevDown = rates_total-1;  // обновляем предыдущий индекс        
-    extr_cur[1].direction = 0;    
+    extr_cur[1].direction = 0;   
    }
    
    LastExtrSignal[0] = jumper;
+   PrevExtrSignal[0] = prevJumper;
    
+   ExtrNumberHigh[0] = countExtrHigh;
+   ExtrNumberLow [0] = countExtrLow;   
    return(rates_total);
   }
   

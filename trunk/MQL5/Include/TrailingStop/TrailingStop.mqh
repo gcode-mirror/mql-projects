@@ -225,7 +225,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
  if ( blowInfo.Upload(EXTR_BOTH,TimeCurrent(),1000) )     
   {
    // получаем тип последнего экстремума
-   last_extr = blowInfo.GetLastExtrType();
+   last_extr = blowInfo.GetPrevExtrType();
    if (last_extr == EXTR_NO)
     return (0.0);
    // сохраняем стоп левел
@@ -264,13 +264,13 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
       {
        lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
        lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
-       //log_file.Write(LOG_DEBUG, StringFormat("Последний значимый эстремум %s", EnumToString(last_extr) ));
+       //log_file.Write(LOG_DEBUG, StringFormat("Последний эстремум %s ", EnumToString(last_extr)));
        //log_file.Write(LOG_DEBUG, StringFormat("Цена (%.05f), < последний значимый эстремум (%.05f)", currentPriceAsk, lastExtrLow ));
        // если текущая цена пробила последний значимый LOW экстремум  
        if ( LessDoubles(currentPriceAsk,lastExtrLow) &&
             GreatDoubles (tmpPrevAsk,lastExtrLow) )
           {
-           //log_file.Write(LOG_DEBUG, StringFormat("Пробили (%.05f) последний значимый эстремум (%.05f)", currentPriceAsk, lastExtrLow ));
+           log_file.Write(LOG_DEBUG, StringFormat("Пробили (%.05f) последний значимый эстремум (%.05f)", currentPriceAsk, lastExtrLow ));
            // если расстояние от цены до нового стоп лосса больше стоп левела
            if ( GreatDoubles(lastExtrHigh - currentPriceAsk,stopLevel) )
              {             
