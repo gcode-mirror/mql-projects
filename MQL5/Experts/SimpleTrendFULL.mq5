@@ -130,7 +130,7 @@ double           prevPriceBid      = 0;            // для хранения предыдущей це
 double           lotReal;                          // действительный лот
 double           lenClosestUp;                     // расстояние до ближайшего уровня сверху
 double           lenClosestDown;                   // расстояние до ближайшего уровня снизу 
-ENUM_TENDENTION lastTendention, currentTendention;  // переменные для хранения направления предыдущего и текущего баров
+ENUM_TENDENTION lastTendention, currentTendention; // переменные для хранения направления предыдущего и текущего баров
 
 // структуры для работы с позициями            
 SPositionInfo pos_info;                            // информация об открытии позиции 
@@ -255,14 +255,19 @@ void OnTick()
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
  curPriceAsk  = SymbolInfoDouble(_Symbol, SYMBOL_ASK);   // получаем текущую цену Ask
  
- if (!blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),100) ||
-     !blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),100) ||
-     !blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),100) ||
-     !blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),100)
+ if (!blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
+     !blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
+     !blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
+     !blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
     )
  {   
   return;
  }
+ 
+   Comment ("curPrice        = ",DoubleToString(curPriceBid),
+            "\nprevPrice     = ",DoubleToString(prevPriceBid),
+            "\nlast Extr Low = ",DoubleToString(lastExtrLow[0].price)
+   ); 
 
  // если мы используем запрет на вход по NineTeenLines
  if (useLinesLock)
@@ -349,16 +354,17 @@ void OnTick()
  {
   ChangeTrailIndex();                            // то меняем индекс трейлинга
   if (countAdd < lotCount && changeLotValid)     // если было совершено меньше lotCount доливок и есть разрешение на доливку
-  {
+  {   
    if (ChangeLot())                              // если получили сигнал на доливание 
    {
+   Print("Доливаемся lotCount = ",lotCount);
     ctm.PositionChangeSize(_Symbol, lotStep);    // доливаемся 
    }       
   }        
  }
  
  currentTendention = GetTendention(lastBarD1[1].open, curPriceBid);
- Comment(StringFormat("lastTendention = %s, currentTendention = %s", TendentionToString(lastTendention), TendentionToString(currentTendention)));
+// Comment(StringFormat("lastTendention = %s, currentTendention = %s", TendentionToString(lastTendention), TendentionToString(currentTendention)));
  // если общая тенденция  - вверх
  if (lastTendention == TENDENTION_UP && currentTendention == TENDENTION_UP)
  {   
@@ -367,6 +373,12 @@ void OnTick()
         ((beatM15=IsExtremumBeaten(2,BUY))&& (lastTrendPBI_2==BUY||usePBI==PBI_NO)) || 
         ((beatH1=IsExtremumBeaten(3,BUY)) && (lastTrendPBI_3==BUY||usePBI==PBI_NO))  )
    {
+ /*  Comment("beatM5 = ",beatM5,
+           "\nbeatM15 = ",beatM15,
+           "\nbeatH1 = ",beatH1,
+           "\ntime = ",TimeToString(TimeCurrent())
+          );
+  */
    Print("Пробили экстремум в нужную сторону (BUY)");        
     // если используются запреты по smydMACD
     if (useMACDLock)
@@ -386,7 +398,7 @@ void OnTick()
     // если используются запреты по NineTeenLines
     if (useLinesLock)
      {
-    Print("Используем запрет по 19 линиям");
+       Print("Используем запрет по 19 линиям");
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
       lenClosestDown = GetClosestLevel(SELL);
@@ -433,7 +445,13 @@ void OnTick()
   if ( ((beatM5=IsExtremumBeaten(1,SELL)) && (lastTrendPBI_1==SELL||usePBI==PBI_NO)) || 
        ((beatM15=IsExtremumBeaten(2,SELL))&& (lastTrendPBI_2==SELL||usePBI==PBI_NO)) || 
        ((beatH1=IsExtremumBeaten(3,SELL)) && (lastTrendPBI_3==SELL||usePBI==PBI_NO)))  
-  {                
+  {      
+  /* Comment("beatM5 = ",beatM5,
+           "\nbeatM15 = ",beatM15,
+           "\nbeatH1 = ",beatH1,
+           "\ntime = ",TimeToString(TimeCurrent())           
+          );            
+  */ 
    Print("Пробили экстремум в нужную сторону (SELL)");        
     // если используются запреты по smydMACD
     if (useMACDLock)
@@ -508,13 +526,25 @@ bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой эк
  switch (direction)
  {
   case SELL:
-   if (LessDoubles(curPriceAsk,lastExtrLow[index].price)&& GreatDoubles(prevPriceAsk,lastExtrLow[index].price) && !extrLowBeaten[index])
+  
+   Comment ("curPrice        = ",DoubleToString(curPriceBid),
+            "\nprevPrice     = ",DoubleToString(prevPriceBid),
+            "\nlast Extr Low = ",DoubleToString(lastExtrLow[index].price)
+   );
+   
+   if (LessDoubles(curPriceBid,lastExtrLow[index].price)&& GreatDoubles(prevPriceBid,lastExtrLow[index].price) && !extrLowBeaten[index])
    {
     extrLowBeaten[index] = true;
     return (true);    
    }     
   break;
   case BUY:
+  
+   Comment ("curPrice         = ",DoubleToString(curPriceBid),
+            "\nprevPrice      = ",DoubleToString(prevPriceBid),
+            "\nlast Extr High = ",DoubleToString(lastExtrHigh[index].price)
+   );  
+   
    if (GreatDoubles(curPriceBid,lastExtrHigh[index].price) && LessDoubles(prevPriceBid,lastExtrHigh[index].price) && !extrHighBeaten[index])
    {
     extrHighBeaten[index] = true;
@@ -556,10 +586,12 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
   case BUY:  // если позиция открыта на BUY
    if ( blowInfo[0].GetLastExtrType() == EXTR_LOW )  // если последний экстремум LOW
    {
-    if (IsExtremumBeaten(0,BUY) && 
-        GreatDoubles(ctm.GetPositionStopLoss(_Symbol),pricePos)
+     
+    if (IsExtremumBeaten(0,BUY) /* && 
+        GreatDoubles(ctm.GetPositionStopLoss(_Symbol),pricePos) */
        ) // если пробит экстремум и стоп лосс в безубытке
     {
+    // Comment("Пробит верхний экстремум M1 в ",TimeToString(TimeCurrent())," экстремум = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price) ); 
      countAdd++; // увеличиваем счетчик доливок
      return (true);
     }
@@ -568,10 +600,12 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
   case SELL: // если позиция открыта на SELL
    if ( blowInfo[0].GetLastExtrType() == EXTR_HIGH ) // если последний экстремум HIGH
    {
-    if (IsExtremumBeaten(0,SELL) &&
-        LessDoubles(ctm.GetPositionStopLoss(_Symbol),pricePos)
+      
+    if (IsExtremumBeaten(0,SELL)/* &&
+        LessDoubles(ctm.GetPositionStopLoss(_Symbol),pricePos) */
        ) // если пробит экстремум и стоп лосс в безубытке
     {
+   //  Comment("Пробит нижний экстремум M1 в ",TimeToString(TimeCurrent())," экстремум = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price) ); 
      cont++;
      countAdd++; // увеличиваем счетчик доливок
      return (true);
@@ -751,11 +785,3 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
      //Comment("Нет сигнала");
     return (0);
    }
-   
-/*   // функция возвращает положение цены закрытия последнего сформированного бара относительно предыдущих двух с учетом типа последнего экстремума
-   int GetLastCloseDirection ()
-    {
-     ENUM_EXTR_USE last
-    }
-    
-    */
