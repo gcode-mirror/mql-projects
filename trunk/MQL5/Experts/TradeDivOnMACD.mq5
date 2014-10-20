@@ -99,13 +99,19 @@ int OnInit()
    pos_info.expiration = 0;
    pos_info.priceDifference = 0;
    trailing.trailingType = trailingType;
-   trailing.minProfit    = 0;
-   trailing.trailingStop = 0;
-   trailing.trailingStep = 0;
+   trailing.minProfit    = minProfit;
    if (trailingType == TRAILING_TYPE_PBI)
-    trailing.handlePBI    = handle_PBI;
+    {
+     trailing.trailingStop = trStop;
+     trailing.trailingStep = trStep;
+     trailing.handlePBI    = handle_PBI;
+    }
    else
-    trailing.handlePBI    = 0;     
+    {
+     trailing.trailingStop = 0;
+     trailing.trailingStep = 0;
+     trailing.handlePBI    = 0;     
+    }
  return(INIT_SUCCEEDED);
 }
 
