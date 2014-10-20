@@ -93,9 +93,19 @@ int OnInit()
   
  trailing.trailingType = trailingType;
  trailing.minProfit    = minProfit;
- trailing.trailingStop = trStop;
- trailing.trailingStep = trStep;
- trailing.handlePBI    = handle_PBI; 
+ // если для трейлинга используется PBI
+ if (trailingType == TRAILING_TYPE_PBI)
+  {
+   trailing.trailingStop = trStop;
+   trailing.trailingStep = trStep;
+   trailing.handlePBI    = handle_PBI; 
+  }
+ else
+  {
+   trailing.trailingStop = 0;
+   trailing.trailingStep = 0;
+   trailing.handlePBI    = 0;
+  }
  return(INIT_SUCCEEDED);
 }
 
@@ -115,6 +125,7 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  ctm.OnTick();
+ if (trailingType != TRAILING_TYPE_NONE)
  ctm.DoTrailing();
  // если используются уровни для запрета на вход
  if (use19Lines)
