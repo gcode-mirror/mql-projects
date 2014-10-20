@@ -30,6 +30,8 @@ input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;               // тип 
 input int     trStop                               = 100;                // Trailing Stop
 input int     trStep                               = 100;                // Trailing Step
 input int     minProfit                            = 250;                // минимальная прибыль
+input string  lineParams                           = "";                 // ПАРАМЕТРЫ 19 ЛИНИЙ
+input bool    use19Lines                           = true;               // использовать запрет на вход 19 линий
 // структура уровней
 struct bufferLevel
  {
@@ -52,24 +54,39 @@ double lenClosestUp;                                                     // расс
 double lenClosestDown;                                                   // расстояние до ближайшего уровня снизу    
 // буферы 
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора smydMACD
-bufferLevel buffers[8];                                                 // буфер уровней
+bufferLevel buffers[10];                                                 // буфер уровней
 
 int OnInit()
 {
  // выделяем память под объект тороговой библиотеки
  isNewBar = new CisNewBar(_Symbol, _Period);
  ctm = new CTradeManager(); 
- handle_PBI = iCustom(_Symbol, _Period, "PriceBasedIndicator", 1000, 1, 1.5);
- if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+ // если трейлинш по PBI
+ if (trailingType == TRAILING_TYPE_PBI)
   {
-   Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+   handle_PBI = iCustom(_Symbol, _Period, "PriceBasedIndicator", 1000, 1, 1.5);
+   if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+    {
+     Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+    }
   }
- 
- handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines");     
- if (handle_19Lines == INVALID_HANDLE)
-  {
-   Print("Не удалось получить хэндл NineteenLines");
-  }    
+  // если используется запрет на вход по 19 линиям
+  if (use19Lines)
+   {
+    handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines",
+                            "",3,3,
+                            "","",true,0.1,
+                            "",true,0.15,
+                            "",true,0.25,
+                            "",true,0.25,
+                            "",true,0.25,
+                            "",false
+                           );       
+    if (handle_19Lines == INVALID_HANDLE)
+      {
+       Print("Не удалось получить хэндл NineteenLines");
+      }
+   }  
  // создаем хэндл индикатора ShowMeYourDivMACD
  handleSmydMACD = iCustom (_Symbol,_Period,"smydMACD");   
  if ( handleSmydMACD == INVALID_HANDLE )
@@ -81,13 +98,14 @@ int OnInit()
    pos_info.volume = lot;
    pos_info.expiration = 0;
    pos_info.priceDifference = 0;
- 
-   trailing.trailingType = TRAILING_TYPE_NONE;
+   trailing.trailingType = trailingType;
    trailing.minProfit    = 0;
    trailing.trailingStop = 0;
    trailing.trailingStep = 0;
-   trailing.handlePBI    = 0;  
-         
+   if (trailingType == TRAILING_TYPE_PBI)
+    trailing.handlePBI    = handle_PBI;
+   else
+    trailing.handlePBI    = 0;     
  return(INIT_SUCCEEDED);
 }
 
@@ -96,66 +114,86 @@ void OnDeinit(const int reason)
  // удаляем объект класса TradeManager
  delete isNewBar;
  delete ctm;
- // удаляем индикатор 
+ // удаляем индикаторы
  IndicatorRelease(handleSmydMACD);
- IndicatorRelease(handle_19Lines);
- IndicatorRelease(handle_PBI);
+ if (use19Lines)
+  IndicatorRelease(handle_19Lines);
+ if (trailingType == TRAILING_TYPE_PBI)
+  IndicatorRelease(handle_PBI);
 }
 
 void OnTick()
 {
  ctm.OnTick();
- ctm.DoTrailing();
+ if (trailingType!=TRAILING_TYPE_NONE)
+  ctm.DoTrailing();
  // если не удалось прогрузить буферы уровней
- if (!UploadBuffers())
-  return;
- // если сформирован новый бар
- if (isNewBar.isNewBar() > 0)
+ if (use19Lines)
   {
+   if (!UploadBuffers())
+    return;
+  }
    if (CopyBuffer(handleSmydMACD,1,0,1,signalBuffer) < 1)
     {
      PrintFormat("Не удалось прогрузить все буферы Error=%d",GetLastError());
      return;
     }   
-
    if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
      { 
-
       currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-      // получаем расстояния до ближайших уровней снизу и сверху
-      lenClosestUp   = GetClosestLevel(BUY);
-      lenClosestDown = GetClosestLevel(SELL);
-      stopLoss = CountStoploss(BUY);
-      // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
-      if (lenClosestUp == 0 || 
-          GreatDoubles(lenClosestUp, lenClosestDown*koLock) )
-         {
-          // то открываем позицию на BUY
-          pos_info.type = OP_BUY;
-          pos_info.sl = stopLoss;
-          if ( ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread) )
-           Comment("BUY OK");        
-         }
+      // если используется запрет на вход по 19 линиям
+      if (use19Lines)
+       {
+        // получаем расстояния до ближайших уровней снизу и сверху
+        lenClosestUp   = GetClosestLevel(BUY);
+        lenClosestDown = GetClosestLevel(SELL);
+        stopLoss = CountStoploss(BUY);
+        // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
+        if (lenClosestUp != 0 || 
+            GreatDoubles(lenClosestUp, lenClosestDown*koLock) )
+            {
+            // то открываем позицию на BUY
+            pos_info.type = OP_BUY;
+            pos_info.sl = stopLoss;
+            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);       
+            }
+       }
+      else
+       {
+            // то открываем позицию на BUY
+            pos_info.type = OP_BUY;
+            pos_info.sl = stopLoss;
+            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);           
+       }
      }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
      {     
-      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
-      // получаем расстояния до ближайших уровней снизу и сверху
-      lenClosestUp   = GetClosestLevel(BUY);
-      lenClosestDown = GetClosestLevel(SELL);      
-      stopLoss = CountStoploss(SELL);
-      // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
-      if (lenClosestDown == 0 ||
-          GreatDoubles(lenClosestDown, lenClosestUp*koLock) )
-         {    
-          // то открываем позицию на SELL
-          pos_info.type = OP_SELL;
-          pos_info.sl = stopLoss;
-          if (ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread) )
-           Comment("SELL OK");        
-         }
-     }
-   }  
+      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID); 
+      // если используется запрет по 19 линиям
+      if (use19Lines) 
+       {
+        // получаем расстояния до ближайших уровней снизу и сверху
+        lenClosestUp   = GetClosestLevel(BUY);
+        lenClosestDown = GetClosestLevel(SELL);      
+        stopLoss = CountStoploss(SELL);
+        // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
+        if (lenClosestDown == 0 ||
+            GreatDoubles(lenClosestDown, lenClosestUp*koLock) )
+           {    
+            // то открываем позицию на SELL
+            pos_info.type = OP_SELL;
+            pos_info.sl = stopLoss;
+            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);     
+           }
+       }
+      else
+       {
+            // то открываем позицию на SELL
+            pos_info.type = OP_SELL;
+            pos_info.sl = stopLoss;
+            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);          
+       }
+     }  
 }
 
 int CountStoploss(int point)
@@ -218,7 +256,7 @@ bool UploadBuffers ()   // получает последние значения уровней
   int indexPer;
   int indexBuff;
   int indexLines = 0;
-  for (indexPer=1;indexPer<5;indexPer++)
+  for (indexPer=0;indexPer<5;indexPer++)
    {
     for (indexBuff=0;indexBuff<2;indexBuff++)
      {
@@ -245,7 +283,7 @@ bool UploadBuffers ()   // получает последние значения уровней
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<8;index++)
+      for (index=0;index<10;index++)
        {
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
@@ -260,7 +298,7 @@ bool UploadBuffers ()   // получает последние значения уровней
        }
      break;
      case SELL: // ближний снизу
-      for (index=0;index<8;index++)
+      for (index=0;index<10;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
