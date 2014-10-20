@@ -168,14 +168,16 @@ int OnCalculate(const int rates_total,
               }
             // если расхождение на SELL и время минуса MACD последнего расхождения отличается от времени последнего минуса
             if (retCode == _Sell && divSellLastMinus != lastMinusMACD)
-              {                                          
+              {        
+               Comment("Получили сигнал SELL");                                  
                DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора    
                bufferDiv[lastBarIndex] = _Sell;    // сохраняем в буфер значение       
                divSellLastMinus = lastMinusMACD;     // сохраняем время последнего минуса MACD
               }
             // если расхождение на BUY и время плюса MACD последнего расхождения отличается от времени последнего плюса
             if (retCode == _Buy && divBuyLastPlus != lastPlusMACD)
-              {                                          
+              {   
+               Comment("Получили сигнал BUY");                                       
                DrawIndicator (time[lastBarIndex]);   // отображаем графические элементы индикатора     
                bufferDiv[lastBarIndex] = _Buy;    // сохраняем в буфер значение       
                divBuyLastPlus = lastPlusMACD;        // сохраняем время последнего плюса MACD
