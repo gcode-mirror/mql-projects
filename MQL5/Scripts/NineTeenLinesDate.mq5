@@ -12,12 +12,12 @@
 // подключаем необходимые библиотеки
 #include <NineTeenLines\CDrawLevel.mqh>
 // входные параметры скрипта
-input datetime date   = "";        // дата
-input bool     useH1  = true;      // использовать часовые уровни
-input bool     useH4  = true;      // использовать 4-х часовые уровни
-input bool     useD1  = true;      // использовать дневные уровни
-input bool     useW1  = true;      // использовать недельные уровни
-input bool     useMN1 = true;      // использовать мес€чные уровни
+input datetime date   = "";         // дата
+input bool     useH1  = true;       // использовать часовые уровни
+input bool     useH4  = false;      // использовать 4-х часовые уровни
+input bool     useD1  = false;      // использовать дневные уровни
+input bool     useW1  = false;      // использовать недельные уровни
+input bool     useMN1 = false;      // использовать мес€чные уровни
 // глобальные переменные скрипта
 int handle_19Lines;                // хэндл индикатора NineTeenLines
 // объекты класса уровней 
@@ -102,12 +102,12 @@ void OnStart()
     {
      // если удалось прогрузить дневные буферы
      if ( (CopyBuffer(handle_19Lines,16,date,1,priceD1_1) < 1 ) ||
-          (CopyBuffer(handle_19Lines,17,date,1,priceD1_2) < 1 ) ||
-          (CopyBuffer(handle_19Lines,18,date,1,priceD1_3) < 1 ) ||
-          (CopyBuffer(handle_19Lines,19,date,1,priceD1_4) < 1 ) ||
-          (CopyBuffer(handle_19Lines,20,date,1,atrD1_1) < 1 )   ||
-          (CopyBuffer(handle_19Lines,21,date,1,atrD1_2) < 1 )   ||
-          (CopyBuffer(handle_19Lines,22,date,1,atrD1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,17,date,1,atrD1_1) < 1 ) ||
+          (CopyBuffer(handle_19Lines,18,date,1,priceD1_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,19,date,1,atrD1_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,20,date,1,priceD1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,21,date,1,atrD1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,22,date,1,priceD1_4) < 1 )   ||
           (CopyBuffer(handle_19Lines,23,date,1,atrD1_4) < 1 )   )
         
         {
@@ -120,12 +120,12 @@ void OnStart()
     {
      // если удалось прогрузить часовые буферы
      if ( (CopyBuffer(handle_19Lines,32,date,1,priceH1_1) < 1 ) ||
-          (CopyBuffer(handle_19Lines,33,date,1,priceH1_2) < 1 ) ||
-          (CopyBuffer(handle_19Lines,34,date,1,priceH1_3) < 1 ) ||
-          (CopyBuffer(handle_19Lines,35,date,1,priceH1_4) < 1 ) ||
-          (CopyBuffer(handle_19Lines,36,date,1,atrH1_1) < 1 )   ||
-          (CopyBuffer(handle_19Lines,37,date,1,atrH1_2) < 1 )   ||
-          (CopyBuffer(handle_19Lines,38,date,1,atrH1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,33,date,1,atrH1_1) < 1 ) ||
+          (CopyBuffer(handle_19Lines,34,date,1,priceH1_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,35,date,1,atrH1_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,36,date,1,priceH1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,37,date,1,atrH1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,38,date,1,priceH1_4) < 1 )   ||
           (CopyBuffer(handle_19Lines,39,date,1,atrH1_4) < 1 )   )
         
         {
@@ -138,12 +138,12 @@ void OnStart()
     {
      // если удалось прогрузить 4-х часовые буферы
      if ( (CopyBuffer(handle_19Lines,24,date,1,priceH4_1) < 1 ) ||
-          (CopyBuffer(handle_19Lines,25,date,1,priceH4_2) < 1 ) ||
-          (CopyBuffer(handle_19Lines,26,date,1,priceH4_3) < 1 ) ||
-          (CopyBuffer(handle_19Lines,27,date,1,priceH4_4) < 1 ) ||
-          (CopyBuffer(handle_19Lines,28,date,1,atrH4_1) < 1 )   ||
-          (CopyBuffer(handle_19Lines,29,date,1,atrH4_2) < 1 )   ||
-          (CopyBuffer(handle_19Lines,30,date,1,atrH4_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,25,date,1,atrH4_1) < 1 ) ||
+          (CopyBuffer(handle_19Lines,26,date,1,priceH4_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,27,date,1,atrH4_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,28,date,1,priceH4_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,29,date,1,atrH4_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,30,date,1,priceH4_4) < 1 )   ||
           (CopyBuffer(handle_19Lines,31,date,1,atrH4_4) < 1 )   )
         
         {
@@ -156,12 +156,12 @@ void OnStart()
     {
      // если удалось прогрузить мес€чные буферы
      if ( (CopyBuffer(handle_19Lines,0,date,1,priceMN1_1) < 1 ) ||
-          (CopyBuffer(handle_19Lines,1,date,1,priceMN1_2) < 1 ) ||
-          (CopyBuffer(handle_19Lines,2,date,1,priceMN1_3) < 1 ) ||
-          (CopyBuffer(handle_19Lines,3,date,1,priceMN1_4) < 1 ) ||
-          (CopyBuffer(handle_19Lines,4,date,1,atrMN1_1) < 1 )   ||
-          (CopyBuffer(handle_19Lines,5,date,1,atrMN1_2) < 1 )   ||
-          (CopyBuffer(handle_19Lines,6,date,1,atrMN1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,1,date,1,atrMN1_1) < 1 ) ||
+          (CopyBuffer(handle_19Lines,2,date,1,priceMN1_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,3,date,1,atrMN1_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,4,date,1,priceMN1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,5,date,1,atrMN1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,6,date,1,priceMN1_4) < 1 )   ||
           (CopyBuffer(handle_19Lines,7,date,1,atrMN1_4) < 1 )   )
         
         {
@@ -174,12 +174,12 @@ void OnStart()
     {
      // если удалось прогрузить недельные буферы
      if ( (CopyBuffer(handle_19Lines,8,date,1,priceW1_1) < 1 ) ||
-          (CopyBuffer(handle_19Lines,9,date,1,priceW1_2) < 1 ) ||
-          (CopyBuffer(handle_19Lines,10,date,1,priceW1_3) < 1 ) ||
-          (CopyBuffer(handle_19Lines,11,date,1,priceW1_4) < 1 ) ||
-          (CopyBuffer(handle_19Lines,12,date,1,atrW1_1) < 1 )   ||
-          (CopyBuffer(handle_19Lines,13,date,1,atrW1_2) < 1 )   ||
-          (CopyBuffer(handle_19Lines,14,date,1,atrW1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,9,date,1,atrW1_1) < 1 ) ||
+          (CopyBuffer(handle_19Lines,10,date,1,priceW1_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,11,date,1,atrW1_2) < 1 ) ||
+          (CopyBuffer(handle_19Lines,12,date,1,priceW1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,13,date,1,atrW1_3) < 1 )   ||
+          (CopyBuffer(handle_19Lines,14,date,1,priceW1_4) < 1 )   ||
           (CopyBuffer(handle_19Lines,15,date,1,atrW1_4) < 1 )   )
         
         {
@@ -190,44 +190,34 @@ void OnStart()
    // если всЄ удалось прогрузить 
    if (useD1)            
     {
-     levelD1.SetLevel("D1_1",priceD1_1[0],atrD1_1[0],clrRed);
-     levelD1.SetLevel("D1_2",priceD1_2[0],atrD1_2[0],clrRed);
-     levelD1.SetLevel("D1_3",priceD1_3[0],atrD1_3[0],clrRed);
-     levelD1.SetLevel("D1_4",priceD1_4[0],atrD1_4[0],clrRed);               
+     levelD1.SetLevel("D1_1",priceD1_1[0],atrD1_1[0],clrYellow);
+     levelD1.SetLevel("D1_2",priceD1_2[0],atrD1_2[0],clrYellow);
+     levelD1.SetLevel("D1_3",priceD1_3[0],atrD1_3[0],clrYellow);
+     levelD1.SetLevel("D1_4",priceD1_4[0],atrD1_4[0],clrYellow);               
     }
    // если всЄ удалось прогрузить 
    if (useH1)            
     {
-     levelH1.SetLevel("H1_1",priceH1_1[0],atrH1_1[0],clrBlue);
-     levelH1.SetLevel("H1_2",priceH1_2[0],atrH1_2[0],clrBlue);
-     levelH1.SetLevel("H1_3",priceH1_3[0],atrH1_3[0],clrBlue);
-     levelH1.SetLevel("H1_4",priceH1_4[0],atrH1_4[0],clrBlue);  
-     Comment ( 
-               "priceH1_1 = ",DoubleToString(priceH1_1[0]),
-               "atrH1_1 = ",DoubleToString(atrH1_1[0]),   
-               "priceH1_2 = ",DoubleToString(priceH1_2[0]),
-               "atrH1_2 = ",DoubleToString(atrH1_2[0]),   
-               "priceH1_3 = ",DoubleToString(priceH1_3[0]),
-               "atrH1_3 = ",DoubleToString(atrH1_3[0]),   
-               "priceH1_4 = ",DoubleToString(priceH1_4[0]),
-               "atrH1_4 = ",DoubleToString(atrH1_4[0])                                                            
-             );             
+     levelH1.SetLevel("H1_1",priceH1_1[0],atrH1_1[0],clrAqua);
+     levelH1.SetLevel("H1_2",priceH1_2[0],atrH1_2[0],clrAqua);
+     levelH1.SetLevel("H1_3",priceH1_3[0],atrH1_3[0],clrAqua);
+     levelH1.SetLevel("H1_4",priceH1_4[0],atrH1_4[0],clrAqua);             
     }
    // если всЄ удалось прогрузить 
    if (useH4)            
     {
-     levelH4.SetLevel("H4_1",priceH4_1[0],atrH4_1[0],clrYellow);
-     levelH4.SetLevel("H4_2",priceH4_2[0],atrH4_2[0],clrYellow);
-     levelH4.SetLevel("H4_3",priceH4_3[0],atrH4_3[0],clrYellow);
-     levelH4.SetLevel("H4_4",priceH4_4[0],atrH4_4[0],clrYellow);               
+     levelH4.SetLevel("H4_1",priceH4_1[0],atrH4_1[0],clrBlue);
+     levelH4.SetLevel("H4_2",priceH4_2[0],atrH4_2[0],clrBlue);
+     levelH4.SetLevel("H4_3",priceH4_3[0],atrH4_3[0],clrBlue);
+     levelH4.SetLevel("H4_4",priceH4_4[0],atrH4_4[0],clrBlue);               
     }
    // если всЄ удалось прогрузить 
    if (useMN1)            
     {
-     levelMN1.SetLevel("MN1_1",priceMN1_1[0],atrMN1_1[0],clrGreen);
-     levelMN1.SetLevel("MN1_2",priceMN1_2[0],atrMN1_2[0],clrGreen);
-     levelMN1.SetLevel("MN1_3",priceMN1_3[0],atrMN1_3[0],clrGreen);
-     levelMN1.SetLevel("MN1_4",priceMN1_4[0],atrMN1_4[0],clrGreen);               
+     levelMN1.SetLevel("MN1_1",priceMN1_1[0],atrMN1_1[0],clrRed);
+     levelMN1.SetLevel("MN1_2",priceMN1_2[0],atrMN1_2[0],clrRed);
+     levelMN1.SetLevel("MN1_3",priceMN1_3[0],atrMN1_3[0],clrRed);
+     levelMN1.SetLevel("MN1_4",priceMN1_4[0],atrMN1_4[0],clrRed);               
     }
    // если всЄ удалось прогрузить 
    if (useW1)            
