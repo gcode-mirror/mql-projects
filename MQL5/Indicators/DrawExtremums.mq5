@@ -26,8 +26,7 @@
 input  ENUM_TIMEFRAMES period     = PERIOD_H4;   // период экстремумов
 input  int     history_depth      = 1000;        // сколько свечей показывать
 input  int     period_ATR         = 30;          // период ATR
-input  int     period_average_ATR = 30;          // период устреднения индикатора ATR
-input  int     codeSymbol         = 217;         // код символа
+input  int     period_average_ATR = 100;         // период устреднения индикатора ATR
 
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];                       // буфер верхних экстремумов
@@ -66,7 +65,6 @@ int OnInit()
    if(Bars(symbol, period) < depth) depth = Bars(symbol, period);
    PrintFormat("Глубина поиска равна: %d", depth);
    NewBarCurrent.SetPeriod(period);
-   ENUM_TIMEFRAMES per;
 
    handle_ATR = iMA(Symbol(), period, 100, 0, MODE_EMA, iATR(Symbol(), period, 30));
    if (handle_ATR == INVALID_HANDLE)
@@ -94,8 +92,8 @@ int OnInit()
    ArrayInitialize(ExtrNumberHigh,0);
    ArrayInitialize(ExtrNumberLow,0);
 
-   PlotIndexSetInteger(0, PLOT_ARROW, codeSymbol+1);
-   PlotIndexSetInteger(1, PLOT_ARROW, codeSymbol);
+   PlotIndexSetInteger(0, PLOT_ARROW, 218);
+   PlotIndexSetInteger(1, PLOT_ARROW, 217);
    
    ArraySetAsSeries( ExtUpArrowBuffer,    series_order);   
    ArraySetAsSeries( ExtDownArrowBuffer,  series_order);

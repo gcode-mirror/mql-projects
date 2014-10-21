@@ -43,7 +43,6 @@ class CBlowInfoFromExtremums
    int _historyDepth;           // глубина истории
    string _symbol;              // символ
    ENUM_TIMEFRAMES _period;     // период
-   int _symbolCode;             // код символа экстремума
   public:
   // методы класса
    int  GetExtrCountHigh() { return( int(_extrCountHigh[0]) ); };                              // возвращает количество экстремумов HIGH
@@ -56,7 +55,7 @@ class CBlowInfoFromExtremums
    ENUM_EXTR_USE GetPrevExtrType ();                                                           // возвращает тип формирующегося экстремума   
    string ShowExtrType (ENUM_EXTR_USE extr_use);                                               // отображает в виде строки тип экстремумов 
   // конструкторы и деструкторы
-  CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,int periodATR=30,int period_average_ATR=1,int symbolCode=217);
+  CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,int periodATR=30,int period_average_ATR=100);
  ~CBlowInfoFromExtremums ();
  };
  
@@ -262,13 +261,12 @@ class CBlowInfoFromExtremums
     }
    
 
-   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,int periodATR=30,int period_average_ATR=1,int symbolCode=217)   // конструктор класса 
+   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,int periodATR=30,int period_average_ATR=100)   // конструктор класса 
     {
      _historyDepth = historyDepth;
      _symbol       = symbol;
      _period       = period;
-     _symbolCode   = symbolCode;
-     _handleExtremums = iCustom(symbol,period,"DrawExtremums",period,historyDepth,periodATR,period_average_ATR,symbolCode);
+     _handleExtremums = iCustom(symbol,period,"DrawExtremums",period,historyDepth,periodATR,period_average_ATR);
     }
     
    CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса

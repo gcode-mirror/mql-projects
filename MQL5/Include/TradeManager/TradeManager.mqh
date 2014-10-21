@@ -406,6 +406,7 @@ bool CTradeManager::DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL)
   pos = _openPositions.At(i);   // выберем позицию по ее индексу
   if (pos.getPositionInfo().type == OP_BUY || pos.getPositionInfo().type == OP_SELL)
   {
+  PrintFormat("Trail Started. trailType = %s", GetNameTrailing(pos.getTrailingType()));
    switch(pos.getTrailingType())
    {
     case TRAILING_TYPE_USUAL :
@@ -415,6 +416,7 @@ bool CTradeManager::DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL)
      sl = _trailingStop.LosslessTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
      break;
     case TRAILING_TYPE_PBI :
+     Print("Trailing PBI");
      sl = _trailingStop.PBITrailing(pos.getType(), pos.getStopLossPrice(), pos.getHandlePBI());  
      break;
     case TRAILING_TYPE_EXTREMUMS :
