@@ -56,7 +56,7 @@ double lastRightExtr=0;                                                  // знач
 // буферы 
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора smydStochastic
 double dateRightExtr[];                                                  // буфер для получения времени прихода правого экстремума расхождения
-bufferLevel buffers[8];                                                  // буфер уровней
+bufferLevel buffers[10];                                                  // буфер уровней
 
 CChartObjectHLine  horLine;                                              // объект класса вертикальной линии
 int OnInit()
@@ -253,7 +253,7 @@ bool UploadBuffers ()   // получает последние значения уровней
   int indexPer;
   int indexBuff;
   int indexLines = 0;
-  for (indexPer=1;indexPer<5;indexPer++)
+  for (indexPer=0;indexPer<5;indexPer++)
    {
     for (indexBuff=0;indexBuff<2;indexBuff++)
      {
@@ -280,7 +280,7 @@ bool UploadBuffers ()   // получает последние значения уровней
    switch (direction)
     {
      case BUY:  // ближний сверху
-      for (index=0;index<8;index++)
+      for (index=0;index<10;index++)
        {
         // если уровень выше
         if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
@@ -295,7 +295,7 @@ bool UploadBuffers ()   // получает последние значения уровней
        }
      break;
      case SELL: // ближний снизу
-      for (index=0;index<8;index++)
+      for (index=0;index<10;index++)
        {
         // если уровень ниже
         if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
