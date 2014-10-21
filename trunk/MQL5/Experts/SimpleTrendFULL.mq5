@@ -163,10 +163,10 @@ int OnInit()
   // создаем объекты класса CisNewBar
   isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
   // создаем объекты класса CBlowInfoFromExtremums
-  blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,100,30,30,217);  // M1 
-  blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,100,30,30,217);  // M5 
-  blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,100,30,30,217); // M15 
-  blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,100,30,30,217);  // H1          
+  blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,100);  // M1 
+  blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,100);  // M5 
+  blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,100); // M15 
+  blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,100);  // H1          
   if (!blowInfo[0].IsInitFine())
      return (INIT_FAILED);
   curPriceAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);  

@@ -64,11 +64,11 @@ int OnInit()
  // если трейлинш по PBI
  if (trailingType == TRAILING_TYPE_PBI)
   {
-   handle_PBI = iCustom(_Symbol, _Period, "PriceBasedIndicator", 1000, 1, 1.5);
-   if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
-    {
-     Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
-    }
+ handle_PBI = iCustom(_Symbol, _Period, "PriceBasedIndicator", 1000, 1, 1.5);
+ if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
+  {
+   Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+  }
   }
   // если используется запрет на вход по 19 линиям
   if (use19Lines)
@@ -82,11 +82,11 @@ int OnInit()
                             "",true,0.25,
                             "",false
                            );       
-    if (handle_19Lines == INVALID_HANDLE)
-      {
-       Print("Не удалось получить хэндл NineteenLines");
+ if (handle_19Lines == INVALID_HANDLE)
+  {
+   Print("Не удалось получить хэндл NineteenLines");
       }
-   }  
+  }    
  // создаем хэндл индикатора ShowMeYourDivMACD
  handleSmydMACD = iCustom (_Symbol,_Period,"smydMACD");   
  if ( handleSmydMACD == INVALID_HANDLE )
@@ -100,9 +100,9 @@ int OnInit()
    pos_info.priceDifference = 0;
    trailing.trailingType = trailingType;
    trailing.minProfit    = minProfit;
-   trailing.trailingStop = trStop;
-   trailing.trailingStep = trStep;
-   trailing.handlePBI    = handle_PBI;
+     trailing.trailingStop = trStop;
+     trailing.trailingStep = trStep;
+     trailing.handlePBI    = handle_PBI;
  return(INIT_SUCCEEDED);
 }
 
@@ -114,21 +114,21 @@ void OnDeinit(const int reason)
  // удаляем индикаторы
  IndicatorRelease(handleSmydMACD);
  if (use19Lines)
-  IndicatorRelease(handle_19Lines);
+ IndicatorRelease(handle_19Lines);
  if (trailingType == TRAILING_TYPE_PBI)
-  IndicatorRelease(handle_PBI);
+ IndicatorRelease(handle_PBI);
 }
 
 void OnTick()
 {
  ctm.OnTick();
  if (trailingType!=TRAILING_TYPE_NONE)
-  ctm.DoTrailing();
+ ctm.DoTrailing();
  // если не удалось прогрузить буферы уровней
  if (use19Lines)
   {
-   if (!UploadBuffers())
-    return;
+ if (!UploadBuffers())
+  return;
   }
    if (CopyBuffer(handleSmydMACD,1,0,1,signalBuffer) < 1)
     {
@@ -141,46 +141,46 @@ void OnTick()
       // если используется запрет на вход по 19 линиям
       if (use19Lines)
        {
-        // получаем расстояния до ближайших уровней снизу и сверху
+      // получаем расстояния до ближайших уровней снизу и сверху
         lenClosestUp    = GetClosestLevel(BUY);
         lenClosestDown  = GetClosestLevel(SELL);
-        // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
+      // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
         if (lenClosestUp != 0 && 
             LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
-            {
+         {
              return;
-            }
-       }
-
-       // то открываем позицию на BUY
-       stopLoss        =  CountStoploss(BUY);       
-       pos_info.type   =  OP_BUY;
-       pos_info.sl     =  stopLoss;
-       ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);        
-     
+         }
      }
+
+            // то открываем позицию на BUY
+       stopLoss        =  CountStoploss(BUY);       
+            pos_info.type = OP_BUY;
+            pos_info.sl = stopLoss;
+            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);           
+     
+       }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
      {     
-      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID); 
+      currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);  
       // если используется запрет по 19 линиям
       if (use19Lines) 
        {
-        // получаем расстояния до ближайших уровней снизу и сверху
-        lenClosestUp   = GetClosestLevel(BUY);
-        lenClosestDown = GetClosestLevel(SELL);      
-        // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
+      // получаем расстояния до ближайших уровней снизу и сверху
+      lenClosestUp   = GetClosestLevel(BUY);
+      lenClosestDown = GetClosestLevel(SELL);      
+      // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
         if (lenClosestDown != 0 &&
             LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
-           {    
+         {    
             return;
-           }
-       }
-       // то открываем позицию на SELL
+         }
+     }
+            // то открываем позицию на SELL
        stopLoss        =  CountStoploss(SELL);       
-       pos_info.type   =  OP_SELL;
-       pos_info.sl     =  stopLoss;
-       ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread); 
-     }  
+            pos_info.type = OP_SELL;
+            pos_info.sl = stopLoss;
+            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);          
+   }  
 }
 
 int CountStoploss(int point)

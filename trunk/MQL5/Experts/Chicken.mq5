@@ -19,9 +19,11 @@
 input double volume = 0.1;
 input int    spread   = 30;         // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
+/*
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
+*/
 
 CTradeManager ctm;       //торговый класс
 CisNewBar *isNewBar;
@@ -48,9 +50,11 @@ int OnInit()
  pos_info.expiration = 0;
  
  trailing.trailingType = trailingType;
+ /*
  trailing.minProfit    = minProfit;
  trailing.trailingStop = trailingStop;
  trailing.trailingStep = trailingStep;
+ */
  trailing.handlePBI    = handle_pbi;
  return(INIT_SUCCEEDED);
 }
@@ -110,6 +114,12 @@ void OnTick()
     pos_info.type = OP_SELLSTOP;
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
+    if (trailingType == TRAILING_TYPE_USUAL || trailingType == TRAILING_TYPE_LOSSLESS)
+    {
+     trailing.minProfit = diff;
+     trailing.trailingStop = diff;
+     trailing.trailingStep = 5;
+    }
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
    
@@ -121,6 +131,12 @@ void OnTick()
     pos_info.type = OP_BUYSTOP;
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
+    if (trailingType == TRAILING_TYPE_USUAL || trailingType == TRAILING_TYPE_LOSSLESS)
+    {
+     trailing.minProfit = diff;
+     trailing.trailingStop = diff;
+     trailing.trailingStep = 5;
+    }
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
   }
