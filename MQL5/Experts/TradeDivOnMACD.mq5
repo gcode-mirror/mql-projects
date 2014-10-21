@@ -100,18 +100,9 @@ int OnInit()
    pos_info.priceDifference = 0;
    trailing.trailingType = trailingType;
    trailing.minProfit    = minProfit;
-   if (trailingType == TRAILING_TYPE_PBI)
-    {
-     trailing.trailingStop = trStop;
-     trailing.trailingStep = trStep;
-     trailing.handlePBI    = handle_PBI;
-    }
-   else
-    {
-     trailing.trailingStop = 0;
-     trailing.trailingStep = 0;
-     trailing.handlePBI    = 0;     
-    }
+   trailing.trailingStop = trStop;
+   trailing.trailingStep = trStep;
+   trailing.handlePBI    = handle_PBI;
  return(INIT_SUCCEEDED);
 }
 
@@ -151,26 +142,22 @@ void OnTick()
       if (use19Lines)
        {
         // получаем расстояния до ближайших уровней снизу и сверху
-        lenClosestUp   = GetClosestLevel(BUY);
-        lenClosestDown = GetClosestLevel(SELL);
-        stopLoss = CountStoploss(BUY);
+        lenClosestUp    = GetClosestLevel(BUY);
+        lenClosestDown  = GetClosestLevel(SELL);
         // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
-        if (lenClosestUp != 0 || 
-            GreatDoubles(lenClosestUp, lenClosestDown*koLock) )
+        if (lenClosestUp != 0 && 
+            LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
             {
-            // то открываем позицию на BUY
-            pos_info.type = OP_BUY;
-            pos_info.sl = stopLoss;
-            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);       
+             return;
             }
        }
-      else
-       {
-            // то открываем позицию на BUY
-            pos_info.type = OP_BUY;
-            pos_info.sl = stopLoss;
-            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);           
-       }
+
+       // то открываем позицию на BUY
+       stopLoss        =  CountStoploss(BUY);       
+       pos_info.type   =  OP_BUY;
+       pos_info.sl     =  stopLoss;
+       ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);        
+     
      }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
      {     
@@ -181,24 +168,18 @@ void OnTick()
         // получаем расстояния до ближайших уровней снизу и сверху
         lenClosestUp   = GetClosestLevel(BUY);
         lenClosestDown = GetClosestLevel(SELL);      
-        stopLoss = CountStoploss(SELL);
         // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
-        if (lenClosestDown == 0 ||
-            GreatDoubles(lenClosestDown, lenClosestUp*koLock) )
+        if (lenClosestDown != 0 &&
+            LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
            {    
-            // то открываем позицию на SELL
-            pos_info.type = OP_SELL;
-            pos_info.sl = stopLoss;
-            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);     
+            return;
            }
        }
-      else
-       {
-            // то открываем позицию на SELL
-            pos_info.type = OP_SELL;
-            pos_info.sl = stopLoss;
-            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);          
-       }
+       // то открываем позицию на SELL
+       stopLoss        =  CountStoploss(SELL);       
+       pos_info.type   =  OP_SELL;
+       pos_info.sl     =  stopLoss;
+       ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread); 
      }  
 }
 
