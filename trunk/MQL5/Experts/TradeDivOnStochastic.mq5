@@ -72,7 +72,15 @@ int OnInit()
  // если используются уровни для запрета на вход
  if (use19Lines)
   {
-   handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines");     
+   handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines",
+                            "",3,3,
+                            "","",true,0.1,
+                            "",true,0.15,
+                            "",true,0.25,
+                            "",true,0.25,
+                            "",true,0.25,
+                            "",false
+                           );     
    if (handle_19Lines == INVALID_HANDLE)
     {
      Print("Не удалось получить хэндл NineteenLines");
