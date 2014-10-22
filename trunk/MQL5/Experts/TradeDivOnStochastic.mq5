@@ -68,19 +68,12 @@ int OnInit()
  if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
   {
    Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+   return (INIT_FAILED);
   }
  // если используются уровни для запрета на вход
  if (use19Lines)
   {
-   handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines",
-                            "",3,3,
-                            "","",true,0.1,
-                            "",true,0.15,
-                            "",true,0.25,
-                            "",true,0.25,
-                            "",true,0.25,
-                            "",false
-                           );     
+   handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines");  
    if (handle_19Lines == INVALID_HANDLE)
     {
      Print("Не удалось получить хэндл NineteenLines");
