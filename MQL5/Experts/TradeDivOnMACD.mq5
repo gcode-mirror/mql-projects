@@ -15,11 +15,9 @@
 // константы сигналов
 #define BUY   1    
 #define SELL -1
-
 //+------------------------------------------------------------------+
 //| Эксперт, основанный на расхождении MACD                          |
-//+------------------------------------------------------------------+                                                                 
-   
+//+------------------------------------------------------------------+                                                                    
 // входные параметры
 sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
 input  double lot                                  = 0.1;                // Лот                
@@ -68,24 +66,18 @@ int OnInit()
  if(handle_PBI == INVALID_HANDLE)                                //проверяем наличие хендла индикатора
   {
    Print("Не удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
+   return(INIT_FAILED); 
   }
   }
   // если используется запрет на вход по 19 линиям
   if (use19Lines)
    {
-    handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines",
-                            "",3,3,
-                            "","",true,0.1,
-                            "",true,0.15,
-                            "",true,0.25,
-                            "",true,0.25,
-                            "",true,0.25,
-                            "",false
-                           );       
- if (handle_19Lines == INVALID_HANDLE)
-  {
-   Print("Не удалось получить хэндл NineteenLines");
-      }
+    handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines");       
+  if (handle_19Lines == INVALID_HANDLE)
+   {
+    Print("Не удалось получить хэндл NineteenLines");
+    return(INIT_FAILED);    
+   }
   }    
  // создаем хэндл индикатора ShowMeYourDivMACD
  handleSmydMACD = iCustom (_Symbol,_Period,"smydMACD");   
@@ -100,9 +92,9 @@ int OnInit()
    pos_info.priceDifference = 0;
    trailing.trailingType = trailingType;
    trailing.minProfit    = minProfit;
-     trailing.trailingStop = trStop;
-     trailing.trailingStep = trStep;
-     trailing.handlePBI    = handle_PBI;
+   trailing.trailingStop = trStop;
+   trailing.trailingStep = trStep;
+   trailing.handlePBI    = handle_PBI;
  return(INIT_SUCCEEDED);
 }
 
@@ -141,23 +133,21 @@ void OnTick()
       // если используется запрет на вход по 19 линиям
       if (use19Lines)
        {
-      // получаем расстояния до ближайших уровней снизу и сверху
+        // получаем расстояния до ближайших уровней снизу и сверху
         lenClosestUp    = GetClosestLevel(BUY);
         lenClosestDown  = GetClosestLevel(SELL);
-      // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
+        // если ближайший уровень сверху отсутствует, или дальше билжайшего уровня снизу
         if (lenClosestUp != 0 && 
             LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
-         {
-             return;
-         }
-     }
-
-            // то открываем позицию на BUY
-       stopLoss        =  CountStoploss(BUY);       
-            pos_info.type = OP_BUY;
-            pos_info.sl = stopLoss;
-            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);           
-     
+             {
+              return;
+             }
+       }
+        // то открываем позицию на BUY
+        stopLoss  =  CountStoploss(BUY);       
+        pos_info.type = OP_BUY;
+        pos_info.sl = stopLoss;
+        ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                
        }
    if ( signalBuffer[0] == SELL) // получили расхождение на продажу
      {     
@@ -171,15 +161,15 @@ void OnTick()
       // если ближайший уровень снизу отсутствует, или дальше ближайшего уровня сверху
         if (lenClosestDown != 0 &&
             LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
-         {    
-            return;
-         }
+             {    
+              return;
+             }
      }
-            // то открываем позицию на SELL
-       stopLoss        =  CountStoploss(SELL);       
-            pos_info.type = OP_SELL;
-            pos_info.sl = stopLoss;
-            ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);          
+      // то открываем позицию на SELL
+      stopLoss  =  CountStoploss(SELL);       
+      pos_info.type = OP_SELL;
+      pos_info.sl = stopLoss;
+      ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);          
    }  
 }
 
@@ -190,8 +180,7 @@ int CountStoploss(int point)
  double priceAB;
  double bufferStopLoss[];
  ArraySetAsSeries(bufferStopLoss, true);
- ArrayResize(bufferStopLoss, 1000);
- 
+ ArrayResize(bufferStopLoss, 1000); 
  int extrBufferNumber;
  if (point > 0)
  {
@@ -205,7 +194,6 @@ int CountStoploss(int point)
   priceAB = SymbolInfoDouble(_Symbol, SYMBOL_BID);
   direction = -1;
  }
- 
  int copiedPBI = -1;
  for(int attempts = 0; attempts < 25; attempts++)
  {
@@ -301,6 +289,4 @@ bool UploadBuffers ()   // получает последние значения уровней
       break;
    }
    return (len);
-  }
-  
-  
+  }  

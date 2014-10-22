@@ -463,7 +463,8 @@ void  ChangeTrailIndex()   // функция меняет индекс таймфрейма для трейлинга
    // если пробили экстремум на более старшем таймфрейме
    if (IsExtremumBeaten ( indexForTrail+1, openedPosition) )
    {
-    indexForTrail ++;  // то переходим на более старший таймфрейм
+    indexForTrail ++;       // то переходим на более старший таймфрейм
+    changeLotValid = false; // выставляем флаг возможности доливок в false
    }
   }
 }
