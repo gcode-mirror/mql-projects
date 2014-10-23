@@ -27,6 +27,7 @@ input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
+input int spread   = 30;
 input bool tradeOnTrend = false;
 input int fastMACDPeriod = 12;
 input int slowMACDPeriod = 26;
@@ -54,6 +55,8 @@ double globalMin;
 bool waitForSell;
 bool waitForBuy;
 
+SPositionInfo pos_info;
+STrailing trailing;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -72,8 +75,15 @@ int OnInit()
       {
        Print("Ошибка инициализации эксперат Condom. Не удалось создать хэндл PriceBasedIndicator");
        return (INIT_FAILED);        
-      }
-    }   
+      }      
+    }  
+   pos_info.volume       = lot;
+   pos_info.expiration   = 0;
+   trailing.trailingType = trailingType;
+   trailing.minProfit    = minProfit;
+   trailing.trailingStop = trailingStop;
+   trailing.trailingStep = trailingStep;     
+   trailing.handlePBI    = handlePBI; 
    if (useLimitOrders)
    {
     opBuy = OP_BUYLIMIT;
@@ -158,7 +168,6 @@ void OnTick()
      waitForSell = true;
     }
    }
-   
    if(!SymbolInfoTick(Symbol(),tick))
    {
     Alert("SymbolInfoTick() failed, error = ",GetLastError());
@@ -168,11 +177,11 @@ void OnTick()
    if (waitForBuy)
    { 
     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
-    {
-     if (trailingType == TRAILING_TYPE_PBI)
-      openPos = ctm.OpenUniquePosition(symbol, timeframe, opBuy, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, handlePBI, priceDifference);
-     else
-      openPos = ctm.OpenUniquePosition(symbol, timeframe, opBuy, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, priceDifference);
+    {  
+     pos_info.type = opBuy;
+     pos_info.sl = SL;
+     pos_info.priceDifference = priceDifference;       
+     openPos = ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread);
      if (openPos)
      {
       waitForBuy = false;
@@ -185,10 +194,10 @@ void OnTick()
    { 
     if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
     {
-     if (trailingType == TRAILING_TYPE_PBI)
-      openPos = ctm.OpenUniquePosition(symbol, timeframe, opSell, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep,handlePBI, priceDifference);     
-     else
-      openPos = ctm.OpenUniquePosition(symbol, timeframe, opSell, lot, SL, TP, trailingType, minProfit, trailingStop, trailingStep, priceDifference); 
+     pos_info.type = opSell;
+     pos_info.sl = SL;
+     pos_info.priceDifference = priceDifference;      
+     openPos = ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread); 
      if (openPos)
      {
       waitForBuy = false;
