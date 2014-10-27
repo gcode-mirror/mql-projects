@@ -43,7 +43,7 @@ input bool   useMultiFill=true;                    // использовать доливки при п
 input double lotStep  = 1;                         // размер шага увеличения лота
 input int    lotCount = 3;                         // количество доливок
 input string pbiParam = "";                        // Параметры PriceBasedIndicator
-input ENUM_PBI  usePBI=PBI_NO;                     // тип  использования PBI
+input ENUM_PBI  usePBI = PBI_NO;                   // тип  использования PBI
 input ENUM_TIMEFRAMES pbiPeriod = PERIOD_H1;       // период PBI
 input string lockParams="";                        // Параметры запретов на вход
 input bool useLinesLock=false;                     // флаг включения запрета на вход по индикатора NineTeenLines
@@ -61,7 +61,9 @@ int handlePBI_1;
 int handlePBI_2;
 int handlePBI_3;
 // хэндл индикатора NineTeenLines
-int handle_19Lines;                                // хэндл 19 Lines
+int handle_19Lines; 
+// хэндлы индикатора DrawExtremums
+int aHandleExtremums[4];
 // буферы для проверки пробития экстремумов
 int      countExtrHigh[4];                         // массив счетчиков экстремумов HIGH
 int      countExtrLow[4];                          // массив счетчиков экстремумов LOW
@@ -109,11 +111,11 @@ STrailing trailing;                                // параметры трейлинга
                            
 int OnInit()
  {     
-  // если мы используем PriceBasedIndicator для вычисления последнего тренда на выбраенном таймфрейме
+  // если мы используем PriceBasedIndicator для вычисления последнего тренда на выбранном таймфрейме
   if (usePBI == PBI_SELECTED)
   {
   // пытаемся инициализировать хэндл PriceBasedIndicator
-   handlePBI_1 = iCustom(_Symbol,pbiPeriod,"PriceBasedIndicator");   
+   handlePBI_1 = iCustom(_Symbol, pbiPeriod, "PriceBasedIndicator");   
    if ( handlePBI_1 == INVALID_HANDLE )
    {
     Print("Ошибка при иниализации эксперта SimpleTrend. Не удалось создать хэндл индикатора PriceBasedIndicator");
@@ -124,7 +126,7 @@ int OnInit()
    lastTrendPBI_2 = lastTrendPBI_1;
    lastTrendPBI_3 = lastTrendPBI_1;           
   }           
-  // исли используеются фиксированных таймфреймы
+  // если используеются фиксированные таймфреймы
   else if (usePBI == PBI_FIXED) 
   {
    // пытаемся инициализировать хэндл PriceBasedIndicator
@@ -162,13 +164,18 @@ int OnInit()
   ctm = new CTradeManager();  
   // создаем объекты класса CisNewBar
   isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
+  
+  aHandleExtremums[0] = iCustom(_Symbol, PERIOD_M1, "DrawExtremums");
+  aHandleExtremums[1] = iCustom(_Symbol, PERIOD_M5, "DrawExtremums");
+  aHandleExtremums[2] = iCustom(_Symbol, PERIOD_M15, "DrawExtremums");
+  aHandleExtremums[3] = iCustom(_Symbol, PERIOD_H1, "DrawExtremums");
+  
   // создаем объекты класса CBlowInfoFromExtremums
-  blowInfo[0]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M1,100);  // M1 
-  blowInfo[1]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M5,100);  // M5 
-  blowInfo[2]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_M15,100); // M15 
-  blowInfo[3]  = new CBlowInfoFromExtremums(_Symbol,PERIOD_H1,100);  // H1          
-  if (!blowInfo[0].IsInitFine())
-     return (INIT_FAILED);
+  for (int i = 0; i < 4; ++i)
+  {
+   blowInfo[i] = new CBlowInfoFromExtremums(aHandleExtremums[i]);  // M1 
+  }
+  
   curPriceAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);  
   curPriceBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);    
   lotReal = lot;
@@ -181,25 +188,37 @@ int OnInit()
   trailing.minProfit    = 0;
   trailing.trailingStop = 0;
   trailing.trailingStep = 0;
-  trailing.handlePBI    = 0;  
+  trailing.handlePBI    = 0; 
+  trailing.handleExtremums = 0; 
   
   return(INIT_SUCCEEDED);
  }
  
 void OnDeinit(const int reason)
-  {
-   ArrayFree(lastBarD1);
-   ArrayFree(pbiBuf);
-   // удаляем объекты классов
-   delete ctm;
-   delete isNewBar_D1;
-   delete blowInfo[0];
-   delete blowInfo[1];
-   delete blowInfo[2];
-   delete blowInfo[3]; 
-   // освобождаем хэндлы индикаторов 
-   IndicatorRelease(handle_19Lines);   
-  }
+{
+ ArrayFree(lastBarD1);
+ ArrayFree(pbiBuf);
+ // удаляем объекты классов
+ delete ctm;
+ delete isNewBar_D1;
+ delete blowInfo[0];
+ delete blowInfo[1];
+ delete blowInfo[2];
+ delete blowInfo[3]; 
+ // освобождаем хэндлы индикаторов 
+ if (usePBI == PBI_SELECTED) IndicatorRelease(handlePBI_1);  
+ if (usePBI == PBI_FIXED)
+ {
+  IndicatorRelease(handlePBI_1);  
+  IndicatorRelease(handlePBI_1);  
+  IndicatorRelease(handlePBI_1);  
+ }
+ if (useLinesLock) IndicatorRelease(handle_19Lines);   
+ for (int i = 0; i < 4; ++i)
+ {
+  IndicatorRelease(aHandleExtremums[i]);  
+ }
+}
 
 void OnTick()
 {     
@@ -208,7 +227,7 @@ void OnTick()
 
  ctm.OnTick(); 
  ctm.UpdateData();
- ctm.DoTrailing(blowInfo[indexForTrail]); 
+ ctm.DoTrailing(aHandleExtremums[indexForTrail]); 
 
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
@@ -231,27 +250,28 @@ void OnTick()
    return;
  } 
  // получаем новые значения счетчиков экстремумов
- for (int ind=0;ind<4;ind++)
+ for (int ind = 0; ind < 4; ind++)
+ {
+  countExtrHigh[ind] = blowInfo[ind].GetExtrCountHigh();   // получаем текущее значение счетчика экстремумов HIGH
+  countExtrLow[ind]  = blowInfo[ind].GetExtrCountLow();    // получаем текущее значение счетчика экстремумов LOW
+  // если счетчик экстремумов High обновился 
+  if (countExtrHigh[ind] != countLastExtrHigh[ind])
   {
-   countExtrHigh[ind] = blowInfo[ind].GetExtrCountHigh();   // получаем текущее значение счетчика экстремумов HIGH
-   countExtrLow[ind]  = blowInfo[ind].GetExtrCountLow();    // получаем текущее значение счетчика экстремумов LOW
-   // если счетчик экстремумов High обновился 
-   if (countExtrHigh[ind] != countLastExtrHigh[ind])
-    {
-     // обновляем значение счетчика
-     countLastExtrHigh[ind] = countExtrHigh[ind];
-     // выставляем флаг пробития экстремума в false
-     beatenExtrHigh[ind] = false; 
-    } 
-   // если счетчик экстремумов Low обновился
-   if (countExtrLow[ind] != countLastExtrLow[ind])
-    {
-     // обновляем значение счетчика
-     countLastExtrLow[ind] = countExtrLow[ind];
-     // выставляем флаг пробития экстремума в false
-     beatenExtrLow[ind] = false; 
-    }     
-  }
+   // обновляем значение счетчика
+   countLastExtrHigh[ind] = countExtrHigh[ind];
+   // выставляем флаг пробития экстремума в false
+   beatenExtrHigh[ind] = false; 
+  } 
+  // если счетчик экстремумов Low обновился
+  if (countExtrLow[ind] != countLastExtrLow[ind])
+  {
+   // обновляем значение счетчика
+   countLastExtrLow[ind] = countExtrLow[ind];
+   // выставляем флаг пробития экстремума в false
+   beatenExtrLow[ind] = false; 
+  }     
+ }
+ 
  // если используется PriceBasedIndicator с выбранным таймфреймом
  if (usePBI == PBI_SELECTED)
  {
@@ -292,9 +312,10 @@ void OnTick()
   firstLaunch = false;
   do
   {
-   copied = CopyRates(_Symbol,PERIOD_D1,0,2,lastBarD1);
+   copied = CopyRates(_Symbol, PERIOD_D1, 0, 2, lastBarD1);
    attempts++;
-   PrintFormat("attempts = %d, copied = %d", attempts, copied);
+   Sleep(111);
+   //PrintFormat("attempts = %d, copied = %d", attempts, copied);
   }
   while (copied < 2 && attempts < 5 && !IsStopped());
   
@@ -303,7 +324,12 @@ void OnTick()
    lastTendention = GetTendention(lastBarD1[0].open, lastBarD1[0].close);        // получаем предыдущую тенденцию 
    copied = 0;
    attempts = 0;
- }
+  }
+  else
+  {
+   firstLaunch = true;
+   return;
+  }
  }
  
  // если нет открытых позиций
@@ -455,18 +481,14 @@ bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой эк
  return (false);
 }
  
-void  ChangeTrailIndex()   // функция меняет индекс таймфрейма для трейлинга
+void ChangeTrailIndex()   // функция меняет индекс таймфрейма для трейлинга
 {
-  // трейлим стоп лосс
-  if (indexForTrail < 3)  // переходим на старший таймфрейм в случае, если сейчас не H1
-  {
-   // если пробили экстремум на более старшем таймфрейме
-   if (IsExtremumBeaten ( indexForTrail+1, openedPosition) )
-   {
-    indexForTrail ++;       // то переходим на более старший таймфрейм
+ // трейлим стоп лосс
+ while (indexForTrail < 3 && IsExtremumBeaten(indexForTrail+1, openedPosition))  // переходим на старший таймфрейм в случае, если сейчас не H1
+ {
+  indexForTrail++;  // то переходим на более старший таймфрейм
     changeLotValid = false; // выставляем флаг возможности доливок в false
-   }
-  }
+ }
 }
  
 int GetStopLoss()     // вычисляет стоп лосс
@@ -530,40 +552,39 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
  return(false);
 }
 
- int GetLastTrendDirection (int handle,ENUM_TIMEFRAMES period)   // возвращает true, если тендекция не противоречит последнему тренду на текущем таймфрейме
+int GetLastTrendDirection (int handle,ENUM_TIMEFRAMES period)   // возвращает true, если тендекция не противоречит последнему тренду на текущем таймфрейме
+{
+ int copiedPBI=-1;     // количество скопированных данных PriceBasedIndicator
+ int signTrend=-1;     // переменная для хранения знака последнего тренда
+ int index=1;          // индекс бара
+ int nBars;            // количество баров
+ 
+ ArraySetAsSeries(pbiBuf,true);
+ 
+ nBars = Bars(_Symbol,period);
+ 
+ for (int attempts=0;attempts<25;attempts++)
  {
-  int copiedPBI=-1;     // количество скопированных данных PriceBasedIndicator
-  int signTrend=-1;     // переменная для хранения знака последнего тренда
-  int index=1;          // индекс бара
-  int nBars;            // количество баров
-  
-  ArraySetAsSeries(pbiBuf,true);
-  
-  nBars = Bars(_Symbol,period);
-  
-  for (int attempts=0;attempts<25;attempts++)
-   {
-     copiedPBI = CopyBuffer(handle,4,1,nBars-1,pbiBuf);
-     //Sleep(100);
-   }
-  if (copiedPBI < (nBars-1))
-   {
-   // Comment("Не удалось скопировать все бары");
-    return (0);
-   }
-  for (index=0;index<nBars-1;index++)
-   {
-    signTrend = int(pbiBuf[index]);
-    // если найден последний тренд вверх
-    if (signTrend == 1 || signTrend == 2)
-     return (1);
-    // если найден последний тренд вниз
-    if (signTrend == 3 || signTrend == 4)
-     return (-1);
-   }
-  
+  copiedPBI = CopyBuffer(handle,4,1,nBars-1,pbiBuf);
+  //Sleep(100);
+ }
+ if (copiedPBI < (nBars-1))
+ {
+ // Comment("Не удалось скопировать все бары");
   return (0);
  }
+ for (index=0;index<nBars-1;index++)
+ {
+  signTrend = int(pbiBuf[index]);
+  // если найден последний тренд вверх
+  if (signTrend == 1 || signTrend == 2)
+   return (1);
+  // если найден последний тренд вниз
+  if (signTrend == 3 || signTrend == 4)
+   return (-1);
+ }
+ return (0);
+}
  
  int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndicator
   {

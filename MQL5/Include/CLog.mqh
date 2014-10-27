@@ -168,14 +168,14 @@ void CLog::Write(ENUM_LOGLEVEL level, string str)
 //+------------------------------------------------------------------+
 bool CLog::CreateLogFile(datetime dt)
 {
- int error = 0;
+ int err = 0;
  _current_filename = MakeLogFilename(dt);
  int filehandle=FileOpen(_current_filename,FILE_WRITE|FILE_TXT|FILE_COMMON);
  
  if(filehandle==INVALID_HANDLE)
  {
-  error=::GetLastError();
-  Print(__FUNCTION__, " Не удалось создать log-файл с именем : ", _current_filename," Ошибка ",error, ".");
+  err=::GetLastError();
+  Print(__FUNCTION__, " Не удалось создать log-файл с именем : ", _current_filename," Ошибка ",err, ".");
   return(false);
  }
  

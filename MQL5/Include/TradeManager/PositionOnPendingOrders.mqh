@@ -10,6 +10,7 @@
 #include "TradeManagerConfig.mqh"
 #include "TradeManagerEnums.mqh"
 #include "CTMTradeFunctions.mqh" //подключаем библиотеку для совершения торговых операций
+#include <TrailingStop\TrailingStop.mqh>
 #include <GlobalVariable.mqh>
 #include <StringUtilities.mqh>
 #include <CompareDoubles.mqh>
@@ -22,6 +23,7 @@ class CPosition : public CObject
 private:
    CSymbolInfo SymbInfo;
    CTMTradeFunctions *trade;
+   CTrailingStop *trailingStop;
    CConfig config;
    SPositionInfo _pos_info;
    STrailing _trailing;
@@ -60,6 +62,7 @@ public:
    {
     //Print("Конструктор по умолчанию");
     trade = new CTMTradeFunctions();
+    trailingStop = new CTrailingStop();
     _pos_status = POSITION_STATUS_NOT_INITIALISED;
     _sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
    };  
@@ -105,20 +108,22 @@ public:
    double   getVolume()            {return(_pos_info.volume);};
    
 // SET
-   void     setMagic(ulong magic) {_magic = magic;};
-   void     setPositionStatus(ENUM_POSITION_STATUS status) {_pos_status = status;};
-   void     setStopLossStatus(ENUM_STOPLEVEL_STATUS status) {_sl_status = status;};
+   void setMagic(ulong magic) {_magic = magic;};
+   void setPositionStatus(ENUM_POSITION_STATUS status) {_pos_status = status;};
+   void setStopLossStatus(ENUM_STOPLEVEL_STATUS status) {_sl_status = status;};
    ENUM_STOPLEVEL_STATUS setStopLoss();
    ENUM_STOPLEVEL_STATUS setTakeProfit();
-   void     setType(ENUM_TM_POSITION_TYPE type) {_pos_info.type = type;};
-   void     setVolume(double lots) {_pos_info.volume = lots;}; 
+   void setTrailingHandle(int handle) {_trailing.handleExtremums = handle;};    
+   void setType(ENUM_TM_POSITION_TYPE type) {_pos_info.type = type;};
+   void setVolume(double lots) {_pos_info.volume = lots;}; 
  
    bool     ChangeSize(double lot);
    ENUM_STOPLEVEL_STATUS ChangeStopLossVolume();   
    bool     CheckTakeProfit();
    bool     ClosePosition();
+   void     DoTrailing();
    bool     isMinProfit();
-   bool     ModifyPosition(double sl, int tp); //tp - не работате
+   bool     ModifyPosition(double sl, double tp); //tp - не работате
    ulong    NewTicket();
    ENUM_POSITION_STATUS OpenPosition();
    double   OpenPriceByType(ENUM_TM_POSITION_TYPE type);     // вычисляет уровень открытия в зависимости от типа 
@@ -219,7 +224,7 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
        else if ((exp&SYMBOL_EXPIRATION_SPECIFIED_DAY)==SYMBOL_EXPIRATION_SPECIFIED_DAY)
             {
              _type_time = ORDER_TIME_SPECIFIED_DAY;
-             _pos_info.expiration_time = SymbolInfoInteger(symbol, SYMBOL_EXPIRATION_TIME) - PeriodSeconds(PERIOD_M1);
+             _pos_info.expiration_time = (datetime)SymbolInfoInteger(symbol, SYMBOL_EXPIRATION_TIME) - PeriodSeconds(PERIOD_M1);
             }
             else 
             {
@@ -321,8 +326,7 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
   {
    _slTicket = trade.ResultOrder();
    _sl_status = STOPLEVEL_STATUS_PLACED;
-   OrderSelect(_slTicket);
-   log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d c ценой %0.6f, время экспирации %s, тип времени истечения %s", MakeFunctionPrefix(__FUNCTION__), _slTicket, _slPrice, TimeToString(OrderGetInteger(ORDER_TIME_EXPIRATION), TIME_DATE), EnumToString((ENUM_ORDER_TYPE_TIME)OrderGetInteger(ORDER_TYPE_TIME))));     
+   if (OrderSelect(_slTicket)) log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d c ценой %0.6f, время экспирации %s, тип времени истечения %s", MakeFunctionPrefix(__FUNCTION__), _slTicket, _slPrice, TimeToString(OrderGetInteger(ORDER_TIME_EXPIRATION), TIME_DATE), EnumToString((ENUM_ORDER_TYPE_TIME)OrderGetInteger(ORDER_TYPE_TIME))));     
   }
   else
   {
@@ -523,6 +527,31 @@ bool CPosition::ClosePosition()
       && _sl_status != STOPLEVEL_STATUS_NOT_DELETED);
 }
 
+void CPosition::DoTrailing()
+{
+ double sl = 0;
+ switch(_trailing.trailingType)
+ {
+  case TRAILING_TYPE_USUAL :
+   sl =  trailingStop.UsualTrailing(_symbol, _pos_info.type, _posAveragePrice, _slPrice, _trailing.minProfit, _trailing.trailingStop, _trailing.trailingStep);  
+   break;
+  case TRAILING_TYPE_LOSSLESS :
+   sl = trailingStop.LosslessTrailing(_symbol, _pos_info.type, _posAveragePrice, _slPrice, _trailing.minProfit, _trailing.trailingStop, _trailing.trailingStep);  
+   break;
+  case TRAILING_TYPE_PBI :
+   sl = trailingStop.PBITrailing(_symbol, _pos_info.type, _slPrice, _trailing.handlePBI, _trailing.minProfit);  
+   break;
+  case TRAILING_TYPE_EXTREMUMS :
+   sl = trailingStop.ExtremumsTrailing(_symbol, _pos_info.type, _slPrice, _posAveragePrice, _trailing.handleExtremums);
+   break;
+  case TRAILING_TYPE_NONE :
+  default:
+   break;
+ }
+ if (sl > 0) this.ModifyPosition(sl, 0);
+}
+
+
 //+------------------------------------------------------------------+
 //|Получение информации о достижении минимального профита            |
 //+------------------------------------------------------------------+
@@ -544,7 +573,7 @@ bool CPosition::isMinProfit(void)
 //+------------------------------------------------------------------+
 //| EMPTY
 //+------------------------------------------------------------------+
-bool CPosition::ModifyPosition(double sl, int tp)
+bool CPosition::ModifyPosition(double sl, double tp)
 {
  //PrintFormat("Изменяем стоп-лосс");
   //если позиция реальная, то меняем отложенный ордер sl
@@ -732,10 +761,10 @@ bool CPosition::ReadFromFile(int  handle)
   _slType          = StringToOrderType(FileReadString(handle));                   //считываем тип стоп лосса
  // Alert("> STOP LOSS PRICE = ",_slPrice);    
   if(FileIsEnding(handle)) return false;    
-  _pos_info.sl     = StringToInteger(FileReadString(handle));                     //считываем стоп лосс
+  _pos_info.sl     = (int)StringToInteger(FileReadString(handle));                     //считываем стоп лосс
  // Alert("> STOP LOSS = ",_pos_info.sl); 
   if(FileIsEnding(handle)) return false;    
-  _pos_info.tp     = StringToInteger(FileReadString(handle));                     //считываем тейк профит
+  _pos_info.tp     = (int)StringToInteger(FileReadString(handle));                     //считываем тейк профит
  // Alert("> TAKE PROFIT = ",_pos_info.tp);
   if(FileIsEnding(handle)) return false;  
   _tpPrice         = StringToDouble(FileReadString(handle));                      //считываем цену тейк профита
@@ -744,13 +773,13 @@ bool CPosition::ReadFromFile(int  handle)
   _trailing.trailingType = StringToTrailingType(FileReadString(handle));          //считываем тип трейлинга
  // Alert("> Trailing type = ",_trailing.trailingType);
   if(FileIsEnding(handle)) return false;    
-  _trailing.minProfit    = StringToInteger(FileReadString(handle));               //Мин профит
+  _trailing.minProfit    = (int)StringToInteger(FileReadString(handle));               //Мин профит
  // Alert("> MIN PROFIT = ",_trailing.minProfit);  
   if(FileIsEnding(handle)) return false;    
-  _trailing.trailingStop = StringToInteger(FileReadString(handle));               //Трейлинг стоп
+  _trailing.trailingStop = (int)StringToInteger(FileReadString(handle));               //Трейлинг стоп
  // Alert("> TRAILING STOP = ",_trailing.trailingStop); 
   if(FileIsEnding(handle)) return false;    
-  _trailing.trailingStep = StringToInteger(FileReadString(handle));               //Трейлинг степ
+  _trailing.trailingStep = (int)StringToInteger(FileReadString(handle));               //Трейлинг степ
  // Alert("> TRAILING STEP = ",_trailing.trailingStep); 
   if(FileIsEnding(handle)) return false;    
   _posOpenPrice    = StringToDouble(FileReadString(handle));                      //цена открытия позиции
@@ -768,7 +797,7 @@ bool CPosition::ReadFromFile(int  handle)
   _posAveragePrice = StringToDouble(FileReadString(handle));                      //средняя цена позиции
  // Alert("> POS AVERAGE PRICE = ",_posAveragePrice);
  if(FileIsEnding(handle)) return false;    
-  _pos_info.priceDifference = StringToInteger(FileReadString(handle));            //разница между позицией и отложенником
+  _pos_info.priceDifference = (int)StringToInteger(FileReadString(handle));            //разница между позицией и отложенником
  // Alert("> POS PRICE DIFFERENCE = ",_pos_info.priceDifference); 
                                 //пропуск пустого символа                                  
   return true;
@@ -989,7 +1018,7 @@ ENUM_TM_POSITION_TYPE CPosition::getOppositeType(ENUM_TM_POSITION_TYPE type)
 //+------------------------------------------------------------------+
 ENUM_ORDER_TYPE CPosition::SLOrderType(int type)
 {
- ENUM_ORDER_TYPE res;
+ ENUM_ORDER_TYPE res = -1;
  if(type == 0 || type == 2 || type == 4) res = ORDER_TYPE_SELL_STOP; // Buy
  if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_STOP;  // Sell
  return(res);
@@ -1000,7 +1029,7 @@ ENUM_ORDER_TYPE CPosition::SLOrderType(int type)
 //+------------------------------------------------------------------+
 ENUM_ORDER_TYPE CPosition::TPOrderType(int type)
 {
- ENUM_ORDER_TYPE res;
+ ENUM_ORDER_TYPE res = -1;
  if(type == 0 || type == 2 || type == 4) res = ORDER_TYPE_SELL_LIMIT; // Buy
  if(type == 1 || type == 3 || type == 5) res = ORDER_TYPE_BUY_LIMIT;  // Sell
  return(res);
@@ -1011,7 +1040,7 @@ ENUM_ORDER_TYPE CPosition::TPOrderType(int type)
 //+------------------------------------------------------------------+
 ENUM_POSITION_TYPE CPosition::PositionType(int type)
 {
- ENUM_POSITION_TYPE res;
+ ENUM_POSITION_TYPE res = -1;
  if(type == 0) res = POSITION_TYPE_BUY;
  if(type == 1) res = POSITION_TYPE_SELL;
  return(res);
@@ -1022,7 +1051,7 @@ ENUM_POSITION_TYPE CPosition::PositionType(int type)
 //+------------------------------------------------------------------+
 ENUM_ORDER_TYPE CPosition::OrderType(int type)
 {
- ENUM_ORDER_TYPE res;
+ ENUM_ORDER_TYPE res = -1;
  switch (type)
  {
   case OP_BUYLIMIT:

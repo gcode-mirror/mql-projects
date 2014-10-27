@@ -12,7 +12,6 @@
 #include "PositionArray.mqh"
 #include <Trade\PositionInfo.mqh>
 #include <Trade\SymbolInfo.mqh>
-#include <TrailingStop\TrailingStop.mqh>
 #include <CompareDoubles.mqh>
 #include <CLog.mqh>
 #include <BlowInfoFromExtremums.mqh>
@@ -29,7 +28,6 @@ private:
   double _max_drawdown;       // максимально допустимая просадка
   double _max_balance;        // максимальный баланс
   CPosition *_SelectedPosition;
-  CTrailingStop *_trailingStop;
   
   bool   _historyChanged;     // флаг изменения истории
 
@@ -75,7 +73,7 @@ public:
   bool ClosePosition(string symbol, color Color=CLR_NONE);    // Закртыие позиции по символу
   bool ClosePosition(long ticket, color Color = CLR_NONE);    // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);          // Закрытие позиции по индексу в массиве позиций
-  bool DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL);     // Вызов трейла
+  void DoTrailing(int handleExtr = 0);     // Вызов трейла
   bool isMinProfit();
   bool isMinProfit(string symbol);
   bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменения истории 
@@ -97,7 +95,6 @@ void CTradeManager::CTradeManager():
                     _useSound(true), 
                     _nameFileSound("expert.wav") 
 {
- _trailingStop = new CTrailingStop();
  _positionsToReProcessing = new CPositionArray();
  _openPositions           = new CPositionArray();
  _positionsHistory        = new CPositionArray();
@@ -133,7 +130,6 @@ void CTradeManager::~CTradeManager(void)
   attempts++;
  }
  
- delete _trailingStop;
  delete _positionsToReProcessing;
  delete _openPositions;
  delete _positionsHistory;
@@ -395,10 +391,9 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  return(false);
 }
 
-bool CTradeManager::DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL)
+void CTradeManager::DoTrailing(int handleExtr = 0)
 {
  int total = _openPositions.Total();
- double sl = 0;
  CPosition *pos;
 //--- по массиву открытых позиций
  for(int i = total - 1; i >= 0; i--) 
@@ -406,30 +401,10 @@ bool CTradeManager::DoTrailing(CBlowInfoFromExtremums *blowInfo=NULL)
   pos = _openPositions.At(i);   // выберем позицию по ее индексу
   if (pos.getPositionInfo().type == OP_BUY || pos.getPositionInfo().type == OP_SELL)
   {
-  PrintFormat("Trail Started. trailType = %s", GetNameTrailing(pos.getTrailingType()));
-   switch(pos.getTrailingType())
-   {
-    case TRAILING_TYPE_USUAL :
-     sl =  _trailingStop.UsualTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
-     break;
-    case TRAILING_TYPE_LOSSLESS :
-     sl = _trailingStop.LosslessTrailing(pos.getSymbol(), pos.getType(), pos.getPositionPrice(), pos.getStopLossPrice(), pos.getMinProfit(), pos.getTrailingStop(), pos.getTrailingStep());  
-     break;
-    case TRAILING_TYPE_PBI :
-     Print("Trailing PBI");
-     sl = _trailingStop.PBITrailing(pos.getType(), pos.getStopLossPrice(), pos.getHandlePBI());  
-     break;
-    case TRAILING_TYPE_EXTREMUMS :
-     if (blowInfo != NULL) sl = _trailingStop.ExtremumsTrailing(pos.getSymbol(), pos.getType(), pos.getStopLossPrice(), pos.getPositionPrice(),blowInfo);
-     break;
-    case TRAILING_TYPE_NONE :
-    default:
-     break;
-   }
+   if(pos.getTrailingType() == TRAILING_TYPE_EXTREMUMS) pos.setTrailingHandle(handleExtr);
+   pos.DoTrailing();
   }
-  if (sl > 0) pos.ModifyPosition(sl, 0);
  }
- return (true);
 }
 
 //+------------------------------------------------------------------+
@@ -583,7 +558,7 @@ void CTradeManager::OnTick()
   {
    if (!OrderSelect(pos.getOrderTicket())) // Если мы не можем выбрать ее по тикету
    {
-    long ticket = pos.getOrderTicket();
+    ulong ticket = pos.getOrderTicket();
     if(!FindHistoryTicket(ticket))            // Попробуем найти этот тикет в истории
     {
      log_file.Write(LOG_DEBUG, StringFormat("%s В массиве историй не найден ордер с тикетом %d", MakeFunctionPrefix(__FUNCTION__), ticket));

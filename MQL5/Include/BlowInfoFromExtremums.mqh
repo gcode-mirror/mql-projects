@@ -41,21 +41,19 @@ class CBlowInfoFromExtremums
    // приватные поля класса
    int _handleExtremums;        // хэндл индикатора DrawExtremums   
    int _historyDepth;           // глубина истории
-   string _symbol;              // символ
-   ENUM_TIMEFRAMES _period;     // период
   public:
   // методы класса
    int  GetExtrCountHigh() { return( int(_extrCountHigh[0]) ); };                              // возвращает количество экстремумов HIGH
    int  GetExtrCountLow()  { return ( int(_extrCountLow[0]) ); };                              // возвращает количество экстремумов LOW
    bool IsInitFine ();                                                                         // проверяет, хорошо ли проиницилизирован объект   
-   bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime start_time=0,int historyDepth=1000); // функция обновляет экстремумы по времени
-   bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_pos=0,int historyDepth=1000);       // функция обновляет экстремумы по индексу
+   bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime start_time=0,int historyDepth = 1000); // функция обновляет экстремумы по времени
+   bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_pos=0,int historyDepth = 1000);       // функция обновляет экстремумы по индексу
    Extr GetExtrByIndex (ENUM_EXTR_USE extr_use,int extr_index);                                // возвращает значение экстремума по индексу
    ENUM_EXTR_USE GetLastExtrType ();                                                           // возвращает тип последнего экстремума
    ENUM_EXTR_USE GetPrevExtrType ();                                                           // возвращает тип формирующегося экстремума   
    string ShowExtrType (ENUM_EXTR_USE extr_use);                                               // отображает в виде строки тип экстремумов 
   // конструкторы и деструкторы
-  CBlowInfoFromExtremums (string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,int periodATR=30,int period_average_ATR=100);
+  CBlowInfoFromExtremums (int handleExtremums, int historyDepth = 1000);
  ~CBlowInfoFromExtremums ();
  };
  
@@ -74,29 +72,29 @@ class CBlowInfoFromExtremums
  
  bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime start_time=0,int historyDepth=1000)       // обновляет данные экстремумов
   {
-   int copiedHigh     = historyDepth;
-   int copiedLow      = historyDepth;
-   _historyDepth = historyDepth;
+   int copiedHigh = historyDepth;
+   int copiedLow  = historyDepth;
+   _historyDepth  = historyDepth;
     if (extr_use == EXTR_NO)
      return (false);
       if ( CopyBuffer(_handleExtremums,2,0,1,_lastExtrSignal) < 1 )
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);       
        }
       if ( CopyBuffer(_handleExtremums,3,0,1,_prevExtrSignal) < 1 )
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);       
        }       
       if ( CopyBuffer(_handleExtremums,4,0,1,_extrCountHigh) < 1 )
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);           
        }
       if ( CopyBuffer(_handleExtremums,5,0,1,_extrCountLow) < 1 )
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);           
        }       
       for (int attempts = 0; attempts < 25; attempts ++)
@@ -113,7 +111,7 @@ class CBlowInfoFromExtremums
       if ( copiedHigh != historyDepth || copiedLow != historyDepth )
        {
      //   Print("Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums ",PeriodToString(_period));
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);
        }
        
@@ -130,22 +128,22 @@ class CBlowInfoFromExtremums
      return (false);
       if ( CopyBuffer(_handleExtremums,2,0,1,_lastExtrSignal) < 1 )
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);       
        }
       if ( CopyBuffer(_handleExtremums,3,0,1,_prevExtrSignal) < 1 )
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);       
        }         
       if ( CopyBuffer(_handleExtremums,4,0,1,_extrCountHigh) < 1 )
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);           
        }   
       if ( CopyBuffer(_handleExtremums,5,0,1,_extrCountLow) < 1 )
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);           
        }              
       for (int attempts = 0; attempts < 25; attempts ++)
@@ -161,7 +159,7 @@ class CBlowInfoFromExtremums
        }
       if ( copiedHigh != historyDepth || copiedLow != historyDepth )
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
         return (false);
        }
        
@@ -182,37 +180,34 @@ class CBlowInfoFromExtremums
       {
        // если в буфере найден экстремум
        if ( _extrBufferHigh[index] != 0 )
+       {
+        countExtr ++;  
+        // если нашли экстремум по индексу 
+        if (countExtr == extr_index)
         {
-          countExtr ++;  
-          // если нашли экстремум по индексу 
-          if (countExtr == extr_index)
-           {
-            
-            extr.price = _extrBufferHigh[index];
-            //return (extr); 
-           }
+         extr.price = _extrBufferHigh[index];
         }
+       }
       }
      }
     else if (extr_use == EXTR_LOW)
-     {
+    {
      // проходим по всему буферу
      for (index=_historyDepth-1;index>0;index--)
+     {
+      // если в буфере найден экстремум
+      if ( _extrBufferLow[index] != 0 )
       {
-       // если в буфере найден экстремум
-       if ( _extrBufferLow[index] != 0 )
-        {
-          countExtr ++;  
-          // если нашли экстремум по индексу 
-          if (countExtr == extr_index)
-           {
-            extr.price = _extrBufferLow[index];
-            return (extr); 
-           }
-        }
-      }      
-     }
-     
+       countExtr ++;  
+       // если нашли экстремум по индексу 
+       if (countExtr == extr_index)
+       {
+        extr.price = _extrBufferLow[index];
+        return (extr); 
+       }
+      }
+     }      
+    }
    return (extr);
   }  
    
@@ -248,10 +243,10 @@ class CBlowInfoFromExtremums
         return "Оба типа экстремумов";
        break;
        case EXTR_HIGH:
-        return "Высокие экстремумы";
+        return "Верхние экстремумы";
        break;
        case EXTR_LOW:
-        return "Низкие экстремумы";
+        return "Нижние экстремумы";
        break;
        case EXTR_NO:
         return "Нет эксремумов";
@@ -261,12 +256,10 @@ class CBlowInfoFromExtremums
     }
    
 
-   CBlowInfoFromExtremums::CBlowInfoFromExtremums(string symbol,ENUM_TIMEFRAMES period,int historyDepth=1000,int periodATR=30,int period_average_ATR=100)   // конструктор класса 
+   CBlowInfoFromExtremums::CBlowInfoFromExtremums(int handleExtremums, int historyDepth = 1000)   // конструктор класса 
     {
      _historyDepth = historyDepth;
-     _symbol       = symbol;
-     _period       = period;
-     _handleExtremums = iCustom(symbol,period,"DrawExtremums",period,historyDepth,periodATR,period_average_ATR);
+     _handleExtremums = handleExtremums;
     }
     
    CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
