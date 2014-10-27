@@ -55,7 +55,7 @@ int OnInit()
  trailing.trailingStop = trailingStop;
  trailing.trailingStep = trailingStep;
  */
- trailing.handlePBI    = handle_pbi;
+ trailing.handlePBI = handle_pbi;
  return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+

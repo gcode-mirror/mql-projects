@@ -21,13 +21,6 @@
 #include <CLog.mqh>
 #include <StringUtilities.mqh>
 //----------------------------------------------------------------
- 
-//--- input параметры
-input  ENUM_TIMEFRAMES period     = PERIOD_H4;   // период экстремумов
-input  int     history_depth      = 1000;        // сколько свечей показывать
-input  int     period_ATR         = 30;          // период ATR
-input  int     period_average_ATR = 100;         // период устреднения индикатора ATR
-
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];                       // буфер верхних экстремумов
 double ExtDownArrowBuffer[];                     // буфер нижних экстремумов
@@ -42,7 +35,7 @@ int jumper        = 0;                           // переменная-попрыгун. ня ^_^
 int prevJumper    = 0;                           // предыдущее значение переменной-попгрыгуна, и опять таки 
 int countExtrHigh = 0;                           // счетчик экстремумов HIGH
 int countExtrLow  = 0;                           // счетчки экстремумов LOW
-
+int history_depth = 0;
 double lastExtrUpValue;                          // значение последнего экстремума
 double lastExtrDownValue;                        // значение последнего экстемума   
 
@@ -53,7 +46,6 @@ int handle_ATR;
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 ENUM_TIMEFRAMES tf_ATR = PERIOD_H4; // таймфрейм ATR
-int depth = history_depth;
 bool series_order = true;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -62,20 +54,19 @@ int OnInit()
   {
    PrintFormat("%s Init", __FUNCTION__);
    symbol = Symbol();
-   if(Bars(symbol, period) < depth) depth = Bars(symbol, period);
-   PrintFormat("Глубина поиска равна: %d", depth);
-   NewBarCurrent.SetPeriod(period);
+   //if(Bars(symbol, _Period) < history_depth)
+   history_depth = Bars(symbol, _Period);
+   PrintFormat("Глубина поиска равна: %d", history_depth);
+   NewBarCurrent.SetPeriod(_Period);
 
-   handle_ATR = iMA(Symbol(), period, 100, 0, MODE_EMA, iATR(Symbol(), period, 30));
+   handle_ATR = iMA(Symbol(), _Period, 100, 0, MODE_EMA, iATR(Symbol(), _Period, 30));
    if (handle_ATR == INVALID_HANDLE)
     {
      Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать хэндл индикатора AverageATR");
      return (INIT_FAILED);
     }      
     
-   extr = new CExtremum(Symbol(), Period(),handle_ATR/*, per, period_ATR, percentage_ATR*/);
- //  handle_ATR = iCustom(Symbol(), per,"AverageATR",
- //  handle_ATR = iATR(Symbol(), per, period_ATR);
+   extr = new CExtremum(_Symbol, _Period, handle_ATR);
 
 //--- indicator buffers mapping
    SetIndexBuffer(0, ExtUpArrowBuffer, INDICATOR_DATA);
@@ -150,9 +141,9 @@ int OnCalculate(const int rates_total,
    ArrayInitialize(ExtUpArrowBuffer   , 0);
    ArrayInitialize(ExtDownArrowBuffer , 0);
 
-   NewBarCurrent.isNewBar(time[depth-1]);
+   NewBarCurrent.isNewBar(time[history_depth-1]);
    
-   for(int i = depth-1; i >= 0;  i--)    
+   for(int i = history_depth - 1; i >= 0;  i--)    
    {
     RecountUpdated(time[i], false, extr_cur);
     if (extr_cur[0].direction > 0)

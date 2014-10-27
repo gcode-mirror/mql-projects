@@ -52,7 +52,7 @@ ENUM_TM_POSITION_TYPE OrderTypeToTMPositionType(ENUM_ORDER_TYPE type)
 //+------------------------------------------------------------------+
 ENUM_ORDER_TYPE StringToOrderType(string str)
 {
- ENUM_ORDER_TYPE result;
+ ENUM_ORDER_TYPE result = -1;
  if(str == "ORDER_TYPE_BUY_LIMIT" )result = ORDER_TYPE_BUY_LIMIT;
  if(str == "ORDER_TYPE_SELL_LIMIT")result = ORDER_TYPE_SELL_LIMIT;
  if(str == "ORDER_TYPE_BUY_STOP"  )result = ORDER_TYPE_BUY_STOP;
@@ -287,6 +287,7 @@ struct STrailing
  int trailingStop;
  int trailingStep;
  int handlePBI;
+ int handleExtremums;
 };
 
 

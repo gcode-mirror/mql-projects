@@ -38,8 +38,8 @@ public:
                        
    double LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl
                        , int _minProfit, int _trailingStop, int _trailingStep);
-   double PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI);
-   double ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, CBlowInfoFromExtremums *blowInfo=NULL);                    
+   double PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl, int handle_PBI, int minProfit = 0);
+   double ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleExtremums);                    
   };
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -115,7 +115,7 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
         price = SymbInfo.Ask();
         direction = 1; 
        }
-       else return true;
+       else return(0.0);
   
   double point = SymbInfo.Point();
   int digits = SymbInfo.Digits();
@@ -124,6 +124,7 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
   {
    newSL = openPrice*point;                                                  // переносим СЛ в безубыток 
   }
+  
   if ((GreatDoubles(direction*openPrice, direction*price + minProfit*point)
      && GreatDoubles(direction*sl, direction*price + (trailingStop+trailingStep-1)*point)) || sl == 0)
   {
@@ -136,13 +137,16 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
 //+------------------------------------------------------------------+
 // Трейлинг по индикатору PBI
 //+------------------------------------------------------------------+
-double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int handle_PBI)
+double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl, int handle_PBI, int minProfit = 0)
 {
  int buffer_num;
  int direction;
  int mainTrend, forbidenTrend;
- 
- //GetTopTimeframe(timeframe
+ double newSL = 0;
+ double price;
+ UpdateSymbolInfo(symbol);
+ double point = SymbInfo.Point();
+ int digits = SymbInfo.Digits();
  
  switch(type)
  {
@@ -152,6 +156,7 @@ double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int han
    direction = 1;
    mainTrend = 3;
    forbidenTrend = 4;
+   price = SymbInfo.Bid();
    break;
   case OP_BUY:
    //Print("PBI_Trailing, позиция БАЙ, тип движения ", PBI_colors[0]);
@@ -159,10 +164,16 @@ double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int han
    direction = -1;
    mainTrend = 1;
    forbidenTrend = 2;
+   price = SymbInfo.Ask();
    break;
   default:
    log_file.Write(LOG_DEBUG, StringFormat("%s Неверный тип позиции для трейлинга %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type)));
    return(0.0);
+ }
+ 
+ if (GreatDoubles(direction*openPrice, direction*price + minProfit*point)) // Если достигнут минпрофит 
+ {
+  newSL = openPrice*point;                                                  // переносим СЛ в безубыток 
  }
  
  int errcolors = CopyBuffer(handle_PBI, 4, 0, DEPTH_PBI, PBI_colors);
@@ -193,18 +204,20 @@ double CTrailingStop::PBITrailing(ENUM_TM_POSITION_TYPE type, double sl, int han
   }
  }
  
- if (newExtr > 0 && GreatDoubles(direction * sl, direction * (newExtr + direction * 50.0*Point()), 5))
+ newSL = newExtr + direction*50.0*Point();
+ if (newExtr > 0 && GreatDoubles(direction * sl, direction * newSL, 5))
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s currentMoving = %s, extremum_from_last_coor_or_trend = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[index]), sl, (newExtr + direction*50.0*Point())) );
-  return (newExtr + direction*50.0*Point());
+  log_file.Write(LOG_DEBUG, StringFormat("%s currentMoving = %s, extremum_from_last_coor_or_trend = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[index]), sl, newSL));
+  return (newSL);
  }
  return(0.0);
 };
 
 
 // трейлинг по экстремумам
-double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, CBlowInfoFromExtremums *blowInfo=NULL)
+double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleExtremums)
 {
+ CBlowInfoFromExtremums blowInfo(handleExtremums);
  double stopLoss = 0;                                            // переменная для хранения нового стоп лосса 
  double currentPriceBid = SymbolInfoDouble(symbol, SYMBOL_BID);  // текущая цена BID
  double currentPriceAsk = SymbolInfoDouble(symbol, SYMBOL_ASK);  // текущая цена ASK
