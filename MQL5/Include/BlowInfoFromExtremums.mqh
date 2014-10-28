@@ -45,7 +45,6 @@ class CBlowInfoFromExtremums
   // методы класса
    int  GetExtrCountHigh() { return( int(_extrCountHigh[0]) ); };                              // возвращает количество экстремумов HIGH
    int  GetExtrCountLow()  { return ( int(_extrCountLow[0]) ); };                              // возвращает количество экстремумов LOW
-   bool IsInitFine ();                                                                         // проверяет, хорошо ли проиницилизирован объект   
    bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime start_time=0,int historyDepth = 1000); // функция обновляет экстремумы по времени
    bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_pos=0,int historyDepth = 1000);       // функция обновляет экстремумы по индексу
    Extr GetExtrByIndex (ENUM_EXTR_USE extr_use,int extr_index);                                // возвращает значение экстремума по индексу
@@ -58,213 +57,169 @@ class CBlowInfoFromExtremums
  };
  
  // кодирование методов класса
+bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime start_time=0,int historyDepth=1000)       // обновляет данные экстремумов
+{
+ int copiedHigh = historyDepth;
+ int copiedLow  = historyDepth;
  
- bool CBlowInfoFromExtremums::IsInitFine(void)   // проверяет правильность инициализации объекта
-  {
-   if (_handleExtremums == INVALID_HANDLE)
-    {
-    // Print("Ошибка инициализации класса CBlowInfoFromExtremums. Не удалось создать хэндл индикатора DrawExtremums");
-     log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка инициализации класса CBlowInfoFromExtremums. Не удалось создать хэндл индикатора DrawExtremums", MakeFunctionPrefix(__FUNCTION__)));     
-     return(false);
-    }
-   return(true);
-  }
+ _historyDepth = historyDepth;
+ if (extr_use == EXTR_NO)
+  return (false);
+  
+ if ( CopyBuffer(_handleExtremums, 2, 0, 1, _lastExtrSignal) < 1
+   || CopyBuffer(_handleExtremums, 3, 0, 1, _prevExtrSignal) < 1
+   || CopyBuffer(_handleExtremums, 4, 0, 1, _extrCountHigh)  < 1 
+   || CopyBuffer(_handleExtremums, 5, 0, 1, _extrCountLow)   < 1)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+  return (false);           
+ }  
  
- bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime start_time=0,int historyDepth=1000)       // обновляет данные экстремумов
+ if (extr_use != EXTR_LOW) 
+ {      
+  copiedHigh = CopyBuffer(_handleExtremums, 0, start_time, historyDepth, _extrBufferHigh);          
+ }
+ if (extr_use != EXTR_HIGH) 
+ {
+  copiedLow = CopyBuffer(_handleExtremums, 1, start_time, historyDepth, _extrBufferLow); 
+ }
+ 
+ if ( copiedHigh != historyDepth || copiedLow != historyDepth )
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+  return (false);
+ }
+ return (true);
+}
+  
+bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use = EXTR_BOTH, int start_pos=0, int historyDepth=1000)       // обновляет данные экстремумов
+{
+ int copiedHigh = historyDepth;
+ int copiedLow  = historyDepth;
+ 
+ _historyDepth = historyDepth;
+ if (extr_use == EXTR_NO)
+  return (false);
+  
+ if ( CopyBuffer(_handleExtremums, 2, 0, 1, _lastExtrSignal) < 1
+   || CopyBuffer(_handleExtremums, 3, 0, 1, _prevExtrSignal) < 1
+   || CopyBuffer(_handleExtremums, 4, 0, 1, _extrCountHigh)  < 1 
+   || CopyBuffer(_handleExtremums, 5, 0, 1, _extrCountLow)   < 1)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+  return (false);           
+ }  
+             
+ if (extr_use != EXTR_LOW) 
+ {      
+  copiedHigh = CopyBuffer(_handleExtremums, 0, start_pos, historyDepth, _extrBufferHigh);          
+ }
+ if (extr_use != EXTR_HIGH) 
+ {
+  copiedLow = CopyBuffer(_handleExtremums, 1, start_pos, historyDepth, _extrBufferLow); 
+ }
+ 
+ if ( copiedHigh != historyDepth || copiedLow != historyDepth )
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+  return (false);
+ }
+ return (true);
+}  
+  
+Extr CBlowInfoFromExtremums::GetExtrByIndex(ENUM_EXTR_USE extr_use, int extr_index)  // получает значение экстремума по индексу
+{
+ int countExtr = -1;  // счетчик индексов экстремумов
+ int index;           // индекс прохода по циклу
+ Extr extr = {0,0};   // экстремум
+ 
+ if (extr_use == EXTR_HIGH)
+ {
+  // проходим по всему буферу
+  for (index = _historyDepth-1; index > 0; index--)
   {
-   int copiedHigh = historyDepth;
-   int copiedLow  = historyDepth;
-   _historyDepth  = historyDepth;
-    if (extr_use == EXTR_NO)
-     return (false);
-      if ( CopyBuffer(_handleExtremums,2,0,1,_lastExtrSignal) < 1 )
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);       
-       }
-      if ( CopyBuffer(_handleExtremums,3,0,1,_prevExtrSignal) < 1 )
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);       
-       }       
-      if ( CopyBuffer(_handleExtremums,4,0,1,_extrCountHigh) < 1 )
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);           
-       }
-      if ( CopyBuffer(_handleExtremums,5,0,1,_extrCountLow) < 1 )
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);           
-       }       
-      for (int attempts = 0; attempts < 25; attempts ++)
-       {
-       if (extr_use != EXTR_LOW) 
-         {      
-          copiedHigh     = CopyBuffer(_handleExtremums,0,start_time,historyDepth,_extrBufferHigh);       
-         }
-       if (extr_use != EXTR_HIGH) 
-         {
-          copiedLow      = CopyBuffer(_handleExtremums,1,start_time,historyDepth,_extrBufferLow);  
-         }
-       }
-      if ( copiedHigh != historyDepth || copiedLow != historyDepth )
-       {
-     //   Print("Ошибка метода Upload класса CExtremums. Не удалось прогрузить буферы индикатора DrawExtremums ",PeriodToString(_period));
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);
-       }
-       
-   return (true);
+   // если в буфере найден экстремум
+   if (_extrBufferHigh[index] != 0)
+   {
+    countExtr ++;  
+    // если нашли экстремум по индексу 
+    if (countExtr == extr_index)
+    {
+     extr.price = _extrBufferHigh[index];
+    }
+   }
   }
-  
- bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_pos=0,int historyDepth=1000)       // обновляет данные экстремумов
+ }
+ else if (extr_use == EXTR_LOW)
+ {
+  // проходим по всему буферу
+  for (index = _historyDepth-1; index > 0; index--)
   {
-   int copiedHigh     = historyDepth;
-   int copiedLow      = historyDepth;
+   // если в буфере найден экстремум
+   if ( _extrBufferLow[index] != 0 )
+   {
+    countExtr ++;  
+    // если нашли экстремум по индексу 
+    if (countExtr == extr_index)
+    {
+     extr.price = _extrBufferLow[index];
+     return (extr); 
+    }
+   }
+  }      
+ }
+ return (extr);
+}  
    
-   _historyDepth = historyDepth;
-    if (extr_use == EXTR_NO)
-     return (false);
-      if ( CopyBuffer(_handleExtremums,2,0,1,_lastExtrSignal) < 1 )
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);       
-       }
-      if ( CopyBuffer(_handleExtremums,3,0,1,_prevExtrSignal) < 1 )
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);       
-       }         
-      if ( CopyBuffer(_handleExtremums,4,0,1,_extrCountHigh) < 1 )
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);           
-       }   
-      if ( CopyBuffer(_handleExtremums,5,0,1,_extrCountLow) < 1 )
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);           
-       }              
-      for (int attempts = 0; attempts < 25; attempts ++)
-       {
-       if (extr_use != EXTR_LOW) 
-         {      
-          copiedHigh     = CopyBuffer(_handleExtremums,0,start_pos,historyDepth,_extrBufferHigh);          
-         }
-       if (extr_use != EXTR_HIGH) 
-         {
-          copiedLow      = CopyBuffer(_handleExtremums,1,start_pos,historyDepth,_extrBufferLow); 
-         }
-       }
-      if ( copiedHigh != historyDepth || copiedLow != historyDepth )
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-        return (false);
-       }
-       
-   return (true);
-  }  
+ENUM_EXTR_USE CBlowInfoFromExtremums::GetLastExtrType(void)
+{
+ switch ( int(_lastExtrSignal[0]) )
+ {
+  case 1:
+   return EXTR_HIGH;
+  case -1:
+   return EXTR_LOW;
+ }
+ return EXTR_NO;
+}
   
- Extr CBlowInfoFromExtremums::GetExtrByIndex(ENUM_EXTR_USE extr_use,int extr_index)  // получает значение экстремума по индексу
-  {
-   int    countExtr = -1;  // счетчик индексов экстремумов
-   int    index;           // индекс прохода по циклу
-   Extr extr;              // экстремум
-   extr.price = 0;
-   extr.time  = 0;
-   if (extr_use == EXTR_HIGH)
-    {
-     // проходим по всему буферу
-     for (index=_historyDepth-1;index>0;index--)
-      {
-       // если в буфере найден экстремум
-       if ( _extrBufferHigh[index] != 0 )
-       {
-        countExtr ++;  
-        // если нашли экстремум по индексу 
-        if (countExtr == extr_index)
-        {
-         extr.price = _extrBufferHigh[index];
-        }
-       }
-      }
-     }
-    else if (extr_use == EXTR_LOW)
-    {
-     // проходим по всему буферу
-     for (index=_historyDepth-1;index>0;index--)
-     {
-      // если в буфере найден экстремум
-      if ( _extrBufferLow[index] != 0 )
-      {
-       countExtr ++;  
-       // если нашли экстремум по индексу 
-       if (countExtr == extr_index)
-       {
-        extr.price = _extrBufferLow[index];
-        return (extr); 
-       }
-      }
-     }      
-    }
-   return (extr);
-  }  
+ENUM_EXTR_USE CBlowInfoFromExtremums::GetPrevExtrType(void)
+{
+ switch ( int(_prevExtrSignal[0]) )
+ {
+  case 1:
+   return EXTR_HIGH;
+  case -1:
+   return EXTR_LOW;
+  }
+ return EXTR_NO;
+}
    
-   ENUM_EXTR_USE CBlowInfoFromExtremums::GetLastExtrType(void)
-    {
-     switch ( int(_lastExtrSignal[0]) )
-      {
-       case 1:
-        return EXTR_HIGH;
-       case -1:
-        return EXTR_LOW;
-      }
-     return EXTR_NO;
-    }
-  
-   ENUM_EXTR_USE CBlowInfoFromExtremums::GetPrevExtrType(void)
-    {
-     switch ( int(_prevExtrSignal[0]) )
-      {
-       case 1:
-        return EXTR_HIGH;
-       case -1:
-        return EXTR_LOW;
-      }
-     return EXTR_NO;
-    }
+string CBlowInfoFromExtremums::ShowExtrType(ENUM_EXTR_USE extr_use)  // отображает в виде строки тип экстремумов
+{
+ switch (extr_use)
+ {
+  case EXTR_BOTH:
+   return "Оба типа экстремумов";
+  case EXTR_HIGH:
+   return "Верхние экстремумы";
+  case EXTR_LOW:
+   return "Нижние экстремумы";
+  case EXTR_NO:
+   return "Нет эксремумов";
+ }
+ return "";
+}
    
-   string CBlowInfoFromExtremums::ShowExtrType(ENUM_EXTR_USE extr_use)  // отображает в виде строки тип экстремумов
-    {
-     switch (extr_use)
-      {
-       case EXTR_BOTH:
-        return "Оба типа экстремумов";
-       break;
-       case EXTR_HIGH:
-        return "Верхние экстремумы";
-       break;
-       case EXTR_LOW:
-        return "Нижние экстремумы";
-       break;
-       case EXTR_NO:
-        return "Нет эксремумов";
-       break;
-      }
-     return "";
-    }
-   
-
-   CBlowInfoFromExtremums::CBlowInfoFromExtremums(int handleExtremums, int historyDepth = 1000)   // конструктор класса 
-    {
-     _historyDepth = historyDepth;
-     _handleExtremums = handleExtremums;
-    }
+CBlowInfoFromExtremums::CBlowInfoFromExtremums(int handleExtremums, int historyDepth = 1000)   // конструктор класса 
+{
+ _historyDepth = historyDepth;
+ _handleExtremums = handleExtremums;
+}
     
-   CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
-    {
-     ArrayFree(_extrBufferHigh);
-     ArrayFree(_extrBufferLow);
-     IndicatorRelease(_handleExtremums);
-    }
+CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
+{
+ ArrayFree(_extrBufferHigh);
+ ArrayFree(_extrBufferLow);
+ IndicatorRelease(_handleExtremums);
+}

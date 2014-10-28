@@ -174,7 +174,7 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, dou
  
  if (minProfit > 0                                                           // Если минпрофит задан 
      && GreatDoubles(direction*openPrice, direction*price + minProfit*point) // и достигнут
-     && GreatDoubles(direction*sl, direction*openPrice))               // и старый стоплосс хуже 
+     && GreatDoubles(direction*sl, direction*openPrice))                     // и старый стоплосс хуже 
  {
   newSL = openPrice;                                                  // переносим СЛ в безубыток 
   PrintFormat("%s Переносим СЛ в безубыток newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), newSL);
@@ -251,8 +251,8 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
      // если последним экстремумов является LOW
      if (last_extr == EXTR_LOW)
       {
-       lastExtrHigh   = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для пробития
-       lastExtrLow    = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для stopLoss
+       lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для пробития
+       lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для stopLoss
        // если текущая цена пробила последний значимый HIGH экстремум  
        if ( GreatDoubles(currentPriceBid,lastExtrHigh) &&
             LessDoubles (tmpPrevBid,lastExtrHigh) )

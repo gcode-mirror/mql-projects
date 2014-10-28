@@ -309,14 +309,12 @@ void OnTick()
  if (firstLaunch || isNewBar_D1.isNewBar() > 0)
  {
   firstLaunch = false;
-  do
+  while (copied < 2 && attempts < 5 && !IsStopped());
   {
    copied = CopyRates(_Symbol, PERIOD_D1, 0, 2, lastBarD1);
    attempts++;
    Sleep(111);
-   //PrintFormat("attempts = %d, copied = %d", attempts, copied);
   }
-  while (copied < 2 && attempts < 5 && !IsStopped());
   
   if (copied == 2 )     
   {
