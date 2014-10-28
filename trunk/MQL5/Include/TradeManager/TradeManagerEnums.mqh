@@ -286,8 +286,7 @@ struct STrailing
  int minProfit;
  int trailingStop;
  int trailingStep;
- int handlePBI;
- int handleExtremums;
+ int handleForTrailing;
 };
 
 

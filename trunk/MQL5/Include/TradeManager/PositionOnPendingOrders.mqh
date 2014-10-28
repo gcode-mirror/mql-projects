@@ -76,7 +76,7 @@ public:
 // GET   
    datetime getClosePosDT()      {return(_posCloseTime);};    //получает дату закрыти€ позиции
    datetime getExpiration()      {return(_pos_info.expiration_time);};      
-   int      getHandlePBI()       {return(_trailing.handlePBI);}; 
+   int      getHandlePBI()       {return(_trailing.handleForTrailing);}; 
    ulong    getMagic()           {return(_magic);};
    int      getMinProfit()       {return(_trailing.minProfit);};
    datetime getOpenPosDT()       {return(_posOpenTime);};     //получает дату открыти€ позиции
@@ -113,7 +113,7 @@ public:
    void setStopLossStatus(ENUM_STOPLEVEL_STATUS status) {_sl_status = status;};
    ENUM_STOPLEVEL_STATUS setStopLoss();
    ENUM_STOPLEVEL_STATUS setTakeProfit();
-   void setTrailingHandle(int handle) {_trailing.handleExtremums = handle;};    
+   void setTrailingHandle(int handle) {_trailing.handleForTrailing = handle;};    
    void setType(ENUM_TM_POSITION_TYPE type) {_pos_info.type = type;};
    void setVolume(double lots) {_pos_info.volume = lots;}; 
  
@@ -146,7 +146,7 @@ CPosition::CPosition(string symbol, ENUM_TIMEFRAMES period, ENUM_TM_POSITION_TYP
 {
   //Print(" онструктор с параметрами дл€ репле€");
  trade = new CTMTradeFunctions();
- _symbol = symbol;
+ trailingStop = new CTrailingStop();
  _period = period;
  _pos_info.type = type;
  _pos_info.volume = volume;
@@ -164,6 +164,7 @@ CPosition::CPosition(CPosition *pos)
 {
  //Print(" онструктор копировани€");
  trade = new CTMTradeFunctions();
+ trailingStop = new CTrailingStop();
  _pos_info = pos.getPositionInfo();
  _trailing = pos.getTrailing();
  
@@ -208,7 +209,6 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
  if (_trailing.trailingStop < SymbInfo.StopsLevel()) _trailing.trailingStop = SymbInfo.StopsLevel();
  if(_pos_info.expiration <= 0)
  {
-  
 //--- check order expiration
   int exp=(int)SymbolInfoInteger(symbol,SYMBOL_EXPIRATION_MODE);
   if((exp&SYMBOL_EXPIRATION_GTC)==SYMBOL_EXPIRATION_GTC)
@@ -238,17 +238,9 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
   _pos_info.expiration_time = TimeCurrent()+_pos_info.expiration*PeriodSeconds(Period());  //помимио прочего нужно помен€ть во всем коде ORDER_TIME_SPECIFIED на ORDER_TIME_GTC 
  }
  trade = new CTMTradeFunctions();
+ trailingStop = new CTrailingStop();
  _pos_status = POSITION_STATUS_NOT_INITIALISED;
  _sl_status = STOPLEVEL_STATUS_NOT_DEFINED;
- /*
- if (_trailingType == TRAILING_TYPE_PBI)
- {
-  _handle_PBI = iCustom(_symbol, _period, "PriceBasedIndicator", 100, 2, 1.5, 12, 2, 1.5, 12);
-  if(_handle_PBI == INVALID_HANDLE)                                //провер€ем наличие хендла индикатора
-  {
-   Print("Ќе удалось получить хендл Price Based Indicator");      //если хендл не получен, то выводим сообщение в лог об ошибке
-  }
- }*/
 }
 
 //+------------------------------------------------------------------+
@@ -539,16 +531,16 @@ void CPosition::DoTrailing()
    sl = trailingStop.LosslessTrailing(_symbol, _pos_info.type, _posAveragePrice, _slPrice, _trailing.minProfit, _trailing.trailingStop, _trailing.trailingStep);  
    break;
   case TRAILING_TYPE_PBI :
-   sl = trailingStop.PBITrailing(_symbol, _pos_info.type, _slPrice, _trailing.handlePBI, _trailing.minProfit);  
+   sl = trailingStop.PBITrailing(_symbol, _pos_info.type, _posAveragePrice, _slPrice, _trailing.handleForTrailing, _trailing.minProfit);  
    break;
   case TRAILING_TYPE_EXTREMUMS :
-   sl = trailingStop.ExtremumsTrailing(_symbol, _pos_info.type, _slPrice, _posAveragePrice, _trailing.handleExtremums);
+   sl = trailingStop.ExtremumsTrailing(_symbol, _pos_info.type, _slPrice, _posAveragePrice, _trailing.handleForTrailing);
    break;
   case TRAILING_TYPE_NONE :
   default:
    break;
  }
- if (sl > 0) this.ModifyPosition(sl, 0);
+ if (sl > 0) ModifyPosition(sl, 0);
 }
 
 
