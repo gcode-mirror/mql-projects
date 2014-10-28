@@ -57,7 +57,7 @@ class CBlowInfoFromExtremums
  };
  
  // кодирование методов класса
-bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime start_time=0,int historyDepth=1000)       // обновляет данные экстремумов
+bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use = EXTR_BOTH,datetime start_time = 0,int historyDepth = 1000)       // обновляет данные экстремумов
 {
  int copiedHigh = historyDepth;
  int copiedLow  = historyDepth;
@@ -92,7 +92,7 @@ bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime st
  return (true);
 }
   
-bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use = EXTR_BOTH, int start_pos=0, int historyDepth=1000)       // обновляет данные экстремумов
+bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use = EXTR_BOTH, int start_pos = 0, int historyDepth = 1000)       // обновляет данные экстремумов
 {
  int copiedHigh = historyDepth;
  int copiedLow  = historyDepth;
@@ -173,24 +173,26 @@ Extr CBlowInfoFromExtremums::GetExtrByIndex(ENUM_EXTR_USE extr_use, int extr_ind
    
 ENUM_EXTR_USE CBlowInfoFromExtremums::GetLastExtrType(void)
 {
- switch ( int(_lastExtrSignal[0]) )
- {
-  case 1:
-   return EXTR_HIGH;
-  case -1:
-   return EXTR_LOW;
- }
+ if(Upload(EXTR_BOTH, TimeCurrent(), 1000))
+  switch ( int(_lastExtrSignal[0]) )
+  {
+   case 1:
+    return EXTR_HIGH;
+   case -1:
+    return EXTR_LOW;
+  }
  return EXTR_NO;
 }
   
 ENUM_EXTR_USE CBlowInfoFromExtremums::GetPrevExtrType(void)
 {
- switch ( int(_prevExtrSignal[0]) )
- {
-  case 1:
-   return EXTR_HIGH;
-  case -1:
-   return EXTR_LOW;
+ if(Upload(EXTR_BOTH, TimeCurrent(), 1000))
+  switch ( int(_prevExtrSignal[0]) )
+  {
+   case 1:
+    return EXTR_HIGH;
+   case -1:
+    return EXTR_LOW;
   }
  return EXTR_NO;
 }
