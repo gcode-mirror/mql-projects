@@ -170,12 +170,10 @@ bool CTMTradeFunctions::StopOrderModify(const ulong ticket, const double sl = 0.
   else
   {
    PrintFormat("%s Не удалось изменить стоплосс",MakeFunctionPrefix(__FUNCTION__));
-       PrintFormat("ask %s bid %s стоп %s левел %s цена %s",DoubleToString( SymbolInfoDouble(OrderGetString(ORDER_SYMBOL),SYMBOL_ASK) ),
-                                                           DoubleToString(SymbolInfoDouble(OrderGetString(ORDER_SYMBOL),SYMBOL_BID) ),
-                                                           DoubleToString(sl),
-                                                           DoubleToString(SymbolInfoInteger(OrderGetString(ORDER_SYMBOL),SYMBOL_TRADE_STOPS_LEVEL)*_Point ),
-                                                           DoubleToString(currentPrice)
-                                                           ); 
+       PrintFormat("стоп %.05f левел %.05f цена %.05f", sl,
+                                                        SymbolInfoInteger(OrderGetString(ORDER_SYMBOL),SYMBOL_TRADE_STOPS_LEVEL)*_Point ,
+                                                        currentPrice
+                                                        ); 
   }
  }
  return(false);

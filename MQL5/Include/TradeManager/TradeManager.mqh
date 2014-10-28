@@ -401,7 +401,7 @@ void CTradeManager::DoTrailing(int handleExtr = 0)
   pos = _openPositions.At(i);   // выберем позицию по ее индексу
   if (pos.getPositionInfo().type == OP_BUY || pos.getPositionInfo().type == OP_SELL)
   {
-   if(pos.getTrailingType() == TRAILING_TYPE_EXTREMUMS) pos.setTrailingHandle(handleExtr);
+   if(handleExtr != 0) pos.setTrailingHandle(handleExtr);
    pos.DoTrailing();
   }
  }

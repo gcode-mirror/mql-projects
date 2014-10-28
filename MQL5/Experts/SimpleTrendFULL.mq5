@@ -122,7 +122,7 @@ int OnInit()
     return (INIT_FAILED);
    } 
    // получаем последний тип тренда на 3-х таймфреймах
-   lastTrendPBI_1 = GetLastTrendDirection(handlePBI_1,pbiPeriod);
+   lastTrendPBI_1 = GetLastTrendDirection(handlePBI_1, pbiPeriod);
    lastTrendPBI_2 = lastTrendPBI_1;
    lastTrendPBI_3 = lastTrendPBI_1;           
   }           
@@ -188,8 +188,7 @@ int OnInit()
   trailing.minProfit    = 0;
   trailing.trailingStop = 0;
   trailing.trailingStep = 0;
-  trailing.handlePBI    = 0; 
-  trailing.handleExtremums = 0; 
+  trailing.handleForTrailing = 0; 
   
   return(INIT_SUCCEEDED);
  }

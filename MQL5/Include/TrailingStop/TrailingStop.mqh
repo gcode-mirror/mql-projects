@@ -39,7 +39,7 @@ public:
    double LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl
                        , int _minProfit, int _trailingStop, int _trailingStep);
    double PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl, int handle_PBI, int minProfit = 0);
-   double ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleExtremums);                    
+   double ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleExtremums, int minProfit = 0);                    
   };
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -122,7 +122,7 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
  
   if (GreatDoubles(direction*openPrice, direction*price + minProfit*point)) // Если достигнут минпрофит 
   {
-   newSL = openPrice*point;                                                  // переносим СЛ в безубыток 
+   newSL = openPrice;                                                  // переносим СЛ в безубыток 
   }
   
   if ((GreatDoubles(direction*openPrice, direction*price + minProfit*point)
@@ -137,13 +137,14 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
 //+------------------------------------------------------------------+
 // Трейлинг по индикатору PBI
 //+------------------------------------------------------------------+
-double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl, int handle_PBI, int minProfit = 0)
-{
+double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl, int handleForTrailing, int minProfit = 0)
+{  
  int buffer_num;
  int direction;
  int mainTrend, forbidenTrend;
  double newSL = 0;
  double price;
+ 
  UpdateSymbolInfo(symbol);
  double point = SymbInfo.Point();
  int digits = SymbInfo.Digits();
@@ -171,17 +172,21 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, dou
    return(0.0);
  }
  
- if (GreatDoubles(direction*openPrice, direction*price + minProfit*point)) // Если достигнут минпрофит 
+ if (minProfit > 0                                                           // Если минпрофит задан 
+     && GreatDoubles(direction*openPrice, direction*price + minProfit*point) // и достигнут
+     && GreatDoubles(direction*sl, direction*openPrice))               // и старый стоплосс хуже 
  {
-  newSL = openPrice*point;                                                  // переносим СЛ в безубыток 
+  newSL = openPrice;                                                  // переносим СЛ в безубыток 
+  PrintFormat("%s Переносим СЛ в безубыток newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), newSL);
+  return(newSL); 
  }
  
- int errcolors = CopyBuffer(handle_PBI, 4, 0, DEPTH_PBI, PBI_colors);
- int errextrems = CopyBuffer(handle_PBI, buffer_num, 0, DEPTH_PBI, PBI_Extrems);
+ int errcolors = CopyBuffer(handleForTrailing, 4, 0, DEPTH_PBI, PBI_colors);
+ int errextrems = CopyBuffer(handleForTrailing, buffer_num, 0, DEPTH_PBI, PBI_Extrems);
  if(errcolors < DEPTH_PBI || errextrems < DEPTH_PBI)
  {
   //PrintFormat("%s Не удалось скопировать данные из индикаторного буфера", MakeFunctionPrefix(__FUNCTION__)); 
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось скопировать данные из индикаторного буфера. Errcolors = %d(%d); Errextrems = %d(%d);", MakeFunctionPrefix(__FUNCTION__), errcolors, DEPTH_PBI, errextrems, DEPTH_PBI));     
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось скопировать данные из индикаторного буфера (%d). Errcolors = %d(%d); Errextrems = %d(%d);", MakeFunctionPrefix(__FUNCTION__), handleForTrailing, errcolors, DEPTH_PBI, errextrems, DEPTH_PBI));     
   return(0.0); 
  }
  
@@ -192,15 +197,13 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, dou
 //  PrintFormat("Текущее движение %s. time = %s", MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), TimeToString(buffer_date[0]));
   for (index = 0; index < DEPTH_PBI; index++)
   { 
-   if (PBI_Extrems[index] > 0)
+   if (PBI_Extrems[index] > 0
+   && (PBI_colors[index] == 5 || PBI_colors[index] == 6 || PBI_colors[index] == 7))
    {
-    if (PBI_colors[index] == 5 || PBI_colors[index] == 6 || PBI_colors[index] == 7)
-    {
-     newExtr = PBI_Extrems[index];
-     //Print("последний экстремум ", newExtr);
-     break;
-    } 
-   }
+    newExtr = PBI_Extrems[index];
+    //Print("последний экстремум ", newExtr);
+    break;
+   } 
   }
  }
  
@@ -215,9 +218,9 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, dou
 
 
 // трейлинг по экстремумам
-double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleExtremums)
+double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleForTrailing, int minProfit = 0)
 {
- CBlowInfoFromExtremums blowInfo(handleExtremums);
+ CBlowInfoFromExtremums blowInfo(handleForTrailing);
  double stopLoss = 0;                                            // переменная для хранения нового стоп лосса 
  double currentPriceBid = SymbolInfoDouble(symbol, SYMBOL_BID);  // текущая цена BID
  double currentPriceAsk = SymbolInfoDouble(symbol, SYMBOL_ASK);  // текущая цена ASK
@@ -257,15 +260,13 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
            // если расстояние от цены до нового стоп лосса больше стоп левела
            if ( GreatDoubles(currentPriceBid-lastExtrLow,stopLevel) )
              {
-               // если новый стоп лосс больше предыдущего и мы в безубытке
-               if ( GreatDoubles(lastExtrLow,sl))// && GreatDoubles(lastExtrLow,priceOpen) )
-                  stopLoss = lastExtrLow;        
+              // если новый стоп лосс больше предыдущего и мы в безубытке
+              if ( GreatDoubles(lastExtrLow,sl)) stopLoss = lastExtrLow;  
              }
           else
              {               
-               // если новый стоп лосс больше предыдущего
-               if ( GreatDoubles(currentPriceBid-stopLevel,sl) )
-                  stopLoss = currentPriceBid - stopLevel;
+              // если новый стоп лосс больше предыдущего
+              if (GreatDoubles(currentPriceBid-stopLevel, sl)) stopLoss = currentPriceBid - stopLevel;
              }
           } 
        }

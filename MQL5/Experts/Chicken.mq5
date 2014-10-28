@@ -17,7 +17,7 @@
 //| Expert parametrs                                                 |
 //+------------------------------------------------------------------+
 input double volume = 0.1;
-input int    spread   = 30;         // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
+input int    spread = 30;         // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 /*
 input int minProfit = 250;
@@ -44,6 +44,11 @@ int OnInit()
 {
  isNewBar = new CisNewBar(_Symbol, _Period);
  handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
+ if ( handle_pbi == INVALID_HANDLE )
+ {
+  Print("Ошибка при иниализации эксперта. Не удалось создать хэндл индикатора PriceBasedIndicator");
+  return (INIT_FAILED);
+ } 
  recountInterval = false;
  
  pos_info.volume = volume;
@@ -55,7 +60,7 @@ int OnInit()
  trailing.trailingStop = trailingStop;
  trailing.trailingStep = trailingStep;
  */
- trailing.handlePBI = handle_pbi;
+ trailing.handleForTrailing = handle_pbi;
  return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
@@ -103,8 +108,6 @@ void OnTick()
  
  if(buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
  {
-  if(ctm.GetPositionCount() == 0)
-  {
    pos_info.tp = 0;
    if(index_max < ALLOW_INTERVAL && curBid > buffer_high[index_max] + stoplevel && prevBid <= buffer_high[index_max] + stoplevel)
    { 
@@ -114,12 +117,9 @@ void OnTick()
     pos_info.type = OP_SELLSTOP;
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
-    if (trailingType == TRAILING_TYPE_USUAL || trailingType == TRAILING_TYPE_LOSSLESS)
-    {
-     trailing.minProfit = diff;
-     trailing.trailingStop = diff;
-     trailing.trailingStep = 5;
-    }
+    trailing.minProfit = diff;
+    trailing.trailingStop = diff;
+    trailing.trailingStep = 5;
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
    
@@ -131,27 +131,21 @@ void OnTick()
     pos_info.type = OP_BUYSTOP;
     pos_info.sl = diff;
     pos_info.priceDifference = diff;
-    if (trailingType == TRAILING_TYPE_USUAL || trailingType == TRAILING_TYPE_LOSSLESS)
-    {
-     trailing.minProfit = diff;
-     trailing.trailingStop = diff;
-     trailing.trailingStep = 5;
-    }
+    trailing.minProfit = diff;
+    trailing.trailingStop = diff;
+    trailing.trailingStep = 5;
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
-  }
-  else
+  if(ctm.GetPositionCount() != 0)
   {
    if(ctm.GetPositionType(_Symbol) == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
    {
     slPrice = curAsk;
-    //log_file.Write(LOG_DEBUG, StringFormat(" Есть позиция. Стоп = %.05f, аск = %.05f", ctm.GetPositionStopLoss(_Symbol), curAsk));
     ctm.ModifyPosition(_Symbol, slPrice, 0); 
    }
    if(ctm.GetPositionType(_Symbol) == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > curBid) 
    {
     slPrice = curBid;
-    //log_file.Write(LOG_DEBUG, StringFormat(" Есть позиция. Стоп = %.05f, бид = %.05f", ctm.GetPositionStopLoss(_Symbol), curBid));
     ctm.ModifyPosition(_Symbol, slPrice, 0); 
    }
   }
