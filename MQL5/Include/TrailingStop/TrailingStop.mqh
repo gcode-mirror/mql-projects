@@ -243,11 +243,8 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
   return (0.0);
  // сохраняем стоп левел
  stopLevel = NormalizeDouble(SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point,_Digits);//+0.0005;
- if (type == OP_BUY)
+ if (type == OP_BUY && last_extr == EXTR_LOW)    // если последним сформированным экстремумом является LOW
  {
-  // если последним сформированным экстремумом является LOW
-  if (last_extr == EXTR_LOW)
-  {
    lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для пробития
    lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для stopLoss
    // если текущая цена пробила последний значимый HIGH экстремум  
@@ -267,12 +264,8 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
     }
    }
   }
- }
- if (type == OP_SELL)
+ if (type == OP_SELL && last_extr == EXTR_HIGH)   // если последним экстремумов является HIGH
  {
-  // если последним экстремумов является HIGH
-  if (last_extr == EXTR_HIGH)
-  {
    lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
    lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
    // если текущая цена пробила последний значимый LOW экстремум  
@@ -293,7 +286,6 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
     }
    } 
   }    
- }
  return (stopLoss);
 }
  
