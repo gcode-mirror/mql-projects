@@ -245,47 +245,24 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
  stopLevel = NormalizeDouble(SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point,_Digits);//+0.0005;
  if (type == OP_BUY && last_extr == EXTR_LOW)    // если последним сформированным экстремумом является LOW
  {
-   lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для пробития
-   lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для stopLoss
-   // если текущая цена пробила последний значимый HIGH экстремум  
-   if (GreatDoubles(currentPriceBid, lastExtrHigh) &&
-       LessDoubles (tmpPrevBid, lastExtrHigh))
-   {
-    // если расстояние от цены до нового стоп лосса больше стоп левела
-    if (GreatDoubles(currentPriceBid-lastExtrLow, stopLevel))
-    {
-     // если новый стоп лосс больше предыдущего и мы в безубытке
-     if (GreatDoubles(lastExtrLow,sl)) stopLoss = lastExtrLow;  
-    }
-    else
-    {               
-     // если новый стоп лосс больше предыдущего
-     if (GreatDoubles(currentPriceBid-stopLevel, sl)) stopLoss = currentPriceBid - stopLevel;
-    }
-   }
+  lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для пробития
+  lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для stopLoss
+  // если текущая цена пробила последний значимый HIGH экстремум и новый стоп лосс больше предыдущего 
+  if (GreatDoubles(currentPriceBid, lastExtrHigh) && GreatDoubles(lastExtrLow,sl))
+  {
+    stopLoss = lastExtrLow;  
   }
+ }
  if (type == OP_SELL && last_extr == EXTR_HIGH)   // если последним экстремумов является HIGH
  {
-   lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
-   lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
-   // если текущая цена пробила последний значимый LOW экстремум  
-   if (LessDoubles(currentPriceAsk, lastExtrLow) &&
-       GreatDoubles(tmpPrevAsk, lastExtrLow))
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("Пробили (%.05f) последний значимый эстремум (%.05f)", currentPriceAsk, lastExtrLow ));
-    // если расстояние от цены до нового стоп лосса больше стоп левела
-    if (GreatDoubles(lastExtrHigh - currentPriceAsk,stopLevel))
-    {             
-     // если новый стоп лосс меньше предыдущего и мы в безубытке
-     if (LessDoubles(lastExtrHigh,sl)) stopLoss = lastExtrHigh;        
-    }
-    else
-    {                               
-     // если новый стоп лосс меньше предыдущего
-     if (LessDoubles(currentPriceAsk+stopLevel ,sl)) stopLoss = currentPriceAsk + stopLevel ;
-    }
-   } 
-  }    
+  lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
+  lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
+  // если текущая цена пробила последний значимый LOW экстремум  
+  if (LessDoubles(currentPriceAsk, lastExtrLow) && LessDoubles(lastExtrHigh,sl))
+  {
+   stopLoss = lastExtrHigh;        
+  }
+ } 
  return (stopLoss);
 }
  
