@@ -12,7 +12,7 @@
 #include <TradeManager\TradeManager.mqh>
 
 #define DEPTH 20
-#define ALLOW_INTERVAL 16
+#define ALLOW_INTERVAL 18
 //+------------------------------------------------------------------+
 //| Expert parametrs                                                 |
 //+------------------------------------------------------------------+
@@ -111,6 +111,10 @@ void OnTick()
    pos_info.tp = 0;
    if(index_max < ALLOW_INTERVAL && curBid > buffer_high[index_max] + stoplevel && prevBid <= buffer_high[index_max] + stoplevel)
    { 
+    Comment("Цена BID пробила цену максимум = ",DoubleToString(buffer_high[index_max]),
+            "\nВремя = ",TimeToString(TimeCurrent()),
+            "\nцена = ",DoubleToString(prevAsk)            
+           );
     //PrintFormat("индекс = %d, значение = %.05f", index_max, buffer_high[index_max]);
     recountInterval = true;
     diff = (curBid - buffer_high[index_max])/Point();
@@ -125,6 +129,10 @@ void OnTick()
    
    if(index_min < ALLOW_INTERVAL && curAsk < buffer_low[index_min] - stoplevel && prevAsk > buffer_low[index_min] - stoplevel)
    {
+    Comment("Цена ASK пробила цену минимум = ",DoubleToString(buffer_low[index_min]),
+            "\nВремя = ",TimeToString(TimeCurrent()),
+            "\nцена = ",DoubleToString(prevAsk)
+           );   
     //PrintFormat("индекс = %d, значение = %.05f", index_min, buffer_low[index_min]);
     recountInterval = true;
     diff = (buffer_low[index_min] - curAsk)/Point();

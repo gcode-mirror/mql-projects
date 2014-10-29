@@ -58,6 +58,8 @@ bool waitForBuy;
 SPositionInfo pos_info;
 STrailing trailing;
 
+double pbiBuf[];     // буфер PBI
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -67,8 +69,8 @@ int OnInit()
    history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
    
    // если задан тип трейлинга PBI      
-   if (trailingType == TRAILING_TYPE_PBI)
-    {
+   //if (trailingType == TRAILING_TYPE_PBI)
+   // {
      // создаем хэндл PBI
      handlePBI = iCustom(_Symbol,_Period,"PriceBasedIndicator");
      if (handlePBI == INVALID_HANDLE)
@@ -76,14 +78,14 @@ int OnInit()
        Print("Ошибка инициализации эксперат Condom. Не удалось создать хэндл PriceBasedIndicator");
        return (INIT_FAILED);        
       }      
-    }  
-   pos_info.volume       = lot;
-   pos_info.expiration   = 0;
-   trailing.trailingType = trailingType;
-   trailing.minProfit    = minProfit;
-   trailing.trailingStop = trailingStop;
-   trailing.trailingStep = trailingStep;     
-   trailing.handlePBI    = handlePBI; 
+   // }  
+   pos_info.volume            = lot;
+   pos_info.expiration        = 0;
+   trailing.trailingType      = trailingType;
+   trailing.minProfit         = minProfit;
+   trailing.trailingStop      = trailingStop;
+   trailing.trailingStep      = trailingStep;     
+   trailing.handleForTrailing = handlePBI; 
    if (useLimitOrders)
    {
     opBuy = OP_BUYLIMIT;
@@ -137,6 +139,7 @@ void OnTick()
    int errHigh = 0;                                                   
    int errClose = 0;
    int errMACD = 0;
+   int diff;
    bool openPos;    // флаг успешно открытой позиции
    static CisNewBar isNewBar(symbol, timeframe);
    
@@ -172,38 +175,54 @@ void OnTick()
    {
     Alert("SymbolInfoTick() failed, error = ",GetLastError());
     return;
-   }
-      
+   }     
+     
    if (waitForBuy)
    { 
-    if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]))
-    {  
-     pos_info.type = opBuy;
-     pos_info.sl = SL;
-     pos_info.priceDifference = priceDifference;       
-     openPos = ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread);
-     if (openPos)
+    // если удалось скопировать буфер PBI
+    if (CopyBuffer(handlePBI,4,0,1,pbiBuf) == 1)
      {
-      waitForBuy = false;
-      waitForSell = false;
-     }
+     // Comment("Цвет = ",int(pbiBuf[0]));
+      if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]) && int(pbiBuf[0]) == 7  )  
+        {  
+         diff = MathAbs((globalMin - tick.ask)/Point());    
+         Comment("DIFF = ",diff); 
+         pos_info.type = opBuy;
+         pos_info.sl = diff;       
+         pos_info.tp = TP;
+         pos_info.priceDifference = priceDifference;       
+         openPos = ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread);
+      if (openPos)
+        {
+         waitForBuy  = false;
+         waitForSell = false;
+        }
+      }
     }
    } 
 
    if (waitForSell)
    { 
-    if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]))
-    {
-     pos_info.type = opSell;
-     pos_info.sl = SL;
-     pos_info.priceDifference = priceDifference;      
-     openPos = ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread); 
-     if (openPos)
-     {
-      waitForBuy = false;
-      waitForSell = false;
+    // если удалось скопировать буфер PBI
+    if (CopyBuffer(handlePBI,4,0,1,pbiBuf) == 1)
+     {   
+     // Comment("Цвет = ",int(pbiBuf[0]));     
+      if (LessDoubles(tick.bid, close_buf[0]) && LessDoubles(tick.bid, close_buf[1]) && int(pbiBuf[0]) == 7  )
+        {
+         diff = MathAbs((tick.bid - globalMax)/Point());  
+         Comment("DIFF = ",diff);                   
+         pos_info.type = opSell;
+         pos_info.sl = diff;
+         pos_info.tp = TP;
+         pos_info.priceDifference = priceDifference;      
+         openPos = ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread); 
+      if (openPos)
+        {
+         waitForBuy = false;
+         waitForSell = false;
+        }
      }
-    }
+    }   
    }
    return;   
   }
