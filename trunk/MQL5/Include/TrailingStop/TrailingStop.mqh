@@ -25,9 +25,8 @@ class CTrailingStop
 private:
    CSymbolInfo SymbInfo;
    bool UpdateSymbolInfo(string symbol);
-   double _previewPriceAsk;
-   double _previewPriceBid;
    double PBI_colors[], PBI_Extrems[];
+   CBlowInfoFromExtremums *blowInfo;
    
 public:
    CTrailingStop();
@@ -48,8 +47,6 @@ CTrailingStop::CTrailingStop()
   {
    ArraySetAsSeries(PBI_colors, true);
    ArraySetAsSeries(PBI_Extrems, true);
-   _previewPriceAsk = 0;
-   _previewPriceBid = 0;
   }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -220,23 +217,14 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, dou
 // трейлинг по экстремумам
 double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleForTrailing, int minProfit = 0)
 {
- CBlowInfoFromExtremums blowInfo(handleForTrailing);
+ blowInfo = new CBlowInfoFromExtremums(handleForTrailing);        
  double stopLoss = 0;                                            // переменная для хранения нового стоп лосса 
  double currentPriceBid = SymbolInfoDouble(symbol, SYMBOL_BID);  // текущая цена BID
  double currentPriceAsk = SymbolInfoDouble(symbol, SYMBOL_ASK);  // текущая цена ASK
- double tmpPrevBid;                                              // предыдущая цена BID
- double tmpPrevAsk;                                              // предыдущая цена ASK
  double lastExtrHigh;                                            // цена последнего экстремума по HIGH
  double lastExtrLow;                                             // цена последнего экстремума по LOW
  double stopLevel;                                               // размер стоп левела
  ENUM_EXTR_USE last_extr;                                        // переменная для хранения последнего экстремума
- tmpPrevAsk = _previewPriceAsk;
- tmpPrevBid = _previewPriceBid;
- // сохраняем текущую цену в качестве предыдущей
- _previewPriceAsk = currentPriceAsk;
- _previewPriceBid = currentPriceBid;
- if (tmpPrevAsk == 0 || tmpPrevBid == 0)
-  return (0.0);
  // получаем тип последнего экстремума
  last_extr = blowInfo.GetPrevExtrType();
  if (last_extr == EXTR_NO)
