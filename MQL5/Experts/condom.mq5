@@ -22,17 +22,12 @@ input int SL = 150;
 input int TP = 500;
 input double lot = 1;
 input int historyDepth = 40;
-input ENUM_TIMEFRAMES timeframe = PERIOD_M1;
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_USUAL;
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
-input int spread   = 30;
+input int spread = 30;
 input bool tradeOnTrend = false;
-input int fastMACDPeriod = 12;
-input int slowMACDPeriod = 26;
-input int signalPeriod = 9;
-input double levelMACD = 0.02;
 
 input bool useLimitOrders = false;
 input int limitPriceDifference = 20;
@@ -40,6 +35,7 @@ input bool useStopOrders = false;
 input int stopPriceDifference = 20;
 
 string symbol;                               //переменная для хранения символа
+ENUM_TIMEFRAMES timeframe;
 datetime history_start;
 
 CTradeManager ctm();
@@ -66,6 +62,7 @@ double pbiBuf[];     // буфер PBI
 int OnInit()
   {
    symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
+   timeframe = Period();
    history_start=TimeCurrent();     //--- запомним время запуска эксперта для получения торговой истории
    
    // если задан тип трейлинга PBI      
@@ -140,7 +137,6 @@ void OnTick()
    int errClose = 0;
    int errMACD = 0;
    int diff;
-   bool openPos;    // флаг успешно открытой позиции
    static CisNewBar isNewBar(symbol, timeframe);
    
    if(isNewBar.isNewBar() > 0)
@@ -181,23 +177,22 @@ void OnTick()
    { 
     // если удалось скопировать буфер PBI
     if (CopyBuffer(handlePBI,4,0,1,pbiBuf) == 1)
-     {
+    {
      // Comment("Цвет = ",int(pbiBuf[0]));
-      if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]) && int(pbiBuf[0]) == 7  )  
-    {  
-         diff = MathAbs((globalMin - tick.ask)/Point());    
-         Comment("DIFF = ",diff); 
-     pos_info.type = opBuy;
-         pos_info.sl = diff;       
-         pos_info.tp = TP;
-     pos_info.priceDifference = priceDifference;       
-     openPos = ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread);
-     if (openPos)
-     {
-      waitForBuy = false;
-      waitForSell = false;
+     if (GreatDoubles(tick.ask, close_buf[0]) && GreatDoubles(tick.ask, close_buf[1]) && int(pbiBuf[0]) == 7  )  
+     {  
+      diff = MathAbs((globalMin - tick.ask)/Point());    
+      Comment("DIFF = ",diff); 
+      pos_info.type = opBuy;
+      pos_info.sl = diff;       
+      pos_info.tp = TP;
+      pos_info.priceDifference = priceDifference;       
+      if (ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread))
+      {
+       waitForBuy = false;
+       waitForSell = false;
+      }
      }
-    }
     }
    } 
 
@@ -215,8 +210,7 @@ void OnTick()
          pos_info.sl = diff;
          pos_info.tp = TP;
      pos_info.priceDifference = priceDifference;      
-     openPos = ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread); 
-     if (openPos)
+     if (ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing, spread))
      {
       waitForBuy = false;
       waitForSell = false;

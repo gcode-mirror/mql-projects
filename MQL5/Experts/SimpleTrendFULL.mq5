@@ -232,7 +232,6 @@ void OnTick()
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
  curPriceAsk  = SymbolInfoDouble(_Symbol, SYMBOL_ASK);   // получаем текущую цену Ask
- 
  if (!blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
      !blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
      !blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
@@ -240,7 +239,8 @@ void OnTick()
     )
  {   
   return;
- } 
+ }
+ 
  // если мы используем запрет на вход по NineTeenLines
  if (useLinesLock)
  {
@@ -268,7 +268,7 @@ void OnTick()
    countLastExtrLow[ind] = countExtrLow[ind];
    // выставляем флаг пробития экстремума в false
    beatenExtrLow[ind] = false; 
-  }     
+  }   
  }
  
  // если используется PriceBasedIndicator с выбранным таймфреймом
@@ -309,7 +309,7 @@ void OnTick()
  if (firstLaunch || isNewBar_D1.isNewBar() > 0)
  {
   firstLaunch = false;
-  while (copied < 2 && attempts < 5 && !IsStopped());
+  while (copied < 2 && attempts < 5 && !IsStopped())
   {
    copied = CopyRates(_Symbol, PERIOD_D1, 0, 2, lastBarD1);
    attempts++;
@@ -583,22 +583,22 @@ int GetLastTrendDirection (int handle,ENUM_TIMEFRAMES period)   // возвращает tr
  return (0);
 }
  
- int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndicator
-  {
-   int copiedPBI;
-   int signTrend;
-   copiedPBI = CopyBuffer(handle,4,1,1,pbiBuf);
-   if (copiedPBI < 1)
-    return (0);
-   signTrend = int(pbiBuf[0]);
-   // если тренд вверх
-   if (signTrend == 1 || signTrend == 2)
-    return (1);
-   // если тренд вниз
-   if (signTrend == 3 || signTrend == 4)
-    return (-1);
-   return (0);
-  }
+int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndicator
+{
+ int copiedPBI;
+ int signTrend;
+ copiedPBI = CopyBuffer(handle,4,1,1,pbiBuf);
+ if (copiedPBI < 1)
+  return (0);
+ signTrend = int(pbiBuf[0]);
+ // если тренд вверх
+ if (signTrend == 1 || signTrend == 2)
+  return (1);
+ // если тренд вниз
+ if (signTrend == 3 || signTrend == 4)
+  return (-1);
+ return (0);
+}
   
 bool Upload19LinesBuffers ()   // получает последние значения уровней
  {
