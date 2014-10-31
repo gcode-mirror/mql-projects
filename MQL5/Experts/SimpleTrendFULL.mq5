@@ -238,6 +238,7 @@ void OnTick()
      !blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
     )
  {   
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
   return;
  }
  

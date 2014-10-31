@@ -83,7 +83,7 @@ bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use = EXTR_BOTH,datetime 
  
  if (c1 != 1 || c2 != 1 || c3 != 1 || c4 != 1)     
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums _handleExtremums= %d", MakeFunctionPrefix(__FUNCTION__), _handleExtremums));           
+  //log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums _handleExtremums= %d", MakeFunctionPrefix(__FUNCTION__), _handleExtremums));           
   return (false);           
  }
 
@@ -99,7 +99,7 @@ bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use = EXTR_BOTH,datetime 
  
  if ( copiedHigh != historyDepth || copiedLow != historyDepth )
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+  //log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
   return (false);
  }
  return (true);
@@ -230,6 +230,7 @@ CBlowInfoFromExtremums::CBlowInfoFromExtremums(int handleExtremums, int historyD
 {
  _historyDepth = historyDepth;
  _handleExtremums = handleExtremums;
+ Upload(EXTR_BOTH, TimeCurrent(), 1000);
 }
     
 CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
