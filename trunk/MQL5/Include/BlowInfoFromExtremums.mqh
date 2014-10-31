@@ -61,19 +61,32 @@ bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use = EXTR_BOTH,datetime 
 {
  int copiedHigh = historyDepth;
  int copiedLow  = historyDepth;
+ int c1 = 0;
+ int c2 = 0;
+ int c3 = 0;
+ int c4 = 0;
+ int attempts = 0;
  
  _historyDepth = historyDepth;
  if (extr_use == EXTR_NO)
   return (false);
-  
- if ( CopyBuffer(_handleExtremums, 2, 0, 1, _lastExtrSignal) < 1
-   || CopyBuffer(_handleExtremums, 3, 0, 1, _prevExtrSignal) < 1
-   || CopyBuffer(_handleExtremums, 4, 0, 1, _extrCountHigh)  < 1 
-   || CopyBuffer(_handleExtremums, 5, 0, 1, _extrCountLow)   < 1)
+ 
+ while (c1 < 1 && c2 < 1 && c3 < 1 && c4 < 1 && attempts < 5 && !IsStopped())
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-  return (false);           
+  c1 = CopyBuffer(_handleExtremums, 2, 0, 1, _lastExtrSignal);
+  c2 = CopyBuffer(_handleExtremums, 3, 0, 1, _prevExtrSignal);
+  c3 = CopyBuffer(_handleExtremums, 4, 0, 1, _extrCountHigh); 
+  c4 = CopyBuffer(_handleExtremums, 5, 0, 1, _extrCountLow);
+  attempts++;
+  Sleep(111);
  }  
+ 
+ if (c1 != 1 || c2 != 1 || c3 != 1 || c4 != 1)     
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums _handleExtremums= %d", MakeFunctionPrefix(__FUNCTION__), _handleExtremums));           
+  return (false);           
+ }
+
  
  if (extr_use != EXTR_LOW) 
  {      
