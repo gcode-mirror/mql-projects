@@ -732,11 +732,6 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
        // если цена close на последнем баре пробила цены close на двух предыдущих 
        if ( GreatDoubles(closes[2],closes[1]) && GreatDoubles (closes[2],closes[0]) && LessDoubles(closes[1],closes[0]) && currentTime != lastTimeClose[timeIndex])
         {
-  /*  Comment("BUY\n"
-            "close2 = ",DoubleToString(closes[2]),
-            "\nclose1 = ",DoubleToString(closes[1]),
-            "\nclose0 = ",DoubleToString(closes[0])    
-           ); */
          lastTimeClose[timeIndex] = currentTime;
          ArrayFree(closes);  
          ArrayFree(time);     
@@ -745,12 +740,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
       case SELL:
        // если цена close на последнем баре пробила цены close на двух предыдущих
        if ( LessDoubles(closes[2],closes[1]) && LessDoubles (closes[2],closes[0]) && GreatDoubles(closes[1],closes[0]) && currentTime != lastTimeClose[timeIndex])
-        {
-  /*  Comment("SELL\n"
-            "close2 = ",DoubleToString(closes[2]),
-            "\nclose1 = ",DoubleToString(closes[1]),
-            "\nclose0 = ",DoubleToString(closes[0])    
-           );    */    
+        {  
          lastTimeClose[timeIndex] = currentTime;
          ArrayFree(closes);
          ArrayFree(time);
