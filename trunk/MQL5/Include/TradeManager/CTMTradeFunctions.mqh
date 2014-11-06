@@ -42,9 +42,6 @@ bool CTMTradeFunctions::OrderOpen(const string symbol, const ENUM_ORDER_TYPE typ
   m_result.retcode=TRADE_RETCODE_INVALID_VOLUME;
   return(false);
  }
- 
- log_file.Write(LOG_DEBUG, StringFormat("%s тип времени истечения %s", MakeFunctionPrefix(__FUNCTION__), EnumToString(type_time) ));
- 
  return (OrderOpen(symbol,type,volume,0.0,price,sl,tp,type_time,expiration,comment));
 }
 //+------------------------------------------------------------------+

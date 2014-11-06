@@ -372,7 +372,7 @@ void OnTick()
     if (openedPosition != BUY)
     {
      // обнуляем счетчик трейлинга
-     indexForTrail = 0;
+     indexForTrail = 1;
      // обнуляем счетчик доливок, если 
      countAdd = 0;                                         
     }   
@@ -422,7 +422,7 @@ void OnTick()
     if (openedPosition != SELL)
     {
      // обнуляем счетчик трейлинга
-     indexForTrail = 0; 
+     indexForTrail = 1; 
      // обнуляем счетчик доливок, если 
      countAdd = 0;        
     }
@@ -497,13 +497,13 @@ int GetStopLoss()     // вычисляет стоп лосс
  switch (openedPosition)
  {
   case BUY:
-   slValue = curPriceBid - blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price; 
+   slValue = curPriceBid - blowInfo[1].GetExtrByIndex(EXTR_LOW,0).price; 
    if ( GreatDoubles(slValue,stopLevel) )
     return ( slValue/_Point );
    else
     return ( (stopLevel+0.0001)/_Point );
   case SELL:
-   slValue = blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk;
+   slValue = blowInfo[1].GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk;
    if ( GreatDoubles(slValue,stopLevel) )
     return ( slValue/_Point );     
    else

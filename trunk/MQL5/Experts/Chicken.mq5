@@ -13,6 +13,7 @@
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 18
+#define SL_MIN 50
 //+------------------------------------------------------------------+
 //| Expert parametrs                                                 |
 //+------------------------------------------------------------------+
@@ -79,15 +80,16 @@ void OnTick()
 {
  ctm.OnTick();
  ctm.DoTrailing();
- int diff;
+ int diff, sl_min;
  double slPrice;
+ double highBorder, lowBorder;
+ double stoplevel;
  static int index_max = -1;
  static int index_min = -1;
  prevAsk = curAsk;
  prevBid = curBid;
  curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
  curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
- double stoplevel = MathMax(50, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
  CopyBuffer(handle_pbi, 4, 0, 1, buffer_pbi);
 
  if(isNewBar.isNewBar() || recountInterval)
@@ -106,44 +108,57 @@ void OnTick()
   recountInterval = false;
  }
  
- if(buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
+ if (index_max != -1 && index_min != -1)
  {
-   pos_info.tp = 0;
-   if(index_max < ALLOW_INTERVAL && curBid > buffer_high[index_max] + stoplevel && prevBid <= buffer_high[index_max] + stoplevel)
-   { 
-    Comment("Цена BID пробила цену максимум = ",DoubleToString(buffer_high[index_max]),
-            "\nВремя = ",TimeToString(TimeCurrent()),
-            "\nцена = ",DoubleToString(prevAsk)            
-           );
-    //PrintFormat("индекс = %d, значение = %.05f", index_max, buffer_high[index_max]);
-    recountInterval = true;
-    diff = (curBid - buffer_high[index_max])/Point();
-    pos_info.type = OP_SELLSTOP;
-    pos_info.sl = diff;
-    pos_info.priceDifference = diff;
-    trailing.minProfit = diff;
-    trailing.trailingStop = diff;
-    trailing.trailingStep = 5;
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
-   }
+  highBorder = buffer_high[index_max];
+  lowBorder = buffer_low[index_min];
+  sl_min = (int)MathCeil((highBorder - lowBorder)*0.15);
+  stoplevel = MathMax(SL_MIN, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
+ }
+ else
+ {
+  return;
+ }
+ 
+ if(buffer_pbi[0] == MOVE_TYPE_FLAT)
+ {
+  pos_info.tp = 0;
+  if(index_max < ALLOW_INTERVAL && curBid > highBorder + stoplevel && prevBid <= highBorder + stoplevel)
+  { 
+   Comment("Цена BID пробила цену максимум = ",DoubleToString(buffer_high[index_max]),
+           "\nВремя = ",TimeToString(TimeCurrent()),
+           "\nцена = ",DoubleToString(prevAsk)            
+          );
+   //PrintFormat("индекс = %d, значение = %.05f", index_max, buffer_high[index_max]);
+   recountInterval = true;
+   diff = (curBid - highBorder)/Point();
+   pos_info.type = OP_SELLSTOP;
+   pos_info.sl = diff;
+   pos_info.priceDifference = diff;
+   trailing.minProfit = diff;
+   trailing.trailingStop = diff;
+   trailing.trailingStep = 5;
+   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
+  }
    
-   if(index_min < ALLOW_INTERVAL && curAsk < buffer_low[index_min] - stoplevel && prevAsk > buffer_low[index_min] - stoplevel)
-   {
-    Comment("Цена ASK пробила цену минимум = ",DoubleToString(buffer_low[index_min]),
-            "\nВремя = ",TimeToString(TimeCurrent()),
-            "\nцена = ",DoubleToString(prevAsk)
-           );   
-    //PrintFormat("индекс = %d, значение = %.05f", index_min, buffer_low[index_min]);
-    recountInterval = true;
-    diff = (buffer_low[index_min] - curAsk)/Point();
-    pos_info.type = OP_BUYSTOP;
-    pos_info.sl = diff;
-    pos_info.priceDifference = diff;
-    trailing.minProfit = diff;
-    trailing.trailingStop = diff;
-    trailing.trailingStep = 5;
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
-   }
+  if(index_min < ALLOW_INTERVAL && curAsk < lowBorder - stoplevel && prevAsk > lowBorder - stoplevel)
+  {
+   Comment("Цена ASK пробила цену минимум = ",DoubleToString(buffer_low[index_min]),
+           "\nВремя = ",TimeToString(TimeCurrent()),
+           "\nцена = ",DoubleToString(prevAsk)
+          );   
+   //PrintFormat("индекс = %d, значение = %.05f", index_min, buffer_low[index_min]);
+   recountInterval = true;
+   diff = (lowBorder - curAsk)/Point();
+   pos_info.type = OP_BUYSTOP;
+   pos_info.sl = diff;
+   pos_info.priceDifference = diff;
+   trailing.minProfit = diff;
+   trailing.trailingStop = diff;
+   trailing.trailingStep = 5;
+   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
+  }
+  
   if(ctm.GetPositionCount() != 0)
   {
    if(ctm.GetPositionType(_Symbol) == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
