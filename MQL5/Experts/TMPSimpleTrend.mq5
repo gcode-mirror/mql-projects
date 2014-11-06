@@ -71,12 +71,10 @@ int      countLastExtrHigh[4];                     // массив последних значений 
 int      countLastExtrLow[4];                      // массив послених значений счетчиков экстремумов LOW
 bool     beatenExtrHigh[4];                        // массив флагов пробития экстремумов HIGH
 bool     beatenExtrLow[4];                         // массив флагов пробития экстремумов LOW
+double   closes[];                                 // массив для хранения цен закрытия последних трех баров 
 // объекты классов
 CTradeManager *ctm;                                // объект торговой библиотеки                             
 CisNewBar     *isNewBar_D1;                        // новый бар на D1
-CisNewBar     *isNewBar_M5;                        // новый бар на M5
-CisNewBar     *isNewBar_M15;                       // новый бар на M15
-CisNewBar     *isNewBar_H1;                        // новый бар на H1
 CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 // дополнительные системные переменные
 bool             firstLaunch       = true;         // флаг первого запуска эксперта
@@ -114,11 +112,10 @@ double           lenClosestDown;                   // расстояние до ближайшего у
 // структуры для работы с позициями            
 SPositionInfo pos_info;                            // информация об открытии позиции 
 STrailing trailing;                                // параметры трейлинга
-// времена закрытия последних баров
-datetime timeCloseM5[];                            // время открытия последнего бара на M5 
-datetime timeCloseM15[];                           // время открытия последнего бара на M15
-datetime timeCloseH1[];                            // время открытия последнего бара на H1
-datetime lastTimeClose[3];                         // последнее время открытия последнего бара на М5
+// время последнего открытия позиции
+datetime  timeOpenPos = 0;
+// буфер для загрузки времени
+datetime  timeBuf[]; 
 int OnInit()
  {     
   // если мы используем PriceBasedIndicator для вычисления последнего тренда на выбранном таймфрейме
@@ -170,7 +167,6 @@ int OnInit()
   ArrayInitialize(countLastExtrLow,0);
   ArrayInitialize(beatenExtrHigh,false);
   ArrayInitialize(beatenExtrLow,false);      
-  ArrayInitialize(lastTimeClose,0);
   // создаем объект класса TradeManager
   ctm = new CTradeManager();  
   // создаем объекты класса CisNewBar
@@ -208,6 +204,8 @@ void OnDeinit(const int reason)
 {
  ArrayFree(lastBarD1);
  ArrayFree(pbiBuf);
+ ArrayFree(timeBuf);
+ ArrayFree(closes);
  // удаляем объекты классов
  delete ctm;
  delete isNewBar_D1;
@@ -255,20 +253,15 @@ void OnTick()
   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
   return;
  }
- 
- // пытаемся скопировать данные времени открытия последних баров на таймфреймах M5, M15, H1
- if (CopyTime(_Symbol,PERIOD_M5,1,1,timeCloseM5) < 1 || CopyTime(_Symbol,PERIOD_M15,1,1,timeCloseM15) < 1 || CopyTime(_Symbol,PERIOD_H1,1,1,timeCloseH1) < 1)
-  {
-   Print("Не удалось прогрузить буферы времени последнего закрытого бара");
-   return;
-  }
- 
  // если мы используем запрет на вход по NineTeenLines
  if (useLinesLock)
  {
   // если не удалось прогрузить буферы NineTeenLines
   if (!Upload19LinesBuffers()) 
+  {
+   Print("Не удалось прогрузить буферы NineTeenLines");
    return;
+  }
  } 
  // получаем новые значения счетчиков экстремумов
  for (int ind = 0; ind < 4; ind++)
@@ -376,9 +369,9 @@ void OnTick()
   if ( ( (beatM5  =  IsExtremumBeaten(1,BUY) ) && (lastTrendPBI_1==BUY||usePBI==PBI_NO))                                     || 
        ( (beatM15 =  IsExtremumBeaten(2,BUY) ) && (lastTrendPBI_2==BUY||usePBI==PBI_NO))                                     || 
        ( (beatH1  =  IsExtremumBeaten(3,BUY) ) && (lastTrendPBI_3==BUY||usePBI==PBI_NO))                                     ||
-       ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,BUY,0,timeCloseM5[0]))      && (lastTrendPBI_1==BUY||usePBI==PBI_NO) ) ||
-       ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,BUY,1,timeCloseM15[0]))    && (lastTrendPBI_2==BUY||usePBI==PBI_NO) ) ||
-       ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,BUY,2,timeCloseH1[0]))      && (lastTrendPBI_3==BUY||usePBI==PBI_NO) )          
+       ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,BUY))      && (lastTrendPBI_1==BUY||usePBI==PBI_NO) ) ||
+       ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,BUY))    && (lastTrendPBI_2==BUY||usePBI==PBI_NO) ) ||
+       ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,BUY))      && (lastTrendPBI_3==BUY||usePBI==PBI_NO) )         
        )
    {      
  // если используются запреты по NineTeenLines
@@ -392,6 +385,7 @@ void OnTick()
       if (lenClosestUp != 0 && 
         LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
          {
+          Print("Получили сигнал запрета на вход на BUY");
           return;
          }   
      }   
@@ -423,8 +417,11 @@ void OnTick()
 
     Comment("Количество сделок = ",countDeal);
     // открываем позицию на BUY
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
-    lastDeal = BUY;
+    if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
+     {
+      timeOpenPos = TimeCurrent();
+      lastDeal = BUY;
+     }
    }
   }
  
@@ -435,22 +432,23 @@ void OnTick()
   if ( ( (beatM5   =  IsExtremumBeaten(1,SELL) ) && (lastTrendPBI_1==SELL||usePBI==PBI_NO))                                 || 
        ( (beatM15  =  IsExtremumBeaten(2,SELL) ) && (lastTrendPBI_2==SELL||usePBI==PBI_NO))                                 || 
        ( (beatH1   =  IsExtremumBeaten(3,SELL) ) && (lastTrendPBI_3==SELL||usePBI==PBI_NO))                                 ||
-       ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,SELL,0,timeCloseM5[0]))   && (lastTrendPBI_1==SELL||usePBI==PBI_NO) ) ||
-       ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,SELL,1,timeCloseM15[0])) && (lastTrendPBI_2==SELL||usePBI==PBI_NO) ) ||
-       ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,SELL,2,timeCloseH1[0]))   && (lastTrendPBI_3==SELL||usePBI==PBI_NO) )        
+       ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,SELL))   && (lastTrendPBI_1==SELL||usePBI==PBI_NO) ) ||
+       ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,SELL)) && (lastTrendPBI_2==SELL||usePBI==PBI_NO) ) ||
+       ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,SELL))   && (lastTrendPBI_3==SELL||usePBI==PBI_NO) )       
         )  
   {    
     // если используются зарпеты по NineTeenLines
     if (useLinesLock)
      { 
-    Print("Используем запрет по 19 линиям");
+     Print("Используем запрет по 19 линиям");
      // получаем расстояния до ближайших уровней снизу и сверху
      lenClosestUp   = GetClosestLevel(BUY);
      lenClosestDown = GetClosestLevel(SELL);    
      // если получили сигнал запрета на вход
      if (lenClosestDown != 0 &&
          LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
-         {            
+         {        
+          Print("Получили сигнал запрета на вход на SELL");
           return;
          }
      }                
@@ -479,11 +477,12 @@ void OnTick()
    pos_info.type = OP_SELL;
    pos_info.sl = stopLoss;   
    pos_info.volume = lotReal;  
-
-   Comment("Количество сделок = ",countDeal);
    // открываем позицию на SELL 
-   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
-   lastDeal = SELL;
+   if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
+    {
+     timeOpenPos = TimeCurrent();
+     lastDeal = SELL;
+    }
   } 
   }
 }
@@ -713,41 +712,38 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
    return (len);
   }    
   // функция проверяет пробития цен close последних двух баров
-  bool IsLastClosesBeaten (ENUM_TIMEFRAMES period,int direction,int timeIndex, datetime currentTime)
+  bool IsLastClosesBeaten (ENUM_TIMEFRAMES period,int direction)
    {
-    double closes[];  // массив для хранения цен закрытия последних трех баров 
-    datetime time[];  // массив для хранения времени закрытия последнего бара
-    // пытаемся скопировать цены закрытия последних 3-х баров
-    if ( CopyClose(_Symbol,period,1,3,closes) < 3 || CopyTime(_Symbol,period,1,1,time) < 1 )
+    // пытаемся скопировать время открытия последнего бара
+    if ( CopyTime(_Symbol,period,1,1,timeBuf) < 1 )
      {
-      Print("Не удалось скопировать цены close 3-х последних сформированных баров либо время последнего закрытого бара");
-      ArrayFree(closes);
-      ArrayFree(time);
+      Print("Не удалось скопировать время открытия последнего бара");
       return false;
      }
-
-    switch (direction)
+    // если время открытия последней позиции меньше времени открытия последнего бара
+    if (timeOpenPos < timeBuf[0])
      {
-      case BUY:
-       // если цена close на последнем баре пробила цены close на двух предыдущих 
-       if ( GreatDoubles(closes[2],closes[1]) && GreatDoubles (closes[2],closes[0]) && LessDoubles(closes[1],closes[0]) && currentTime != lastTimeClose[timeIndex])
-        {
-         lastTimeClose[timeIndex] = currentTime;
-         ArrayFree(closes);  
-         ArrayFree(time);     
+     // пытаемся скопировать цены закрытия последних 3-х баров
+     if ( CopyClose(_Symbol,period,1,3,closes) < 3 )
+      {
+       Print("Не удалось скопировать цены close 3-х последних сформированных баров");
+       return false;
+      }
+     switch (direction)
+      {
+       case BUY:
+        // если цена close на последнем баре пробила цены close на двух предыдущих 
+        if ( GreatDoubles(closes[2],closes[1]) && GreatDoubles (closes[2],closes[0]) && LessDoubles(closes[1],closes[0]) )
+         {
          return true;
         }
       case SELL:
        // если цена close на последнем баре пробила цены close на двух предыдущих
-       if ( LessDoubles(closes[2],closes[1]) && LessDoubles (closes[2],closes[0]) && GreatDoubles(closes[1],closes[0]) && currentTime != lastTimeClose[timeIndex])
+       if ( LessDoubles(closes[2],closes[1]) && LessDoubles (closes[2],closes[0]) && GreatDoubles(closes[1],closes[0]) )
         {  
-         lastTimeClose[timeIndex] = currentTime;
-         ArrayFree(closes);
-         ArrayFree(time);
          return true;
         }
+      }
      }
-    ArrayFree(closes);
-    ArrayFree(time);
     return false;
    }  
