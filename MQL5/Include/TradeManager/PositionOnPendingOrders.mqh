@@ -300,7 +300,7 @@ double CPosition::getPosProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
- log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice ));
+ //log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice ));
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);
  //формируем комментарий
@@ -313,7 +313,6 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
   
   _slType = SLOrderType((int)_pos_info.type);
   
-  log_file.Write(LOG_DEBUG, StringFormat("%s тип времени истечения %s, время истечения %s", MakeFunctionPrefix(__FUNCTION__), EnumToString(_type_time), TimeToString(_pos_info.expiration_time)));
   if (trade.OrderOpen(_symbol, _slType, _pos_info.volume, _slPrice, _type_time, _pos_info.expiration_time, slComment))
   {
    _slTicket = trade.ResultOrder();

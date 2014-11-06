@@ -45,7 +45,6 @@ int handle_ATR;
               
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
-ENUM_TIMEFRAMES tf_ATR = PERIOD_H4; // עאילפנויל ATR
 bool series_order = true;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |

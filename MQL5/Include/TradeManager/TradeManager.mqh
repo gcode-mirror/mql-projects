@@ -368,16 +368,12 @@ bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
 {
  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
- //PrintFormat("%s получаем из массива указатель на позицию по ее индексу", MakeFunctionPrefix(__FUNCTION__));
  if (pos.ClosePosition())
  {
-  //Print("Перемещаем позицию в хистори");
   _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
   _historyChanged = true;                          // меняем флаг, что история увеличилась 
   SaveArrayToFile(historyDataFileName,_positionsHistory); 
   SaveArrayToFile(rescueDataFileName,_openPositions);   
-  //log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i));
- // PrintFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__), i);
   log_file.Write(LOG_DEBUG, StringFormat("%s Удалена позиция [%d]", MakeFunctionPrefix(__FUNCTION__),i ) );     
   return(true);
  }
@@ -681,29 +677,21 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
      pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
-      if (pos.getType() == OP_SELL)
+      if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
       {
-       ClosePosition(i);
-      }
-      else
-      {
-       if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
+       ResetLastError();
+       if(!OrderSelect(pos.getOrderTicket()))
        {
-        ResetLastError();
-        if(OrderSelect(pos.getOrderTicket()))
-        {
-         ClosePosition(i);
-        }
-        else
-        {
-         log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                       , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
-                       , GetLastError(), ErrorDescription(GetLastError())));
-        }
+        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                      , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
+                      , GetLastError(), ErrorDescription(GetLastError())));
+        // ToDo
+        // Проверить наличие ордера в истории
+        // Удалить позицию из массива позиций и перенести объект позиции в историю
        }
        else
-       {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось выбрать позицию по тикету %d", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()));
+       { 
+        ClosePosition(i);
        }
       }
      }
@@ -720,29 +708,21 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
      pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
-      if (pos.getType() == OP_BUY)
+      if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
       {
-       ClosePosition(i);
-      }
-      else
-      {
-       if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
+       ResetLastError();
+       if(!OrderSelect(pos.getOrderTicket()))
        {
-        ResetLastError();
-        if(OrderSelect(pos.getOrderTicket()))
-        {
-         ClosePosition(i);
-        }
-        else
-        {
-         log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                        , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
-                        , GetLastError(), ErrorDescription(GetLastError())));
-        }
+        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                       , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
+                       , GetLastError(), ErrorDescription(GetLastError())));
+        // ToDo
+        // Проверить наличие ордера в истории
+        // Удалить позицию из массива позиций и перенести объект позиции в историю
        }
        else
        {
-        log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось выбрать позицию по тикету %d", MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()));
+        ClosePosition(i);
        }
       }
      }
