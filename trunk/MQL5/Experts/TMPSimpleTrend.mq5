@@ -374,6 +374,7 @@ void OnTick()
        ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,BUY))      && (lastTrendPBI_3==BUY||usePBI==PBI_NO) )         
        )
    {      
+
  // если используются запреты по NineTeenLines
     if (useLinesLock)
      {
@@ -413,6 +414,14 @@ void OnTick()
     // заполняем параметры открытия позиции
     pos_info.type = OP_BUY;
     pos_info.sl = stopLoss;  
+/*   Print("beatM5 = ",beatM5,
+         "\nbeatM15 = ",beatM15,
+         "\nbeatH1 = ",beatH1,
+         "\ncloseM5 = ",beatCloseM5,
+         "\ncloseM15 = ",beatCloseM15,
+         "\ncloseH1 = ",beatCloseH1,
+         "\nstopLoss = ",stopLoss
+           );*/    
     pos_info.volume = lotReal; 
 
     Comment("Количество сделок = ",countDeal);
@@ -529,27 +538,40 @@ void ChangeTrailIndex()   // функция меняет индекс таймфрейма для трейлинга
  }
 }
  
-int GetStopLoss()     // вычисляет стоп лосс
+int GetStopLoss()         // вычисляет стоп лосс
 {
- double slValue;          // значение стоп лосса
- double stopLevel;        // стоп левел
- stopLevel = SymbolInfoInteger(_Symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point;  // получаем стоп левел
+ int slValue;          // значение стоп лосса
+ int stopLevel;        // стоп левел
+ stopLevel = SymbolInfoInteger(_Symbol,SYMBOL_TRADE_STOPS_LEVEL);  // получаем стоп левел
  switch (openedPosition)
  {
   case BUY:
-   slValue = curPriceBid - blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price; 
-   if ( GreatDoubles(slValue,stopLevel) )
-    return ( slValue/_Point );
+   slValue = (curPriceBid - blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price)/_Point; 
+   if ( slValue > stopLevel )
+    {
+     Print("Вернул 0, потому что slValue = ",slValue/_Point," curPriceBid = ",DoubleToString(curPriceBid), " blowinfo0 = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price) );
+     return ( slValue );
+    }
    else
-    return ( (stopLevel+0.0001)/_Point );
+    {
+     Print("Вернул 0, потому что stopLevel = ",DoubleToString(stopLevel));
+     return ( stopLevel+1 );
+    }
   case SELL:
-   slValue = blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk;
-   if ( GreatDoubles(slValue,stopLevel) )
-    return ( slValue/_Point );     
+   slValue = (blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk)/_Point;
+   if ( slValue > stopLevel )
+    {
+     Print("Вернул 0, потому что slValue = ",DoubleToString(slValue)," curPriceAsk = ",DoubleToString(curPriceAsk), " blowinfo0 = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price) );    
+     return ( slValue );     
+    }
    else
-    return ( (stopLevel+0.0001)/_Point );     
+    {
+     Print("Вернул 0, потому что stopLevel = ",DoubleToString(stopLevel));
+     return ( stopLevel+1 );     
+    }
  }
- return (0.0);
+ Print("Вернул 0, потому что конец функции GetStopLoss");
+ return (0);
 }
 
 bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
