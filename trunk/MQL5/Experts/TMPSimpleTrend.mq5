@@ -48,6 +48,9 @@ input ENUM_TIMEFRAMES pbiPeriod = PERIOD_H1;       // период PBI
 input string lockParams="";                        // Параметры запретов на вход
 input bool useLinesLock=false;                     // флаг включения запрета на вход по индикатора NineTeenLines
 input int    koLock  = 2;                          // коэффициент запрета на вход
+input bool   useExtr = true;                       // использовать пробития экстремумов
+input bool   useClose = true;                      // использовать пробития close-в
+input int indexStopLoss = 0;                       // индекс по которому выставляем стоп лосс
 // структура уровней
 struct bufferLevel
  {
@@ -73,7 +76,7 @@ bool     beatenExtrHigh[4];                        // массив флагов пробития экс
 bool     beatenExtrLow[4];                         // массив флагов пробития экстремумов LOW
 double   closes[];                                 // массив для хранения цен закрытия последних трех баров 
 // объекты классов
-CTradeManager *ctm;                                // объект торговой библиотеки                             
+CTradeManager *ctm;                                // объект торговой библиотеки                                                     
 CisNewBar     *isNewBar_D1;                        // новый бар на D1
 CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 // дополнительные системные переменные
@@ -168,7 +171,7 @@ int OnInit()
   ArrayInitialize(beatenExtrHigh,false);
   ArrayInitialize(beatenExtrLow,false);      
   // создаем объект класса TradeManager
-  ctm = new CTradeManager();  
+  ctm  = new CTradeManager();  
   // создаем объекты класса CisNewBar
   isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
   
@@ -239,7 +242,7 @@ void OnTick()
  ctm.OnTick(); 
  ctm.UpdateData();
  ctm.DoTrailing(aHandleExtremums[indexForTrail]); 
-
+ 
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
@@ -366,12 +369,12 @@ void OnTick()
  if (lastTendention == TENDENTION_UP && currentTendention == TENDENTION_UP)
  {   
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if ( ( (beatM5  =  IsExtremumBeaten(1,BUY) ) && (lastTrendPBI_1==BUY||usePBI==PBI_NO))                                     || 
-       ( (beatM15 =  IsExtremumBeaten(2,BUY) ) && (lastTrendPBI_2==BUY||usePBI==PBI_NO))                                     || 
-       ( (beatH1  =  IsExtremumBeaten(3,BUY) ) && (lastTrendPBI_3==BUY||usePBI==PBI_NO))                                     ||
-       ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,BUY))      && (lastTrendPBI_1==BUY||usePBI==PBI_NO) ) ||
-       ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,BUY))    && (lastTrendPBI_2==BUY||usePBI==PBI_NO) ) ||
-       ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,BUY))      && (lastTrendPBI_3==BUY||usePBI==PBI_NO) )         
+  if ( ( (beatM5       =  IsExtremumBeaten(1,BUY) ) && (lastTrendPBI_1==BUY||usePBI==PBI_NO) && useExtr)    || 
+       ( (beatM15      =  IsExtremumBeaten(2,BUY) ) && (lastTrendPBI_2==BUY||usePBI==PBI_NO) && useExtr)    || 
+       ( (beatH1       =  IsExtremumBeaten(3,BUY) ) && (lastTrendPBI_3==BUY||usePBI==PBI_NO) && useExtr)    ||
+       ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,BUY))      && (lastTrendPBI_1==BUY)    && useClose) ||
+       ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,BUY))     && (lastTrendPBI_2==BUY)    && useClose) ||
+       ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,BUY))      && (lastTrendPBI_3==BUY)    && useClose)         
        )
    {      
 
@@ -394,7 +397,7 @@ void OnTick()
     if (openedPosition != BUY)
     {
      // обнуляем счетчик трейлинга
-     indexForTrail = 0;
+     indexForTrail = indexStopLoss;
      // обнуляем счетчик доливок, если 
      countAdd = 0;                                         
     }   
@@ -413,24 +416,14 @@ void OnTick()
     stopLoss = GetStopLoss();        
     // заполняем параметры открытия позиции
     pos_info.type = OP_BUY;
-    pos_info.sl = stopLoss;  
-/*   Print("beatM5 = ",beatM5,
-         "\nbeatM15 = ",beatM15,
-         "\nbeatH1 = ",beatH1,
-         "\ncloseM5 = ",beatCloseM5,
-         "\ncloseM15 = ",beatCloseM15,
-         "\ncloseH1 = ",beatCloseH1,
-         "\nstopLoss = ",stopLoss
-           );*/    
+    pos_info.sl = stopLoss;    
     pos_info.volume = lotReal; 
-
-    Comment("Количество сделок = ",countDeal);
     // открываем позицию на BUY
-    if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
-     {
-      timeOpenPos = TimeCurrent();
-      lastDeal = BUY;
-     }
+      if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
+        {
+         timeOpenPos = TimeCurrent();
+         lastDeal = BUY;
+        }    
    }
   }
  
@@ -438,12 +431,12 @@ void OnTick()
  if (lastTendention == TENDENTION_DOWN && currentTendention == TENDENTION_DOWN)
  {                     
   // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
-  if ( ( (beatM5   =  IsExtremumBeaten(1,SELL) ) && (lastTrendPBI_1==SELL||usePBI==PBI_NO))                                 || 
-       ( (beatM15  =  IsExtremumBeaten(2,SELL) ) && (lastTrendPBI_2==SELL||usePBI==PBI_NO))                                 || 
-       ( (beatH1   =  IsExtremumBeaten(3,SELL) ) && (lastTrendPBI_3==SELL||usePBI==PBI_NO))                                 ||
-       ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,SELL))   && (lastTrendPBI_1==SELL||usePBI==PBI_NO) ) ||
-       ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,SELL)) && (lastTrendPBI_2==SELL||usePBI==PBI_NO) ) ||
-       ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,SELL))   && (lastTrendPBI_3==SELL||usePBI==PBI_NO) )       
+  if ( ( (beatM5   =  IsExtremumBeaten(1,SELL) ) && (lastTrendPBI_1==SELL||usePBI==PBI_NO) && useExtr) || 
+       ( (beatM15  =  IsExtremumBeaten(2,SELL) ) && (lastTrendPBI_2==SELL||usePBI==PBI_NO) && useExtr) || 
+       ( (beatH1   =  IsExtremumBeaten(3,SELL) ) && (lastTrendPBI_3==SELL||usePBI==PBI_NO) && useExtr) || 
+       ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,SELL))   && (lastTrendPBI_1==SELL)   && useClose)  ||
+       ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,SELL))  && (lastTrendPBI_2==SELL)   && useClose)  ||
+       ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,SELL))   && (lastTrendPBI_3==SELL)   && useClose)       
         )  
   {    
     // если используются зарпеты по NineTeenLines
@@ -465,7 +458,7 @@ void OnTick()
     if (openedPosition != SELL)
     {
      // обнуляем счетчик трейлинга
-     indexForTrail = 0; 
+     indexForTrail = indexStopLoss; 
      // обнуляем счетчик доливок, если 
      countAdd = 0;        
     }
@@ -487,11 +480,11 @@ void OnTick()
    pos_info.sl = stopLoss;   
    pos_info.volume = lotReal;  
    // открываем позицию на SELL 
-   if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
-    {
-     timeOpenPos = TimeCurrent();
-     lastDeal = SELL;
-    }
+     if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
+      {
+       timeOpenPos = TimeCurrent();
+       lastDeal = SELL;
+      }
   } 
   }
 }
@@ -546,31 +539,26 @@ int GetStopLoss()         // вычисляет стоп лосс
  switch (openedPosition)
  {
   case BUY:
-   slValue = (curPriceBid - blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price)/_Point; 
+   slValue = (curPriceBid - blowInfo[indexStopLoss].GetExtrByIndex(EXTR_LOW,0).price)/_Point; 
    if ( slValue > stopLevel )
     {
-     Print("Вернул 0, потому что slValue = ",slValue/_Point," curPriceBid = ",DoubleToString(curPriceBid), " blowinfo0 = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price) );
      return ( slValue );
     }
    else
     {
-     Print("Вернул 0, потому что stopLevel = ",DoubleToString(stopLevel));
      return ( stopLevel+1 );
     }
   case SELL:
-   slValue = (blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk)/_Point;
+   slValue = (blowInfo[indexStopLoss].GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk)/_Point;
    if ( slValue > stopLevel )
-    {
-     Print("Вернул 0, потому что slValue = ",DoubleToString(slValue)," curPriceAsk = ",DoubleToString(curPriceAsk), " blowinfo0 = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price) );    
+    {   
      return ( slValue );     
     }
    else
     {
-     Print("Вернул 0, потому что stopLevel = ",DoubleToString(stopLevel));
      return ( stopLevel+1 );     
     }
  }
- Print("Вернул 0, потому что конец функции GetStopLoss");
  return (0);
 }
 
@@ -582,30 +570,28 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
  switch (openedPosition)
  {
   case BUY:  // если позиция открыта на BUY
-   if ( blowInfo[0].GetPrevExtrType() == EXTR_LOW )  // если последний экстремум LOW
+   if ( blowInfo[indexStopLoss].GetPrevExtrType() == EXTR_LOW )  // если последний экстремум LOW
    { 
     // получаем новую среднюю цену позиции
     posAverPrice = (lotReal*pricePos + lotStep*SymbolInfoDouble(_Symbol,SYMBOL_ASK) ) / (lotReal+lotStep);   
-    if (IsExtremumBeaten(0,BUY)  && 
+    if (IsExtremumBeaten(indexStopLoss,BUY)  && 
         GreatDoubles(ctm.GetPositionStopLoss(_Symbol),posAverPrice) 
        ) // если пробит экстремум и стоп лосс в безубытке
-    {
-     Comment("Пробит верхний экстремум M1 в ",TimeToString(TimeCurrent())," экстремум = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_HIGH,0).price) ); 
+    { 
      countAdd++; // увеличиваем счетчик доливок
      return (true);
     }
    } 
   break;
   case SELL: // если позиция открыта на SELL
-   if ( blowInfo[0].GetPrevExtrType() == EXTR_HIGH ) // если последний экстремум HIGH
+   if ( blowInfo[indexStopLoss].GetPrevExtrType() == EXTR_HIGH ) // если последний экстремум HIGH
    {   
     // получаем новую среднюю цену позиции
     posAverPrice = (lotReal*pricePos + lotStep*SymbolInfoDouble(_Symbol,SYMBOL_BID) ) / (lotReal+lotStep);      
-    if (IsExtremumBeaten(0,SELL) &&
+    if (IsExtremumBeaten(indexStopLoss,SELL) &&
         LessDoubles(ctm.GetPositionStopLoss(_Symbol),posAverPrice)  
        ) // если пробит экстремум и стоп лосс в безубытке
     {
-     Comment("Пробит нижний экстремум M1 в ",TimeToString(TimeCurrent())," экстремум = ",DoubleToString(blowInfo[0].GetExtrByIndex(EXTR_LOW,0).price) ); 
      countAdd++; // увеличиваем счетчик доливок
      return (true);
     }   
