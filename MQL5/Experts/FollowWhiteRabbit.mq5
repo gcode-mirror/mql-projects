@@ -8,70 +8,57 @@
 #property version   "1.00"
 
 //+------------------------------------------------------------------+
-//| Expert includes                                                  |
+//| Эксперт FollowWhiteRabbit                                        |
 //+------------------------------------------------------------------+
-//#include <Trade\PositionInfo.mqh> //подключаем библиотеку для получения информации о позициях
-//#include <CompareDoubles.mqh>
+// подключение необходимых библиотек
 #include <Lib CIsNewBar.mqh>
-#include <TradeManager\TradeManager.mqh>
-#include <TradeManager\ReplayPosition.mqh>  
-
-#define DEFAULT_LOT 1
+#include <TradeManager\TradeManager.mqh> 
+// константы
+#define ADD_TO_STOPLOSS 50 
 #define DEPTH 30
-#define ADD_TO_STOPPLOSS 50
-//+------------------------------------------------------------------+
-//| Expert variables                                                 |
-//+------------------------------------------------------------------+
-input ENUM_TIMEFRAMES timeframe = PERIOD_H1;
-input double supremacyPercent = 0.2;
-input double profitPercent = 0.5; 
-input double levelsKo = 3;
-input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
-input int minProfit = 250;
-input int trailingStop = 150;
-input int trailingStep = 5;
-input ENUM_USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;           //Тип отложенного ордера                    
-input int priceDifference = 50;                       // Price Difference
-input bool replayPositions = true;
-input int percentATRforReadyToReplay = 10;
-input int percentATRforTrailing = 50;
-
-string symbol;           //переменная для хранения символа
+#define SPREAD 30
+// вводимые пользователем параметры
+input string baseParams = "";                                                   // БАЗОВЫЕ ПАРАМЕТРЫ
+input double supremacyPercent = 0.2;                                            
+input double profitPercent = 0.5;                                               
+input string trailParams = "";                                                  // ПАРАМЕТРЫ ТРЕЙЛИНГА
+input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;                      // тип трейлинга
+input int minProfit = 250;                                                      // минимальная прибыль
+input int trailingStop = 150;                                                   // трейлинг стоп
+input int trailingStep = 5;                                                     // шаг трейлинга
+input string orderParams = "";                                                  // ПАРАМЕТРЫ ОРДЕРОВ
+input ENUM_USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;           // Тип отложенного ордера                    
+input int priceDifference = 50;                                                 // Price Difference
+// глобальные переменные 
 datetime history_start;
-
-CTradeManager ctm;       //торговый класс
-//ReplayPosition *rp;      //класс отыгрыша убыточной позиции
-MqlTick tick;
-
-double takeProfit, stopLoss;
+//торговый класс
+CTradeManager ctm;          
+// массивы
 double ave_atr_buf[1], close_buf[1], open_buf[1], pbi_buf[1];
-ENUM_TM_POSITION_TYPE opBuy, opSell, pos_type;
+
+ENUM_TM_POSITION_TYPE opBuy, opSell;
+
 CisNewBar *isNewBarM1;
 CisNewBar *isNewBarM5;
 CisNewBar *isNewBarM15;
-
+// хэндлы индикаторов
 int handle_PBI;
 int handle_aATR_M1;
 int handle_aATR_M5;
 int handle_aATR_M15;
-int handle_19Lines;
-struct bufferLevel         // структура уровней
-{
- double price[];
- double atr[];
-};
-bufferLevel buffers[20];   // буферы уровней
-
+// параметры позиции и трейлинга
 SPositionInfo pos_info;
-STrailing trailing;
+STrailing     trailing;
+
+double volume = 0.1;
 //+------------------------------------------------------------------+
-//| Expert initialization function                                   |
+//| Инициализация эксперта                                           |
 //+------------------------------------------------------------------+
+
 int OnInit()
   {
-   symbol=Symbol();                 //сохраним текущий символ графика для дальнейшей работы советника именно на этом символе
    history_start=TimeCurrent();        //--- запомним время запуска эксперта для получения торговой истории
-   
+
    switch (pending_orders_type)  //вычисление priceDifference
    {
     case USE_LIMIT_ORDERS: //useLimitsOrders = true;
@@ -88,216 +75,110 @@ int OnInit()
     break;
    }
    
-   //rp = new ReplayPosition(symbol, timeframe, percentATRforReadyToReplay, percentATRforTrailing);
-   isNewBarM1  = new CisNewBar(symbol, PERIOD_M1);
-   isNewBarM5  = new CisNewBar(symbol, PERIOD_M5);
-   isNewBarM15 = new CisNewBar(symbol, PERIOD_M15);
-   handle_PBI     = iCustom(symbol, PERIOD_M15, "PriceBasedIndicator");
-   handle_aATR_M1  = iMA(symbol,  PERIOD_M1, 100, 0, MODE_EMA, iATR(symbol,  PERIOD_M1, 30));
-   handle_aATR_M5  = iMA(symbol,  PERIOD_M5, 100, 0, MODE_EMA, iATR(symbol,  PERIOD_M5, 30)); 
-   handle_aATR_M15 = iMA(symbol, PERIOD_M15, 100, 0, MODE_EMA, iATR(symbol, PERIOD_M15, 30));  
-   handle_19Lines = iCustom(symbol, timeframe, "NineteenLines");     
-   if (handle_PBI == INVALID_HANDLE || handle_19Lines == INVALID_HANDLE)
+   // создаем объекты класса для обнаружения появления нового бара
+   isNewBarM1      = new CisNewBar(_Symbol, PERIOD_M1);
+   isNewBarM5      = new CisNewBar(_Symbol, PERIOD_M5);
+   isNewBarM15     = new CisNewBar(_Symbol, PERIOD_M15);
+   // создаем хэндл PriceBasedIndicator
+   handle_PBI      = iCustom(_Symbol, PERIOD_M15, "PriceBasedIndicator");
+   handle_aATR_M1  = iMA(_Symbol,  PERIOD_M1, 100, 0, MODE_EMA, iATR(_Symbol,  PERIOD_M1,  30));
+   handle_aATR_M5  = iMA(_Symbol,  PERIOD_M5, 100, 0, MODE_EMA, iATR(_Symbol,  PERIOD_M5,  30)); 
+   handle_aATR_M15 = iMA(_Symbol, PERIOD_M15, 100, 0, MODE_EMA, iATR(_Symbol,  PERIOD_M15, 30));  
+     
+   if ( handle_PBI == INVALID_HANDLE )
     {
      PrintFormat("%s Не удалось получить хэндл одного из вспомогательных индикаторов", MakeFunctionPrefix(__FUNCTION__));
     }       
-   //устанавливаем индексацию для массивов ХХХ_buf
-   ArraySetAsSeries(ave_atr_buf, false);
-   ArraySetAsSeries(close_buf, false);
-   ArraySetAsSeries(open_buf, false);
-   
-   pos_info.volume = DEFAULT_LOT;
-   pos_info.expiration = 0;
-   pos_info.priceDifference = priceDifference;
-   
-   trailing.trailingType = trailingType;
-   trailing.minProfit    = minProfit;
-   trailing.trailingStop = trailingStop;
-   trailing.trailingStep = trailingStep;
-   trailing.handlePBI    = handle_PBI;
- 
-   return(0);
+     
+   trailing.trailingType      = trailingType;
+   trailing.minProfit         = minProfit;
+   trailing.trailingStop      = trailingStop;
+   trailing.trailingStep      = trailingStep;
+   trailing.handleForTrailing = handle_PBI;
+   return(INIT_SUCCEEDED);
   }
-//+------------------------------------------------------------------+
-//| Expert deinitialization function                                 |
-//+------------------------------------------------------------------+
+
 void OnDeinit(const int reason)
   {
-   //delete rp;
-   // Освобождаем динамические массивы от данных
-   ArrayFree(ave_atr_buf);
+
   }
-//+------------------------------------------------------------------+
-//| Expert tick function                                             |
-//+------------------------------------------------------------------+
+  
+  int c=0;
+
 void OnTick()
   {
    ctm.OnTick();
-   //if (replayPositions) rp.CustomPosition();
-   //переменные для хранения результатов работы с ценовым графиком
-   
    if(isNewBarM1.isNewBar())
    {
-    CheckHugeBar(PERIOD_M1, handle_aATR_M1);
-     //PrintFormat("Большой бар на М1. Открыл позицию");
+    pos_info = GetTradeSignal(PERIOD_M1, handle_aATR_M1);
    }
-   
    if(isNewBarM5.isNewBar())
    {
-    CheckHugeBar(PERIOD_M5, handle_aATR_M5);
-     //PrintFormat("Большой бар на М5. Открыл позицию");
-   }
-   
+    pos_info = GetTradeSignal(PERIOD_M5, handle_aATR_M5);
+   }  
    if(isNewBarM15.isNewBar())
    {
-    CheckHugeBar(PERIOD_M15, handle_aATR_M15);
-     //PrintFormat("Большой бар на М15. Открыл позицию");
+    pos_info = GetTradeSignal(PERIOD_M15, handle_aATR_M15);
    }
- 
-   return;   
+   if (pos_info.type == opBuy || pos_info.type == opSell)
+    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);
   }
-//+------------------------------------------------------------------+
+
 void OnTrade()
   {
    ctm.OnTrade();
-   //if(replayPositions)rp.OnTrade();
    if (history_start != TimeCurrent())
    {
-    //rp.setArrayToReplay(ctm.GetPositionHistory(history_start));
     history_start = TimeCurrent() + 1;
    }
   }
-  
-bool CheckHugeBar(ENUM_TIMEFRAMES tf, int handle_atr)
-{
- int errATR = 0;                                                   
- int errHigh = 0;                                                   
- int errClose = 0;
- int errOpen = 0;
- int errPBI = 0;
-   
- double sum = 0;
- double avgBar = 0;
- double lastBar = 0;
- long positionType;
 
- //копируем данные ценового графика в динамические массивы для дальнейшей работы с ними
- errClose = CopyClose(symbol, tf, 1, 1, close_buf);          
- errOpen  =  CopyOpen(symbol, tf, 1, 1, open_buf);
- errATR   = CopyBuffer(handle_atr, 0, 0, 1, ave_atr_buf);
- errPBI   = CopyBuffer(handle_PBI, 4, 1, 1, pbi_buf);
- Upload19LinesBuffers();
-   
- if(errATR < 0 || errClose < 0 || errOpen < 0)         //если есть ошибки
+// функция получения торгового сигнала (возвращает заполненную структуру позиции) 
+ SPositionInfo GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr)
+{   
+ SPositionInfo pos;
+ pos.type = OP_UNKNOWN;
+ // если не удалось прогрузить все буферы 
+ if ( CopyClose  (_Symbol,tf,1,1, close_buf)    < 1 ||
+      CopyOpen   (_Symbol,tf,1,1,open_buf)      < 1 ||
+      CopyBuffer (handle_atr,0,0,1,ave_atr_buf) < 1 )
  {
-  Alert("Не удалось скопировать данные из буфера ценового графика");  //то выводим сообщение в лог об ошибке
-  return(false);                                                             //и выходим из функции
+  Print("Не удалось скопировать данные из буфера ценового графика");  //то выводим сообщение в лог об ошибке
+  return(pos);                                                 //и выходим из функции
+ }
+ // если не удалось прогрузить буфер PBI  
+ if( CopyBuffer(handle_PBI,4,1,1,pbi_buf) < 1)   
+ {
+  Print("Не удалось скопировать данные из вспомогательного индикатора");  //то выводим сообщение в лог об ошибке
+  return(pos);                                                                 //и выходим из функции
  }
    
- if(errPBI < 0)                                                           //если есть ошибки
+ if(GreatDoubles(MathAbs(open_buf[0] - close_buf[0]), ave_atr_buf[0]*(1 + supremacyPercent)))
  {
-  Alert("Не удалось скопировать данные из вспомогательного индикатора");  //то выводим сообщение в лог об ошибке
-  return(false);                                                                 //и выходим из функции
- }
- 
- avgBar = ave_atr_buf[0];
- lastBar = MathAbs(open_buf[0] - close_buf[0]);
-    
- if(GreatDoubles(lastBar, avgBar*(1 + supremacyPercent)))
- {
-  double point = SymbolInfoDouble(symbol, SYMBOL_POINT);
-  int digits  = SymbolInfoInteger(symbol, SYMBOL_DIGITS);
-  double vol = MathPow(10.0, digits); 
   if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
   {  
-   pos_info.type = opSell;
-   stopLoss = CountStoploss(-1);
-   if(pbi_buf[0] == MOVE_TYPE_TREND_UP || pbi_buf[0] == MOVE_TYPE_TREND_UP_FORBIDEN ||
-      GetClosestLevel(-1) <= levelsKo*GetClosestLevel(1))
-    return(false);
+   Print("Получили торговый сигнал SELL");
+   pos.type = opSell;
+   pos.sl = CountStoploss(-1);
   }
   if(GreatDoubles(close_buf[0], open_buf[0]))
   { 
-   pos_info.type = opBuy;
-   stopLoss = CountStoploss(1);
-   if(pbi_buf[0] == MOVE_TYPE_TREND_DOWN || pbi_buf[0] == MOVE_TYPE_TREND_DOWN_FORBIDEN ||
-      GetClosestLevel(1) <= levelsKo*GetClosestLevel(-1))
-    return(false);
+   Print("Получили торговый сигнал BUY");
+   pos.type = opBuy;
+   pos.sl = CountStoploss(1);
   }
-  pos_info.tp = NormalizeDouble(MathAbs(open_buf[0] - close_buf[0])*vol*(1 + profitPercent),0);
-  pos_info.sl = stopLoss;
-  ctm.OpenUniquePosition(symbol, timeframe, pos_info, trailing);
-  PrintFormat("%s открыта позиция %d sl:%f tp:%f", EnumToString((ENUM_TIMEFRAMES)tf), pos_type, stopLoss, takeProfit); 
- }
- ArrayInitialize(ave_atr_buf, EMPTY_VALUE);
- ArrayInitialize(  close_buf, EMPTY_VALUE);
- ArrayInitialize(   open_buf, EMPTY_VALUE);
- ArrayInitialize(    pbi_buf, EMPTY_VALUE);
- Initialize19LinesBuffers();
- return(true);
+   pos.tp = (int)MathCeil((MathAbs(open_buf[0] - close_buf[0]) / _Point) * (1 + profitPercent));
+   pos.expiration = 0; 
+   pos.volume = volume;
+   pos.priceDifference = priceDifference; 
+  }
+  ArrayInitialize(ave_atr_buf, EMPTY_VALUE);
+  ArrayInitialize(close_buf,   EMPTY_VALUE);
+  ArrayInitialize(open_buf,    EMPTY_VALUE);
+  ArrayInitialize(pbi_buf,     EMPTY_VALUE);
+  return(pos);
 }
   
-bool Upload19LinesBuffers()   // получает последние значения уровней
-{
- int copiedPrice;
- int copiedATR;
- 
- for (int i = 0; i < 20; i++)
- {
-  copiedPrice = CopyBuffer(handle_19Lines,   i*2, 0, 1, buffers[i].price);
-  copiedATR   = CopyBuffer(handle_19Lines, i*2+1, 0, 1, buffers[i].atr);
-  if (copiedPrice < 1 || copiedATR < 1)
-  {
-   Print("Не удалось прогрузить буферы индикатора NineTeenLines");
-   return (false);
-  }
- }
- return(true);     
-}
-
-void Initialize19LinesBuffers()   // получает последние значения уровней
-{
- for (int i = 0; i < 20; i++)
- {
-  ArrayInitialize(buffers[i].price, EMPTY_VALUE);
-  ArrayInitialize(buffers[i].atr  , EMPTY_VALUE);  
- } 
-}
-
-double GetClosestLevel(int direction)  // возвращает ближайший уровень к текущей цене
-{
- double cuPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
- double len = 0;  //расстояние до цены от уровня
- double tmpLen; 
-
- switch (direction)
- {
-  case 1:  // ближний сверху
-   for(int i = 0; i < 20; i++)
-   {  // если уровень выше
-    if (GreatDoubles((buffers[i].price[0]-buffers[i].atr[0]),cuPrice))
-    {
-     tmpLen = buffers[i].price[0] - buffers[i].atr[0] - cuPrice;
-     if (tmpLen < len || len == 0)
-      len = tmpLen;  
-    }
-   }
-   break;
-  case -1: // ближний снизу
-   for(int j = 0; j < 20; j++)
-   {  // если уровень ниже
-    if ( LessDoubles((buffers[j].price[0]+buffers[j].atr[0]),cuPrice)  )
-    {
-     tmpLen = cuPrice - buffers[j].price[0] - buffers[j].atr[0] ;
-     if (tmpLen < len || len == 0)
-      len = tmpLen;
-    }
-   }
-   break;
-  }
- return (len);
-}
-
 // функция вычисляет стоп лосс
 int CountStoploss(int point)
 {
@@ -307,57 +188,46 @@ int CountStoploss(int point)
  double bufferStopLoss[];
  ArraySetAsSeries(bufferStopLoss, true);
  ArrayResize(bufferStopLoss, DEPTH);
- 
  int extrBufferNumber;
  if (point > 0)
  {
   extrBufferNumber = 6; //minimum
-  priceAB = SymbolInfoDouble(symbol, SYMBOL_ASK);
+  priceAB = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
   direction = 1;
  }
  else
  {
   extrBufferNumber = 5; // maximum
-  priceAB = SymbolInfoDouble(symbol, SYMBOL_BID);
+  priceAB = SymbolInfoDouble(_Symbol, SYMBOL_BID);
   direction = -1;
  }
- 
  int copiedPBI = -1;
  for(int attempts = 0; attempts < 25; attempts++)
  {
   Sleep(100);
   copiedPBI = CopyBuffer(handle_PBI, extrBufferNumber, 0,DEPTH, bufferStopLoss);
-
  }
  if (copiedPBI < DEPTH)
  {
   PrintFormat("%s Не удалось скопировать буфер bufferStopLoss", MakeFunctionPrefix(__FUNCTION__));
   return(0);
  }
- 
  for(int i = 0; i < DEPTH; i++)
  {
   if (bufferStopLoss[i] > 0)
   {
    if (LessDoubles(direction*bufferStopLoss[i], direction*priceAB))
    {
-    //PrintFormat("Last extremum %f", bufferStopLoss[i]);
     PrintFormat("price = %f; extr = %f", priceAB, bufferStopLoss[i]);
     stopLoss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point());// + ADD_TO_STOPPLOSS;
     break;
    }
   }
  }
- // на случай сбоя матрицы, в которой мы живем, а возможно и не живем
- // возможно всё вокруг - это лишь результат работы моего больного воображения
- // так или иначе, мы не можем исключать, что stopLoss может быть отрицательным числом
- // хотя гарантировать, что он будет положительным не из-за сбоя матрицы, мы опять таки не можем
- // к чему вообще вся эта дискуссия, пойду напьюсь ;) (c) DMIRTRII
  if (stopLoss <= 0)  
  {
   PrintFormat("Не поставили стоп на экстремуме");
-  stopLoss = SymbolInfoInteger(symbol, SYMBOL_SPREAD) + ADD_TO_STOPPLOSS;
+  stopLoss = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD) + ADD_TO_STOPLOSS;
  }
- //PrintFormat("%s StopLoss = %d",MakeFunctionPrefix(__FUNCTION__), stopLoss);
  return(stopLoss);
 }

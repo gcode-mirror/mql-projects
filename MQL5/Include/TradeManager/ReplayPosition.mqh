@@ -245,7 +245,7 @@ void ReplayPosition::CustomPosition()
     trailing.minProfit = trailParam;
     trailing.trailingStop = trailParam;
     trailing.trailingStep = trailParam;
-    trailing.handlePBI = 0;
+    trailing.handleForTrailing = 0;
     
     if (ctm.OpenMultiPosition(symbol, PERIOD_H1, pos_info, trailing)) //открываем позицию
     {
