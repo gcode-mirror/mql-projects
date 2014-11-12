@@ -194,7 +194,7 @@ CPosition::CPosition(CPosition *pos)
 //+------------------------------------------------------------------+
 //| Constructor with parameters                                      |
 //+------------------------------------------------------------------+
-CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositionInfo& pi, STrailing& tr): 
+CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositionInfo &pi, STrailing &tr): 
                      _magic(magic), 
                      _symbol(symbol), 
                      _period(period)
@@ -206,6 +206,7 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
  _trailing = tr;
  if(_pos_info.sl > 0 && _pos_info.sl < SymbInfo.StopsLevel()) _pos_info.sl = SymbInfo.StopsLevel();
  if(_pos_info.tp > 0 && _pos_info.tp < SymbInfo.StopsLevel()) _pos_info.tp = SymbInfo.StopsLevel();
+ if(_pos_info.priceDifference > 0 && _pos_info.priceDifference < SymbInfo.StopsLevel()) _pos_info.priceDifference = SymbInfo.StopsLevel();
  if (_trailing.trailingStop < SymbInfo.StopsLevel()) _trailing.trailingStop = SymbInfo.StopsLevel();
  if(_pos_info.expiration <= 0)
  {
@@ -300,7 +301,7 @@ double CPosition::getPosProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
- //log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice ));
+ log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice ));
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);
  //формируем комментарий
@@ -313,11 +314,11 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
   
   _slType = SLOrderType((int)_pos_info.type);
   
-  if (trade.OrderOpen(_symbol, _slType, _pos_info.volume, _slPrice, _type_time, _pos_info.expiration_time, slComment))
+  if (trade.OrderOpen(_symbol, _slType, _pos_info.volume, _slPrice, 0, 0, slComment))
   {
    _slTicket = trade.ResultOrder();
    _sl_status = STOPLEVEL_STATUS_PLACED;
-   if (OrderSelect(_slTicket)) log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d c ценой %0.6f, время экспирации %s, тип времени истечения %s", MakeFunctionPrefix(__FUNCTION__), _slTicket, _slPrice, TimeToString(OrderGetInteger(ORDER_TIME_EXPIRATION), TIME_DATE), EnumToString((ENUM_ORDER_TYPE_TIME)OrderGetInteger(ORDER_TYPE_TIME))));     
+   if (OrderSelect(_slTicket)) log_file.Write(LOG_DEBUG, StringFormat("%s Выставлен стоплосс %d c ценой %0.6f", MakeFunctionPrefix(__FUNCTION__), _slTicket, _slPrice));     
   }
   else
   {
@@ -611,6 +612,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
 {
  UpdateSymbolInfo();
  _posOpenPrice = OpenPriceByType(_pos_info.type);
+ PrintFormat("type = %s, _posOpenPrice=%.05f, bid = %.05f, diff = %.05f", GetNameOP(_pos_info.type), _posOpenPrice, SymbInfo.Bid(), _pos_info.priceDifference);
  _posAveragePrice = OpenPriceByType(_pos_info.type);
  _posOpenTime = TimeCurrent(); //сохраняем время открытия позиции    
  _posProfit = 0;

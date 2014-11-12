@@ -368,7 +368,7 @@ void OnTick()
  // если общая тенденция  - вверх
  if (lastTendention == TENDENTION_UP && currentTendention == TENDENTION_UP)
  {   
-  // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
+  // если текущая цена пробила один из экстемумов на одном из таймфреймов
   if ( ( (beatM5       =  IsExtremumBeaten(1,BUY) ) && (lastTrendPBI_1==BUY||usePBI==PBI_NO) && useExtr)    || 
        ( (beatM15      =  IsExtremumBeaten(2,BUY) ) && (lastTrendPBI_2==BUY||usePBI==PBI_NO) && useExtr)    || 
        ( (beatH1       =  IsExtremumBeaten(3,BUY) ) && (lastTrendPBI_3==BUY||usePBI==PBI_NO) && useExtr)    ||
@@ -430,7 +430,7 @@ void OnTick()
  // если общая тенденция - вниз
  if (lastTendention == TENDENTION_DOWN && currentTendention == TENDENTION_DOWN)
  {                     
-  // если текущая цена пробила один из экстемумов на одном из таймфреймов и текущее расхождение MACD НЕ противоречит текущему движению
+  // если текущая цена пробила один из экстемумов на одном из таймфреймов 
   if ( ( (beatM5   =  IsExtremumBeaten(1,SELL) ) && (lastTrendPBI_1==SELL||usePBI==PBI_NO) && useExtr) || 
        ( (beatM15  =  IsExtremumBeaten(2,SELL) ) && (lastTrendPBI_2==SELL||usePBI==PBI_NO) && useExtr) || 
        ( (beatH1   =  IsExtremumBeaten(3,SELL) ) && (lastTrendPBI_3==SELL||usePBI==PBI_NO) && useExtr) || 
