@@ -19,7 +19,7 @@
 input double volume = 0.1;
 input int    spread = 30;         // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
-input double tp_ko = 1;
+input double tp_ko = 2;
 /*
 input int minProfit = 250;
 input int trailingStop = 150;
@@ -154,8 +154,6 @@ void OnTick()
     trailing.minProfit = 2*diff_low;
     trailing.trailingStop = diff_low;
     trailing.trailingStep = 5;
-    
-    TimeCurrent(timeCurrent);
     if ((pos_info.tp > pos_info.sl*tp_ko))
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
