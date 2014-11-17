@@ -19,7 +19,9 @@
 #define SPREAD 30
 // вводимые пользователем параметры
 input string baseParams = "";                                                   // БАЗОВЫЕ ПАРАМЕТРЫ
-input double supremacyPercent = 0.2;                                            
+input double M1_supremacyPercent  = 5;
+input double M5_supremacyPercent  = 3;
+input double M15_supremacyPercent = 1;
 input double profitPercent = 0.5;                                               
 input string trailParams = "";                                                  // ПАРАМЕТРЫ ТРЕЙЛИНГА
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;                      // тип трейлинга
@@ -50,7 +52,7 @@ int handle_aATR_M15;
 SPositionInfo pos_info;
 STrailing     trailing;
 
-double volume = 0.1;
+double volume = 1.0;
 //+------------------------------------------------------------------+
 //| Инициализация эксперта                                           |
 //+------------------------------------------------------------------+
@@ -102,26 +104,27 @@ void OnDeinit(const int reason)
   {
 
   }
-  
-  int c=0;
 
 void OnTick()
   {
    ctm.OnTick();
+   pos_info.type = OP_UNKNOWN;
    if(isNewBarM1.isNewBar())
    {
-    pos_info = GetTradeSignal(PERIOD_M1, handle_aATR_M1);
+    GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent, pos_info); //свой коэффициент
    }
    if(isNewBarM5.isNewBar())
    {
-    pos_info = GetTradeSignal(PERIOD_M5, handle_aATR_M5);
+    GetTradeSignal(PERIOD_M5, handle_aATR_M5, M5_supremacyPercent, pos_info);
    }  
    if(isNewBarM15.isNewBar())
    {
-    pos_info = GetTradeSignal(PERIOD_M15, handle_aATR_M15);
+    GetTradeSignal(PERIOD_M15, handle_aATR_M15, M15_supremacyPercent, pos_info);
    }
    if (pos_info.type == opBuy || pos_info.type == opSell)
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);
+    {
+     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);
+    }
   }
 
 void OnTrade()
@@ -134,49 +137,48 @@ void OnTrade()
   }
 
 // функция получения торгового сигнала (возвращает заполненную структуру позиции) 
- SPositionInfo GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr)
+void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,SPositionInfo &pos)
 {   
- SPositionInfo pos;
- pos.type = OP_UNKNOWN;
  // если не удалось прогрузить все буферы 
  if ( CopyClose  (_Symbol,tf,1,1, close_buf)    < 1 ||
       CopyOpen   (_Symbol,tf,1,1,open_buf)      < 1 ||
       CopyBuffer (handle_atr,0,0,1,ave_atr_buf) < 1 )
  {
   Print("Не удалось скопировать данные из буфера ценового графика");  //то выводим сообщение в лог об ошибке
-  return(pos);                                                 //и выходим из функции
+  return;                                                 //и выходим из функции
  }
  // если не удалось прогрузить буфер PBI  
  if( CopyBuffer(handle_PBI,4,1,1,pbi_buf) < 1)   
  {
   Print("Не удалось скопировать данные из вспомогательного индикатора");  //то выводим сообщение в лог об ошибке
-  return(pos);                                                                 //и выходим из функции
+  return;                                                                 //и выходим из функции
  }
    
  if(GreatDoubles(MathAbs(open_buf[0] - close_buf[0]), ave_atr_buf[0]*(1 + supremacyPercent)))
  {
   if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
   {  
-   Print("Получили торговый сигнал SELL");
+ //  Print("Получили торговый сигнал SELL");
    pos.type = opSell;
    pos.sl = CountStoploss(-1);
   }
   if(GreatDoubles(close_buf[0], open_buf[0]))
   { 
-   Print("Получили торговый сигнал BUY");
+ //  Print("Получили торговый сигнал BUY");
    pos.type = opBuy;
    pos.sl = CountStoploss(1);
   }
    pos.tp = (int)MathCeil((MathAbs(open_buf[0] - close_buf[0]) / _Point) * (1 + profitPercent));
    pos.expiration = 0; 
-   pos.volume = volume;
+   pos.expiration_time = 0;
+   pos.volume     = volume;
    pos.priceDifference = priceDifference; 
   }
   ArrayInitialize(ave_atr_buf, EMPTY_VALUE);
   ArrayInitialize(close_buf,   EMPTY_VALUE);
   ArrayInitialize(open_buf,    EMPTY_VALUE);
   ArrayInitialize(pbi_buf,     EMPTY_VALUE);
-  return(pos);
+  return;
 }
   
 // функция вычисляет стоп лосс

@@ -184,7 +184,7 @@ bool CTMTradeFunctions::PositionOpen(const string symbol,const ENUM_POSITION_TYP
  ENUM_ORDER_TYPE order_type;
  if(volume <= 0.0)
  {
-  PrintFormat("%s Неправильный объем", MakeFunctionPrefix(__FUNCTION__));
+  PrintFormat("%s Неправильный объем %d", MakeFunctionPrefix(__FUNCTION__),volume);
   m_result.retcode=TRADE_RETCODE_INVALID_VOLUME;
   return(false);
  }
