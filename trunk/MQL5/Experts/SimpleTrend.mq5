@@ -80,31 +80,31 @@ CTradeManager *ctm;                                // объект торговой библиотеки
 CisNewBar     *isNewBar_D1;                        // новый бар на D1
 CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 // дополнительные системные переменные
-bool             firstLaunch       = true;         // флаг первого запуска эксперта
-bool             beatM5;                           // флаг пробития на M5
-bool             beatM15;                          // флаг пробития на M15
-bool             beatH1;                           // флаг пробития на H1
-bool             beatCloseM5;                      // флаг пробития последних двух close M5
-bool             beatCloseM15;                     // флаг пробития последних двух close M15
-bool             beatCloseH1;                      // флаг пробития последних двух close H1
-int              openedPosition    = NO_POSITION;  // тип открытой позиции 
-int              stopLoss;                         // стоп лосс
-int              indexForTrail     = 0;            // индекс для трейлинга
-int              tmpLastBar;
+bool firstLaunch       = true;         // флаг первого запуска эксперта
+bool beatM5;                           // флаг пробития на M5
+bool beatM15;                          // флаг пробития на M15
+bool beatH1;                           // флаг пробития на H1
+bool beatCloseM5;                      // флаг пробития последних двух close M5
+bool beatCloseM15;                     // флаг пробития последних двух close M15
+bool beatCloseH1;                      // флаг пробития последних двух close H1
+int  openedPosition    = NO_POSITION;  // тип открытой позиции 
+int  stopLoss;                         // стоп лосс
+int  indexForTrail     = 0;            // индекс для трейлинга
+int  tmpLastBar;
 
-double           curPriceAsk       = 0;            // для хранения текущей цены Ask
-double           curPriceBid       = 0;            // для хранения текущей цены Bid 
-double           prevPriceAsk      = 0;            // для хранения предыдущей цены Ask
-double           prevPriceBid      = 0;            // для хранения предыдущей цены Bid
-double           lotReal;                          // действительный лот
+double curPriceAsk       = 0;            // для хранения текущей цены Ask
+double curPriceBid       = 0;            // для хранения текущей цены Bid 
+double prevPriceAsk      = 0;            // для хранения предыдущей цены Ask
+double prevPriceBid      = 0;            // для хранения предыдущей цены Bid
+double lotReal;                          // действительный лот
 
 // переменные доливок
-int              countAdd          = 0;            // количество доливок
-bool             changeLotValid    = false;        // флаг возможности доливки на M1
+int  countAdd          = 0;            // количество доливок
+bool changeLotValid    = false;        // флаг возможности доливки на M1
 // переменные PriceBasedIndicator
-int              lastTrendPBI_1    = 0;            // тип последнего тренда по PBI 
-int              lastTrendPBI_2    = 0;            // тип последнего тренда по PBI
-int              lastTrendPBI_3    = 0;            // тип последнего тренда по PBI
+int  lastTrendPBI_1    = 0;            // тип последнего тренда по PBI 
+int  lastTrendPBI_2    = 0;            // тип последнего тренда по PBI
+int  lastTrendPBI_3    = 0;            // тип последнего тренда по PBI
 double pbiBuf[];                                   // буфер для хранения PriceBasedIndicator
 ENUM_TENDENTION lastTendention, currentTendention; // переменные для хранения направления предыдущего и текущего баров
 // переменные и буферы NineTeenLines
