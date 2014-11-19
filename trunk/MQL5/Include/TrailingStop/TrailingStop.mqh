@@ -245,6 +245,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
  {
   lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
   lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
+
   // если текущая цена пробила последний значимый LOW экстремум  
   if (LessDoubles(currentPriceAsk, lastExtrLow) && LessDoubles(lastExtrHigh,sl))
   {
