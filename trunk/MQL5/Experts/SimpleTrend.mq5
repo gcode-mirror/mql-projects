@@ -364,6 +364,7 @@ void OnTick()
   }        
  }
  currentTendention = GetTendention(lastBarD1[1].open, curPriceBid);
+ 
  // если общая тенденция  - вверх
  if (lastTendention == TENDENTION_UP && currentTendention == TENDENTION_UP)
  {   
@@ -374,11 +375,8 @@ void OnTick()
        ( (beatCloseM5  =  IsLastClosesBeaten(PERIOD_M5,BUY))      && (lastTrendPBI_1==BUY)    && useClose)  ||
        ( (beatCloseM15 =  IsLastClosesBeaten(PERIOD_M15,BUY))     && (lastTrendPBI_2==BUY)    && useClose)  ||
        ( (beatCloseH1  =  IsLastClosesBeaten(PERIOD_H1,BUY))      && (lastTrendPBI_3==BUY)    && useClose)         
-       )
+       ) 
    {      
-    Comment("BUY lastTend = ",lastTendention,
-            "\ncurrentTend = ",currentTendention
-           );
     Print("Получили сигнал на BUY, время = ",TimeToString(TimeCurrent()));
     // если используются запреты по NineTeenLines
     if (useLinesLock)
@@ -439,9 +437,6 @@ void OnTick()
        ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,SELL))   && (lastTrendPBI_3==SELL)   && useClose)       
         )  
   {    
-    Comment("SELL lastTend = ",lastTendention,
-            "\ncurrentTend = ",currentTendention
-           );  
     Print("Получили сигнал на Sell, время = ",TimeToString(TimeCurrent()));
     // если используются зарпеты по NineTeenLines
     if (useLinesLock)
@@ -506,24 +501,16 @@ bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой эк
  switch (direction)
  {
   case SELL:
-   if (LessDoubles(curPriceBid,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price)&& GreatDoubles(prevPriceBid,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price) && !beatenExtrLow[index])
+   if (LessDoubles(curPriceBid,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price)&& GreatOrEqualDoubles(prevPriceBid,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price) && !beatenExtrLow[index])
    {
-    beatenExtrLow[index] = true;
-   /* Comment("SELL предыдущая цена = ",DoubleToString(prevPriceBid),
-            "\nтекущая цена = ",DoubleToString(curPriceBid),
-            "\nэкстремум = ",DoubleToString(blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price)
-           ); */
+    beatenExtrLow[index] = true; 
     return (true);    
    }     
   break;
   case BUY:
-   if (GreatDoubles(curPriceBid,blowInfo[index].GetExtrByIndex(EXTR_HIGH,0).price) && LessDoubles(prevPriceBid,blowInfo[index].GetExtrByIndex(EXTR_HIGH,0).price) && !beatenExtrHigh[index])
+   if (GreatDoubles(curPriceBid,blowInfo[index].GetExtrByIndex(EXTR_HIGH,0).price) && LessOrEqualDoubles(prevPriceBid,blowInfo[index].GetExtrByIndex(EXTR_HIGH,0).price) && !beatenExtrHigh[index])
    {
     beatenExtrHigh[index] = true;
-  /*  Comment("BUY предыдущая цена = ",DoubleToString(prevPriceBid),
-            "\nтекущая цена = ",DoubleToString(curPriceBid),
-            "\nэкстремум = ",DoubleToString(blowInfo[index].GetExtrByIndex(EXTR_HIGH,0).price)
-           );   */ 
     return (true);
    }     
   break;
@@ -588,7 +575,6 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
         GreatDoubles(ctm.GetPositionStopLoss(_Symbol),posAverPrice) 
        ) // если пробит экстремум и стоп лосс в безубытке
     {
-     Comment("сигнал BUY"); 
      countAdd++; // увеличиваем счетчик доливок
      return (true);
     }
@@ -604,7 +590,6 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
         LessDoubles(ctm.GetPositionStopLoss(_Symbol),posAverPrice)  
        ) // если пробит экстремум и стоп лосс в безубытке
     {
-     Comment("сигнал SELL");
      countAdd++; // увеличиваем счетчик доливок
      return (true);
     }   
