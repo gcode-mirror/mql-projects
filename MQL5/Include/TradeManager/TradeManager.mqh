@@ -690,11 +690,8 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
         // Проверить наличие ордера в истории
         // Удалить позицию из массива позиций и перенести объект позиции в историю
        }
-       else
-       { 
-        ClosePosition(i);
-       }
       }
+      ClosePosition(i);
      }
     }
    }
