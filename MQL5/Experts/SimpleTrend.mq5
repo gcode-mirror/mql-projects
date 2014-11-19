@@ -242,6 +242,8 @@ void OnTick()
  ctm.UpdateData();
  ctm.DoTrailing(aHandleExtremums[indexForTrail]); 
 
+ //Comment("TrailIndex = ",indexForTrail);
+
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
@@ -364,7 +366,9 @@ void OnTick()
   }        
  }
  currentTendention = GetTendention(lastBarD1[1].open, curPriceBid);
- 
+ Comment("curTendention = ",currentTendention,
+         "\nlastTendention = ",lastTendention
+         );
  // если общая тенденция  - вверх
  if (lastTendention == TENDENTION_UP && currentTendention == TENDENTION_UP)
  {   
@@ -501,7 +505,8 @@ bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой эк
  switch (direction)
  {
   case SELL:
-   if (LessDoubles(curPriceBid,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price)&& GreatOrEqualDoubles(prevPriceBid,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price) && !beatenExtrLow[index])
+  if (index == 1)
+   if (LessDoubles(curPriceAsk,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price)&& GreatOrEqualDoubles(prevPriceAsk,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price) && !beatenExtrLow[index])
    {
     beatenExtrLow[index] = true; 
     return (true);    
