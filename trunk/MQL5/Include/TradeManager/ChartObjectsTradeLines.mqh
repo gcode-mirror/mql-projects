@@ -93,6 +93,8 @@ bool CTakeProfitLine::Create(long lTicket,double price)
       //LogFile.Log(LOG_VERBOSE,__FUNCTION__,"("+(string)price+","+strName+") returning true");
       Color(TakeProfitLineColor);
       Style(STYLE_DASHDOTDOT);
+      Selectable(true);
+      Selected(true);
       return(true);
      }
    else

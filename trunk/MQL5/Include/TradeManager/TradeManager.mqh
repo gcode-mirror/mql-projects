@@ -649,7 +649,7 @@ void CTradeManager::OnTrade(datetime history_start=0)
 //+------------------------------------------------------------------+
 bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing,int maxSpread)
 {
- Print("ПОЛУЧИЛИ ОБЪЕМ = ",DoubleToString(pos_info.volume));
+ //Print("ПОЛУЧИЛИ ОБЪЕМ = ",DoubleToString(pos_info.volume));
  if (maxSpread > 0 && SymbolInfoInteger(symbol,SYMBOL_SPREAD) > maxSpread)
  {
   //log_file.Write(LOG_DEBUG, StringFormat("%s Невозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
