@@ -209,7 +209,8 @@ enum ENUM_TRAILING_TYPE
    TRAILING_TYPE_USUAL,
    TRAILING_TYPE_LOSSLESS,
    TRAILING_TYPE_PBI,
-   TRAILING_TYPE_EXTREMUMS
+   TRAILING_TYPE_EXTREMUMS,
+   TRAILING_TYPE_EASY_LOSSLESS
   };
 
 //+------------------------------------------------------------------+ 
@@ -223,6 +224,7 @@ string GetNameTrailing(ENUM_TRAILING_TYPE type)
   case TRAILING_TYPE_USUAL   : return("USUAL");
   case TRAILING_TYPE_LOSSLESS: return("LOSSLESS");
   case TRAILING_TYPE_PBI     : return("PBI");
+  case TRAILING_TYPE_EASY_LOSSLESS: return ("EASY_LOSSLESS");
   default                    : return("Unknown trailing type");
  }
 };
@@ -236,6 +238,7 @@ ENUM_TRAILING_TYPE StringToTrailingType(string str)
  if(str == "USUAL"   ) return(TRAILING_TYPE_USUAL);
  if(str == "LOSSLESS") return(TRAILING_TYPE_LOSSLESS);
  if(str == "PBI"     ) return(TRAILING_TYPE_PBI);
+ if(str == "EASY_LOSSLESS" ) return (TRAILING_TYPE_EASY_LOSSLESS);
  return(TRAILING_TYPE_NONE);
 };
   

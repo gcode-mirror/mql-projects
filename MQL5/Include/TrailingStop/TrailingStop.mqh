@@ -37,6 +37,7 @@ public:
                        
    double LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl
                        , int _minProfit, int _trailingStop, int _trailingStep);
+   double Lossless        (string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, int minProfit);                       
    double PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl, int handle_PBI, int minProfit = 0);
    double ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleExtremums, int minProfit = 0);                    
   };
@@ -127,6 +128,40 @@ double CTrailingStop::LosslessTrailing(string symbol, ENUM_TM_POSITION_TYPE type
   {
    newSL = NormalizeDouble(price + direction*trailingStop*point, digits);
   }
+ }
+ return (newSL);
+}
+
+//+------------------------------------------------------------------+
+// Трейлинг с выходом на безубыток
+//+------------------------------------------------------------------+
+double CTrailingStop::Lossless(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, int minProfit)
+{
+ double newSL = 0;
+ if (minProfit > 0 )
+ {
+  UpdateSymbolInfo(symbol);
+  double price;
+  int direction;
+  if (type == OP_BUY)
+  {
+   price = SymbInfo.Bid();
+   direction = -1;
+  }
+  else if (type == OP_SELL)
+       {
+        price = SymbInfo.Ask();
+        direction = 1; 
+       }
+       else return(0.0);
+  
+  double point = SymbInfo.Point();
+  int digits = SymbInfo.Digits();
+ 
+  if (GreatDoubles(direction*openPrice, direction*price + minProfit*point)) // Если достигнут минпрофит 
+  {
+   newSL = openPrice;                                                       // переносим СЛ в безубыток 
+  }  
  }
  return (newSL);
 }
