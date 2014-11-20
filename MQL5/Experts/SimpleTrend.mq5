@@ -366,9 +366,6 @@ void OnTick()
   }        
  }
  currentTendention = GetTendention(lastBarD1[1].open, curPriceBid);
- Comment("curTendention = ",currentTendention,
-         "\nlastTendention = ",lastTendention
-         );
  // если общая тенденция  - вверх
  if (lastTendention == TENDENTION_UP && currentTendention == TENDENTION_UP)
  {   
@@ -505,7 +502,6 @@ bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой эк
  switch (direction)
  {
   case SELL:
-  if (index == 1)
    if (LessDoubles(curPriceAsk,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price)&& GreatOrEqualDoubles(prevPriceAsk,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price) && !beatenExtrLow[index])
    {
     beatenExtrLow[index] = true; 

@@ -11,19 +11,6 @@
 //| Эксперт FollowWhiteRabbit                                        |
 //+------------------------------------------------------------------+
 
-/*
-Что было проделано:
-1) прокомментированы параметры
-2) Print заменены на логи
-3) добавлена константа KO для открытия позиции в сравнении, что тейк профит в KO или более раз больше вычисленного стоп лосса
-4) крикручены NineTeenLines (запрет на вход)
-5) добавлено условие открытия сделки при условии, что вычисленный тейк профит в KO или более раз больше вычисленного стоп лосса
-6) добавлен новый тип трейлинга LOSSLESS
-7) minProfit вычисляется, как двойной вычисленный стоп лосс
-*/
-
-
-
 // подключение необходимых библиотек
 #include <Lib CIsNewBar.mqh>
 #include <TradeManager\TradeManager.mqh> 
@@ -31,15 +18,13 @@
 #define ADD_TO_STOPLOSS 50                                                      // добавочные пункты к стоп лоссу
 #define DEPTH 30                                                                // глубина истории
 #define SPREAD 30                                                               // размер спреда
-#define KO 3                                                                    // 
+#define KO 3                                                                    // коэффициент для условия открытия позиции, во сколько как минимум вычисленный тейк профит должен превышать вычисленный стоп лосс 
 // вводимые пользователем параметры
 input string baseParams = "";                                                   // БАЗОВЫЕ ПАРАМЕТРЫ
 input double M1_supremacyPercent  = 5;                                          // процент, насколько бар M1 больше среднего значения
 input double M5_supremacyPercent  = 3;                                          // процент, насколько бар M5 больше среднего значения
 input double M15_supremacyPercent = 1;                                          // процент, насколько бар M15 больше среднего значения
 input double profitPercent = 0.5;                                               // процент прибыли                                            
-input int trailingStop = 150;                                                   // трейлинг стоп
-input int trailingStep = 5;                                                     // шаг трейлинга
 input string orderParams = "";                                                  // ПАРАМЕТРЫ ОРДЕРОВ
 input ENUM_USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;           // Тип отложенного ордера                    
 input int priceDifference = 50;                                                 // Price Difference
@@ -77,7 +62,7 @@ int handle_19Lines;
 SPositionInfo pos_info;
 STrailing     trailing;
 
-double volume = 1.0;
+double volume = 1.0;                                                           // объем 
 double lenClosestUp;                                                           // расстояние до ближайшего уровня сверху
 double lenClosestDown;                                                         // расстояние до ближайшего уровня снизу 
 //+------------------------------------------------------------------+
@@ -110,9 +95,9 @@ int OnInit()
    isNewBarM15     = new CisNewBar(_Symbol, PERIOD_M15);
    // создаем хэндл PriceBasedIndicator
    handle_PBI      = iCustom(_Symbol, PERIOD_M15, "PriceBasedIndicator");
-   handle_aATR_M1  = iMA(_Symbol,  PERIOD_M1, 100, 0, MODE_EMA, iATR(_Symbol,  PERIOD_M1,  30));
-   handle_aATR_M5  = iMA(_Symbol,  PERIOD_M5, 100, 0, MODE_EMA, iATR(_Symbol,  PERIOD_M5,  30)); 
-   handle_aATR_M15 = iMA(_Symbol, PERIOD_M15, 100, 0, MODE_EMA, iATR(_Symbol,  PERIOD_M15, 30));  
+   handle_aATR_M1  = iMA(_Symbol,  PERIOD_M1,  100, 0, MODE_EMA, iATR(_Symbol,  PERIOD_M1,  30));
+   handle_aATR_M5  = iMA(_Symbol,  PERIOD_M5,  100, 0, MODE_EMA, iATR(_Symbol,  PERIOD_M5,  30)); 
+   handle_aATR_M15 = iMA(_Symbol,  PERIOD_M15, 100, 0, MODE_EMA, iATR(_Symbol,  PERIOD_M15, 30));  
      
    if ( handle_PBI == INVALID_HANDLE )
     {
@@ -130,9 +115,9 @@ int OnInit()
       }    
   }      
    trailing.trailingType      = TRAILING_TYPE_EASY_LOSSLESS;
-   trailing.trailingStop      = trailingStop;
-   trailing.trailingStep      = trailingStep;
-   trailing.handleForTrailing = handle_PBI;
+   trailing.trailingStop      = 0;
+   trailing.trailingStep      = 0;
+   trailing.handleForTrailing = 0;
    return(INIT_SUCCEEDED);
   }
 
@@ -317,6 +302,9 @@ int CountStoploss(int point)
    {
     log_file.Write(LOG_DEBUG,StringFormat("%s price = %f; extr = %f",MakeFunctionPrefix(__FUNCTION__), priceAB, bufferStopLoss[i])  );      
     stopLoss = (int)(MathAbs(bufferStopLoss[i] - priceAB)/Point());// + ADD_TO_STOPPLOSS;
+    Print("bufferStopLoss[i] = ",DoubleToString(bufferStopLoss[i]),
+          "\npriceAB = ",DoubleToString(priceAB)
+         );
     break;
    }
   }
