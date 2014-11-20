@@ -539,23 +539,23 @@ int GetStopLoss()         // вычисляет стоп лосс
   case BUY:
    slValue = (curPriceBid - blowInfo[indexStopLoss].GetExtrByIndex(EXTR_LOW,0).price)/_Point; 
    if ( slValue > stopLevel )
-    {
-     return ( slValue );
-    }
+   {
+    return (slValue);
+   }
    else
-    {
-     return ( stopLevel+1 );
-    }
+   {
+    return (stopLevel + 1);
+   }
   case SELL:
    slValue = (blowInfo[indexStopLoss].GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk)/_Point;
-   if ( slValue > stopLevel )
-    {   
-     return ( slValue );     
-    }
+   if (slValue > stopLevel)
+   {   
+    return (slValue);     
+   }
    else
-    {
-     return ( stopLevel+1 );     
-    }
+   {
+    return (stopLevel + 1);     
+   }
  }
  return (0);
 }
@@ -568,12 +568,12 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
  switch (openedPosition)
  {
   case BUY:  // если позиция открыта на BUY
-   if ( blowInfo[indexStopLoss].GetPrevExtrType() == EXTR_LOW )  // если последний экстремум LOW
+   if (blowInfo[indexStopLoss].GetPrevExtrType() == EXTR_LOW)  // если последний экстремум LOW
    { 
     // получаем новую среднюю цену позиции
     posAverPrice = (lotReal*pricePos + lotStep*SymbolInfoDouble(_Symbol,SYMBOL_ASK) ) / (lotReal+lotStep);   
-    if (IsExtremumBeaten(indexStopLoss,BUY)  && 
-        GreatDoubles(ctm.GetPositionStopLoss(_Symbol),posAverPrice) 
+    if (IsExtremumBeaten(indexStopLoss,BUY) && 
+        GreatDoubles(ctm.GetPositionStopLoss(_Symbol), posAverPrice) 
        ) // если пробит экстремум и стоп лосс в безубытке
     {
      countAdd++; // увеличиваем счетчик доливок
@@ -582,13 +582,12 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
    } 
   break;
   case SELL: // если позиция открыта на SELL
-   if ( blowInfo[indexStopLoss].GetPrevExtrType() == EXTR_HIGH ) // если последний экстремум HIGH
+   if (blowInfo[indexStopLoss].GetPrevExtrType() == EXTR_HIGH) // если последний экстремум HIGH
    {   
-    
     // получаем новую среднюю цену позиции
-    posAverPrice = (lotReal*pricePos + lotStep*SymbolInfoDouble(_Symbol,SYMBOL_BID) ) / (lotReal+lotStep);      
+    posAverPrice = (lotReal*pricePos + lotStep*SymbolInfoDouble(_Symbol,SYMBOL_BID)) / (lotReal+lotStep);      
     if (IsExtremumBeaten(indexStopLoss,SELL) &&
-        LessDoubles(ctm.GetPositionStopLoss(_Symbol),posAverPrice)  
+        LessDoubles(ctm.GetPositionStopLoss(_Symbol), posAverPrice)  
        ) // если пробит экстремум и стоп лосс в безубытке
     {
      countAdd++; // увеличиваем счетчик доливок
@@ -611,17 +610,18 @@ int GetLastTrendDirection (int handle,ENUM_TIMEFRAMES period)   // возвращает tr
  
  nBars = Bars(_Symbol,period);
  
- for (int attempts=0;attempts<25;attempts++)
+ for (int attempts = 0; attempts < 5; attempts++)
  {
-  copiedPBI = CopyBuffer(handle,4,1,nBars-1,pbiBuf);
-  //Sleep(100);
+  copiedPBI = CopyBuffer(handle, 4, 1, nBars - 1, pbiBuf);
+  Sleep(100);
  }
  if (copiedPBI < (nBars-1))
  {
  // Comment("Не удалось скопировать все бары");
   return (0);
  }
- for (index=0;index<nBars-1;index++)
+ 
+ for (index = 0; index < nBars - 1; index++)
  {
   signTrend = int(pbiBuf[index]);
   // если найден последний тренд вверх
@@ -652,105 +652,107 @@ int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndic
 }
   
 bool Upload19LinesBuffers ()   // получает последние значения уровней
+{
+ int copiedPrice;
+ int copiedATR;
+ int indexPer;
+ int indexBuff;
+ int indexLines = 0;
+ for (indexPer=1;indexPer<5;indexPer++)
  {
-  int copiedPrice;
-  int copiedATR;
-  int indexPer;
-  int indexBuff;
-  int indexLines = 0;
-  for (indexPer=1;indexPer<5;indexPer++)
-   {
-     for (indexBuff=0;indexBuff<2;indexBuff++)
-      {
-       copiedPrice = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+4,  0,1,  buffers[indexLines].price);
-       copiedATR   = CopyBuffer(handle_19Lines,indexPer*8+indexBuff*2+5,  0,1,buffers[indexLines].atr);
-       if (copiedPrice < 1 || copiedATR < 1)
-        {
-         Print("Не удалось прогрузить буферы индикатора NineTeenLines");
-         return (false);
-        }
-       indexLines++;
-     }
-   }
-  return(true);     
- }
- // возвращает ближайший уровень к текущей цене
- double GetClosestLevel (int direction) 
+  for (indexBuff=0;indexBuff<2;indexBuff++)
   {
-   double cuPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-   double len = 0;  //расстояние до цены от уровня
-   double tmpLen; 
-   int    index;
-   int    savedInd;
-   switch (direction)
-    {
-     case BUY:  // ближний сверху
-      for (index=0;index<8;index++)
-       {         
-          // если уровень выше
-          if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
-            {
-             tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
-             if (tmpLen < len || len == 0)
-               {
-                savedInd = index;
-                len = tmpLen;
-               }  
-            }           
-            
-       }
-     break;
-     case SELL: // ближний снизу
-      for (index=0;index<8;index++)
-       {
-        // если уровень ниже
-        if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
-          {
-           tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
-           if (tmpLen < len || len == 0)
-            {
-             savedInd = index;
-             len = tmpLen;
-            }
-          }
-       }     
-      break;
-   }
-   return (len);
-  }    
-  // функция проверяет пробития цен close последних двух баров
-  bool IsLastClosesBeaten (ENUM_TIMEFRAMES period,int direction)
+   copiedPrice = CopyBuffer(handle_19Lines, indexPer * 8 + indexBuff * 2 + 4,  0, 1, buffers[indexLines].price);
+   copiedATR   = CopyBuffer(handle_19Lines, indexPer * 8 + indexBuff * 2 + 5,  0, 1, buffers[indexLines].atr);
+   if (copiedPrice < 1 || copiedATR < 1)
    {
-    // пытаемся скопировать время открытия последнего бара
-    if ( CopyTime(_Symbol,period,1,1,timeBuf) < 1 )
+    Print("Не удалось прогрузить буферы индикатора NineTeenLines");
+    return (false);
+   }
+   indexLines++;
+  }
+ }
+ return(true);     
+}
+
+// возвращает ближайший уровень к текущей цене
+double GetClosestLevel (int direction) 
+{
+ double cuPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);
+ double len = 0;  //расстояние до цены от уровня
+ double tmpLen; 
+ int    index;
+ int    savedInd;
+ switch (direction)
+ {
+  case BUY:  // ближний сверху
+   for (index=0;index<8;index++)
+   {         
+    // если уровень выше
+    if ( GreatDoubles((buffers[index].price[0]-buffers[index].atr[0]),cuPrice)  )
+    {
+     tmpLen = buffers[index].price[0] - buffers[index].atr[0] - cuPrice;
+     if (tmpLen < len || len == 0)
      {
-      Print("Не удалось скопировать время открытия последнего бара");
-      return false;
-     }
-    // если время открытия последней позиции меньше времени открытия последнего бара
-    if (timeOpenPos < timeBuf[0])
+      savedInd = index;
+      len = tmpLen;
+     }  
+    }           
+   }
+   break;
+  case SELL: // ближний снизу
+   for (index=0;index<8;index++)
+   {
+    // если уровень ниже
+    if ( LessDoubles((buffers[index].price[0]+buffers[index].atr[0]),cuPrice)  )
+    {
+     tmpLen = cuPrice - buffers[index].price[0] - buffers[index].atr[0] ;
+     if (tmpLen < len || len == 0)
      {
-     // пытаемся скопировать цены закрытия последних 3-х баров
-     if ( CopyClose(_Symbol,period,1,3,closes) < 3 )
-      {
-       Print("Не удалось скопировать цены close 3-х последних сформированных баров");
-       return false;
-      }
-     switch (direction)
-      {
-       case BUY:
-        // если цена close на последнем баре пробила цены close на двух предыдущих 
-        if ( GreatDoubles(closes[2],closes[1]) && GreatDoubles (closes[2],closes[0]) && LessDoubles(closes[1],closes[0]) )
-         {
-         return true;
-        }
-      case SELL:
-       // если цена close на последнем баре пробила цены close на двух предыдущих
-       if ( LessDoubles(closes[2],closes[1]) && LessDoubles (closes[2],closes[0]) && GreatDoubles(closes[1],closes[0]) )
-        {  
-         return true;
-        }
-      }
+      savedInd = index;
+      len = tmpLen;
      }
-    return false;
-   }  
+    }
+   }     
+   break;
+ }
+ return (len);
+}    
+
+
+// функция проверяет пробития цен close последних двух баров
+bool IsLastClosesBeaten (ENUM_TIMEFRAMES period,int direction)
+{
+ // пытаемся скопировать время открытия последнего бара
+ if ( CopyTime(_Symbol,period,1,1,timeBuf) < 1 )
+ {
+  Print("Не удалось скопировать время открытия последнего бара");
+  return false;
+ }
+ // если время открытия последней позиции меньше времени открытия последнего бара
+ if (timeOpenPos < timeBuf[0])
+ {
+  // пытаемся скопировать цены закрытия последних 3-х баров
+  if ( CopyClose(_Symbol,period,1,3,closes) < 3 )
+  {
+   Print("Не удалось скопировать цены close 3-х последних сформированных баров");
+   return false;
+  }
+  switch (direction)
+  {
+   case BUY:
+   // если цена close на последнем баре пробила цены close на двух предыдущих 
+    if ( GreatDoubles(closes[2],closes[1]) && GreatDoubles (closes[2],closes[0]) && LessDoubles(closes[1],closes[0]) )
+    {
+     return true;
+    }
+   case SELL:
+   // если цена close на последнем баре пробила цены close на двух предыдущих
+    if ( LessDoubles(closes[2],closes[1]) && LessDoubles (closes[2],closes[0]) && GreatDoubles(closes[1],closes[0]) )
+    {  
+     return true;
+    }
+  }
+ }
+ return false;
+}  

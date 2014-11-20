@@ -154,7 +154,7 @@ void OnTick()
    }
    if (pos_info.type == opBuy || pos_info.type == opSell)
     {
-     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);
+     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, SPREAD);
     }
   }
 
@@ -168,7 +168,7 @@ void OnTrade()
   }
 
 // функция получения торгового сигнала (возвращает заполненную структуру позиции) 
-void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,SPositionInfo &pos)
+void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent, SPositionInfo &pos)
 {   
  // если не удалось прогрузить все буферы 
  if ( CopyClose  (_Symbol,tf,1,1, close_buf)    < 1 ||
