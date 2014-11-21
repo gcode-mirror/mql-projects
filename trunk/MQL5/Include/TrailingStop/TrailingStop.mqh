@@ -167,7 +167,7 @@ double CTrailingStop::Lossless(string symbol, ENUM_TM_POSITION_TYPE type, double
 }
 
 //+------------------------------------------------------------------+
-// Трейлинг по индикатору PBI
+// Трейлинг по индикатору PBI                                        |
 //+------------------------------------------------------------------+
 double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl, int handleForTrailing, int minProfit = 0)
 {  
