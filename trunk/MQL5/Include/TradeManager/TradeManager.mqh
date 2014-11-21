@@ -15,6 +15,8 @@
 #include <CompareDoubles.mqh>
 #include <CLog.mqh>
 #include <BlowInfoFromExtremums.mqh>
+
+#define RISK 0,01;
 int error = 0;
 
 //+------------------------------------------------------------------+
@@ -30,7 +32,8 @@ private:
   CPosition *_SelectedPosition;
   
   bool   _historyChanged;     // флаг изменения истории
-
+  
+  double CalcVolume();
   bool   CloseReProcessingPosition(int i,color Color=CLR_NONE);
   string CreateFilename(ENUM_FILENAME filename);
   bool   FindHistoryTicket(long ticket);
@@ -73,7 +76,7 @@ public:
   bool ClosePosition(string symbol, color Color=CLR_NONE);    // Закртыие позиции по символу
   bool ClosePosition(long ticket, color Color = CLR_NONE);    // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);          // Закрытие позиции по индексу в массиве позиций
-  void DoTrailing(int handleExtr = 0);     // Вызов трейла
+  void DoTrailing(int handleExtr = 0);                        // Вызов трейла
   bool isMinProfit();
   bool isMinProfit(string symbol);
   bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменения истории 
@@ -678,20 +681,20 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
      pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
-      if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
+      if ((pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP) && OrderSelect(pos.getOrderTicket())
+        ||(pos.getType() == OP_SELL))
       {
-       ResetLastError();
-       if(!OrderSelect(pos.getOrderTicket()))
-       {
-        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                      , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
-                      , GetLastError(), ErrorDescription(GetLastError())));
-        // ToDo
-        // Проверить наличие ордера в истории
-        // Удалить позицию из массива позиций и перенести объект позиции в историю
-       }
+       ClosePosition(i);
       }
-      ClosePosition(i);
+      else
+      {
+       log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                     , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
+                     , GetLastError(), ErrorDescription(GetLastError())));
+       // ToDo
+       // Проверить наличие ордера в истории
+       // Удалить позицию из массива позиций и перенести объект позиции в историю
+      }
      }
     }
    }
@@ -706,22 +709,19 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
      pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
-      if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
+      if ((pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP) && OrderSelect(pos.getOrderTicket())
+        ||(pos.getType() == OP_BUY))
       {
-       ResetLastError();
-       if(!OrderSelect(pos.getOrderTicket()))
-       {
-        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                       , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
-                       , GetLastError(), ErrorDescription(GetLastError())));
-        // ToDo
-        // Проверить наличие ордера в истории
-        // Удалить позицию из массива позиций и перенести объект позиции в историю
-       }
-       else
-       {
-        ClosePosition(i);
-       }
+       ClosePosition(i);
+      }
+      else
+      {
+       log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                      , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
+                      , GetLastError(), ErrorDescription(GetLastError())));
+       // ToDo
+       // Проверить наличие ордера в истории
+       // Удалить позицию из массива позиций и перенести объект позиции в историю
       }
      }
     }
@@ -923,6 +923,19 @@ void CTradeManager::UpdateData(CPositionArray *positionsHistory = NULL)
 }
 
 //---------------PRIVATE-----------------------------
+
+//+------------------------------------------------------------------+
+/// Volume calculation.
+/// \param [in] i			      pos index in array of positions
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+double CTradeManager::CalcVolume(void)
+{
+ //double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+ //double volume_risk = (balance * RISK) / (openPrice * _Point);
+ return 0.0;
+}
 
 //+------------------------------------------------------------------+
 /// Delete a virtual pos from "not_deleted".
