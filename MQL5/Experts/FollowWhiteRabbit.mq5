@@ -187,7 +187,10 @@ void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,
    { 
     //получаем расстояния до ближайших уровней снизу и сверху
     lenClosestUp = GetClosestLevel(1);
-    lenClosestDown = GetClosestLevel(-1);    
+    lenClosestDown = GetClosestLevel(-1);   
+    Comment("lenClosestUp = ",DoubleToString(lenClosestDown),
+            "\nlenClosestDown = ",DoubleToString(lenClosestUp*koLock)
+           );  
     // если получили сигнал запрета на вход
     if(lenClosestDown != 0 &&
        LessOrEqualDoubles(lenClosestDown,lenClosestUp*koLock))
@@ -217,6 +220,9 @@ void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,
     //получаем расстояния до ближайших уровней снизу и сверху
     lenClosestUp = GetClosestLevel(1);
     lenClosestDown = GetClosestLevel(-1);
+    Comment("lenClosestUp = ",DoubleToString(lenClosestUp),
+            "\nlenClosestDown = ",DoubleToString(lenClosestDown*koLock)
+           );     
     //если получили сигнал на запрет на вход
     if(lenClosestUp != 0 && 
        LessOrEqualDoubles(lenClosestUp,lenClosestDown*koLock))

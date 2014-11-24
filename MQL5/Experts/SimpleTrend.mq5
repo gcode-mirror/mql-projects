@@ -92,11 +92,12 @@ int  stopLoss;                         // стоп лосс
 int  indexForTrail     = 0;            // индекс для трейлинга
 int  tmpLastBar;
 
-double curPriceAsk       = 0;            // для хранения текущей цены Ask
-double curPriceBid       = 0;            // для хранения текущей цены Bid 
-double prevPriceAsk      = 0;            // для хранения предыдущей цены Ask
-double prevPriceBid      = 0;            // для хранения предыдущей цены Bid
-double lotReal;                          // действительный лот
+double curPriceAsk       = 0;          // для хранения текущей цены Ask
+double curPriceBid       = 0;          // для хранения текущей цены Bid 
+double prevPriceAsk      = 0;          // для хранения предыдущей цены Ask
+double prevPriceBid      = 0;          // для хранения предыдущей цены Bid
+double lotReal;                        // действительный лот
+double lastPriceAdding   = 0;          // последняя цена доливания      
 
 // переменные доливок
 int  countAdd          = 0;            // количество доливок
@@ -420,8 +421,9 @@ void OnTick()
     // открываем позицию на BUY
       if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
         {
-         timeOpenPos = TimeCurrent();
-         lastDeal = BUY;
+         timeOpenPos = TimeCurrent();       // сохраняем время открытия позиции
+         lastPriceAdding = curPriceBid;     // сохраняем цену открытия позиции
+         lastDeal = BUY;                    // сохраняем тип позиции
         }    
    }
   }
@@ -480,8 +482,9 @@ void OnTick()
    // открываем позицию на SELL 
      if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
       {
-       timeOpenPos = TimeCurrent();
-       lastDeal = SELL;
+       timeOpenPos = TimeCurrent();   // сохраняем время открытия позиции
+       lastPriceAdding = curPriceAsk; // сохраняем цену позиции
+       lastDeal = SELL;               // сохраняем тип позиции
       }
   } 
   }
@@ -573,10 +576,12 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
     // получаем новую среднюю цену позиции
     posAverPrice = (lotReal*pricePos + lotStep*SymbolInfoDouble(_Symbol,SYMBOL_ASK) ) / (lotReal+lotStep);   
     if (IsExtremumBeaten(indexStopLoss,BUY) && 
-        GreatDoubles(ctm.GetPositionStopLoss(_Symbol), posAverPrice) 
+        GreatDoubles(ctm.GetPositionStopLoss(_Symbol), posAverPrice) &&
+        GreatDoubles(curPriceBid,lastPriceAdding)
        ) // если пробит экстремум и стоп лосс в безубытке
     {
      countAdd++; // увеличиваем счетчик доливок
+     lastPriceAdding = curPriceBid; // сохраняем последнюю цену, по которой открывались \ доливались
      return (true);
     }
    } 
@@ -587,10 +592,12 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
     // получаем новую среднюю цену позиции
     posAverPrice = (lotReal*pricePos + lotStep*SymbolInfoDouble(_Symbol,SYMBOL_BID)) / (lotReal+lotStep);      
     if (IsExtremumBeaten(indexStopLoss,SELL) &&
-        LessDoubles(ctm.GetPositionStopLoss(_Symbol), posAverPrice)  
+        LessDoubles(ctm.GetPositionStopLoss(_Symbol), posAverPrice)  &&
+        LessDoubles(curPriceAsk,lastPriceAdding)  
        ) // если пробит экстремум и стоп лосс в безубытке
     {
      countAdd++; // увеличиваем счетчик доливок
+     lastPriceAdding = curPriceAsk; // сохраняем последнюю цену, по которой открывались \ доливались
      return (true);
     }   
    }
