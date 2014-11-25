@@ -13,9 +13,9 @@
 #include <Lib CIsNewBar.mqh>
 #include <TradeManager\TradeManager.mqh> 
 //константы
-#define ADD_TO_STOPLOSS 50 //добавочные пункты к стоп лоссу
-#define DEPTH 30  //глубина истории
-#define SPREAD 30 //размер спреда
+#define ADD_TO_STOPLOSS 50 // добавочные пункты к стоп лоссу
+#define DEPTH  1000        // глубина истории
+#define SPREAD 30          // размер спреда
 #define KO 3 //коэффициент для условия открытия позиции, во сколько как минимум вычисленный тейк профит должен превышать вычисленный стоп лосс 
 //вводимые пользователем параметры
 input string baseParams = "";//БАЗОВЫЕ ПАРАМЕТРЫ
@@ -179,7 +179,6 @@ void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,
  } 
  if(GreatDoubles(MathAbs(open_buf[0] - close_buf[0]), ave_atr_buf[0]*(1 + supremacyPercent)))
  {
-
   if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
   {  
    //если используются зарпеты по NineTeenLines
@@ -188,9 +187,6 @@ void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,
     //получаем расстояния до ближайших уровней снизу и сверху
     lenClosestUp = GetClosestLevel(1);
     lenClosestDown = GetClosestLevel(-1);   
-    Comment("lenClosestUp = ",DoubleToString(lenClosestDown),
-            "\nlenClosestDown = ",DoubleToString(lenClosestUp*koLock)
-           );  
     // если получили сигнал запрета на вход
     if(lenClosestDown != 0 &&
        LessOrEqualDoubles(lenClosestDown,lenClosestUp*koLock))
@@ -219,10 +215,7 @@ void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,
    {
     //получаем расстояния до ближайших уровней снизу и сверху
     lenClosestUp = GetClosestLevel(1);
-    lenClosestDown = GetClosestLevel(-1);
-    Comment("lenClosestUp = ",DoubleToString(lenClosestUp),
-            "\nlenClosestDown = ",DoubleToString(lenClosestDown*koLock)
-           );     
+    lenClosestDown = GetClosestLevel(-1); 
     //если получили сигнал на запрет на вход
     if(lenClosestUp != 0 && 
        LessOrEqualDoubles(lenClosestUp,lenClosestDown*koLock))
