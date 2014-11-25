@@ -612,7 +612,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
 {
  UpdateSymbolInfo();
  _posOpenPrice = OpenPriceByType(_pos_info.type);
- PrintFormat("type = %s, _posOpenPrice=%.05f, bid = %.05f, diff = %.05f", GetNameOP(_pos_info.type), _posOpenPrice, SymbInfo.Bid(), _pos_info.priceDifference);
+ log_file.Write(LOG_DEBUG, StringFormat("%s, type = %s, _posOpenPrice=%.05f, bid = %.05f, diff = %.05f", MakeFunctionPrefix(__FUNCTION__), GetNameOP(_pos_info.type), _posOpenPrice, SymbInfo.Bid(), _pos_info.priceDifference));
  _posAveragePrice = OpenPriceByType(_pos_info.type);
  _posOpenTime = TimeCurrent(); //сохраняем время открытия позиции    
  _posProfit = 0;

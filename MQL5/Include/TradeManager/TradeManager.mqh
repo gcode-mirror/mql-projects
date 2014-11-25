@@ -716,9 +716,10 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
       }
       else
       {
+       ResetLastError();
        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                      , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
-                      , GetLastError(), ErrorDescription(GetLastError())));
+                     , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
+                     , GetLastError(), ErrorDescription(GetLastError())));
        // ToDo
        // Проверить наличие ордера в истории
        // Удалить позицию из массива позиций и перенести объект позиции в историю
@@ -736,9 +737,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
  if (total <= 0)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
- // PrintFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__));
   
-  Print("ПОЛУЧИЛИ ОБЪЕМ = ",pos_info.volume);
   pos = new CPosition(_magic, symbol, timeframe, pos_info, trailing);
   ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию

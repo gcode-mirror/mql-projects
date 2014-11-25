@@ -129,7 +129,7 @@ int OnInit()
    handlePBI_1 = iCustom(_Symbol, pbiPeriod, "PriceBasedIndicator");   
    if ( handlePBI_1 == INVALID_HANDLE )
    {
-    Print("Ошибка при иниализации эксперта SimpleTrend. Не удалось создать хэндл индикатора PriceBasedIndicator");
+    log_file.Write(LOG_DEBUG, StringFormat("%s, Ошибка при иниализации эксперта SimpleTrend. Не удалось создать хэндл индикатора PriceBasedIndicator", MakeFunctionPrefix(__FUNCTION__)));
     return (INIT_FAILED);
    } 
    // получаем последний тип тренда на 3-х таймфреймах
@@ -146,7 +146,7 @@ int OnInit()
    handlePBI_3  = iCustom(_Symbol,PERIOD_H1,"PriceBasedIndicator");            
    if ( handlePBI_1 == INVALID_HANDLE || handlePBI_2 == INVALID_HANDLE || handlePBI_3 == INVALID_HANDLE)
    {
-    Print("Ошибка при иниализации эксперта SimpleTrend. Не удалось создать хэндл индикатора PriceBasedIndicator");
+    log_file.Write(LOG_DEBUG, StringFormat("%s, Ошибка при иниализации эксперта SimpleTrend. Не удалось создать хэндл индикатора PriceBasedIndicator", MakeFunctionPrefix(__FUNCTION__)));
     return (INIT_FAILED);
    } 
    // получаем последний тип тренда на 3-х таймфреймах
@@ -160,7 +160,7 @@ int OnInit()
    handle_19Lines = iCustom(_Symbol,_Period,"NineteenLines");     
    if (handle_19Lines == INVALID_HANDLE)
    {
-    Print("Ошибка при инициализации эксперта SimpleTrend. Не удалось получить хэндл NineteenLines");
+    log_file.Write(LOG_DEBUG, StringFormat("%s, Ошибка при инициализации эксперта SimpleTrend. Не удалось получить хэндл NineteenLines", MakeFunctionPrefix(__FUNCTION__)));
     return (INIT_FAILED);
    }    
   }  
@@ -266,7 +266,7 @@ void OnTick()
   // если не удалось прогрузить буферы NineTeenLines
   if (!Upload19LinesBuffers()) 
   {
-   Print("Не удалось прогрузить буферы NineTeenLines");
+   log_file.Write(LOG_DEBUG, StringFormat("%s, Не удалось прогрузить буферы NineTeenLines", MakeFunctionPrefix(__FUNCTION__)));
    return;
   }
  } 
@@ -363,7 +363,7 @@ void OnTick()
   {   
    if (ChangeLot())                              // если получили сигнал на доливание 
    {
-    Print("Доливаемся lotCount = ",lotCount);
+    log_file.Write(LOG_DEBUG, StringFormat("%s, Доливаемся. Количество доливок = %d", MakeFunctionPrefix(__FUNCTION__), countAdd));
     ctm.PositionChangeSize(_Symbol, lotStep);    // доливаемся 
    }       
   }        
@@ -381,11 +381,11 @@ void OnTick()
        ( (beatCloseH1  =  IsLastClosesBeaten(PERIOD_H1,BUY))      && (lastTrendPBI_3==BUY)    && useClose)         
        ) 
    {      
-    Print("Получили сигнал на BUY, время = ",TimeToString(TimeCurrent()));
+    log_file.Write(LOG_DEBUG, StringFormat("%s, Получили сигнал на BUY, время = %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent())));
     // если используются запреты по NineTeenLines
     if (useLinesLock)
      {
-      Print("Используем запрет по 19 линиям");
+      log_file.Write(LOG_DEBUG, StringFormat("%s, Используем запрет по 19 линиям", MakeFunctionPrefix(__FUNCTION__)));
       // получаем расстояния до ближайших уровней снизу и сверху
       lenClosestUp   = GetClosestLevel(BUY);
       lenClosestDown = GetClosestLevel(SELL);
@@ -393,7 +393,7 @@ void OnTick()
       if (lenClosestUp != 0 && 
         LessOrEqualDoubles(lenClosestUp, lenClosestDown*koLock) )
          {
-          Print("Получили сигнал запрета на вход на BUY");
+          log_file.Write(LOG_DEBUG, StringFormat("%s, Получили сигнал запрета на вход на BUY", MakeFunctionPrefix(__FUNCTION__)));
           return;
          }   
      }   
@@ -442,11 +442,11 @@ void OnTick()
        ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,SELL))   && (lastTrendPBI_3==SELL)   && useClose)       
         )  
   {    
-    Print("Получили сигнал на Sell, время = ",TimeToString(TimeCurrent()));
+    log_file.Write(LOG_DEBUG, StringFormat("%s, Получили сигнал на Sell, время = %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent())));
     // если используются зарпеты по NineTeenLines
     if (useLinesLock)
      { 
-     Print("Используем запрет по 19 линиям");
+     log_file.Write(LOG_DEBUG, StringFormat("%s, Используем запрет по 19 линиям", MakeFunctionPrefix(__FUNCTION__)));
      // получаем расстояния до ближайших уровней снизу и сверху
      lenClosestUp   = GetClosestLevel(BUY);
      lenClosestDown = GetClosestLevel(SELL);    
@@ -454,7 +454,7 @@ void OnTick()
      if (lenClosestDown != 0 &&
          LessOrEqualDoubles(lenClosestDown, lenClosestUp*koLock) )
          {        
-          Print("Получили сигнал запрета на вход на SELL");
+          log_file.Write(LOG_DEBUG, StringFormat("%s, Получили сигнал запрета на вход на SELL", MakeFunctionPrefix(__FUNCTION__)));
           return;
          }
      }                
@@ -675,7 +675,7 @@ bool Upload19LinesBuffers ()   // получает последние значения уровней
    copiedATR   = CopyBuffer(handle_19Lines, indexPer * 8 + indexBuff * 2 + 5,  0, 1, buffers[indexLines].atr);
    if (copiedPrice < 1 || copiedATR < 1)
    {
-    Print("Не удалось прогрузить буферы индикатора NineTeenLines");
+    log_file.Write(LOG_DEBUG, StringFormat("%s, Не удалось прогрузить буферы индикатора NineTeenLines", MakeFunctionPrefix(__FUNCTION__)));
     return (false);
    }
    indexLines++;
@@ -744,7 +744,7 @@ bool IsLastClosesBeaten (ENUM_TIMEFRAMES period,int direction)
   // пытаемся скопировать цены закрытия последних 3-х баров
   if ( CopyClose(_Symbol,period,1,3,closes) < 3 )
   {
-   Print("Не удалось скопировать цены close 3-х последних сформированных баров");
+   log_file.Write(LOG_DEBUG, StringFormat("%s, Не удалось скопировать цены close 3-х последних сформированных баров", MakeFunctionPrefix(__FUNCTION__)));
    return false;
   }
   switch (direction)
