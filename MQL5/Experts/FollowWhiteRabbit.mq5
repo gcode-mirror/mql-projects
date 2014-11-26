@@ -29,6 +29,7 @@ input int priceDifference = 50;//Price Difference
 input string lockParams="";//Параметры запретов на вход
 input bool useLinesLock=false; //флаг включения запрета на вход по индикатора NineTeenLines
 input int  koLock  = 2;  //коэффициент запрета на вход
+input bool checkFilter = true; // фильтр входных сигналов
 //структура уровней
 struct bufferLevel
 {
@@ -57,9 +58,14 @@ int handle_19Lines;
 //параметры позиции и трейлинга
 SPositionInfo pos_info;
 STrailing     trailing;
-double volume = 1.0; //объем 
-double lenClosestUp; //расстояние до ближайшего уровня сверху
+double volume = 1.0;   //объем 
+double lenClosestUp;   //расстояние до ближайшего уровня сверху
 double lenClosestDown; //расстояние до ближайшего уровня снизу 
+
+int signalM1;
+int signalM5;
+int signalM15;
+
 //+------------------------------------------------------------------+
 //| Инициализация эксперта                                           |
 //+------------------------------------------------------------------+
@@ -134,18 +140,36 @@ void OnTick()
  if(isNewBarM1.isNewBar())
  {
   GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent, pos_info); //свой коэффициент
+  if (pos_info.type == opBuy)
+   signalM1 = 1;
+  else if (pos_info.type == opSell)
+   signalM1 = -1; 
+  else
+   signalM1 = 0;   
  }
  if(isNewBarM5.isNewBar())
  {
   GetTradeSignal(PERIOD_M5, handle_aATR_M5, M5_supremacyPercent, pos_info);
+  if (pos_info.type == opBuy)
+   signalM5 = 1;
+  else if (pos_info.type == opSell)
+   signalM5 = -1; 
+  else
+   signalM5 = 0;  
  }  
  if(isNewBarM15.isNewBar())
  {
   GetTradeSignal(PERIOD_M15, handle_aATR_M15, M15_supremacyPercent, pos_info);
+  if (pos_info.type == opBuy)
+   signalM15 = 1;
+  else if (pos_info.type == opSell)
+   signalM15 = -1; 
+  else
+   signalM15 = 0;    
  }
- if(pos_info.type == opBuy || pos_info.type == opSell)
+ if( (pos_info.type == opBuy || pos_info.type == opSell ) && (InputFilter() || !checkFilter) )
  {
-  ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);
+  ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);   
  }
 }
 
@@ -368,3 +392,14 @@ double GetClosestLevel(int direction)
  }
 return (len);
 }   
+// фукция не пропускает противоречивые сигналы
+bool  InputFilter ()
+ {
+  // если все сигналы не BUY (т.е. нет противоречий)
+  if (signalM1!=1 && signalM5!=1 && signalM15!=1)
+   return(true);
+  // если все сигналы не SELL (т.е. нет противоречий)
+  if (signalM1!=-1 && signalM5!=-1 && signalM15!=-1)
+   return(true);
+  return(false);
+ }
