@@ -296,7 +296,8 @@ string CPositionArray::PrintToString()
  for (int i = total-1; i >= 0; i--)
  {
   pos = Position(i);
-  StringConcatenate(result, "[", i, "] = {", pos.getMagic(), ", ", pos.getPositionPrice(), ", ", PositionStatusToStr(pos.getPositionStatus()), ", ", GetNameOP(pos.getType()), ",", pos.getStopLossPrice(), ",", pos.getTakeProfitPrice(), ",", pos.getStopLossTicket(), ",", pos.getStopLossStatus(), "}" );
+  StringFormat("%s [%d] = {%d, %.05f, %s, %s, %.05f, %.05f, %d}", 
+  result, i, pos.getMagic(), pos.getPositionPrice(), PositionStatusToStr(pos.getPositionStatus()), GetNameOP(pos.getType()), pos.getStopLossPrice(), pos.getTakeProfitPrice(), pos.getStopLossTicket());
   if(pos.getType() != OP_BUY && pos.getType() != OP_SELL) 
   {
    if(OrderSelect(pos.getOrderTicket()))
