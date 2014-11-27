@@ -169,7 +169,7 @@ void OnTick()
  }
  if( (pos_info.type == opBuy || pos_info.type == opSell ) && (InputFilter() || !checkFilter) )
  {
-  ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);   
+  ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, SPREAD);   
  }
 }
 
@@ -393,13 +393,13 @@ double GetClosestLevel(int direction)
 return (len);
 }   
 // фукция не пропускает противоречивые сигналы
-bool  InputFilter ()
- {
-  // если все сигналы не BUY (т.е. нет противоречий)
-  if (signalM1!=1 && signalM5!=1 && signalM15!=1)
-   return(true);
-  // если все сигналы не SELL (т.е. нет противоречий)
-  if (signalM1!=-1 && signalM5!=-1 && signalM15!=-1)
-   return(true);
-  return(false);
- }
+bool InputFilter()
+{
+ // если все сигналы не BUY (т.е. нет противоречий)
+ if (signalM1!=1 && signalM5!=1 && signalM15!=1)
+  return(true);
+ // если все сигналы не SELL (т.е. нет противоречий)
+ if (signalM1!=-1 && signalM5!=-1 && signalM15!=-1)
+  return(true);
+ return(false);
+}
