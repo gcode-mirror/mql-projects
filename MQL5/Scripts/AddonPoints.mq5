@@ -29,19 +29,8 @@ int copiedLow;
 int copiedTime;
 CChartObjectVLine  vertLine;                       // объект класса вертикальной линии
 
-int fileHandle;                          // хэндл файла статистики
-
 void OnStart()
-  {
-  
-    // создаем хэндл файла тестирования статистики прохождения уровней
-    fileHandle = FileOpen("MY_REVOLUTION.txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
-    if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
-     {
-      Print("Не удалось создать файл тестирования статистики прохождения уровней");
-      return;
-     }   
-  
+  { 
    // выставляем последовательность элементов в массивах, как в таймсерии
    ArraySetAsSeries(bufferPBI,true);
    ArraySetAsSeries(high,true);
@@ -56,7 +45,6 @@ void OnStart()
    if (handlePBI == INVALID_HANDLE)
     {
      Alert("Ошибка скрипта AddingPoint.mq5: не удалось создать хэндл PriceBasedIndicator");
-     FileClose(fileHandle);
      return;
     }
    // пытаемся загрузить буфер PriceBasedIndicator
@@ -70,13 +58,10 @@ void OnStart()
    if (copiedHigh < pbiDepth || copiedLow < pbiDepth || copiedPBI < pbiDepth || copiedTime < pbiDepth)
     {
      Alert("Ошибка скрипта AddingPoint.mq5: не удалось прогрузить буферы");
-     FileClose(fileHandle);
      return;
     }
    // запускаем первое вычисление точек
    FirstCalculate();
-   
-   FileClose(fileHandle);
   }
  // функция первого расчета дополнительных точек
  void FirstCalculate ()
@@ -87,9 +72,6 @@ void OnStart()
    // проходим с конца истории и вычисляем дополнительные точки
    for (int ind=pbiDepth-1;ind>=0;ind--)
     {
-     
-     FileWriteString(fileHandle,"\nтип движения = "+DoubleToString(bufferPBI[ind],0)+" время = "+TimeToString(time[ind])+" ind = "+ind+" pbiDepth = "+pbiDepth );    
-     //Alert("движение = ",DoubleToString(bufferPBI[ind]) ," время = ",TimeToString(time[ind]) );
      // если поулчили коррекцию вверх
      if ( bufferPBI[ind] == MOVE_TYPE_CORRECTION_UP )
       {
@@ -97,9 +79,6 @@ void OnStart()
         {
          indMax = ind;
          max = high[ind];
-    /*     Alert("Начало коррекции вверх. Время = ",TimeToString(time[ind]),
-               " макс = ",DoubleToString(max)
-              );   */
         }
        else 
         {
@@ -107,9 +86,6 @@ void OnStart()
            {
             indMax = ind;
             max = high[ind];
-        /*      Alert("Коррекция вверх продолжается. Время = ",TimeToString(time[ind]),
-               " макс = ",DoubleToString(max)
-              );*/
            }
         }
       }
@@ -119,36 +95,27 @@ void OnStart()
        if ( indMin == -1 )
         {
          indMin = ind;
-         min = low[ind];
-      /*   Alert("Начало коррекции вниз. Время = ",TimeToString(time[ind]),
-               " мин = ",DoubleToString(min)
-              );    */     
+         min = low[ind];   
         }
        else 
         {
          if ( LessDoubles(low[ind],min) )
            {
             indMin = ind;
-            min = low[ind];
-        /*      Alert("Коррекция вниз продолжается. Время = ",TimeToString(time[ind]),
-               " мин = ",DoubleToString(min)
-              );      */      
+            min = low[ind];     
            }
         }
       }
      // любое другое движение, отличное от коррекции
      else
       {
-       //Alert("Другое движение");
        curMove = int(bufferPBI[ind]);   // сохраняем текущее движение
-     //  Alert("движение = ",curMove," время = ",TimeToString(time[ind]) );
        // если текущее движение - тренд вверх, предыдущее - коррекция вниз и до него - тренд вверх, то сохраняем точку 
        if ( (curMove == MOVE_TYPE_TREND_UP  || curMove == MOVE_TYPE_TREND_UP_FORBIDEN ) &&
             (prevMove == MOVE_TYPE_TREND_UP || prevMove == MOVE_TYPE_TREND_UP_FORBIDEN) &&
             indMin != -1
           )
            {
-          //  Alert("Сохраняем точку min время = ",TimeToString(time[indMin]));
             // то сохраняем точку
             buffer[indMin] = min;
             vertLine.Color(clrRed);
@@ -161,7 +128,6 @@ void OnStart()
             indMax != -1
           )
            {
-          //  Alert("Сохраняем точку max время = ",TimeToString(time[indMax]));
             // то сохраняем точку
             buffer[indMax] = max;
             vertLine.Color(clrRed);
@@ -174,6 +140,6 @@ void OnStart()
        // сохраняем текущее движение, как предыдущее
        prevMove = curMove;       
       }
-      
+           
     }
   }
