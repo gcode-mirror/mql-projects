@@ -24,7 +24,7 @@ input double M5_supremacyPercent  = 3;//процент, насколько бар M5 больше среднег
 input double M15_supremacyPercent = 1;//процент, насколько бар M15 больше среднего значения
 input double profitPercent = 0.5;// процент прибыли                                            
 input string orderParams = "";// ПАРАМЕТРЫ ОРДЕРОВ
-input ENUM_USE_PENDING_ORDERS pending_orders_type = USE_NO_ORDERS;// Тип отложенного ордера                    
+input ENUM_USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;// Тип отложенного ордера                    
 input int priceDifference = 50;//Price Difference
 input string lockParams="";//Параметры запретов на вход
 input bool useLinesLock=false; //флаг включения запрета на вход по индикатора NineTeenLines
@@ -137,6 +137,9 @@ void OnTick()
   }
  }    
  pos_info.type = OP_UNKNOWN;
+ signalM1  = 0;
+ signalM5  = 0;
+ signalM15 = 0;
  if(isNewBarM1.isNewBar())
  {
   GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent, pos_info); //свой коэффициент
@@ -169,7 +172,7 @@ void OnTick()
  }
  if( (pos_info.type == opBuy || pos_info.type == opSell ) && (InputFilter() || !checkFilter) )
  {
-  ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, SPREAD);   
+  ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);   
  }
 }
 
@@ -312,7 +315,7 @@ int CountStoploss(int point)
   {
    if(LessDoubles(direction*bufferStopLoss[i],direction*priceAB))
    {
-    //log_file.Write(LOG_DEBUG,StringFormat("%s price = %f; extr = %f",MakeFunctionPrefix(__FUNCTION__), priceAB, bufferStopLoss[i]));      
+   // log_file.Write(LOG_DEBUG,StringFormat("%s price = %f; extr = %f",MakeFunctionPrefix(__FUNCTION__), priceAB, bufferStopLoss[i]));      
     stopLoss=(int)(MathAbs(bufferStopLoss[i] - priceAB)/Point());
     break;
    }
@@ -393,13 +396,13 @@ double GetClosestLevel(int direction)
 return (len);
 }   
 // фукция не пропускает противоречивые сигналы
-bool InputFilter()
-{
- // если все сигналы не BUY (т.е. нет противоречий)
- if (signalM1!=1 && signalM5!=1 && signalM15!=1)
-  return(true);
- // если все сигналы не SELL (т.е. нет противоречий)
- if (signalM1!=-1 && signalM5!=-1 && signalM15!=-1)
-  return(true);
- return(false);
-}
+bool  InputFilter ()
+ {
+  // если все сигналы не BUY (т.е. нет противоречий)
+  if (signalM1!=1 && signalM5!=1 && signalM15!=1)
+   return(true);
+  // если все сигналы не SELL (т.е. нет противоречий)
+  if (signalM1!=-1 && signalM5!=-1 && signalM15!=-1)
+   return(true);
+  return(false);
+ }
