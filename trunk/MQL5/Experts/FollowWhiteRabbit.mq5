@@ -24,7 +24,7 @@ input double M5_supremacyPercent  = 3;//процент, насколько бар M5 больше среднег
 input double M15_supremacyPercent = 1;//процент, насколько бар M15 больше среднего значения
 input double profitPercent = 0.5;// процент прибыли                                            
 input string orderParams = "";// ПАРАМЕТРЫ ОРДЕРОВ
-input ENUM_USE_PENDING_ORDERS pending_orders_type = USE_LIMIT_ORDERS;// Тип отложенного ордера                    
+input ENUM_USE_PENDING_ORDERS pending_orders_type = USE_NO_ORDERS;// Тип отложенного ордера                    
 input int priceDifference = 50;//Price Difference
 input string lockParams="";//Параметры запретов на вход
 input bool useLinesLock=false; //флаг включения запрета на вход по индикатора NineTeenLines
@@ -312,7 +312,7 @@ int CountStoploss(int point)
   {
    if(LessDoubles(direction*bufferStopLoss[i],direction*priceAB))
    {
-    log_file.Write(LOG_DEBUG,StringFormat("%s price = %f; extr = %f",MakeFunctionPrefix(__FUNCTION__), priceAB, bufferStopLoss[i]));      
+    //log_file.Write(LOG_DEBUG,StringFormat("%s price = %f; extr = %f",MakeFunctionPrefix(__FUNCTION__), priceAB, bufferStopLoss[i]));      
     stopLoss=(int)(MathAbs(bufferStopLoss[i] - priceAB)/Point());
     break;
    }

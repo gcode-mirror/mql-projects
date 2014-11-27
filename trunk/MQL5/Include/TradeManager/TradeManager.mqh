@@ -681,19 +681,27 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
      pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
-      if ((pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP) && OrderSelect(pos.getOrderTicket())
-        ||(pos.getType() == OP_SELL))
+      if (pos.getType() == OP_SELL)
       {
        ClosePosition(i);
+       continue;
       }
-      else
+      if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
       {
-       log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                     , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
-                     , GetLastError(), ErrorDescription(GetLastError())));
+       if (OrderSelect(pos.getOrderTicket()))
+       {
+        ClosePosition(i);
+       }
+       else
+       {
+        ResetLastError();
+        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                      , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
+                      , GetLastError(), ErrorDescription(GetLastError())));
        // ToDo
        // Проверить наличие ордера в истории
        // Удалить позицию из массива позиций и перенести объект позиции в историю
+       }
       }
      }
     }
@@ -709,20 +717,27 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
      pos = _openPositions.At(i);
      if (pos.getSymbol() == symbol)
      {
-      if ((pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP) && OrderSelect(pos.getOrderTicket())
-        ||(pos.getType() == OP_BUY))
+      if (pos.getType() == OP_BUY)
       {
        ClosePosition(i);
+       continue;
       }
-      else
+      if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
       {
-       ResetLastError();
-       log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                     , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
-                     , GetLastError(), ErrorDescription(GetLastError())));
+       if (OrderSelect(pos.getOrderTicket()))
+       {
+        ClosePosition(i);
+       }
+       else
+       {
+        ResetLastError();
+        log_file.Write(LOG_DEBUG ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                      , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
+                      , GetLastError(), ErrorDescription(GetLastError())));
        // ToDo
        // Проверить наличие ордера в истории
        // Удалить позицию из массива позиций и перенести объект позиции в историю
+       }
       }
      }
     }

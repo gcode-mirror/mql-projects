@@ -301,7 +301,7 @@ double CPosition::getPosProfit()
 //+------------------------------------------------------------------+
 ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
 {
- log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс %.05f", MakeFunctionPrefix(__FUNCTION__), _slPrice ));
+ log_file.Write(LOG_DEBUG, StringFormat("%s Выставляем стоп-лосс", MakeFunctionPrefix(__FUNCTION__)));
  MqlDateTime mdt;
  TimeToStruct(_posOpenTime, mdt);
  //формируем комментарий
@@ -310,7 +310,6 @@ ENUM_STOPLEVEL_STATUS CPosition::setStopLoss()
  if (_pos_info.sl > 0 && _sl_status != STOPLEVEL_STATUS_PLACED)
  {
   if (_slPrice <= 0) _slPrice = SLPriceByType(_pos_info.type);
-  //if (MathAbs(_slPrice - PriceByType(_pos_info.type)) <= SymbInfo.StopsLevel()) _slPrice = StopLevelByType(_pos_info.type);
   
   _slType = SLOrderType((int)_pos_info.type);
   
@@ -627,7 +626,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
  switch(_pos_info.type)
  {
   case OP_BUY:
-   log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Бай", MakeFunctionPrefix(__FUNCTION__)) );
+   log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Бай, объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _pos_info.volume));
    if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _pos_info.volume, _posOpenPrice, 0, 0, orderComment))
    {
     _orderTicket = 0;
@@ -643,7 +642,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
    }
    break;
   case OP_SELL:
-   log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Селл, объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _pos_info.volume) );
+   log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Селл, объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _pos_info.volume));
    if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _pos_info.volume, _posOpenPrice, 0, 0, orderComment))
    {
     _orderTicket = 0;
