@@ -28,7 +28,6 @@ int copiedHigh;
 int copiedLow;
 int copiedTime;
 CChartObjectVLine  vertLine;                       // объект класса вертикальной линии
-
 void OnStart()
   { 
    // выставляем последовательность элементов в массивах, как в таймсерии
@@ -41,7 +40,7 @@ void OnStart()
    ArrayResize(buffer,pbiDepth);
    ArrayInitialize(buffer,0);
    // создаем хэндл PBI
-   handlePBI = iCustom(_Symbol,_Period,"PriceBasedIndicator");
+   handlePBI = iCustom(_Symbol,_Period,"PriceBasedIndicator",pbiDepth);
    if (handlePBI == INVALID_HANDLE)
     {
      Alert("Ошибка скрипта AddingPoint.mq5: не удалось создать хэндл PriceBasedIndicator");
@@ -50,10 +49,10 @@ void OnStart()
    // пытаемся загрузить буфер PriceBasedIndicator
    for (int attempts=0;attempts<25;attempts++)
     {
-     copiedHigh = CopyHigh(_Symbol,_Period,0,pbiDepth,high);
-     copiedLow  = CopyLow(_Symbol,_Period,0,pbiDepth,low);
-     copiedPBI  = CopyBuffer(handlePBI,4,0,pbiDepth,bufferPBI);
-     copiedTime = CopyTime(_Symbol,_Period,0,pbiDepth,time);
+     copiedHigh = CopyHigh(_Symbol,_Period,TimeCurrent(),pbiDepth,high);
+     copiedLow  = CopyLow(_Symbol,_Period,TimeCurrent(),pbiDepth,low);
+     copiedPBI  = CopyBuffer(handlePBI,4,TimeCurrent(),pbiDepth,bufferPBI);
+     copiedTime = CopyTime(_Symbol,_Period,TimeCurrent(),pbiDepth,time);
     }
    if (copiedHigh < pbiDepth || copiedLow < pbiDepth || copiedPBI < pbiDepth || copiedTime < pbiDepth)
     {
@@ -68,7 +67,7 @@ void OnStart()
   {
    double min,max;
    int    indMin=-1,indMax=-1;
-   int    prevMove=-1,curMove=-1; // последнее и текущее движение
+   int    prevMove=-1; // последнее движение
    // проходим с конца истории и вычисляем дополнительные точки
    for (int ind=pbiDepth-1;ind>=0;ind--)
     {
@@ -109,9 +108,9 @@ void OnStart()
      // любое другое движение, отличное от коррекции
      else
       {
-       curMove = int(bufferPBI[ind]);   // сохраняем текущее движение
+     //  curMove = int(bufferPBI[ind]);   // сохраняем текущее движение
        // если текущее движение - тренд вверх, предыдущее - коррекция вниз и до него - тренд вверх, то сохраняем точку 
-       if ( (curMove == MOVE_TYPE_TREND_UP  || curMove == MOVE_TYPE_TREND_UP_FORBIDEN ) &&
+       if ( (bufferPBI[ind] == MOVE_TYPE_TREND_UP  ||  bufferPBI[ind] == MOVE_TYPE_TREND_UP_FORBIDEN ) &&
             (prevMove == MOVE_TYPE_TREND_UP || prevMove == MOVE_TYPE_TREND_UP_FORBIDEN) &&
             indMin != -1
           )
@@ -120,10 +119,11 @@ void OnStart()
             buffer[indMin] = min;
             vertLine.Color(clrRed);
             // создаем вертикальную линию, показывающий момент появления расхождения MACD
-            vertLine.Create(0,"MIN_"+IntegerToString(indMin),0,time[indMin]);
+            vertLine.Create(0,"MIN_"+IntegerToString(ind),0,time[indMin]);
+            vertLine.Color(clrRed);
            }
        // если текущее движение - тренд вниз, предыдущее - коррекция вверх и до него - тренд вниз, то сохраняем точку 
-       if ( (curMove == MOVE_TYPE_TREND_DOWN  || curMove == MOVE_TYPE_TREND_DOWN_FORBIDEN ) &&
+       if ( (bufferPBI[ind] == MOVE_TYPE_TREND_DOWN  || bufferPBI[ind] == MOVE_TYPE_TREND_DOWN_FORBIDEN ) &&
             (prevMove == MOVE_TYPE_TREND_DOWN || prevMove == MOVE_TYPE_TREND_DOWN_FORBIDEN) &&
             indMax != -1
           )
@@ -132,13 +132,14 @@ void OnStart()
             buffer[indMax] = max;
             vertLine.Color(clrRed);
             // создаем вертикальную линию, показывающий момент появления расхождения MACD
-            vertLine.Create(0,"MAX_"+IntegerToString(indMax),0,time[indMax]);            
+            vertLine.Create(0,"MAX_"+IntegerToString(ind),0,time[indMax]);   
+            vertLine.Color(clrRed);      
            }
        // сбрасываем индексы Min и max
        indMax = -1;    
        indMin = -1;    
        // сохраняем текущее движение, как предыдущее
-       prevMove = curMove;       
+       prevMove = int(bufferPBI[ind]);       
       }
            
     }
