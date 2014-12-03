@@ -8,6 +8,8 @@
 //| Class CisNewBar.                                                 |
 //| Appointment: Класс функций для определения появления нового бара |
 //+------------------------------------------------------------------+
+ 
+#include <CEventBase.mqh>  // для генерации события
 
 class CisNewBar 
   {
@@ -21,6 +23,7 @@ class CisNewBar
       int               m_new_bars;       // Количество новых баров
       string            m_comment;        // Комментарий выполнения
       
+      CEventBase        *event;           // Класс для генерации событий
    public:
       void              CisNewBar();      // Конструктор CisNewBar
       void              CisNewBar(string symbol);      // Конструктор CisNewBar с параметрами
@@ -87,7 +90,7 @@ void CisNewBar::CisNewBar(ENUM_TIMEFRAMES period)
    m_new_bars=0;        // Количество новых баров
    m_comment="";        // Комментарий выполнения
    m_symbol=Symbol();   // Имя инструмента, по умолчанию символ текущего графика
-   m_period=period;   // Период графика передается параметром    
+   m_period=period;     // Период графика передается параметром    
   }
 
 //+------------------------------------------------------------------+
@@ -102,8 +105,8 @@ void CisNewBar::CisNewBar(string symbol, ENUM_TIMEFRAMES period)
    m_lastbar_time=0;    // Время открытия последнего бара
    m_new_bars=0;        // Количество новых баров
    m_comment="";        // Комментарий выполнения
-   m_symbol=symbol;   // Имя инструмента передается параметром
-   m_period=period;   // Период графика передается параметром    
+   m_symbol=symbol;     // Имя инструмента передается параметром
+   m_period=period;     // Период графика передается параметром    
   }
   
 //+------------------------------------------------------------------+
@@ -182,6 +185,21 @@ int CisNewBar::isNewBar()
    m_new_bars=1;
    //--- дошли до этого места - значит  появился новый бар(ы)
    // генерируем события появления нового бара для всех графиков 
-   
+   event = new CEventBase();
+   if(CheckPointer(event)==POINTER_DYNAMIC)
+     {
+      SEventData data;
+      // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
+      long z = ChartFirst();
+      while (z>=0)
+       {
+        if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
+          {
+           // генерим событие для текущего графика
+           event.Generate(z,1,data); 
+          }
+        z = ChartNext(z);      
+       }   
+     }   
    return(m_new_bars);
   }

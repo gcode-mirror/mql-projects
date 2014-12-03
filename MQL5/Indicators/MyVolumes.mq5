@@ -37,6 +37,7 @@ void OnInit()
    {
    if (ChartSymbol(z)== _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
       {
+       
        // если на этом графике нашли индикатор IsNewBar
        if (ChartIndicatorGet(z,0,"IsNewBar") != INVALID_HANDLE)
         {
@@ -49,7 +50,7 @@ void OnInit()
    // если ни на одном графике данного символа и ТФ не найден IsNewBar, то создаем его на новом графике
    if (chart) 
     {
-     z = ChartOpen(_Symbol, _Period);
+     z = ChartID();
      if (z>0)
       {
        int handleIsNewBar = iCustom(_Symbol,_Period,"IsNewBar");
@@ -60,6 +61,9 @@ void OnInit()
     }
    
   }
+  
+  
+  
 //+------------------------------------------------------------------+
 //|  Volumes                                                         |
 //+------------------------------------------------------------------+
@@ -105,7 +109,7 @@ void OnChartEvent(const int id,         // идентификатор события
     // если получили события о том, что пришел новый бар на заданном таймфрейме
     if (id==CHARTEVENT_CUSTOM+1)
      {
-     Comment("количество событий = ",countEvent++);
+      Comment("количество событий = ",countEvent++);
       couldCalc = true; // включаем флаг возможности пересчета индикатора
      }
    }

@@ -7,8 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_chart_window
-#include <Lib CisNewBarDD.mqh>  // дл€ проверки на новый бар
-#include <CEventBase.mqh>  // дл€ генерации событи€
+#include <CIsNewBarEvent.mqh>  // дл€ проверки на новый бар
 //+------------------------------------------------------------------+
 //| »ндикатор, генерирующий событи€ пришестви€ нового бара           |
 //+------------------------------------------------------------------+
@@ -33,27 +32,7 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
-   // если пришел новый бар
-   if (isNewBar.isNewBar())
-    {
-     // то запускаем генератор событий
-     event = new CEventBase();
-     if(CheckPointer(event)==POINTER_DYNAMIC)
-       {
-        SEventData data;
-        // проходим по всем открытым графикам с текущим символом и “‘ и генерируем дл€ них событи€
-        long z = ChartFirst();
-        while (z>=0)
-         {
-          if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
-            {
-            // генерим событие дл€ текущего графика
-            event.Generate(z,1,data); 
-            }
-         z = ChartNext(z);
-        
-        }   
-      }  
-    }
+   // генерируем событи€, что пришел новый бар
+   isNewBar.isNewBar();
    return(rates_total);
   }

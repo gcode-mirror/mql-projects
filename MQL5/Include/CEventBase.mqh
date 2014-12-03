@@ -86,7 +86,7 @@ bool CEventBase::Generate(long _chart_id,const ushort _event_id,const SEventData
       ResetLastError();
       is_generated=EventChartCustom(_chart_id,_event_id,this.m_data.lparam,
                                     this.m_data.dparam,this.m_data.sparam);
-      if(!is_generated)
+      if(!is_generated && _LastError!=4104)
          Print("Error while generating a custom event: ",_LastError);
      }
    if(is_generated)
