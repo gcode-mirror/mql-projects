@@ -108,7 +108,6 @@ void OnStart()
      // любое другое движение, отличное от коррекции
      else
       {
-     //  curMove = int(bufferPBI[ind]);   // сохраняем текущее движение
        // если текущее движение - тренд вверх, предыдущее - коррекция вниз и до него - тренд вверх, то сохраняем точку 
        if ( (bufferPBI[ind] == MOVE_TYPE_TREND_UP  ||  bufferPBI[ind] == MOVE_TYPE_TREND_UP_FORBIDEN ) &&
             (prevMove == MOVE_TYPE_TREND_UP || prevMove == MOVE_TYPE_TREND_UP_FORBIDEN) &&
