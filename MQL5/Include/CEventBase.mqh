@@ -65,7 +65,7 @@ public:
      };
    void             ~CEventBase(void){};
    //--
-   bool              Generate(long _chart_id,const ushort _event_id,const SEventData &_data,
+   bool              Generate(long _chart_id,ushort _event_id, SEventData &_data,
                               const bool _is_custom=true);                       // генератор событий
    ushort            GetId(void) {return this.m_id;};                            // возвращает ID события
 
@@ -75,7 +75,7 @@ private:
 //+------------------------------------------------------------------+
 //| метод генератора событий                                         |
 //+------------------------------------------------------------------+
-bool CEventBase::Generate(long _chart_id,const ushort _event_id,const SEventData &_data,
+bool CEventBase::Generate(long _chart_id, ushort _event_id, SEventData &_data,
                           const bool _is_custom=true)
   {
    bool is_generated=true;

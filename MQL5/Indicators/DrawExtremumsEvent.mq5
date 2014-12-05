@@ -46,6 +46,17 @@ int handle_ATR;
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 bool series_order = true;
+
+double lowExtrValueEvent;                        // значение нижнего экстремума, полученное от событий
+double highExtrValueEvent;                       // значение верхнего экстремума, полученное от событий 
+
+bool   CameHighExtr=false;                       // флаг прихода верхнего экстремума
+bool   CameLowExtr=false;                        // флаг прихода нижнего экстремума
+
+// событийные полученные параметры
+//bool signalHighExtr = false;
+//bool signalLowExtr = false;
+//datetime 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -180,22 +191,24 @@ int OnCalculate(const int rates_total,
    indexPrevDown = rates_total - 1 - indexPrevDown;
    indexPrevUp   = rates_total - 1 - indexPrevUp;
    PrintFormat("%s Первый расчет индикатора ОКОНЧЕН.", __FUNCTION__);
+   
    jumper = jumper*-1;
    return (rates_total);
-  }
+ }
    LastExtrSignal[0] = jumper;
    PrevExtrSignal[0] = prevJumper;
-   RecountUpdated(time[rates_total-1], true, extr_cur);
+   
+   // RecountUpdated(time[rates_total-1], true, extr_cur);
    
    ArraySetAsSeries(ExtUpArrowBuffer   , false);
    ArraySetAsSeries(ExtDownArrowBuffer , false);
      
-   if (extr_cur[0].direction > 0)
+   // если обновился верхний экстремум
+   if (CameHighExtr)
    {
     
-    lastExtrUpValue = extr_cur[0].price;
-
-    
+    lastExtrUpValue = highExtrValueEvent;//extr_cur[0].price;
+       
     if (jumper == -1)
     {
      ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
@@ -204,13 +217,13 @@ int OnCalculate(const int rates_total,
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
-    extr_cur[0].direction = 0;    
-   }
-   
-   if (extr_cur[1].direction < 0)
+   // extr_cur[0].direction = 0;    
+   }  
+   // если обновился нижний экстремум
+   if (CameLowExtr)
    {
 
-    lastExtrDownValue = extr_cur[1].price;
+    lastExtrDownValue = lowExtrValueEvent;//extr_cur[1].price;
 
     if (jumper == 1)
     {
@@ -220,8 +233,12 @@ int OnCalculate(const int rates_total,
     }
     jumper = -1;
     indexPrevDown = rates_total-1;  // обновляем предыдущий индекс        
-    extr_cur[1].direction = 0;   
+   // extr_cur[1].direction = 0;   
    }
+   
+   // сбрасываем флаги обновления экстремумов
+   CameHighExtr = false;
+   CameLowExtr = false;
    
    LastExtrSignal[0] = jumper;
    PrevExtrSignal[0] = prevJumper;
@@ -231,7 +248,29 @@ int OnCalculate(const int rates_total,
    return(rates_total);
   }
   
-  
+void OnChartEvent(const int id,         // идентификатор события  
+                  const long& lparam,   // параметр события типа long
+                  const double& dparam, // параметр события типа double
+                  const string& sparam  // параметр события типа string
+  )
+   {
+    
+    // если получили события о том, что появился новый верхний экстремум
+    if (id==CHARTEVENT_CUSTOM+1)
+     {
+      Print("Получили новый верхний экстремум. Цена = ",DoubleToString(dparam)," Время = ",TimeToString(datetime(lparam))," Индекс = ",sparam );
+      CameHighExtr = true;  // говорим, что верхний экстремум обновился
+      highExtrValueEvent = dparam; // сохраняем цену экстремума
+     }
+    // если получили события о том, что появился новый нижний экстремум
+    if (id==CHARTEVENT_CUSTOM+2)
+     {
+      Print("Получили новый нижний экстремум. Цена = ",DoubleToString(dparam)," Время = ",TimeToString(datetime(lparam))," Индекс = ",sparam );
+      CameLowExtr = true; // говорим, что нижний экстремум обновился
+      lowExtrValueEvent = dparam; // сохраняем цену экстремума
+     }     
+   }  
+ 
 void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
 {
  int count_new_extrs = extr.RecountExtremum(start_pos, now);

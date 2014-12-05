@@ -14,15 +14,15 @@
 #define ARRAY_SIZE 4                 // количество хранимых экстремумов
 #define DEFAULT_PERCENTAGE_ATR 1.0   // по умолчанию новый экстремум появляется когда разница больше среднего бара
 
-struct SExtremum
+struct SExtremum 
 {
  int direction;                      // направление экстремума: 1 - max; -1 -min; 0 - null
  double price;                       // цена экстремума: для max - high; для min - low
  datetime time;                      // время бара на котором возникает экстремум
 };
 
-// Класс который хранит и вычисляет последние ARRAY_SIZE экстремумов
-class CExtremum
+// Класс который хранит и вычисляет последние ARRAY_SIZE экстремумов (унаследован от CEventBase)
+class CExtremum : public CEventBase
 {
  protected:
  string _symbol;
@@ -32,9 +32,9 @@ class CExtremum
  int _handle_ATR;
  double _percentage_ATR;   // коэфициент отвечающий за то во сколько раз движение цены должно превысить средний бар что бы появился новый экстремум
  double _averageATR;       // храним среднее значение АТР
+ MqlRates bufferRates[1];  // буфер котировок
  //-----------------------------------------
  SExtremum extremums[ARRAY_SIZE];
- CEventBase        *event; // Класс для генерации событий 
  
  public:
  CExtremum();
@@ -43,6 +43,7 @@ class CExtremum
 
  int isExtremum(SExtremum& extr_array[], datetime start_pos_time = __DATETIME__,  bool now = true);  // есть ли экстремум на данном баре
  int RecountExtremum(datetime start_pos_time = __DATETIME__, bool now = true);                       // обновить массив экстремумов
+ void RecountUpdated(datetime start_pos, bool now);  // обновляет значения экстремумов, возвращая их  в массив ret_extremums
  double AverageBar (datetime start_pos);
  SExtremum getExtr(int i);
  void PrintExtremums();
@@ -89,7 +90,7 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  SExtremum result2 = {0, -1}; // временная переменная для записи min если он есть
  int count = 0;               // считаем сколько появилось экстремумов
  double high = 0, low = 0;    // временная переменная в которой будет хранится цена для расчета max и min соответственно
- MqlRates bufferRates[1];
+ 
 
  if(CopyRates(_symbol, _tf_period, start_pos_time, 1, bufferRates) < 1)
  {
@@ -153,6 +154,9 @@ int CExtremum::isExtremum(SExtremum& extr_array [], datetime start_pos_time = __
  return(count);
 }
 
+
+double cn = 1;
+
 //-------------------------------------------------------------------------------------
 // функция проверяет есть на данном баре экстремумы и если есть добавляет в массив экстремумов
 // по принципу стэка 
@@ -182,7 +186,9 @@ int CExtremum::RecountExtremum(datetime start_pos_time = __DATETIME__, bool now 
     }       
    }
   }
+ 
  }
+ 
  return(count_new_extrs);
 }
 
@@ -246,10 +252,9 @@ void CExtremum::PrintExtremums()
  PrintFormat("%s %s %s %s", __FUNCTION__, TimeToString(TimeCurrent()),EnumToString((ENUM_TIMEFRAMES)_tf_period), result);
 }
 
-
-//-------------------------------------------------------------------------------------
-// устанавливает нужное значение коэфицента в зависимости от выбранного таймфрейма
-//-------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------+
+// устанавливает нужное значение коэфицента в зависимости от выбранного таймфрейма     |
+//-------------------------------------------------------------------------------------+
 void CExtremum::SetPercentageATR()
 {
  switch(_tf_period)
@@ -283,3 +288,66 @@ void CExtremum::SetPercentageATR()
       break;
  }
 }
+
+// обновляет значения экстремумов, сохраняя их в массив ret_extremums
+void CExtremum::RecountUpdated(datetime start_pos,bool now)
+ {
+  int count_new_extrs = RecountExtremum(start_pos, now);
+  if (count_new_extrs > 0)
+   { //В массиве возвращаемых экструмумов на 0 месте стоит max, на месте 1 стоит min
+     // генерируем события обновления экстремумов для всех графиков 
+     SEventData data;
+     // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
+     long z = ChartFirst();
+     // сохраняем время экстремума
+     data.lparam = long(start_pos); 
+     while (z>=0)
+      {
+       if (ChartSymbol(z) == _symbol && ChartPeriod(z) == _tf_period)  // если найден график с текущим символом и периодом 
+         {
+          // если пришел 1 экстремум и он верхний
+          if (count_new_extrs == 1 && getExtr(0).direction == 1)
+            {
+             // то сохраняем цену экстремума
+             data.dparam = getExtr(0).price;
+             // и генерим событие для текущего графика для верхнего экстремума
+             Generate(z,1,data);  
+            }
+          // если пришел 1 экстремум и он нижний
+          if (count_new_extrs == 1 && getExtr(0).direction == -1)
+            {
+             // то сохраняем цену экстремума
+             data.dparam = getExtr(1).price;
+             // и генерим событие для текущего графика для нижнего экстремума
+             Generate(z,2,data);  
+            }
+          // если пришло 2 экстремума и по 0-му индексу - верхний
+          if (count_new_extrs == 2 && getExtr(0).direction == 1)
+            {
+             // то сохраняем цену экстремума
+             data.dparam = getExtr(0).price;
+             // и генерим событие для текущего графика для верхнего экстремума
+             Generate(z,1,data);  
+             // то сохраняем цену экстремума
+             data.dparam = getExtr(1).price;
+             // и генерим событие для текущего графика для нижнего экстремума
+             Generate(z,2,data);          
+            }                
+         // если пришло 2 экстремума и по 0-му индексу - верхний
+         if (count_new_extrs == 2 && getExtr(0).direction == -1)
+            {
+             // то сохраняем цену экстремума
+             data.dparam = getExtr(1).price;
+             // и генерим событие для текущего графика для верхнего экстремума
+             Generate(z,1,data);  
+             // то сохраняем цену экстремума
+             data.dparam = getExtr(0).price;
+             // и генерим событие для текущего графика для нижнего экстремума
+             Generate(z,2,data);          
+            }            
+       //Print("HIGH = ",DoubleToString(bufferRates[0].high)," LOW = ",DoubleToString(bufferRates[0].low) );   
+      }
+   z = ChartNext(z);      
+  }          
+  }
+ }
