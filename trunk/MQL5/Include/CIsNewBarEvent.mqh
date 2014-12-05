@@ -11,7 +11,7 @@
  
 #include <CEventBase.mqh>  // для генерации события
 
-class CisNewBar 
+class CisNewBar : public CEventBase
   {
    protected:
       datetime          m_lastbar_time;   // Время открытия последнего бара
@@ -23,7 +23,6 @@ class CisNewBar
       int               m_new_bars;       // Количество новых баров
       string            m_comment;        // Комментарий выполнения
       
-      CEventBase        *event;           // Класс для генерации событий
    public:
       void              CisNewBar();      // Конструктор CisNewBar
       void              CisNewBar(string symbol);      // Конструктор CisNewBar с параметрами
@@ -176,18 +175,13 @@ int CisNewBar::isNewBar()
       return(0);
      }
    //---
-   
    //---Далее используем первый тип запроса на появление нового бара для завершения анализа:
    if(!isNewBar(newbar_time)) return(0);
-   
    //---Уточним количество новых баров:
   // m_new_bars=Bars(m_symbol, m_period, lastbar_time, newbar_time) - 1;
    m_new_bars=1;
    //--- дошли до этого места - значит  появился новый бар(ы)
    // генерируем события появления нового бара для всех графиков 
-   event = new CEventBase();
-   if(CheckPointer(event)==POINTER_DYNAMIC)
-     {
       SEventData data;
       // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
       long z = ChartFirst();
@@ -196,10 +190,9 @@ int CisNewBar::isNewBar()
         if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
           {
            // генерим событие для текущего графика
-           event.Generate(z,1,data); 
+           Generate(z,1,data); 
           }
         z = ChartNext(z);      
-       }   
-     }   
+       }     
    return(m_new_bars);
   }
