@@ -13,6 +13,11 @@
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 16
+
+// константы сигналов
+#define BUY   1    
+#define SELL -1 
+#define NO_POSITION 0
 //+------------------------------------------------------------------+
 //| Expert parametrs                                                 |
 //+------------------------------------------------------------------+
@@ -32,12 +37,14 @@ SPositionInfo pos_info;
 STrailing trailing;
 
 int handle_pbi;
-double buffer_pbi[1];
+double buffer_pbi[];
 double buffer_high[];
 double buffer_low[];
 
 double highPrice[], lowPrice[], closePrice[];
 bool recountInterval;
+int  tmpLastBar;
+int  lastTrend = 0;            // тип последнего тренда по PBI 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -107,6 +114,12 @@ void OnTick()
   index_min = ArrayMinimum(buffer_low, 0, DEPTH - 1);
   recountInterval = false;
   
+  tmpLastBar = GetLastMoveType(handle_pbi);
+  if (tmpLastBar != 0)
+  {
+   lastTrend = tmpLastBar;
+  }
+  
   if (buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
   {
    highBorder = buffer_high[index_max];
@@ -119,7 +132,7 @@ void OnTick()
  
    pos_info.tp = 0;
    
-   if(index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], highBorder) && diff_high > sl_min)
+   if(index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], highBorder) && diff_high > sl_min && lastTrend == SELL)
    { 
     PrintFormat("÷ена закрыти€ пробила цену максимум = %s, ¬рем€ = %s, цена = %.05f, sl_min = %d, diff_high = %d",
           DoubleToString(highBorder, 5),
@@ -135,10 +148,10 @@ void OnTick()
     trailing.trailingStop = diff_high;
     trailing.trailingStep = 5;
     if ((pos_info.tp > pos_info.sl*tp_ko))
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
+     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
     
-   if(index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], lowBorder) && diff_low > sl_min)
+   if(index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], lowBorder) && diff_low > sl_min && lastTrend == BUY)
    {
     PrintFormat("÷ена закрыти€ пробила цену минимум = %s, ¬рем€ = %s, цена = %.05f, sl_min = %d, diff_low = %d",
           DoubleToString(lowBorder, 5),
@@ -155,21 +168,26 @@ void OnTick()
     trailing.trailingStop = diff_low;
     trailing.trailingStep = 5;
     if ((pos_info.tp > pos_info.sl*tp_ko))
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
+     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
    
    if(ctm.GetPositionCount() != 0)
    {
-    if(ctm.GetPositionType(_Symbol) == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
+    ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol);
+    if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
     {
      slPrice = curAsk;
      ctm.ModifyPosition(_Symbol, slPrice, 0); 
     }
-    if(ctm.GetPositionType(_Symbol) == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > curBid) 
+    if(type == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > curBid) 
     {
      slPrice = curBid;
      ctm.ModifyPosition(_Symbol, slPrice, 0); 
     }
+    if(type == OP_BUYSTOP || type == OP_SELLSTOP && (pos_info.tp <= pos_info.sl*tp_ko))
+    {
+     ctm.ClosePendingPosition(_Symbol);
+    } 
    }
   }
   else
@@ -179,3 +197,55 @@ void OnTick()
  }
 }
 //+------------------------------------------------------------------+
+
+int GetLastTrendDirection (int handle, ENUM_TIMEFRAMES period)   // возвращает true, если тендекци€ не противоречит последнему тренду на текущем таймфрейме
+{
+ int copiedPBI=-1;     // количество скопированных данных PriceBasedIndicator
+ int signTrend=-1;     // переменна€ дл€ хранени€ знака последнего тренда
+ int index=1;          // индекс бара
+ int nBars;            // количество баров
+ 
+ ArraySetAsSeries(buffer_pbi, true);
+ 
+ nBars = Bars(_Symbol,period);
+ 
+ for (int attempts = 0; attempts < 5; attempts++)
+ {
+  copiedPBI = CopyBuffer(handle, 4, 1, nBars - 1, buffer_pbi);
+  Sleep(100);
+ }
+ if (copiedPBI < (nBars-1))
+ {
+ // Comment("Ќе удалось скопировать все бары");
+  return (0);
+ }
+ 
+ for (index = 0; index < nBars - 1; index++)
+ {
+  signTrend = int(buffer_pbi[index]);
+  // если найден последний тренд вверх
+  if (signTrend == 1 || signTrend == 2)
+   return (1);
+  // если найден последний тренд вниз
+  if (signTrend == 3 || signTrend == 4)
+   return (-1);
+ }
+ return (0);
+}
+
+int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndicator
+{
+ int copiedPBI;
+ int signTrend;
+ copiedPBI = CopyBuffer(handle, 4, 1, 1, buffer_pbi);
+ if (copiedPBI < 1)
+  return (0);
+ signTrend = int(buffer_pbi[0]);
+ // если тренд вверх
+ if (signTrend == 1 || signTrend == 2)
+  return (1);
+ // если тренд вниз
+ if (signTrend == 3 || signTrend == 4)
+  return (-1);
+ return (0);
+}

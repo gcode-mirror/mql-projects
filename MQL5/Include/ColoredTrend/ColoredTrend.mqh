@@ -164,7 +164,7 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_time, bool now, SExtre
  }
  
  //если коррекрция "переросла" тренд то она превращается во флэт
- if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_DOWN || enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP)  && 
+ if ((enumMoveType[bar] == MOVE_TYPE_CORRECTION_DOWN || enumMoveType[bar] == MOVE_TYPE_CORRECTION_UP) && 
       isCorrectionWrong(bar))
  {
   enumMoveType[bar] = MOVE_TYPE_FLAT;
