@@ -742,7 +742,7 @@ bool IsLastClosesBeaten (ENUM_TIMEFRAMES period,int direction)
  if (timeOpenPos < timeBuf[0])
  {
   // пытаемся скопировать цены закрытия последних 3-х баров
-  if ( CopyClose(_Symbol,period,1,3,closes) < 3 )
+  if (CopyClose(_Symbol, period, 1, 3, closes) < 3)
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s, Не удалось скопировать цены close 3-х последних сформированных баров", MakeFunctionPrefix(__FUNCTION__)));
    return false;
@@ -751,13 +751,13 @@ bool IsLastClosesBeaten (ENUM_TIMEFRAMES period,int direction)
   {
    case BUY:
    // если цена close на последнем баре пробила цены close на двух предыдущих 
-    if ( GreatDoubles(closes[2],closes[1]) && GreatDoubles (closes[2],closes[0]) && LessDoubles(closes[1],closes[0]) )
+    if (GreatDoubles(closes[2], closes[1]) && GreatDoubles(closes[2], closes[0]) && LessDoubles(closes[1], closes[0]))
     {
      return true;
     }
    case SELL:
    // если цена close на последнем баре пробила цены close на двух предыдущих
-    if ( LessDoubles(closes[2],closes[1]) && LessDoubles (closes[2],closes[0]) && GreatDoubles(closes[1],closes[0]) )
+    if (LessDoubles(closes[2], closes[1]) && LessDoubles(closes[2], closes[0]) && GreatDoubles(closes[1], closes[0]))
     {  
      return true;
     }
