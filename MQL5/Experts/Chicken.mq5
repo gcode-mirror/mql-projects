@@ -148,7 +148,10 @@ void OnTick()
     trailing.trailingStop = diff_high;
     trailing.trailingStep = 5;
     if ((pos_info.tp > pos_info.sl*tp_ko))
+    {
+     PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
      ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
+    }
    }
     
    if(index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], lowBorder) && diff_low > sl_min && lastTrend == BUY)
@@ -168,7 +171,10 @@ void OnTick()
     trailing.trailingStop = diff_low;
     trailing.trailingStep = 5;
     if ((pos_info.tp > pos_info.sl*tp_ko))
+    {
+     PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
      ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
+    }
    }
    
    if(ctm.GetPositionCount() != 0)
@@ -184,7 +190,7 @@ void OnTick()
      slPrice = curBid;
      ctm.ModifyPosition(_Symbol, slPrice, 0); 
     }
-    if(type == OP_BUYSTOP || type == OP_SELLSTOP && (pos_info.tp <= pos_info.sl*tp_ko))
+    if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp <= pos_info.sl*tp_ko))
     {
      ctm.ClosePendingPosition(_Symbol);
     } 
