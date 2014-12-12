@@ -16,7 +16,7 @@
 #include <CLog.mqh>
 #include <BlowInfoFromExtremums.mqh>
 
-#define RISK 0,01;
+#define RISK 0.01
 int error = 0;
 
 //+------------------------------------------------------------------+
@@ -33,7 +33,7 @@ private:
   
   bool   _historyChanged;     // флаг изменения истории
   
-  double CalcVolume();
+  double CalcVolume(string symbol);
   bool   CloseReProcessingPosition(int i,color Color=CLR_NONE);
   string CreateFilename(ENUM_FILENAME filename);
   bool   FindHistoryTicket(long ticket);
@@ -652,7 +652,6 @@ void CTradeManager::OnTrade(datetime history_start=0)
 //+------------------------------------------------------------------+
 bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing,int maxSpread)
 {
- //Print("ПОЛУЧИЛИ ОБЪЕМ = ",DoubleToString(pos_info.volume));
  if (maxSpread > 0 && SymbolInfoInteger(symbol,SYMBOL_SPREAD) > maxSpread)
  {
   //log_file.Write(LOG_DEBUG, StringFormat("%s Невозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
@@ -753,6 +752,10 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
   
+  if(pos_info.volume <= 0)
+  {
+   CalcVolume(symbol);
+  }
   pos = new CPosition(_magic, symbol, timeframe, pos_info, trailing);
   ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
@@ -940,14 +943,12 @@ void CTradeManager::UpdateData(CPositionArray *positionsHistory = NULL)
 
 //+------------------------------------------------------------------+
 /// Volume calculation.
-/// \param [in] i			      pos index in array of positions
-/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
-/// \return							true if successful, false if not
+/// \return							position volume
 //+------------------------------------------------------------------+
-double CTradeManager::CalcVolume(void)
+double CTradeManager::CalcVolume(string symbol)
 {
- //double balance = AccountInfoDouble(ACCOUNT_BALANCE);
- //double volume_risk = (balance * RISK) / (openPrice * _Point);
+ double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+ double volume_risk = (balance * RISK) / (SymbolInfoDouble(symbol, SYMBOL_BID));
  return 0.0;
 }
 

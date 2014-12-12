@@ -24,6 +24,7 @@
 input double volume = 0.1;
 input int    spread = 30;         // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
+bool use_tp = false;
 input double tp_ko = 2;
 /*
 input int minProfit = 250;
@@ -125,7 +126,7 @@ void OnTick()
    highBorder = buffer_high[index_max];
    lowBorder = buffer_low[index_min];
    sl_min = MathMax((int)MathCeil((highBorder - lowBorder)*0.10/Point()), 50);
-   tp = (int)MathCeil((highBorder - lowBorder)*0.75/Point());
+   tp = (use_tp) ? (int)MathCeil((highBorder - lowBorder)*0.75/Point()) : 0;
    diff_high = (buffer_high[DEPTH - 1] - highBorder)/Point();
    diff_low = (lowBorder - buffer_low[DEPTH - 1])/Point();
    stoplevel = MathMax(sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
@@ -147,7 +148,7 @@ void OnTick()
     trailing.minProfit = 2*diff_high;
     trailing.trailingStop = diff_high;
     trailing.trailingStep = 5;
-    if ((pos_info.tp > pos_info.sl*tp_ko))
+    if (pos_info.tp == 0 || pos_info.tp > pos_info.sl*tp_ko)
     {
      PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
      ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
@@ -170,7 +171,7 @@ void OnTick()
     trailing.minProfit = 2*diff_low;
     trailing.trailingStop = diff_low;
     trailing.trailingStep = 5;
-    if ((pos_info.tp > pos_info.sl*tp_ko))
+    if (pos_info.tp == 0 || pos_info.tp > pos_info.sl*tp_ko)
     {
      PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
      ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
@@ -190,7 +191,7 @@ void OnTick()
      slPrice = curBid;
      ctm.ModifyPosition(_Symbol, slPrice, 0); 
     }
-    if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp <= pos_info.sl*tp_ko))
+    if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp >0 && pos_info.tp <= pos_info.sl*tp_ko))
     {
      ctm.ClosePendingPosition(_Symbol);
     } 
