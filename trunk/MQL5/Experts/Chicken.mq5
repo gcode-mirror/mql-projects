@@ -24,7 +24,7 @@
 input double volume = 0.1;
 input int    spread = 30;         // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
-bool use_tp = false;
+input bool use_tp = false;
 input double tp_ko = 2;
 /*
 input int minProfit = 250;
