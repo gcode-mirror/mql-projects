@@ -77,7 +77,7 @@ int OnInit()
    return(INIT_FAILED);    
   }
  pos_info.tp = 0;
- //pos_info.volume = lot;
+ pos_info.volume = lot;
  pos_info.expiration = 0;
  pos_info.priceDifference = 0; 
  pos_info.sl = 0;
@@ -120,7 +120,7 @@ void OnTick()
           // задаем стоп лосс
           pos_info.sl  =  CountStopLoss(1,SymbolInfoDouble(_Symbol,SYMBOL_BID));
           // вычисляем размер лота
-          pos_info.volume = CountLotByStopLoss(pos_info.sl);
+          //pos_info.volume = CountLotByStopLoss(pos_info.sl);
           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                  
         }
        // сохраняем последний сигнал
@@ -136,7 +136,7 @@ void OnTick()
           // задаем стоп лосс
           pos_info.sl = CountStopLoss(-1,SymbolInfoDouble(_Symbol,SYMBOL_ASK));
           // вычисляем размер лота
-          pos_info.volume = CountLotByStopLoss(pos_info.sl);
+          //pos_info.volume = CountLotByStopLoss(pos_info.sl);
           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                   
        }
       //сохраняем последний правый экстремум расхождения
@@ -173,7 +173,8 @@ bool UploadBuffers ()
 int   CountStopLoss (int dealType, double currentPrice)
  {
   double closestLevel=0;  // цена ближайшего уровня
-  int ind;
+  int ind;                // для прохода по циклам
+  int stopLoss;           // стоп лосс в пунктах
   // загружаем буферы уровней
   if (!UploadBuffers())
    return (0);
@@ -183,29 +184,25 @@ int   CountStopLoss (int dealType, double currentPrice)
       // если позиция открыта на Buy, цена уровня ниже цены открытия позиции , но она ближе к цене позиции
       if (dealType == 1 && LessDoubles(levelPrices[ind],currentPrice) && GreatDoubles(levelPrices[ind],closestLevel)  )
        {
-        // если стоп лосс размером не менее 100 пунктов
-        if ( int( MathAbs(currentPrice-closestLevel)/_Point ) >= 100 )
-         {
-          // то сохраняем цену ближайшего уровня
-          closestLevel = levelPrices[ind];
-         }
+        // то сохраняем цену ближайшего уровня
+        closestLevel = levelPrices[ind]; 
        }
       // если позиция открыта на Sell, цена уровня выше цены открытия позиции , но она ближе к цене позиции
       if (dealType == -1 && GreatDoubles(levelPrices[ind],currentPrice) && (LessDoubles(levelPrices[ind],closestLevel)||closestLevel==0) )
-       {
-        // если стоп лосс размером не менее 100 пунктов
-        if ( int( MathAbs(currentPrice-closestLevel)/_Point ) >= 100 )
-         {       
-          // то сохраняем цену ближайшего уровня
-          closestLevel = levelPrices[ind];
-         }
+       {   
+        // то сохраняем цену ближайшего уровня
+        closestLevel = levelPrices[ind];
        }       
      } 
-  if (closestLevel != 0)
-   return ( int( MathAbs(currentPrice-closestLevel)/_Point ) );
-  return (0);
+  // вычисляем размер стопа
+  stopLoss = int( MathAbs(currentPrice-closestLevel)/_Point );
+  // если stopLoss оказался меньше 100 пунктов, то выставляем его в размере 100 пунктов
+  if (stopLoss < 100)
+   stopLoss = 100; 
+  // возвращаем стоп лосс в пунктах
+  return (stopLoss);
  }
- 
+ /*
 // функция вычисляет размер лота в зависимоти от стоп лосса
 double  CountLotByStopLoss (int stopLoss)
  {
@@ -213,3 +210,4 @@ double  CountLotByStopLoss (int stopLoss)
   
   return (lotSize);
  }
+ */
