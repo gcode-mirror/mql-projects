@@ -23,7 +23,8 @@
 // входные параметры
 sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
 input  double lot                                  = 0.1;                // Лот         
-input  int    spread                               = 300;                // Размер спреда       
+input  int    spread                               = 300;                // Размер спреда    
+input  int    risk                                 = 1;                  // размер риска в процентах   
 input  int    top_level                            = 75;                 // Top Level
 input  int    bottom_level                         = 25;                 // Bottom Level
 input  ENUM_MA_METHOD      ma_method               = MODE_SMA;           // тип сглаживания
@@ -44,6 +45,7 @@ SPositionInfo pos_info;                                                  // инфо
 STrailing     trailing;                                                  // информация о трейлинге
 // переменные эксперта 
 double lastRightExtr=0;                                                  // значение последней даты правого экстремума расхождения
+double riskSize;                                                         // размер риска
 // буферы 
 double signalBuffer[];                                                   // буфер для получения сигнала из индикатора smydBlau
 double dateRightExtr[];                                                  // буфер для получения времени прихода правого экстремума расхождения
@@ -87,6 +89,10 @@ int OnInit()
  trailing.trailingStop = 0;
  trailing.trailingStep = 0;
  trailing.handleForTrailing = 0;
+ 
+ // вычисляем значение риска
+ riskSize = risk/100.0;
+ 
  return(INIT_SUCCEEDED);
 }
 
@@ -102,7 +108,6 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  ctm.OnTick();
- Comment("Текущий счёт = ",DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE) ) );
  // если сформирован новый бар
    if (CopyBuffer(handleSmydBlau,1,0,1,signalBuffer) < 1 || CopyBuffer(handleSmydBlau,3,0,1,dateRightExtr) < 1 || CopyBuffer(handleStoc,0,0,1,stoc) < 1 )
     {
@@ -120,8 +125,9 @@ void OnTick()
           // задаем стоп лосс
           pos_info.sl  =  CountStopLoss(1,SymbolInfoDouble(_Symbol,SYMBOL_BID));
           // вычисляем размер лота
-          //pos_info.volume = CountLotByStopLoss(pos_info.sl);
-          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                  
+          pos_info.volume = CountLotByStopLoss(SymbolInfoDouble(_Symbol,SYMBOL_BID),pos_info.sl);
+          if (pos_info.volume!=0)
+           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                  
         }
        // сохраняем последний сигнал
        lastRightExtr = dateRightExtr[0];
@@ -136,8 +142,9 @@ void OnTick()
           // задаем стоп лосс
           pos_info.sl = CountStopLoss(-1,SymbolInfoDouble(_Symbol,SYMBOL_ASK));
           // вычисляем размер лота
-          //pos_info.volume = CountLotByStopLoss(pos_info.sl);
-          ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                   
+          pos_info.volume = CountLotByStopLoss(SymbolInfoDouble(_Symbol,SYMBOL_ASK),pos_info.sl);
+          if (pos_info.volume!=0)
+           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                   
        }
       //сохраняем последний правый экстремум расхождения
       lastRightExtr = dateRightExtr[0]; 
@@ -202,12 +209,19 @@ int   CountStopLoss (int dealType, double currentPrice)
   // возвращаем стоп лосс в пунктах
   return (stopLoss);
  }
- /*
-// функция вычисляет размер лота в зависимоти от стоп лосса
-double  CountLotByStopLoss (int stopLoss)
+ 
+// функция вычисляет размер лота в зависимоти от стоп лосса 
+double  CountLotByStopLoss (double posOpenPrice,int stopLoss)
  {
-  double lotSize;
-  
-  return (lotSize);
+  double balancePart;
+  double Sp;
+  double percentLot;
+  // вычисляем процент риска от текущего баланса, которым мы можем потерять
+  balancePart = AccountInfoDouble(ACCOUNT_BALANCE)*riskSize;
+  Sp = stopLoss*SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE_PROFIT);
+  //SymbolInfoInteger(_Symbol,
+  percentLot = NormalizeDouble(balancePart / Sp, 2);
+ // PrintFormat("Размер лота = %.02f, процент баланса = %.05f, стоимость стопа = %.05f, стоимость тика = %.05f ",percentLot, balancePart , Sp, SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE_PROFIT)  );
+  //Comment("Текущий счёт = ",DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE) ) );  
+  return (percentLot);
  }
- */
