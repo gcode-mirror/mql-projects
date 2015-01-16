@@ -14,12 +14,13 @@
 #property indicator_type2   DRAW_ARROW
 
 //----------------------------------------------------------------
-#include <CompareDoubles.mqh>
-#include <DrawExtemums/CDrawExtremums.mqh>
+#include <CompareDoubles.mqh> // для сравнения действительных чисел
+#include <DrawExtemums/CDrawExtremums.mqh> 
 #include <CExtremum.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <CLog.mqh>
 #include <StringUtilities.mqh>
+#include <CEventBase.mqh> // для генерации событий
 //----------------------------------------------------------------
 //--- индикаторные буферы
 double ExtUpArrowBuffer[];                       // буфер верхних экстремумов
@@ -47,16 +48,8 @@ string symbol;
 ENUM_TIMEFRAMES current_timeframe;
 bool series_order = true;
 
-double lowExtrValueEvent;                        // значение нижнего экстремума, полученное от событий
-double highExtrValueEvent;                       // значение верхнего экстремума, полученное от событий 
+CEventBase *eventBase;
 
-bool   CameHighExtr=false;                       // флаг прихода верхнего экстремума
-bool   CameLowExtr=false;                        // флаг прихода нижнего экстремума
-
-// событийные полученные параметры
-//bool signalHighExtr = false;
-//bool signalLowExtr = false;
-//datetime 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -102,7 +95,9 @@ int OnInit()
    ArraySetAsSeries( PrevExtrSignal,      true);
    ArraySetAsSeries( ExtrNumberHigh,      true);
    ArraySetAsSeries( ExtrNumberLow,       true);
-   
+
+   eventBase = new CEventBase(); // создаем объект класса генерации событий
+
    return(INIT_SUCCEEDED);
   }
   
@@ -116,6 +111,8 @@ void OnDeinit(const int reason)
    ArrayFree(PrevExtrSignal);
    ArrayFree(ExtrNumberHigh);
    ArrayFree(ExtrNumberLow);
+   // удаляем объект класса генерации события 
+   delete eventBase;
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -191,54 +188,54 @@ int OnCalculate(const int rates_total,
    indexPrevDown = rates_total - 1 - indexPrevDown;
    indexPrevUp   = rates_total - 1 - indexPrevUp;
    PrintFormat("%s Первый расчет индикатора ОКОНЧЕН.", __FUNCTION__);
-   
    jumper = jumper*-1;
    return (rates_total);
- }
+  }
    LastExtrSignal[0] = jumper;
    PrevExtrSignal[0] = prevJumper;
-   
-   // RecountUpdated(time[rates_total-1], true, extr_cur);
+   RecountUpdated(time[rates_total-1], true, extr_cur);
    
    ArraySetAsSeries(ExtUpArrowBuffer   , false);
    ArraySetAsSeries(ExtDownArrowBuffer , false);
-     
-   // если обновился верхний экстремум
-   if (CameHighExtr)
-   {
-    
-    lastExtrUpValue = highExtrValueEvent;//extr_cur[0].price;
-       
+   
+   // если пришел новый верхний экстремум  
+   if (extr_cur[0].direction > 0)
+   {  
+    lastExtrUpValue = extr_cur[0].price;
+    // генерим соответсвующее событие
+    GenEvent(1,lastExtrUpValue,extr_cur[0].time,"high");
+    // если сформировался экстремум
     if (jumper == -1)
     {
      ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
      countExtrLow ++;                 // увеличиваем количество экстремумов на единицу  HIGH
      prevJumper = jumper;
+     // генерим событие, что сформировался верхний экстремум
+     GenEvent(2,lastExtrDownValue,0,"low");     
     }
     jumper = 1;
     indexPrevUp = rates_total-1;  // обновляем предыдущий индекс
-   // extr_cur[0].direction = 0;    
-   }  
-   // если обновился нижний экстремум
-   if (CameLowExtr)
+    extr_cur[0].direction = 0;    
+   }
+   // если пришел новый новый нижний экстремум
+   if (extr_cur[1].direction < 0)
    {
-
-    lastExtrDownValue = lowExtrValueEvent;//extr_cur[1].price;
-
+    lastExtrDownValue = extr_cur[1].price;
+    // генерим соответсвующее событие
+    GenEvent(1,lastExtrDownValue,extr_cur[1].time,"low");
+    // если сформировался экстремум
     if (jumper == 1)
     {
      ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
      countExtrHigh ++;                   // увеличиваем количество экстремумов на единицу LOW      
-     prevJumper = jumper;     
+     prevJumper = jumper; 
+     // генерим событие, что сформировался верхний экстремум
+     GenEvent(2,lastExtrUpValue,0,"high");   
     }
     jumper = -1;
     indexPrevDown = rates_total-1;  // обновляем предыдущий индекс        
-   // extr_cur[1].direction = 0;   
+    extr_cur[1].direction = 0;   
    }
-   
-   // сбрасываем флаги обновления экстремумов
-   CameHighExtr = false;
-   CameLowExtr = false;
    
    LastExtrSignal[0] = jumper;
    PrevExtrSignal[0] = prevJumper;
@@ -248,29 +245,7 @@ int OnCalculate(const int rates_total,
    return(rates_total);
   }
   
-void OnChartEvent(const int id,         // идентификатор события  
-                  const long& lparam,   // параметр события типа long
-                  const double& dparam, // параметр события типа double
-                  const string& sparam  // параметр события типа string
-  )
-   {
-    
-    // если получили события о том, что появился новый верхний экстремум
-    if (id==CHARTEVENT_CUSTOM+1)
-     {
-      Print("Получили новый верхний экстремум. Цена = ",DoubleToString(dparam)," Время = ",TimeToString(datetime(lparam))," Индекс = ",sparam );
-      CameHighExtr = true;  // говорим, что верхний экстремум обновился
-      highExtrValueEvent = dparam; // сохраняем цену экстремума
-     }
-    // если получили события о том, что появился новый нижний экстремум
-    if (id==CHARTEVENT_CUSTOM+2)
-     {
-      Print("Получили новый нижний экстремум. Цена = ",DoubleToString(dparam)," Время = ",TimeToString(datetime(lparam))," Индекс = ",sparam );
-      CameLowExtr = true; // говорим, что нижний экстремум обновился
-      lowExtrValueEvent = dparam; // сохраняем цену экстремума
-     }     
-   }  
- 
+  
 void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
 {
  int count_new_extrs = extr.RecountExtremum(start_pos, now);
@@ -289,3 +264,24 @@ void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
   }     
  }
 }
+
+// функция генерации события для всех графиков
+void GenEvent (ushort event_id,double price,datetime time,string type)   // event_id - id события, price - цена экстремума , time - время экстремума, type - тип экстремума (верхний или нижний)
+ { 
+  SEventData data;
+  // сохраняем поля
+  data.dparam = price;
+  data.lparam = long(time);
+  data.sparam = type;
+  long z = ChartFirst();
+  // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события 
+  while (z>=0)
+   {
+    if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
+       {
+        // генерим событие для текущего графика
+        eventBase.Generate(z,event_id,data); 
+       }
+    z = ChartNext(z);      
+   }
+ }   

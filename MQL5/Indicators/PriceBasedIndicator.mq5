@@ -21,13 +21,13 @@
 #property indicator_type5   DRAW_ARROW
 
 
-//----------------------------------------------------------------
+//----------------------------------------------------------------+
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <ColoredTrend/ColoredTrend.mqh>
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
 #include <CLog.mqh>
-//----------------------------------------------------------------
+//----------------------------------------------------------------+
  
 //--- input параметры
 input int history_depth = 1000; // сколько свечей показывать
