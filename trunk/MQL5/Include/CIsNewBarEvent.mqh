@@ -195,4 +195,4 @@ int CisNewBar::isNewBar()
         z = ChartNext(z);      
        }     
    return(m_new_bars);
-  }
+  }  

@@ -52,39 +52,148 @@ struct SEventData
 
 class CEventBase : public CObject
   {
+// защищенные поля класса
 protected:
    ENUM_EVENT_TYPE   m_type;
+   ushort            start_id; // изначальный код 
    ushort            m_id;
+   ushort            id_array[]; // массив id событий
+   string            id_name[];  // массив имен событий
+   int               id_count;   // количество id событий
    SEventData        m_data;
 
+private:
+// приватные методы класса
+   int  GetEventIndByName(string eventName); // возвращает  индекс ID события в массиве по имени события
+   int  GetSymbolCode(string symbol);   // возвращает код символа по символу
+   long GenerateIsNewBarEventID (string symbol,ENUM_TIMEFRAMES period);  // метод формирует код ID события 
+
 public:
-   void              CEventBase(void)
+   void              CEventBase(const ushort startid)
      {
       this.m_id=0;
       this.m_type=EVENT_TYPE_NULL;
+      this.start_id=start_id;
+      this.id_count = 0; 
      };
    void             ~CEventBase(void){};
    //--
-   bool              Generate(long _chart_id,ushort _event_id, SEventData &_data,
-                              const bool _is_custom=true);                       // генератор событий
+   bool AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventName="");   // метод добавляет новое событие по заданному символу и ТФ с заданным именем   
+   bool              Generate(long _chart_id, int _id_ind, SEventData &_data,
+                              const bool _is_custom=true);                       // генератор событий по индексу
+   bool              Generate(long _chart_id,string id_nam,SEventData &_data, 
+                              const bool _is_custom=true);                       // генераторв событий по имени события 
    ushort            GetId(void) {return this.m_id;};                            // возвращает ID события
-
+   
+   
 private:
    virtual bool      Validate(void) {return true;};
-  };
+  };  
+  
+// возвращает индекс ID события в массиве по имени события
+int CEventBase::GetEventIndByName(string eventName)
+ {
+  for (int ind=0;ind<id_count;ind++)
+   {
+    if (id_name[ind] == eventName)
+     return (ind);
+   }
+  return (-1); 
+ }  
+  
+// функция возвращает код по символу
+int CEventBase::GetSymbolCode (string symbol)
+ {
+    if (symbol == "EURUSD")
+     return (1);
+    if (symbol == "GBPUSD")
+     return (2);
+    if (symbol == "USDCHF")
+     return (3);
+    if (symbol == "USDJPY")
+     return (4);
+    if (symbol == "USDCAD")
+     return (5);
+    if (symbol == "AUDUSD")
+     return (6);
+  return (0); 
+ }
+
+// функция, возвращающая код ID события
+long CEventBase::GenerateIsNewBarEventID (string symbol,ENUM_TIMEFRAMES period)
+ {
+  int scode = GetSymbolCode(symbol);
+  if (scode == 0)
+   return (0);    // нет кода ID
+  return (start_id + 100*int(period)+scode);   // возвращаем код ID события
+ }   
+  
+// добавляет новое событие
+bool CEventBase::AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventName="")
+ {
+  long tmp_id;
+  int ind;  // счетчик прохода по циклам
+  // если имя не пустое, значит оно задано => нужно проверить его уникальность
+  if (eventName != "")
+   {
+    for (ind=0;ind<id_count;ind++)
+     {
+      if (id_name[ind] == eventName)
+       {
+        Print("Не удалось добавить новое id события, поскольку задано не уникальное имя");
+        return (false);
+       }
+     }
+   }   
+  tmp_id = GenerateIsNewBarEventID(symbol,period);
+  if (tmp_id == 0)
+   {
+    Print("Не удалось добавить новое id события, поскольку не удалось его сгенерить");
+    return (false);
+   } 
+  // проходим по буферу id для проверки уникальности id
+  for (ind=0;ind<id_count;ind++)
+   {
+    // если уже был подобный id
+    if (id_array[ind]==tmp_id)
+     {
+      Print("Не удалось добавить новое id события, поскольку такой id уже существует");
+      return (false);
+     }
+   }
+  // добавляем новое id в буфер
+  
+  ArrayResize(id_array,id_count+1);
+  ArrayResize(id_name,id_count+1);
+  id_array[id_count] = tmp_id;
+  id_name[id_count]  = eventName;
+  id_count++;
+  
+  return (true);
+ }  
+ 
+  
 //+------------------------------------------------------------------+
 //| метод генератора событий                                         |
 //+------------------------------------------------------------------+
-bool CEventBase::Generate(long _chart_id, ushort _event_id, SEventData &_data,
+bool CEventBase::Generate(long _chart_id, int _id_ind, SEventData &_data,
                           const bool _is_custom=true)
   {
    bool is_generated=true;
-   this.m_id=(ushort)(CHARTEVENT_CUSTOM+_event_id);
-   this.m_data=_data;
+   // если индекс id события в массиве не верен
+   if (_id_ind < 0 || _id_ind >= id_count)
+    {
+     Print("Не верно задан индекс ID события");
+     return (false);
+    }
+   // заполняем поля 
+   this.m_id = (ushort)(CHARTEVENT_CUSTOM+id_array[_id_ind]);
+   this.m_data = _data;
+   this.m_data.sparam = id_name[_id_ind]; // сохраняем имя события
    if(_is_custom)
      {
       ResetLastError();
-      is_generated=EventChartCustom(_chart_id,_event_id,this.m_data.lparam,
+      is_generated=EventChartCustom(_chart_id,id_array[_id_ind],this.m_data.lparam,
                                     this.m_data.dparam,this.m_data.sparam);
       if(!is_generated && _LastError!=4104)
          Print("Error while generating a custom event: ",_LastError);
@@ -97,3 +206,19 @@ bool CEventBase::Generate(long _chart_id, ushort _event_id, SEventData &_data,
      }
    return is_generated;
   }
+
+//+------------------------------------------------------------------+
+//| метод генератора событий по имени                                |
+//+------------------------------------------------------------------+
+bool CEventBase::Generate(long _chart_id,string id_nam,SEventData &_data,const bool _is_custom=true)
+ {
+  int ind_id = GetEventIndByName(id_nam);   // получаем индекс ID события в массиве по имени события
+  // если не найден индекс
+  if ( ind_id == -1)
+   {
+    Print("Не удалось найти индекс события по имени");
+    return (false);
+   }
+  Generate(_chart_id,ind_id,_data,_is_custom);
+  return (true);
+ }

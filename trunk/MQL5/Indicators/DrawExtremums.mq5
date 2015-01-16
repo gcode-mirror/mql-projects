@@ -194,7 +194,6 @@ int OnCalculate(const int rates_total,
    {
     
     lastExtrUpValue = extr_cur[0].price;
-
     
     if (jumper == -1)
     {
@@ -230,7 +229,6 @@ int OnCalculate(const int rates_total,
    ExtrNumberLow [0] = countExtrLow;   
    return(rates_total);
   }
-  
   
 void RecountUpdated(datetime start_pos, bool now, SExtremum &ret_extremums[])
 {
