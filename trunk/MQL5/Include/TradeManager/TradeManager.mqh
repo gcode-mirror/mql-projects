@@ -84,7 +84,7 @@ public:
   void ModifyPosition(string symbol, double sl = 0, double tp = 0); // Изменяет заранее выбранную позицию
   void OnTick();
   void OnTrade(datetime history_start);
-  bool OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing,int maxSpread);
+  bool OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0);
   bool OpenMultiPosition (string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing);
   bool PositionChangeSize(string strSymbol, double additionalVolume);
   bool PositionSelect(long index, ENUM_SELECT_TYPE type, ENUM_SELECT_MODE pool = MODE_TRADES);
@@ -650,7 +650,7 @@ void CTradeManager::OnTrade(datetime history_start=0)
 //| если существует такая же позиция - открытия не будет             |
 //| если существует противоположная позиция - она будет закрыта      |
 //+------------------------------------------------------------------+
-bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing,int maxSpread)
+bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0)
 {
  if (maxSpread > 0 && SymbolInfoInteger(symbol,SYMBOL_SPREAD) > maxSpread)
  {

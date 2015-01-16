@@ -140,6 +140,7 @@ void OnTick()
  signalM1  = 0;
  signalM5  = 0;
  signalM15 = 0;
+ /*
  if(isNewBarM1.isNewBar())
  {
   GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent, pos_info); //свой коэффициент
@@ -150,6 +151,8 @@ void OnTick()
   else
    signalM1 = 0;   
  }
+ */
+ /*
  if(isNewBarM5.isNewBar())
  {
   GetTradeSignal(PERIOD_M5, handle_aATR_M5, M5_supremacyPercent, pos_info);
@@ -160,6 +163,7 @@ void OnTick()
   else
    signalM5 = 0;  
  }  
+ */
  if(isNewBarM15.isNewBar())
  {
   GetTradeSignal(PERIOD_M15, handle_aATR_M15, M15_supremacyPercent, pos_info);
