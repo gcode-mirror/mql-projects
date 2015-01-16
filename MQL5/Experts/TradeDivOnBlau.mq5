@@ -22,17 +22,15 @@
    
 // входные параметры
 sinput string base_param                           = "";                 // БАЗОВЫЕ ПАРАМЕТРЫ ЭКСПЕРТА
-input  double lot                                  = 0.1;                // Лот         
-input  int    spread                               = 300;                // Размер спреда    
 input  int    risk                                 = 1;                  // размер риска в процентах   
 input  int    top_level                            = 75;                 // Top Level
 input  int    bottom_level                         = 25;                 // Bottom Level
-input  ENUM_MA_METHOD      ma_method               = MODE_SMA;           // тип сглаживания
+input  ENUM_MA_METHOD      ma_method               = MODE_EMA;           // тип сглаживания
 input  ENUM_STO_PRICE      price_field             = STO_LOWHIGH;        // способ расчета стохастика   
 input  int    q                                    = 2;                  // q - период, по которому вычисляется моментум
 input  int    r                                    = 20;                 // r - период 1-й EMA, применительно к моментуму
-input  int    s                                    = 5;                  // s - период 2-й EMA, применительно к результату первого сглаживания
-input  int    u                                    = 3;                  // u - период 3-й EMA, применительно к результату второго сглаживания
+input  int    s                                    = 1;                  // s - период 2-й EMA, применительно к результату первого сглаживания
+input  int    u                                    = 1;                  // u - период 3-й EMA, применительно к результату второго сглаживания
 // объекты
 CTradeManager    *ctm;                                                   // указатель на объект торговой библиотеки
 static CisNewBar *isNewBar;                                              // для проверки формирования нового бара
@@ -79,7 +77,7 @@ int OnInit()
    return(INIT_FAILED);    
   }
  pos_info.tp = 0;
- pos_info.volume = lot;
+ //pos_info.volume = lot;
  pos_info.expiration = 0;
  pos_info.priceDifference = 0; 
  pos_info.sl = 0;
@@ -127,7 +125,7 @@ void OnTick()
           // вычисляем размер лота
           pos_info.volume = CountLotByStopLoss(SymbolInfoDouble(_Symbol,SYMBOL_BID),pos_info.sl);
           if (pos_info.volume!=0)
-           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                  
+           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing);                  
         }
        // сохраняем последний сигнал
        lastRightExtr = dateRightExtr[0];
@@ -144,7 +142,7 @@ void OnTick()
           // вычисляем размер лота
           pos_info.volume = CountLotByStopLoss(SymbolInfoDouble(_Symbol,SYMBOL_ASK),pos_info.sl);
           if (pos_info.volume!=0)
-           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing,spread);                   
+           ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing);                   
        }
       //сохраняем последний правый экстремум расхождения
       lastRightExtr = dateRightExtr[0]; 
