@@ -11,6 +11,8 @@
 //| подключение библиотек                                            |
 //+------------------------------------------------------------------+
 #include <Object.mqh>
+#include <StringUtilities.mqh>
+#include <CLog.mqh>                                       // для лога
 //+------------------------------------------------------------------+
 //| A custom event type enumeration                                  |
 //+------------------------------------------------------------------+
@@ -85,6 +87,10 @@ public:
                               const bool _is_custom=true);                       // генераторв событий по имени события 
    ushort            GetId(void) {return this.m_id;};                            // возвращает ID события
    
+   string            GenUniqEventName (string eventName,string symbol, 
+                                               ENUM_TIMEFRAMES period);          // генерирует уникальное имя события 
+                                               
+   void  PrintAllNames();                                            
    
 private:
    virtual bool      Validate(void) {return true;};
@@ -216,9 +222,27 @@ bool CEventBase::Generate(long _chart_id,string id_nam,SEventData &_data,const b
   // если не найден индекс
   if ( ind_id == -1)
    {
-    Print("Не удалось найти индекс события по имени");
+    Print("Не удалось найти индекс события по имени ",id_nam);
     return (false);
    }
   Generate(_chart_id,ind_id,_data,_is_custom);
   return (true);
+ }
+ 
+//+------------------------------------------------------------------+
+//| метод генерирует уникальное имя события                          |
+//+------------------------------------------------------------------+
+string CEventBase::GenUniqEventName(string eventName,string symbol,ENUM_TIMEFRAMES period)
+ {
+  return ( eventName + "_" + symbol + "_" + PeriodToString(period) );
+ } 
+ 
+ 
+ 
+void CEventBase::PrintAllNames(void)
+ {
+  for(int i=0;i<ArraySize(id_name);i++)
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%i имя = %s",i,id_name[i]) );  
+   }
  }
