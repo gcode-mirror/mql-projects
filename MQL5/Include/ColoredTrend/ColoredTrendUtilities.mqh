@@ -7,6 +7,14 @@
 #property link      "http://www.mql5.com"
 
 //+-----------------------------------+
+//|  константы                        |
+//+-----------------------------------+
+#define AMOUNT_OF_PRICE 2           // количество баров с которых нам нужно знать цены. дл€ вычислени€ типа движени€ нам интересны цены с текущего и последнего бара.
+#define AMOUNT_BARS_FOR_HUGE 100    // количество баров по которым считаетс€ средний бар на младшем таймфрейме
+#define DEFAULT_DIFF_TO_TREND 1.5   // значение коэфицента роста движени€ по умолчанию
+#define FACTOR_OF_SUPERIORITY 2     // во сколько раз бар должен быть больше среднего чтобы быть большим
+
+//+-----------------------------------+
 //|  объ€вление перечислений          |
 //+-----------------------------------+
 enum ENUM_TF
@@ -154,4 +162,27 @@ int GetMaPeriodForATR(ENUM_TIMEFRAMES timeframe)
        return(100);
       }
  }
+}
+
+
+double SetDiffToTrend(ENUM_TIMEFRAMES period)
+{
+ switch(period)
+ {
+   case(PERIOD_M5):
+      return (1.5);     
+   case(PERIOD_M15):
+      return (1.3);
+   case(PERIOD_H1):
+      return (1.3);
+   case(PERIOD_H4):
+      return (1.3);
+   case(PERIOD_D1):
+      return (0.8);
+   case(PERIOD_W1):
+      return (0.8);
+   case(PERIOD_MN1):
+      return (0.8);
+ }
+ return (DEFAULT_DIFF_TO_TREND);
 }
