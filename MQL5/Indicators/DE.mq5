@@ -155,7 +155,7 @@ int OnCalculate(const int rates_total,
           if (extrHigh.time >= time[i])
            {
             bufferAllExtrHigh[i] = extrHigh.price;       // сохран€ем в буфер значение полученного экстремума
-            bufferFormedExtrHigh[i] = extrHigh.price; // удалить к ху€м
+            //bufferFormedExtrHigh[i] = extrHigh.price; 
             bufferTimeExtrHigh[i] = extrHigh.time;
             lastExtrUpValue = extrHigh.price;
             lastExtrUpTime  = extrHigh.time;
@@ -176,7 +176,7 @@ int OnCalculate(const int rates_total,
           if (extrLow.time >= time[i])
            {        
             bufferAllExtrLow[i] = extrLow.price;
-            bufferFormedExtrLow[i] = extrLow.price;  // удалить к ху€м
+           // bufferFormedExtrLow[i] = extrLow.price;  
             bufferTimeExtrLow[i] = extrLow.time;
             lastExtrDownValue = extrLow.price;
             lastExtrDownTime  = extrLow.time;
