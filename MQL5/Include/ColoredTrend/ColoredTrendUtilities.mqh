@@ -35,6 +35,7 @@ enum ENUM_MOVE_TYPE      // Тип движения
    MOVE_TYPE_CORRECTION_DOWN,     // Коррекция вниз, корректируется тренд вверх - голубой
    MOVE_TYPE_FLAT,                // Флэт - желтый
   };
+   
   
 string MoveTypeToString(ENUM_MOVE_TYPE enumMoveType)
   {
