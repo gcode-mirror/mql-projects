@@ -126,12 +126,9 @@ bool CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start
    extrHighTime = bufferRates[0].time;
  }
  
- bool reason1 = false;
- bool reason2 = false;
- 
  if ( ( extrLow.direction == 0 && extrHigh.direction == 0)                                                  // Если экстремумов еще нет то говорим что сейчас экстремум
-   || ((extrLow.time > extrHigh.time) && (reason1 = LessDoubles(low,extrLow.price,_digits) ) )                        // Если последний экстремум - Low, и цена пробила экстремум в ту же сторону
-   || ((extrLow.time < extrHigh.time) && (reason2 = LessDoubles(low,extrHigh.price - difToNewExtremum,_digits) ) ) )  // Если последний экстремум - High, и цена отошла от экстремума на мин. расстояние в обратную сторону
+   || ((extrLow.time > extrHigh.time) && (LessDoubles(low,extrLow.price,_digits) ) )                        // Если последний экстремум - Low, и цена пробила экстремум в ту же сторону
+   || ((extrLow.time < extrHigh.time) && (LessDoubles(low,extrHigh.price - difToNewExtremum,_digits) ) ) )  // Если последний экстремум - High, и цена отошла от экстремума на мин. расстояние в обратную сторону
  {
   // если на этом баре пришел верхний экстремум
   if (extrHighTime > 0)
