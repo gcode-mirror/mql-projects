@@ -17,15 +17,17 @@
 #include <SystemLib/IndicatorManager.mqh>   // библиотека по работе с индикаторами
 #include <CLog.mqh>                         // для лога
 // входные параметры робота
-input int depth = 20;  
-input double lot = 1.0; // лот 
+input int depth = 20;     
+input double lot = 1.0;   // лот 
 // переменные
-double max_price;       // максимальная цена канала
-double min_price;       // минимальная цена канала
-double h;               // ширина канала
-double price_bid;       // цена bid
-double price_ask;       // цена ask
-int mode=0;             // режим работы робота
+double max_price;         // максимальная цена канала
+double min_price;         // минимальная цена канала
+double h;                 // ширина канала
+double price_bid;         // цена bid
+double price_ask;         // цена ask
+bool wait_for_sell=false; // флаг ожидания условия открытия на SELL
+bool wait_for_buy=false;  // флаг ожидания условия открытия на BUY
+int mode=0;               // режим работы робота
 // объекты классов
 CTradeManager *ctm;     // объект торгового класса
 // структуры позиции и трейлинга
@@ -60,45 +62,26 @@ void OnTick()
    // получаем текущее значение цен 
    price_bid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
    price_ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-   // если еще не было открыто позиций
-   if (mode == 0)
+   // если удалось вычислить максимум и минимум
+   if (GetMaxMinChannel())
     {
-     // если удалось вычислить максимум и минимум
-     if (GetMaxMinChannel())
+     // если цена bid резко двинулась вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
+     if ( GreatDoubles(price_bid-max_price,/*h*2*/ h) )
       {
-       // если цена bid резко двинулась вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-       if ( GreatDoubles(price_bid-max_price,/*h*2*/ h) )
-        {
-         // то переходим в режим отскока для открытия на SELL
-         mode = -1;          
-      /*   Comment("SELL: \n",
-                 "bid = ",DoubleToString(price_bid,5),
-                 "\n max_price = ",DoubleToString(max_price,5),
-                 "\n min_price = ",DoubleToString(min_price,5),
-                 "\n h = ",DoubleToString(h,5),
-                 "\n bid - max_price = ",DoubleToString(price_bid-max_price,5)
-                 );
-       */  
-        }
-       // если цена ask резко двинулась вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-       if ( GreatDoubles(min_price-price_ask,/*h*2*/h) )
-        {
-         // то переходим в режим отскока для открытия на BUY
-         mode = 1; 
-      /*
-         Comment("BUY: \n",
-                 "ask = ",DoubleToString(price_ask,5),
-                 "\n max_price = ",DoubleToString(max_price,5),
-                 "\n min_price = ",DoubleToString(min_price,5),
-                 "\n h = ",DoubleToString(h,5),
-                 "\n min_price-ask = ",DoubleToString(min_price-price_ask,5)
-                 );      
-       */             
-        }        
-      }     
-    }
+       // то переходим в режим отскока для открытия на SELL
+       wait_for_sell = true;   
+       wait_for_buy = false;      
+      }
+     // если цена ask резко двинулась вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
+     if ( GreatDoubles(min_price-price_ask,/*h*2*/h) )
+      {
+       // то переходим в режим отскока для открытия на BUY
+       wait_for_buy = true; 
+       wait_for_sell = false;            
+      }        
+    }         
    // если перешли в режим ожидания отбития для открытия позиции на SELL
-   if (mode == -1)
+   if (wait_for_sell)
     {
      // если удалось пробить последние два бара 
      if (IsBeatenBars(-1))
@@ -109,11 +92,12 @@ void OnTick()
        pos_info.tp = CountTakeProfit(-1);
        pos_info.priceDifference = 0;     
        ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing); 
-       Comment("Можно открываться на SELL");
+       wait_for_sell = false;     
+       wait_for_buy = false;  
       }
     } 
    // если перешли в режим ожидания отбития для открытия позиции на BUY
-   if (mode == 1)
+   if (wait_for_buy)
     {
      // если удалось пробить последние два бара
      if (IsBeatenBars(1))
@@ -124,7 +108,8 @@ void OnTick()
        pos_info.tp = CountTakeProfit(1);
        pos_info.priceDifference = 0;       
        ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);    
-       Comment("Можно открываться на BUY");
+       wait_for_buy = false;
+       wait_for_sell = false;
       }
     }
   }
@@ -205,32 +190,64 @@ bool IsBeatenBars (int type)
  {
   int copiedBars;
   double prices[];
-  switch (type)
+  if (type == 1)  // если нужно проверить пробитие на BUY
    {
-    case 1:
      copiedBars = CopyHigh(_Symbol,_Period,1,2,prices);
      if (copiedBars < 2)
       {
        Print("Не удалось скопировать цены");
-       return false;
+       return (false);
       }
      if ( GreatDoubles(price_bid,prices[0]) && GreatDoubles(price_bid,prices[1]) )
       {
        return (true);  // говорим, что успешно пробили последние два максимума
       }     
-    break;
-    case -1:    // если нужно открыться на SELL  
+   }
+  if (type == -1)  // если нужно проверить пробитие на SELL
+   {
      copiedBars = CopyLow(_Symbol,_Period,1,2,prices);
      if (copiedBars < 2)
       {
        Print("Не удалось скопировать цены");
-       return false;
+       return (false);
       }
      if ( LessDoubles(price_ask,prices[0]) && LessDoubles(price_ask,prices[1]) )
       {
        return (true);  // говорим, что успешно пробили последние два максимума
       }
-    break;
    }
    return (false);  // ничего не пробили
+ }
+ 
+// функция для закрытия позиции по экстремуму
+bool IsBeatenExtremum (int type)
+ {
+  int copied_high;
+  int copied_low;
+  double price_high[];
+  double price_low[];
+  copied_high = CopyHigh(_Symbol,_Period,0,3,price_high);
+  copied_low  = CopyLow(_Symbol,_Period,0,3,price_low);
+  if (copied_high < 3 || copied_low < 3)
+   {
+    Print("Не удалось прогрузить буферы цен");
+    return (false);
+   }
+  if (type == 1)
+   {
+    // условие закрытие позиции BUY
+    if (LessDoubles(price_ask,price_low[1]) && GreatDoubles(price_high[1],price_high[0]) && GreatDoubles(price_high[1],price_high[2])
+     {
+      return (true);
+     } 
+   }
+  if (type == -1)
+   {
+    // условие закрытие позиции SELL  (завтра переделать на противоположную)
+    if (LessDoubles(price_ask,price_low[1]) && GreatDoubles(price_high[1],price_high[0]) && GreatDoubles(price_high[1],price_high[2])
+     {
+      return (true);
+     }    
+   }
+  return (false);
  }
