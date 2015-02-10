@@ -43,9 +43,9 @@ protected:
   
   bool isCorrectionEnds(double price, ENUM_MOVE_TYPE move_type, datetime start_time);
   bool isCorrectionWrong(int i);
-  int  isLastBarHuge(datetime start_time);
-  int  isNewTrend();
-  int  isEndTrend();
+  int isLastBarHuge(datetime start_time);
+  int isNewTrend();
+  int isEndTrend();
   void SetDiffToTrend();
   
 public:
@@ -111,8 +111,8 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_time, bool now, SExtre
  {                          // В массиве возвращаемых экструмумов на 0 месте стоит max, на месте 1 стоит min  (*)
   if(count_new_extrs == 1)  // если появился только один новый экстремум
   {
-   if(extremums.getExtr(0).direction == 1)       ret_extremums[0] = extremums.getExtr(0);
-   else if(extremums.getExtr(0).direction == -1) ret_extremums[1] = extremums.getExtr(0); 
+   if(extremums.getExtr(0).direction == 1)         ret_extremums[0] = extremums.getExtr(0);
+   else if(extremums.getExtr(0).direction == -1)   ret_extremums[1] = extremums.getExtr(0); 
   }
   
   if(count_new_extrs == 2)  // если появились два новых экстремумов. возвращаем с учетом (*)
@@ -121,12 +121,15 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_time, bool now, SExtre
    else if(extremums.getExtr(0).direction == -1) { ret_extremums[0] = extremums.getExtr(1); ret_extremums[1] = extremums.getExtr(0); }
   }
   
- log_file.Write(LOG_DEBUG, StringFormat("extr0(%s,%s,%i) extr1(%s,%s,%i) extr2(%s,%s,%i)",DoubleToString(extremums.getExtr(0).price),TimeToString(extremums.getExtr(0).time),extremums.getExtr(0).direction,
-                                         DoubleToString(extremums.getExtr(1).price),TimeToString(extremums.getExtr(1).time),extremums.getExtr(1).direction,
-                                         DoubleToString(extremums.getExtr(2).price),TimeToString(extremums.getExtr(2).time),extremums.getExtr(2).direction
-                                        ));    
-  
-  newTrend = isNewTrend();  // если появились новые экстремумы проверяем не появился ли новый тренд     
+  newTrend = isNewTrend();  // если появились новые экстремумы проверяем не появился ли новый тренд    
+   
+  log_file.Write(LOG_DEBUG, StringFormat("%i extr0(%s,%s,%i) extr1(%s,%s,%i) extr2(%s,%s,%i)",
+                                            bar,
+                                            DoubleToString(extremums.getExtr(0).price),TimeToString(extremums.getExtr(0).time),extremums.getExtr(0).direction,
+                                            DoubleToString(extremums.getExtr(1).price),TimeToString(extremums.getExtr(1).time),extremums.getExtr(1).direction,
+                                            DoubleToString(extremums.getExtr(2).price),TimeToString(extremums.getExtr(2).time),extremums.getExtr(2).direction
+                                           ));  
+    
  }
  
  //проверяем тренд на запрещенность каждый раз, так как движения на старшем таймфрейма меняются так же в течение бара 
