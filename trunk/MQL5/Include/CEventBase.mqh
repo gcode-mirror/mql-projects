@@ -131,7 +131,7 @@ long CEventBase::GenerateIsNewBarEventID (string symbol,ENUM_TIMEFRAMES period)
   int scode = GetSymbolCode(symbol);
   if (scode == 0)
    return (0);    // нет кода ID
-  return (start_id + 100*int(period)+scode);   // возвращаем код ID события
+  return (start_id + 100*int(period)+10*scode+id_count);   // возвращаем код ID события
  }   
   
 // добавляет новое событие
@@ -163,7 +163,8 @@ bool CEventBase::AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventNa
     // если уже был подобный id
     if (id_array[ind]==tmp_id)
      {
-      Print("Не удалось добавить новое id события, поскольку такой id уже существует");
+      
+      Print("Не удалось добавить новое id события, поскольку такой id уже существует Symbol = ",symbol," period = ",PeriodToString(period)," name = ",eventName );
       return (false);
      }
    }
@@ -177,7 +178,6 @@ bool CEventBase::AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventNa
   
   return (true);
  }  
- 
   
 //+------------------------------------------------------------------+
 //| метод генератора событий                                         |
@@ -236,8 +236,6 @@ string CEventBase::GenUniqEventName(string eventName,string symbol,ENUM_TIMEFRAM
  {
   return ( eventName + "_" + symbol + "_" + PeriodToString(period) );
  } 
- 
- 
  
 void CEventBase::PrintAllNames(void)
  {
