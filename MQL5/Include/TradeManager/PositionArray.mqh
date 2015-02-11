@@ -21,7 +21,7 @@ private:
 
 public:
    CPositionArray();
-   CPosition    *AtTicket(long lTicket);
+   CPosition        *AtTicket(long lTicket);
    int               OpenLots(string strSymbol);
    /// Count of orders.
    int               OrderCount(string strSymbol,long lMagic);
@@ -54,7 +54,7 @@ CPositionArray::CPositionArray()
 //+------------------------------------------------------------------+
 CPosition *CPositionArray::AtTicket(long lTicket)
   {
-   for(int i=Total()-1;i>=0;i--)
+   for(int i= Total()- 1; i >= 0; i--)
      {
       CPosition *pos=Position(i);
       if(pos.getOrderTicket()==lTicket)

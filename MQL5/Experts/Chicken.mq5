@@ -52,7 +52,7 @@ int  lastTrend = 0;            // тип последнего тренда по PBI
 int OnInit()
 {
  isNewBar = new CisNewBar(_Symbol, _Period);
- handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
+ handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");//
  if ( handle_pbi == INVALID_HANDLE )
  {
   Print("Ошибка при иниализации эксперта. Не удалось создать хэндл индикатора PriceBasedIndicator");
