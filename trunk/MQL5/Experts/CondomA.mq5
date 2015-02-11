@@ -25,9 +25,12 @@ double min_price;         // минимальная цена канала
 double h;                 // ширина канала
 double price_bid;         // цена bid
 double price_ask;         // цена ask
+double average_price;     // значение средней цены на момент получения сигнала о скачке (присваивание переменных wait_for_sell или wait_for_buy)
 bool wait_for_sell=false; // флаг ожидания условия открытия на SELL
 bool wait_for_buy=false;  // флаг ожидания условия открытия на BUY
 int mode=0;               // режим работы робота
+int opened_position = 0;  // флаг открытой позиции (0 - нет позиции, 1 - buy, (-1) - sell)
+int last_move_bars;       // количество баров последнего движения
 // объекты классов
 CTradeManager *ctm;     // объект торгового класса
 // структуры позиции и трейлинга
@@ -59,59 +62,86 @@ void OnDeinit(const int reason)
 
 void OnTick()
   {
+   ctm.OnTick();
    // получаем текущее значение цен 
    price_bid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
    price_ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-   // если удалось вычислить максимум и минимум
-   if (GetMaxMinChannel())
+   if (ctm.GetPositionCount() == 0)
     {
-     // если цена bid резко двинулась вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-     if ( GreatDoubles(price_bid-max_price,/*h*2*/ h) )
-      {
-       // то переходим в режим отскока для открытия на SELL
-       wait_for_sell = true;   
-       wait_for_buy = false;      
-      }
-     // если цена ask резко двинулась вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-     if ( GreatDoubles(min_price-price_ask,/*h*2*/h) )
-      {
-       // то переходим в режим отскока для открытия на BUY
-       wait_for_buy = true; 
-       wait_for_sell = false;            
-      }        
-    }         
-   // если перешли в режим ожидания отбития для открытия позиции на SELL
-   if (wait_for_sell)
-    {
-     // если удалось пробить последние два бара 
-     if (IsBeatenBars(-1))
-      {
-       // вычисляем стоп лосс, тейк профит и открываем позицию на SELL
-       pos_info.type = OP_SELL;
-       pos_info.sl = CountStopLoss(-1);       
-       pos_info.tp = CountTakeProfit(-1);
-       pos_info.priceDifference = 0;     
-       ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing); 
-       wait_for_sell = false;     
-       wait_for_buy = false;  
-      }
-    } 
-   // если перешли в режим ожидания отбития для открытия позиции на BUY
-   if (wait_for_buy)
-    {
-     // если удалось пробить последние два бара
-     if (IsBeatenBars(1))
-      {
-       // вычисляем стоп лосс, тейк профит и открываем позицию на BUY
-       pos_info.type = OP_BUY;
-       pos_info.sl = CountStopLoss(1);       
-       pos_info.tp = CountTakeProfit(1);
-       pos_info.priceDifference = 0;       
-       ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);    
-       wait_for_buy = false;
-       wait_for_sell = false;
-      }
+     opened_position = 0;   
     }
+     // если удалось вычислить максимум и минимум
+     if (GetMaxMinChannel())
+      {
+       // если цена bid резко двинулась вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
+       if ( GreatDoubles(price_bid-max_price,/*h*2*/ h) )
+        {
+         // то переходим в режим отскока для открытия на SELL
+         wait_for_sell = true;   
+         wait_for_buy = false;
+         // вычисление средней цены для дальнейшего вычисления тейк профита 
+         average_price = (max_price + min_price)/2; 
+        }
+       // если цена ask резко двинулась вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
+       if ( GreatDoubles(min_price-price_ask,/*h*2*/h) )
+        {
+         // то переходим в режим отскока для открытия на BUY
+         wait_for_buy = true; 
+         wait_for_sell = false;   
+         // вычисление средней цены для дальнейшего вычисления тейк профита 
+         average_price = (max_price + min_price)/2;                  
+        }        
+      }      
+    // }   
+     // если перешли в режим ожидания отбития для открытия позиции на SELL
+     if (wait_for_sell)
+      {
+       // если удалось пробить последние два бара 
+       if (IsBeatenBars(-1))
+        {
+         // вычисляем стоп лосс, тейк профит и открываем позицию на SELL
+         pos_info.type = OP_SELL;
+         pos_info.sl = CountStopLoss(-1);       
+         pos_info.tp = CountTakeProfit(-1);
+         pos_info.priceDifference = 0;     
+         //ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing); 
+         //log_file.Write(LOG_DEBUG, StringFormat("открыли позицию SELL в %s ", TimeToString(TimeCurrent()) ) );
+         Print("открыли позицию на SELL в ",TimeToString(TimeCurrent()) );         
+         wait_for_sell = false;     
+         wait_for_buy = false;  
+         opened_position = -1;
+        }
+      } 
+     // если перешли в режим ожидания отбития для открытия позиции на BUY
+     if (wait_for_buy)
+      {
+       // если удалось пробить последние два бара
+       if (IsBeatenBars(1))
+        {
+         // вычисляем стоп лосс, тейк профит и открываем позицию на BUY
+         pos_info.type = OP_BUY;
+         pos_info.sl = CountStopLoss(1);       
+         pos_info.tp = CountTakeProfit(1);
+         pos_info.priceDifference = 0;       
+         ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing); 
+         // log_file.Write(LOG_DEBUG, StringFormat("открыли позицию BUY в %s ", TimeToString(TimeCurrent()) ) );  
+         Print("открыли позицию на BUY в ",TimeToString(TimeCurrent()) );        
+         wait_for_buy = false;
+         wait_for_sell = false;
+         opened_position = 1;
+        }
+      } 
+       
+    // обработка закрытия позиций
+    if (opened_position != 0)
+     {
+      // если получили сигнал о том, что нужно закрывать позицию
+      if (IsBeatenExtremum (opened_position))
+       {
+        ctm.ClosePosition(0);
+       }
+     }
+    
   }
   
 // кодирование дополнительных функций робота
@@ -137,6 +167,7 @@ bool GetMaxMinChannel ()
   max_price = price_high[ArrayMaximum(price_high)]; 
   min_price = price_low[ArrayMinimum(price_low)];
   h = max_price - min_price;
+  last_move_bars = depth;  // сохраняем длину последнего движения
   // Comment("Максимальная цена = ",DoubleToString(max_price)," минимальная цена = ",DoubleToString(min_price) );
   return (true);
  }
@@ -176,11 +207,11 @@ int CountTakeProfit (int type)
  {
   if (type == 1)
    {
-    return ( int ( MathAbs(price_ask - ( (max_price+min_price)/2))/_Point ) );
+    return ( int ( MathAbs(price_ask - ( (average_price)/2))/_Point ) );
    }
   if (type == -1)
    {
-    return ( int ( MathAbs(price_bid - ( (max_price+min_price)/2))/_Point ) );   
+    return ( int ( MathAbs(price_bid - ( (average_price)/2))/_Point ) );   
    }
   return (0);
  }
@@ -236,7 +267,7 @@ bool IsBeatenExtremum (int type)
   if (type == 1)
    {
     // условие закрытие позиции BUY
-    if (LessDoubles(price_ask,price_low[1]) && GreatDoubles(price_high[1],price_high[0]) && GreatDoubles(price_high[1],price_high[2])
+    if (LessDoubles(price_ask,price_low[1]) && GreatDoubles(price_high[1],price_high[0]) && GreatDoubles(price_high[1],price_high[2]) )
      {
       return (true);
      } 
@@ -244,7 +275,7 @@ bool IsBeatenExtremum (int type)
   if (type == -1)
    {
     // условие закрытие позиции SELL  (завтра переделать на противоположную)
-    if (LessDoubles(price_ask,price_low[1]) && GreatDoubles(price_high[1],price_high[0]) && GreatDoubles(price_high[1],price_high[2])
+    if (GreatDoubles(price_bid,price_high[1]) && LessDoubles(price_low[1],price_low[0]) && GreatDoubles(price_low[1],price_low[2]) )
      {
       return (true);
      }    
