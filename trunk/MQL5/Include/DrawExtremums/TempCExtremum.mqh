@@ -106,7 +106,7 @@ bool CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start
  if (now) // за время жизни бара цена close проходит все его значения от low до high
  {        // соответсвено если на данном баре есть верхний экстремум то он будет достигнут когда close будет max  и наоборот с low
   high = bufferRates[0].close;
-  low = bufferRates[0].close;
+  low  = bufferRates[0].close;
  }
  else    // во время работы на истории мы смотрим на бар один раз соотвественно нам сразу нужно узнать его максимум и минимум
  {

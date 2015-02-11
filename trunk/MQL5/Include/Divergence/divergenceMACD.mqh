@@ -1,22 +1,36 @@
 //+------------------------------------------------------------------+
-//|                                               divergenceMACD.mqh |
+//|                                               CDivergenceMACD.mqh |
 //|                                              Copyright 2013, GIA |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 
-#include <CompareDoubles.mqh>     // для сравнения вещественных переменных
-#include <Constants.mqh>          // подключаем библиотеку констант
+#include <CompareDoubles.mqh>                // для сравнения вещественных переменных
+#include <Constants.mqh>                     // подключаем библиотеку констант
+#include <Divergence/ExtrMACDContainer.mqh>  // подключить класс контейнера
 
 
-#define DEPTH_MACD 130
-#define BORDER_DEPTH_MACD 15
+#define DEPTH_MACD 130            // Количество баров на рассматриваемом участке
+#define BORDER_DEPTH_MACD 15      //
+#define REMAINS_MACD 115          //DEPTH_MACD - BORDER_DEPTH_MACD 130-15
 
 #define _Buy 1
 #define _Sell -1
 
-struct PointDivMACD        
-{                           
+//+------------------------------------------------------------------+
+//                 Класс CDivergenceMACD предназначен для вычисления | 
+//                расхождения/схождения MACD на определенном участке |
+//+------------------------------------------------------------------+
+
+class CDivergenceMACD
+{
+   
+private:
+   CExtrMACDContainer *extremumsMACD; 
+   string _symbol;
+   ENUM_TIMEFRAMES _timeframe;
+   int _handleMACD;
+public:
    datetime timeExtrMACD1;  // время появления первого экстремума MACD
    datetime timeExtrMACD2;  // время появления второго экстремума MACD
    datetime timeExtrPrice1; // время появления первого экстремума цен
@@ -27,277 +41,36 @@ struct PointDivMACD
    double   valueExtrPrice2;// знечение второго экстремума по ценам
    double   closePrice;     // цена закрытия бара (на котором возник сигнал схождения\расхождения)
    int      divconvIndex;   // индекс возникновения схождения\расхождения
+
+   CDivergenceMACD();
+   CDivergenceMACD(const string symbol, ENUM_TIMEFRAMES timeframe, int handleMACD, int startIndex, int depth);
+   ~CDivergenceMACD();
+   int countDivergence(int startIndex = 0);
+   bool RecountExtremums(int startIndex, bool fill = false);
 };
-PointDivMACD nullMACD = {0};
 
-/////-------------------------------
-/////-------------------------------
-int isMACDExtremum(int handleMACD, int startIndex)
-{ 
- double iMACD_buf[5];
- 
- int copied = 0; 
- for(int attemps = 0; attemps < 25 && copied <= 0; attemps++)
- {
-  copied = CopyBuffer(handleMACD, 0, startIndex, 5, iMACD_buf);
-  Sleep(100);
- }
- 
- if(copied != 5)
- {
-  int err = GetLastError();
-  Print(__FUNCTION__, "Не удалось скопировать буффер полностью.", copied, "/5. Error = ", err);
-  return(0);
- }
-
- if ( GreatDoubles(iMACD_buf[2], iMACD_buf[0]) && GreatDoubles(iMACD_buf[2], iMACD_buf[1]) &&
-      GreatDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] > 0)
- {
-  return(1);
- }
- else if ( LessDoubles(iMACD_buf[2], iMACD_buf[0]) && LessDoubles(iMACD_buf[2], iMACD_buf[1]) && 
-           LessDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] < 0) 
-      {
-       return(-1);     
-      }
- return(0);
+CDivergenceMACD::CDivergenceMACD(const string symbol, ENUM_TIMEFRAMES timeframe, int handle, int startIndex, int depth)
+{
+ _timeframe = timeframe;
+ _symbol = symbol;
+ _handleMACD = handle;
+ extremumsMACD = new CExtrMACDContainer(_handleMACD, startIndex, DEPTH_MACD);  //создает контейнер экстремумов MACD
+}
+CDivergenceMACD::~CDivergenceMACD()
+{
+ delete extremumsMACD;
 }
 
-/////-------------------------------
-/////-------------------------------
-int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, int startIndex = 0, bool LOG = false)
+//+---------------------------------------------------------------------------------------------------------+
+//                                     Вычисление наличия рассхождения/схождения с помощью countDivergence. | 
+//    Расхождение считается на участке в 130 баров, разделенного в свою очередь на участки в 115 и 15 баров |
+//                  Алгоритм ищет наличие верхних/нижних экстремумов для цены и MACD на каждом из участков, |
+//                      при выполнении условий расхождения/схождения возвращает _Sell / _Buy соответсвенно. |
+//+---------------------------------------------------------------------------------------------------------+
+
+int CDivergenceMACD::countDivergence(int startIndex = 0)
 {
- double iMACD_buf [DEPTH_MACD] = {0};
- double iHigh_buf [DEPTH_MACD] = {0};
- double iLow_buf  [DEPTH_MACD] = {0};
- double iClose_buf[DEPTH_MACD] = {0};
- 
- int index_MACD_global_max;
- int index_Price_global_max;
- int index_Price_local_max;
- int index_MACD_global_min;
- int index_Price_global_min;
- int index_Price_local_min;
- 
- bool under_zero = false;
- bool over_zero = false;
- bool is_extr_exist = false;
- int i;
- 
- int copiedMACD  = -1;
- int copiedHigh  = -1;
- int copiedLow   = -1;
- int copiedClose = -1;
- for(int attemps = 0; attemps < 25 && copiedMACD < 0
-                                   && copiedHigh < 0
-                                   && copiedLow  < 0; attemps++)
- {
-  Sleep(100);
-  copiedMACD  = CopyBuffer(handleMACD, 0, startIndex, DEPTH_MACD, iMACD_buf);
-  copiedHigh  = CopyHigh(symbol,       timeframe, startIndex, DEPTH_MACD, iHigh_buf);
-  copiedLow   = CopyLow  (symbol,      timeframe, startIndex, DEPTH_MACD, iLow_buf);
-  copiedClose = CopyClose(symbol,      timeframe, startIndex, DEPTH_MACD, iClose_buf);
- }
- if (copiedMACD != DEPTH_MACD || copiedHigh != DEPTH_MACD || copiedLow != DEPTH_MACD || copiedClose != DEPTH_MACD)
- {
-  int err;
-  if (LOG)
-  { 
-   err = GetLastError();
-   Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", err);
-  }
-  return(0);
- }
-  
- index_Price_global_max = ArrayMaximum(iHigh_buf, 0, WHOLE_ARRAY);
- index_Price_global_min = ArrayMinimum(iLow_buf,  0, WHOLE_ARRAY);
- 
- //--------------------------------РАСХОЖДЕНИЕ-------------------------------------------------------------+
- //------------------------------сначала экстремум на MACD-------------------------------------------------+
- if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_max && index_Price_global_max < (DEPTH_MACD-1)  )       //самая высокая цены находится в последних 15 барах
- {
-  //PrintFormat("%d %s", startIndex, "самая высокая цены находится в последних 15 барах");
-  if(isMACDExtremum(handleMACD, startIndex) == 1) //если в текущий момент есть экстремум
-  {
-   is_extr_exist = false;
-   for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++) //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
-   {
-    if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == 1) 
-    {
-     is_extr_exist = true;
-     break; 
-    }
-   }  
-   if (!is_extr_exist) return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
-   
-   index_MACD_global_max = ArrayMaximum(iMACD_buf, i-2, WHOLE_ARRAY);  
-   for(i = index_MACD_global_max; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 и возвращение назад 
-   {
-    if(iMACD_buf[i] < 0) 
-    {
-     under_zero = true;
-     break;
-    }//не проверяем на выход из 0 так как в текущий момент есть положительный экстремум
-   }
-   if(!under_zero) return(0); //если не было прохождения через 0 то нас данная ситуация уже не интересует
-   
-   if(LessDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_max]))  //на MACD: экстремум в текущий момент меньше глобального
-   {
-    index_Price_local_max    = ArrayMaximum(iHigh_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);
-    if (index_Price_local_max == 0 || index_Price_local_max == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
-    { 
-     return (0);
-    }
-    //PrintFormat("Расхождение MACD на продажу");      
-    return(_Sell);
-   }
-  }
- }
-  //-----------------------------сначала пришел экстремум цены----------------------------------+
- if(index_Price_global_max == DEPTH_MACD - 1) // самый высокий экстремум на цене в текущий момент
- {
-  is_extr_exist = false;
-  for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++) //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
-  {
-   if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == 1) 
-   {
-    is_extr_exist = true;
-    break; 
-   }
-  }  
-  if (!is_extr_exist) return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
-  
-  index_MACD_global_max = ArrayMaximum(iMACD_buf, i-2, WHOLE_ARRAY);  
-  for(i = index_MACD_global_max; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 и возвращение назад 
-  {
-   if(iMACD_buf[i] < 0) 
-   {
-    under_zero = true;
-    break;
-   }//не проверяем на выход из 0 так как в текущий момент есть положительный экстремум
-  }
-  if(!under_zero) return(0); //если не было прохождения через 0 то нас данная ситуация уже не интересует
-  
-  is_extr_exist = false;
-  for (i = (DEPTH_MACD-BORDER_DEPTH_MACD-2); i <= (DEPTH_MACD-2); i++) //будем искать на последних 15 барах до максимума цены 
-  {
-   if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == 1) 
-   {
-    is_extr_exist = true;
-    break; 
-   }
-  }  
-  if (!is_extr_exist) return(0);  //если на последних 15 баров не было экстремума MACD
-  
-  if(LessDoubles(iMACD_buf[i], iMACD_buf[index_MACD_global_max]))  //на MACD: экстремум в текущий момент меньше глобального
-  {
-   index_Price_local_max    = ArrayMaximum(iHigh_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);
-   if (index_Price_local_max == 0 || index_Price_local_max == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
-   { 
-    return (0);
-   }
-   //PrintFormat("Расхождение MACD на продажу");      
-   return(_Sell);
-  }
- }
- //--------------------------------СХОЖДЕНИЕ-------------------------------------------------------------+
-  //------------------------------сначала экстремум на MACD----------------------------------------------+
- if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_min && index_Price_global_min < (DEPTH_MACD-1) )       //самая низкая цены находится в последних 15 барах
- {
-  if(isMACDExtremum(handleMACD, startIndex) == -1) //если в текущий момент есть экстремум
-  {
-   is_extr_exist = false;
-   for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
-   {
-    if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == -1) 
-    {
-     is_extr_exist = true;
-     break;
-    }
-   }
-   if (!is_extr_exist) 
-    return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
- 
-   index_MACD_global_min = ArrayMinimum(iMACD_buf, i-2, WHOLE_ARRAY);  
-   for(i = index_MACD_global_min; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 
-   {
-    if(iMACD_buf[i] > 0) 
-    {
-     over_zero = true;
-     break;
-    }
-   }
-   if(!over_zero)
-    return(0); //если не было прохождения через 0 то нас данная ситуация уже не интересует
- 
-   if(GreatDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_min]))  //на MACD: экстремум в текущий момент меньше глобального
-   {
-    index_Price_local_min    = ArrayMinimum(iLow_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);  
-    if (index_Price_local_min == 0 || index_Price_local_min == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
-    {
-     return (0);
-    }
-    //PrintFormat("Расхождение MACD на покупку");      
-    return(_Buy);
-   }
-  }
- }
- //-----------------------------сначала пришел экстремум цены----------------------------------+
- if(index_Price_global_min == DEPTH_MACD - 1)
- {
-  is_extr_exist = false;
-  for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
-  {
-   if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == -1) 
-   {
-    is_extr_exist = true;
-    break;
-   }
-  }
-  if (!is_extr_exist) return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
-
-  index_MACD_global_min = ArrayMinimum(iMACD_buf, i-2, WHOLE_ARRAY);  
-  for(i = index_MACD_global_min; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 
-  {
-   if(iMACD_buf[i] > 0) 
-   {
-    over_zero = true;
-    break;
-   }
-  }
-  if(!over_zero) return(0); //если не было прохождения через 0 то нас данная ситуация уже не интересует
-   
-  is_extr_exist = false;
-  for (i = (DEPTH_MACD-BORDER_DEPTH_MACD-2); i <= (DEPTH_MACD-2); i++) //будем искать на последних 15 барах до минимума цены 
-  {
-   if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == -1) 
-   {
-    is_extr_exist = true;
-    break;
-   }
-  }
-  if (!is_extr_exist) return(0);  //если на последних 15 баров не было экстремума MACD
-
-  if(GreatDoubles(iMACD_buf[i], iMACD_buf[index_MACD_global_min]))  //на MACD: экстремум в текущий момент меньше глобального
-  {
-   index_Price_local_min    = ArrayMinimum(iLow_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);  
-   if (index_Price_local_min == 0 || index_Price_local_min == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
-   {
-    return (0);
-   }
-   //PrintFormat("Расхождение MACD на покупку");      
-   return(_Buy);
-  }
- }
-    
- return(0); 
-}
-
-/////-------------------------------
-/////-------------------------------
-int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timeframe, PointDivMACD& div_point, int startIndex = 0)
-{
- 
+ //отладка
  double iMACD_buf [DEPTH_MACD]  = {0};
  double iHigh_buf [DEPTH_MACD]  = {0};
  double iLow_buf  [DEPTH_MACD]  = {0};
@@ -305,9 +78,11 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  double iClose_buf[DEPTH_MACD]  = {0};
  
  int index_MACD_global_max;
+ int index_MACD_local_max;
  int index_Price_global_max;
  int index_Price_local_max;
  int index_MACD_global_min;
+ int index_MACD_local_min;
  int index_Price_global_min;
  int index_Price_local_min;
  
@@ -321,254 +96,171 @@ int divergenceMACD(int handleMACD, const string symbol, ENUM_TIMEFRAMES timefram
  int copiedLow   = -1;
  int copiedDate  = -1;
  int copiedClose = -1;
+ 
  for(int attemps = 0; attemps < 25 && copiedMACD < 0
                                    && copiedHigh < 0
                                    && copiedLow  < 0
                                    && copiedDate < 0; attemps++)
  {
   Sleep(100);
-  copiedMACD  = CopyBuffer(handleMACD, 0, startIndex, DEPTH_MACD, iMACD_buf);
-  copiedHigh  = CopyHigh(symbol,       timeframe, startIndex, DEPTH_MACD, iHigh_buf);
-  copiedLow   = CopyLow (symbol,       timeframe, startIndex, DEPTH_MACD, iLow_buf);
-  copiedDate  = CopyTime(symbol,       timeframe, startIndex, DEPTH_MACD, date_buf); 
-  copiedClose = CopyClose(symbol,      timeframe, startIndex, DEPTH_MACD, iClose_buf);
+  copiedMACD  = CopyBuffer(_handleMACD, 0, startIndex, DEPTH_MACD, iMACD_buf);
+  copiedHigh  = CopyHigh(_symbol, _timeframe, startIndex, DEPTH_MACD, iHigh_buf);
+  copiedLow   = CopyLow (_symbol, _timeframe, startIndex, DEPTH_MACD, iLow_buf);
+  copiedDate  = CopyTime(_symbol, _timeframe, startIndex, DEPTH_MACD, date_buf); 
+  copiedClose = CopyClose(_symbol, _timeframe, startIndex, DEPTH_MACD, iClose_buf);
  }
  if (copiedMACD != DEPTH_MACD || copiedHigh != DEPTH_MACD || copiedLow != DEPTH_MACD || copiedDate != DEPTH_MACD || copiedClose != DEPTH_MACD)
  {
-   int err;
-   err = GetLastError();        
-   Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", err);
-   return(-2);
- }
+  int err;
+  err = GetLastError();        
+  Print(__FUNCTION__, "Не удалось скопировать буффер полностью. Error = ", err);
+  return(-2);
+ } 
+ index_Price_global_max = ArrayMaximum(iHigh_buf, 0, WHOLE_ARRAY);   //Вычисления индекса максиальной цены на участке
+ index_Price_global_min = ArrayMinimum(iLow_buf,  0, WHOLE_ARRAY);   //Вычисления индекса минимальной цены на участке
+ CExtremumMACD *extr_local_max = extremumsMACD.maxExtr();
+ CExtremumMACD *extr_global_max;
+ CExtremumMACD *extr_local_min = extremumsMACD.minExtr();
+ CExtremumMACD *extr_global_min;
  
- index_Price_global_max = ArrayMaximum(iHigh_buf, 0, WHOLE_ARRAY);
- index_Price_global_min = ArrayMinimum(iLow_buf,  0, WHOLE_ARRAY);
- 
+//  +----------------------------------------------------------------------------+
+//  |                         *** РАСХОЖДЕНИЕ ***                                |                   
+//  +----------------------------------------------------------------------------+ 
 
- //--------------------------------РАСХОЖДЕНИЕ-------------------------------------------------------------+
- //------------------------------сначала экстремум на MACD-------------------------------------------------+
- if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_max && index_Price_global_max < (DEPTH_MACD-1)  )       //самая высокая цены находится в последних 15 барах
+ i = 0;
+ if(DEPTH_MACD >= index_Price_global_max && index_Price_global_max > REMAINS_MACD)  //Если индекс максиальной цены на последних 15 барах
  {
-  //PrintFormat("%d %s", startIndex, "самая высокая цены находится в последних 15 барах");
-  if(isMACDExtremum(handleMACD, startIndex) == 1) //если в текущий момент есть экстремум
+  if(extr_local_max.index < DEPTH_MACD && extr_local_max.index > BORDER_DEPTH_MACD) //Если индекс максимального MACD на участке REMAINS
   {
-   is_extr_exist = false;
-   for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
-   {
-    if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == 1) 
+   CExtremumMACD *tmpExtr;
+   //сохранить индекс максимального MACD как индекс локального макисмума MACD
+   index_MACD_local_max = extr_local_max.index;
+   for (is_extr_exist = false; i < extremumsMACD.getCount()/2; i++)   //Ищем верхний экстремум MACD на участке от 0 до 15 
+   {  
+    tmpExtr = extremumsMACD.getExtr(i);
+    if(tmpExtr.direction == 1 && tmpExtr.index <= BORDER_DEPTH_MACD)  //Если нашли экстремум MACD на последних 15 барах
     {
+     //сохраняем индекс MACD как индекс глобального экстремума
+     extr_global_max = tmpExtr;
+     index_MACD_global_max = extr_global_max.index;
      is_extr_exist = true;
-     break; 
+     i++;                     
+     break;
     }
-   }  
-   if (!is_extr_exist) 
-    return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
-   
-   index_MACD_global_max = ArrayMaximum(iMACD_buf, i-2, WHOLE_ARRAY);
-   for(i = index_MACD_global_max; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 и возвращение назад 
+   }
+      
+   if(!is_extr_exist) return(0);            //если на последних 15 барах нет верхнего экстремума MACD
+  
+   for(under_zero = false; tmpExtr.index < index_MACD_local_max; i++) //Ищем нижний экстремум MACD между локальным и глобальным по индексу
    {
-    if(iMACD_buf[i] < 0) 
+    tmpExtr = extremumsMACD.getExtr(i);
+    if(tmpExtr.direction == -1)
     {
      under_zero = true;
      break;
-    }//не проверяем на выход из 0 так как в текущий момент есть положительный экстремум
+    }
    }
-   if(!under_zero)                       
-    return(0); //если не было прохождения через 0 то нас данная ситуация уже не интересует
-   
-   if(LessDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_max]))  //на MACD: экстремум в текущий момент меньше глобального
-   {
-    index_Price_local_max    = ArrayMaximum(iHigh_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);
-    if (index_Price_local_max == 0 || index_Price_local_max == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
-     return (0);
-    div_point.timeExtrPrice1  = date_buf [index_Price_local_max];
-    div_point.timeExtrPrice2  = date_buf [index_Price_global_max];    
-    div_point.timeExtrMACD1   = date_buf [index_MACD_global_max];
-    div_point.timeExtrMACD2   = date_buf [DEPTH_MACD-3];
-    div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_max];
-    div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-3];
-    div_point.valueExtrPrice1 = iHigh_buf[index_Price_local_max];
-    div_point.valueExtrPrice2 = iHigh_buf[index_Price_global_max];
-    div_point.closePrice      = iClose_buf[index_Price_global_max];
-    div_point.divconvIndex    = index_Price_global_max;
-    /*PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
-                                                                                    TimeToString(div_point.timeExtrPrice2),
-                                                                                    TimeToString(div_point.timeExtrMACD1),
-                                                                                    TimeToString(div_point.timeExtrMACD2));
-   */ return(_Sell);
-   }
-  }
- // else
- //  return(0);
- }
-   //-----------------------------сначала пришел экстремум цены----------------------------------+
- if(index_Price_global_max == DEPTH_MACD - 1) // самый высокий экстремум на цене в текущий момент
- {
-  is_extr_exist = false;
-  for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++) //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
-  {
-   if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == 1) 
-   {
-    is_extr_exist = true;
-    break; 
-   }
-  }  
-  if (!is_extr_exist) return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
-  
-  index_MACD_global_max = ArrayMaximum(iMACD_buf, i-2, WHOLE_ARRAY);  
-  for(i = index_MACD_global_max; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 и возвращение назад 
-  {
-   if(iMACD_buf[i] < 0) 
-   {
-    under_zero = true;
-    break;
-   }//не проверяем на выход из 0 так как в текущий момент есть положительный экстремум
-  }
-  if(!under_zero) return(0); //если не было прохождения через 0 то нас данная ситуация уже не интересует
-  
-  is_extr_exist = false;
-  for (i = (DEPTH_MACD-BORDER_DEPTH_MACD-2); i <= (DEPTH_MACD-2); i++) //будем искать на последних 15 барах до максимума цены 
-  {
-   if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == 1) 
-   {
-    is_extr_exist = true;
-    break; 
-   }
-  }  
-  if (!is_extr_exist) return(0);  //если на последних 15 баров не было экстремума MACD
-  
-  if(LessDoubles(iMACD_buf[i], iMACD_buf[index_MACD_global_max]))  //на MACD: экстремум в текущий момент меньше глобального
-  {
-   index_Price_local_max    = ArrayMaximum(iHigh_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);
-   if (index_Price_local_max == 0 || index_Price_local_max == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
+   if(!under_zero) return(0);      // если нет перехода на нижний экстремум
+   //сохраняем индекс локального максимума цены
+   index_Price_local_max = ArrayMaximum(iHigh_buf, 0, REMAINS_MACD); 
+   if (index_Price_local_max == 0 || index_Price_local_max == (REMAINS_MACD - 1) )
     return (0);
+    
+   //отображение индекса на массив date_buf   
+   index_MACD_local_max = DEPTH_MACD - 1 - index_MACD_local_max;
+   index_MACD_global_max = DEPTH_MACD - 1 - index_MACD_global_max;  
+    
+   //заполняем поля класса CDivergenceMACD
+   timeExtrPrice1  = date_buf [index_Price_local_max];
+   timeExtrPrice2  = date_buf [index_Price_global_max];    
+   timeExtrMACD1   = date_buf [index_MACD_local_max];
+   timeExtrMACD2   = date_buf [index_MACD_global_max];          
+   valueExtrMACD1  = extr_local_max.value;
+   valueExtrMACD2  = extr_global_max.value; 
+   valueExtrPrice1 = iHigh_buf[index_Price_local_max];
+   valueExtrPrice2 = iHigh_buf[index_Price_global_max];
+   closePrice      = iClose_buf[index_Price_global_max];
+   divconvIndex    = index_Price_global_max;
    
-   div_point.timeExtrPrice1  = date_buf [index_Price_local_max];
-   div_point.timeExtrPrice2  = date_buf [index_Price_global_max];    
-   div_point.timeExtrMACD1   = date_buf [index_MACD_global_max];
-   div_point.timeExtrMACD2   = date_buf [i];
-   div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_max];
-   div_point.valueExtrMACD2  = iMACD_buf[i];
-   div_point.valueExtrPrice1 = iHigh_buf[index_Price_local_max];
-   div_point.valueExtrPrice2 = iHigh_buf[index_Price_global_max];
-   div_point.closePrice      = iClose_buf[index_Price_global_max];
-   div_point.divconvIndex    = index_Price_global_max;
-        
    return(_Sell);
   }
  }
- //--------------------------------СХОЖДЕНИЕ-------------------------------------------------------------+
- //------------------------------сначала экстремум на MACD----------------------------------------------+
- if ((DEPTH_MACD-BORDER_DEPTH_MACD) <= index_Price_global_min && index_Price_global_min < (DEPTH_MACD-1) )       //самая низкая цены находится в последних 15 барах
+ 
+ 
+// +----------------------------------------------------------------------------+
+// |                         *** СХОЖДЕНИЕ ***                                  |                   
+// +----------------------------------------------------------------------------+ 
+ 
+ i = 0;
+ if(DEPTH_MACD >= index_Price_global_min && index_Price_global_min > REMAINS_MACD)  //Если индекс минимальной цены на последних 15 барах
  {
-  if(isMACDExtremum(handleMACD, startIndex) == -1) //если в текущий момент есть экстремум
+  if(extr_local_min.index < DEPTH_MACD && extr_local_min.index > BORDER_DEPTH_MACD) //Если индекс минимальной MACD на участке REMAIN
   {
-   is_extr_exist = false;
-   for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
-   {
-    if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == -1) 
+   CExtremumMACD *tmpExtr;
+   //сохранить индекс локального минимума MACD
+   index_MACD_local_min = extr_local_min.index;
+   for (is_extr_exist = false; i < extremumsMACD.getCount()/2; i++)   //Ищем нижний экстремум MACD на участке от 0 до 15 
+   {  
+    tmpExtr = extremumsMACD.getExtr(i);
+    if(tmpExtr.direction == -1 && tmpExtr.index <= BORDER_DEPTH_MACD)  //Если нашли экстремум на последних 15 барах
     {
-     is_extr_exist = true;
-     break;
-    }
-   }
-   if (!is_extr_exist) 
-    return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
- 
-   index_MACD_global_min = ArrayMinimum(iMACD_buf, i-2, WHOLE_ARRAY);  
-   for(i = index_MACD_global_min; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 
-   {
-    if(iMACD_buf[i] > 0) 
-    {
-     over_zero = true;
-     break;
-    }
-   }
-   if(!over_zero)
-    return(0); //если не было прохождения через 0 то нас данная ситуация уже не интересует
- 
-   if(GreatDoubles(iMACD_buf[DEPTH_MACD-1], iMACD_buf[index_MACD_global_min]))  //на MACD: экстремум в текущий момент меньше глобального
-   {
-    index_Price_local_min    = ArrayMinimum(iLow_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);  
-    if (index_Price_local_min == 0 || index_Price_local_min == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
-     return (0);      
-    div_point.timeExtrPrice1  = date_buf [index_Price_local_min];
-    div_point.timeExtrPrice2  = date_buf [index_Price_global_min];    
-    div_point.timeExtrMACD1   = date_buf [index_MACD_global_min];
-    div_point.timeExtrMACD2   = date_buf [DEPTH_MACD-3];
-    div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_min];
-    div_point.valueExtrMACD2  = iMACD_buf[DEPTH_MACD-3];
-    div_point.valueExtrPrice1 = iLow_buf [index_Price_local_min];
-    div_point.valueExtrPrice2 = iLow_buf [index_Price_global_min];
-    div_point.closePrice      = iClose_buf[index_Price_global_min];
-    div_point.divconvIndex    = index_Price_global_min;
-  /*  PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
-                                                                                    TimeToString(div_point.timeExtrPrice2),
-                                                                                    TimeToString(div_point.timeExtrMACD1),
-                                                                                    TimeToString(div_point.timeExtrMACD2));    
-  */  return(_Buy);
-   }
-  }
- // else
- //  return(0);
- }
- 
- //-----------------------------сначала пришел экстремум цены----------------------------------+
- if(index_Price_global_min == DEPTH_MACD - 1)
- {
-  is_extr_exist = false;
-  for (i = 2; i <= (DEPTH_MACD-BORDER_DEPTH_MACD); i++)           //будем искать после первого экстремума для того что бы MACD_global_max был экстремумом
-  {
-   if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == -1) 
-   {
+    //сохраняем индекс MACD как индекс глобального экстремума
+    extr_global_min = tmpExtr;
+    index_MACD_global_min = extr_global_min.index;
     is_extr_exist = true;
+    i++;                     
     break;
    }
   }
-  if (!is_extr_exist) return(0);  //если на всей истории начиная с DEPTH до последних 15 баров не было экстремума
+     
+  if(!is_extr_exist) return(0);    //если на последних 15 баров нет нижнего экстремума 
 
-  index_MACD_global_min = ArrayMinimum(iMACD_buf, i-2, WHOLE_ARRAY);  
-  for(i = index_MACD_global_min; i < DEPTH_MACD - 3; i++)  //ищем было ли прохождение через 0 
+  for(under_zero = false; tmpExtr.index < index_MACD_local_min; i++) //Ищем верхний экстремум MACD между локальным и глобальным по индексу
   {
-   if(iMACD_buf[i] > 0) 
+   tmpExtr = extremumsMACD.getExtr(i);
+   if(tmpExtr.direction == -1)
    {
-    over_zero = true;
+    under_zero = true;
     break;
    }
   }
-  if(!over_zero) return(0); //если не было прохождения через 0 то нас данная ситуация уже не интересует
-   
-  is_extr_exist = false;
-  for (i = (DEPTH_MACD-BORDER_DEPTH_MACD-2); i <= (DEPTH_MACD-2); i++) //будем искать на последних 15 барах до минимума цены 
-  {
-   if (isMACDExtremum(handleMACD, ((DEPTH_MACD-1)-i)+startIndex) == -1) 
-   {
-    is_extr_exist = true;
-    break;
-   }
-  }
-  if (!is_extr_exist) return(0);  //если на последних 15 баров не было экстремума MACD
-
-  if(GreatDoubles(iMACD_buf[i], iMACD_buf[index_MACD_global_min]))  //на MACD: экстремум в текущий момент меньше глобального
-  {
-   index_Price_local_min    = ArrayMinimum(iLow_buf,0,DEPTH_MACD-BORDER_DEPTH_MACD);  
-   if (index_Price_local_min == 0 || index_Price_local_min == (DEPTH_MACD-BORDER_DEPTH_MACD-1) )
-    return (0);
-   
-   div_point.timeExtrPrice1  = date_buf [index_Price_local_min];
-   div_point.timeExtrPrice2  = date_buf [index_Price_global_min];    
-   div_point.timeExtrMACD1   = date_buf [index_MACD_global_min];
-   div_point.timeExtrMACD2   = date_buf [i];
-   div_point.valueExtrMACD1  = iMACD_buf[index_MACD_global_min];
-   div_point.valueExtrMACD2  = iMACD_buf[i];
-   div_point.valueExtrPrice1 = iLow_buf [index_Price_local_min];
-   div_point.valueExtrPrice2 = iLow_buf [index_Price_global_min];
-   div_point.closePrice      = iClose_buf[index_Price_global_min];
-   div_point.divconvIndex    = index_Price_global_min;
-   //PrintFormat("Расхождение MACD на покупку");      
-   return(_Buy);
-  }
+  if(!under_zero) return(0);      // если нет перехода на верхний экстремум
+  //сохраняем индекс локального минимума цены
+  index_Price_local_min = ArrayMinimum(iLow_buf, 0, REMAINS_MACD); 
+  if (index_Price_local_min == 0 || index_Price_local_min == (REMAINS_MACD - 1) )
+  return (0);
+  
+  //отображение индекса на массив date_buf    
+  index_MACD_local_min = DEPTH_MACD - 1 - index_MACD_local_min;
+  index_MACD_global_min = DEPTH_MACD - 1 - index_MACD_global_min;   
+  
+  //заполняем поля класса CDivergenceMACD
+  timeExtrPrice1  = date_buf [index_Price_local_min];
+  timeExtrPrice2  = date_buf [index_Price_global_min];    
+  timeExtrMACD1   = date_buf [index_MACD_local_min];
+  timeExtrMACD2   = date_buf [index_MACD_global_min];        
+  valueExtrMACD1  = extr_local_min.value;
+  valueExtrMACD2  = extr_global_min.value;
+  valueExtrPrice1 = iLow_buf[index_Price_local_min];
+  valueExtrPrice2 = iLow_buf[index_Price_global_min];
+  closePrice      = iClose_buf[index_Price_global_min];
+  divconvIndex    = index_Price_global_min;
+  /*
+   PrintFormat("PriceExtr1 = %s; PriceExtr2 = %s; MACDExtr1 = %s; MACDExtr2 = %s", TimeToString(div_point.timeExtrPrice1),
+                                                                                   TimeToString(div_point.timeExtrPrice2),
+                                                                                   TimeToString(div_point.timeExtrMACD1),
+                                                                                   TimeToString(div_point.timeExtrMACD2));
+                                                                                   */
+  return(_Buy);
  }
-    
+}
  return(0); 
 }
+//+----------------------------------------------------------------------------------------+
+//|              RecountExtremums вызывает функцию RecountExtremums из массива экстремумов |                                                  |
+//+----------------------------------------------------------------------------------------+
+
+bool CDivergenceMACD::RecountExtremums(int startIndex, bool fill = false)
+{
+ return (extremumsMACD.RecountExtremum(startIndex, fill));
+} 

@@ -31,7 +31,7 @@ enum ENUM_EXTR_USE
            else 
              continue;                
          }
-        if (extrBufferLow[index] != 0)
+        if (extrBufferLow[index] != 0) //если нижний экстремум найден
          return EXTR_LOW;
       } 
       return EXTR_NO;
