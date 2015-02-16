@@ -14,20 +14,21 @@
 class CExtremumMACD : public CObject
 {
 private:
- datetime _time;                      // НУЖНО ЛИ? время бара на котором возникает экстремум
 
 public:
  CExtremumMACD(){};
  ~CExtremumMACD(){};
- CExtremumMACD(int direction, int index, double value);
+ CExtremumMACD(int direction, int index, double value, datetime time);
                      
  int direction;                      // направление экстремума: 1 - max; -1 -min; 0 - null
  double value;                       // значение экстремума: для max - high; для min - low
  int index;                          // Индекс экстремума относительно заданного диапазона
+ datetime time;                      // время бара на котором возникает экстремум
 };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CExtremumMACD::CExtremumMACD(int direction, int index, double value): direction(direction), index(index), value(value)
+CExtremumMACD::CExtremumMACD(int direction, int index, double value, datetime time)
+                            : direction(direction), index(index), value(value), time(time)
   {
   }
