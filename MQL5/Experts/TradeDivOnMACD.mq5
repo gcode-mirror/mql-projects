@@ -94,7 +94,7 @@ int OnInit()
    trailing.minProfit    = minProfit;
    trailing.trailingStop = trStop;
    trailing.trailingStep = trStep;
-   trailing.handlePBI    = handle_PBI;
+   trailing.handleForTrailing    = handle_PBI;
  return(INIT_SUCCEEDED);
 }
 

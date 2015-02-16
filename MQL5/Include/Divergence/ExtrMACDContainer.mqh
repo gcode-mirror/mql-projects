@@ -13,29 +13,31 @@
 #include <Arrays/ArrayObj.mqh>
 #include <Divergence/CExtremumMACD.mqh>
 
-#define ARRAY_SIZE 130           
 
-
+#define DEPTH_MACD 120                                       // Количество баров на рассматриваемом участке
+#define BORDER_DEPTH_MACD 15                                 //
+#define REMAINS_MACD (DEPTH_MACD-BORDER_DEPTH_MACD)          //
 
 //+----------------------------------------------------------------------------------------------+
 //|            Класс CExtrMACDContainer предназначен для хранения и вычисления экстремумов MACD  |
-//                                                          на определенном участке ARRAY_SIZE.  |
+//                                                          на определенном участке DEPTH_MACD.  |
 //+----------------------------------------------------------------------------------------------+
 class CExtrMACDContainer
 {
 private: 
  CArrayObj extremums;                        // массив экстремумов MACD
- double valueMACDbuffer[ARRAY_SIZE];         // массив значений MACD на участке ARRAY_SIZE
+ double valueMACDbuffer[DEPTH_MACD];         // массив значений MACD на участке DEPTH_MACD
+ datetime date_buf[DEPTH_MACD];
  bool _flagFillSucceed;                      // флаг учпешного заполенния контейнера
- int count;                                  // количесвто хранимых экстремумов MACD
- int _depth;                                 
  int _handle;
+ string _symbol;
+ ENUM_TIMEFRAMES _period;
  
 public: 
  
  CExtrMACDContainer();
  ~CExtrMACDContainer();
- CExtrMACDContainer(int handleMACD,int startIndex,int depth);  //Начальная позиция - startIndex, 
+ CExtrMACDContainer(string symbol, ENUM_TIMEFRAMES period, int handleMACD, int startIndex);  //Начальная позиция - startIndex, 
                                                                //смещение  - DEPTH, Handle
   
  //---------------Методы для работы с классом-------------------
@@ -54,10 +56,11 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CExtrMACDContainer::CExtrMACDContainer(int handle, int startIndex, int depth)    //Передается нулевой индекс, слева
+CExtrMACDContainer::CExtrMACDContainer(string symbol, ENUM_TIMEFRAMES period, int handle, int startIndex)    //Передается нулевой индекс, слева
 {
+ _symbol = symbol;
+ _period = period;
  _handle = handle;
- _depth = depth;
  FilltheExtremums(startIndex);
 }
 //+------------------------------------------------------------------+
@@ -75,26 +78,28 @@ CExtrMACDContainer::~CExtrMACDContainer()
 
 void CExtrMACDContainer::FilltheExtremums(int startIndex)
 {
- int copied = 0;
+ int copiedMACD = 0;
+ int copiedDate = 0;
  //----------Копирование значений MACD в буфер valueMACDbuffer-------
- for(int attemps = 0; attemps < 25 && copied <= 0; attemps++)
+ for(int attemps = 0; attemps < 25 && copiedMACD <= 0; attemps++)
  {
-  copied = CopyBuffer(_handle, 0, startIndex , _depth, valueMACDbuffer);
+  copiedMACD = CopyBuffer(_handle, 0, startIndex , DEPTH_MACD, valueMACDbuffer);
+  copiedDate = CopyTime(_symbol, _period, startIndex, DEPTH_MACD, date_buf); 
   Sleep(100);
  }
- if(copied != _depth)
+ 
+ if(copiedMACD != DEPTH_MACD || copiedDate != DEPTH_MACD)
  {
   int err = GetLastError();
-  Print(__FUNCTION__, " Не удалось скопировать буффер полностью.", copied, "/. Error = ", err);
+  Print(__FUNCTION__, " Не удалось скопировать буффер полностью. /. Error = ", err);
   _flagFillSucceed = false;
   return;
  }
  //-----------------------Заполнение контейнера---------------------
- count = 0;
- int indexForExtremum = startIndex + 1;                       
+ int indexForExtremum = startIndex;                       
  int extremRslt = 0;
- int i, j = 2 , ind = _depth - 3;
- for(i = 0; indexForExtremum - startIndex  < _depth - 5; indexForExtremum++) //от 1ого до 126ого
+ int i, j = 2 , ind = DEPTH_MACD - 2;
+ for(i = 0; indexForExtremum - startIndex  <= DEPTH_MACD - 4 ; indexForExtremum++) //от 0ого до 126ого
  {
   extremRslt = isMACDExtremum(indexForExtremum);  // проверка на экстремум MACD
   if(extremRslt != 0)                             // если текущий элемент экстремум 
@@ -103,13 +108,13 @@ void CExtrMACDContainer::FilltheExtremums(int startIndex)
    new_extr.direction = extremRslt;               // запомнить направление
    new_extr.index = j;                            // запомнить индекс относитьельно _depth (т.е текущий элемент - [0 + 2])
    new_extr.value = valueMACDbuffer[ind];         // значение экстремума
+   new_extr.time = date_buf[ind];
    extremums.Add(new_extr);                       // добавление экстремума в массив 
    i++;
   }
   j++; 
   ind--;
  }
- count = i;
  _flagFillSucceed = true; 
  return;
 } 
@@ -130,43 +135,44 @@ bool CExtrMACDContainer::RecountExtremum(int startIndex, bool fill = false)
   return (_flagFillSucceed);
  }
  
- CExtremumMACD *new_extr  = new CExtremumMACD(0, -1, 0.0);         // временная переменная в которую isMACDExtremum 
+ CExtremumMACD *new_extr = new CExtremumMACD(0, -1, 0.0, 0);         // временная переменная в которую isMACDExtremum 
                                                                    // запишет текущий экстремум (если он есть)
  //--------Копирование значения предполагаемого экстремума------------
  double buf_Value[1];                                       
- int copied = 0;  
- for(int attemps = 0; attemps < 25 && copied <= 0; attemps++)
+ int copiedMACD = 0; 
+ int copiedDate = 0; 
+ for(int attemps = 0; attemps < 25 && copiedMACD <= 0; attemps++)
  {
-  copied = CopyBuffer(_handle, 0, startIndex + 2, 1, buf_Value);        
+  copiedMACD = CopyBuffer(_handle, 0, startIndex + 1, 1, buf_Value);   
+  copiedDate = CopyTime(_symbol, _period, startIndex + 1, 1, date_buf); 
   Sleep(100);                   
  }
- if(copied != 1)                   
+ if(copiedMACD != 1 || copiedDate != 1)                   
  {
   int err = GetLastError();
-  Print(__FUNCTION__, "Не удалось обновить последний элемент", copied, "/1. Error = ", err);
+  Print(__FUNCTION__, "Не удалось обновить последний элемент. Error = ", err);
   return(false);
  }
  
  //-------------------Обновление индексов--------------------------
  CExtremumMACD *tmp;  
- count = extremums.Total() - 1;
- for(int i = 0; i <= count; i++)
+ for(int i = extremums.Total() - 1; i >= 0; i--)
  {
   tmp = extremums.At(i);
   tmp.index++;
-  if(tmp.index >= 130)   
+  if(tmp.index >= DEPTH_MACD)   
   {
    extremums.Delete(i);
-   count--;
   }
  } 
- //-------Добавление экстремума MACDE в начало массива------------
- int is_extr_exist = isMACDExtremum(startIndex + 1); 
+ //-------Добавление экстремума MACD в начало массива------------
+ int is_extr_exist = isMACDExtremum(startIndex); 
  if (is_extr_exist != 0)
  { 
   new_extr.direction = is_extr_exist;
   new_extr.index = 2;    
   new_extr.value = buf_Value[0];
+  new_extr.time = date_buf[0];
   extremums.Insert(new_extr, 0);             
  }   
  return(true);
@@ -191,13 +197,13 @@ CExtremumMACD *CExtrMACDContainer::getExtr(int i)
 //+------------------------------------------------------------------+
 CExtremumMACD *CExtrMACDContainer::maxExtr()   //--- ArrayMaximum(extrems,0,whole_array)
 {
- CExtremumMACD *temp_Extr = new CExtremumMACD(0, -1, 0);
+ CExtremumMACD *temp_Extr = new CExtremumMACD(0, -1, 0, 0);
  int indexMax = 0;
- if(_flagFillSucceed && count > 0)
+ if(_flagFillSucceed && extremums.Total() > 0)
  {
   int j = 0; 
   double extrMax = -1;
-  for(int i = 0; i < count; i++)
+  for(int i = 0; i < extremums.Total(); i++)
   {
    temp_Extr = extremums.At(i);
    if(temp_Extr.direction == 1)
@@ -220,16 +226,16 @@ CExtremumMACD *CExtrMACDContainer::maxExtr()   //--- ArrayMaximum(extrems,0,whol
 //+------------------------------------------------------------------+
 CExtremumMACD *CExtrMACDContainer::minExtr()  
 {
- CExtremumMACD *temp_Extr = new CExtremumMACD(0, -1, 0);
+ CExtremumMACD *temp_Extr = new CExtremumMACD(0, -1, 0, 0);
  int indexMin = 0;
- if(_flagFillSucceed && count > 0)
+ if(_flagFillSucceed && extremums.Total() > 0)
  {
   int j = 0; 
   double extrMin = 1;
-  for(int i = 0; i < count; i++)
+  for(int i = 0; i < extremums.Total(); i++)
   {
    temp_Extr = extremums.At(i);
-   if(temp_Extr.index < _depth && temp_Extr.direction == -1)
+   if(temp_Extr.direction == -1)
    {
     if(extrMin > temp_Extr.value)
     {
@@ -268,6 +274,7 @@ int CExtrMACDContainer::isMACDExtremum(int startIndex)
          GreatDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] > 0)
    {
       return(1);
+      
    }
    else if ( LessDoubles(iMACD_buf[2], iMACD_buf[0]) && LessDoubles(iMACD_buf[2], iMACD_buf[1]) && 
            LessDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] < 0) 
