@@ -49,7 +49,7 @@ long               countDiv;                       // счетчик тренд линий (для р
 
 CChartObjectTrend  trendLine;                      // объект класса трендовой линии (для отображения расхождений)
 CChartObjectVLine  vertLine;                       // объект класса вертикальной линии
-CisNewBar          *isNewBar;                       // для проверки формирования нового бара
+CisNewBar          *isNewBar;                      // для проверки формирования нового бара
 CDivergenceMACD    *divMACD;
 // буферы индикатора 
 double bufferMACD[];                               // буфер уровней MACD

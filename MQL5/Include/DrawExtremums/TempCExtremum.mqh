@@ -14,6 +14,15 @@
 
 #define DEFAULT_PERCENTAGE_ATR 1.0   // по умолчанию новый экстремум появляется когда разница больше среднего бара
 
+// перечисление для типа пришедшего экстремума
+enum ENUM_CAME_EXTR
+ {
+  CAME_HIGH = 0,
+  CAME_LOW = 1,
+  CAME_BOTH = 2,
+  CAME_NOTHING = 3
+ };
+
 // класс для вычисления послених экстремумов
 class CExtremum
   {
@@ -27,7 +36,7 @@ class CExtremum
    public:
     CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr);  // конструктор класса
    // основные методы класса
-   bool isExtremum(SExtremum &extrHigh,SExtremum &extrLow, datetime start_pos_time = __DATETIME__,  bool now = true);  // есть ли экстремум на данном баре   
+   ENUM_CAME_EXTR isExtremum(SExtremum &extrHigh,SExtremum &extrLow, datetime start_pos_time = __DATETIME__,  bool now = true);  // есть ли экстремум на данном баре   
    double AverageBar (datetime start_pos); // возвращает средний размер бара   
   };
   
@@ -78,14 +87,15 @@ CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr)
  }
  
 // метод вычисления экстремума на текущем баре
-bool CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start_pos_time=__DATETIME__,bool now=true)
+ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start_pos_time=__DATETIME__,bool now=true)
  {
- double high = 0, low = 0;       // временная переменная в которой будет хранится цена для расчета max и min соответственно
- double averageBarNow;           // для хранения среднего размера бара
- double difToNewExtremum;        // для хранения минимального расстояния между экстремумами
- datetime extrHighTime = 0;      // время прихода верхнего экстремума 
- datetime extrLowTime = 0;       // время прихода нижнего экстремума
- MqlRates bufferRates[1];
+ double high = 0, low = 0;                     // временная переменная в которой будет хранится цена для расчета max и min соответственно
+ double averageBarNow;                         // для хранения среднего размера бара
+ double difToNewExtremum;                      // для хранения минимального расстояния между экстремумами
+ datetime extrHighTime = 0;                    // время прихода верхнего экстремума 
+ datetime extrLowTime = 0;                     // время прихода нижнего экстремума
+ MqlRates bufferRates[1];                      // буфер котировок
+ ENUM_CAME_EXTR came_extr = CAME_NOTHING;      // тип пришедшего экстремума (возвращаемое значение)
  //Comment("Время = ",TimeToString(start_pos_time) );
  if(CopyRates(_symbol, _tf_period, start_pos_time, 1, bufferRates) < 1)
  {
@@ -123,6 +133,7 @@ bool CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start
    extrHighTime = TimeCurrent();
   else  // если экстремумы вычисляются на истории
    extrHighTime = bufferRates[0].time;
+  came_extr = CAME_HIGH;  // типо пришел верхний экстремум
  }
  
  if ( ( extrLow.direction == 0 && extrHigh.direction == 0)                                                  // Если экстремумов еще нет то говорим что сейчас экстремум
@@ -142,6 +153,7 @@ bool CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start
       extrHighTime = bufferRates[0].time + datetime(100);
       extrLowTime  = bufferRates[0].time;
      }
+    came_extr = CAME_BOTH;   // типо пришли оба экстремума
    }
   else // иначе просто сохраняем время прихода нижнего экстремума
    {
@@ -149,6 +161,7 @@ bool CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start
      extrLowTime = TimeCurrent();
     else // если экстремумы вычисляются на истории
      extrLowTime = bufferRates[0].time;
+    came_extr = CAME_LOW; // типо пришел нижний экстремум
    }
  }
  
@@ -170,9 +183,7 @@ bool CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start
    extrLow.price = low;
    extrLow.time = extrLowTime;
   }  
-  /*if ( now)
-   Print("Время High = ",TimeToString(extrHighTime)," Время Low = ",TimeToString(extrLowTime) );*/
-   return (true);
+   return (came_extr);
  }
  
 // метод вычисления среднего размера бара

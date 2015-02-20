@@ -7,7 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 #property indicator_chart_window
-#property indicator_buffers 6   // задействовано 4 буфера
+#property indicator_buffers 6   // задействовано 6 буферов
 #property indicator_plots   2   // два из которых отрисовываются на графике
 
 #property indicator_type1   DRAW_ARROW
@@ -54,7 +54,9 @@ SEventData eventData;      // структура полей событий
 // структуры экстремумов
 SExtremum extrHigh = {0,-1,0};      // структура для хранения верхнего экстремума
 SExtremum extrLow  = {0,-1,0};      // структура для хранения нижнего экстремума
- 
+
+ENUM_CAME_EXTR came_extr;  // переменная для хранения типа пришедшего экстремума
+
 int OnInit()
   {
    // задаем индикаторную глубину на все бары
@@ -82,9 +84,9 @@ int OnInit()
     }
    // создаем события
    event.AddNewEvent(_Symbol,_Period,"новый экстремум");
+   event.AddNewEvent(_Symbol,_Period,"экстремум");
   // event.AddNewEvent(_Symbol,_Period,event.GenUniqEventName("сформировался экстремум",_Symbol,_Period) );
    
-   event.PrintAllNames();
    // задаем индексацию индикаторных буферов
    SetIndexBuffer(0, bufferFormedExtrHigh, INDICATOR_DATA);
    SetIndexBuffer(1, bufferFormedExtrLow, INDICATOR_DATA);
@@ -92,6 +94,7 @@ int OnInit()
    SetIndexBuffer(3, bufferAllExtrLow,INDICATOR_CALCULATIONS);
    SetIndexBuffer(4, bufferTimeExtrHigh,INDICATOR_CALCULATIONS);
    SetIndexBuffer(5, bufferTimeExtrLow,INDICATOR_CALCULATIONS);
+   
    // выставляем индексацию буферов
    ArraySetAsSeries(bufferAllExtrHigh,false);
    ArraySetAsSeries(bufferAllExtrLow,false);
@@ -99,6 +102,7 @@ int OnInit()
    ArraySetAsSeries(bufferFormedExtrLow,false);
    ArraySetAsSeries(bufferTimeExtrHigh,false);
    ArraySetAsSeries(bufferTimeExtrLow,false);
+    
    // задаем тип графическ
    PlotIndexSetInteger(0, PLOT_ARROW, 218);
    PlotIndexSetInteger(1, PLOT_ARROW, 217); 
@@ -122,6 +126,8 @@ void OnDeinit (const int reason)
    // удаляем объекты
    delete extr;
   }  
+  
+ int countExtr=0; 
 
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
@@ -137,6 +143,7 @@ int OnCalculate(const int rates_total,
    // если это первый расчет индикатора
    if(prev_calculated == 0) 
    {
+   
    if (BarsCalculated(handleForAverBar) < 1)
     {
      return (0);
@@ -149,113 +156,102 @@ int OnCalculate(const int rates_total,
        bufferAllExtrLow[i]     = 0;
        bufferFormedExtrHigh[i] = 0;
        bufferFormedExtrLow[i]  = 0;
+       // получаем тип вычисленного экстремума
+       came_extr = extr.isExtremum(extrHigh,extrLow,time[i],false); 
        // если удалось вычислить экстремумы
-       if ( extr.isExtremum(extrHigh,extrLow,time[i],false) )
-        {
+      // if ( extr.isExtremum(extrHigh,extrLow,time[i],false) )
+       // {
           // если обновился верхний экстремум 
-          if (extrHigh.time >= time[i])
+          if (/*extrHigh.time >= time[i]*/came_extr == CAME_BOTH || came_extr == CAME_HIGH)
            {
             bufferAllExtrHigh[i] = extrHigh.price;       // сохраняем в буфер значение полученного экстремума
-            bufferFormedExtrHigh[i] = extrHigh.price; 
             bufferTimeExtrHigh[i] = double(extrHigh.time);
             
             lastExtrUpValue = extrHigh.price;
             lastExtrUpTime  = extrHigh.time;
-            //Comment("экстр HIGH время = ",TimeToString(extrHigh.time) );
-            //Generate("Новый экстремум"                 // здесь будем генерировать событие появления нового экстремума
-            
             if (jumper == -1)
               {
                bufferFormedExtrLow[indexPrevDown] = lastExtrDownValue; // сохраняем сформированный экстремум         
-               bufferTimeExtrLow[indexPrevDown] = double(lastExtrDownTime);    // сохраняем время сформированного экстремума   
+               bufferTimeExtrLow[indexPrevDown] = double(lastExtrDownTime);    // сохраняем время сформированного экстремума             
                prevJumper = jumper;   
-              //  Generate                               // здесь будем генерить событие, что сформировался новый экстремум
               } 
             jumper = 1;
             indexPrevUp = i;  // обновляем предыдущий индекс             
            }
           // если обновился нижний экстремум
-          if (extrLow.time >= time[i])
+          if (/*extrLow.time >= time[i]*/ came_extr == CAME_BOTH || came_extr == CAME_LOW)
            {        
             bufferAllExtrLow[i] = extrLow.price;
-            bufferFormedExtrLow[i] = extrLow.price;  
             bufferTimeExtrLow[i] = double(extrLow.time);
             lastExtrDownValue = extrLow.price;
             lastExtrDownTime  = extrLow.time;
-            //Comment("экстр LOW время = ",TimeToString(extrLow.time) );            
-            //Generate                                   // здесь будем генерить событие появления нового экстремума
             if (jumper == 1)
              {
               bufferFormedExtrHigh[indexPrevUp] = lastExtrUpValue; // сохраняем сформированный экстремум
-              bufferTimeExtrHigh[indexPrevUp] = double(lastExtrUpTime);  // сохраняем время сформированного экстремума        
+              bufferTimeExtrHigh[indexPrevUp] = double(lastExtrUpTime);  // сохраняем время сформированного экстремума                    
               prevJumper = jumper;
-              //Generate                                 // здесь будем генерить событие, что сформировался новый экстремум
              }
             jumper = -1;
             indexPrevDown = i; // обновляем предыдущий индекс
            }
            
-        }
+        
       }
       lastBarTime = time[rates_total-1];   // сохраняем время последнего бара
      }
     // если в реальном времени
     else
      {              
-      // если удалось вычислить экстремум\экстремумы
-      if (  extr.isExtremum(extrHigh,extrLow,time[rates_total-1],true) )
-       {
+      // получаем тип пришедшего экстремума
+      came_extr = extr.isExtremum(extrHigh,extrLow,time[rates_total-1],true);
         // если обновился верхний экстремум
-        if (extrHigh.time >= time[rates_total-1]   )
+        if (/*extrHigh.time > time[rates_total-1]*/ came_extr == CAME_HIGH )
          {        
+          
           bufferAllExtrHigh[rates_total-1] = extrHigh.price;
-          bufferFormedExtrHigh[rates_total-1] = extrHigh.price;  // потом удалить
           bufferTimeExtrHigh[rates_total-1] = double(extrHigh.time);
           lastExtrUpValue = extrHigh.price;
           lastExtrUpTime = extrHigh.time;
-          //Comment("экстр HIGH время = ",TimeToString(extrHigh.time) );          
-          // генерим событие для всех графиков
-          Generate("новый экстремум",eventData,true); 
-          
-        //  Print("Время = ",TimeToString(lastExtrUpTime)," цена = ",DoubleToString(lastExtrUpValue) );
+
           if (jumper == -1)
-           {
+           {   
+          Comment("countExtr = ",countExtr++); 
             bufferFormedExtrLow[indexPrevDown] = lastExtrDownValue;        // сохраняем сформированный экстремум
             bufferTimeExtrLow[indexPrevDown] = long(lastExtrDownTime);     // сохраняем время сформированного экстремума
+            // записи инмормации об экстремуме
+            eventData.dparam = lastExtrDownValue;  
+            eventData.lparam = -1;  
             prevJumper = jumper;
+          // Generate("экстремум",eventData,true);
            }
           jumper = 1;
           indexPrevUp = rates_total-1;
          }
         // если обновился нижний экстремум
-        if (extrLow.time >= time[rates_total-1])
+        if (/*extrLow.time > time[rates_total-1]*/ came_extr == CAME_LOW)
          {
+          
           bufferAllExtrLow[rates_total-1] = extrLow.price;
-          bufferFormedExtrLow[rates_total-1] = extrLow.price;   // потом удалить
           bufferTimeExtrLow[rates_total-1] = double(extrLow.time);
           lastExtrDownValue = extrLow.price;
           lastExtrDownTime = extrLow.time;
-          //Comment("экстр LOW время = ",TimeToString(extrLow.time) );             
-          // генерим событие для всех графиков
-          Generate("новый экстремум",eventData,true);  
-         // Print("Время = ",TimeToString(lastExtrDownTime)," цена = ",DoubleToString(lastExtrDownValue) );           
-          if (jumper == -1)
-           {
+          
+          if (jumper == 1)
+           {         
+           Comment("countExtr = ",countExtr++);       
             bufferFormedExtrHigh[indexPrevUp] = lastExtrUpValue;        // сохраняемт сформированный экстремум
             bufferTimeExtrHigh[indexPrevUp] = long(lastExtrUpTime);     // сохраняем время сформированного экстремума
-            prevJumper = jumper;
+            // записи инмормации об экстремуме
+            eventData.dparam = lastExtrUpValue;  
+            eventData.lparam = 1;      
+            prevJumper = jumper;          
+           // Generate("экстремум",eventData,true);
            }
           jumper = -1;
           indexPrevDown = rates_total-1;
-         }
-       }       
+         }      
      }
      
-  /*   if (bufferFormedExtrLow[rates_total-1] == 1.31571)
-      Comment(" верхний экстремум = ",DoubleToString(bufferFormedExtrHigh[rates_total-1])," ",TimeToString(datetime(bufferTimeExtrHigh[rates_total-1]) ),
-              "\n нижний экстремум = ",DoubleToString(bufferFormedExtrLow[rates_total-1])," ",TimeToString(datetime(bufferTimeExtrLow[rates_total-1]) )  
-             );
-    */ 
    return(rates_total);
   }
    
@@ -275,4 +271,4 @@ void Generate(string id_nam,SEventData &_data,const bool _is_custom=true)
         }
       z = ChartNext(z);      
      }     
-  }     
+  }

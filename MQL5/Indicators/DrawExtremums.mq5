@@ -110,6 +110,8 @@ void OnDeinit(const int reason)
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
 
+int countExtr=0;
+
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
                 const datetime &time[],
@@ -197,6 +199,7 @@ int OnCalculate(const int rates_total,
     
     if (jumper == -1)
     {
+     Comment("countExtr = ",countExtr++);
      ExtDownArrowBuffer[indexPrevDown] = lastExtrDownValue;
      countExtrLow ++;                 // увеличиваем количество экстремумов на единицу  HIGH
      prevJumper = jumper;
@@ -213,6 +216,7 @@ int OnCalculate(const int rates_total,
 
     if (jumper == 1)
     {
+     Comment("countExtr = ",countExtr++);    
      ExtUpArrowBuffer[indexPrevUp] = lastExtrUpValue;
      countExtrHigh ++;                   // увеличиваем количество экстремумов на единицу LOW      
      prevJumper = jumper;     
