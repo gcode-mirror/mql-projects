@@ -67,7 +67,7 @@ int OnInit()
     {
      Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать хэндл индикатора AverageATR");
      return (INIT_FAILED);
-    }      
+    }
    // создаем объект класса вычисления экстремумов
    extr = new CExtremum(_Symbol, _Period, handleForAverBar);
    if (extr == NULL)
@@ -85,8 +85,7 @@ int OnInit()
    // создаем события
    event.AddNewEvent(_Symbol,_Period,"новый экстремум");
    event.AddNewEvent(_Symbol,_Period,"экстремум");
-  // event.AddNewEvent(_Symbol,_Period,event.GenUniqEventName("сформировался экстремум",_Symbol,_Period) );
-   
+
    // задаем индексацию индикаторных буферов
    SetIndexBuffer(0, bufferFormedExtrHigh, INDICATOR_DATA);
    SetIndexBuffer(1, bufferFormedExtrLow, INDICATOR_DATA);
@@ -127,8 +126,6 @@ void OnDeinit (const int reason)
    delete extr;
   }  
   
- int countExtr=0; 
-
 int OnCalculate(const int rates_total,
                 const int prev_calculated,
                 const datetime &time[],
@@ -142,8 +139,7 @@ int OnCalculate(const int rates_total,
   {
    // если это первый расчет индикатора
    if(prev_calculated == 0) 
-   {
-   
+   {   
    if (BarsCalculated(handleForAverBar) < 1)
     {
      return (0);
@@ -158,11 +154,8 @@ int OnCalculate(const int rates_total,
        bufferFormedExtrLow[i]  = 0;
        // получаем тип вычисленного экстремума
        came_extr = extr.isExtremum(extrHigh,extrLow,time[i],false); 
-       // если удалось вычислить экстремумы
-      // if ( extr.isExtremum(extrHigh,extrLow,time[i],false) )
-       // {
           // если обновился верхний экстремум 
-          if (/*extrHigh.time >= time[i]*/came_extr == CAME_BOTH || came_extr == CAME_HIGH)
+          if (came_extr == CAME_BOTH || came_extr == CAME_HIGH)
            {
             bufferAllExtrHigh[i] = extrHigh.price;       // сохраняем в буфер значение полученного экстремума
             bufferTimeExtrHigh[i] = double(extrHigh.time);
@@ -179,7 +172,7 @@ int OnCalculate(const int rates_total,
             indexPrevUp = i;  // обновляем предыдущий индекс             
            }
           // если обновился нижний экстремум
-          if (/*extrLow.time >= time[i]*/ came_extr == CAME_BOTH || came_extr == CAME_LOW)
+          if (came_extr == CAME_BOTH || came_extr == CAME_LOW)
            {        
             bufferAllExtrLow[i] = extrLow.price;
             bufferTimeExtrLow[i] = double(extrLow.time);
@@ -205,47 +198,42 @@ int OnCalculate(const int rates_total,
       // получаем тип пришедшего экстремума
       came_extr = extr.isExtremum(extrHigh,extrLow,time[rates_total-1],true);
         // если обновился верхний экстремум
-        if (/*extrHigh.time > time[rates_total-1]*/ came_extr == CAME_HIGH )
-         {        
-          
+        if (came_extr == CAME_HIGH )
+         {                
           bufferAllExtrHigh[rates_total-1] = extrHigh.price;
           bufferTimeExtrHigh[rates_total-1] = double(extrHigh.time);
           lastExtrUpValue = extrHigh.price;
           lastExtrUpTime = extrHigh.time;
-
           if (jumper == -1)
            {   
-          Comment("countExtr = ",countExtr++); 
             bufferFormedExtrLow[indexPrevDown] = lastExtrDownValue;        // сохраняем сформированный экстремум
             bufferTimeExtrLow[indexPrevDown] = long(lastExtrDownTime);     // сохраняем время сформированного экстремума
             // записи инмормации об экстремуме
             eventData.dparam = lastExtrDownValue;  
             eventData.lparam = -1;  
             prevJumper = jumper;
-          // Generate("экстремум",eventData,true);
+            Generate("экстремум",eventData,true);
            }
           jumper = 1;
           indexPrevUp = rates_total-1;
          }
         // если обновился нижний экстремум
-        if (/*extrLow.time > time[rates_total-1]*/ came_extr == CAME_LOW)
+        if (came_extr == CAME_LOW)
          {
           
           bufferAllExtrLow[rates_total-1] = extrLow.price;
           bufferTimeExtrLow[rates_total-1] = double(extrLow.time);
           lastExtrDownValue = extrLow.price;
-          lastExtrDownTime = extrLow.time;
-          
+          lastExtrDownTime = extrLow.time;        
           if (jumper == 1)
-           {         
-           Comment("countExtr = ",countExtr++);       
+           {             
             bufferFormedExtrHigh[indexPrevUp] = lastExtrUpValue;        // сохраняемт сформированный экстремум
             bufferTimeExtrHigh[indexPrevUp] = long(lastExtrUpTime);     // сохраняем время сформированного экстремума
             // записи инмормации об экстремуме
             eventData.dparam = lastExtrUpValue;  
             eventData.lparam = 1;      
             prevJumper = jumper;          
-           // Generate("экстремум",eventData,true);
+            Generate("экстремум",eventData,true);
            }
           jumper = -1;
           indexPrevDown = rates_total-1;

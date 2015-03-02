@@ -94,12 +94,12 @@ ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,date
  double difToNewExtremum;                      // для хранения минимального расстояния между экстремумами
  datetime extrHighTime = 0;                    // время прихода верхнего экстремума 
  datetime extrLowTime = 0;                     // время прихода нижнего экстремума
- MqlRates bufferRates[1];                      // буфер котировок
+ MqlRates bufferRates[2];                      // котировки
  ENUM_CAME_EXTR came_extr = CAME_NOTHING;      // тип пришедшего экстремума (возвращаемое значение)
- //Comment("Время = ",TimeToString(start_pos_time) );
- if(CopyRates(_symbol, _tf_period, start_pos_time, 1, bufferRates) < 1)
+ // пытаемся скопировать два бара 
+ if(CopyRates(_symbol, _tf_period, start_pos_time, 2, bufferRates) < 2)
  {
-  Print("Ошибка CExtremum::isExtremum. Не удалось скопировать котировки");
+  Print("Ошибка CExtremum::isExtremum. Не удалось скопировать котировки = ");
   return(false); 
  }
  // вычисляем средний размер бара
@@ -110,58 +110,58 @@ ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,date
  // вычисляем минимальное расстояние между экстремумами
  difToNewExtremum = _averageATR * _percentage_ATR;  
  
- if (extrHigh.time > extrLow.time && bufferRates[0].time < extrHigh.time && !now) return (false); 
- if (extrHigh.time < extrLow.time && bufferRates[0].time < extrLow.time && !now) return (false); 
+ if (extrHigh.time > extrLow.time && bufferRates[1].time < extrHigh.time && !now) return (false); 
+ if (extrHigh.time < extrLow.time && bufferRates[1].time < extrLow.time && !now) return (false); 
  
  if (now) // за время жизни бара цена close проходит все его значения от low до high
  {        // соответсвено если на данном баре есть верхний экстремум то он будет достигнут когда close будет max  и наоборот с low
-  high = bufferRates[0].close;
-  low  = bufferRates[0].close;
+  high = bufferRates[1].close;
+  low = bufferRates[1].close;
  }
  else    // во время работы на истории мы смотрим на бар один раз соотвественно нам сразу нужно узнать его максимум и минимум
  {
-  high = bufferRates[0].high;
-  low = bufferRates[0].low;
+  high = bufferRates[1].high;
+  low = bufferRates[1].low;
  }
  
  if ( (extrHigh.direction == 0  && extrLow.direction == 0)                                                  // Если экстремумов еще нет то говорим что сейчас экстремум
-   || ((extrHigh.time > extrLow.time) && (GreatDoubles(high, extrHigh.price,_digits) ) )                    // Если последний экстремум - High, и цена пробила экстремум в ту же сторону 
-   || ((extrHigh.time < extrLow.time) && (GreatDoubles(high,extrLow.price + difToNewExtremum,_digits) ) ) ) // Если последний экстремум - Low, и цена отошла от экстремума на мин. расстояние в обратную сторону   
+   || ((extrHigh.time > extrLow.time) && (GreatDoubles(high, extrHigh.price,_digits) )  )                   // Если последний экстремум - High, и цена пробила экстремум в ту же сторону 
+   || ((extrHigh.time < extrLow.time) && (GreatDoubles(high,extrLow.price + difToNewExtremum,_digits) && GreatDoubles(high,bufferRates[0].high,_digits) )  )  ) // Если последний экстремум - Low, и цена отошла от экстремума на мин. расстояние в обратную сторону  
  {
   // сохраняем время прихода верхнего экстремума
   if (now) // если экстремумы вычисляются в реальном времени
    extrHighTime = TimeCurrent();
   else  // если экстремумы вычисляются на истории
-   extrHighTime = bufferRates[0].time;
-  came_extr = CAME_HIGH;  // типо пришел верхний экстремум
+   extrHighTime = bufferRates[1].time;
+  came_extr = CAME_HIGH;  // типо пришел верхний экстремум   
  }
  
  if ( ( extrLow.direction == 0 && extrHigh.direction == 0)                                                  // Если экстремумов еще нет то говорим что сейчас экстремум
    || ((extrLow.time > extrHigh.time) && (LessDoubles(low,extrLow.price,_digits) ) )                        // Если последний экстремум - Low, и цена пробила экстремум в ту же сторону
-   || ((extrLow.time < extrHigh.time) && (LessDoubles(low,extrHigh.price - difToNewExtremum,_digits) ) ) )  // Если последний экстремум - High, и цена отошла от экстремума на мин. расстояние в обратную сторону
+   || ((extrLow.time < extrHigh.time) && (LessDoubles(low,extrHigh.price - difToNewExtremum,_digits)  && LessDoubles(low,bufferRates[0].low,_digits) ) ) )  // Если последний экстремум - High, и цена отошла от экстремума на мин. расстояние в обратную сторону
  {
   // если на этом баре пришел верхний экстремум
   if (extrHighTime > 0)
    {
     // если close ниже open, то говорим, что верхний экстремум пришел раньше нижнего
-    if(bufferRates[0].close <= bufferRates[0].open) 
+    if(bufferRates[1].close <= bufferRates[1].open) 
      {
-      extrLowTime = bufferRates[0].time + datetime(100);
+      extrLowTime = bufferRates[1].time + datetime(100);
      }
     else // иначе полагаем, что нижний пришел раньше верхнего
      {
-      extrHighTime = bufferRates[0].time + datetime(100);
-      extrLowTime  = bufferRates[0].time;
+      extrHighTime = bufferRates[1].time + datetime(100);
+      extrLowTime  = bufferRates[1].time;
      }
-    came_extr = CAME_BOTH;   // типо пришли оба экстремума
+    came_extr = CAME_BOTH;   // типо пришли оба экстремума     
    }
   else // иначе просто сохраняем время прихода нижнего экстремума
    {
     if (now) // если экстремумы вычисляются в реальном времени
      extrLowTime = TimeCurrent();
     else // если экстремумы вычисляются на истории
-     extrLowTime = bufferRates[0].time;
-    came_extr = CAME_LOW; // типо пришел нижний экстремум
+     extrLowTime = bufferRates[1].time;
+    came_extr = CAME_LOW; // типо пришел нижний экстремум     
    }
  }
  
@@ -183,6 +183,7 @@ ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,date
    extrLow.price = low;
    extrLow.time = extrLowTime;
   }  
+
    return (came_extr);
  }
  
