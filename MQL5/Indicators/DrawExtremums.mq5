@@ -16,7 +16,7 @@
 //+------------------------------------------------------------------+
 //| Индикатор, отображающий экстремумы                               |
 //+------------------------------------------------------------------+
-#include <DrawExtremums/TempCExtremum.mqh> // вычисление экстремумов
+#include <DrawExtremums/CExtremum.mqh> // вычисление экстремумов
 #include <CLog.mqh>                        // для сохранения в лог
 #include <CompareDoubles.mqh>              // для сравнения действительных чисел
 #include <CEventBase.mqh>                  // для генерации событий     
@@ -253,7 +253,6 @@ int OnCalculate(const int rates_total,
             eventData.lparam = -1;  
             prevJumper = jumper;
             Generate("экстремум",eventData,true);
-            Comment("Пришел новый экстремум LOW = ",DoubleToString(lastExtrDownValue) );
            }
           jumper = 1;
           indexPrevUp = rates_total-1;
@@ -274,8 +273,7 @@ int OnCalculate(const int rates_total,
             eventData.dparam = lastExtrUpValue;  
             eventData.lparam = 1;      
             prevJumper = jumper;          
-            Generate("экстремум",eventData,true);
-            Comment("Пришел новый экстремум HIGH = ",DoubleToString(lastExtrUpValue) );            
+            Generate("экстремум",eventData,true);         
            }
           jumper = -1;
           indexPrevDown = rates_total-1;
