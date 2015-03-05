@@ -80,6 +80,8 @@ void CExtrMACDContainer::FilltheExtremums(int startIndex)
 {
  int copiedMACD = 0;
  int copiedDate = 0;
+ //extremums.Clear();
+ Print(__FUNCTION__," was here");
  //----------Копирование значений MACD в буфер valueMACDbuffer-------
  for(int attemps = 0; attemps < 25 && copiedMACD <= 0; attemps++)
  {
@@ -104,6 +106,7 @@ void CExtrMACDContainer::FilltheExtremums(int startIndex)
   extremRslt = isMACDExtremum(indexForExtremum);  // проверка на экстремум MACD
   if(extremRslt != 0)                             // если текущий элемент экстремум 
   {
+   //Print("value = ",valueMACDbuffer[ind] , " index = ",j, " time = ",date_buf[ind], " i  ",i ,"date_buf", date_buf[0]);
    CExtremumMACD *new_extr = new CExtremumMACD(); // новый экстремум 
    new_extr.direction = extremRslt;               // запомнить направление
    new_extr.index = j;                            // запомнить индекс относитьельно _depth (т.е текущий элемент - [0 + 2])
@@ -172,7 +175,7 @@ bool CExtrMACDContainer::RecountExtremum(int startIndex, bool fill = false)
   new_extr.direction = is_extr_exist;
   new_extr.index = 2;    
   new_extr.value = buf_Value[0];
-  new_extr.time = date_buf[0];
+  new_extr.time  = date_buf[0];
   extremums.Insert(new_extr, 0);             
  }   
  return(true);
