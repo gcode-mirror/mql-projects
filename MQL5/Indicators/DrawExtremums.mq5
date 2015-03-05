@@ -158,6 +158,10 @@ int OnCalculate(const int rates_total,
           // если обновились оба экстремума
           if (came_extr == CAME_BOTH)
            {
+            bufferAllExtrHigh[i] = extrHigh.price;
+            bufferAllExtrLow[i] = extrLow.price;
+            bufferTimeExtrHigh[i] = double(extrHigh.time);
+            bufferTimeExtrLow[i] = double(extrLow.time);
             // если верхний экстремум пришел раньше нижнего
             if (extrHigh.time > extrLow.time)
              {

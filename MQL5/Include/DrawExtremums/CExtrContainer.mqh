@@ -65,7 +65,6 @@ class CExtrContainer
        _countFormedExtr ++;
       }    
     }
-
   }
   
  // формирует из данных экстремума объект структуры экстремума
@@ -90,13 +89,13 @@ class CExtrContainer
    // задаем размер буфера экстремумов
    ArrayResize(_bufferExtr,10000);
   }
-  
+
  CExtrContainer::~CExtrContainer() // деструктор класса
   {
    // освобождение буферов класса
    ArrayFree(_bufferExtr);
   }
-  
+
  // метод возвращает экстремум по индексу 
  SExtremum CExtrContainer::GetExtremum(int index)
  {
@@ -108,7 +107,7 @@ class CExtrContainer
     }     
   return (_bufferExtr[_countFormedExtr - index - 1]);          
  }
-  
+
  // метод добавляет новый экстремум по хэндлу индикатора по заданной дате
  bool CExtrContainer::AddNewExtr(datetime time)
   {
@@ -118,7 +117,7 @@ class CExtrContainer
    double extrLowTime[];
    datetime timeHigh;
    datetime timeLow;
-   if ( CopyBuffer(_handleDE,0,time,1,extrHigh)     < 1 || CopyBuffer(_handleDE,1,time,1,extrLow) < 1 || 
+   if ( CopyBuffer(_handleDE,2,time,1,extrHigh)     < 1 || CopyBuffer(_handleDE,3,time,1,extrLow) < 1 || 
         CopyBuffer(_handleDE,4,time,1,extrHighTime) < 1 || CopyBuffer(_handleDE,5,time,1,extrLowTime) < 1 )
     {
      Print("Не удалось прогузить буфер экстремумов");
@@ -127,7 +126,6 @@ class CExtrContainer
    timeHigh = datetime(extrHighTime[0]);
    timeLow  = datetime(extrLowTime[0]);
 
-   
    //если пришел только верхний экстремум
    if (extrHigh[0]>0 && extrLow[0]==0)
     {
