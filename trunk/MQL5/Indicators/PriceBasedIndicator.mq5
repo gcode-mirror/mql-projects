@@ -20,19 +20,19 @@
 #property indicator_type4   DRAW_ARROW
 #property indicator_type5   DRAW_ARROW
 
-
 //----------------------------------------------------------------
 #include <CompareDoubles.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <ColoredTrend/ColoredTrend.mqh>
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
+#include <CEventBase.mqh>                         // для генерации событий   
 #include <CLog.mqh>
 //----------------------------------------------------------------
  
 //--- input параметры
 input int history_depth = 1000; // сколько свечей показывать
 input bool show_top = false;    // показывать текущий таймфрейм или старший
-input bool is_it_top = true;   // если true вычисляется только текущий таймфрейм; false вычислятеся дополнительный индикатор для старшего таймфрейма
+input bool is_it_top = true;    // если true вычисляется только текущий таймфрейм; false вычислятеся дополнительный индикатор для старшего таймфрейма
 
 //--- индикаторные буферы
 double ColorCandlesBuffer1[];
@@ -47,7 +47,9 @@ double ExtDownArrowBuffer[];
 CisNewBar NewBarCurrent, 
           NewBarTop;
 
-CColoredTrend *trend;
+CColoredTrend *trend;      // объект старшего тренда
+CEventBase    *event;      // для генерации событий 
+SEventData eventData;      // структура полей событий
               
 string symbol;
 ENUM_TIMEFRAMES current_timeframe;
@@ -55,7 +57,7 @@ int  digits;
 int handle_top_trend;
 int depth = history_depth;
 bool series_order = true;
-
+double last_move;
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
@@ -65,6 +67,16 @@ int OnInit()
    symbol = Symbol();
    current_timeframe = Period();
    digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+   
+   // создаем объект генерации событий 
+   event = new CEventBase(300);
+   if (event == NULL)
+    {
+     Print("Ошибка при инициализации индикатора PriceBasedIndicator. Не удалось создать объект класса CEventBase");
+     return (INIT_FAILED);
+    } 
+   // создаем события
+   event.AddNewEvent(_Symbol,_Period,"смена движения");      
    
    if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe)-1;
    PrintFormat("Глубина поиска равна: %d", depth);
@@ -91,7 +103,6 @@ int OnInit()
    }
    SetIndexBuffer(5,    ExtUpArrowBuffer, INDICATOR_DATA);
    SetIndexBuffer(6,  ExtDownArrowBuffer, INDICATOR_DATA);
-
 
    InitializeIndicatorBuffers();
    
@@ -126,6 +137,7 @@ void OnDeinit(const int reason)
    ArrayFree(ColorCandlesColorsTop);
    if(!is_it_top) IndicatorRelease(handle_top_trend);
    delete trend;
+   delete event;
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
@@ -195,6 +207,7 @@ int OnCalculate(const int rates_total,
       buffer_index++;     //для того что бы считать на истории
      }
     }
+    last_move = ColorCandlesColors[0];
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН", MakeFunctionPrefix(__FUNCTION__));
     trend.PrintExtr();
    }
@@ -207,12 +220,23 @@ int OnCalculate(const int rates_total,
    
    trend.CountMoveType(buffer_index, time[0], true, extr_cur, (ENUM_MOVE_TYPE)buffer_top_trend[0]);
    
-   ColorCandlesBuffer1[0] = open[0];
-   ColorCandlesBuffer2[0] = high[0];
-   ColorCandlesBuffer3[0] = low [0];
-   ColorCandlesBuffer4[0] = close[0]; 
-   ColorCandlesColors[0] = trend.GetMoveType(buffer_index);
+   ColorCandlesBuffer1[0]   = open[0];
+   ColorCandlesBuffer2[0]   = high[0];
+   ColorCandlesBuffer3[0]   = low [0];
+   ColorCandlesBuffer4[0]   = close[0]; 
+   ColorCandlesColors[0]    = trend.GetMoveType(buffer_index);
    ColorCandlesColorsTop[0] = buffer_top_trend[0];
+
+   // если обновилось движение
+   if (ColorCandlesColors[0] != last_move)
+    {
+     // обновляем движение
+     last_move = ColorCandlesColors[0];
+     // заполняем поля структуры события
+     eventData.dparam = last_move;
+     // и генерим событие обновления движения
+     Generate("смена движения",eventData,true);
+    }
 
    if (extr_cur[0].direction > 0)
    {
@@ -246,3 +270,21 @@ void InitializeIndicatorBuffers()
  ArrayInitialize(ExtDownArrowBuffer , 0);
  ArrayInitialize(ColorCandlesColorsTop, 0);
 }
+
+// дополнительные функции индикатора 
+
+// проходим по всем графикам и генерим события под них
+void Generate(string id_nam,SEventData &_data,const bool _is_custom=true)
+  {
+   // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
+   long z = ChartFirst();
+   while (z>=0)
+     {
+      if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
+        {
+         // генерим событие для текущего графика
+         event.Generate(z,id_nam,_data,_is_custom);
+        }
+      z = ChartNext(z);      
+     }     
+  }
