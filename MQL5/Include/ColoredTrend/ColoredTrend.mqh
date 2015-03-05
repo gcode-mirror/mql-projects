@@ -122,13 +122,13 @@ bool CColoredTrend::CountMoveType(int bar, datetime start_time, bool now, SExtre
   }
   
   newTrend = isNewTrend();  // если появились новые экстремумы проверяем не появился ли новый тренд    
-   
+  /* 
   log_file.Write(LOG_DEBUG, StringFormat("%i extr0(%s,%s,%i) extr1(%s,%s,%i) extr2(%s,%s,%i)",
                                             bar,
                                             DoubleToString(extremums.getExtr(0).price),TimeToString(extremums.getExtr(0).time),extremums.getExtr(0).direction,
                                             DoubleToString(extremums.getExtr(1).price),TimeToString(extremums.getExtr(1).time),extremums.getExtr(1).direction,
                                             DoubleToString(extremums.getExtr(2).price),TimeToString(extremums.getExtr(2).time),extremums.getExtr(2).direction
-                                           ));  
+                                           ));  */
     
  }
  

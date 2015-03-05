@@ -57,7 +57,7 @@ class CEventBase : public CObject
 // защищенные поля класса
 protected:
    ENUM_EVENT_TYPE   m_type;
-   ushort            start_id; // изначальный код 
+   ushort            start_id;   // изначальный код 
    ushort            m_id;
    ushort            id_array[]; // массив id событий
    string            id_name[];  // массив имен событий
@@ -185,7 +185,7 @@ bool CEventBase::AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventNa
 bool CEventBase::Generate(long _chart_id, int _id_ind, SEventData &_data,
                           const bool _is_custom=true)
   {
-   bool is_generated=true;
+   bool is_generated = true;
    // если индекс id события в массиве не верен
    if (_id_ind < 0 || _id_ind >= id_count)
     {
@@ -196,19 +196,20 @@ bool CEventBase::Generate(long _chart_id, int _id_ind, SEventData &_data,
    this.m_id = (ushort)(CHARTEVENT_CUSTOM+id_array[_id_ind]);
    this.m_data = _data;
    this.m_data.sparam = id_name[_id_ind]; // сохраняем имя события
+   
    if(_is_custom)
      {
       ResetLastError();
-      is_generated=EventChartCustom(_chart_id,id_array[_id_ind],this.m_data.lparam,
+      is_generated = EventChartCustom(_chart_id,id_array[_id_ind],this.m_data.lparam,
                                     this.m_data.dparam,this.m_data.sparam);
       if(!is_generated && _LastError!=4104)
          Print("Error while generating a custom event: ",_LastError);
      }
    if(is_generated)
      {
-      is_generated=this.Validate();
+      is_generated = this.Validate();
       if(!is_generated)
-         this.m_id=0;
+         this.m_id = 0;
      }
    return is_generated;
   }

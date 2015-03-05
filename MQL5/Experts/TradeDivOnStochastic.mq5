@@ -145,7 +145,7 @@ void OnTick()
    if ( signalBuffer[0] == BUY)  // получили расхождение на покупку
      { 
       // если последний полученный сигнал не равен предыдущему
-      if ( !EqualDoubles( lastRightExtr,dateRightExtr[0]) ) 
+      if ( !EqualDoubles(lastRightExtr, dateRightExtr[0])) 
        {
         currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
         // если используются уровни для запрета на вход

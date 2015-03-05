@@ -60,8 +60,8 @@ CTrailingStop::~CTrailingStop()
 //+------------------------------------------------------------------+
 // Обычный трейлинг
 //+------------------------------------------------------------------+
-double CTrailingStop::UsualTrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl
-                                   , int minProfit, int trailingStop, int trailingStep)
+double CTrailingStop::UsualTrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl,
+                                    int minProfit, int trailingStop, int trailingStep)
 {
  double newSL = 0;
  if (minProfit > 0 && trailingStop > 0 && trailingStep > 0)

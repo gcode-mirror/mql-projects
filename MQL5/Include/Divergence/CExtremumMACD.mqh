@@ -28,7 +28,7 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CExtremumMACD::CExtremumMACD(int direction, int index, double value, datetime time)
-                            : direction(direction), index(index), value(value), time(time)
+CExtremumMACD::CExtremumMACD(int _direction, int _index, double _value, datetime _time)
+                            : direction(_direction), index(_index), value(_value), time(_time)
   {
   }

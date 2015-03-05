@@ -293,11 +293,11 @@ int OnCalculate(const int rates_total,
 // дополнительные функции индикатора 
 
 // проходим по всем графикам и генерим события под них
-void Generate(string id_nam,SEventData &_data,const bool _is_custom=true)
+void Generate(string id_nam, SEventData &_data, const bool _is_custom = true)
   {
    // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
    long z = ChartFirst();
-   while (z>=0)
+   while (z >= 0)
      {
       if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
         {

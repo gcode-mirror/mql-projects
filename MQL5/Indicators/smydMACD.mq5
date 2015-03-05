@@ -12,11 +12,11 @@
 //| Индикатор, показывающий расхождения MACD                         |
 //| 1) рисует MACD                                                   |
 //| 2) рисует линиями расхождения на MACD и на графике цены          |
-//| 3) рисует стрелочками момент возникновения сигнала               |
+//| 3) рисует вертикальную линию в момент возникновения сигнала      |
 //+------------------------------------------------------------------+
 
-#define _Buy 1
-#define _Sell -1
+//#define _Buy 1
+//#define _Sell -1
 
 // подключаем библиотеки 
 #include <Lib CisNewBar.mqh>                       // для проверки формирования нового бара
@@ -32,7 +32,7 @@ input  int    signal_period   = 9;                 // период усреднения разности
 input  ENUM_APPLIED_PRICE priceType = PRICE_CLOSE; // тип цен, по которым вычисляется MACD
 
 // параметры индикаторных буферов 
-#property indicator_buffers 2                      // задействовано 2 индикаторных буфера
+#property indicator_buffers 3                      // задействовано 2 индикаторных буфера
 #property indicator_plots   1                      // 1 буфер отображаются на графиках
 
 // параметры  буфера (MACD)
@@ -54,17 +54,22 @@ CDivergenceMACD    *divMACD;
 // буферы индикатора 
 double bufferMACD[];                               // буфер уровней MACD
 double bufferDiv[];                                // буфер сигналов расхождения
+double lastPriceDiv[];                            // буфер цены начала расхождения 
 
 // переменные для хранения времени последних отрицательных и положительных значений MACD
-datetime  lastExtrMinMACD    = 0;                    // время последнего отрицательного MACD
-datetime  lastExtrMaxMACD    = 0;                    // время последнего отрицательного MACD
+datetime  lastExtrMinMACD    = 0;                   // время последнего отрицательного MACD
+datetime  lastExtrMaxMACD    = 0;                   // время последнего отрицательного MACD
 
 // переменные для хранения времени перехода через ноль для расхождений MACD
-datetime  lastMaxWithDiv = 0;                    // время последнего минуса расхождения на SELL
-datetime  lastMinWithDiv   = 0;                    // время последнего плюса расхождения на BUY
+datetime  lastMaxWithDiv = 0;                      // время последнего минуса расхождения на SELL
+datetime  lastMinWithDiv  = 0;                    // время последнего плюса расхождения на BUY
+
+bool firstTimeUse = true;                          //Флаг, по которому происходит лтбо полное обновление массива экстремумов Стохастика 
+                                                   //либо добавление нового экстремум при его наличии на каждом новом баре
 
 // дополнительные функции работы индикатора
 void    DrawIndicator (datetime vertLineTime);     // отображает линии индикатора. В функцию передается время вертикальной линии (сигнала расхождения)
+
    
 // инициализация индикатора
 int OnInit()
@@ -73,6 +78,8 @@ int OnInit()
  ArraySetAsSeries(bufferDiv,true);
  // буфер MACD устанавливаем как в таймсерии
  ArraySetAsSeries(bufferMACD,true);
+ // буфер цен начала расхождения устанавливаем как в таймсерии
+ ArraySetAsSeries(lastPriceDiv,true);
  // загружаем хэндл индикатора MACD
  handleMACD = iMACD(_Symbol, _Period, fast_ema_period,slow_ema_period,signal_period,PRICE_CLOSE);
  if ( handleMACD == INVALID_HANDLE)  // если не удалось загрузить хэндл MACD
@@ -90,6 +97,7 @@ int OnInit()
  // связываем индикаторы с буферами 
  SetIndexBuffer(0,bufferMACD,INDICATOR_DATA);         // буфер MACD
  SetIndexBuffer(1,bufferDiv ,INDICATOR_CALCULATIONS); // буфер расхождений (моментов возникновения сигналов)
+ SetIndexBuffer(2,lastPriceDiv ,INDICATOR_CALCULATIONS); // буфер расхождений (моментов возникновения сигналов)
  // инициализация глобальных  переменных
  countDiv = 0;                                        // выставляем начальное количество расхождений
  return(INIT_SUCCEEDED); // успешное завершение инициализации индикатора
@@ -105,6 +113,7 @@ void OnDeinit(const int reason)
  // очищаем индикаторные буферы
  ArrayFree(bufferMACD);
  ArrayFree(bufferDiv);
+ ArrayFree(lastPriceDiv);
  // освобождаем хэндл MACD
  IndicatorRelease(handleMACD);
  delete divMACD;
@@ -130,91 +139,74 @@ int OnCalculate(const int rates_total,
  ArraySetAsSeries (close,true);
  
  if (prev_calculated == 0) // если на пред. вызове было обработано 0 баров, значит этот вызов первый
- {
-  bool fillTheExtremums = true;
-  // положим индексацию нужных массивов как в таймсерии
+ {  
+ 
+  firstTimeUse = true;
+  //Обнулим буферы индикатора (в надежде на то, что каждый последующий элемент тоже обнулится)
+  ArrayInitialize(bufferDiv, 0);       // обнуляем буфер сигналов расхождений MACD
+  ArrayInitialize(lastPriceDiv, 0);   // обнуляем буфер цен начала расхождения
+   
+  
   // проходим по всем барам истории и ищем расхождения MACD
-  for (lastBarIndex = rates_total - 1; lastBarIndex >= 1; lastBarIndex--)
-  {
-   // обнуляем буфер сигналов расхождений MACD
-   bufferDiv[lastBarIndex] = 0;  
-   // если мы дошли до бара, с которого можно начать вычислять расхождения
-   if (lastBarIndex <= (rates_total - DEPTH_MACD - 1) )
-   {        
-    //Заполним массив экстремумов MACD
-    if(!divMACD.RecountExtremums(lastBarIndex, fillTheExtremums)) 
-    {
-     Print("Пересчет экстремумов неуспешен lastBarIndex = ",lastBarIndex);
-     return(0);
-    }
-    fillTheExtremums = false;
-            
-    retCode = divMACD.countDivergence(lastBarIndex-1);  // получаем сигнал на расхождение
-    if (retCode == -2)
-    {
-     Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
-     return (0);
-    }
-    lastExtrMinMACD = divMACD.getLastExtrMinTime();           //  сохраняем время последнего нижнего экстремума MACD     
-    lastExtrMaxMACD = divMACD.getLastExtrMaxTime();           //  сохраняем время последнего верхнего экстремума MACD 
-
-        
-   // if (retCode == _Sell)
-   //  Print(time[lastBarIndex-1]);
-    // если расхождение на SELL и время последнего расхождения отличается от времени последнего максимума
-    if (retCode == _Sell && lastMaxWithDiv != lastExtrMaxMACD)
-    {       
-     DrawIndicator (time[lastBarIndex-1]);               // отображаем графические элементы индикатора    
-     bufferDiv[lastBarIndex] = _Sell;                    // сохраняем в буфер значение       
-     lastMaxWithDiv = lastExtrMaxMACD;          // сохраняем время последнего минуса MACD 
-    }
-    // если расхождение на BUY и время последнего расхождения отличается от времени последнего минимума
-    if (retCode == _Buy && lastMinWithDiv != lastExtrMinMACD)
-    {   
-     DrawIndicator (time[lastBarIndex-1]);        // отображаем графические элементы индикатора     
-     bufferDiv[lastBarIndex] = _Buy;            // сохраняем в буфер значение 
-     lastMinWithDiv = lastExtrMinMACD;             // сохраняем время последнего плюса MACD
-    }         
+  for (lastBarIndex = rates_total - DEPTH_MACD - 1; lastBarIndex >= 1; lastBarIndex--)
+  {       
+   //Заполним массив экстремумов MACD        
+   retCode = divMACD.countDivergence(lastBarIndex, firstTimeUse); // получаем сигнал на расхождение
+   firstTimeUse = false; 
+   if (retCode == -2)
+   {
+    Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
+    return (0);
    }
-  }
+   lastExtrMinMACD = divMACD.getLastExtrMinTime();           //  сохраняем время последнего нижнего экстремума MACD     
+   lastExtrMaxMACD = divMACD.getLastExtrMaxTime();           //  сохраняем время последнего верхнего экстремума MACD 
+       
+   // если расхождение на SELL и время последнего расхождения отличается от времени последнего максимума
+   if (retCode == _Sell && lastMaxWithDiv != lastExtrMaxMACD)
+   {       
+    DrawIndicator (time[lastBarIndex]);               // отображаем графические элементы индикатора    
+    bufferDiv[lastBarIndex] = _Sell;  
+    lastPriceDiv[lastBarIndex] = divMACD.valueExtrPrice2;                  // сохраняем в буфер значение       
+    lastMaxWithDiv = lastExtrMaxMACD;              // сохраняем время последнего минуса MACD 
+   }
+   // если расхождение на BUY и время последнего расхождения отличается от времени последнего минимума
+   if (retCode == _Buy && lastMinWithDiv != lastExtrMinMACD)
+   {   
+    DrawIndicator (time[lastBarIndex]);        // отображаем графические элементы индикатора     
+    bufferDiv[lastBarIndex] = _Buy;            // сохраняем в буфер значение 
+    lastPriceDiv[lastBarIndex] = divMACD.valueExtrPrice2; 
+    lastMinWithDiv = lastExtrMinMACD;             // сохраняем время последнего плюса MACD
+   }         
+  }firstTimeUse = true;
  }
  else    // если это не первый вызов индикатора 
  {
-  if(isNewBar.isNewBar())  
-  {
-   if(!divMACD.RecountExtremums(1)) 
-   {
-    Print("Пересчет экстремумов неуспешен lastBarIndex = ",0);
-    return(0);
-   }
-  }
-  
   bufferDiv[0] = 0;
-  if ( CopyBuffer(handleMACD,0,0,rates_total,bufferMACD) < 0  )
+  lastPriceDiv[0] = 0;
+  if (CopyBuffer(handleMACD, 0, 0, rates_total, bufferMACD) < 0  )
   {
    // если не удалось загрузить буфера MACD
    Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
    return (rates_total);
   }     // сохраняем последние времена MACD
  
-  retCode = divMACD.countDivergence(0);  // получаем сигнал на расхождение
+  retCode = divMACD.countDivergence(0, firstTimeUse);                     // получаем сигнал на расхождение
   lastExtrMinMACD = divMACD.getLastExtrMinTime();           //  сохраняем время последнего нижнего экстремума MACD     
   lastExtrMaxMACD = divMACD.getLastExtrMaxTime();           //  сохраняем время последнего верхнего экстремума MACD     
-
-  if (retCode == _Sell || retCode == _Buy)
-  Print("time=",time[0]);
+  firstTimeUse = false;
   // если не удалось загрузить буферы MACD
   if (retCode == -2)
   {
    Print("Ошибка индикатора ShowMeYourDivMACD. Не удалось загрузить буферы MACD");
    return (0);
   }
+
   // если расхождение на SELL и время предыдущего расхождения отличается от последнего максимума MACD
   if (retCode == _Sell && lastMaxWithDiv != lastExtrMaxMACD )
   {                                      
    DrawIndicator (time[0]);                  // отображаем графические элементы индикатора    
    bufferDiv[0] = _Sell;                     // сохраняем текущий сигнал
- //  lastMaxExtrMACD = divMACD.timeExtrMACD2;    // обновляем время последнего минимального экстремума         
+   lastPriceDiv[0] = divMACD.valueExtrPrice1;
    lastMaxWithDiv = lastExtrMaxMACD;         // сохраняем время последнего максимального экстремума
   }    
   // если расхождение на BUY и время предыдущего расхождения отличается от последнего минимума MACD
@@ -222,7 +214,7 @@ int OnCalculate(const int rates_total,
   {                                        
    DrawIndicator (time[0]);               // отображаем графические элементы индикатора    
    bufferDiv[0] = _Buy;                   // сохраняем текущий сигнал
-//   lastMinExtrMACD = divMACD.timeExtrMACD2;  // обновляем время последнего плюса
+   lastPriceDiv[0] = divMACD.valueExtrPrice1;
    lastMinWithDiv = lastExtrMinMACD;         // сохраняем время последнего плюса
   }                  
  }
@@ -232,15 +224,15 @@ int OnCalculate(const int rates_total,
   
 // функция отображения графических элементов индикатора
 void DrawIndicator (datetime vertLineTime)
- {
-   trendLine.Color(clrYellow);
-   // создаем линию схождения\расхождения                    
-   trendLine.Create(0,"PriceLine_"+IntegerToString(countDiv)+" "+TimeToString(divMACD.timeExtrPrice2),0,divMACD.timeExtrPrice1,divMACD.valueExtrPrice1,divMACD.timeExtrPrice2,divMACD.valueExtrPrice2);           
-   trendLine.Color(clrYellow);         
-   // создаем линию схождения\расхождения на MACD
-   trendLine.Create(0,"MACDLine_"+IntegerToString(countDiv),1,divMACD.timeExtrMACD1,divMACD.valueExtrMACD1,divMACD.timeExtrMACD2,divMACD.valueExtrMACD2);            
-   vertLine.Color(clrRed);
-   // создаем вертикальную линию, показывающий момент появления расхождения MACD
+{
+  trendLine.Color(clrYellow);
+  // создаем линию схождения\расхождения                    
+  trendLine.Create(0,"PriceLine_"+IntegerToString(countDiv)+" "+TimeToString(divMACD.timeExtrPrice2),0,divMACD.timeExtrPrice1,divMACD.valueExtrPrice1,divMACD.timeExtrPrice2,divMACD.valueExtrPrice2);           
+  trendLine.Color(clrYellow);         
+  // создаем линию схождения\расхождения на MACD
+  trendLine.Create(0,"MACDLine_"+IntegerToString(countDiv),1,divMACD.timeExtrMACD1,divMACD.valueExtrMACD1,divMACD.timeExtrMACD2,divMACD.valueExtrMACD2);            
+  vertLine.Color(clrRed);
+  // создаем вертикальную линию, показывающий момент появления расхождения MACD
    vertLine.Create(0,"MACDVERT_"+IntegerToString(countDiv),0,vertLineTime);
-   countDiv++; // увеличиваем количество отображаемых схождений
- }
+  countDiv++; // увеличиваем количество отображаемых схождений
+}
