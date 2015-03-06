@@ -159,7 +159,7 @@ int OnCalculate(const int rates_total,
           if (came_extr == CAME_BOTH)
            {
             bufferAllExtrHigh[i] = extrHigh.price;
-            bufferAllExtrLow[i] = extrLow.price;
+            bufferAllExtrLow[i] = extrLow.price;            
             bufferTimeExtrHigh[i] = double(extrHigh.time);
             bufferTimeExtrLow[i] = double(extrLow.time);
             // если верхний экстремум пришел раньше нижнего
@@ -193,6 +193,7 @@ int OnCalculate(const int rates_total,
           // если обновился верхний экстремум 
           if (came_extr == CAME_HIGH)
            {
+           
             bufferAllExtrHigh[i] = extrHigh.price;       // сохраняем в буфер значение полученного экстремума
             bufferTimeExtrHigh[i] = double(extrHigh.time);
             
@@ -238,7 +239,11 @@ int OnCalculate(const int rates_total,
       
         // если обновился верхний экстремум
         if (came_extr == CAME_HIGH )
-         {                
+         {            
+         
+          // потом удалить
+      //    bufferFormedExtrHigh[rates_total-1] = extrHigh.price;
+             
           bufferAllExtrHigh[rates_total-1] = extrHigh.price;
           bufferTimeExtrHigh[rates_total-1] = double(extrHigh.time);
           lastExtrUpValue = extrHigh.price;
@@ -263,6 +268,9 @@ int OnCalculate(const int rates_total,
         // если обновился нижний экстремум
         if (came_extr == CAME_LOW)
          {
+          
+          // потом удалить
+     //     bufferFormedExtrLow[rates_total-1] = extrLow.price;
           
           bufferAllExtrLow[rates_total-1] = extrLow.price;
           bufferTimeExtrLow[rates_total-1] = double(extrLow.time);

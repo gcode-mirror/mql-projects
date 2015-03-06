@@ -18,25 +18,23 @@ class CExtrContainer
  {
   private:
    // буфер экстремумов
-   SExtremum       _bufferExtr[];            // буфер для хранения экстремумов  
+   SExtremum       _bufferExtr[4];           // массив для хранения экстремумов  
    // приватные поля класса
    int             _handleDE;                // хэндл индикатора DrawExtremums
    string          _symbol;                  // символ
    ENUM_TIMEFRAMES _period;                  // период
    int             _countFormedExtr;         // количество сформированных экстремумов
-   int             _countExtr;               // количество всего вычисленных экстремумов
-   // приватные методы класса
+   public:
    void         AddExtrToContainer(SExtremum &extr);                                                    // добавляет экстремум в контейнер
+   void         AddExtrToContainer(int direction,double price,datetime time);                           // добавляет экстремум в контейнер по направлению экстремума, цене и времени 
    SExtremum    MakeExtremum (double price, datetime time, int direction);                              // формирует из данных экстремума объект структуры экстремума
-   
-  public:
+  
    CExtrContainer(string symbol,ENUM_TIMEFRAMES period,int handleDE);                                   // конструктор класса контейнера экстремумов
   ~CExtrContainer();                                                                                    // деструктор класса контейнера экстремумов
    // методы класса
    SExtremum    GetExtremum       (int index);                                                          // получает экстремум по индексу
    bool         AddNewExtr        (datetime time);                                                      // добавляет новый экстремум с заданной даты
    int          GetCountFormedExtr() {  return (_countFormedExtr); };                                   // возвращает количество сформированных экстремумов  
-   int          GetCountExtr      () {  return (_countExtr); };                                         // возвращает количество экстремумов 
  };
  
  // кодирование методов класса
@@ -53,17 +51,48 @@ class CExtrContainer
    else
     {
      // если предыдущий экстремум был в том же направлении
-     if (_bufferExtr[_countFormedExtr-1].direction == extr.direction)
+     if (_bufferExtr[0].direction == extr.direction)
       {
        // то просто обновляем экстремум в контейнере
-       _bufferExtr[_countFormedExtr-1] = extr;
+       _bufferExtr[0] = extr;
       }
      // если же он противоположный, то добавляем в конец
      else
       {
-       _bufferExtr[_countFormedExtr] = extr;
-       _countFormedExtr ++;
-      }    
+       // если не было найдено 4 экстремума
+       if (_countFormedExtr < 4)
+        _countFormedExtr ++;
+       // смещаем массив экстремумов
+       for (int ind=3;ind>0;ind--)
+          {
+           _bufferExtr[ind] = _bufferExtr[ind-1];
+          }
+       // сохраняем текущее значение
+       _bufferExtr[0] = extr;          
+     }
+   }    
+  }
+  
+ void CExtrContainer::AddExtrToContainer(int direction,double price,datetime time)  // добавляет экстремум в кониейнер
+  {
+   // если напрвление нового экстремума совпадает с направлением последнего экстремума
+   if (direction == _bufferExtr[0].direction)
+    {
+     // то просто перезаписываем экстремум
+     _bufferExtr[0].price = price;
+     _bufferExtr[0].time = time;
+    }
+   else
+    {
+     // иначе смещаем все экстремумы в буфере
+     for (int ind=3;ind>0;ind--)
+      {
+       _bufferExtr[ind] = _bufferExtr[ind-1];
+      }
+     // и записываем новый экстремум в начало
+     _bufferExtr[0].direction = direction;
+     _bufferExtr[0].price = price;
+     _bufferExtr[0].time = time;
     }
   }
   
@@ -85,15 +114,11 @@ class CExtrContainer
    _period = period;
    _handleDE = handleDE;
    _countFormedExtr = 0;
-   _countExtr = 0;
-   // задаем размер буфера экстремумов
-   ArrayResize(_bufferExtr,10000);
   }
 
  CExtrContainer::~CExtrContainer() // деструктор класса
   {
-   // освобождение буферов класса
-   ArrayFree(_bufferExtr);
+
   }
 
  // метод возвращает экстремум по индексу 
@@ -105,7 +130,7 @@ class CExtrContainer
      Print("Ошибка метода GetExtrByIndex класса CExtrContainer. Индекс экстремума вне диапазона");
      return (nullExtr);
     }     
-  return (_bufferExtr[_countFormedExtr - index - 1]);          
+  return (_bufferExtr[index]);          
  }
 
  // метод добавляет новый экстремум по хэндлу индикатора по заданной дате
@@ -129,19 +154,16 @@ class CExtrContainer
    //если пришел только верхний экстремум
    if (extrHigh[0]>0 && extrLow[0]==0)
     {
-     _countExtr++;
      AddExtrToContainer(MakeExtremum(extrHigh[0],datetime(extrHighTime[0]),1));
     }
    //если пришел только нижний экстремум
    if (extrLow[0]>0 && extrHigh[0]==0)
-    {
-     _countExtr++;    
+    { 
      AddExtrToContainer(MakeExtremum(extrLow[0],datetime(extrLowTime[0]),-1));
     }
    //если пришло оба экстремума
    if (extrHigh[0]>0 && extrLow[0]>0)
-    {
-     _countExtr = _countExtr + 2;    
+    { 
      // если верхний пришел раньше
      if (extrHighTime[0] < extrLowTime[0])
       {
