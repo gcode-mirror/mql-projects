@@ -30,7 +30,7 @@
 //----------------------------------------------------------------
  
 //--- input параметры
-input int history_depth = 1000; // сколько свечей показывать
+input int history_depth = 100; // сколько свечей показывать
 input bool show_top = false;    // показывать текущий таймфрейм или старший
 input bool is_it_top = true;    // если true вычисляется только текущий таймфрейм; false вычислятеся дополнительный индикатор для старшего таймфрейма
 
@@ -168,9 +168,9 @@ int OnCalculate(const int rates_total,
     PrintFormat("%s Первый расчет индикатора", MakeFunctionPrefix(__FUNCTION__));
     buffer_index = 0;
     trend.Zeros();
-    depth = rates_total;
+    //depth = rates_total;
     InitializeIndicatorBuffers();
-    NewBarCurrent.isNewBar(time[depth-1]);
+    NewBarCurrent.isNewBar(time[depth]);
     
     for(int i = depth-1; i >= 0;  i--)    
     {
