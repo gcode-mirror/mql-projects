@@ -20,21 +20,24 @@
 
 // параметры робота
 input double lot = 1.0; // лот
-input int stop_loss = 300; // стоп лосс
-input int take_profit = 300; // тейк профит
 
 // необходимые переменные
 int handleDE; // хэндл индикатора DrawExtremums
+int handleATR; // хэндл ATR
 double curBid; // текущая цена Bid
 double prevBid; // предыдущая цена Bid
 // объекты классов
 CChartObjectTrend trend; // трендовая линия по верхним экстремумам
 CTradeManager *ctm; // объект торгового класса
 // массивы экстремумов для отрисовки трендовых лучей
-SExtremum extrHigh[2];  // два последних нижних экстремума
+SExtremum extrHigh[2];  // два последних верхних экстремума
+SExtremum extrLow[2]; // два последних нижних экстремума
 // структуры позиции и трейлинга
 SPositionInfo pos_info; // структура информации о позиции
 STrailing     trailing; // структура информации о трейлинге
+//+------------------------------------------------------------------+
+//| Системные функции робота TIHIRO 2                                |
+//+------------------------------------------------------------------+
 int OnInit()
   {    
    // привязка индикатора DrawExtremums 
@@ -48,7 +51,14 @@ int OnInit()
        return (INIT_FAILED);
       }
      SetIndicatorByHandle(_Symbol,_Period,handleDE);
-    }      
+    } 
+   // пытаемся создать хэндл ATR
+   handleATR       = iATR(_Symbol,_Period, 25);
+   if (handleATR == INVALID_HANDLE)
+    {
+     Print("Не удалось создать индикатор ATR");
+     return (INIT_FAILED);
+    }         
    ctm = new CTradeManager();
    if (ctm == NULL)
     {
@@ -72,12 +82,12 @@ int OnInit()
    curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
    prevBid = curBid;
    // заполняем поля позиции
-   pos_info.volume = 1.0;
+   pos_info.volume = lot;
    pos_info.expiration = 0;
-   pos_info.sl = stop_loss;
-   pos_info.tp = take_profit;     
+   pos_info.tp = 0;     
    // заполняем 
-   trailing.trailingType = TRAILING_TYPE_NONE;
+   trailing.trailingType = TRAILING_TYPE_ATR;
+   trailing.handleForTrailing = handleATR;   
    return(INIT_SUCCEEDED);
   }
 
@@ -90,10 +100,13 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    ctm.OnTick();
+   ctm.DoTrailing();
    curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
    if (SignalToOpenPosition ())
     {
      pos_info.type = OP_BUY;  
+     pos_info.sl = CountStopLoss ();
+     trailing.minProfit = pos_info.sl;
      ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);     
     }
    prevBid = curBid;
@@ -115,9 +128,12 @@ void OnChartEvent(const int id,         // идентификатор события
     } 
   }  
   
-// дополнительные функции робота
+//+------------------------------------------------------------------+
+//| Алгоритмические функции робота TIHIRO 2                          |
+//+------------------------------------------------------------------+
 
-bool GetFirstTrend () // функция получает первый тренд при запуске робота
+// функция получает первый тренд при запуске робота
+bool GetFirstTrend () 
  {
   double buffHigh[];
   double buffTime[];
@@ -184,15 +200,7 @@ void UpdateTrend (double price,datetime time)
     extrHigh[0].time = time;
    }
  }
- 
-// функция обновляет лучи
-void DragRay (int type)
- {
-  ObjectDelete(0,"TihiroTrend");
-  trend.Create(0,"TihiroTrend",0,datetime(extrHigh[1].time),extrHigh[1].price,datetime(extrHigh[0].time),extrHigh[0].price);
-  ObjectSetInteger(0,"TihiroTrend",OBJPROP_RAY_RIGHT,1);    
- } 
- 
+
 // функция получения сигнала открытия позиции
 bool SignalToOpenPosition ()
  {
@@ -201,4 +209,39 @@ bool SignalToOpenPosition ()
   if ( LessDoubles(prevBid,priceTrendLine) && GreatOrEqualDoubles(curBid,priceTrendLine) )
     return (true);     
   return (false);
+ }
+
+// функция вычисления стоп лосса
+int CountStopLoss ()
+ {
+  // пока она выглядит так, но вскоре изменится
+  double buffLow[];
+  double buffTime[];
+  int bars = Bars(_Symbol,_Period);
+  for (int ind=0;ind<bars;)
+   {
+    if (CopyBuffer(handleDE,1,ind,1,buffLow) < 1 || CopyBuffer(handleDE,5,ind,1,buffTime) < 1) 
+     {
+      Sleep(100);
+      continue;
+     }
+    if (buffLow[0] != 0.0)
+     {
+       return (int(MathAbs(curBid-buffLow[0])/_Point));
+     }
+    ind++;
+   } 
+  return (0);
+ }
+
+//+------------------------------------------------------------------+
+//| Визуальные функции робота TIHIRO 2                               |
+//+------------------------------------------------------------------+
+ 
+// функция обновляет лучи
+void DragRay (int type)
+ {
+  ObjectDelete(0,"TihiroTrend");
+  trend.Create(0,"TihiroTrend",0,datetime(extrHigh[1].time),extrHigh[1].price,datetime(extrHigh[0].time),extrHigh[0].price);
+  ObjectSetInteger(0,"TihiroTrend",OBJPROP_RAY_RIGHT,1);    
  }
