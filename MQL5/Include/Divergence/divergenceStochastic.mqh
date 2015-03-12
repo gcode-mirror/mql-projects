@@ -44,6 +44,8 @@ class CDivergenceSTOC
  
  CExtrSTOCContainer *extrSTOC;                       // массив экстремумов STOC
  CisNewBar          isNewBar;                        // для проверки формирования нового бара
+
+ 
  CDivergenceSTOC();
  CDivergenceSTOC(int handleSTOC, string symbol, ENUM_TIMEFRAMES timeframe, int top_level, int bottom_level, int startIndex);
  ~CDivergenceSTOC();
@@ -150,6 +152,9 @@ int CDivergenceSTOC::countDivergence(int startIndex = 0, bool ifirstTimeUse = tr
      valueExtrSTOC1   =  maxExtr.value;                      //STOC_buf[maxExtr.index];
      valueExtrSTOC2   =  extr_temp.value;                    //iSTOC_buf[index_STOC_global_max];
      //Print("maxExtr.value = ", maxExtr.value, " maxExtr.index = ",maxExtr.index," maxExtr.time = ",maxExtr.time);
+     delete maxExtr;
+     delete minExtr;
+     delete extr_temp;
      return(SELL);
     }   
    }
@@ -182,7 +187,10 @@ int CDivergenceSTOC::countDivergence(int startIndex = 0, bool ifirstTimeUse = tr
      valueExtrPrice2  =  iLow_buf[index_Price_global_min];
      valueExtrSTOC1   =  minExtr.value;                      //STOC_buf[maxExtr.index];
      valueExtrSTOC2   =  extr_temp.value;                    //iSTOC_buf[index_STOC_global_max];
-             
+     
+     delete maxExtr;
+     delete minExtr;
+     delete extr_temp;        
      return(BUY);
     }   
    }

@@ -210,7 +210,8 @@ enum ENUM_TRAILING_TYPE
    TRAILING_TYPE_LOSSLESS,
    TRAILING_TYPE_PBI,
    TRAILING_TYPE_EXTREMUMS,
-   TRAILING_TYPE_EASY_LOSSLESS
+   TRAILING_TYPE_EASY_LOSSLESS,
+   TRAILING_TYPE_ATR
   };
 
 //+------------------------------------------------------------------+ 

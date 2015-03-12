@@ -23,6 +23,8 @@
 #include <Divergence/divergenceMACD.mqh>           // подключаем библиотеку для поиска расхождений MACD
 #include <ChartObjects/ChartObjectsLines.mqh>      // для рисования линий расхождения
 #include <CompareDoubles.mqh>                      // для проверки соотношения  цен
+#include <CEventBase.mqh>                          // для генерации событий     
+
 
 // входные пользовательские параметры индикатора
 sinput string macd_params     = "";                // ПАРАМЕТРЫ ИНДИКАТОРА MACD
@@ -50,11 +52,15 @@ long               countDiv;                       // счетчик тренд линий (для р
 CChartObjectTrend  trendLine;                      // объект класса трендовой линии (для отображения расхождений)
 CChartObjectVLine  vertLine;                       // объект класса вертикальной линии
 CisNewBar          *isNewBar;                      // для проверки формирования нового бара
+
+CEventBase         *event;                         // для генерации событий 
+SEventData         eventData;                      // структура полей событий
+
 CDivergenceMACD    *divMACD;
 // буферы индикатора 
 double bufferMACD[];                               // буфер уровней MACD
 double bufferDiv[];                                // буфер сигналов расхождения
-double lastPriceDiv[];                            // буфер цены начала расхождения 
+double lastPriceDiv[];                            // буфер цены конца расхождения 
 
 // переменные для хранения времени последних отрицательных и положительных значений MACD
 datetime  lastExtrMinMACD    = 0;                   // время последнего отрицательного MACD
@@ -95,11 +101,22 @@ int OnInit()
  ObjectsDeleteAll(0,1,OBJ_TREND); // все трендовые линии с побочного графика
  ObjectsDeleteAll(0,0,OBJ_VLINE); // все вертикальные линии, обозначающие момент возникновения расхождения
  // связываем индикаторы с буферами 
- SetIndexBuffer(0,bufferMACD,INDICATOR_DATA);         // буфер MACD
- SetIndexBuffer(1,bufferDiv ,INDICATOR_CALCULATIONS); // буфер расхождений (моментов возникновения сигналов)
+ SetIndexBuffer(0,bufferMACD,INDICATOR_DATA);            // буфер MACD
+ SetIndexBuffer(1,bufferDiv ,INDICATOR_CALCULATIONS);    // буфер расхождений (моментов возникновения сигналов)
  SetIndexBuffer(2,lastPriceDiv ,INDICATOR_CALCULATIONS); // буфер расхождений (моментов возникновения сигналов)
  // инициализация глобальных  переменных
- countDiv = 0;                                        // выставляем начальное количество расхождений
+ countDiv = 0; // выставляем начальное количество расхождений
+   
+ event = new CEventBase(100);                            // не оч удобная штука 100                         
+ if (event == NULL)
+ {
+  Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать объект класса CEventBase");
+  return (INIT_FAILED);
+ }
+ // создаем события
+ event.AddNewEvent(_Symbol, _Period, "SELL");
+ event.AddNewEvent(_Symbol, _Period, "BUY");
+                                      
  return(INIT_SUCCEEDED); // успешное завершение инициализации индикатора
 }
 
@@ -118,6 +135,7 @@ void OnDeinit(const int reason)
  IndicatorRelease(handleMACD);
  delete divMACD;
  delete isNewBar;
+ delete event;
 }
 
 // базовая функция расчета индикатора
@@ -168,6 +186,7 @@ int OnCalculate(const int rates_total,
     bufferDiv[lastBarIndex] = _Sell;  
     lastPriceDiv[lastBarIndex] = divMACD.valueExtrPrice2;                  // сохраняем в буфер значение       
     lastMaxWithDiv = lastExtrMaxMACD;              // сохраняем время последнего минуса MACD 
+    
    }
    // если расхождение на BUY и время последнего расхождения отличается от времени последнего минимума
    if (retCode == _Buy && lastMinWithDiv != lastExtrMinMACD)
@@ -206,16 +225,24 @@ int OnCalculate(const int rates_total,
   {                                      
    DrawIndicator (time[0]);                  // отображаем графические элементы индикатора    
    bufferDiv[0] = _Sell;                     // сохраняем текущий сигнал
-   lastPriceDiv[0] = divMACD.valueExtrPrice1;
+   lastPriceDiv[0] = divMACD.valueExtrPrice2;
    lastMaxWithDiv = lastExtrMaxMACD;         // сохраняем время последнего максимального экстремума
+   
+   eventData.dparam = divMACD.valueExtrPrice2;
+   eventData.lparam = 1;                  //пока что не нужно?
+   Generate("SELL",eventData,true);
   }    
   // если расхождение на BUY и время предыдущего расхождения отличается от последнего минимума MACD
   if (retCode == _Buy && lastMinWithDiv != lastExtrMinMACD)
   {                                        
    DrawIndicator (time[0]);               // отображаем графические элементы индикатора    
    bufferDiv[0] = _Buy;                   // сохраняем текущий сигнал
-   lastPriceDiv[0] = divMACD.valueExtrPrice1;
-   lastMinWithDiv = lastExtrMinMACD;         // сохраняем время последнего плюса
+   lastPriceDiv[0] = divMACD.valueExtrPrice2;
+   lastMinWithDiv = lastExtrMinMACD;      // сохраняем время последнего плюса
+   
+   eventData.dparam = divMACD.valueExtrPrice2;
+   eventData.lparam = -1;                 //пока что не нужно?
+   Generate("BUY",eventData,true);
   }                  
  }
  return(rates_total);
@@ -235,4 +262,19 @@ void DrawIndicator (datetime vertLineTime)
   // создаем вертикальную линию, показывающий момент появления расхождения MACD
    vertLine.Create(0,"MACDVERT_"+IntegerToString(countDiv),0,vertLineTime);
   countDiv++; // увеличиваем количество отображаемых схождений
+}
+
+void Generate(string id_nam, SEventData &_data, const bool _is_custom = true)
+{
+ // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
+ long z = ChartFirst();
+ while (z >= 0)
+ {
+  if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
+  {
+   // генерим событие для текущего графика
+   event.Generate(z,id_nam,_data,_is_custom);
+  }
+  z = ChartNext(z);      
+ }     
 }
