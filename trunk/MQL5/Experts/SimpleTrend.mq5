@@ -14,6 +14,7 @@
 #include <CompareDoubles.mqh>                      // для сравнения вещественных чисел
 #include <TradeManager\TradeManager.mqh>           // торговая библиотека
 #include <BlowInfoFromExtremums.mqh>               // класс по работе с экстремумами индикатора DrawExtremums
+//#include <DrawExtremums\CExtrContainer.mqh>        // класс контейнера      
 
 // константы сигналов
 #define BUY   1    
@@ -727,7 +728,6 @@ double GetClosestLevel (int direction)
  }
  return (len);
 }    
-
 
 // функция проверяет пробития цен close последних двух баров
 bool IsLastClosesBeaten (ENUM_TIMEFRAMES period,int direction)

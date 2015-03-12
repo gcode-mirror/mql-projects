@@ -11,6 +11,7 @@
 // подключение необходимых библиотек
 #include <CompareDoubles.mqh> // для сравнения действительных чисел
 #include "SExtremum.mqh"      // стркутура экстремумов
+#include <StringUtilities.mqh>
 
 #define DEFAULT_PERCENTAGE_ATR 1.0   // по умолчанию новый экстремум появляется когда разница больше среднего бара
 
@@ -98,10 +99,10 @@ ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,date
  ENUM_CAME_EXTR came_extr = CAME_NOTHING;      // тип пришедшего экстремума (возвращаемое значение)
  // пытаемся скопировать два бара 
  if(CopyRates(_symbol, _tf_period, start_pos_time, 2, bufferRates) < 2)
- {
-  Print("Ошибка CExtremum::isExtremum. Не удалось скопировать котировки = ");
-  return(false); 
- }
+  {
+   Print("Ошибка CExtremum::isExtremum. Не удалось скопировать котировки = symbol = ",_symbol," Period = ",PeriodToString(_tf_period)," time = ",TimeToString(start_pos_time) );
+   return(false); 
+  }
  // вычисляем средний размер бара
  averageBarNow = AverageBar(start_pos_time);
  // если удалось вычислить среднее значение и

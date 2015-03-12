@@ -83,8 +83,10 @@ int OnInit()
      return (INIT_FAILED);
     }
    // создаем события
-   event.AddNewEvent(_Symbol,_Period,"новый экстремум");
-   event.AddNewEvent(_Symbol,_Period,"экстремум");
+   event.AddNewEvent(_Symbol,_Period,"EXTR_UP");
+   event.AddNewEvent(_Symbol,_Period,"EXTR_UP_FORMED");
+   event.AddNewEvent(_Symbol,_Period,"EXTR_DOWN");
+   event.AddNewEvent(_Symbol,_Period,"EXTR_DOWN_FORMED");      
 
    // задаем индексацию индикаторных буферов
    SetIndexBuffer(0, bufferFormedExtrHigh, INDICATOR_DATA);
@@ -250,17 +252,17 @@ int OnCalculate(const int rates_total,
           lastExtrUpTime = extrHigh.time;
           // запись информации об экстремуме
           eventData.dparam = extrHigh.price;
-          eventData.lparam = 1;
-          Generate("новый экстремум",eventData,true);
+          eventData.lparam = long(extrHigh.time);
+          Generate("EXTR_UP",eventData,true);
           if (jumper == -1)
            {   
             bufferFormedExtrLow[indexPrevDown] = lastExtrDownValue;        // сохраняем сформированный экстремум
             bufferTimeExtrLow[indexPrevDown] = long(lastExtrDownTime);     // сохраняем время сформированного экстремума
             // запись инмормации об экстремуме
             eventData.dparam = lastExtrDownValue;
-            eventData.lparam = -1;  
+            eventData.lparam = long(lastExtrDownTime);  
             prevJumper = jumper;
-            Generate("экстремум",eventData,true);
+            Generate("EXTR_DOWN_FORMED",eventData,true);
            }
           jumper = 1;
           indexPrevUp = rates_total-1;
@@ -278,17 +280,17 @@ int OnCalculate(const int rates_total,
           lastExtrDownTime = extrLow.time;   
           // запись информации об экстремуме
           eventData.dparam = extrLow.price;
-          eventData.lparam = -1;
-          Generate("новый экстремум",eventData,true);               
+          eventData.lparam = long(extrLow.time);
+          Generate("EXTR_DOWN",eventData,true);               
           if (jumper == 1)
            {             
             bufferFormedExtrHigh[indexPrevUp] = lastExtrUpValue;        // сохраняемт сформированный экстремум
             bufferTimeExtrHigh[indexPrevUp] = long(lastExtrUpTime);     // сохраняем время сформированного экстремума
             // запись инмормации об экстремуме
             eventData.dparam = lastExtrUpValue;  
-            eventData.lparam = 1;      
+            eventData.lparam = long(lastExtrUpTime);      
             prevJumper = jumper;          
-            Generate("экстремум",eventData,true);         
+            Generate("EXTR_UP_FORMED",eventData,true);         
            }
           jumper = -1;
           indexPrevDown = rates_total-1;
