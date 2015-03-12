@@ -535,6 +535,9 @@ void CPosition::DoTrailing()
   case TRAILING_TYPE_EXTREMUMS :
    sl = trailingStop.ExtremumsTrailing(_symbol, _pos_info.type, _slPrice, _posAveragePrice, _trailing.handleForTrailing);
    break;
+  case TRAILING_TYPE_ATR :
+   sl = trailingStop.ATRTrailing(_symbol, _pos_info.type, _period, _trailing.handleForTrailing, _posAveragePrice, _slPrice, _trailing.minProfit);
+   break;
   case TRAILING_TYPE_NONE :
   default:
    break;

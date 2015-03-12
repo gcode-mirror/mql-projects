@@ -39,7 +39,8 @@ public:
                        , int _minProfit, int _trailingStop, int _trailingStep);
    double Lossless        (string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, int minProfit);                       
    double PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl, int handle_PBI, int minProfit = 0);
-   double ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleExtremums, int minProfit = 0);                    
+   double ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleExtremums, int minProfit = 0);  
+   double ATRTrailing (string symbol, ENUM_TM_POSITION_TYPE type, ENUM_TIMEFRAMES period, int handleExtremums, double openPrice, double sl, int minProfit = 0);                  
   };
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -239,7 +240,7 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, dou
   }
  }
  
- newSL = newExtr + direction*50.0*Point();
+ newSL = newExtr + direction * 50.0 * Point();
  if (newExtr > 0 && GreatDoubles(direction * sl, direction * newSL, 5))
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s currentMoving = %s, extremum_from_last_coor_or_trend = %s, oldSL = %.05f, newSL = %.05f", MakeFunctionPrefix(__FUNCTION__), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[0]), MoveTypeToString((ENUM_MOVE_TYPE)PBI_colors[index]), sl, newSL));
@@ -248,8 +249,9 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, dou
  return(0.0);
 };
 
-
-// трейлинг по экстремумам
+//+------------------------------------------------------------------+
+// Трейлинг по экстремумам
+//+------------------------------------------------------------------+
 double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleForTrailing, int minProfit = 0)
 {
  blowInfo = new CBlowInfoFromExtremums(handleForTrailing);        
@@ -276,7 +278,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
     stopLoss = lastExtrLow;  
   }
  }
- if (type == OP_SELL && last_extr == EXTR_HIGH)   // если последним экстремумов является HIGH
+ if (type == OP_SELL && last_extr == EXTR_HIGH)                  // если последним экстремумов является HIGH
  {
   lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
   lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
@@ -289,6 +291,77 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
  } 
  return (stopLoss);
 }
+ 
+//+------------------------------------------------------------------+
+// Трейлинг по ATR
+//+------------------------------------------------------------------+ 
+double CTrailingStop::ATRTrailing (string symbol,ENUM_TM_POSITION_TYPE type, ENUM_TIMEFRAMES period, int handleATR, double openPrice, 
+                                             double sl, int minProfit = 0)
+{
+ double valueATR[];
+ double valueLow[];
+ double valueHigh[];
+ double modifiedSL = 0;
+ double price;
+ 
+ int direction;
+ int copiedHigh;
+ int copiedLow;
+ int copied_ATR = CopyBuffer(handleATR, 0, 0, 1, valueATR);
+ if(copied_ATR != 1)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось скопировать данные из индикаторного буфера (%d). ", MakeFunctionPrefix(__FUNCTION__), handleATR));     
+  return(0.0); 
+ }
+ 
+ UpdateSymbolInfo(symbol);
+ double point = SymbInfo.Point();
+ 
+ switch(type)
+ {
+  case OP_SELL:
+   direction = 1;
+   price = SymbInfo.Bid();
+   copiedHigh = CopyHigh(symbol, period, 0, 1, valueHigh);
+   if(copiedHigh != 1)
+   { 
+    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось скопировать верхнюю цену текущего бара  ", MakeFunctionPrefix(__FUNCTION__)));     
+    return(0.0);
+   }
+   modifiedSL = valueHigh[0] + valueATR[0];
+  break;
+   
+  case OP_BUY:
+   direction = -1;
+   price = SymbInfo.Ask();
+   copiedLow = CopyLow(symbol, period, 0, 1, valueLow);
+   if(copiedLow != 1)
+   { 
+    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось скопировать нижнюю цену текущего бара  ", MakeFunctionPrefix(__FUNCTION__)));     
+    return(0.0);
+   }
+   modifiedSL = valueLow[0] -  valueATR[0];
+  break; 
+  
+  default:
+    log_file.Write(LOG_DEBUG, StringFormat("%s Неверный тип позиции для трейлинга %s", MakeFunctionPrefix(__FUNCTION__), GetNameOP(type)));
+    return(0.0);
+ }
+ 
+ if (minProfit > 0                                                           // Если минпрофит задан 
+     && GreatDoubles(direction*openPrice, direction*price + minProfit*point) // и достигнут
+     && GreatDoubles(direction*sl, direction*modifiedSL))                    // и старый стоплосс хуже 
+ {                                                 // переносим СЛ в безубыток 
+  PrintFormat("Цена SL изменена. С %.05f до %.05f",sl,modifiedSL);
+  return(modifiedSL); 
+ }
+ return(0.0);
+}
+ 
+ 
+ 
+ 
+ 
  
 //+------------------------------------------------------------------+
 //|Получение актуальной информации по торговому инструменту          |

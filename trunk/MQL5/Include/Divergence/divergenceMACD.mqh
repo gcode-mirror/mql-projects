@@ -195,6 +195,9 @@ int CDivergenceMACD::countDivergence(int startIndex = 0, bool ifirstTimeUse = tr
    valueExtrPrice2 = iHigh_buf[index_Price_global_max];
    closePrice      = iClose_buf[index_Price_global_max];
    divconvIndex    = index_Price_global_max;
+   delete tmpExtr;
+   delete extr_local_min;
+   delete extr_local_max;
    return(_Sell);
   }
  }
@@ -279,7 +282,10 @@ int CDivergenceMACD::countDivergence(int startIndex = 0, bool ifirstTimeUse = tr
    Print("Время MACD2 = ", timeExtrMACD2 , " индекс MACD2 = ", index_MACD_global_min);
    Print("Значение MACD2 = ", DoubleToString(valueExtrMACD2,5));
    Print("startIndex = ", startIndex);*/    
-   
+   delete tmpExtr;
+   delete extr_local_min;
+   delete extr_local_max;
+   return(_Sell);
    return(_Buy);
   }
  }
@@ -309,6 +315,7 @@ datetime CDivergenceMACD::getLastExtrMaxTime()
     if(tmpExtr.value >= 0)
     {
     time = tmpExtr.time;
+    delete tmpExtr;
     return time;
     }
    } 
@@ -331,6 +338,7 @@ datetime CDivergenceMACD::getLastExtrMinTime()
    if(tmpExtr.value <= 0.0)
    {
     time = tmpExtr.time;
+    delete tmpExtr;
     return time;
    }
   } 

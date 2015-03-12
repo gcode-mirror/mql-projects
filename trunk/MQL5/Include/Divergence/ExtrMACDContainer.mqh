@@ -80,7 +80,7 @@ void CExtrMACDContainer::FilltheExtremums(int startIndex)
 {
  int copiedMACD = 0;
  int copiedDate = 0;
- //extremums.Clear();
+ extremums.Clear();
  Print(__FUNCTION__," was here");
  //----------Копирование значений MACD в буфер valueMACDbuffer-------
  for(int attemps = 0; attemps < 25 && copiedMACD <= 0; attemps++)

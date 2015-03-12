@@ -22,6 +22,8 @@
 #include <Divergence/divergenceStochastic.mqh>        // подключаем библиотеку для поиска расхождений MACD
 #include <ChartObjects/ChartObjectsLines.mqh>         // для рисования линий расхождения
 #include <CompareDoubles.mqh>                         // для проверки соотношения  цен
+#include <CEventBase.mqh>                             // для генерации событий     
+
 
 // входные пользовательские параметры индикатора
 sinput string             stoc_params  = "";          // ПАРАМЕТРЫ ИНДИКАТОРА STOC
@@ -61,8 +63,10 @@ long               countDiv;                        // счетчик тренд линий (для 
 
 CChartObjectTrend  trendLine;                       // объект класса трендовой линии (для отображения расхождений)
 CChartObjectVLine  vertLine;                        // объект класса вертикальной линии
-CisNewBar          isNewBar;                        // для проверки формирования нового бара
 CDivergenceSTOC    *divSTOC;                        // для поиска точек расхождения 
+
+CEventBase         *event;                         // для генерации событий 
+SEventData         eventData;                      // структура полей событий
 
 // буферы индикатора 
 double bufferMainLine[];                            // буфер уровней StochasticLine
@@ -104,10 +108,20 @@ int OnInit()
  SetIndexBuffer(2, bufferDiv ,         INDICATOR_CALCULATIONS);   // буфер расхождений (моментов возникновения сигналов)
  SetIndexBuffer(3, bufferExtrLeft,     INDICATOR_CALCULATIONS);   // буфер времени левых экстремумов
  SetIndexBuffer(4, bufferExtrRight,    INDICATOR_CALCULATIONS);   // буфер времени правых экструмумов
+ 
+ event = new CEventBase(100);                            // не оч удобная штука 100                         
+ if (event == NULL)
+ {
+  Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать объект класса CEventBase");
+  return (INIT_FAILED);
+ }
+ // создаем события
+ event.AddNewEvent(_Symbol, _Period, "SELL");
+ event.AddNewEvent(_Symbol, _Period, "BUY");
  // инициализация глобальных  переменных
  countDiv = 0;                                             // выставляем начальное количество расхождений
- int lastbars = Bars(_Symbol, _Period) - DEPTH_STOC;
- divSTOC = new CDivergenceSTOC(handleSTOC, _Symbol, _Period, top_level, bottom_level, lastbars);
+ int lastbars  = Bars(_Symbol, _Period) - DEPTH_STOC;
+ divSTOC       = new CDivergenceSTOC(handleSTOC, _Symbol, _Period, top_level, bottom_level, lastbars);
  return(INIT_SUCCEEDED); // успешное завершение инициализации индикатора
 }
 
@@ -127,6 +141,7 @@ void OnDeinit(const int reason)
  // освобождаем хэндл Стохастика
  IndicatorRelease(handleSTOC);
  delete divSTOC;
+ delete event;
 }
 // базовая функция расчета индикатора
 int OnCalculate(const int rates_total,
@@ -220,6 +235,9 @@ int OnCalculate(const int rates_total,
    bufferExtrLeft[0]  = double(divSTOC.timeExtrPrice2);  // сохраним время левого  экстремума
    bufferExtrRight[0] = double(divSTOC.timeExtrPrice1);  // сохраним время правого экстремума  
    lastRightPriceBuy =  divSTOC.timeExtrPrice1;          // сохраняем время экстремумов цен
+   
+   eventData.dparam = divSTOC.valueExtrPrice2;           // сохраняем цену , на которой было найдено расхождение
+   Generate("BUY", eventData, true);
   }
   // если SELL и точки экстремумов цены не совпадают с предыдущим расхождением 
   if (retCode == SELL && datetime(divSTOC.timeExtrPrice1) != lastRightPriceSell)
@@ -229,6 +247,9 @@ int OnCalculate(const int rates_total,
    bufferExtrLeft[0]  = double(divSTOC.timeExtrPrice2);   // сохраним время левого  экстремума
    bufferExtrRight[0] = double(divSTOC.timeExtrPrice1);   // сохраним время правого экстремума      
    lastRightPriceSell =  divSTOC.timeExtrPrice1;          // сохраняем время экстремумов цен   
+   
+   eventData.dparam = divSTOC.valueExtrPrice2;            // сохраняем цену , на которой было найдено расхождение
+   Generate("SELL", eventData, true);
   }                    
  }
  return(rates_total);
@@ -249,3 +270,19 @@ void DrawIndicator (datetime vertLineTime)
    vertLine.Create(0,"STOCVERT_"+IntegerToString(countDiv),0,vertLineTime);
    countDiv++; // увеличиваем количество отображаемых схождений
  }
+ 
+ 
+void Generate(string id_nam, SEventData &_data, const bool _is_custom = true)
+{
+ // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
+ long z = ChartFirst();
+ while (z >= 0)
+ {
+  if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
+  {
+   // генерим событие для текущего графика
+   event.Generate(z,id_nam,_data,_is_custom);
+  }
+  z = ChartNext(z);      
+ }     
+}
