@@ -70,8 +70,6 @@ class CTihiro
     //цены на предыдущем тике
     double   _prev_bid;
     double   _prev_ask;
-    //хэндл индикатора Parabolic SAR
-    int _handle_parabolic;
     //режим вычисления тейк профита
     TAKE_PROFIT_MODE _takeProfitMode;
     //коэффициент вычисления тейк профита
@@ -106,8 +104,7 @@ class CTihiro
      //порядок как в таймсерии
      ArraySetAsSeries(_price_high,true);  
      ArraySetAsSeries(_price_low, true);  
-     ArraySetAsSeries(_price_close,true); 
-     _handle_parabolic = iSAR(_symbol,_timeFrame,0.02,0.2);      
+     ArraySetAsSeries(_price_close,true);      
      _prev_ask = -1;
      _prev_bid = -1;     
     }; 
@@ -242,7 +239,7 @@ void CTihiro::GetTDPoints()
       }  //восходящий тренд               
     }
  } 
- 
+
 void  CTihiro::RecognizeSituation(void)
 //возвращает ситуацию 
  {
@@ -333,7 +330,7 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
    }
   //если тренд нисходящий
   if (_trend_type == TREND_DOWN) 
-   {   
+   {
     //вычисляем текущее положение цены относительно линии тренда
     locate_now = TestPointLocate(price_ask);
     //вычисляем положение предыдующей цену относительно линии тренда
@@ -355,15 +352,13 @@ ENUM_TM_POSITION_TYPE CTihiro::GetSignal()
   return OP_UNKNOWN;  
  }
 
-
 bool CTihiro::OnNewBar()
 //вычисляет все необходимые значения по массивам максимальных и минимальных цен баров
  {
   //загружаем буферы 
   if(CopyHigh (_symbol, _timeFrame, 1, _bars, _price_high)  <= 0 ||
      CopyLow  (_symbol, _timeFrame, 1, _bars, _price_low)   <= 0 ||
-     CopyClose(_symbol, _timeFrame, 1, _bars, _price_close) <= 0 ||
-     CopyBuffer(_handle_parabolic,  0, 0, 1, _parabolic)    <  0 ) 
+     CopyClose(_symbol, _timeFrame, 1, _bars, _price_close) <= 0 )
       {
        Print("Не удалось загрузить бары из истории");
        return false;
@@ -378,4 +373,3 @@ bool CTihiro::OnNewBar()
   GetRange();
   return true; 
  }
- 

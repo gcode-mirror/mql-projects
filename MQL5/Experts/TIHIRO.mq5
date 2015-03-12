@@ -6,10 +6,9 @@
 #property copyright "Copyright 2013, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
-#include <JAPAN\jExperts\CTihiro.mqh>      //класс CTihiro
+#include <TIHIRO\CTihiro.mqh>              //класс CTihiro
 #include <Lib CisNewBar.mqh>               //для проверки формирования нового бара
 #include <TradeManager\TradeManager.mqh>   //подключаем библиотеку TradeManager
-#include <TradeManager\BackTest.mqh>       //бэктест
 
 //+------------------------------------------------------------------+
 //| TIHIRO эксперт                                                   |
@@ -35,13 +34,23 @@ int handle;                                        // хэндл индикатора
 bool allow_continue = true;                        // флаг продолжения 
 ENUM_TM_POSITION_TYPE signal;                      // переменная для хранения торгового сигнала
 
+SPositionInfo pos_info;
+STrailing trailing;
 int OnInit()
 {
- //загружаем хэндл индикатора Tihiro
- handle  = iCustom(symbol, timeFrame, "test_PBI"); 
- int han = iCustom(symbol,timeFrame,"WBackTest");
- //вычисляем торговую ситуацию в самом начале работы эксперта
- //WBackTest * wBackTest = new WBackTest("backtest","ВЫЧИСЛЕНИЕ БЭКТЕСТА",5,12,200,50,0,0,CORNER_LEFT_UPPER,0);
+ iCustom(_Symbol,_Period,"TihiroIndicator");
+ pos_info.tp = 0;
+ pos_info.volume = 1.0;
+ pos_info.expiration = 0;
+ pos_info.priceDifference = 0;
+ pos_info.sl = 0;
+ pos_info.tp = 0;
+ trailing.trailingType = TRAILING_TYPE_NONE;
+ trailing.minProfit    = 0;
+ trailing.trailingStop = 0;
+ trailing.trailingStep = 0;
+ trailing.handleForTrailing    = 0;
+ 
  return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
@@ -54,7 +63,6 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
-
 
 void OnTick()
   {
@@ -73,38 +81,10 @@ void OnTick()
        signal = tihiro.GetSignal();   
        if (signal != OP_UNKNOWN)
         {      
-         ctm.OpenUniquePosition(symbol,signal,orderVolume,tihiro.GetStopLoss(),tihiro.GetTakeProfit(),0,0,0); 
+        // ctm.OpenUniquePosition(symbol,signal,orderVolume,tihiro.GetStopLoss(),tihiro.GetTakeProfit(),0,0,0); 
+         pos_info.type = signal;
+         ctm.OpenUniquePosition(symbol,timeFrame,pos_info,trailing,0);
         }
       }
     }
   }
-  
-// метод обработки событий  
-void OnChartEvent(const int id,
-                const long &lparam,
-                const double &dparam,
-                const string &sparam)
-  { 
-   // если нажата кнопка
-   if(id==CHARTEVENT_OBJECT_CLICK)
-    {
-     // обработка типа нажатой кнопки
-
-       if (sparam == "backtest_all_expt")     // кнопка "Все эксперты"
-        {
-         //CalculateBackTest (0,TimeCurrent());
-         Alert("ВСЕ ЭКСПЕРТЫ");
-        }
-       if (sparam == "backtest_cur_expt")     // кнопка "Этот эксперт"
-        {
-         Print("ТЕКУЩИЙ ЭКСПЕРТ");       
-        }
-       if (sparam == "backtest_close_button") // кнопка закрытия панели
-        {
-          Print("ЗАКРЫТИЕ ПАНЕЛИ");  
-          uchar val[];
-          StringToCharArray ("mspaint.exe",val);
-          Alert("",WinExec(val, 1));     
-        }
-    }
-  } 

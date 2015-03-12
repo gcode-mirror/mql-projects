@@ -161,8 +161,6 @@ int OnCalculate(const int rates_total,
  ArraySetAsSeries (low,  true); 
  ArraySetAsSeries (close,true);
  
- 
-  
  CopyBuffer(handleSTOC, 0, 0, rates_total, bufferMainLine);
  CopyBuffer(handleSTOC, 1, 0, rates_total, bufferSignalLine);
 
