@@ -20,9 +20,9 @@
 #include <ChartObjects/ChartObjectsLines.mqh>      // дл€ рисовани€ линий расхождени€
 
 // входные параметры робота
-input int    depth        = 3;      // глубина      
-input double lot          = 1.0;    // лот     
-
+input int    depth     = 3;      // глубина      
+input double lot       = 1.0;    // лот     
+input bool skipLastBar = true;   // пропустить последний бар при расчете канала
 // переменные
 double max_price;            // максимальна€ цена канала
 double min_price;            // минимальна€ цена канала
@@ -139,13 +139,11 @@ void OnTick()
    // если перешли в режим ожидани€ отбити€ дл€ открыти€ позиции на SELL
    if (wait_for_sell)
       {  
-       Print("ожидаем SELL, врем€ = ",TimeToString(TimeCurrent()) );               
-       // если удалось пробить последние два бара и от текущей цены на старшем “‘ нет тел свечей 
+       // если удалось пробить последние два бара 
        if (IsBeatenBars(-1))
         {
-         Print("ѕробит экстремум на SELL ", TimeToString(TimeCurrent()));        
          // если на старшем “‘ слева нет тел баров
-         if (/*TestEldPeriod(-1)*/true)
+         if (TestEldPeriod(-1))
           {
            // вычисл€ем стоп лосс, тейк профит и открываем позицию на SELL
            pos_info.type = OP_SELL;
@@ -164,13 +162,11 @@ void OnTick()
      // если перешли в режим ожидани€ отбити€ дл€ открыти€ позиции на BUY
      if (wait_for_buy)
       {
-       Print("ожидаем BUY, врем€ = ",TimeToString(TimeCurrent()) );
-       // если удалось пробить последние два бара и от текущей цены на старшем “‘ нет тел свечей
+       // если удалось пробить последние два бара 
        if (IsBeatenBars(1))
         {
-         Print("ѕробит экстремум на BUY ", TimeToString(TimeCurrent()));
-         // если удалось пробить последние два бара и от текущей цены на старших “‘ нет тел свечей
-         if (/*TestEldPeriod(1)*/true)
+         // от текущей цены на старших “‘ нет тел свечей
+         if (TestEldPeriod(1))
           {
            // вычисл€ем стоп лосс, тейк профит и открываем позицию на BUY
            pos_info.type = OP_BUY;
@@ -208,14 +204,15 @@ void OnTick()
 // функци€ вычисл€ет параметры канала на старшем таймфрейме  
 bool CountChannel ()
  {
+  int startIndex = (skipLastBar)?2:1;
   double high_prices[];
   double low_prices[];
   int copiedHigh;
   int copiedLow;
   for (int attempts=0;attempts<25;attempts++)
    {
-    copiedHigh = CopyHigh(_Symbol,periodEld,1,depth,high_prices);
-    copiedLow  = CopyLow(_Symbol,periodEld,1,depth,low_prices);
+    copiedHigh = CopyHigh(_Symbol,periodEld,startIndex,depth,high_prices);
+    copiedLow  = CopyLow(_Symbol,periodEld,startIndex,depth,low_prices);
     Sleep(100);
    }
   if (copiedHigh < depth || copiedLow < depth) 
@@ -347,9 +344,10 @@ bool TestEldPeriod (int type)
  {
   MqlRates eldPriceBuf[];  
   int copied_rates;
+  int startIndex = (skipLastBar)?2:1;
   for (int attempts=0;attempts<25;attempts++)
    {
-    copied_rates = CopyRates(_Symbol,periodEld,1,depth,eldPriceBuf);
+    copied_rates = CopyRates(_Symbol,periodEld,startIndex,depth,eldPriceBuf);
     Sleep(100);
    }
   if (copied_rates < depth)
@@ -358,7 +356,7 @@ bool TestEldPeriod (int type)
     return (false);
    }
   // проходим по скопированным барам и провер€ем, чтобы не попадались тела баров
-  for (int ind=0;ind<depth;ind++)
+  for (int ind = 0; ind < depth+1-startIndex; ind++)
    {
     // если нужно открыватьс€ на Buy, но на пути попалось тело бара
     if (type == 1  &&  ( GreatDoubles(price_ask,eldPriceBuf[ind].open) || GreatDoubles(price_ask,eldPriceBuf[ind].close) ) )
