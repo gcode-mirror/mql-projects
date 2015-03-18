@@ -20,18 +20,24 @@
 
 // параметры робота
 input double lot = 1.0; // лот
+input int price_diff = 50; // цена разницы
 
 // необходимые переменные
-int handleDE; // хэндл индикатора DrawExtremums
+int handleTrendLines; // хэндл идникатора трендовых линий
 int handleATR; // хэндл ATR
+int handleDE; // хэндл DrawExtremums
+int currentMoveType=0; // текущее движение
+int tradeSignal; // переменная для хранения сигнала открытия позиции
 double curBid; // текущая цена Bid
+double curAsk; // текущая цена Ask
 double prevBid; // предыдущая цена Bid
+double prevAsk; // предыдущая цена Ask
+double price_difference;
+string supportLineName; // имя линии поддержки
+string resistanceLineName; // имя линии сопротивления
 // объекты классов
 CChartObjectTrend trend; // трендовая линия по верхним экстремумам
 CTradeManager *ctm; // объект торгового класса
-// массивы экстремумов для отрисовки трендовых лучей
-SExtremum extrHigh[2];  // два последних верхних экстремума
-SExtremum extrLow[2]; // два последних нижних экстремума
 // структуры позиции и трейлинга
 SPositionInfo pos_info; // структура информации о позиции
 STrailing     trailing; // структура информации о трейлинге
@@ -40,6 +46,10 @@ STrailing     trailing; // структура информации о трейлинге
 //+------------------------------------------------------------------+
 int OnInit()
   {    
+   // сохраняем имена линий тренда
+   supportLineName = _Symbol + "_" + PeriodToString(_Period) + "_supLine"; 
+   resistanceLineName = _Symbol + "_" + PeriodToString(_Period) + "_resLine";      
+   price_difference = price_diff * _Point;
    // привязка индикатора DrawExtremums 
    handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
    if (handleDE == INVALID_HANDLE)
@@ -52,8 +62,15 @@ int OnInit()
       }
      SetIndicatorByHandle(_Symbol,_Period,handleDE);
     } 
+   
+   handleTrendLines = iCustom(_Symbol,_Period,"TrendLines");
+   if (handleTrendLines == INVALID_HANDLE)
+    {
+     Print("Не удалось создать индикатор TrendLines");
+     return (INIT_FAILED);
+    }
    // пытаемся создать хэндл ATR
-   handleATR       = iATR(_Symbol,_Period, 25);
+   handleATR = iATR(_Symbol,_Period, 25);
    if (handleATR == INVALID_HANDLE)
     {
      Print("Не удалось создать индикатор ATR");
@@ -65,29 +82,20 @@ int OnInit()
      Print("Не удалось создать торговую библиотеку");
      return (INIT_FAILED);
     }
-   
-   // если не удалось получить последние экстремумы
-   if (!GetFirstTrend () )
-    {
-     Print("Не удалось прогрузить последние экстремумы для построения трендовых линий");
-     return (INIT_FAILED); // то возвращаем нуль, чтобы попробовать в след. раз    
-    }
-   // создаем трендовые линии по последним экстремумам
-   
-   trend.Create(0,"TihiroTrend",0,datetime(extrHigh[1].time),extrHigh[1].price,datetime(extrHigh[0].time),extrHigh[0].price); 
-   
-   // устанавливаем свойства лучей
-   ObjectSetInteger(0,"TihiroTrend",OBJPROP_RAY_RIGHT,1);
    // получаем цены
    curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
+   curAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
    prevBid = curBid;
+   prevAsk = curAsk;
    // заполняем поля позиции
    pos_info.volume = lot;
    pos_info.expiration = 0;
    pos_info.tp = 0;     
    // заполняем 
-   trailing.trailingType = TRAILING_TYPE_ATR;
-   trailing.handleForTrailing = handleATR;   
+  // trailing.trailingType = TRAILING_TYPE_ATR;
+   trailing.trailingType = TRAILING_TYPE_USUAL;
+   trailing.handleForTrailing = 0;
+   //trailing.handleForTrailing = handleATR;   
    return(INIT_SUCCEEDED);
   }
 
@@ -100,148 +108,115 @@ void OnDeinit(const int reason)
 void OnTick()
   {
    ctm.OnTick();
-   ctm.DoTrailing();
+   ctm.DoTrailing(); 
+   // получаем текущее ценовое движение
+   currentMoveType = GetMoveType();
    curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-   if (SignalToOpenPosition ())
+   curAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+   
+   if (currentMoveType == 1)
+    Comment("тренд вверх");
+   if (currentMoveType == -1)
+    Comment("тренд вниз");
+   if (currentMoveType == 0)
+    Comment("флэт");
+  
+   tradeSignal = SignalToOpenPosition();
+   
+   if (tradeSignal==1)
     {
      pos_info.type = OP_BUY;  
      pos_info.sl = CountStopLoss ();
      trailing.minProfit = pos_info.sl;
-     ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);     
+     ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
     }
-   prevBid = curBid;
-  }
-  
-// функция обработки внешних событий
-void OnChartEvent(const int id,         // идентификатор события  
-                  const long& lparam,   // параметр события типа long
-                  const double& dparam, // параметр события типа double
-                  const string& sparam  // параметр события типа string 
-                 )
-  {  
-   // если пришел новый верхний экстремум
-   if (sparam == "EXTR_UP_FORMED")
+   if (tradeSignal==-1)
     {
-     // то обновляем линию тренда
-     UpdateTrend(dparam,datetime(lparam));
-     DragRay(lparam);
-    } 
-  }  
+     pos_info.type = OP_SELL;  
+     pos_info.sl = CountStopLoss ();
+     trailing.minProfit = pos_info.sl;
+     ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);     
+    }    
+   prevBid = curBid;
+   prevAsk = curAsk;
+  }
   
 //+------------------------------------------------------------------+
 //| Алгоритмические функции робота TIHIRO 2                          |
 //+------------------------------------------------------------------+
 
-// функция получает первый тренд при запуске робота
-bool GetFirstTrend () 
+// функция получения сигнала открытия позиции
+int SignalToOpenPosition ()
  {
-  double buffHigh[];
-  double buffTime[];
-  bool countExtr=false;
-  int bars = Bars(_Symbol,_Period);
-  for (int ind=1;ind<bars;)
+  double priceTrendLine;
+  // если в данный момент - тренд вверх
+  if (currentMoveType == 1)
    {
-    // если не удалось прогрузить последние значения буферов
-    if (CopyBuffer(handleDE,0,ind,1,buffHigh) < 1 || CopyBuffer(handleDE,4,ind,1,buffTime) < 1)
-     {
-      Sleep(100);
-      continue;
-     }    
-    // если найден экстремум
-    if (buffHigh[0] != 0)
-     {
-      // если это первый попавшийся на пути экстремум
-      if (countExtr==false)
-       {
-        extrHigh[0].direction = 1;
-        extrHigh[0].price = buffHigh[0];
-        extrHigh[0].time = datetime(buffTime[0]);
-        countExtr=true;
-       }
-      else
-       {
-        // если найденный экстремум выше первого
-        if (GreatDoubles(buffHigh[0],extrHigh[0].price))
-         {
-          // то сохраняем второй экстремум и возвращаем true
-          extrHigh[1].direction = 1;
-          extrHigh[1].price = buffHigh[0];
-          extrHigh[1].time = datetime(buffTime[0]);
-          return (true);
-         }
-       }
-       
-     }
-    ind++;
+    priceTrendLine = ObjectGetValueByTime(0,supportLineName,TimeCurrent());
+    // если тренд пробит снизу вверх
+    if ( GreatDoubles(prevBid,priceTrendLine) && LessOrEqualDoubles(curBid,priceTrendLine) )
+      return (1);     
    }
-  return(false);
- }
- 
-// функция обновления тренда (с приходом нового экстремума
-void UpdateTrend (double price,datetime time)
- {
-  // если новый экстремум ниже последнего
-  if (LessDoubles(price,extrHigh[0].price))
+  // если в данный момент - тренд вниз
+  if (currentMoveType == -1)
    {
-    // то перемещаем начало тренда на последний экстремум
-    extrHigh[1] = extrHigh[0];
-   }
-  // если новый экстремум выше начала линии тренда
-  if (GreatDoubles(price,extrHigh[1].price))
-   {
-    // снова вычисляем изначальный тренд
-    GetFirstTrend();
-   }
-  else
-   {
-    // заменяем последний экстремум на новый 
-    extrHigh[0].direction = 1;
-    extrHigh[0].price = price;
-    extrHigh[0].time = time;
-   }
+    priceTrendLine = ObjectGetValueByTime(0,resistanceLineName,TimeCurrent());
+    // если тренд пробит снизу вверх
+    if ( LessDoubles(prevBid,priceTrendLine) && GreatOrEqualDoubles(curBid,priceTrendLine) )
+      return (-1);     
+   }     
+  return (0);
  }
 
-// функция получения сигнала открытия позиции
-bool SignalToOpenPosition ()
+// функция определяет, какое сейчас направление ценового движения
+int GetMoveType ()
  {
-  double priceTrendLine = ObjectGetValueByTime(0,"TihiroTrend",TimeCurrent());
-  // если тренд пробит снизу вверх
-  if ( LessDoubles(prevBid,priceTrendLine) && GreatOrEqualDoubles(curBid,priceTrendLine) )
-    return (true);     
-  return (false);
+  color clrSup;
+  color clrRes;
+  clrSup = color(ObjectGetInteger(0,supportLineName,OBJPROP_COLOR));
+  clrRes = color(ObjectGetInteger(0,resistanceLineName,OBJPROP_COLOR));
+  if (clrSup == clrBlue && clrRes == clrBlue)
+   return (1);
+  if (clrSup == clrRed && clrRes == clrRed)
+   return (-1);
+  // иначе это флэт
+  return (0);
  }
 
 // функция вычисления стоп лосса
 int CountStopLoss ()
  {
   // пока она выглядит так, но вскоре изменится
-  double buffLow[];
+  double buffExtr[];
   double buffTime[];
+  double curPrice;
+  int buffInd;
+  int timeInd;
   int bars = Bars(_Symbol,_Period);
+  if (currentMoveType == 1)
+   {
+    buffInd = 1;
+    timeInd = 5;
+    curPrice = curBid;
+   }
+  if (currentMoveType == -1)
+   {
+    buffInd = 0;
+    timeInd = 4;
+    curPrice = curAsk;
+   }
   for (int ind=0;ind<bars;)
    {
-    if (CopyBuffer(handleDE,1,ind,1,buffLow) < 1 || CopyBuffer(handleDE,5,ind,1,buffTime) < 1) 
+    if (CopyBuffer(handleDE,buffInd,ind,1,buffExtr) < 1 || CopyBuffer(handleDE,timeInd,ind,1,buffTime) < 1) 
      {
       Sleep(100);
       continue;
      }
-    if (buffLow[0] != 0.0)
+    if (buffExtr[0] != 0.0)
      {
-       return (int(MathAbs(curBid-buffLow[0])/_Point));
+       return (int(MathAbs(curPrice-buffExtr[0])/_Point));
      }
     ind++;
    } 
   return (0);
- }
-
-//+------------------------------------------------------------------+
-//| Визуальные функции робота TIHIRO 2                               |
-//+------------------------------------------------------------------+
- 
-// функция обновляет лучи
-void DragRay (int type)
- {
-  ObjectDelete(0,"TihiroTrend");
-  trend.Create(0,"TihiroTrend",0,datetime(extrHigh[1].time),extrHigh[1].price,datetime(extrHigh[0].time),extrHigh[0].price);
-  ObjectSetInteger(0,"TihiroTrend",OBJPROP_RAY_RIGHT,1);    
- }
+ }  

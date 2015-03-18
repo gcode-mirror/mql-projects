@@ -20,8 +20,8 @@
 #include <ChartObjects/ChartObjectsLines.mqh>      // для рисования линий расхождения
 
 // входные параметры робота
-input int    depth        = 10;     // глубина      
-input double lot          = 1.0;    // лот 
+input int    depth        = 3;      // глубина      
+input double lot          = 1.0;    // лот     
 
 // переменные
 double max_price;            // максимальная цена канала
@@ -36,17 +36,15 @@ bool wait_for_sell=false;    // флаг ожидания условия открытия на SELL
 bool wait_for_buy=false;     // флаг ожидания условия открытия на BUY
 bool is_flat_now;            // флаг, показывающий, флэт ли сейчас на графике или нет 
 int opened_position = 0;     // флаг открытой позиции (0 - нет позиции, 1 - buy, (-1) - sell)
+int countBars;
 ENUM_TIMEFRAMES periodEld;   // период старшего таймфрейма
 // переменные для хранения времени движения цены
 datetime signal_time;        // время получения сигнала пробития ценой уровня на расстояние H
-datetime open_pos_time;      // время открытия позиции
-// массивы цен последних 4-х экстремумов для определения бокового движения
-double extrHigh[2];          // массив экстремумов High (0 младше 1)
-double extrLow[2];           // массив экстремумов Low (0 младше 1)     
-// хэндлы индикаторов
-int handleDE;                // хэндл DrawExtremums 
+datetime open_pos_time;      // время открытия позиции   
 // объекты классов
 CTradeManager *ctm;          // объект торгового класса
+CisNewBar *isNewBar;         // для вычисления формирования нового бара на текущем ТФ
+CisNewBar *isNewBarEld;      // для вычисления формирования нового бара на старшем ТФ
 // структуры позиции и трейлинга
 SPositionInfo pos_info;      // структура информации о позиции
 STrailing     trailing;      // структура информации о трейлинге
@@ -60,30 +58,9 @@ int OnInit()
      Print("Не удалось создать объект класса CTradeManager");
      return (INIT_FAILED);
     }    
-   // привязка индикатора DrawExtremums 
-   handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
-   if (handleDE == INVALID_HANDLE)
-    {
-     handleDE = iCustom(_Symbol,_Period,"DrawExtremums");
-     if (handleDE == INVALID_HANDLE)
-      {
-       Print("Не удалось создать хэндл индикатора ");
-       return (INIT_FAILED);
-      }
-     SetIndicatorByHandle(_Symbol,_Period,handleDE);
-    }
-   // при первом запуске эксперта определяем движение
-   if (UploadLastExtremums ())
-    {
-     is_flat_now = IsFlatNow(); 
-     // если вычисленное движение является флэтом
-     if (is_flat_now)
-      {
-       CountMaxMinChannel (); // то вычисляем  максимум, минимум и ширину канала движения
-       // вычисление средней цены для дальнейшего вычисления тейк профита 
-       average_price = (max_price + min_price)/2;            
-      }
-    }
+   // если удалось вычислить параметры канала движения на старшем ТФ
+   if (CountChannel()) 
+    average_price = (max_price + min_price)/2;            
    // сохраняем период страшего таймфрейма 
    periodEld = GetTopTimeframe(_Period);   // заменить на функцию, которая определяет старший ТФ по отношению к текущему
    // заполняем поля позиции
@@ -91,6 +68,8 @@ int OnInit()
    pos_info.expiration = 0;
    // заполняем 
    trailing.trailingType = TRAILING_TYPE_NONE;
+   isNewBar = new CisNewBar(_Symbol,_Period);
+   isNewBarEld=new CisNewBar(_Symbol,periodEld);
       
    return(INIT_SUCCEEDED);
   }
@@ -100,6 +79,8 @@ void OnDeinit(const int reason)
    Print("Код ошибки = ",reason);
    // удаляем объекты
    delete ctm;
+   delete isNewBar;
+   delete isNewBarEld;
   }
 
 void OnTick()
@@ -111,49 +92,60 @@ void OnTick()
    // получаем текущее значение цен 
    price_bid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
    price_ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-   
+
+   // если пришел новый бар на старшем ТФ
+   if (isNewBarEld.isNewBar() > 0)
+    {
+     // то перевычисляем параметры канала 
+     CountChannel();
+     wait_for_buy = false;
+     wait_for_sell = false;
+    }
+    
    // если нет открытых позиций то сбрасываем тип позиции на нуль
    if (ctm.GetPositionCount() == 0)
     {
      opened_position = 0;   
     }
-    
- 
-   
-   // если текущее движение - flat
-   if (is_flat_now)
-      {        
-       // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-       if ( GreatDoubles(price_bid-max_price,h)  && LessOrEqualDoubles(prev_price_bid-max_price,h) && !wait_for_sell && opened_position!=-1 )
-        {               
-         // то переходим в режим отскока для открытия на SELL
-         wait_for_sell = true;   
-         wait_for_buy = false;
-         // сохраняем время получения сигнала пробития уровня движения цены
-         signal_time = TimeCurrent(); 
-         Print("Цена отошла вверх от уровня high[0]=",DoubleToString(extrHigh[0],5)," high[1]=",DoubleToString(extrHigh[1],5)," low[0]=",DoubleToString(extrLow[0],5)," low[1]=",DoubleToString(extrLow[1],5)," bid=",DoubleToString(price_bid)," prev_bid=",DoubleToString(prev_price_bid,5)," h=",DoubleToString(h,5) );
-        }
-       // если цена ask отошла вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-       if ( GreatDoubles(min_price-price_ask,h) && LessOrEqualDoubles(min_price-prev_price_ask,h) && !wait_for_buy && opened_position!=1 )
-        {
-         // то переходим в режим отскока для открытия на BUY
-         wait_for_buy = true; 
-         wait_for_sell = false;    
-         // сохраняем время получения сигнала пробития уровня движения цены
-         signal_time = TimeCurrent();   
-         Print("Цена отошла вниз от уровня high[0]=",DoubleToString(extrHigh[0],5)," high[1]=",DoubleToString(extrHigh[1],5)," low[0]=",DoubleToString(extrLow[0],5)," low[1]=",DoubleToString(extrLow[1],5)," ask=",DoubleToString(price_ask)," prev_ask=",DoubleToString(prev_price_ask,5)," h=",DoubleToString(h,5) );                            
-        }
+        
+   // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
+   if ( GreatDoubles(price_bid-max_price,h)  && LessOrEqualDoubles(prev_price_bid-max_price,h) && !wait_for_sell && opened_position!=-1 )
+      {      
+       Comment("max = ",DoubleToString(max_price), " min=",DoubleToString(min_price),
+               "\n bid = ",DoubleToString(price_bid)," prev_bid = ",DoubleToString(prev_price_bid)," \nотошли от канала вверх",
+               "\n время = ",TimeToString(TimeCurrent())
+               );
+       // то переходим в режим отскока для открытия на SELL 
+       wait_for_sell = true;   
+       wait_for_buy = false;
+       countBars = 0;
+       // сохраняем время получения сигнала пробития уровня движения цены
+       signal_time = TimeCurrent(); 
       }
-
-     // если перешли в режим ожидания отбития для открытия позиции на SELL
-     if (wait_for_sell)
-      {           
+   // если цена ask отошла вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
+   if ( GreatDoubles(min_price-price_ask,h) && LessOrEqualDoubles(min_price-prev_price_ask,h) && !wait_for_buy && opened_position!=1 )
+      {      
+       Comment("max = ",DoubleToString(max_price), " min=",DoubleToString(min_price),
+               "\n ask = ",DoubleToString(price_ask)," prev_ask = ",DoubleToString(prev_price_ask)," \nотошли от канала вниз",
+                              "\n время = ",TimeToString(TimeCurrent())
+               );        
+       // то переходим в режим отскока для открытия на BUY
+       wait_for_buy = true; 
+       wait_for_sell = false;
+       countBars = 0;    
+       // сохраняем время получения сигнала пробития уровня движения цены
+       signal_time = TimeCurrent();           
+      }     
+   // если перешли в режим ожидания отбития для открытия позиции на SELL
+   if (wait_for_sell)
+      {  
+       Print("ожидаем SELL, время = ",TimeToString(TimeCurrent()) );               
        // если удалось пробить последние два бара и от текущей цены на старшем ТФ нет тел свечей 
        if (IsBeatenBars(-1))
         {
-         //Print("Пробили бары");
+         Print("Пробит экстремум на SELL ", TimeToString(TimeCurrent()));        
          // если на старшем ТФ слева нет тел баров
-         if (TestEldPeriod(-1))
+         if (/*TestEldPeriod(-1)*/true)
           {
            // вычисляем стоп лосс, тейк профит и открываем позицию на SELL
            pos_info.type = OP_SELL;
@@ -165,24 +157,20 @@ void OnTick()
            wait_for_buy = false;  
            opened_position = -1;
            // сохраняем время открытия позиции
-           open_pos_time = TimeCurrent();  
-             
-           // выводим всю информацию        
-           Print("SELL ",
-                 " время = ",TimeToString(TimeCurrent())
-                );          
+           open_pos_time = TimeCurrent();         
           }
         }
       } 
      // если перешли в режим ожидания отбития для открытия позиции на BUY
      if (wait_for_buy)
       {
+       Print("ожидаем BUY, время = ",TimeToString(TimeCurrent()) );
        // если удалось пробить последние два бара и от текущей цены на старшем ТФ нет тел свечей
        if (IsBeatenBars(1))
         {
-         //Print("пробили бары");
+         Print("Пробит экстремум на BUY ", TimeToString(TimeCurrent()));
          // если удалось пробить последние два бара и от текущей цены на старших ТФ нет тел свечей
-         if (TestEldPeriod(1))
+         if (/*TestEldPeriod(1)*/true)
           {
            // вычисляем стоп лосс, тейк профит и открываем позицию на BUY
            pos_info.type = OP_BUY;
@@ -195,11 +183,6 @@ void OnTick()
            opened_position = 1;
            // сохраняем время открытия позиции
            open_pos_time = TimeCurrent();   
-           
-           // выводим всю информацию
-           Print("BUY ",
-                 " время = ",TimeToString(TimeCurrent())
-                );    
           }
         }
       }
@@ -213,23 +196,38 @@ void OnTick()
        Print("Закрыли позицию по экстремуму. Время = ",TimeToString(TimeCurrent()) );  
       }
        
-     // если мы получили второе условие закрытия позиции (закрытие по заверешнению периода удержания октрытой позиции)
+   /*  // если мы получили второе условие закрытия позиции (закрытие по заверешнению периода удержания октрытой позиции)
      if ( (TimeCurrent() - open_pos_time) > 1.5*(open_pos_time - signal_time) )
       {
        ctm.ClosePosition(0);
        Print("Закрыли позицию по времени Время = ",TimeToString(TimeCurrent())," Время сигнала = ",TimeToString(signal_time)," Время позиции = ",TimeToString(open_pos_time));
       } 
-    
+   */ 
     }  
   }
-
-// функция вычисляет параметры канала последнего движения цены
-void CountMaxMinChannel ()
+// функция вычисляет параметры канала на старшем таймфрейме  
+bool CountChannel ()
  {
-  max_price = extrHigh[ArrayMaximum(extrHigh)];
-  min_price = extrLow[ArrayMinimum(extrLow)];
+  double high_prices[];
+  double low_prices[];
+  int copiedHigh;
+  int copiedLow;
+  for (int attempts=0;attempts<25;attempts++)
+   {
+    copiedHigh = CopyHigh(_Symbol,periodEld,1,depth,high_prices);
+    copiedLow  = CopyLow(_Symbol,periodEld,1,depth,low_prices);
+    Sleep(100);
+   }
+  if (copiedHigh < depth || copiedLow < depth) 
+   {
+    Print("Не удалось прогрузить котировки старшего таймфрейма");
+    return (false);
+   }
+  max_price = high_prices[ArrayMaximum(high_prices)];
+  min_price = low_prices[ArrayMinimum(low_prices)];
   h = max_price - min_price;
- }
+  return (true);
+ }  
 
 // вычисляет стоп лосс
 int CountStopLoss (int type)
@@ -266,13 +264,11 @@ int CountTakeProfit (int type)
  {
   if (type == 1)
    {
-    return ( int ( MathAbs(price_ask - max_price)/_Point ) );
-  //  return ( int ( MathAbs(price_ask - average_price)/_Point ) );    
+    return ( int ( MathAbs(price_ask - max_price)/_Point ) );  
    }
   if (type == -1)
    {
-    return ( int ( MathAbs(price_bid - min_price)/_Point ) );
-  //  return ( int ( MathAbs(price_bid - average_price)/_Point ) );       
+    return ( int ( MathAbs(price_bid - min_price)/_Point ) );    
    }
   return (0);
  }
@@ -346,58 +342,6 @@ bool IsBeatenExtremum (int type)
   return (false);
  } 
 
-// функция загружает цены последних 4-х экстремумов
-bool UploadLastExtremums ()
- {
-  int ind;
-  int bars = Bars(_Symbol,_Period);
-  int extrCountHigh=0;
-  int extrCountLow=0;
-  double extrHighTemp[];
-  double extrLowTemp[];
-  for (ind=0;ind<bars;)
-   {
-    if (CopyBuffer(handleDE,0,ind,1,extrHighTemp) < 1 || CopyBuffer(handleDE,1,ind,1,extrLowTemp) < 1)
-     {
-      Sleep(100);
-      continue;
-     }
-    // если был найден high экстремум
-    if (extrHighTemp[0] != 0.0)
-     {
-      extrHigh[extrCountHigh] = extrHighTemp[0];
-      extrCountHigh++;
-     }
-    // если был найден low экстремум
-    if (extrLowTemp[0] != 0.0)
-     {
-      extrLow[extrCountLow] = extrLowTemp[0];
-      extrCountLow++;
-     }     
-    // если было найдено 4 последних экстремума
-    if (extrCountHigh == 2 && extrCountLow == 2)
-     return (true);
-    ind++;
-   }
-  return (false);
- }
- 
-// функция проверяет по 4-м экстремумам, не является ли последнее движение флэтом
-bool IsFlatNow ()
- {
-  // если направленное движение вверх
-  if ( GreatDoubles (extrHigh[0],extrHigh[1]) && GreatDoubles(extrLow[0],extrLow[1]) )
-   {
-    return (false);
-   }
-  // если направленное движение вниз
-  if ( LessDoubles (extrHigh[0],extrHigh[1]) && LessDoubles(extrLow[0],extrLow[1]) )
-   {
-    return (false);   
-   }
-  return (true);
- }
-
 // функция смотрит на старший ТФ и проверяет
 bool TestEldPeriod (int type)
  {
@@ -425,39 +369,3 @@ bool TestEldPeriod (int type)
    }
   return (true);
  } 
- 
-// функция обработки внешних событий
-void OnChartEvent(const int id,         // идентификатор события  
-                  const long& lparam,   // параметр события типа long
-                  const double& dparam, // параметр события типа double
-                  const string& sparam  // параметр события типа string 
-                 )
-  {  
-   if (sparam == "EXTR_UP_FORMED" || sparam == "EXTR_DOWN_FORMED")
-    {
-     
-     if (sparam == "EXTR_UP_FORMED")
-      {
-       extrHigh[1] = extrHigh[0];
-       extrHigh[0] = dparam;
-       wait_for_buy = false;     
-      }
-     if (sparam == "EXTR_DOWN_FORMED")
-      {
-       extrLow[1] = extrLow[0];
-       extrLow[0] = dparam;
-       wait_for_sell = false;       
-      }
-     
-     if (wait_for_buy == false && wait_for_sell == false)
-      {
-       is_flat_now = IsFlatNow();
-       if (is_flat_now)
-        {       
-         CountMaxMinChannel();  
-         // вычисление средней цены для дальнейшего вычисления тейк профита 
-         average_price = (max_price + min_price)/2; 
-        } 
-      }     
-    }  
-  }

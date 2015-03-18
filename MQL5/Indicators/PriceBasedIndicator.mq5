@@ -76,7 +76,7 @@ int OnInit()
      return (INIT_FAILED);
     } 
    // создаем события
-   event.AddNewEvent(_Symbol,_Period,"смена движения");      
+   event.AddNewEvent(_Symbol,_Period,"MOVE_CHANGED");      
    
    if(Bars(symbol, current_timeframe) < depth) depth = Bars(symbol, current_timeframe)-1;
    PrintFormat("Глубина поиска равна: %d", depth);
@@ -235,7 +235,7 @@ int OnCalculate(const int rates_total,
      // заполняем поля структуры события
      eventData.dparam = last_move;
      // и генерим событие обновления движения
-     Generate("смена движения",eventData,true);
+     Generate("MOVE_CHANGED",eventData,true);
     }
 
    if (extr_cur[0].direction > 0)
