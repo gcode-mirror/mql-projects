@@ -155,7 +155,7 @@ int OnCalculate(const int rates_total,
  ArraySetAsSeries (high, true);
  ArraySetAsSeries (low,  true); 
  ArraySetAsSeries (close,true);
- 
+  
  if (prev_calculated == 0) // если на пред. вызове было обработано 0 баров, значит этот вызов первый
  {  
  
