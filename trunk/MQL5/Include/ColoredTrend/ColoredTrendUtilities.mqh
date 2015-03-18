@@ -36,7 +36,6 @@ enum ENUM_MOVE_TYPE      // Тип движения
    MOVE_TYPE_FLAT,                // Флэт - желтый
   };
    
-  
 string MoveTypeToString(ENUM_MOVE_TYPE enumMoveType)
   {
    switch(enumMoveType)
@@ -81,7 +80,7 @@ ENUM_TIMEFRAMES GetTopTimeframe(ENUM_TIMEFRAMES timeframe)
       case PERIOD_M6: return(PERIOD_H1);
       case PERIOD_M10: return(PERIOD_H1);
       case PERIOD_M12: return(PERIOD_H1);
-      case PERIOD_M15: return(PERIOD_H1);
+      case PERIOD_M15: return(PERIOD_H4);
       case PERIOD_M20: return(PERIOD_H1);
       case PERIOD_M30: return(PERIOD_H4);
       case PERIOD_H1: return(PERIOD_H4);
@@ -164,7 +163,6 @@ int GetMaPeriodForATR(ENUM_TIMEFRAMES timeframe)
       }
  }
 }
-
 
 double SetDiffToTrend(ENUM_TIMEFRAMES period)
 {
