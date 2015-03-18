@@ -73,12 +73,12 @@ ENUM_TIMEFRAMES GetTopTimeframe(ENUM_TIMEFRAMES timeframe)
 {
  switch(timeframe)
  {
-      case PERIOD_M1: return(PERIOD_M5);
-      case PERIOD_M2: return(PERIOD_M5);
+      case PERIOD_M1: return(PERIOD_M15);
+      case PERIOD_M2: return(PERIOD_M15);
       case PERIOD_M3: return(PERIOD_M15);
       case PERIOD_M4: return(PERIOD_M15);
-      case PERIOD_M5: return(PERIOD_M15);
-      case PERIOD_M6: return(PERIOD_M15);
+      case PERIOD_M5: return(PERIOD_H1);
+      case PERIOD_M6: return(PERIOD_H1);
       case PERIOD_M10: return(PERIOD_H1);
       case PERIOD_M12: return(PERIOD_H1);
       case PERIOD_M15: return(PERIOD_H1);

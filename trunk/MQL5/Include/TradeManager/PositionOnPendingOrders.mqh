@@ -236,7 +236,7 @@ CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositi
  else
  {
   _type_time = ORDER_TIME_SPECIFIED;
-  _pos_info.expiration_time = TimeCurrent()+_pos_info.expiration*PeriodSeconds(Period());  //помимио прочего нужно поменять во всем коде ORDER_TIME_SPECIFIED на ORDER_TIME_GTC 
+  _pos_info.expiration_time = TimeCurrent()+_pos_info.expiration*PeriodSeconds(_period);  //помимио прочего нужно поменять во всем коде ORDER_TIME_SPECIFIED на ORDER_TIME_GTC 
  }
  trade = new CTMTradeFunctions();
  trailingStop = new CTrailingStop();
