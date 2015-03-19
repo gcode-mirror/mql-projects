@@ -20,9 +20,10 @@
 #include <ChartObjects/ChartObjectsLines.mqh>      // для рисования линий расхождения
 
 // входные параметры робота
-input int    depth     = 3;      // глубина      
-input double lot       = 1.0;    // лот     
-input bool skipLastBar = true;   // пропустить последний бар при расчете канала
+input int    channelDepth = 3;      // глубина канала
+input int    tailDepth    = 20;     // глубина определения хвоста
+input double lot          = 1.0;    // лот     
+input bool skipLastBar    = true;   // пропустить последний бар при расчете канала
 // переменные
 double max_price;            // максимальная цена канала
 double min_price;            // минимальная цена канала
@@ -109,7 +110,7 @@ void OnTick()
     }
         
    // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-   if ( GreatDoubles(price_bid-max_price,h)  && LessOrEqualDoubles(prev_price_bid-max_price,h) && !wait_for_sell && opened_position!=-1 )
+   if ( GreatDoubles(price_bid-max_price,h) && !wait_for_sell && opened_position!=-1 )
       {      
        Comment("max = ",DoubleToString(max_price), " min=",DoubleToString(min_price),
                "\n bid = ",DoubleToString(price_bid)," prev_bid = ",DoubleToString(prev_price_bid)," \nотошли от канала вверх",
@@ -123,7 +124,7 @@ void OnTick()
        signal_time = TimeCurrent(); 
       }
    // если цена ask отошла вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-   if ( GreatDoubles(min_price-price_ask,h) && LessOrEqualDoubles(min_price-prev_price_ask,h) && !wait_for_buy && opened_position!=1 )
+   if ( GreatDoubles(min_price-price_ask,h) && !wait_for_buy && opened_position!=1 )
       {      
        Comment("max = ",DoubleToString(max_price), " min=",DoubleToString(min_price),
                "\n ask = ",DoubleToString(price_ask)," prev_ask = ",DoubleToString(prev_price_ask)," \nотошли от канала вниз",
@@ -184,14 +185,15 @@ void OnTick()
       }
    // если позиция уже открыта, то обрабатываем условия закрытия позиции  
    if (opened_position)
-    {    
+    { 
+    /*   
      // если мы получили первое условие закрытия позиции (закрытие по экстремуму)
      if (IsBeatenExtremum(opened_position))
       {
        ctm.ClosePosition(0);
        Print("Закрыли позицию по экстремуму. Время = ",TimeToString(TimeCurrent()) );  
       }
-       
+   */    
    /*  // если мы получили второе условие закрытия позиции (закрытие по заверешнению периода удержания октрытой позиции)
      if ( (TimeCurrent() - open_pos_time) > 1.5*(open_pos_time - signal_time) )
       {
@@ -211,11 +213,11 @@ bool CountChannel ()
   int copiedLow;
   for (int attempts=0;attempts<25;attempts++)
    {
-    copiedHigh = CopyHigh(_Symbol,periodEld,startIndex,depth,high_prices);
-    copiedLow  = CopyLow(_Symbol,periodEld,startIndex,depth,low_prices);
+    copiedHigh = CopyHigh(_Symbol, periodEld, startIndex, channelDepth, high_prices);
+    copiedLow  = CopyLow (_Symbol, periodEld, startIndex, channelDepth, low_prices);
     Sleep(100);
    }
-  if (copiedHigh < depth || copiedLow < depth) 
+  if (copiedHigh < channelDepth || copiedLow < channelDepth) 
    {
     Print("Не удалось прогрузить котировки старшего таймфрейма");
     return (false);
@@ -249,7 +251,7 @@ int CountStopLoss (int type)
      {
       Print("Не удалось скопировать цены");
       return (0);
-     } 
+     }
     // ставим стоп лосс на уровне максимума
     return ( int( (prices[ArrayMaximum(prices)] - price_ask)/_Point) + 30 );
    }
@@ -321,8 +323,8 @@ bool IsBeatenExtremum (int type)
   if (type == 1)
    {
     // условие закрытие позиции BUY
-    if (LessDoubles(price_ask,price_low[1]) && LessDoubles(price_ask,price_low[0]) && LessDoubles(price_low[1],price_low[0]) &&
-        GreatDoubles(price_high[1],price_high[0]) && GreatDoubles(price_high[1],price_high[2]) )
+    if (LessDoubles(price_ask,price_low[1]) && LessDoubles(price_ask,price_low[0])// && LessDoubles(price_low[1],price_low[0])
+        && GreatDoubles(price_high[1],price_high[0]) && GreatDoubles(price_high[1],price_high[2]) )
      {
       return (true);
      } 
@@ -330,8 +332,8 @@ bool IsBeatenExtremum (int type)
   if (type == -1)
    {
     // условие закрытие позиции SELL 
-    if (GreatDoubles(price_bid,price_high[1]) && GreatDoubles(price_bid,price_high[0]) && GreatDoubles(price_high[1],price_high[0]) &&
-        LessDoubles(price_low[1],price_low[0]) && LessDoubles(price_low[1],price_low[2]) )
+    if (GreatDoubles(price_bid,price_high[1]) && GreatDoubles(price_bid,price_high[0])// && GreatDoubles(price_high[1],price_high[0]) 
+        && LessDoubles(price_low[1],price_low[0]) && LessDoubles(price_low[1],price_low[2]) )
      {
       return (true);
      }    
@@ -345,18 +347,18 @@ bool TestEldPeriod (int type)
   MqlRates eldPriceBuf[];  
   int copied_rates;
   int startIndex = (skipLastBar)?2:1;
-  for (int attempts=0;attempts<25;attempts++)
+  for (int attempts=0; attempts<25; attempts++)
    {
-    copied_rates = CopyRates(_Symbol,periodEld,startIndex,depth,eldPriceBuf);
+    copied_rates = CopyRates(_Symbol, periodEld, startIndex, tailDepth, eldPriceBuf);
     Sleep(100);
    }
-  if (copied_rates < depth)
+  if (copied_rates < tailDepth)
    {
     Print("Не удалось прогрузить все котировки");
     return (false);
    }
   // проходим по скопированным барам и проверяем, чтобы не попадались тела баров
-  for (int ind = 0; ind < depth+1-startIndex; ind++)
+  for (int ind = 0; ind < tailDepth+1-startIndex; ind++)
    {
     // если нужно открываться на Buy, но на пути попалось тело бара
     if (type == 1  &&  ( GreatDoubles(price_ask,eldPriceBuf[ind].open) || GreatDoubles(price_ask,eldPriceBuf[ind].close) ) )
