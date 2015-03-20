@@ -72,7 +72,7 @@ public:
                  , ENUM_TM_POSITION_TYPE type, double volume
                  , double profit, double priceOpen, double priceClose); // Конструктор для отыгрыша позиций
    void CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositionInfo& pi, STrailing& tr); // Конструктор с параметрами
-   void ~CPosition() {delete trade;}
+   void ~CPosition() {delete trade; delete trailingStop;}
 // GET   
    datetime getClosePosDT()      {return(_posCloseTime);};    //получает дату закрытия позиции
    datetime getExpiration()      {return(_pos_info.expiration_time);};      

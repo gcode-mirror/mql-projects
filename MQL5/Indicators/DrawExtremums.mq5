@@ -126,6 +126,7 @@ void OnDeinit (const int reason)
    IndicatorRelease(handleForAverBar);
    // удаляем объекты
    delete extr;
+   delete event;
   }  
   
 int OnCalculate(const int rates_total,
@@ -197,8 +198,7 @@ int OnCalculate(const int rates_total,
            {
            
             bufferAllExtrHigh[i] = extrHigh.price;       // сохраняем в буфер значение полученного экстремума
-            bufferTimeExtrHigh[i] = double(extrHigh.time);
-            
+            bufferTimeExtrHigh[i] = double(extrHigh.time);          
             lastExtrUpValue = extrHigh.price;
             lastExtrUpTime  = extrHigh.time;
             
@@ -248,6 +248,9 @@ int OnCalculate(const int rates_total,
              
           bufferAllExtrHigh[rates_total-1] = extrHigh.price;
           bufferTimeExtrHigh[rates_total-1] = double(extrHigh.time);
+          
+          bufferFormedExtrHigh[rates_total-1] = extrHigh.price;          
+          
           lastExtrUpValue = extrHigh.price;
           lastExtrUpTime = extrHigh.time;
           // запись информации об экстремуме
@@ -276,6 +279,9 @@ int OnCalculate(const int rates_total,
           
           bufferAllExtrLow[rates_total-1] = extrLow.price;
           bufferTimeExtrLow[rates_total-1] = double(extrLow.time);
+          
+        //   bufferFormedExtrLow[rates_total-1] = extrLow.price;          
+          
           lastExtrDownValue = extrLow.price;
           lastExtrDownTime = extrLow.time;   
           // запись информации об экстремуме
@@ -304,16 +310,16 @@ int OnCalculate(const int rates_total,
 
 // проходим по всем графикам и генерим события под них
 void Generate(string id_nam, SEventData &_data, const bool _is_custom = true)
+{
+ // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
+ long z = ChartFirst();
+ while (z >= 0)
+ {
+  if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
   {
-   // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
-   long z = ChartFirst();
-   while (z >= 0)
-     {
-      if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
-        {
-         // генерим событие для текущего графика
-         event.Generate(z,id_nam,_data,_is_custom);
-        }
-      z = ChartNext(z);      
-     }     
+   // генерим событие для текущего графика
+   event.Generate(z,id_nam,_data,_is_custom);
   }
+  z = ChartNext(z);      
+ }     
+}

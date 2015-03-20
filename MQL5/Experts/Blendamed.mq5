@@ -249,7 +249,8 @@ int GetStopLoss(int openedPos)
    openPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    slValue = (int)MathAbs((last_extrem_high - openPrice) / _Point);
   break;
- }Print("last_extrem_low = ", last_extrem_low, " openPrice = ", openPrice , " slValue = ", slValue, " stopLevel = ", stopLevel);
+ }
+ Print("last_extrem_low = ", last_extrem_low, " openPrice = ", openPrice , " slValue = ", slValue, " stopLevel = ", stopLevel);
  if (slValue > stopLevel)
   return (slValue);
  else
@@ -272,7 +273,7 @@ bool IsSuitRSI(int borderRSI, int tradeType)
  // если RSI , больше borderRSI при tradeType = SELL
  if(curRSI[0] > borderRSI && tradeType == SELL)
  return true;
- // если RSI , больше borderRSI при tradeType = SELL
+ // если RSI , больше borderRSI при tradeType = BUY
  if(curRSI[0] > borderRSI && tradeType == BUY)
  return true;
  return false;
