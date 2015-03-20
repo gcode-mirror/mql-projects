@@ -289,6 +289,7 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
    stopLoss = lastExtrHigh;        
   }
  } 
+ delete blowInfo;
  return (stopLoss);
 }
  

@@ -21,6 +21,7 @@ private:
 
 public:
    CPositionArray();
+   ~CPositionArray();
    CPosition        *AtTicket(long lTicket);
    int               OpenLots(string strSymbol);
    /// Count of orders.
@@ -41,11 +42,22 @@ public:
 
   };
 //+------------------------------------------------------------------+
-//|                                                                  |
+//|   Конструктор                                                    |
 //+------------------------------------------------------------------+
 CPositionArray::CPositionArray()
   {
    m_strPersistFilename="";
+  }
+  
+//+------------------------------------------------------------------+
+//|    Деструктор                                                    |
+//+------------------------------------------------------------------+
+CPositionArray::~CPositionArray()
+  {
+   for(int i = Total(); i >= 0; i--)
+   {
+    delete Position(i);
+   }
   }
 //+------------------------------------------------------------------+
 /// Searches for and returns the Position which matches ticket.
