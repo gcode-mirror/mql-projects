@@ -9,6 +9,7 @@
 //|  Класс  для получения данных индикатора DrawExtremums            |
 //+------------------------------------------------------------------+
 
+#include <Object.mqh>
 #include <StringUtilities.mqh>
 #include <CLog.mqh>
 
@@ -28,7 +29,7 @@ struct Extr
   datetime time; 
  };
 
-class CBlowInfoFromExtremums
+class CBlowInfoFromExtremums : public CObject
  {
   private:
    // буферы класса
@@ -119,7 +120,7 @@ bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use = EXTR_BOTH, int star
    || CopyBuffer(_handleExtremums, 4, 0, 1, _extrCountHigh)  < 1 
    || CopyBuffer(_handleExtremums, 5, 0, 1, _extrCountLow)   < 1)
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+  //log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
   return (false);           
  }  
              
@@ -134,7 +135,7 @@ bool CBlowInfoFromExtremums::Upload(ENUM_EXTR_USE extr_use = EXTR_BOTH, int star
  
  if ( copiedHigh != historyDepth || copiedLow != historyDepth )
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+  //log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
   return (false);
  }
  return (true);
@@ -237,5 +238,4 @@ CBlowInfoFromExtremums::~CBlowInfoFromExtremums(void)   // деструктор класса
 {
  ArrayFree(_extrBufferHigh);
  ArrayFree(_extrBufferLow);
- IndicatorRelease(_handleExtremums);
 }

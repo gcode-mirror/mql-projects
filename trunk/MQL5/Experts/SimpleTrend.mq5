@@ -14,7 +14,6 @@
 #include <CompareDoubles.mqh>                      // для сравнения вещественных чисел
 #include <TradeManager\TradeManager.mqh>           // торговая библиотека
 #include <BlowInfoFromExtremums.mqh>               // класс по работе с экстремумами индикатора DrawExtremums
-//#include <DrawExtremums\CExtrContainer.mqh>        // класс контейнера      
 
 // константы сигналов
 #define BUY   1    
@@ -76,10 +75,10 @@ int      countLastExtrLow[4];                      // массив послених значений с
 bool     beatenExtrHigh[4];                        // массив флагов пробития экстремумов HIGH
 bool     beatenExtrLow[4];                         // массив флагов пробития экстремумов LOW
 double   closes[];                                 // массив для хранения цен закрытия последних трех баров 
-// объекты классов
-CTradeManager *ctm;                                // объект торговой библиотеки                                                     
-CisNewBar     *isNewBar_D1;                        // новый бар на D1
-CBlowInfoFromExtremums *blowInfo[4];               // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
+// объекты классов 
+CTradeManager   *ctm;             // объект торговой библиотеки                                                     
+CisNewBar       *isNewBar_D1;     // новый бар на D1
+CArrayObj       aBlowInfo;        // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 // дополнительные системные переменные
 bool firstLaunch       = true;         // флаг первого запуска эксперта
 bool beatM5;                           // флаг пробития на M5
@@ -187,7 +186,8 @@ int OnInit()
   {
    if(aHandleExtremums[i] == INVALID_HANDLE)
     PrintFormat(__FUNCTION__ + " Не удалось скопировать хэндл для %i элемента",i);
-   blowInfo[i] = new CBlowInfoFromExtremums(aHandleExtremums[i]);  // M1 
+   CBlowInfoFromExtremums *bI = new CBlowInfoFromExtremums(aHandleExtremums[i]);
+   aBlowInfo.Add(bI);   // M1 
   }
   
   curPriceAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);  
@@ -216,10 +216,11 @@ void OnDeinit(const int reason)
  // удаляем объекты классов
  delete ctm;
  delete isNewBar_D1;
- delete blowInfo[0];
- delete blowInfo[1];
- delete blowInfo[2];
- delete blowInfo[3]; 
+ 
+ for (int i = aBlowInfo.Total() - 1; i >= 0; i--)
+ {
+  delete aBlowInfo.At(i);
+ }
  // освобождаем хэндлы индикаторов 
  if (usePBI == PBI_SELECTED) IndicatorRelease(handlePBI_1);  
  if (usePBI == PBI_FIXED)
@@ -243,25 +244,21 @@ void OnTick()
  int attempts = 0;      // Количество попыток копирования данных из буфера
 
  ctm.OnTick(); 
- ctm.UpdateData();
  ctm.DoTrailing(aHandleExtremums[indexForTrail]); 
-
- Comment("TrailIndex = ",indexForTrail,
-         "\nlastPriceAdding = ",DoubleToString(lastPriceAdding)
-        );
 
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
  curPriceAsk  = SymbolInfoDouble(_Symbol, SYMBOL_ASK);   // получаем текущую цену Ask
- if (!blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
-     !blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
-     !blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
-     !blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
-    )
- {   
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
-  return;
+ 
+ for (int i = aBlowInfo.Total() - 1; i >= 0; i--)
+ {
+  CBlowInfoFromExtremums *bI = aBlowInfo.At(i);
+  if (!bI.Upload(EXTR_BOTH,TimeCurrent(),1000))
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums i=%d ", MakeFunctionPrefix(__FUNCTION__), i));           
+   return;
+  }
  }
  
  // если мы используем запрет на вход по NineTeenLines
@@ -278,8 +275,11 @@ void OnTick()
  // получаем новые значения счетчиков экстремумов
  for (int ind = 0; ind < 4; ind++)
  {
-  countExtrHigh[ind] = blowInfo[ind].GetExtrCountHigh();   // получаем текущее значение счетчика экстремумов HIGH
-  countExtrLow[ind]  = blowInfo[ind].GetExtrCountLow();    // получаем текущее значение счетчика экстремумов LOW
+  CBlowInfoFromExtremums *bIHigh = aBlowInfo.At(ind);
+  CBlowInfoFromExtremums *bILow  = aBlowInfo.At(ind);
+  
+  countExtrHigh[ind] = bIHigh.GetExtrCountHigh();   // получаем текущее значение счетчика экстремумов HIGH
+  countExtrLow[ind]  = bILow.GetExtrCountLow();    // получаем текущее значение счетчика экстремумов LOW
   // если счетчик экстремумов High обновился 
   if (countExtrHigh[ind] != countLastExtrHigh[ind])
   {
@@ -357,6 +357,7 @@ void OnTick()
    return;
   }
  }
+
  // если нет открытых позиций
  if (ctm.GetPositionCount() == 0)
   openedPosition = NO_POSITION;
@@ -372,6 +373,7 @@ void OnTick()
    }       
   }        
  } 
+
  currentTendention = GetTendention(lastBarD1[1].open, curPriceBid);
  // если общая тенденция  - вверх
  if (lastTendention == TENDENTION_UP && currentTendention == TENDENTION_UP)
@@ -383,7 +385,7 @@ void OnTick()
        ( (beatCloseM5  =  IsLastClosesBeaten(PERIOD_M5,BUY))      && (lastTrendPBI_1==BUY)    && useClose)   ||
        ( (beatCloseM15 =  IsLastClosesBeaten(PERIOD_M15,BUY))     && (lastTrendPBI_2==BUY)    && useClose)   ||
        ( (beatCloseH1  =  IsLastClosesBeaten(PERIOD_H1,BUY))      && (lastTrendPBI_3==BUY)    && useClose)         
-       ) 
+     ) 
   {      
    //log_file.Write(LOG_DEBUG, StringFormat("%s, Получили сигнал на BUY, время = %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent())));
    // если используются запреты по NineTeenLines
@@ -426,20 +428,19 @@ void OnTick()
    pos_info.volume = lotReal; 
    // открываем позицию на BUY
    
-   if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
+   if (ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread))
    {
     timeOpenPos = TimeCurrent();       // сохраняем время открытия позиции
     lastPriceAdding = curPriceBid;     // сохраняем цену открытия позиции
     lastDeal = BUY;                    // сохраняем тип позиции
    } 
-      
   }
  }/*
  // если общая тенденция - вниз
  if (lastTendention == TENDENTION_DOWN && currentTendention == TENDENTION_DOWN)
  {                     
   // если текущая цена пробила один из экстемумов на одном из таймфреймов 
-  if ( ( (beatM5  = IsExtremumBeaten(1,SELL) ) && (lastTrendPBI_1==SELL||usePBI==PBI_NO) && useExtr)   || 
+  if (( (beatM5  = IsExtremumBeaten(1,SELL) ) && (lastTrendPBI_1==SELL||usePBI==PBI_NO) && useExtr)   || 
       ( (beatM15 = IsExtremumBeaten(2,SELL) ) && (lastTrendPBI_2==SELL||usePBI==PBI_NO) && useExtr)   || 
       ( (beatH1  = IsExtremumBeaten(3,SELL) ) && (lastTrendPBI_3==SELL||usePBI==PBI_NO) && useExtr)   || 
       ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,SELL))   && (lastTrendPBI_1==SELL)   && useClose)  ||
@@ -447,7 +448,7 @@ void OnTick()
       ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,SELL))   && (lastTrendPBI_3==SELL)   && useClose)       
        )  
   {    
-   log_file.Write(LOG_DEBUG, StringFormat("%s, Получили сигнал на Sell, время = %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent())));
+   log_file.Write(LOG_CRITICAL, StringFormat("%s, Получили сигнал на Sell, время = %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent())));
    // если используются зарпеты по NineTeenLines
    if (useLinesLock)
    { 
@@ -487,7 +488,7 @@ void OnTick()
    pos_info.sl = stopLoss;   
    pos_info.volume = lotReal;  
    // открываем позицию на SELL 
-   if ( ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread) )
+   if (ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread))
    {
     timeOpenPos = TimeCurrent();   // сохраняем время открытия позиции
     lastPriceAdding = curPriceAsk; // сохраняем цену позиции
@@ -509,17 +510,19 @@ ENUM_TENDENTION GetTendention (double priceOpen,double priceAfter)            //
 
 bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой экстремума
 {
+ CBlowInfoFromExtremums *bI = aBlowInfo.At(index);
+
  switch (direction)
  {
   case SELL:
-   if (LessDoubles(curPriceAsk,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price)&& GreatOrEqualDoubles(prevPriceAsk,blowInfo[index].GetExtrByIndex(EXTR_LOW,0).price) && !beatenExtrLow[index])
+   if (LessDoubles(curPriceAsk,bI.GetExtrByIndex(EXTR_LOW,0).price)&& GreatOrEqualDoubles(prevPriceAsk,bI.GetExtrByIndex(EXTR_LOW,0).price) && !beatenExtrLow[index])
    {
     beatenExtrLow[index] = true; 
     return (true);    
    }     
   break;
   case BUY:
-   if (GreatDoubles(curPriceBid,blowInfo[index].GetExtrByIndex(EXTR_HIGH,0).price) && LessOrEqualDoubles(prevPriceBid,blowInfo[index].GetExtrByIndex(EXTR_HIGH,0).price) && !beatenExtrHigh[index])
+   if (GreatDoubles(curPriceBid,bI.GetExtrByIndex(EXTR_HIGH,0).price) && LessOrEqualDoubles(prevPriceBid,bI.GetExtrByIndex(EXTR_HIGH,0).price) && !beatenExtrHigh[index])
    {
     beatenExtrHigh[index] = true;
     return (true);
@@ -544,10 +547,11 @@ int GetStopLoss()         // вычисляет стоп лосс
  int slValue;          // значение стоп лосса
  int stopLevel;        // стоп левел
  stopLevel = SymbolInfoInteger(_Symbol,SYMBOL_TRADE_STOPS_LEVEL);  // получаем стоп левел
+ CBlowInfoFromExtremums *bI = aBlowInfo.At(indexStopLoss);
  switch (openedPosition)
  {
   case BUY:
-   slValue = (curPriceBid - blowInfo[indexStopLoss].GetExtrByIndex(EXTR_LOW,0).price)/_Point; 
+   slValue = (curPriceBid - bI.GetExtrByIndex(EXTR_LOW,0).price)/_Point; 
    if ( slValue > stopLevel )
    {
     return (slValue);
@@ -557,7 +561,7 @@ int GetStopLoss()         // вычисляет стоп лосс
     return (stopLevel + 1);
    }
   case SELL:
-   slValue = (blowInfo[indexStopLoss].GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk)/_Point;
+   slValue = (bI.GetExtrByIndex(EXTR_HIGH,0).price - curPriceAsk)/_Point;
    if (slValue > stopLevel)
    {   
     return (slValue);     
@@ -572,13 +576,14 @@ int GetStopLoss()         // вычисляет стоп лосс
 
 bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
 {
+ CBlowInfoFromExtremums *bI = aBlowInfo.At(indexStopLoss);
  double pricePos = ctm.GetPositionPrice(_Symbol);
  double posAverPrice;  // средняя цена позиции 
  // в зависимости от типа открытой позиции
  switch (openedPosition)
  {
   case BUY:  // если позиция открыта на BUY
-   if (blowInfo[indexStopLoss].GetPrevExtrType() == EXTR_LOW)  // если последний экстремум LOW
+   if (bI.GetPrevExtrType() == EXTR_LOW)  // если последний экстремум LOW
    { 
     // получаем новую среднюю цену позиции
     posAverPrice = (lotReal*pricePos + lotStep*SymbolInfoDouble(_Symbol,SYMBOL_ASK) ) / (lotReal+lotStep);   
@@ -594,7 +599,7 @@ bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
    } 
   break;
   case SELL: // если позиция открыта на SELL
-   if (blowInfo[indexStopLoss].GetPrevExtrType() == EXTR_HIGH) // если последний экстремум HIGH
+   if (bI.GetPrevExtrType() == EXTR_HIGH) // если последний экстремум HIGH
    {   
     // получаем новую среднюю цену позиции
     posAverPrice = (lotReal*pricePos + lotStep*SymbolInfoDouble(_Symbol,SYMBOL_BID)) / (lotReal+lotStep);      

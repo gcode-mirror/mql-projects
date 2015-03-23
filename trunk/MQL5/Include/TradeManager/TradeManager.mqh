@@ -663,6 +663,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
   return false;
  }
 
+ bool result = true;
  int i = 0;
  int total = _openPositions.Total();
  CPosition *pos;
@@ -766,21 +767,19 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
                                           , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
 
 
-     _openPositions.Add(pos);  // добавляем открытую позицию в массив открытых позиций
+   _openPositions.Add(pos);  // добавляем открытую позицию в массив открытых позиций
    SaveArrayToFile(rescueDataFileName ,_openPositions);
    log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-   return(true); // Если удачно открыли позицию
   }
   else
   {
    error = GetLastError();
    if(pos.getType() == OP_SELL || pos.getType() == OP_BUY) _positionsToReProcessing.Add(pos);
    log_file.Write(LOG_CRITICAL, StringFormat("%s Не удалось открыть позицию. Error{%d} = %s. Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(pos.getPositionStatus())));
-   return(false); // Если открыть позицию не удалось
+   result = false; // Если открыть позицию не удалось
   }
  }
- log_file.Write(LOG_CRITICAL, StringFormat("%s Осталось открытых позиций %d", MakeFunctionPrefix(__FUNCTION__), total));
- return(true); // Если остались открытые позиции, значит не надо открываться 
+ return(result); // Если остались открытые позиции, значит не надо открываться 
 }
 
 //+------------------------------------------------------------------+
