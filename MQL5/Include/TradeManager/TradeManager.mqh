@@ -766,7 +766,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
                                           , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
 
 
-   _openPositions.Add(pos);  // добавляем открытую позицию в массив открытых позиций
+     _openPositions.Add(pos);  // добавляем открытую позицию в массив открытых позиций
    SaveArrayToFile(rescueDataFileName ,_openPositions);
    log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
    return(true); // Если удачно открыли позицию

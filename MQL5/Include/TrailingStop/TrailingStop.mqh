@@ -265,7 +265,10 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
  // получаем тип последнего экстремума
  last_extr = blowInfo.GetPrevExtrType();
  if (last_extr == EXTR_NO)
+ {
+  delete blowInfo;
   return (0.0);
+ }
  // сохраняем стоп левел
  stopLevel = NormalizeDouble(SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point,_Digits);//+0.0005;
  if (type == OP_BUY && last_extr == EXTR_LOW)    // если последним сформированным экстремумом является LOW

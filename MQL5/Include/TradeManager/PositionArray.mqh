@@ -38,7 +38,7 @@ public:
    void              Clear(const string strSymbol); //очищение массива позиций по символу
    void              Clear();                       //очищение всего массива позиций
    string            PrintToString();
-   CPosition    *Position(int nIndex){return((CPosition*)CArrayObj::At(nIndex));}
+   CPosition         *Position(int nIndex){return((CPosition*)CArrayObj::At(nIndex));}
 
   };
 //+------------------------------------------------------------------+
