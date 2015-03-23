@@ -140,6 +140,7 @@ bool CExtrMACDContainer::RecountExtremum(int startIndex, bool fill = false)
  
  CExtremumMACD *new_extr = new CExtremumMACD(0, -1, 0.0, 0);         // временная переменная в которую isMACDExtremum 
                                                                    // запишет текущий экстремум (если он есть)
+                                                                   
  //--------Копирование значения предполагаемого экстремума------------
  double buf_Value[1];                                       
  int copiedMACD = 0; 
@@ -276,8 +277,7 @@ int CExtrMACDContainer::isMACDExtremum(int startIndex)
    if ( GreatDoubles(iMACD_buf[2], iMACD_buf[0]) && GreatDoubles(iMACD_buf[2], iMACD_buf[1]) &&
          GreatDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] > 0)
    {
-      return(1);
-      
+      return(1);   
    }
    else if ( LessDoubles(iMACD_buf[2], iMACD_buf[0]) && LessDoubles(iMACD_buf[2], iMACD_buf[1]) && 
            LessDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] < 0) 
