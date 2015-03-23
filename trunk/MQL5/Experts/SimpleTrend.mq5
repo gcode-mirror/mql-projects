@@ -434,7 +434,7 @@ void OnTick()
    } 
       
   }
- }
+ }/*
  // если общая тенденция - вниз
  if (lastTendention == TENDENTION_DOWN && currentTendention == TENDENTION_DOWN)
  {                     
@@ -494,7 +494,7 @@ void OnTick()
     lastDeal = SELL;               // сохраняем тип позиции
    }
   } 
- }
+ }*/
 }
   
 // кодирование функций
