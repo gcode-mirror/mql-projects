@@ -20,7 +20,6 @@
 
 // параметры робота
 input double lot = 1.0; // лот
-input int price_diff = 50; // цена разницы
 
 // необходимые переменные
 int handleTrendLines; // хэндл идникатора трендовых линий
@@ -49,7 +48,6 @@ int OnInit()
    // сохраняем имена линий тренда
    supportLineName = _Symbol + "_" + PeriodToString(_Period) + "_supLine"; 
    resistanceLineName = _Symbol + "_" + PeriodToString(_Period) + "_resLine";      
-   price_difference = price_diff * _Point;
    // привязка индикатора DrawExtremums 
    handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
    if (handleDE == INVALID_HANDLE)
@@ -92,10 +90,8 @@ int OnInit()
    pos_info.expiration = 0;
    pos_info.tp = 0;     
    // заполняем 
-  // trailing.trailingType = TRAILING_TYPE_ATR;
-   trailing.trailingType = TRAILING_TYPE_USUAL;
-   trailing.handleForTrailing = 0;
-   //trailing.handleForTrailing = handleATR;   
+   trailing.trailingType = TRAILING_TYPE_ATR;
+   trailing.handleForTrailing = handleATR;   
    return(INIT_SUCCEEDED);
   }
 
@@ -113,16 +109,9 @@ void OnTick()
    currentMoveType = GetMoveType();
    curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
    curAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
-   
-   if (currentMoveType == 1)
-    Comment("тренд вверх");
-   if (currentMoveType == -1)
-    Comment("тренд вниз");
-   if (currentMoveType == 0)
-    Comment("флэт");
-  
+   // получаем сигнал на открытие позиции
    tradeSignal = SignalToOpenPosition();
-   
+   // если получили сигнал на BUY
    if (tradeSignal==1)
     {
      pos_info.type = OP_BUY;  
@@ -130,6 +119,7 @@ void OnTick()
      trailing.minProfit = pos_info.sl;
      ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
     }
+   // если получили сигнал на SELL
    if (tradeSignal==-1)
     {
      pos_info.type = OP_SELL;  
@@ -155,7 +145,7 @@ int SignalToOpenPosition ()
     priceTrendLine = ObjectGetValueByTime(0,supportLineName,TimeCurrent());
     // если тренд пробит снизу вверх
     if ( GreatDoubles(prevBid,priceTrendLine) && LessOrEqualDoubles(curBid,priceTrendLine) )
-      return (1);     
+      return (-1);     
    }
   // если в данный момент - тренд вниз
   if (currentMoveType == -1)
@@ -163,7 +153,7 @@ int SignalToOpenPosition ()
     priceTrendLine = ObjectGetValueByTime(0,resistanceLineName,TimeCurrent());
     // если тренд пробит снизу вверх
     if ( LessDoubles(prevBid,priceTrendLine) && GreatOrEqualDoubles(curBid,priceTrendLine) )
-      return (-1);     
+      return (1);     
    }     
   return (0);
  }
@@ -195,14 +185,14 @@ int CountStopLoss ()
   int bars = Bars(_Symbol,_Period);
   if (currentMoveType == 1)
    {
-    buffInd = 1;
-    timeInd = 5;
+    buffInd = 0;
+    timeInd = 4;
     curPrice = curBid;
    }
   if (currentMoveType == -1)
    {
-    buffInd = 0;
-    timeInd = 4;
+    buffInd = 1;
+    timeInd = 5;
     curPrice = curAsk;
    }
   for (int ind=0;ind<bars;)

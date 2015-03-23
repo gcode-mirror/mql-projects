@@ -23,7 +23,8 @@
 input int    channelDepth = 3;      // глубина канала
 input int    tailDepth    = 20;     // глубина определения хвоста
 input double lot          = 1.0;    // лот     
-input bool skipLastBar    = true;   // пропустить последний бар при расчете канала
+input bool   skipLastBar  = true;   // пропустить последний бар при расчете канала
+//input bool   usePBIFilter = true;   // использовать фильтр PBI
 // переменные
 double max_price;            // максимальная цена канала
 double min_price;            // минимальная цена канала
@@ -38,6 +39,7 @@ bool wait_for_buy=false;     // флаг ожидания условия открытия на BUY
 bool is_flat_now;            // флаг, показывающий, флэт ли сейчас на графике или нет 
 int opened_position = 0;     // флаг открытой позиции (0 - нет позиции, 1 - buy, (-1) - sell)
 int countBars;
+int handlePBI;               // хэндлл PriceBasedIndicator
 ENUM_TIMEFRAMES periodEld;   // период старшего таймфрейма
 // переменные для хранения времени движения цены
 datetime signal_time;        // время получения сигнала пробития ценой уровня на расстояние H
@@ -70,8 +72,14 @@ int OnInit()
    // заполняем 
    trailing.trailingType = TRAILING_TYPE_NONE;
    isNewBar = new CisNewBar(_Symbol,_Period);
-   isNewBarEld=new CisNewBar(_Symbol,periodEld);
-      
+   isNewBarEld = new CisNewBar(_Symbol,periodEld);
+   // создаем хэндл индикатора PriceBasedIndicator
+   handlePBI = iCustom(_Symbol,periodEld,"PriceBasedIndicator");
+   if (handlePBI == INVALID_HANDLE)
+    {
+     Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
+     return (INIT_FAILED);
+    }      
    return(INIT_SUCCEEDED);
   }
 
@@ -82,6 +90,7 @@ void OnDeinit(const int reason)
    delete ctm;
    delete isNewBar;
    delete isNewBarEld;
+   IndicatorRelease(handlePBI);
   }
 
 void OnTick()
@@ -112,10 +121,6 @@ void OnTick()
    // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
    if ( GreatDoubles(price_bid-max_price,h) && !wait_for_sell && opened_position!=-1 )
       {      
-       Comment("max = ",DoubleToString(max_price), " min=",DoubleToString(min_price),
-               "\n bid = ",DoubleToString(price_bid)," prev_bid = ",DoubleToString(prev_price_bid)," \nотошли от канала вверх",
-               "\n время = ",TimeToString(TimeCurrent())
-               );
        // то переходим в режим отскока для открытия на SELL 
        wait_for_sell = true;   
        wait_for_buy = false;
@@ -125,11 +130,7 @@ void OnTick()
       }
    // если цена ask отошла вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
    if ( GreatDoubles(min_price-price_ask,h) && !wait_for_buy && opened_position!=1 )
-      {      
-       Comment("max = ",DoubleToString(max_price), " min=",DoubleToString(min_price),
-               "\n ask = ",DoubleToString(price_ask)," prev_ask = ",DoubleToString(prev_price_ask)," \nотошли от канала вниз",
-                              "\n время = ",TimeToString(TimeCurrent())
-               );        
+      {         
        // то переходим в режим отскока для открытия на BUY
        wait_for_buy = true; 
        wait_for_sell = false;
@@ -144,14 +145,14 @@ void OnTick()
        if (IsBeatenBars(-1))
         {
          // если на старшем ТФ слева нет тел баров
-         if (TestEldPeriod(-1))
+         if (TestEldPeriod(-1) /*&& IsFlatNow ()GetLastTrend ()!=1*/)
           {
            // вычисляем стоп лосс, тейк профит и открываем позицию на SELL
            pos_info.type = OP_SELL;
            pos_info.sl = CountStopLoss(-1);       
            pos_info.tp = CountTakeProfit(-1);
            pos_info.priceDifference = 0;     
-           ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);  
+           ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
            wait_for_sell = false;     
            wait_for_buy = false;  
            opened_position = -1;
@@ -167,14 +168,14 @@ void OnTick()
        if (IsBeatenBars(1))
         {
          // от текущей цены на старших ТФ нет тел свечей
-         if (TestEldPeriod(1))
+         if (TestEldPeriod(1) /*&& IsFlatNow ()&& GetLastTrend ()!=-1*/)
           {
            // вычисляем стоп лосс, тейк профит и открываем позицию на BUY
            pos_info.type = OP_BUY;
            pos_info.sl = CountStopLoss(1);       
            pos_info.tp = CountTakeProfit(1);           
            pos_info.priceDifference = 0;       
-           ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);     
+           ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
            wait_for_buy = false;
            wait_for_sell = false;
            opened_position = 1;
@@ -183,25 +184,7 @@ void OnTick()
           }
         }
       }
-   // если позиция уже открыта, то обрабатываем условия закрытия позиции  
-   if (opened_position)
-    { 
-    /*   
-     // если мы получили первое условие закрытия позиции (закрытие по экстремуму)
-     if (IsBeatenExtremum(opened_position))
-      {
-       ctm.ClosePosition(0);
-       Print("Закрыли позицию по экстремуму. Время = ",TimeToString(TimeCurrent()) );  
-      }
-   */    
-   /*  // если мы получили второе условие закрытия позиции (закрытие по заверешнению периода удержания октрытой позиции)
-     if ( (TimeCurrent() - open_pos_time) > 1.5*(open_pos_time - signal_time) )
-      {
-       ctm.ClosePosition(0);
-       Print("Закрыли позицию по времени Время = ",TimeToString(TimeCurrent())," Время сигнала = ",TimeToString(signal_time)," Время позиции = ",TimeToString(open_pos_time));
-      } 
-   */ 
-    }  
+ 
   }
 // функция вычисляет параметры канала на старшем таймфрейме  
 bool CountChannel ()
@@ -369,3 +352,39 @@ bool TestEldPeriod (int type)
    }
   return (true);
  } 
+
+// функция возвращает тип последнего тренда
+int GetLastTrend ()
+ {
+  double buffPBI[];
+  int bars = Bars(_Symbol,_Period);
+  for (int ind=1;ind<bars;)
+   {
+    if (CopyBuffer(handlePBI,4,ind,1,buffPBI) < 1)
+      {
+       Sleep(100);
+       continue;
+      }
+    // если нашли трендовое движение вверх
+    if (buffPBI[0] == 1.0 || buffPBI[0] == 2.0)
+     return (1);
+    // если нашли трендовое движение вниз
+    if (buffPBI[0] == 3.0 || buffPBI[0] == 4.0)
+     return (-1);
+    ind++;
+   }
+  return (0);
+ }
+ 
+// функция возвращает true, если в данный момент - флэт
+bool IsFlatNow ()
+ {
+  double buffPBI[];
+  if (CopyBuffer(handlePBI,4,0,1,buffPBI) < 1)
+   {
+    return (false);
+   }
+  if (buffPBI[0] == 7.0)
+   return (true);
+  return (false);
+ }
