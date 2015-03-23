@@ -26,7 +26,6 @@ private:
    CSymbolInfo SymbInfo;
    bool UpdateSymbolInfo(string symbol);
    double PBI_colors[], PBI_Extrems[];
-   CBlowInfoFromExtremums *blowInfo;
    
 public:
    CTrailingStop();
@@ -254,7 +253,7 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, dou
 //+------------------------------------------------------------------+
 double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleForTrailing, int minProfit = 0)
 {
- blowInfo = new CBlowInfoFromExtremums(handleForTrailing);        
+ CBlowInfoFromExtremums *blowInfo = new CBlowInfoFromExtremums(handleForTrailing);        
  double stopLoss = 0;                                            // переменная для хранения нового стоп лосса 
  double currentPriceBid = SymbolInfoDouble(symbol, SYMBOL_BID);  // текущая цена BID
  double currentPriceAsk = SymbolInfoDouble(symbol, SYMBOL_ASK);  // текущая цена ASK
