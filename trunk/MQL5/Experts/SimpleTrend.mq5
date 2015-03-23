@@ -259,6 +259,14 @@ void OnTick()
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums i=%d ", MakeFunctionPrefix(__FUNCTION__), i));           
    return;
   }
+ if (!blowInfo[0].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
+     !blowInfo[1].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
+     !blowInfo[2].Upload(EXTR_BOTH,TimeCurrent(),1000) ||
+     !blowInfo[3].Upload(EXTR_BOTH,TimeCurrent(),1000)
+    )
+ {   
+  //log_file.Write(LOG_DEBUG, StringFormat(__FUNCTION__+"%s Не удалось прогрузить буфер индикатора DrawExtremums %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent())));           
+  return;
  }
  
  // если мы используем запрет на вход по NineTeenLines
@@ -435,7 +443,7 @@ void OnTick()
     lastDeal = BUY;                    // сохраняем тип позиции
    } 
   }
- }/*
+ }
  // если общая тенденция - вниз
  if (lastTendention == TENDENTION_DOWN && currentTendention == TENDENTION_DOWN)
  {                     
@@ -495,7 +503,7 @@ void OnTick()
     lastDeal = SELL;               // сохраняем тип позиции
    }
   } 
- }*/
+ }
 }
   
 // кодирование функций

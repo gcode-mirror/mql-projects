@@ -75,24 +75,24 @@ int OnInit()
  switch (pending_orders_type) //вычисление priceDifference
  {
   case USE_LIMIT_ORDERS: //useLimitsOrders = true;
-  opBuy=OP_BUYLIMIT;
-  opSell=OP_SELLLIMIT;
+  opBuy = OP_BUYLIMIT;
+  opSell= OP_SELLLIMIT;
   break;
   case USE_STOP_ORDERS:
-  opBuy=OP_BUYSTOP;
-  opSell=OP_SELLSTOP;
+  opBuy = OP_BUYSTOP;
+  opSell= OP_SELLSTOP;
   break;
   case USE_NO_ORDERS:
-  opBuy=OP_BUY;
-  opSell=OP_SELL;      
+  opBuy = OP_BUY;
+  opSell= OP_SELL;      
   break;
-}   
+ }   
  //создаем объекты класса для обнаружения появления нового бара
- isNewBarM1=new CisNewBar(_Symbol,PERIOD_M1);
- isNewBarM5=new CisNewBar(_Symbol,PERIOD_M5);
+ isNewBarM1= new CisNewBar(_Symbol,PERIOD_M1);
+ isNewBarM5= new CisNewBar(_Symbol,PERIOD_M5);
  isNewBarM15=new CisNewBar(_Symbol,PERIOD_M15);
  // создаем хэндл PriceBasedIndicator
- handle_PBI=iCustom(_Symbol,PERIOD_M15,"PriceBasedIndicator");
+ handle_PBI= iCustom(_Symbol,PERIOD_M15,"PriceBasedIndicator");
  handle_aATR_M1=iMA(_Symbol,PERIOD_M1,100,0,MODE_EMA,iATR(_Symbol,PERIOD_M1,30));
  handle_aATR_M5=iMA(_Symbol,PERIOD_M5,100,0,MODE_EMA,iATR(_Symbol,PERIOD_M5,30)); 
  handle_aATR_M15=iMA(_Symbol,PERIOD_M15,100,0,MODE_EMA,iATR(_Symbol,PERIOD_M15,30));      

@@ -67,10 +67,10 @@ double CTrailingStop::UsualTrailing(string symbol, ENUM_TM_POSITION_TYPE type, d
  if (minProfit > 0 && trailingStop > 0 && trailingStep > 0)
  {
   UpdateSymbolInfo(symbol);
-  double ask = SymbInfo.Ask();
-  double bid = SymbInfo.Bid();
+  double ask   = SymbInfo.Ask();
+  double bid   = SymbInfo.Bid();
   double point = SymbInfo.Point();
-  int digits = SymbInfo.Digits();
+  int digits   = SymbInfo.Digits();
  
   if (type == OP_BUY &&
       LessDoubles(openPrice, bid - minProfit*point) &&
