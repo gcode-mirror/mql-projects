@@ -24,17 +24,18 @@ class CExtrContainer
    string          _symbol;                  // символ
    ENUM_TIMEFRAMES _period;                  // период
    int             _countFormedExtr;         // количество сформированных экстремумов
+   
    public:
-   void         AddExtrToContainer(SExtremum &extr);                                                    // добавляет экстремум в контейнер
-   void         AddExtrToContainer(int direction,double price,datetime time);                           // добавляет экстремум в контейнер по направлению экстремума, цене и времени 
-   SExtremum    MakeExtremum (double price, datetime time, int direction);                              // формирует из данных экстремума объект структуры экстремума
+   CExtrContainer(string symbol,ENUM_TIMEFRAMES period,int handleDE);                  // конструктор класса контейнера экстремумов
+  ~CExtrContainer();                                                                   // деструктор класса контейнера экстремумов
   
-   CExtrContainer(string symbol,ENUM_TIMEFRAMES period,int handleDE);                                   // конструктор класса контейнера экстремумов
-  ~CExtrContainer();                                                                                    // деструктор класса контейнера экстремумов
    // методы класса
-   SExtremum    GetExtremum       (int index);                                                          // получает экстремум по индексу
-   bool         AddNewExtr        (datetime time);                                                      // добавляет новый экстремум с заданной даты
-   int          GetCountFormedExtr() {  return (_countFormedExtr); };                                   // возвращает количество сформированных экстремумов  
+   void         AddExtrToContainer(SExtremum &extr);                            // добавляет экстремум в контейнер
+   void         AddExtrToContainer(int direction,double price,datetime time);   // добавляет экстремум в контейнер по направлению экстремума, цене и времени 
+   SExtremum    MakeExtremum (double price, datetime time, int direction);      // формирует из данных структуру экстремума
+   SExtremum    GetExtremum (int index);                                        // получает экстремум по индексу
+   bool         AddNewExtr (datetime time);                                     // добавляет новый экстремум с заданной даты
+   int          GetCountFormedExtr() {return (_countFormedExtr);};              // возвращает количество сформированных экстремумов  
  };
  
  // кодирование методов класса
