@@ -12,6 +12,7 @@
 #include <CompareDoubles.mqh> // для сравнения действительных чисел
 #include "SExtremum.mqh"      // стркутура экстремумов
 #include <StringUtilities.mqh>
+#include <CLog.mqh>           // для лога
 
 #define DEFAULT_PERCENTAGE_ATR 1.0   // по умолчанию новый экстремум появляется когда разница больше среднего бара
 
@@ -29,20 +30,19 @@ class CExtremum
   {
    protected:
     string _symbol;             // символ
-    int    _digits;             // количество знаков после запятой для сравнения действительных чисел
     ENUM_TIMEFRAMES _tf_period; // период
     int    _handle_ATR;         // хэндл ATR
     double _averageATR;         // среднее значение бара
     double _percentage_ATR;     // коэфициент отвечающий за то во сколько раз движение цены должно превысить средний бар что бы появился новый экстремум  
+    
    public:
     CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr);  // конструктор класса
-   // основные методы класса
-   ENUM_CAME_EXTR isExtremum(SExtremum &extrHigh,SExtremum &extrLow, datetime start_pos_time = __DATETIME__,  bool now = true);  // есть ли экстремум на данном баре   
-   double AverageBar (datetime start_pos); // возвращает средний размер бара   
+    // основные методы класса
+    ENUM_CAME_EXTR isExtremum(SExtremum &extrHigh,SExtremum &extrLow, datetime start_pos_time = __DATETIME__,  bool now = true);  // есть ли экстремум на данном баре   
+    double AverageBar (datetime start_pos); // возвращает средний размер бара   
   };
   
 // кодирование методов класса вычисения экстремумов
-
 
 // конструктор класса
 CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr)
@@ -51,8 +51,7 @@ CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr)
   _symbol = symbol;
   _tf_period = period;
   _handle_ATR = handle_atr;
-  _digits = 8;
-  // вычисляем среднее значение ATR по 
+  // выбираем коэфициент в зафисимости от ТФ 
   switch(_tf_period)
   {
    case(PERIOD_M1):
@@ -100,19 +99,19 @@ ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,date
  // пытаемся скопировать два бара 
  if(CopyRates(_symbol, _tf_period, start_pos_time, 2, bufferRates) < 2)
   {
-   Print("Ошибка CExtremum::isExtremum. Не удалось скопировать котировки = symbol = ",_symbol," Period = ",PeriodToString(_tf_period)," time = ",TimeToString(start_pos_time) );
-   return(false); 
+   log_file.Write(LOG_CRITICAL, StringFormat("%s Не удалось скопировать котировки. symbol = %s, Period = %s, time = %s"
+                                            ,MakeFunctionPrefix(__FUNCTION__), _symbol, PeriodToString(_tf_period), TimeToString(start_pos_time)));
+   return(came_extr); 
   }
  // вычисляем средний размер бара
  averageBarNow = AverageBar(start_pos_time);
  // если удалось вычислить среднее значение и
- if (averageBarNow > 0)
-  _averageATR = averageBarNow; 
+ if (averageBarNow > 0) _averageATR = averageBarNow; 
  // вычисляем минимальное расстояние между экстремумами
  difToNewExtremum = _averageATR * _percentage_ATR;  
  
- if (extrHigh.time > extrLow.time && bufferRates[1].time < extrHigh.time && !now) return (false); 
- if (extrHigh.time < extrLow.time && bufferRates[1].time < extrLow.time && !now) return (false); 
+ if (extrHigh.time > extrLow.time && bufferRates[1].time < extrHigh.time && !now) return (came_extr); 
+ if (extrHigh.time < extrLow.time && bufferRates[1].time < extrLow.time && !now) return (came_extr); 
  
  if (now) // за время жизни бара цена close проходит все его значения от low до high
  {        // соответсвено если на данном баре есть верхний экстремум то он будет достигнут когда close будет max  и наоборот с low
@@ -125,9 +124,9 @@ ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,date
   low = bufferRates[1].low;
  }
  
- if ( (extrHigh.direction == 0  && extrLow.direction == 0)                                                  // Если экстремумов еще нет то говорим что сейчас экстремум
-   || ((extrHigh.time > extrLow.time) && (GreatDoubles(high, extrHigh.price,_digits) )  )                   // Если последний экстремум - High, и цена пробила экстремум в ту же сторону 
-   || ((extrHigh.time < extrLow.time) && (GreatDoubles(high,extrLow.price + difToNewExtremum,_digits) && GreatDoubles(high,bufferRates[0].high,_digits) )  )  ) // Если последний экстремум - Low, и цена отошла от экстремума на мин. расстояние в обратную сторону  
+ if ( (extrHigh.direction == 0  && extrLow.direction == 0)                         // Если экстремумов еще нет то говорим что сейчас экстремум
+   || ((extrHigh.time > extrLow.time) && (GreatDoubles(high, extrHigh.price) ))    // Если последний экстремум - High, и цена пробила экстремум в ту же сторону 
+   || ((extrHigh.time < extrLow.time) && (GreatDoubles(high,extrLow.price + difToNewExtremum) && GreatDoubles(high,bufferRates[0].high) )  )  ) // Если последний экстремум - Low, и цена отошла от экстремума на мин. расстояние в обратную сторону  
  {
   // сохраняем время прихода верхнего экстремума
   if (now) // если экстремумы вычисляются в реальном времени
@@ -137,9 +136,9 @@ ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,date
   came_extr = CAME_HIGH;  // типо пришел верхний экстремум   
  }
  
- if ( ( extrLow.direction == 0 && extrHigh.direction == 0)                                                  // Если экстремумов еще нет то говорим что сейчас экстремум
-   || ((extrLow.time > extrHigh.time) && (LessDoubles(low,extrLow.price,_digits) ) )                        // Если последний экстремум - Low, и цена пробила экстремум в ту же сторону
-   || ((extrLow.time < extrHigh.time) && (LessDoubles(low,extrHigh.price - difToNewExtremum,_digits)  && LessDoubles(low,bufferRates[0].low,_digits) ) ) )  // Если последний экстремум - High, и цена отошла от экстремума на мин. расстояние в обратную сторону
+ if ( ( extrLow.direction == 0 && extrHigh.direction == 0)                      // Если экстремумов еще нет то говорим что сейчас экстремум
+   || ((extrLow.time > extrHigh.time) && (LessDoubles(low,extrLow.price)))    // Если последний экстремум - Low, и цена пробила экстремум в ту же сторону
+   || ((extrLow.time < extrHigh.time) && (LessDoubles(low,extrHigh.price - difToNewExtremum) && LessDoubles(low,bufferRates[0].low) ) ) )  // Если последний экстремум - High, и цена отошла от экстремума на мин. расстояние в обратную сторону
  {
   // если на этом баре пришел верхний экстремум
   if (extrHighTime > 0)
@@ -192,17 +191,21 @@ ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,date
 double CExtremum::AverageBar(datetime start_pos)
  {
   int copied = 0;
-  double buffer_average_atr[1];
+  double buffer_atr[1];
   if (_handle_ATR == INVALID_HANDLE)
    {
-    PrintFormat("%s ERROR. I have INVALID HANDLE = %d, %s", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period));
+    log_file.Write(LOG_CRITICAL, StringFormat("%s ERROR %d. INVALID HANDLE ATR %s", MakeFunctionPrefix(__FUNCTION__), GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period)));
     return (-1);
    }
-  copied = CopyBuffer(_handle_ATR, 0, start_pos, 1, buffer_average_atr);
+  copied = CopyBuffer(_handle_ATR, 0, start_pos, 1, buffer_atr);
   if (copied < 1) 
    {
-    PrintFormat("%s ERROR. I have this error = %d, %s. copied = %d, calculated = %d, buf_num = %d start_pos = %s", __FUNCTION__, GetLastError(), EnumToString((ENUM_TIMEFRAMES)_tf_period), copied, BarsCalculated(_handle_ATR), _handle_ATR,TimeToString(start_pos));
-    return(0);
+    log_file.Write(LOG_CRITICAL, StringFormat("%s ERROR %d. Period = %s. copied = %d, calculated = %d, start time = %s"
+                                             , MakeFunctionPrefix(__FUNCTION__)
+                                             , GetLastError()
+                                             , EnumToString((ENUM_TIMEFRAMES)_tf_period), copied
+                                             , BarsCalculated(_handle_ATR), TimeToString(start_pos)));
+    return(-1);
    }
-  return (buffer_average_atr[0]);
+  return (buffer_atr[0]);
  }
