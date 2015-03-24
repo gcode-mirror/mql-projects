@@ -19,6 +19,8 @@
 
 #include <ChartObjects/ChartObjectsLines.mqh>      // для рисования линий расхождения
 
+
+#define K 0.5
 // входные параметры робота
 input int    channelDepth = 3;      // глубина канала
 input int    tailDepth    = 20;     // глубина определения хвоста
@@ -119,7 +121,7 @@ void OnTick()
     }
         
    // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-   if ( GreatDoubles(price_bid-max_price,h) && !wait_for_sell && opened_position!=-1 )
+   if ( GreatDoubles(price_bid-max_price,K*h) && !wait_for_sell && opened_position!=-1 )
       {      
        // то переходим в режим отскока для открытия на SELL 
        wait_for_sell = true;   
@@ -129,7 +131,7 @@ void OnTick()
        signal_time = TimeCurrent(); 
       }
    // если цена ask отошла вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
-   if ( GreatDoubles(min_price-price_ask,h) && !wait_for_buy && opened_position!=1 )
+   if ( GreatDoubles(min_price-price_ask,K*h) && !wait_for_buy && opened_position!=1 )
       {         
        // то переходим в режим отскока для открытия на BUY
        wait_for_buy = true; 
@@ -225,7 +227,7 @@ int CountStopLoss (int type)
       return (0);
      } 
     // ставим стоп лосс на уровне минимума
-    return ( int( (price_bid-prices[ArrayMinimum(prices)])/_Point) + 30 );   
+    return ( int( (price_bid-prices[ArrayMinimum(prices)])/_Point) + 50 );   
    }
   if (type == -1)
    {
@@ -236,7 +238,7 @@ int CountStopLoss (int type)
       return (0);
      }
     // ставим стоп лосс на уровне максимума
-    return ( int( (prices[ArrayMaximum(prices)] - price_ask)/_Point) + 30 );
+    return ( int( (prices[ArrayMaximum(prices)] - price_ask)/_Point) + 50 );
    }
   return (0);
  }
