@@ -42,7 +42,6 @@ double ColorCandlesColorsTop[];
 
 int i,count;
 string str="";
-SExtremum extr;
 
 // системные параменные индикатора               
 int  depth = depth_history;           // переменная для хранения глубины истории
@@ -284,7 +283,7 @@ void OnChartEvent(const int id,         // идентификатор события
    // пришло событие "пришел новый экстремум"
    if (sparam == "экстремум")
     {
-     // догружаем контейнер новыми экстремумами. И если успешно загрузили экстремумы
+     // догружаеAddExtrToContainerм контейнер новыми экстремумами. И если успешно загрузили экстремумы
      container.AddExtrToContainer(lparam,dparam,TimeCurrent());
      //if (container.AddNewExtr(TimeCurrent() ))
       //{
