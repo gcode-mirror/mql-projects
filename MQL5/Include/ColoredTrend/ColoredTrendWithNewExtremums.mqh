@@ -33,9 +33,10 @@ protected:
   MqlRates buffer_Rates[];                 // буфер котировок
   datetime time_buffer[];                  // буфер времени
   // экстремумы для определения движения
-  SExtremum _extr0,_extr1,_extr2;
-  SExtremum lastOnTrend;                  // последний экстремум текущего тренда
-  SExtremum firstOnTrend;                 // цена начала тренда и его направление 
+  
+  CExtremum *_extr0, *_extr1,*_extr2;
+  CExtremum *lastOnTrend;                  // последний экстремум текущего тренда
+  CExtremum *firstOnTrend;                 // цена начала тренда и его направление 
   // объекты классов
   CExtrContainer *_extrContainer;         // контейнер экстремумов
       
@@ -51,6 +52,7 @@ protected:
 public:
   void CountTrend ();    // метод рассчета тренда
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period,  int handle_atr, int depth,CExtrContainer *extrContainer);
+  void ~CColoredTrend();
   //SExtremum isExtremum(datetime start_index, bool now);
   bool FindExtremumInHistory(int depth);
   bool CountMoveType (int bar, datetime start_time, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);    // метод вычисляет ценовое движение на истории  
@@ -59,7 +61,7 @@ public:
   void Zeros();
   int UpdateExtremums ();     // метод обновляет значения последних трех экстремумов (now = true - для реального времени, now = false - для рассчета на истории) 
   // временные методы
-  SExtremum GetExtr (int n);
+  CExtremum *GetExtr (int n);
   
   void ZeroTrend() { _newTrend = 0; };
   
@@ -78,15 +80,24 @@ void CColoredTrend::CColoredTrend(string symbol, ENUM_TIMEFRAMES period, int han
                    _extrContainer(extrContainer)
 {
  _digits = (int)SymbolInfoInteger(_symbol, SYMBOL_DIGITS);
- firstOnTrend.direction = 0;
- firstOnTrend.price = -1;
- lastOnTrend.direction = 0;
- lastOnTrend.price = -1;
+ firstOnTrend = new CExtremum(0,-1);
+ lastOnTrend  = new CExtremum(0,-1);
  _difToTrend = SetDiffToTrend(period);
+ _extr0 = new CExtremum(0,-1);
+ _extr1 = new CExtremum(0,-1);
+ _extr2 = new CExtremum(0,-1);
  ArrayResize(enumMoveType, depth);
  Zeros();  
+ 
 }
-
+void CColoredTrend::~CColoredTrend()
+{
+ delete _extr0;
+ delete _extr1;
+ delete _extr2;
+ delete firstOnTrend;
+ delete lastOnTrend;
+}
 //+-------------------------------------------------+
 //| Функция вычисляет тип движения рынка на истории |
 //+-------------------------------------------------+
@@ -183,10 +194,16 @@ bool  CColoredTrend::CountMoveType(int bar, datetime start_time, ENUM_MOVE_TYPE 
  {
   enumMoveType[bar] = MOVE_TYPE_CORRECTION_DOWN;
 
-  if (_extr0.direction > 0)   
-   lastOnTrend = _extr0; 
-  else 
-   lastOnTrend = _extr1;
+  if (_extr0.direction > 0)  
+  {
+   lastOnTrend.price = _extr0.price;  
+   lastOnTrend.direction = _extr0.direction; 
+  } 
+  else
+  {
+   lastOnTrend.price = _extr1.price;  
+   lastOnTrend.direction = _extr1.direction; 
+  } 
   
   previous_move_type = enumMoveType[bar];
   return (true);
@@ -202,10 +219,16 @@ bool  CColoredTrend::CountMoveType(int bar, datetime start_time, ENUM_MOVE_TYPE 
  {
   enumMoveType[bar] = MOVE_TYPE_CORRECTION_UP;
 
-  if (_extr0.direction < 0)   
-   lastOnTrend = _extr0; 
+  if (_extr0.direction < 0) 
+  { 
+   lastOnTrend.price = _extr0.price;  
+   lastOnTrend.direction = _extr0.direction; 
+  }  
   else 
-   lastOnTrend = _extr1;
+  {
+   lastOnTrend.price = _extr1.price;  
+   lastOnTrend.direction = _extr1.direction; 
+  }
    
   previous_move_type = enumMoveType[bar];
   return(true);
@@ -340,9 +363,15 @@ bool CColoredTrend::CountMoveTypeA(int bar, datetime start_time, ENUM_MOVE_TYPE 
   enumMoveType[bar] = MOVE_TYPE_CORRECTION_DOWN;
 
   if (_extr0.direction > 0)                  
-   lastOnTrend = _extr0; 
-  else 
-   lastOnTrend = _extr1;
+  {
+   lastOnTrend.price = _extr0.price;  
+   lastOnTrend.direction = _extr0.direction; 
+  }
+  else
+  { 
+   lastOnTrend.price = _extr1.price;  
+   lastOnTrend.direction = _extr1.direction;
+  }
   
   previous_move_type = enumMoveType[bar];
   return (true);
@@ -366,9 +395,15 @@ bool CColoredTrend::CountMoveTypeA(int bar, datetime start_time, ENUM_MOVE_TYPE 
   enumMoveType[bar] = MOVE_TYPE_CORRECTION_UP;
   
   if (_extr0.direction < 0)    
-   lastOnTrend = _extr0; 
+  {
+   lastOnTrend.price = _extr0.price;  
+   lastOnTrend.direction = _extr0.direction; 
+  }
   else 
-   lastOnTrend = _extr1;
+  {
+   lastOnTrend.price = _extr1.price;  
+   lastOnTrend.direction = _extr1.direction;
+  }
    
   previous_move_type = enumMoveType[bar];
   return(true);
@@ -623,7 +658,7 @@ void CColoredTrend::Zeros()
 //+-------------------------------------------------------------+
 int CColoredTrend::UpdateExtremums()
 {
- SExtremum extr0Temp,extr1Temp,extr2Temp;
+ CExtremum *extr0Temp,*extr1Temp,*extr2Temp;
  int countExtr;
  // получаем количество экстремумов в контейнере
  countExtr = _extrContainer.GetCountFormedExtr();
@@ -637,19 +672,22 @@ int CColoredTrend::UpdateExtremums()
  extr0Temp = _extrContainer.GetExtremum(0);
  extr1Temp = _extrContainer.GetExtremum(1);
  extr2Temp = _extrContainer.GetExtremum(2);
- 
  // если обновилась цена экстремума
+
  if (extr0Temp.price != _extr0.price)
   {
-   _extr0 = extr0Temp;
-   _extr1 = extr1Temp;
-   _extr2 = extr2Temp;  
+   _extr0.price = extr0Temp.price;
+   _extr1.price = extr1Temp.price;
+   _extr2.price = extr2Temp.price;
+   _extr0.direction = extr0Temp.direction;
+   _extr1.direction = extr1Temp.direction;
+   _extr2.direction = extr2Temp.direction;  
    return (1);
   }
  return (-1);
 }
 
-SExtremum CColoredTrend::GetExtr(int n)
+CExtremum *CColoredTrend::GetExtr(int n)
  {
   if (n == 0)
    return (_extr0);
