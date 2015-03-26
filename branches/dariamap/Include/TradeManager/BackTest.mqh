@@ -1,0 +1,764 @@
+//+------------------------------------------------------------------+
+//|                                                     BackTest.mqh |
+//|                        Copyright 2013, MetaQuotes Software Corp. |
+//|                                              http://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2013, MetaQuotes Software Corp."
+#property link      "http://www.mql5.com"//---
+
+
+#include <TradeManager/TradeManagerEnums.mqh>  
+#include <CompareDoubles.mqh>
+#include <TradeManager/PositionArray.mqh>
+#include <StringUtilities.mqh> 
+#include <kernel32.mqh>
+#include <Constants.mqh>  
+
+//+------------------------------------------------------------------+
+//| Класс для работы с бэктестом                                     |
+//+------------------------------------------------------------------+
+
+class BackTest
+ {
+  private:
+   CPositionArray *_positionsHistory; // массив истории виртуальных позиций
+   double   _balance;                 // баланс
+   datetime _start,_finish;           // периоды загрузки истории
+   string   _symbol;                  // символ
+   double   _max_balance;             // максимальный уровень баланса
+   double   _min_balance;             // минимальный уровень баланса
+   double   _clean_profit;            // чистая прибыль
+   double   _gross_profit;            // общая прибыль
+   double   _gross_loss;              // общий убыток
+   double   _deposit;                 // депозит
+   ENUM_TIMEFRAMES _timeFrame;        // таймфрейм
+   string   _expertName;              // имя эксперта   
+  public:
+   //конструкторы
+   BackTest() { _positionsHistory = new CPositionArray(); };  
+   BackTest(string file_url,datetime start,datetime finish)
+    { 
+     _positionsHistory = new CPositionArray(); 
+     LoadHistoryFromFile(file_url,start,finish); 
+    }; 
+   // деструктор
+  ~BackTest() { delete _positionsHistory; };
+   //методы бэктеста
+   //метод возвращения индекса позиции в массиве позиций по времени
+   int   GetIndexByDate(datetime dt,bool type);
+   //методы вычисления количест трейдов в истории по символу
+   uint   GetNTrades();     //вычисляет количество трейдов по символу
+   uint   GetNSignTrades(int sign);  //вычисляет количество выйгрышных трейдов по символу
+   //вычисление прибылей
+   void GetProfits();       
+   //возвращает чистую прибыль    
+   double GetCleanProfit(); 
+   //знаки позиций по прибыли
+   int    GetSignLastPosition();           //возвращает знак последней позиции 
+   int    GetSignPosition(uint index);    //вычисляет знак позиции по индексу 
+   //метод вычисления процентных соотношений
+   double GetIntegerPercent(uint value1,uint value2);   //метод вычисления процентного соотношения value1 по отношению  к value2
+   //методы вычисления максимальных и средних трейдов
+   double GetMaxTrade(int sign);          //вычисляет самый большой  трейд по символу
+   double GetAverageTrade(int sign);      //вычисляет средний  трейд
+   //методы вычисления количеств подряд идущих трейдов
+   uint   GetMaxInARowTrades(int sign); 
+   //методы вычисления максимальные непрерывные прибыль и убыток
+   double GetMaxInARow(int sign);  
+   //методы вычисления просадки баланса
+   double GetAbsDrawdown ();              //вычисляет абсолютную просадку баланса
+   double GetRelDrawdown ();              //вычисляет относительную просадку баланса
+   double GetMaxDrawdown ();              //вычисляет максимальную просадку баланса
+   //метод вычисления конечной прибыли 
+   double GetTotalProfit ();  
+   //метод вычисляет максимальный и минимальный баланс
+   void   GetBalances ();   
+   //метод сохраняет график баланса
+   void   SaveBalanceToFile (int file_handle);
+   //прочие системные методы
+   void SortHistoryArray(); // сортирует массив истории по возрастанию даты и времени закрытия позиции
+   bool LoadHistoryFromFile(string file_url,datetime start,datetime finish,bool clear=true);          //загружает историю позиции из файла
+   void GetHistoryExtra(CPositionArray *array);        //получает историю позиций извне
+ //  void Save
+   bool SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName); //сохраняет результаты бэктеста
+   void WriteTo (int handle,string buffer);            // сохраняет в файл строку по заданному хэндлу
+   //дополнительный методы
+   string SignToString (int sign);                     //переводит знак позиции в строку
+   //сохраняет строку в файл 
+ };
+
+//+------------------------------------------------------------------+
+//| Возвращает индекс по дате                                        |
+//+------------------------------------------------------------------+
+
+ int BackTest::GetIndexByDate(datetime dt,bool type)
+  {
+   int index;
+   CPosition *pos;
+   switch (type)
+    {
+     //если нужно найти первую позицию, позднее заданной даты
+     case true:
+      index = 0;
+      //проходим по массиву позиций
+      do 
+       {
+        pos = _positionsHistory.Position(index);
+        index++;
+       }
+      while (index < _positionsHistory.Total() && pos.getOpenPosDT() < dt );
+      //если позиция найдена, то вернем её индекс
+      if (index <_positionsHistory.Total())
+       return index;
+     break; 
+     //если нужно найти первую позицию перед заданной датой
+     case false:
+      index = _positionsHistory.Total();
+      //проходим по массиву позиций
+      do 
+       {
+        index--;
+        pos = _positionsHistory.Position(index);
+       }
+      while (index >= 0 && pos.getOpenPosDT() > dt );
+      //если позиция найдена, то вернем её индекс
+      if (index >=  0)
+       return index;     
+     break;
+    }
+   return -1;  //если позиция не найдена
+  } 
+ 
+ 
+//+------------------------------------------------------------------+
+//| Вычисляет количество позиций в истории                           |
+//+------------------------------------------------------------------+
+ uint BackTest::GetNTrades()
+  {
+   return _positionsHistory.Total();  //размер массива
+  }
+//+------------------------------------------------------------------+
+//| Вычисляет количество позиций по знаку                            |
+//+------------------------------------------------------------------+
+  uint BackTest::GetNSignTrades(int sign) // (1) - прибыльные трейды (-1) - убыточные
+  {
+   uint index;
+   uint total = _positionsHistory.Total();  //размер массива
+   uint count=0; //количество позиций с данным символом
+   CPosition * pos;
+   for (index=0;index<total;index++)
+    {
+     pos = _positionsHistory.Position(index); //получаем указатель на позицию
+     if (pos.getPosProfit()*sign > 0) //если символ позиции совпадает с переданным и профит положительный
+      {
+       count++; //увеличиваем количество посчитанных позиций на единицу
+      }
+    }
+    return count;
+  }
+
+//+------------------------------------------------------------------+
+//| вычисляет прибыли                                                | 
+//+------------------------------------------------------------------+
+
+ void BackTest::GetProfits(void)
+  {
+   CPosition * pos;
+   int length = _positionsHistory.Total(); 
+   int index;
+   // выставляем по умолчанию прибыли
+   _clean_profit = 0;
+   _gross_profit = 0;
+   _gross_loss   = 0;
+   for (index=0;index<length;index++)
+    {
+     pos = _positionsHistory.At(index);
+     // модифицируем чистую прибыль
+     if (pos.getPosProfit()>=0)
+      _gross_profit = _gross_profit + pos.getPosProfit();
+     else
+      _gross_loss   = _gross_loss + pos.getPosProfit();
+     
+    }
+    _clean_profit = _gross_profit + _gross_loss;
+  } 
+
+//+------------------------------------------------------------------+
+//| возвращает чистую прибыль                                        | 
+//+------------------------------------------------------------------+
+
+ double BackTest::GetCleanProfit(void)
+  {
+   return _clean_profit;
+  }
+
+//+------------------------------------------------------------------+
+//| возвращает знак последней позиции                                |  
+//+------------------------------------------------------------------+   
+ int  BackTest::GetSignLastPosition()
+  {
+   CPosition * pos;
+   double profit;
+   int index = _positionsHistory.Total()-1;
+   if (index > -1)
+   {
+    pos = _positionsHistory.At(index);
+    profit = pos.getPosProfit();
+    if (profit>0)
+     return 1;
+    if (profit<0)
+     return -1;
+    return 0;
+   }
+   return 2;
+  }
+    
+//+------------------------------------------------------------------+
+//| возвращает знак  позиции по индексу                              |  
+//+------------------------------------------------------------------+   
+ int  BackTest::GetSignPosition(uint index)
+  {
+   CPosition * pos;
+   double profit;
+     pos = _positionsHistory.Position(index);
+     profit = pos.getPosProfit();
+      if (profit>0)
+        return 1;
+      if (profit<0)
+        return -1;
+       return 0;
+  }
+//+------------------------------------------------------------------+
+//| Вычисляет процентное соотношение value1 к value2                 |
+//+------------------------------------------------------------------+  
+
+ double BackTest::GetIntegerPercent(uint value1,uint value2)
+  {
+   if (value2)
+   return 1.0*value1/value2;
+   return -1;
+  }
+
+//+------------------------------------------------------------------+
+//| Вычисляет самую большую по знаку                                 |
+//+------------------------------------------------------------------+    
+
+double BackTest::GetMaxTrade(int sign) //sign = 1 - самый большой прибыльный, (-1) - самый большой убыточный
+ {
+   uint index;
+   uint total = _positionsHistory.Total();  //размер массива
+   double maxTrade = 0;  //значение максимального трейда
+   CPosition * pos;
+   for (index=0;index<total;index++)
+    {
+     pos = _positionsHistory.Position(index); //получаем указатель на позицию 
+     if (pos.getPosProfit()*sign > maxTrade)
+      {
+       maxTrade = pos.getPosProfit()*sign;
+      }
+    }  
+    return maxTrade*sign;
+ }
+ 
+
+ 
+//+------------------------------------------------------------------+
+//| Вычисляет среднюю позицию                                        |
+//+------------------------------------------------------------------+
+
+double BackTest::GetAverageTrade(int sign) // (1) - средний выйгрышный, (-1) - средний убыточный, (0) - средний по всем
+ {
+   uint index;
+   uint total = _positionsHistory.Total();    //размер массива
+   double tradeSum = 0;                       //сумма трейдов 
+   uint count = 0;                            //количество посчитанных позиций
+   CPosition * pos;
+   for (index=0;index<total;index++)
+    {
+     pos = _positionsHistory.Position(index); //получаем указатель на позицию 
+     if (sign != 0)
+      {
+       if ( pos.getPosProfit()*sign > 0 ) 
+        {
+         count++; //увеличиваем счетчик позиций на единицу
+         tradeSum = tradeSum + pos.getPosProfit(); //к общей сумме прибавляем трейд
+        }
+      }
+      else
+      {
+         count++; //увеличиваем счетчик позиций на единицу
+         tradeSum = tradeSum + pos.getPosProfit(); //к общей сумме прибавляем трейд
+      }  
+     }
+   if (count)
+    return tradeSum/count; //возвращаем среднее
+   return -1;
+ }   
+   
+ 
+//+------------------------------------------------------------------+
+//| Вычисляет макс. количество подряд идущих позиций по знаку        |
+//+------------------------------------------------------------------+
+
+ uint BackTest::GetMaxInARowTrades(int sign) //sign 1 - прибыльные трейды, (-1) - убыточные трейды 
+  {
+   uint index;
+   uint total = _positionsHistory.Total();  //размер массива
+   uint max_count = 0; //максимальное количество подряд идущих трейдов
+   uint count = 0;     //текущий счет позиций
+   CPosition *pos;
+   for (index=0;index<total;index++)
+    {
+     pos = _positionsHistory.Position(index); //получаем указатель на позицию 
+       if (pos.getPosProfit()*sign > 0) 
+         {
+           count++; //увеличиваем количество
+         }
+        else
+         {
+          if (count>0)  
+           {
+            if (count > max_count) //если текущее количество больше предыдущего
+             {
+              max_count = count;   //сохранем текущее
+             }
+            count = 0;             //обнуляем счетчик
+           }
+         }   
+    }   
+    if (count>max_count)
+    {
+     max_count = count;
+    }      
+    return max_count; 
+  }
+  
+  
+//+------------------------------------------------------------------+
+//| Вычисляет максимальную непрерывную прибыль (1) или убыток (-1)   |
+//+------------------------------------------------------------------+
+
+ double BackTest::GetMaxInARow(int sign)  //sign: 1 - по прибыльным, (-1) - по убыточным
+  {
+   uint index;
+   uint total = _positionsHistory.Total();            //размер массива
+   double tradeSum = 0;                               //суммарное количество 
+   double maxTrade = 0;                               //максимальный непрерывный трейд
+   CPosition *pos;
+   for (index=0;index<total;index++)
+    {
+     pos = _positionsHistory.Position(index);         //получаем указатель на позицию 
+        if (pos.getPosProfit()*sign > 0)              
+         {
+           tradeSum = tradeSum + pos.getPosProfit();  //прибавляем профит позиции
+         }
+        else
+         {
+          if (tradeSum*sign>0)  
+           {
+            if (tradeSum*sign > maxTrade*sign)        
+             {
+              maxTrade = tradeSum; 
+             }
+            tradeSum = 0;
+           }
+         }
+    }   
+            if (tradeSum*sign > maxTrade*sign)
+             maxTrade = tradeSum;
+    return maxTrade; 
+  }  
+
+ 
+//+-------------------------------------------------------------------+
+//| Вычисляет абсолютную просадку по балансу                          |
+//+-------------------------------------------------------------------+
+
+double BackTest::GetAbsDrawdown(void)
+ {
+   if (_min_balance < 0)
+    return -_min_balance; 
+   return 0; 
+ }
+
+  
+//+-------------------------------------------------------------------+
+//| Вычисляет максимальную просадку по балансу                        |
+//+-------------------------------------------------------------------+  
+double BackTest::GetMaxDrawdown () //(сейчас для теста вместо баланса - прибыль)
+ {
+   uint index;
+   uint total = _positionsHistory.Total();  //размер массива
+   double MaxBalance = 0;   //максимальный баланс на текущий момент (вместо нуля потом записать начальный баланс)
+   double MaxDrawdown = 0;  //максимальная просадка баланса
+  
+   CPosition * pos;
+   _balance = 0;
+   for (index=0;index<total;index++)
+    {
+     pos = _positionsHistory.Position(index); //получаем указатель на позицию 
+       _balance = _balance + pos.getPosProfit(); //модернизируем текущий баланс
+       if (_balance > MaxBalance)  //если баланс превысил текущий максимальный баланс, то перезаписываем его
+        {
+          MaxBalance = _balance;
+        }
+       else 
+        {
+         if ((MaxBalance-_balance) > MaxDrawdown) //если обнаружена больше просадка, чем была
+          {
+            MaxDrawdown = MaxBalance-_balance;  //то записываем новую просадку баланса
+          }
+        }
+    }  
+   return MaxDrawdown; //возвращаем максимальную просадку по балансу
+ }
+ 
+//+-------------------------------------------------------------------+
+//| Возвращает конечный баланс                                        |
+//+-------------------------------------------------------------------+
+
+double BackTest::GetTotalProfit()
+ {
+  return _balance;
+ }  
+ 
+//+-------------------------------------------------------------------+
+//| Вычисляет максимальный и минимальный балансы                      |
+//+-------------------------------------------------------------------+
+
+void  BackTest::GetBalances()
+ {
+   uint index;
+   uint total = _positionsHistory.Total();  //размер массива
+   double balance  = 0;                     //максимальный баланс на текущий момент (вместо нуля потом записать начальный баланс)
+   double sizeOfLot;   
+   CPosition * pos;                         //указатель на позицию                                  
+   //обнуляем баланс
+   _max_balance = 0;
+   _min_balance = 0;
+   for (index=0;index<total;index++)
+    {
+     pos = _positionsHistory.Position(index);   //получаем указатель на позицию 
+     sizeOfLot = GetLotBySymbol (_symbol)*pos.getVolume();     
+
+        balance = balance + pos.getPosProfit()*sizeOfLot; // модицифируем баланс
+        if (GreatDoubles(balance,_max_balance) )
+         _max_balance = balance;
+        if (LessDoubles (balance, _min_balance) )
+         _min_balance = balance;
+        
+    }
+
+ } 
+ 
+//+-------------------------------------------------------------------+
+//| Сохраняет в файл отчетности график баланса                        |
+//+-------------------------------------------------------------------+ 
+
+void BackTest::SaveBalanceToFile(int file_handle)
+ {
+  int    total = _positionsHistory.Total();                      // всего количество позиций в истории
+  double current_balance = 0;                                    // текущий баланс
+  CPosition *pos;                                                // указатель на позицию  
+  double sizeOfLot;   
+  WriteTo  (file_handle,DoubleToString(current_balance)+" ");    // сохраняем изначальный баланс  
+  for (int index=0;index<total;index++)
+   {
+    // получаем указатель на позицию
+    pos = _positionsHistory.Position(index);
+    sizeOfLot = GetLotBySymbol (_symbol)*pos.getVolume();
+    current_balance = current_balance + pos.getPosProfit()*sizeOfLot; // вычисляем  баланс в данной точке, прибавляя к балансу прибыль по позиции
+    WriteTo  (file_handle,DoubleToString(current_balance)+" "); 
+   }
+ }
+ 
+//+-------------------------------------------------------------------+
+//| Сортирует историю позиций по возрастанию даты и времени           |
+//+-------------------------------------------------------------------+
+/*
+void BackTest::SortHistoryArray(void)  // сейчас сохраняетотсортированное значение баланса в файл
+ {
+   int index_x,index_y;                    // счетчики прохода по циклам
+   int length = _positionsHistory.Total(); // количество позиций в истории
+   CPosition *pos_x,*pos_y;                // указатели на позицию
+   CPosition *tmp_pos;                     // временное значение позиции
+   double    currentBalance = 0;           // текущее значение баланса 
+   int file_handle;                        // хэндл файла баланса
+   
+   // открываем файл на запись совместного баланса
+   file_handle = FileOpen("BALANCE.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " ");
+    if (list_handle == INVALID_HANDLE)
+     {
+      Alert("Не удалось открыть файл со списком файлов истории");
+      return;
+     }   
+    
+   // сортировка установкой
+   for (index_y=0;index_y<length;index_y) 
+    {
+     // получаем позицию по индексу index_y
+     pos_y = _positionsHistory.Position(index_y);
+     for (index_x=0;index_x<length;index_x++)
+      {
+        // получаем позицию по индексу index_x
+        pos_x = _positionsHistory.Position(index_x);
+        // если время закрытия текущей позиции раньше, чем предыдущее
+        if (pos_x.getClosePosDT() < pos_y.getClosePosDT())
+         {
+          // то выставляем временный указатель на текущий элемент
+          tmp_pos = pos_x;
+          
+          
+         }
+      }
+     currentBalance = currentBalance + tmp_pos.getPosProfit();  // модифицируем баланс
+    }
+ }  
+  */
+  
+void  BackTest::SortHistoryArray(void)
+ {
+   double   profitArray[]; // динамический массив профитов
+   ulong timeArray[];      // массив времени закрытия позиций 
+   int index;              // индекс прохода по массиву истории
+   int i_x,i_y;            // индексы прохода по циклам сортировки
+   CPosition *pos;         // указатель на позицию
+   int length;             // длина массива истории
+   datetime tmpTime;       // временная переменная для обмена временем
+   double      tmpValue;   // временная переменная для обмена значениями
+   int file_handle;        // хэндл файла баланса   
+   double  curBalance = 0; // текущий баланс
+   
+   file_handle = FileOpen("DEALS2.txt",FILE_READ|FILE_COMMON|FILE_ANSI|FILE_TXT, " "); // открываем файл на чтение массивов из файла
+    if (file_handle == INVALID_HANDLE)
+     {
+      Alert("Не удалось открыть файл со списком файлов истории");
+      return;
+     } 
+   index=0;  // количество считанных элементов
+   while (! FileIsEnding(file_handle) )  // считываем файл до конца файла
+    {
+     ArrayResize(profitArray,index+1);                  // увеличиваем размер массива профитов на единицу
+     ArrayResize(timeArray,index+1);                    // увеличиваем размер массива времени закрытия позиций  
+     profitArray[index] = StringToDouble(FileReadString(file_handle)); 
+     timeArray[index] = StringToInteger(FileReadString(file_handle));    
+
+     index++; // увеличиваем счетчик элементов массивов на единицу  
+     
+    }   
+   
+   FileClose(file_handle); // закрываем файл 
+   // вычисляем длину массива истории
+   length = _positionsHistory.Total();
+   
+   // открываем файл на запись совместного баланса
+   file_handle = FileOpen("BALANCE.txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, " ");
+    if (file_handle == INVALID_HANDLE)
+     {
+      Alert("Не удалось открыть файл со списком файлов истории");
+      return;
+     }           
+   // сортируем массив профитов 
+   for (i_y=0;i_y < index; i_y++)
+    {
+      for(i_x=i_y;i_x < index; i_x++)
+       {
+         // если время закрытия текущей позиции раньше, чем время последнй найденной ранней позиции 
+         if (timeArray[i_x]  < timeArray[i_y])
+          {
+            tmpTime          = timeArray[i_y];
+            tmpValue         = profitArray[i_y];
+            timeArray[i_y]   = timeArray[i_x];
+            profitArray[i_y] = profitArray[i_x];
+            timeArray[i_x]   = tmpTime;
+            profitArray[i_x] = tmpValue;
+          }
+       }
+
+      // сохраняем текущий баланс в файл
+      curBalance = curBalance + profitArray[i_y];
+      FileWrite(file_handle,""+DoubleToString(curBalance));       
+    }
+    FileClose(file_handle); // закрываем файл
+ }
+//+-------------------------------------------------------------------+
+//| Загружает историю позиций из файла                                |
+//+-------------------------------------------------------------------+   
+  
+bool BackTest::LoadHistoryFromFile(string file_url,datetime start,datetime finish,bool clear=true)
+{
+
+ if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
+ {
+  FileDelete(file_url);
+  return(true);
+ }
+ int file_handle;   //файловый хэндл  
+ if (!FileIsExist(file_url, FILE_COMMON) ) //проверка существования файла истории 
+ {
+
+  PrintFormat("%s File %s doesn't exist", MakeFunctionPrefix(__FUNCTION__),file_url);
+  return (false);
+ }  
+ file_handle = FileOpen(file_url, FILE_READ|FILE_COMMON|FILE_CSV, ";");
+ if (file_handle == INVALID_HANDLE) //не удалось открыть файл
+ {
+  FileClose(file_handle);
+  PrintFormat("%s error: %s opening %s", MakeFunctionPrefix(__FUNCTION__), ErrorDescription(::GetLastError()), file_url);
+  return (false);
+ }
+
+ if (clear == true)  // если нужно очистить файл истории перед загрузкой
+ _positionsHistory.Clear();                   //очищаем массив
+ _positionsHistory.ReadFromFile(file_handle,start,finish); //загружаем данные из файла 
+ 
+ _start = start;
+ _finish   = finish;
+ 
+ FileClose(file_handle);                      //закрывает файл  
+ return (true);
+}  
+  
+  
+//+-------------------------------------------------------------------+
+//| Получает историю позиций извне                                    |
+//+-------------------------------------------------------------------+
+
+void BackTest::GetHistoryExtra(CPositionArray *array)
+ {
+  _positionsHistory = array;
+ } 
+ 
+//+-------------------------------------------------------------------+
+//| Сохраняет вычисленные параметры бэктеста                          |
+//+-------------------------------------------------------------------+
+bool BackTest::SaveBackTestToFile (string file_name,string symbol,ENUM_TIMEFRAMES timeFrame,string expertName)
+ {
+  double current_balance;
+  double sizeOfLot;      // размер лота
+  CPosition *pos;
+  uint total = _positionsHistory.Total();  //всего количество позиций в истории
+  //открываем файл для рез-тов бэктеста на запись
+  int file_handle = CreateFileW(file_name, _GENERIC_WRITE_, _FILE_SHARE_WRITE_, 0, _CREATE_ALWAYS_, 128, NULL);  
+  //если не удалось создать файл
+  if(file_handle <= 0 )
+   {
+    Alert("Не возможно создать файл результатов бэктеста");
+    return(false);
+   }
+  // сохраняем параметры сохранения отчетности
+  _timeFrame  = timeFrame;
+  _expertName = expertName;
+  _symbol     = symbol;
+  // сохраняем стандартный размер лота по символу
+  pos = _positionsHistory.Position(0);
+  // размер лота по символу
+  sizeOfLot = GetLotBySymbol (_symbol)*pos.getVolume();
+  //переменные для хранения параметров бэктеста
+  uint    n_trades           =  GetNTrades();                     //количество позиций
+  uint    n_win_trades       =  GetNSignTrades(1);                //количество выйгрышных трейдов
+  uint    n_lose_trades      =  GetNSignTrades(-1);               //количество выйгрышных трейдов
+  int     sign_last_pos      =  GetSignLastPosition();            //знак последней позиции
+  double  max_trade          =  GetMaxTrade(1)*sizeOfLot;         //самый большой трейд по символу
+  double  min_trade          =  GetMaxTrade(-1)*sizeOfLot;        //самый маленький трейд по символу
+  double  aver_profit_trade  =  GetAverageTrade(1)*sizeOfLot;     //средний прибыльный трейд 
+  double  aver_lose_trade    =  GetAverageTrade(-1)*sizeOfLot;    //средний убыточный трейд   
+  uint    maxPositiveTrades  =  GetMaxInARowTrades(1);            //максимальное количество подряд идущих положительных трейдов
+  uint    maxNegativeTrades  =  GetMaxInARowTrades(-1);           //максимальное количество подряд идущих отрицательных трейдов
+  double  maxProfitRange     =  GetMaxInARow(1)*sizeOfLot;        //максимальный профит
+  double  maxLoseRange       =  GetMaxInARow(-1)*sizeOfLot;       //максимальный убыток
+  double  maxDrawDown        =  GetMaxDrawdown()*sizeOfLot;       //максимальная просадка
+  double  absDrawDown;                                            //абсолютная просадка
+  double  profitFactor;                                           //фактор профита
+  double  recoveryFactor;                                         //отношение чистой прибыли к процентной максимальной просадке
+  double  mathAwaiting;                                           //матожидание сделки
+   
+  GetBalances();  // вычисляем максимальный и минимальный баланс
+  
+  GetProfits ();  // вычисляем прибыли
+  
+  _clean_profit  = _clean_profit * sizeOfLot;
+  _gross_loss    = _gross_loss * sizeOfLot;
+  _gross_profit  = _gross_profit * sizeOfLot;
+  if (_gross_loss < 0)
+   {
+    profitFactor   = -_gross_profit / _gross_loss;
+   }
+  if (maxDrawDown)
+   {
+    recoveryFactor = _clean_profit / maxDrawDown;
+   }
+  mathAwaiting   = GetAverageTrade(0) * sizeOfLot;
+  absDrawDown    = GetAbsDrawdown();
+  
+  //сохраняем в файл данные об эксперте , таймфрейме и прочем
+  WriteTo  (file_handle,_expertName+" ");                  // сохраняем имя эксперта
+  WriteTo  (file_handle,_symbol+" ");                      // сохраняем символ
+  WriteTo  (file_handle,IntegerToString(ArraySearchString(symArray,_symbol) )+" ");    // сохраняем символ (код символа)
+  WriteTo  (file_handle,PeriodToString(_timeFrame)+" ");   // сохраняем таймфрейм  
+  pos = _positionsHistory.Position(_positionsHistory.Total()-1);         //получаем указатель на первую позицию   
+  WriteTo  (file_handle,IntegerToString(pos.getOpenPosDT())+" ");      // сохраняем время начала считывания истории в Unix Time
+  pos = _positionsHistory.Position(0);         //получаем указатель на последнюю позицию    
+  WriteTo  (file_handle,IntegerToString(pos.getOpenPosDT())+" ");     // сохраняем время конца считывания истории в Unix Time
+  WriteTo  (file_handle,DoubleToString(_max_balance)+" "); // максимальный баланс
+  WriteTo  (file_handle,DoubleToString(_min_balance)+" "); // минимальный баланс
+  
+  //сохраняем файл параметров вычисления бэктеста
+  WriteTo  (file_handle,IntegerToString(n_trades+1)+" ");
+  WriteTo  (file_handle,IntegerToString(n_win_trades)+" ");
+  WriteTo  (file_handle,IntegerToString(n_lose_trades+1)+" ");
+  WriteTo  (file_handle,IntegerToString(sign_last_pos)+" ");
+  WriteTo  (file_handle,DoubleToString (max_trade)+" ");
+  WriteTo  (file_handle,DoubleToString (min_trade)+" ");   
+  WriteTo  (file_handle,DoubleToString (maxProfitRange)+" "); 
+  WriteTo  (file_handle,DoubleToString (maxLoseRange)+" ");
+  WriteTo  (file_handle,IntegerToString(maxPositiveTrades)+" ");  
+  WriteTo  (file_handle,IntegerToString(maxNegativeTrades)+" ");
+  WriteTo  (file_handle,DoubleToString (aver_profit_trade)+" ");
+  WriteTo  (file_handle,DoubleToString (aver_lose_trade)+" ");    
+  WriteTo  (file_handle,DoubleToString (maxDrawDown)+" ");
+  WriteTo  (file_handle,DoubleToString (absDrawDown)+" ");
+  WriteTo  (file_handle,DoubleToString (_clean_profit)+" ");
+  WriteTo  (file_handle,DoubleToString (_gross_profit)+" ");
+  WriteTo  (file_handle,DoubleToString (_gross_loss)+" ");
+  WriteTo  (file_handle,DoubleToString (profitFactor)+" ");
+  WriteTo  (file_handle,DoubleToString (recoveryFactor)+" ");  
+  WriteTo  (file_handle,DoubleToString (mathAwaiting)+" "); 
+                                         
+  //сохраняем точки графиков (баланса, маржи)
+  SaveBalanceToFile(file_handle);
+  //закрываем файл
+  CloseHandle(file_handle);
+ return (true);
+ }
+
+//+-------------------------------------------------------------------+
+//| Дополнительные методы                                             |
+//+-------------------------------------------------------------------+
+
+string BackTest::SignToString(int sign)
+ //переводит знак позиции в строку
+ {
+   if (sign == 1)
+    return "positive";
+   if (sign == -1)
+    return "negative";
+   return "no sign";
+ }
+ 
+ 
+   // сохраняет строку в файл
+void BackTest::WriteTo(int handle, string buffer) 
+{
+  int    nBytesRead[1]={1};
+  char   buff[]; 
+  StringToCharArray(buffer,buff);
+  if(handle>0) 
+  {
+    Comment(" ");
+    WriteFile(handle, buff, StringLen(buffer), nBytesRead, NULL);
+    
+  } 
+  else
+   Print("неудача. плохой хэндл для файла SPEAKER");
+}
