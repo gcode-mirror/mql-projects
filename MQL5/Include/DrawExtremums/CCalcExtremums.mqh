@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                CExtremum.mqh     |
+//|                                                CCalcExtremums.mqh |
 //|                        Copyright 2014, Dmitry Onodera            |
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -13,6 +13,7 @@
 #include "SExtremum.mqh"      // стркутура экстремумов
 #include <StringUtilities.mqh>
 #include <CLog.mqh>           // для лога
+#include <DrawExtremums\CExtremum.mqh>
 
 
 #define DEFAULT_PERCENTAGE_ATR 1.0   // по умолчанию новый экстремум появляется когда разница больше среднего бара
@@ -27,7 +28,7 @@ enum ENUM_CAME_EXTR
  };
 
 // класс для вычисления послених экстремумов
-class CExtremum 
+class CCalcExtremums 
   {
    protected:
     string _symbol;             // символ
@@ -37,7 +38,7 @@ class CExtremum
     double _percentage_ATR;     // коэфициент отвечающий за то во сколько раз движение цены должно превысить средний бар что бы появился новый экстремум  
     
    public:
-    CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr);  // конструктор класса
+    CCalcExtremums(string symbol, ENUM_TIMEFRAMES period, int handle_atr);  // конструктор класса
     // основные методы класса
     ENUM_CAME_EXTR isExtremum(SExtremum &extrHigh,SExtremum &extrLow, datetime start_pos_time = __DATETIME__,  bool now = true);  // есть ли экстремум на данном баре   
     double AverageBar (datetime start_pos); // возвращает средний размер бара   
@@ -46,7 +47,7 @@ class CExtremum
 // кодирование методов класса вычисения экстремумов
 
 // конструктор класса
-CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr)
+CCalcExtremums::CCalcExtremums(string symbol, ENUM_TIMEFRAMES period, int handle_atr)
  {
   // сохраняем поля класса
   _symbol = symbol;
@@ -88,7 +89,7 @@ CExtremum::CExtremum(string symbol, ENUM_TIMEFRAMES period, int handle_atr)
  }
  
 // метод вычисления экстремума на текущем баре
-ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start_pos_time=__DATETIME__,bool now=true)
+ENUM_CAME_EXTR CCalcExtremums::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,datetime start_pos_time=__DATETIME__,bool now=true)
  {
  double high = 0, low = 0;                     // временная переменная в которой будет хранится цена для расчета max и min соответственно
  double averageBarNow;                         // для хранения среднего размера бара
@@ -189,7 +190,7 @@ ENUM_CAME_EXTR CExtremum::isExtremum(SExtremum &extrHigh,SExtremum &extrLow,date
  }
  
 // метод вычисления среднего размера бара
-double CExtremum::AverageBar(datetime start_pos)
+double CCalcExtremums::AverageBar(datetime start_pos)
  {
   int copied = 0;
   double buffer_atr[1];
