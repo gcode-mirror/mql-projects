@@ -53,7 +53,6 @@ public:
   void CountTrend ();    // метод рассчета тренда
   void CColoredTrend(string symbol, ENUM_TIMEFRAMES period,  int handle_atr, int depth,CExtrContainer *extrContainer);
   void ~CColoredTrend();
-  //SExtremum isExtremum(datetime start_index, bool now);
   bool FindExtremumInHistory(int depth);
   bool CountMoveType (int bar, datetime start_time, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);    // метод вычисляет ценовое движение на истории  
   bool CountMoveTypeA(int bar, datetime start_time, ENUM_MOVE_TYPE topTF_Movement = MOVE_TYPE_UNKNOWN);   // метод вычисляет ценовое движение в реальном времени

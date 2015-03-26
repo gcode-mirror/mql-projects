@@ -20,8 +20,8 @@
 // подключаем необходимые библиотеки
 #include <CompareDoubles.mqh>                             // для сравнения вещественных чисел
 #include <Lib CisNewBarDD.mqh>                            // для появления нового бара
-#include <ColoredTrend/ColoredTrendWithNewExtremums.mqh>  // класс CColoredTrend
-#include <ColoredTrend/ColoredTrendUtilities.mqh>         // константы и перечисления CColoredTrend
+#include <ColoredTrend/ColoredTrend.mqh>                  // класс CColoredTrend
+//#include <ColoredTrend/ColoredTrendUtilities.mgh>       // кому он здесь нужен?
 #include <DrawExtremums/CExtrContainer.mqh>               // контейнер экстремумов
 #include <SystemLib/IndicatorManager.mqh>                 // библиотека по работе с индикаторами
 #include <CEventBase.mqh>                                 // для генерации событий   
@@ -223,15 +223,14 @@ int OnCalculate(const int rates_total,
       if (!trendCalculated)
           trend.ZeroTrend();  // то обнуляем тренд
         
-     /* if (container.AddNewExtr(TimeCurrent()))   
-        {         
-         // обновляем экстремумы         
-         if (trend.UpdateExtremums()==1)
-          {
-           trend.CountTrend();   
-          }
-        } 
-     */  
+      if (container.AddNewExtr(TimeCurrent()))   
+      {         
+       // обновляем экстремумы         
+       if (trend.UpdateExtremums()==1)
+       {
+        trend.CountTrend();   
+       }
+      }   
            
       // вычисляем текущее движение в реальном времени 
       trend.CountMoveTypeA(buffer_index, time[0], (ENUM_MOVE_TYPE)buffer_top_trend[0]);
