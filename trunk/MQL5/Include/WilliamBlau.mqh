@@ -17,8 +17,8 @@ int ExponentialMAOnBufferWB(const int rates_total,const int prev_calculated,cons
    if(period<1 || rates_total-begin<period) return(0);
    double dSmoothFactor=2.0/(1.0+period);
 //--- save as_series flags
-   bool as_series_price=ArrayGetAsSeries(price);
-   bool as_series_buffer=ArrayGetAsSeries(buffer);
+   bool as_series_price = ArrayGetAsSeries(price);
+   bool as_series_buffer= ArrayGetAsSeries(buffer);
    if(as_series_price)  ArraySetAsSeries(price,false);
    if(as_series_buffer) ArraySetAsSeries(buffer,false);
 //--- first calculation or number of bars was changed
