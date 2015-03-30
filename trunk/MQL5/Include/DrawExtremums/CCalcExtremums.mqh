@@ -10,7 +10,7 @@
 
 // подключение необходимых библиотек
 #include <CompareDoubles.mqh> // для сравнения действительных чисел
-#include "SExtremum.mqh"      // стркутура экстремумов
+//#include "SExtremum.mqh"      // стркутура экстремумов
 #include <StringUtilities.mqh>
 #include <CLog.mqh>           // для лога
 #include <DrawExtremums\CExtremum.mqh>
