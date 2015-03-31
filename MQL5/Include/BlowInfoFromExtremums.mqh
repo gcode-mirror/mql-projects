@@ -44,7 +44,7 @@ class CBlowInfoFromExtremums : public CObject
    int _historyDepth;           // глубина истории
   public:
   // методы класса
-   int  GetExtrCountHigh() { return( int(_extrCountHigh[0]) ); };                              // возвращает количество экстремумов HIGH
+   int  GetExtrCountHigh() { return( int(_extrCountHigh[0]) ); };                             // возвращает количество экстремумов HIGH
    int  GetExtrCountLow()  { return ( int(_extrCountLow[0]) ); };                              // возвращает количество экстремумов LOW
    bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,datetime start_time=0,int historyDepth = 1000); // функция обновляет экстремумы по времени
    bool Upload (ENUM_EXTR_USE extr_use=EXTR_BOTH,int start_pos=0,int historyDepth = 1000);       // функция обновляет экстремумы по индексу
