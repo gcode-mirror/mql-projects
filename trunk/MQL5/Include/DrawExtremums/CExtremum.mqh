@@ -15,7 +15,7 @@ enum STATE_OF_EXTR
 {
  EXTR_FORMING = 0,
  EXTR_FORMED,
- EXTR_NO
+ EXTR_NO_TYPE        //не €сно нужно ли отсавл€ть
 };
 
 class CExtremum : public CObject
@@ -28,7 +28,7 @@ class CExtremum : public CObject
  datetime time;                      // врем€ бара на котором возникает экстремум
  STATE_OF_EXTR state;                // статус экстремума типа перечислений STATE_OF_EXTR (форимирующийс€/сформированный)
                      CExtremum();
-                     CExtremum(int direction, double price, datetime time = 0, STATE_OF_EXTR state = EXTR_NO);
+                     CExtremum(int direction, double price, datetime time = 0, STATE_OF_EXTR state = EXTR_NO_TYPE);
                     ~CExtremum();
 };
 //+------------------------------------------------------------------+
@@ -37,7 +37,7 @@ class CExtremum : public CObject
 CExtremum::CExtremum()
 {
 }
-CExtremum::CExtremum(int _direction, double _price, datetime _time = 0, STATE_OF_EXTR _state = EXTR_NO)
+CExtremum::CExtremum(int _direction, double _price, datetime _time = 0, STATE_OF_EXTR _state = EXTR_NO_TYPE)
 {
  direction = _direction;
  price     = _price;
