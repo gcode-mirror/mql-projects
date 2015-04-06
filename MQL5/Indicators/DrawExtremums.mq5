@@ -55,7 +55,7 @@ int indexPrevDown = -1;    // индекс последнего нижнего экстремума, которого нуж
 int depth;                 // глубина истории
 int jumper=0;              // переменная для чередования экстремумов
 int prevJumper=0;          // предыдущее значение jumper
-double averageATR;         // среднее значение бара
+double averageATR;        // среднее значение бара
 double percentage_ATR;     // коэфициент отвечающий за то во сколько раз движение цены должно
                            // превысить средний бар что бы появился новый экстремум 
                            
@@ -94,17 +94,17 @@ int OnInit()
  // создаем объект генерации событий 
  extrHigh = new CExtremum(0,-1);
  extrLow = new CExtremum(0,-1);
- event = new CEventBase(100);
+ event = new CEventBase(_Symbol, _Period, 100);
  if (event == NULL)
  {
   Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать объект класса CEventBase");
   return (INIT_FAILED);
  }
  // создаем события
- event.AddNewEvent(_Symbol,_Period,"EXTR_UP");
- event.AddNewEvent(_Symbol,_Period,"EXTR_UP_FORMED");
- event.AddNewEvent(_Symbol,_Period,"EXTR_DOWN");
- event.AddNewEvent(_Symbol,_Period,"EXTR_DOWN_FORMED");      
+ event.AddNewEvent("EXTR_UP");
+ event.AddNewEvent("EXTR_UP_FORMED");
+ event.AddNewEvent("EXTR_DOWN");
+ event.AddNewEvent("EXTR_DOWN_FORMED");      
  // задаем индексацию индикаторных буферов
  SetIndexBuffer(0, bufferFormedExtrHigh, INDICATOR_DATA);
  SetIndexBuffer(1, bufferFormedExtrLow, INDICATOR_DATA);
@@ -308,7 +308,7 @@ int OnCalculate(const int rates_total,
    }
    return(rates_total);
   } 
- 
+   
 //+------------------------------------------------------------------+
 //|       Дополнительные функции индикатора                          |
 //+------------------------------------------------------------------+

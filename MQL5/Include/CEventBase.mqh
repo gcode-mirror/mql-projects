@@ -155,7 +155,7 @@ bool CEventBase::AddNewEvent(string eventName)
        }
      }
    }   
-  tmp_id = GenerateIsNewBarEventID(symbol,period);
+  tmp_id = GenerateIsNewBarEventID(_symbol, _period);
   if (tmp_id == 0)
    {
     Print("Не удалось добавить новое id события, поскольку не удалось его сгенерить");
@@ -167,8 +167,7 @@ bool CEventBase::AddNewEvent(string eventName)
     // если уже был подобный id
     if (id_array[ind]==tmp_id)
      {
-      
-      Print("Не удалось добавить новое id события, поскольку такой id уже существует Symbol = ",symbol," period = ",PeriodToString(period)," name = ",eventName );
+      Print("Не удалось добавить новое id события, поскольку такой id уже существует Symbol = ",_symbol," period = ",PeriodToString(_period)," name = ",eventName );
       return (false);
      }
    }

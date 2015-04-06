@@ -30,7 +30,7 @@ struct pointLine
   datetime time;
  };
  
-CTradeManager * ctm; 
+CTradeManager *ctm; 
 
 int  handleDE;
 bool switchTrend = false; // количество пробитий трендовой линии
@@ -60,57 +60,52 @@ int OnInit()
  {
   ctm = new CTradeManager(); 
    // прив€зка индикатора DrawExtremums 
-   handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
+  handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
+  if (handleDE == INVALID_HANDLE)
+  {
+   handleDE = iCustom(_Symbol,_Period,"DrawExtremums");
    if (handleDE == INVALID_HANDLE)
-    {
-     handleDE = iCustom(_Symbol,_Period,"DrawExtremums");
-     if (handleDE == INVALID_HANDLE)
-      {
-       Print("Ќе удалось создать хэндл индикатора DrawExtremums");
-       return (INIT_FAILED);
-      }
-     SetIndicatorByHandle(_Symbol,_Period,handleDE);
-    }      
+   {
+    Print("Ќе удалось создать хэндл индикатора DrawExtremums");
+    return (INIT_FAILED);
+   }
+   SetIndicatorByHandle(_Symbol,_Period,handleDE);
+  }      
   // если удалось прогрузить последние экстремумы
   if (UploadExtremums())
+  {
+   trend = IsTrendNow();
+   // сохран€ем валидность тренда
+   validTrend = IsValidState (trend);
+   if (validTrend)
    {
-    trend = IsTrendNow();
-    // сохран€ем валидность тренда
-    validTrend = IsValidState (trend);
-    if (validTrend)
-     {
-      // строим линии 
-      DrawLines ();    
-     }
+    // строим линии 
+    DrawLines ();    
    }
-    countTotal = 0;
-    // сохран€ем цены  
-    curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
-    prevBid = curBid;
-   // заполн€ем пол€ позиции
-   pos_info.volume = lot;
-   pos_info.expiration = 0;
-   // заполн€ем 
-   trailing.trailingType = TRAILING_TYPE_NONE;
-   trailing.handleForTrailing = 0;     
-   return(INIT_SUCCEEDED);
   }
+  countTotal = 0;
+   // сохран€ем цены  
+  curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
+  prevBid = curBid;
+   // заполн€ем пол€ позиции
+  pos_info.volume = lot;
+  pos_info.expiration = 0;
+   // заполн€ем 
+  trailing.trailingType = TRAILING_TYPE_NONE;
+  trailing.handleForTrailing = 0;     
+  return(INIT_SUCCEEDED);
+ }
 
 void OnDeinit(const int reason)
   {
    delete ctm;
-   Print("»з них достигли обоих линий: ",YesTrendYesHor);   
-   Print("»з них достигли горизонтальной, но не тренда: ",NoTrendYesHor);
-   Print("»з них достигли тренда, но не горизонтальной: ",YesTrendNoHor);   
-   Print("»з них не достигли линий: ",NoTrendNoHor);
-   Print(" оличество экстремумов: ",countTotal);  
    IndicatorRelease(handleDE);
   }
   
   
 void OnTick()
   {     
-     ctm.OnTick();
+   ctm.OnTick();
    curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);    
      // если движение валидно
      if (validTrend)
@@ -160,19 +155,16 @@ void OnChartEvent(const int id,         // идентификатор событи€
                   const string& sparam  // параметр событи€ типа string 
                  )
   {
-   int direction;
    double price;
    if (sparam == "EXTR_DOWN_FORMED")
     {
      price = SymbolInfoDouble(_Symbol,SYMBOL_BID);
      pos_info.type = OP_BUY; 
-     direction = -1;
     }
    if (sparam == "EXTR_UP_FORMED")
     {
      price = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
      pos_info.type = OP_SELL;
-     direction = 1;
     }
    // пришло событие "сформировалс€ новых экстремум"
    if (sparam == "EXTR_DOWN_FORMED" || sparam == "EXTR_UP_FORMED")
@@ -207,12 +199,12 @@ void OnChartEvent(const int id,         // идентификатор событи€
        if (half_stop)
         pos_info.sl = int(MathAbs((price-extr[0].price)/2)/_Point);
        else
-        pos_info.sl = int(MathAbs(price-extr[0].price)/_Point);
+       pos_info.sl = int(MathAbs(price-extr[0].price)/_Point);
        pos_info.tp = int(MathAbs(price-extr[1].price)/_Point);
        if (use)
         {
          if (pos_info.tp > pos_info.sl*n)
-          ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
+         ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
         }
        else
         {
