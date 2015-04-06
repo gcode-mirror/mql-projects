@@ -84,14 +84,14 @@ int OnInit()
     }
 
    // создаем объект генерации событий 
-   event = new CEventBase(300);
+   event = new CEventBase(_Symbol,_Period,300);
    if (event == NULL)
     {
      Print("Ошибка при инициализации индикатора PriceBasedIndicator. Не удалось создать объект класса CEventBase");
      return (INIT_FAILED);
     }
    // создаем события
-   event.AddNewEvent(_Symbol,_Period,"смена движения"); 
+   event.AddNewEvent("MOVE_CHANGED"); 
   
    if(Bars(_Symbol,_Period) < depth) depth = Bars(_Symbol,_Period)-1;
    PrintFormat("Глубина поиска равна: %d", depth);
@@ -247,7 +247,7 @@ int OnCalculate(const int rates_total,
         // то обновляем последнее движение
         last_move = ColorCandlesColors[0];
         eventData.dparam = last_move;
-        Generate("смена движения",eventData,true);
+        event.Generate("смена движения",eventData,true);
        }
        
       if(NewBarCurrent.isNewBar() && prev_calculated != 0)
@@ -291,20 +291,3 @@ void OnChartEvent(const int id,         // идентификатор события
     }
    
   } 
-// дополнительные функции индикатора 
-
-// проходим по всем графикам и генерим события под них
-void Generate(string id_nam,SEventData &_data,const bool _is_custom=true)
-  {
-   // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
-   long z = ChartFirst();
-   while (z>=0)
-     {
-      if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
-        {
-         // генерим событие для текущего графика
-         event.Generate(z,id_nam,_data,_is_custom);
-        }
-      z = ChartNext(z);      
-     }     
-  }  

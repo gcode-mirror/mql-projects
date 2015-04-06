@@ -266,7 +266,7 @@ int OnCalculate(const int rates_total,
      // запись информации об экстремуме
      eventData.dparam = extrHigh.price;
      eventData.lparam = long(extrHigh.time);
-     Generate("EXTR_UP",eventData,true);
+     event.Generate("EXTR_UP",eventData,true);
      if (jumper == -1)
      {   
       bufferFormedExtrLow[indexPrevDown] = lastExtrDownValue;        // сохраняем сформированный экстремум
@@ -275,7 +275,7 @@ int OnCalculate(const int rates_total,
       eventData.dparam = lastExtrDownValue;
       eventData.lparam = long(lastExtrDownTime);  
       prevJumper = jumper;
-      Generate("EXTR_DOWN_FORMED",eventData,true);
+      event.Generate("EXTR_DOWN_FORMED",eventData,true);
      }
      jumper = 1;
      indexPrevUp = rates_total-1;
@@ -291,7 +291,7 @@ int OnCalculate(const int rates_total,
      // запись информации об экстремуме
      eventData.dparam = extrLow.price;
      eventData.lparam = long(extrLow.time);
-     Generate("EXTR_DOWN",eventData,true);               
+     event.Generate("EXTR_DOWN",eventData,true);               
      if (jumper == 1)
      {             
       bufferFormedExtrHigh[indexPrevUp] = lastExtrUpValue;        // сохраняемт сформированный экстремум
@@ -300,7 +300,7 @@ int OnCalculate(const int rates_total,
       eventData.dparam = lastExtrUpValue;  
       eventData.lparam = long(lastExtrUpTime);      
       prevJumper = jumper;          
-      Generate("EXTR_UP_FORMED",eventData,true);         
+      event.Generate("EXTR_UP_FORMED",eventData,true);         
      }
      jumper = -1;
      indexPrevDown = rates_total-1;
@@ -348,22 +348,6 @@ void GetATRCoefficient(ENUM_TIMEFRAMES period)
     break;
  }  
 } 
-
-// проходим по всем графикам и генерим события под них
-void Generate(string id_nam, SEventData &_data, const bool _is_custom = true)
-{
- // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
- long z = ChartFirst();
- while (z >= 0)
- {
-  if (ChartSymbol(z) == _Symbol && ChartPeriod(z)==_Period)  // если найден график с текущим символом и периодом 
-  {
-   // генерим событие для текущего графика
-   event.Generate(z,id_nam,_data,_is_custom);
-  }
-  z = ChartNext(z);      
- }     
-}
 
 // метод вычисления экстремума на текущем баре
 ENUM_CAME_EXTR isExtremum(datetime start_pos_time=__DATETIME__,bool now=true)

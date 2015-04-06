@@ -85,10 +85,15 @@ public:
    void             ~CEventBase(void){};
    //--
    bool AddNewEvent(string eventName);   // метод добавляет новое событие по заданному символу и ТФ с заданным именем   
+   
    bool              Generate(long _chart_id, int _id_ind, SEventData &_data,
                               const bool _is_custom=true);                       // генератор событий по индексу
    bool              Generate(long _chart_id,string id_nam,SEventData &_data, 
                               const bool _is_custom=true);                       // генераторв событий по имени события 
+  
+   void              Generate(string id_nam, SEventData &_data, 
+                              const bool _is_custom = true);                     // генератор событий, проходящий по всем графикам
+                              
    ushort            GetId(void) {return this.m_id;};                            // возвращает ID события
    
    string            GenUniqEventName (string eventName);                        // генерирует уникальное имя события 
@@ -176,63 +181,11 @@ bool CEventBase::AddNewEvent(string eventName)
   ArrayResize(id_array,id_count+1);
   ArrayResize(id_name,id_count+1);
   id_array[id_count] = tmp_id;
-  id_name[id_count]  = eventName;
+  id_name[id_count]  = generatedName;
   id_count++;
   
   return (true);
  }  
- 
-/* 
- 
-// добавляет новое событие
-bool CEventBase::AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventName)
- {
-  long tmp_id;
-  int ind;  // счетчик прохода по циклам
-  string generatedName;
-  // генерим имя события
-  generatedName = eventName + "_" + symbol+"_"+PeriodToString(period);
-  // если имя не пустое, значит оно задано => нужно проверить его уникальность
-  if (eventName != "")
-   {
-    for (ind=0;ind<id_count;ind++)
-     {
-      if (id_name[ind] == eventName)
-       {
-        Print("Не удалось добавить новое id события, поскольку задано не уникальное имя");
-        return (false);
-       }
-     }
-   }   
-  tmp_id = GenerateIsNewBarEventID(symbol,period);
-  if (tmp_id == 0)
-   {
-    Print("Не удалось добавить новое id события, поскольку не удалось его сгенерить");
-    return (false);
-   } 
-  // проходим по буферу id для проверки уникальности id
-  for (ind=0;ind<id_count;ind++)
-   {
-    // если уже был подобный id
-    if (id_array[ind]==tmp_id)
-     {
-      
-      Print("Не удалось добавить новое id события, поскольку такой id уже существует Symbol = ",symbol," period = ",PeriodToString(period)," name = ",eventName );
-      return (false);
-     }
-   }
-  // добавляем новое id в буфер
-  
-  ArrayResize(id_array,id_count+1);
-  ArrayResize(id_name,id_count+1);
-  id_array[id_count] = tmp_id;
-  id_name[id_count]  = eventName;
-  id_count++;
-  
-  return (true);
- }  
-  
-*/  
   
 //+------------------------------------------------------------------+
 //| метод генератора событий                                         |
@@ -284,7 +237,38 @@ bool CEventBase::Generate(long _chart_id,string id_nam,SEventData &_data,const b
   Generate(_chart_id,ind_id,_data,_is_custom);
   return (true);
  }
- 
+
+//+------------------------------------------------------------------+
+//| метод генератора событий на все графики                          |
+//+------------------------------------------------------------------+
+void CEventBase::Generate(string id_nam, SEventData &_data, const bool _is_custom = true)
+{
+ // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
+ long z = ChartFirst();
+ int ind;
+ string eventName = GenUniqEventName(id_nam);
+ _data.sparam = eventName;
+ // ищем это событие по имении в буфере
+ for (ind=0;ind<id_count;ind++)
+  {
+   // если нашли событие по имени
+   if (id_name[ind] == eventName)
+    {     
+      // проходим по всем графикам и генерим события
+      while (z >= 0)
+       {
+        if (ChartSymbol(z) == _symbol && ChartPeriod(z)==_period)  // если найден график с текущим символом и периодом 
+           {
+            // генерим событие для текущего графика
+            Generate(z,id_name[ind],_data,_is_custom);
+           }
+        z = ChartNext(z);      
+       }  
+      return;
+    }
+  }
+} 
+
 //+------------------------------------------------------------------+
 //| метод генерирует уникальное имя события                          |
 //+------------------------------------------------------------------+

@@ -45,6 +45,9 @@ class CExtrContainer
  int      _historyDepth;            // глубина истории
  int      _countHigh;
  int      _countLow;
+ 
+ // приватные методы класса
+ string GenEventName (string eventName) { return(eventName+"_"+_symbol+"_"+PeriodToString(_period) ); };
  public:
  CExtrContainer(int handleExtremums, string symbol, ENUM_TIMEFRAMES period);          // конструктор класса контейнера экстремумов
  ~CExtrContainer();                                                                   // деструктор класса контейнера экстремумов
@@ -218,8 +221,6 @@ bool CExtrContainer::Upload()
  return (true);
 }
 
-
-
 //+------------------------------------------------------------------+
 // ƒобавл€ет новый эктсремум по событию                              |
 //+------------------------------------------------------------------+
@@ -227,8 +228,10 @@ bool  CExtrContainer::UploadOnEvent(string sparam,double dparam,long lparam)
 {
 
  CExtremum *lastExtr;
+ string extrUp = GenEventName("EXTR_UP");
+ string extrDown = GenEventName("EXTR_DOWN");
  // если пришел новый экстремум High
- if (sparam == "EXTR_UP")
+ if (sparam == extrUp)
   {
  
    lastExtr =  new CExtremum(1, dparam,datetime(lparam),EXTR_FORMING); 
@@ -238,7 +241,7 @@ bool  CExtrContainer::UploadOnEvent(string sparam,double dparam,long lparam)
    return true;
   } 
  // если пришел новый экстремум Low
- if (sparam == "EXTR_DOWN")
+ if (sparam == extrDown)
   {
    lastExtr = new CExtremum(-1, dparam,datetime(lparam),EXTR_FORMING); 
    if (lastExtr == NULL)
