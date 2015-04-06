@@ -456,7 +456,9 @@ void CTradeManager::ModifyPosition(string symbol, double sl = 0, double tp = 0)
   if (pos.getSymbol() == symbol)
   {
    if(sl > 0)
-    pos.ModifyPosition(sl, tp);
+    pos.ModifySL(sl);
+   if(tp > 0)
+    pos.ModifyTP(tp);
   }
  }
 }

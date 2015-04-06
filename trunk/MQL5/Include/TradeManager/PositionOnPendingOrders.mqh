@@ -123,7 +123,8 @@ public:
    bool     ClosePosition();
    void     DoTrailing();
    bool     isMinProfit();
-   bool     ModifyPosition(double sl, double tp); //tp - не работате
+   bool     ModifySL(double sl); 
+   bool     ModifyTP(double tp); 
    ulong    NewTicket();
    ENUM_POSITION_STATUS OpenPosition();
    double   OpenPriceByType(ENUM_TM_POSITION_TYPE type);     // вычисляет уровень открытия в зависимости от типа 
@@ -440,21 +441,22 @@ ENUM_STOPLEVEL_STATUS CPosition::ChangeStopLossVolume()
 //+------------------------------------------------------------------+
 bool CPosition::CheckTakeProfit(void)
 {
+ bool result = false;
  if (_tpPrice > 0)
  {
   UpdateSymbolInfo();
   if (_pos_info.type == OP_SELL && _tpPrice >= SymbInfo.Ask())
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Позиция Селл, пройден уровень тейкпрофит ",MakeFunctionPrefix(__FUNCTION__))  );
+   result = true;
   }
   if (_pos_info.type == OP_BUY  && _tpPrice <= SymbInfo.Bid())
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Позиция Бай, пройден уровень тейкпрофит ",MakeFunctionPrefix(__FUNCTION__)) );
+   result = true;
   }
-  return ((_pos_info.type == OP_SELL && _tpPrice >= SymbInfo.Ask()) || 
-          (_pos_info.type == OP_BUY  && _tpPrice <= SymbInfo.Bid()) );
  }
- return (false);
+ return (result);
 }
 
 //+------------------------------------------------------------------+
@@ -542,7 +544,7 @@ void CPosition::DoTrailing()
   default:
    break;
  }
- if (sl > 0) ModifyPosition(sl, 0);
+ if (sl > 0) ModifySL(sl);
 }
 
 
@@ -567,7 +569,7 @@ bool CPosition::isMinProfit(void)
 //+------------------------------------------------------------------+
 //| EMPTY
 //+------------------------------------------------------------------+
-bool CPosition::ModifyPosition(double sl, double tp)
+bool CPosition::ModifySL(double sl)
 {
  //PrintFormat("Изменяем стоп-лосс");
   //если позиция реальная, то меняем отложенный ордер sl
@@ -595,6 +597,14 @@ bool CPosition::ModifyPosition(double sl, double tp)
  return(false);
 }
 
+
+bool CPosition::ModifyTP(double tp)
+{
+ _tpPrice = tp;
+ log_file.Write(LOG_DEBUG, StringFormat("%s Изменили ТейкПрофит, новый ТейкПрофит %.05f", MakeFunctionPrefix(__FUNCTION__), _tpPrice) ) ;
+ //_pos_info.tp = tp;
+ return (true);
+}
 //+------------------------------------------------------------------+
 /// Increments Config.VirtualOrderTicketGlobalVariable.
 /// \return    Unique long integer
