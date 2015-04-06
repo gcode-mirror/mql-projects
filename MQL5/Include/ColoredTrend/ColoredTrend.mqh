@@ -38,7 +38,7 @@ protected:
   CExtremum *lastOnTrend;                  // последний экстремум текущего тренда
   CExtremum *firstOnTrend;                 // цена начала тренда и его направление 
   // объекты классов
-  CExtrContainer *_extrContainer;         // контейнер экстремумов
+  CExtrContainer *_extrContainer;          // контейнер экстремумов
       
   int FillTimeSeries(ENUM_TF tfType, int count, datetime start_time, MqlRates &array[]);
   
@@ -658,29 +658,35 @@ void CColoredTrend::Zeros()
 int CColoredTrend::UpdateExtremums()
 {
  CExtremum *extr0Temp,*extr1Temp,*extr2Temp;
- int countExtr;
- // получаем количество экстремумов в контейнере
- countExtr = _extrContainer.GetCountFormedExtr();
- // если количество экстремумов меньше 3-х
- if (countExtr < 3)
-  {
-   return (0);
-  }
-       
- // загружаем эктстремумы
- extr0Temp = _extrContainer.GetExtremum(0);
- extr1Temp = _extrContainer.GetExtremum(1);
- extr2Temp = _extrContainer.GetExtremum(2);
- // если обновилась цена экстремума
 
+ // получаем последние 3 экстремума
+ extr0Temp = _extrContainer.GetExtrByIndex(0,EXTR_BOTH);
+ extr1Temp = _extrContainer.GetExtrByIndex(1,EXTR_BOTH);
+ extr2Temp = _extrContainer.GetExtrByIndex(2,EXTR_BOTH);
+  
+
+ if (extr0Temp.direction == 0 || extr1Temp.direction == 0 || extr2Temp.direction == 0)
+  return (0);
+  
+ /*Print("extr0Temp = ",DoubleToString(extr0Temp.price),
+       "\nextr1 = ",DoubleToString(extr1Temp.price),
+       "\nextr2 = ",DoubleToString(extr2Temp.price)
+      );
+ */
+ // если обновился экстремум 
  if (extr0Temp.price != _extr0.price)
   {
    _extr0.price = extr0Temp.price;
-   _extr1.price = extr1Temp.price;
-   _extr2.price = extr2Temp.price;
+   _extr0.time  = extr0Temp.time;
    _extr0.direction = extr0Temp.direction;
+   
+   _extr1.price = extr1Temp.price;
+   _extr1.time  = extr1Temp.time;
    _extr1.direction = extr1Temp.direction;
-   _extr2.direction = extr2Temp.direction;  
+   
+   _extr2.price = extr2Temp.price;
+   _extr2.time  = extr2Temp.time;
+   _extr2.direction = extr2Temp.direction;   
    return (1);
   }
  return (-1);

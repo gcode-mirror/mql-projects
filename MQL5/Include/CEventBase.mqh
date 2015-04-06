@@ -62,6 +62,8 @@ protected:
    ushort            id_array[]; // массив id событий
    string            id_name[];  // массив имен событий
    int               id_count;   // количество id событий
+   string            _symbol;    // символ
+   ENUM_TIMEFRAMES   _period;    // таймфрейм      
    SEventData        m_data;
 
 private:
@@ -71,24 +73,25 @@ private:
    long GenerateIsNewBarEventID (string symbol,ENUM_TIMEFRAMES period);  // метод формирует код ID события 
 
 public:
-   void              CEventBase(const ushort startid)
+   void              CEventBase(string symbol,ENUM_TIMEFRAMES period,const ushort startid)
      {
       this.m_id=0;
       this.m_type=EVENT_TYPE_NULL;
       this.start_id=start_id;
       this.id_count = 0; 
+      this._symbol = symbol;
+      this._period = period;
      };
    void             ~CEventBase(void){};
    //--
-   bool AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventName="");   // метод добавляет новое событие по заданному символу и ТФ с заданным именем   
+   bool AddNewEvent(string eventName);   // метод добавляет новое событие по заданному символу и ТФ с заданным именем   
    bool              Generate(long _chart_id, int _id_ind, SEventData &_data,
                               const bool _is_custom=true);                       // генератор событий по индексу
    bool              Generate(long _chart_id,string id_nam,SEventData &_data, 
                               const bool _is_custom=true);                       // генераторв событий по имени события 
    ushort            GetId(void) {return this.m_id;};                            // возвращает ID события
    
-   string            GenUniqEventName (string eventName,string symbol, 
-                                               ENUM_TIMEFRAMES period);          // генерирует уникальное имя события 
+   string            GenUniqEventName (string eventName);                        // генерирует уникальное имя события 
                                                
    void  PrintAllNames();                                            
    
@@ -135,10 +138,61 @@ long CEventBase::GenerateIsNewBarEventID (string symbol,ENUM_TIMEFRAMES period)
  }   
   
 // добавляет новое событие
-bool CEventBase::AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventName="")
+bool CEventBase::AddNewEvent(string eventName)
  {
   long tmp_id;
   int ind;  // счетчик прохода по циклам
+  string generatedName = GenUniqEventName(eventName);
+  // если имя не пустое, значит оно задано => нужно проверить его уникальность
+  if (generatedName != "")
+   {
+    for (ind=0;ind<id_count;ind++)
+     {
+      if (id_name[ind] == generatedName)
+       {
+        Print("Не удалось добавить новое id события, поскольку задано не уникальное имя");
+        return (false);
+       }
+     }
+   }   
+  tmp_id = GenerateIsNewBarEventID(symbol,period);
+  if (tmp_id == 0)
+   {
+    Print("Не удалось добавить новое id события, поскольку не удалось его сгенерить");
+    return (false);
+   } 
+  // проходим по буферу id для проверки уникальности id
+  for (ind=0;ind<id_count;ind++)
+   {
+    // если уже был подобный id
+    if (id_array[ind]==tmp_id)
+     {
+      
+      Print("Не удалось добавить новое id события, поскольку такой id уже существует Symbol = ",symbol," period = ",PeriodToString(period)," name = ",eventName );
+      return (false);
+     }
+   }
+  // добавляем новое id в буфер
+  
+  ArrayResize(id_array,id_count+1);
+  ArrayResize(id_name,id_count+1);
+  id_array[id_count] = tmp_id;
+  id_name[id_count]  = eventName;
+  id_count++;
+  
+  return (true);
+ }  
+ 
+/* 
+ 
+// добавляет новое событие
+bool CEventBase::AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventName)
+ {
+  long tmp_id;
+  int ind;  // счетчик прохода по циклам
+  string generatedName;
+  // генерим имя события
+  generatedName = eventName + "_" + symbol+"_"+PeriodToString(period);
   // если имя не пустое, значит оно задано => нужно проверить его уникальность
   if (eventName != "")
    {
@@ -178,6 +232,8 @@ bool CEventBase::AddNewEvent(string symbol,ENUM_TIMEFRAMES period,string eventNa
   
   return (true);
  }  
+  
+*/  
   
 //+------------------------------------------------------------------+
 //| метод генератора событий                                         |
@@ -233,9 +289,9 @@ bool CEventBase::Generate(long _chart_id,string id_nam,SEventData &_data,const b
 //+------------------------------------------------------------------+
 //| метод генерирует уникальное имя события                          |
 //+------------------------------------------------------------------+
-string CEventBase::GenUniqEventName(string eventName,string symbol,ENUM_TIMEFRAMES period)
+string CEventBase::GenUniqEventName(string eventName)
  {
-  return ( eventName + "_" + symbol + "_" + PeriodToString(period) );
+  return ( eventName + "_" + _symbol + "_" + PeriodToString(_period) );
  } 
  
 void CEventBase::PrintAllNames(void)

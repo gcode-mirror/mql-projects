@@ -76,7 +76,7 @@ int OnInit()
      SetIndicatorByHandle(_Symbol,_Period,handleDE);
     }   
    // выделяем память под объект класса для доступа     
-   container = new CExtrContainer(_Symbol,_Period,handleDE);
+   container = new CExtrContainer(handleDE,_Symbol,_Period);
    if ( container == NULL )
     {
      Print("Ошибка при инициализации индикатора PriceBasedIndicator. Не удалось создать объект класса CExtrContainer");
@@ -164,7 +164,7 @@ int OnCalculate(const int rates_total,
    static int buffer_index = 0;
    double buffer_top_trend[1] = {MOVE_TYPE_UNKNOWN};  // масссив для хранения типа движения на старшем таймфреме
    int countMoveTypeEvent;
-   
+
    // переворачиваем индексацию массивов как в таймсерии
    ArraySetAsSeries(open , true);
    ArraySetAsSeries(high , true);
@@ -180,7 +180,9 @@ int OnCalculate(const int rates_total,
     InitializeIndicatorBuffers();
     //depth = rates_total;
     NewBarCurrent.isNewBar(time[depth]);
-      
+  //  if (!container.Upload())
+  //   return (0);
+    
     for(int i = depth-1; i >= 0;  i--)    
     {
      if(!is_it_top) 
@@ -191,7 +193,8 @@ int OnCalculate(const int rates_total,
       }       
        
        // пытаемся добавить экстремумы если это возможно
-       container.AddNewExtr(time[i]);    
+       container.AddNewExtrByTime(time[i]);  
+       Print("Количество экстремумов = ",container.GetCountFormedExtr());  
        // получаем событие от метода вычисления движения
        trend.CountMoveType(buffer_index, time[i], (ENUM_MOVE_TYPE)buffer_top_trend[0]);
        
@@ -211,6 +214,9 @@ int OnCalculate(const int rates_total,
     last_move = ColorCandlesColors[0]; 
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН", MakeFunctionPrefix(__FUNCTION__));
    }  
+   
+   //Comment("последний экстремум = ",DoubleToString(container.GetExtrByIndex(0,EXTR_BOTH).price)); 
+   
    // рассчет индикатора в реальном времени
           
       // вычисление типа движения в текущий момент
@@ -222,16 +228,7 @@ int OnCalculate(const int rates_total,
       // если тренд не был обновлен
       if (!trendCalculated)
           trend.ZeroTrend();  // то обнуляем тренд
-        
-      if (container.AddNewExtr(TimeCurrent()))   
-      {         
-       // обновляем экстремумы         
-       if (trend.UpdateExtremums()==1)
-       {
-        trend.CountTrend();   
-       }
-      }   
-           
+          
       // вычисляем текущее движение в реальном времени 
       trend.CountMoveTypeA(buffer_index, time[0], (ENUM_MOVE_TYPE)buffer_top_trend[0]);
       // сбрасываем флаг того, что тренд вычислялся
@@ -279,22 +276,18 @@ void OnChartEvent(const int id,         // идентификатор события
                   const string& sparam  // параметр события типа string 
                  )
   {
-   // пришло событие "пришел новый экстремум"
-   if (sparam == "экстремум")
+   
+   // если удалось догрузить экстремумы в контейнер
+   if (container.UploadOnEvent(sparam,dparam,lparam))
     {
-     // догружаеAddExtrToContainerм контейнер новыми экстремумами. И если успешно загрузили экстремумы
-     container.AddExtrToContainer(lparam,dparam,TimeCurrent());
-     //if (container.AddNewExtr(TimeCurrent() ))
-      //{
-       // если удалось обновить экстремумы
-       if (trend.UpdateExtremums()==1)
+     // если удалось обновить экстремумы
+     if (trend.UpdateExtremums()==1)
         {
          // рассчитываем тренд
          trend.CountTrend();
          // выставляем флаг того, что тренд был пересчитан
          trendCalculated = true;
-        }
-      ///}
+        }        
     }
    
   } 
@@ -314,5 +307,4 @@ void Generate(string id_nam,SEventData &_data,const bool _is_custom=true)
         }
       z = ChartNext(z);      
      }     
-  }
-  
+  }  
