@@ -16,6 +16,10 @@
 
 input double percent = 0.1; // процент 
 input double lot = 1.0; // лот
+input bool use = true; // условие
+input bool half_stop = true;
+input int n = 2; 
+
 
 // структура точек для построения линии
 struct pointLine
@@ -200,10 +204,21 @@ void OnChartEvent(const int id,         // идентификатор события
      validTrend = IsValidState (trend);
      if (validTrend)
       {
-       pos_info.sl = int(MathAbs(price-extr[0].price)/_Point);
+       if (half_stop)
+        pos_info.sl = int(MathAbs((price-extr[0].price)/2)/_Point);
+       else
+        pos_info.sl = int(MathAbs(price-extr[0].price)/_Point);
        pos_info.tp = int(MathAbs(price-extr[1].price)/_Point);
-       if (pos_info.tp > pos_info.sl*3)
-         ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
+       if (use)
+        {
+         if (pos_info.tp > pos_info.sl*n)
+          ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
+        }
+       else
+        {
+          ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);        
+        }
+        
        // перерисовываем линии
        DrawLines ();
       }

@@ -55,7 +55,7 @@ int indexPrevDown = -1;    // индекс последнего нижнего экстремума, которого нуж
 int depth;                 // глубина истории
 int jumper=0;              // переменна€ дл€ чередовани€ экстремумов
 int prevJumper=0;          // предыдущее значение jumper
-double averageATR;        // среднее значение бара
+double averageATR;         // среднее значение бара
 double percentage_ATR;     // коэфициент отвечающий за то во сколько раз движение цены должно
                            // превысить средний бар что бы по€вилс€ новый экстремум 
                            
@@ -307,8 +307,7 @@ int OnCalculate(const int rates_total,
     }      
    }
    return(rates_total);
-  }
-   
+  } 
  
 //+------------------------------------------------------------------+
 //|       ƒополнительные функции индикатора                          |
@@ -349,7 +348,6 @@ void GetATRCoefficient(ENUM_TIMEFRAMES period)
     break;
  }  
 } 
-
 
 // проходим по всем графикам и генерим событи€ под них
 void Generate(string id_nam, SEventData &_data, const bool _is_custom = true)
@@ -467,7 +465,6 @@ ENUM_CAME_EXTR isExtremum(datetime start_pos_time=__DATETIME__,bool now=true)
  return (came_extr);
 }
 
-
 // метод вычислени€ среднего размера бара
 double AverageBar(datetime start_pos)
 {
@@ -489,4 +486,4 @@ double AverageBar(datetime start_pos)
   return(-1);
  }
  return (buffer_atr[0]);
-} 
+}
