@@ -232,28 +232,26 @@ bool CExtrContainer::Upload(int bars = 0)
 //+------------------------------------------------------------------+
 bool  CExtrContainer::UploadOnEvent(string sparam,double dparam,long lparam)
 {
-
  CExtremum *lastExtr;
  string extrUp = GenEventName("EXTR_UP");
  string extrDown = GenEventName("EXTR_DOWN");
  // если пришел новый экстремум High
  if (sparam == extrUp)
   {
- 
-   lastExtr =  new CExtremum(1, dparam,datetime(lparam),EXTR_FORMING); 
+   lastExtr =  new CExtremum(1, dparam, datetime(lparam), EXTR_FORMING); 
    if (lastExtr == NULL)
     return false;
    AddExtrToContainer(lastExtr);
-   return true;
+    return true;
   } 
  // если пришел новый экстремум Low
  if (sparam == extrDown)
   {
-   lastExtr = new CExtremum(-1, dparam,datetime(lparam),EXTR_FORMING); 
+   lastExtr = new CExtremum(-1, dparam, datetime(lparam), EXTR_FORMING); 
    if (lastExtr == NULL)
     return false;
    AddExtrToContainer(lastExtr);
-   return true;
+    return true;
   }  
  return false;
 } 
