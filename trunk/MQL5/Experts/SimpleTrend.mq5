@@ -14,6 +14,7 @@
 #include <CompareDoubles.mqh>                      // для сравнения вещественных чисел
 #include <TradeManager\TradeManager.mqh>           // торговая библиотека
 #include <BlowInfoFromExtremums.mqh>               // класс по работе с экстремумами индикатора DrawExtremums
+#include <StringUtilities.mqh>
 
 // константы сигналов
 #define BUY   1    
@@ -123,6 +124,8 @@ STrailing trailing;                                // параметры трейлинга
 datetime  timeOpenPos = 0;
 // буфер для загрузки времени
 datetime  timeBuf[]; 
+
+int pos = 0;
 int OnInit()
  {     
   // если мы используем PriceBasedIndicator для вычисления последнего тренда на выбранном таймфрейме
@@ -797,19 +800,40 @@ void OnChartEvent(const int id,
                   const double &dparam,
                   const string &sparam)
 {
+ string strPeriod;
+ Print(sparam);
  //container.UploadOnEvent(sparam,dparam,lparam); 
- sparam = "ExtrUp_
- trailing.extrContainer.UploadOnEvent(sparam, dparam, lparam);
- Print(" По событию теперь элементов в контейнере = ", trailing.extrContainer.GetCountByType(EXTR_BOTH));
+ pos = StringFind(sparam, "_", 6); pos++;
+ strPeriod = StringSubstr(sparam, pos, 9);
+ CExtrContainer *cextr;
+ //Print(strPeriod, "pos = ", pos);
+ if(strPeriod == PeriodToString(PERIOD_M1))
+ {
+  cextr = conteiners.At(0);
+  cextr.UploadOnEvent(sparam, dparam, lparam);
+  Print(" По событию теперь элементов в контейнере = ", trailing.extrContainer.GetCountByType(EXTR_BOTH));
+ }
+ if(strPeriod == PeriodToString(PERIOD_M10))
+ {
+  cextr = conteiners.At(1);
+  cextr.UploadOnEvent(sparam, dparam, lparam);
+  Print(" По событию теперь элементов в контейнере = ", trailing.extrContainer.GetCountByType(EXTR_BOTH));
+ }
+ if(strPeriod == PeriodToString(PERIOD_M15))
+ {
+  cextr = conteiners.At(2);
+  cextr.UploadOnEvent(sparam, dparam, lparam);
+  Print(" По событию теперь элементов в контейнере = ", trailing.extrContainer.GetCountByType(EXTR_BOTH));
+ }
+ if(strPeriod == PeriodToString(PERIOD_H1))
+ {
+  cextr = conteiners.At(3);
+  cextr.UploadOnEvent(sparam, dparam, lparam);
+  Print(" По событию теперь элементов в контейнере = ", trailing.extrContainer.GetCountByType(EXTR_BOTH));
+ }
+ 
+  //trailing.extrContainer.UploadOnEvent(sparam, dparam, lparam);
+ 
+ //Print(" По событию теперь элементов в контейнере = ", trailing.extrContainer.GetCountByType(EXTR_BOTH));
 }
 
-//+------------------------------------------------------------------+
-//| метод генерирует уникальное имя события                          |
-//+------------------------------------------------------------------+
-void CEventBase::PrintAllNames(void)
- {
-  for(int i=0;i<ArraySize(id_name);i++)
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%i имя = %s",i,id_name[i]) );  
-   }
- }
