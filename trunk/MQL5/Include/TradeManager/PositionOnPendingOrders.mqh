@@ -410,7 +410,7 @@ bool CPosition::ChangeSize(double additionalVolume)
    }
    else
    {
- //   PrintFormat("%s Не удалось установить новый ордер при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__));
+   //   PrintFormat("%s Не удалось установить новый ордер при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__));
     log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось установить новый ордер при изменении отложенной позиции", MakeFunctionPrefix(__FUNCTION__)));
    }
   }
@@ -535,7 +535,7 @@ void CPosition::DoTrailing()
    sl = trailingStop.PBITrailing(_symbol, _pos_info.type, _posAveragePrice, _slPrice, _trailing.handleForTrailing, _trailing.minProfit);  
    break;
   case TRAILING_TYPE_EXTREMUMS :
-   sl = trailingStop.ExtremumsTrailing(_symbol, _pos_info.type, _slPrice, _posAveragePrice, _trailing.handleForTrailing);
+   sl = trailingStop.ExtremumsTrailing(_symbol, _pos_info.type, _period, _trailing, _slPrice, _posAveragePrice, _trailing.handleForTrailing);
    break;
   case TRAILING_TYPE_ATR :
    sl = trailingStop.ATRTrailing(_symbol, _pos_info.type, _period, _trailing.handleForTrailing, _posAveragePrice, _slPrice, _trailing.minProfit);

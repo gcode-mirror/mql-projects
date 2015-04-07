@@ -5,6 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2013, GIA"
 #property link      "http://www.saita.net"
+#include <DrawExtremums\CExtrContainer.mqh>
 
 //+------------------------------------------------------------------+
 /// Similar enum to ENUM_ORDER_TYPE.
@@ -291,6 +292,7 @@ struct STrailing
  int trailingStop;
  int trailingStep;
  int handleForTrailing;
+ CExtrContainer *extrContainer;
 };
 
 
