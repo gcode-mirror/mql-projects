@@ -13,7 +13,7 @@
 #include <CompareDoubles.mqh>
 #include <StringUtilities.mqh>
 #include <ColoredTrend\ColoredTrendUtilities.mqh>
-#include <BlowInfoFromExtremums.mqh>
+#include <DrawExtremums\CExtrContainer.mqh>
 
 #define DEPTH_PBI 100
 
@@ -38,7 +38,7 @@ public:
                        , int _minProfit, int _trailingStop, int _trailingStep);
    double Lossless        (string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, int minProfit);                       
    double PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, double openPrice, double sl, int handle_PBI, int minProfit = 0);
-   double ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleExtremums, int minProfit = 0);  
+   double ExtremumsTrailing (string symbol, ENUM_TM_POSITION_TYPE type, ENUM_TIMEFRAMES period, STrailing &trail, double sl,double priceOpen, int handleExtremums, int minProfit = 0);  
    double ATRTrailing (string symbol, ENUM_TM_POSITION_TYPE type, ENUM_TIMEFRAMES period, int handleExtremums, double openPrice, double sl, int minProfit = 0);                  
   };
 //+------------------------------------------------------------------+
@@ -251,9 +251,15 @@ double CTrailingStop::PBITrailing(string symbol, ENUM_TM_POSITION_TYPE type, dou
 //+------------------------------------------------------------------+
 // Трейлинг по экстремумам
 //+------------------------------------------------------------------+
-double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE type,double sl,double priceOpen, int handleForTrailing, int minProfit = 0)
+double CTrailingStop::ExtremumsTrailing (string symbol, ENUM_TM_POSITION_TYPE type, ENUM_TIMEFRAMES period, STrailing &trail, double sl,double priceOpen, int handleForTrailing, int minProfit = 0)
 {
- CBlowInfoFromExtremums *blowInfo = new CBlowInfoFromExtremums(handleForTrailing);        
+ CExtrContainer *extrContain = trail.extrContainer;
+ if(extrContain == NULL || extrContain.GetCountByType(EXTR_BOTH) == 0)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Используемый контейнер экстремумов пуст.  ", MakeFunctionPrefix(__FUNCTION__)));     
+  return(0.0);
+ }
+ //CBlowInfoFromExtremums *blowInfo = new CBlowInfoFromExtremums(handleForTrailing);        
  double stopLoss = 0;                                            // переменная для хранения нового стоп лосса 
  double currentPriceBid = SymbolInfoDouble(symbol, SYMBOL_BID);  // текущая цена BID
  double currentPriceAsk = SymbolInfoDouble(symbol, SYMBOL_ASK);  // текущая цена ASK
@@ -262,28 +268,32 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
  double stopLevel;                                               // размер стоп левела
  ENUM_EXTR_USE last_extr;                                        // переменная для хранения последнего экстремума
  // получаем тип последнего экстремума
- last_extr = blowInfo.GetPrevExtrType();
+ 
+ last_extr = extrContain.GetPrevExtrType();
  if (last_extr == EXTR_NO)
  {
-  delete blowInfo;
   return (0.0);
  }
  // сохраняем стоп левел
  stopLevel = NormalizeDouble(SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point,_Digits);//+0.0005;
  if (type == OP_BUY && last_extr == EXTR_LOW)    // если последним сформированным экстремумом является LOW
  {
-  lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для пробития
-  lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для stopLoss
+  lastExtrHigh = extrContain.GetExtrByIndex(0, EXTR_HIGH).price;     // получаем последний верхний экстремум HIGH для пробития
+  lastExtrLow  = extrContain.GetExtrByIndex(0, EXTR_LOW).price;      // получаем последний нижний экстремум LOW для stopLoss
   // если текущая цена пробила последний значимый HIGH экстремум и новый стоп лосс больше предыдущего 
   if (GreatDoubles(currentPriceBid, lastExtrHigh) && GreatDoubles(lastExtrLow,sl))
   {
-    stopLoss = lastExtrLow;  
+   stopLoss = lastExtrLow; 
+   Print("timeH  0 = ",  extrContain.GetExtrByIndex(0, EXTR_HIGH).time);
+   Print("priceH 0 = ",  extrContain.GetExtrByIndex(0, EXTR_HIGH).price);
+   Print("timeH  1 = ",  extrContain.GetExtrByIndex(1, EXTR_HIGH).time);
+   Print("priceH 1 = ",  extrContain.GetExtrByIndex(1, EXTR_HIGH).price);
   }
  }
- if (type == OP_SELL && last_extr == EXTR_HIGH)                  // если последним экстремумов является HIGH
+ if (type == OP_SELL && last_extr == EXTR_HIGH)                      // если последним экстремумов является HIGH
  {
-  lastExtrHigh = blowInfo.GetExtrByIndex(EXTR_HIGH,0).price;     // получаем последний верхний экстремум HIGH для stopLoss
-  lastExtrLow  = blowInfo.GetExtrByIndex(EXTR_LOW,0).price;      // получаем последний нижний экстремум LOW для пробития
+  lastExtrHigh = extrContain.GetExtrByIndex(0, EXTR_HIGH).price;     // получаем последний верхний экстремум HIGH для stopLoss
+  lastExtrLow  = extrContain.GetExtrByIndex(0, EXTR_LOW).price;      // получаем последний нижний экстремум LOW для пробития
 
   // если текущая цена пробила последний значимый LOW экстремум  
   if (LessDoubles(currentPriceAsk, lastExtrLow) && LessDoubles(lastExtrHigh,sl))
@@ -291,7 +301,6 @@ double CTrailingStop::ExtremumsTrailing (string symbol,ENUM_TM_POSITION_TYPE typ
    stopLoss = lastExtrHigh;        
   }
  } 
- delete blowInfo;
  return (stopLoss);
 }
  

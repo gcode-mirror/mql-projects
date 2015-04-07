@@ -12,15 +12,16 @@
 #include <Object.mqh>
 #include <StringUtilities.mqh>
 #include <CLog.mqh>
+#include <DrawExtremums\CExtrContainer.mqh>
 
 // перечисление типов эктсремумов
-enum ENUM_EXTR_USE
+/*enum ENUM_EXTR_USE
  {
   EXTR_HIGH = 0,
   EXTR_LOW,
   EXTR_BOTH,
   EXTR_NO
- };
+ };*/
 
 // структура хранения эктсремумов
 struct Extr

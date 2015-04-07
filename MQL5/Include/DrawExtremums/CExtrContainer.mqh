@@ -25,7 +25,7 @@ enum ENUM_EXTR_USE
   EXTR_NO
  };
 
-class CExtrContainer 
+class CExtrContainer  : public CObject
 {
  private:
  // буферы класса
@@ -59,10 +59,11 @@ class CExtrContainer
  void         AddExtrToContainer(CExtremum *extr);                            // добавляет экстремум в контейнер
  bool         AddNewExtrByTime(datetime time);                                // добавляет экстремум по времени
  CExtremum    *GetExtremum (int index);
- bool         Upload();
+ bool         Upload(int bars = 0);
  bool         UploadOnEvent(string sparam,double dparam,long lparam);         
  int          GetCountFormedExtr() {return (_bufferExtr.Total()-1);};         // возвращает количество сформированных экстремумов
- CExtremum    *GetExtrByIndex(int index, ENUM_EXTR_USE extr_use);             // возвращает экстремум по индексу, при учете extr_use   
+ CExtremum    *GetExtrByIndex(int index, ENUM_EXTR_USE extr_use);             // возвращает экстремум по индексу, при учете extr_use
+ ENUM_EXTR_USE GetPrevExtrType(void);   
 };
  
  // кодирование методов класса
@@ -76,7 +77,7 @@ void CExtrContainer::AddExtrToContainer(CExtremum *extr)
  {
   _bufferExtr.Add(extr);
   if(extr.direction == 1)
-  _countHigh++;
+   _countHigh++;
   if(extr.direction == -1)
    _countLow++;
  }
@@ -118,7 +119,11 @@ void CExtrContainer::AddExtrToContainer(CExtremum *extr)
    _period = period;
    _countHigh = 0;
    _countLow = 0;
-  // Upload();
+   if(!Upload(150))
+   {
+    Print(__FUNCTION__, "Не удалось обновить контейнер.!");
+   }
+   Print("В контейнере столько элементов  ", _bufferExtr.Total());  //отладка
    //если баров на истории меньше тысячи, скопировать то, что есть
   }
 
@@ -150,23 +155,24 @@ CExtremum *CExtrContainer::GetExtremum(int index)
 //+------------------------------------------------------------------+
 // обновляет данные экстремумов по всей истории                      |
 //+------------------------------------------------------------------+
-bool CExtrContainer::Upload()       
+bool CExtrContainer::Upload(int bars = 0)       
 {
- int bars = Bars(_symbol,_period);
+ if(bars == 0)
+ bars = Bars(_symbol,_period);
  //bars = 420;
  _historyDepth = bars;
  int copiedHigh     = _historyDepth;
  int copiedLow      = _historyDepth;
  int copiedHighTime = _historyDepth;
  int copiedLowTime  = _historyDepth;
- 
+ Sleep(1000);
  if ( CopyBuffer(_handleDE, 2, 0, 1, _lastExtrSignal) < 1
    || CopyBuffer(_handleDE, 3, 0, 1, _prevExtrSignal) < 1)
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
+  log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы формирующихся экстремумов индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
   return (false);           
  }
-            
+ Sleep(10000);           
  copiedHigh       = CopyBuffer(_handleDE, 0, 0, _historyDepth, _extrHigh);   
  copiedHighTime   = CopyBuffer(_handleDE, 4, 0, _historyDepth, _extrBufferHighTime);     
  copiedLow        = CopyBuffer(_handleDE, 1, 0, _historyDepth, _extrLow);
@@ -311,7 +317,7 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use)
 int CExtrContainer::GetExtrIndexByTime(datetime time)
 {
  CExtremum *extr;
- CExtremum *errorExtr = new CExtremum(0, -1, 0, 2);
+ CExtremum *errorExtr = new CExtremum(0, -1, 0, EXTR_NO_TYPE);
  for(int i = 0; i < _bufferExtr.Total(); i++)
  {
   extr = _bufferExtr.At(i);
@@ -329,7 +335,7 @@ int CExtrContainer::GetExtrIndexByTime(datetime time)
 CExtremum *CExtrContainer::GetExtrByTime(datetime time)
 {
  CExtremum *extr;
- CExtremum *errorExtr = new CExtremum(0, -1, 0, 2);
+ CExtremum *errorExtr = new CExtremum(0, -1, 0, EXTR_NO_TYPE);
  for(int i = 0; i < _bufferExtr.Total(); i++)
  {
   extr = _bufferExtr.At(i);
@@ -411,3 +417,23 @@ int CExtrContainer::GetCountByType(ENUM_EXTR_USE extr_use)
   break;
  }
 }
+
+ENUM_EXTR_USE CExtrContainer::GetPrevExtrType(void)
+{
+ if(_bufferExtr.Total()!= 0)
+ {
+  CExtremum *extr = _bufferExtr.At(0);
+  switch ( int(extr.direction) )
+  {
+   case 1:
+    return EXTR_HIGH;
+   case -1:
+    return EXTR_LOW;
+  }
+ }
+ return EXTR_NO;
+}
+/*void StringToPars(string sparam)
+{
+ StringSplit(sparam, ' ', array);
+}*/

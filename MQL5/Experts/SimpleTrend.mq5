@@ -79,6 +79,7 @@ double   closes[];                                 // массив для хранения цен за
 CTradeManager   *ctm;             // объект торговой библиотеки                                                     
 CisNewBar       *isNewBar_D1;     // новый бар на D1
 CArrayObj       aBlowInfo;        // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
+CArrayObj       conteiners;        // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 // дополнительные системные переменные
 bool firstLaunch       = true;         // флаг первого запуска эксперта
 bool beatM5;                           // флаг пробития на M5
@@ -98,6 +99,8 @@ double prevPriceAsk      = 0;          // для хранения предыдущей цены Ask
 double prevPriceBid      = 0;          // для хранения предыдущей цены Bid
 double lotReal;                        // действительный лот
 double lastPriceAdding   = 0;          // последняя цена доливания      
+
+int lastIndex;//Отладка
 
 // переменные доливок
 int  countAdd          = 0;            // количество доливок
@@ -180,6 +183,10 @@ int OnInit()
   aHandleExtremums[1] = iCustom(_Symbol, PERIOD_M5, "DrawExtremums");
   aHandleExtremums[2] = iCustom(_Symbol, PERIOD_M15,"DrawExtremums");
   aHandleExtremums[3] = iCustom(_Symbol, PERIOD_H1, "DrawExtremums");
+  conteiners.Add(new CExtrContainer(aHandleExtremums[0], _Symbol, PERIOD_M1));
+  conteiners.Add(new CExtrContainer(aHandleExtremums[1], _Symbol, PERIOD_M5));
+  conteiners.Add(new CExtrContainer(aHandleExtremums[2], _Symbol, PERIOD_M15));
+  conteiners.Add(new CExtrContainer(aHandleExtremums[3], _Symbol, PERIOD_H1));
   
   // создаем объекты класса CBlowInfoFromExtremums
   for (int i = 0; i < 4; ++i)
@@ -202,8 +209,9 @@ int OnInit()
   trailing.minProfit    = 0;
   trailing.trailingStop = 0;
   trailing.trailingStep = 0;
-  trailing.handleForTrailing = 0; 
-  
+  trailing.handleForTrailing = 0;
+  trailing.extrContainer = conteiners.At(indexForTrail);
+  lastIndex = indexForTrail;  //Отладка
   return(INIT_SUCCEEDED);
  }
  
@@ -220,6 +228,7 @@ void OnDeinit(const int reason)
  for (int i = aBlowInfo.Total() - 1; i >= 0; i--)
  {
   delete aBlowInfo.At(i);
+  delete conteiners.At(i);
  }
  // освобождаем хэндлы индикаторов 
  if (usePBI == PBI_SELECTED) IndicatorRelease(handlePBI_1);  
@@ -238,11 +247,17 @@ void OnDeinit(const int reason)
 
 int lastDeal = 0;
 
+
 void OnTick()
 {   
  int copied = 0;        // Количество скопированных данных из буфера
  int attempts = 0;      // Количество попыток копирования данных из буфера
 
+ if(lastIndex!=indexForTrail) //Отладка
+ {
+  Print("Был изменен хэндл для трэйлинга, сейчас = ", indexForTrail);
+  lastIndex = indexForTrail; 
+ }
  ctm.OnTick(); 
  ctm.DoTrailing(aHandleExtremums[indexForTrail]); 
 
@@ -427,7 +442,7 @@ void OnTick()
    pos_info.sl = stopLoss;    
    pos_info.volume = lotReal; 
    // открываем позицию на BUY
-   
+   trailing.extrContainer = conteiners.At(indexForTrail);
    if (ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread))
    {
     timeOpenPos = TimeCurrent();       // сохраняем время открытия позиции
@@ -443,10 +458,10 @@ void OnTick()
   if (( (beatM5  = IsExtremumBeaten(1,SELL) ) && (lastTrendPBI_1==SELL||usePBI==PBI_NO) && useExtr)   || 
       ( (beatM15 = IsExtremumBeaten(2,SELL) ) && (lastTrendPBI_2==SELL||usePBI==PBI_NO) && useExtr)   || 
       ( (beatH1  = IsExtremumBeaten(3,SELL) ) && (lastTrendPBI_3==SELL||usePBI==PBI_NO) && useExtr)   || 
-      ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,SELL))   && (lastTrendPBI_1==SELL)   && useClose)  ||
-      ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,SELL))  && (lastTrendPBI_2==SELL)   && useClose)  ||
-      ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,SELL))   && (lastTrendPBI_3==SELL)   && useClose)       
-       )  
+      ( (beatCloseM5  = IsLastClosesBeaten(PERIOD_M5,SELL))   && (lastTrendPBI_1==SELL) && useClose)  ||
+      ( (beatCloseM15 = IsLastClosesBeaten(PERIOD_M15,SELL))  && (lastTrendPBI_2==SELL) && useClose)  ||
+      ( (beatCloseH1  = IsLastClosesBeaten(PERIOD_H1,SELL))   && (lastTrendPBI_3==SELL) && useClose)       
+     )  
   {    
    log_file.Write(LOG_CRITICAL, StringFormat("%s, Получили сигнал на Sell, время = %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent())));
    // если используются зарпеты по NineTeenLines
@@ -486,7 +501,8 @@ void OnTick()
    // заполняем параметры открытия позиции
    pos_info.type = OP_SELL;
    pos_info.sl = stopLoss;   
-   pos_info.volume = lotReal;  
+   pos_info.volume = lotReal;
+   trailing.extrContainer = conteiners.At(indexForTrail);  
    // открываем позицию на SELL 
    if (ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread))
    {
@@ -538,8 +554,9 @@ void ChangeTrailIndex()   // функция меняет индекс таймфрейма для трейлинга
  while (indexForTrail < 3 && IsExtremumBeaten(indexForTrail+1, openedPosition))  // переходим на старший таймфрейм в случае, если сейчас не H1
  {
   indexForTrail++;  // то переходим на более старший таймфрейм
-    changeLotValid = false; // выставляем флаг возможности доливок в false
+  changeLotValid = false; // выставляем флаг возможности доливок в false
  }
+ //trailing.extrContainer = new CExtrContainer (aHandleExtremums[indexForTrail], _Symbol, _Period);
 }
  
 int GetStopLoss()         // вычисляет стоп лосс
@@ -774,3 +791,25 @@ bool IsLastClosesBeaten (ENUM_TIMEFRAMES period,int direction)
  }
  return false;
 }  
+
+void OnChartEvent(const int id,
+                  const long &lparam,
+                  const double &dparam,
+                  const string &sparam)
+{
+ //container.UploadOnEvent(sparam,dparam,lparam); 
+ sparam = "ExtrUp_
+ trailing.extrContainer.UploadOnEvent(sparam, dparam, lparam);
+ Print(" По событию теперь элементов в контейнере = ", trailing.extrContainer.GetCountByType(EXTR_BOTH));
+}
+
+//+------------------------------------------------------------------+
+//| метод генерирует уникальное имя события                          |
+//+------------------------------------------------------------------+
+void CEventBase::PrintAllNames(void)
+ {
+  for(int i=0;i<ArraySize(id_name);i++)
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%i имя = %s",i,id_name[i]) );  
+   }
+ }
