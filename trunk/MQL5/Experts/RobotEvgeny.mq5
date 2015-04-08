@@ -13,6 +13,7 @@
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
 #include <CompareDoubles.mqh> // для сравнения вещественных чисел
 #include <TradeManager/TradeManager.mqh>    // торговая библиотека
+#include <Lib CisNewBarDD.mqh> // для проверки формирования нового бара
 
 input double lot = 0.1; // лот
 input double percent = 0.1; // процент
@@ -25,8 +26,9 @@ struct pointLine
   double price;
   datetime time;
  };
- 
+// объекты классов 
 CTradeManager *ctm; 
+CisNewBar *isNewBar;
 // хэндлы индикаторов
 int  handleDE;
 int  handlePBI;
@@ -59,6 +61,7 @@ STrailing     trailing;      // структура информации о трейлинге
 
 int OnInit()
  {
+  isNewBar = new CisNewBar(_Symbol, _Period); 
   // сохраняем имена событий
   eventExtrDownName = "EXTR_DOWN_FORMED_"+_Symbol+"_"+PeriodToString(_Period);
   eventExtrUpName = "EXTR_UP_FORMED_"+_Symbol+"_"+PeriodToString(_Period); 
@@ -78,7 +81,7 @@ int OnInit()
   }    
     
    // привязка индикатора PriceBasedIndicator
-  handlePBI = DoesIndicatorExist(_Symbol,_Period,"PriceBasedIndicator");
+ /* handlePBI = DoesIndicatorExist(_Symbol,_Period,"PriceBasedIndicator");
   if (handlePBI == INVALID_HANDLE)
   {
    handlePBI = iCustom(_Symbol,_Period,"PriceBasedIndicator");
@@ -89,7 +92,7 @@ int OnInit()
    }
    SetIndicatorByHandle(_Symbol,_Period,handlePBI);
   }     
-  
+  */
   // если удалось прогрузить последние экстремумы
   if (UploadExtremums())
   {
@@ -128,49 +131,56 @@ void OnTick()
       // то закрываем позицию
       ctm.ClosePosition(0);
      }
-   
    // если текущее движение - тренд 1-й типа вверх
    if (trend == 1)
     {
-     // копируем котировки последних двух баров
-     if (CopyRates(_Symbol,_Period,1,2,rates) == 2)
+     // если сформировался новый бар
+     if (isNewBar.isNewBar() > 0)
       {
-       priceTrendUp = ObjectGetValueByTime(0,"trendUp",TimeCurrent());
-       priceTrendDown = ObjectGetValueByTime(0,"trendDown",TimeCurrent());   
-       channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала   
-       // если цена закрытия на последнем баре выше цены открытия (в нашу сторону), а на предыдущем баре - обратная ситуевина
-       if ( GreatDoubles(rates[1].close,rates[1].open) && LessDoubles(rates[0].close,rates[0].open) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
-            LessOrEqualDoubles(MathAbs(curBid-priceTrendDown),channelH*0.2)                             // если текущая цена находится возле нижней границы канала тренда 
-          )
-           {
-            pos_info.sl = CountStopLossForTrendLines ();
-            pos_info.tp = pos_info.sl*10;
-            pos_info.volume = lot;
-            pos_info.type = OP_BUY;
-            ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
-           }
+       // копируем котировки последних двух баров
+       if (CopyRates(_Symbol,_Period,1,2,rates) == 2)
+        {
+         priceTrendUp = ObjectGetValueByTime(0,"trendUp",TimeCurrent());
+         priceTrendDown = ObjectGetValueByTime(0,"trendDown",TimeCurrent());   
+         channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала   
+         // если цена закрытия на последнем баре выше цены открытия (в нашу сторону), а на предыдущем баре - обратная ситуевина
+         if ( GreatDoubles(rates[1].close,rates[1].open) && LessDoubles(rates[0].close,rates[0].open) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
+              LessOrEqualDoubles(MathAbs(curBid-priceTrendDown),channelH*0.2)                             // если текущая цена находится возле нижней границы канала тренда 
+            )
+             {
+              pos_info.sl = CountStopLossForTrendLines ();
+              pos_info.tp = pos_info.sl*10;
+              pos_info.volume = lot;
+              pos_info.type = OP_BUY;
+              ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
+             }
+        }
       }
     }
    // если текущее движение - тренд 1-й типа вниз
    if (trend == -1)
     {
-     // копируем котировки последних двух баров
-     if (CopyRates(_Symbol,_Period,1,2,rates) == 2)
+     // если сформировался новый бар
+     if (isNewBar.isNewBar() > 0)
       {
-       priceTrendUp = ObjectGetValueByTime(0,"trendUp",TimeCurrent());
-       priceTrendDown = ObjectGetValueByTime(0,"trendDown",TimeCurrent());   
-       channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала   
-       // если цена закрытия на последнем баре ниже цены открытия (в нашу сторону), а на предыдущем баре - обратная ситуевина
-       if ( LessDoubles(rates[1].close,rates[1].open) && GreatDoubles(rates[0].close,rates[0].open) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
-            LessOrEqualDoubles(MathAbs(curBid-priceTrendUp),channelH*0.2)                             // если текущая цена находится возле нижней границы канала тренда 
-          )
-           {
-            pos_info.sl = CountStopLossForTrendLines ();
-            pos_info.tp = pos_info.sl*10;
-            pos_info.volume = lot;
-            pos_info.type = OP_SELL;
-            ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
-           }
+       // копируем котировки последних двух баров
+       if (CopyRates(_Symbol,_Period,1,2,rates) == 2)
+        {
+         priceTrendUp = ObjectGetValueByTime(0,"trendUp",TimeCurrent());
+         priceTrendDown = ObjectGetValueByTime(0,"trendDown",TimeCurrent());   
+         channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала   
+         // если цена закрытия на последнем баре ниже цены открытия (в нашу сторону), а на предыдущем баре - обратная ситуевина
+         if ( LessDoubles(rates[1].close,rates[1].open) && GreatDoubles(rates[0].close,rates[0].open) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
+              LessOrEqualDoubles(MathAbs(curBid-priceTrendUp),channelH*0.2)                             // если текущая цена находится возле нижней границы канала тренда 
+            )
+             {
+              pos_info.sl = CountStopLossForTrendLines ();
+              pos_info.tp = pos_info.sl*10;
+              pos_info.volume = lot;
+              pos_info.type = OP_SELL;
+              ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
+             }
+        }
       }
     }    
    prevBid = curBid;
