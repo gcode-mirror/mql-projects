@@ -15,7 +15,7 @@
 #include <TradeManager/TradeManager.mqh>    // торговая библиотека
 #include <Lib CisNewBarDD.mqh> // для проверки формирования нового бара
 
-input double lot = 0.1; // лот
+input double lot = 1; // лот
 input double percent = 0.1; // процент
 
 // структура точек для построения линии
@@ -42,6 +42,7 @@ double curAsk; // текущая цена Ask
 double prevBid; // предыдущая цена bid
 double priceTrendUp; // цена верхней линии тренда
 double priceTrendDown; // цена нижней линии тренда
+double H1,H2; // расстояния между экстремумами
 double channelH; // ширина канала
 double horPrice;
 double pbiMove; // значение движение на PBI в текущий момент
@@ -54,7 +55,6 @@ pointLine extr[4]; // точки для отображения линий
 MqlRates rates[]; // буфер котировок
 CChartObjectTrend  trendLine; // объект класса трендовой линии
 CChartObjectHLine  horLine; // объект класса горизонтальной линии
-
 // структуры позиции и трейлинга
 SPositionInfo pos_info;      // структура информации о позиции
 STrailing     trailing;      // структура информации о трейлинге
@@ -117,7 +117,10 @@ int OnInit()
 
 void OnDeinit(const int reason)
   {
+   
+   DeleteLines();
    delete ctm;
+   delete isNewBar;
   }
   
 void OnTick()
@@ -308,7 +311,6 @@ void DeleteLines ()
 // вернет true, если тренд валиден
 int  IsTrendNow ()
  {
-  double H1,H2;
   double h1,h2;
   
   // вычисляем расстояния h1,h2
@@ -351,12 +353,12 @@ int CountStopLossForTrendLines ()
   // если тренд вверх
   if (trend == 1)
    {
-    return (int((MathAbs(curBid-extr[0].price)+0.1*channelH)/_Point));
+    return (int((MathAbs(curBid-extr[0].price)+H1*percent)/_Point));
    }
   // если тренд вниз
   if (trend == -1)
    {
-    return (int((MathAbs(curAsk-extr[0].price)+0.1*channelH)/_Point));
+    return (int((MathAbs(curAsk-extr[0].price)+H1*percent)/_Point));
    }   
   return (0);
  }
