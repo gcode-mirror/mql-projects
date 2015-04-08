@@ -194,7 +194,6 @@ int OnCalculate(const int rates_total,
        
        // пытаемся добавить экстремумы если это возможно
        container.AddNewExtrByTime(time[i]);  
-       Print("Количество экстремумов = ",container.GetCountFormedExtr());  
        // получаем событие от метода вычисления движения
        trend.CountMoveType(buffer_index, time[i], (ENUM_MOVE_TYPE)buffer_top_trend[0]);
        
@@ -215,46 +214,45 @@ int OnCalculate(const int rates_total,
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН", MakeFunctionPrefix(__FUNCTION__));
    }  
    
-   //Comment("последний экстремум = ",DoubleToString(container.GetExtrByIndex(0,EXTR_BOTH).price)); 
+   Comment("последний экстремум = ",DoubleToString(container.GetExtrByIndex(0,EXTR_BOTH).price)); 
    
    // рассчет индикатора в реальном времени
           
-      // вычисление типа движения в текущий момент
-      if(!is_it_top && CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
-      {
-       log_file.Write(LOG_DEBUG, StringFormat("%s/%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)_Period), EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(_Period)), GetLastError()));
-      } 
+   // вычисление типа движения в текущий момент
+   if(!is_it_top && CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
+   {
+    log_file.Write(LOG_DEBUG, StringFormat("%s/%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)_Period), EnumToString((ENUM_TIMEFRAMES)GetTopTimeframe(_Period)), GetLastError()));
+   } 
       
-      // если тренд не был обновлен
-      if (!trendCalculated)
-          trend.ZeroTrend();  // то обнуляем тренд
+   // если тренд не был обновлен
+   if (!trendCalculated) trend.ZeroTrend();  // то обнуляем тренд
           
-      // вычисляем текущее движение в реальном времени 
-      trend.CountMoveTypeA(buffer_index, time[0], (ENUM_MOVE_TYPE)buffer_top_trend[0]);
-      // сбрасываем флаг того, что тренд вычислялся
-      trendCalculated = false;
-      // заполняем буферы
-      ColorCandlesBuffer1[0]   = open[0];
-      ColorCandlesBuffer2[0]   = high[0];
-      ColorCandlesBuffer3[0]   = low [0];
-      ColorCandlesBuffer4[0]   = close[0]; 
-      ColorCandlesColors[0]    = trend.GetMoveType(buffer_index);
-      ColorCandlesColorsTop[0] = buffer_top_trend[0];
+   // вычисляем текущее движение в реальном времени 
+   trend.CountMoveTypeA(buffer_index, time[0], (ENUM_MOVE_TYPE)buffer_top_trend[0]);
+   // сбрасываем флаг того, что тренд вычислялся
+   trendCalculated = false;
+   // заполняем буферы
+   ColorCandlesBuffer1[0]   = open[0];
+   ColorCandlesBuffer2[0]   = high[0];
+   ColorCandlesBuffer3[0]   = low [0];
+   ColorCandlesBuffer4[0]   = close[0]; 
+   ColorCandlesColors[0]    = trend.GetMoveType(buffer_index);
+   ColorCandlesColorsTop[0] = buffer_top_trend[0];
+    
+   // если движение изменилось, генерим соответствующее событие
+   if (ColorCandlesColors[0] != last_move)
+   {
+    // то обновляем последнее движение
+    last_move = ColorCandlesColors[0];
+    eventData.dparam = last_move;
+    event.Generate("смена движения",eventData,true);
+   }
+     
+   if(NewBarCurrent.isNewBar() && prev_calculated != 0)
+   {
+    buffer_index++; 
+   }
       
-      // если движение изменилось, генерим соответствующее событие
-      if (ColorCandlesColors[0] != last_move)
-       {
-        // то обновляем последнее движение
-        last_move = ColorCandlesColors[0];
-        eventData.dparam = last_move;
-        event.Generate("смена движения",eventData,true);
-       }
-       
-      if(NewBarCurrent.isNewBar() && prev_calculated != 0)
-      {
-       buffer_index++; 
-      }
-       
    return (rates_total);
   }
 
@@ -278,6 +276,12 @@ void OnChartEvent(const int id,         // идентификатор события
   {
    
    // если удалось догрузить экстремумы в контейнер
+   /*
+   if (CheckPointer(container) == POINTER_INVALID)
+   {
+    PrintFormat("%s invalid pointer", MakeFunctionPrefix(__FUNCTION__));
+    return;
+   }*/
    if (container.UploadOnEvent(sparam,dparam,lparam))
     {
      // если удалось обновить экстремумы
