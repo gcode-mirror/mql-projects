@@ -30,7 +30,6 @@ CTradeManager *ctm;
 // хэндлы индикаторов
 int  handleDE;
 int  handlePBI;
-bool validTrend = false;
 // счетчики 
 int countTotal = 0; // всего экстремумов
 
@@ -95,9 +94,7 @@ int OnInit()
   if (UploadExtremums())
   {
    trend = IsTrendNow();
-   // сохраняем валидность тренда
-   validTrend = IsValidState (trend);
-   if (validTrend)
+   if (trend)
    {
     // строим линии 
     DrawLines ();    
@@ -131,6 +128,7 @@ void OnTick()
       // то закрываем позицию
       ctm.ClosePosition(0);
      }
+   
    // если текущее движение - тренд 1-й типа вверх
    if (trend == 1)
     {
@@ -206,11 +204,9 @@ void OnChartEvent(const int id,         // идентификатор события
      DeleteLines();
      // получаем новые значение экстремумов и смещаем
      UploadExtremums ();
-     // DragExtremums(direction,dparam,datetime(lparam));
+
      trend = IsTrendNow();
-     // сохраняем валидность тренда
-     validTrend = IsValidState (trend);
-     if (validTrend)
+     if (trend)
       {  
        // перерисовываем линии
        DrawLines ();     
@@ -298,29 +294,18 @@ void DeleteLines ()
   ObjectDelete(0,"trendDown");
   ObjectDelete(0,"horLine");
  }
-
-// возвращает тип движения (тренд вверх, тренд вниз или не тренд
-int   IsTrendNow ()
- {
-  // если тренд вверх
-  if (GreatDoubles(extr[0].price,extr[2].price) && GreatDoubles(extr[1].price,extr[3].price) )
-   return (1);
-  // если тренд вниз
-  if (LessDoubles(extr[0].price,extr[2].price) && LessDoubles(extr[1].price,extr[3].price) )
-   return (-1);
-  return (0);   
- }
  
 // вернет true, если тренд валиден
-bool  IsValidState (int trendType)
+int  IsTrendNow ()
  {
   double H1,H2;
   double h1,h2;
+  
   // вычисляем расстояния h1,h2
   h1 = MathAbs(extr[0].price - extr[2].price);
   h2 = MathAbs(extr[1].price - extr[3].price);
-  // если тренд вверх
-  if (trendType == 1)
+  // если тренд вверх 
+  if (GreatDoubles(extr[0].price,extr[2].price) && GreatDoubles(extr[1].price,extr[3].price))
    {
     // если последний экстремум - вниз
     if (extr[0].direction == -1)
@@ -329,11 +314,11 @@ bool  IsValidState (int trendType)
       H2 = extr[3].price - extr[2].price;
       // если наша трендовая линия нас удовлетворяет
       if (GreatDoubles(h1,H1*percent) && GreatDoubles(h2,H2*percent) )
-       return (true);
+       return (1);
      }
    }
   // если тренд вниз
-  if (trendType == -1)
+  if (LessDoubles(extr[0].price,extr[2].price) && LessDoubles(extr[1].price,extr[3].price))
    {
     // если  последний экстремум - вверх
     if (extr[0].direction == 1)
@@ -343,11 +328,11 @@ bool  IsValidState (int trendType)
       H2 = extr[3].price - extr[2].price;
       // если наша трендования линия нас удовлетворяет
       if (GreatDoubles(h1,H1*percent) && GreatDoubles(h2,H2*percent) )    
-       return (true);
+       return (-1);
      }
 
    }   
-  return (false);   
+  return (0);   
  }
  
 // функция вычисляет стоп лосс для трендовых линий
