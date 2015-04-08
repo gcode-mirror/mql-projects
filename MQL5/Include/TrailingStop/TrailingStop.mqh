@@ -278,8 +278,10 @@ double CTrailingStop::ExtremumsTrailing (string symbol, ENUM_TM_POSITION_TYPE ty
  stopLevel = NormalizeDouble(SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL)*_Point,_Digits);//+0.0005;
  if (type == OP_BUY && last_extr == EXTR_LOW)    // если последним сформированным экстремумом является LOW
  {
-  lastExtrHigh = extrContain.GetExtrByIndex(0, EXTR_HIGH).price;     // получаем последний верхний экстремум HIGH для пробития
+  //Print("last_extr = EXTR_LOW = ", extrContain.GetExtrByIndex(0, EXTR_LOW).price);
+  lastExtrHigh = extrContain.GetExtrByIndex(1, EXTR_HIGH).price;     // получаем последний верхний экстремум HIGH для пробития
   lastExtrLow  = extrContain.GetExtrByIndex(0, EXTR_LOW).price;      // получаем последний нижний экстремум LOW для stopLoss
+  //Print(" lastExtrHigh = ", lastExtrHigh, " lastExtrLow = ", lastExtrLow, " currentPriceBid = ", currentPriceBid);
   // если текущая цена пробила последний значимый HIGH экстремум и новый стоп лосс больше предыдущего 
   if (GreatDoubles(currentPriceBid, lastExtrHigh) && GreatDoubles(lastExtrLow,sl))
   {
@@ -293,12 +295,16 @@ double CTrailingStop::ExtremumsTrailing (string symbol, ENUM_TM_POSITION_TYPE ty
  if (type == OP_SELL && last_extr == EXTR_HIGH)                      // если последним экстремумов является HIGH
  {
   lastExtrHigh = extrContain.GetExtrByIndex(0, EXTR_HIGH).price;     // получаем последний верхний экстремум HIGH для stopLoss
-  lastExtrLow  = extrContain.GetExtrByIndex(0, EXTR_LOW).price;      // получаем последний нижний экстремум LOW для пробития
+  lastExtrLow  = extrContain.GetExtrByIndex(1, EXTR_LOW).price;      // получаем последний нижний экстремум LOW для пробития
 
   // если текущая цена пробила последний значимый LOW экстремум  
   if (LessDoubles(currentPriceAsk, lastExtrLow) && LessDoubles(lastExtrHigh,sl))
   {
-   stopLoss = lastExtrHigh;        
+   stopLoss = lastExtrHigh;   
+   Print("timeL  0 = ",  extrContain.GetExtrByIndex(0, EXTR_LOW).time);
+   Print("priceL 0 = ",  extrContain.GetExtrByIndex(0, EXTR_LOW).price);
+   Print("timeL  1 = ",  extrContain.GetExtrByIndex(1, EXTR_LOW).time);
+   Print("priceL 1 = ",  extrContain.GetExtrByIndex(1, EXTR_LOW).price);     
   }
  } 
  return (stopLoss);
