@@ -257,11 +257,8 @@ void CEventBase::Generate(string id_nam, SEventData &_data, const bool _is_custo
       // проходим по всем графикам и генерим события
       while (z >= 0)
        {
-        if (ChartSymbol(z) == _symbol && ChartPeriod(z)==_period)  // если найден график с текущим символом и периодом 
-           {
-            // генерим событие для текущего графика
-            Generate(z,id_name[ind],_data,_is_custom);
-           }
+        // генерим событие для текущего графика
+        Generate(z,id_name[ind],_data,_is_custom);
         z = ChartNext(z);      
        }  
       return;

@@ -15,6 +15,7 @@
 #include <CompareDoubles.mqh>              // для сравнения вещественных чисел
 #include <DrawExtremums/CExtremum.mqh>     // для массива эктсремумов
 #include <Arrays\ArrayObj.mqh>
+#include <CLog.mqh>
 
 // перечисление типов эктсремумов
 enum ENUM_EXTR_USE
@@ -35,7 +36,9 @@ class CExtrContainer  : public CObject
  double   _prevExtrSignal[];    // буфер формирующегося экстремума
  double   _extrBufferHighTime[];// буффер времени экстремумов
  double   _extrBufferLowTime[]; // буффер времени экстремумов
- string   _symbol;
+ string   _symbol;              // символ, на котром был создан контейнер
+ string   _eventExtrUp;         // имя подходящего события для добавления верхнего экстремума     
+ string   _eventExtrDown;       // имя подходящего события для добавления нижнего экстремума 
  ENUM_TIMEFRAMES _period;
  
  CArrayObj       _bufferExtr;       // массив для хранения экстремумов  
@@ -59,11 +62,13 @@ class CExtrContainer  : public CObject
  void         AddExtrToContainer(CExtremum *extr);                            // добавляет экстремум в контейнер
  bool         AddNewExtrByTime(datetime time);                                // добавляет экстремум по времени
  CExtremum    *GetExtremum (int index);
- bool         Upload(int bars = 0);
+ bool         Upload(int bars = -1);
  bool         UploadOnEvent(string sparam,double dparam,long lparam);         
  int          GetCountFormedExtr() {return (_bufferExtr.Total()-1);};         // возвращает количество сформированных экстремумов
  CExtremum    *GetExtrByIndex(int index, ENUM_EXTR_USE extr_use);             // возвращает экстремум по индексу, при учете extr_use
- ENUM_EXTR_USE GetPrevExtrType(void);   
+ CExtremum    *GetLastFormedExtr(ENUM_EXTR_USE extr_use);                     // возвращает последний сформированный по типу
+ CExtremum    *GetLastFormingExtr();                                          // возвращает последний формирующийся
+ ENUM_EXTR_USE GetPrevExtrType(void);
 };
  
  // кодирование методов класса
@@ -119,6 +124,8 @@ void CExtrContainer::AddExtrToContainer(CExtremum *extr)
    _period = period;
    _countHigh = 0;
    _countLow = 0;
+   _eventExtrUp =  GenEventName("EXTR_UP");
+   _eventExtrDown = GenEventName("EXTR_DOWN");
    if(!Upload(150))
    {
     Print(__FUNCTION__, "Не удалось обновить контейнер.!");
@@ -155,9 +162,9 @@ CExtremum *CExtrContainer::GetExtremum(int index)
 //+------------------------------------------------------------------+
 // обновляет данные экстремумов по всей истории                      |
 //+------------------------------------------------------------------+
-bool CExtrContainer::Upload(int bars = 0)       
+bool CExtrContainer::Upload(int bars = -1)       
 {
- if(bars == 0)
+ if(bars == -1)
  bars = Bars(_symbol,_period);
  //bars = 420;
  _historyDepth = bars;
@@ -165,14 +172,14 @@ bool CExtrContainer::Upload(int bars = 0)
  int copiedLow      = _historyDepth;
  int copiedHighTime = _historyDepth;
  int copiedLowTime  = _historyDepth;
- Sleep(1000);
+ Sleep(500);
  if ( CopyBuffer(_handleDE, 2, 0, 1, _lastExtrSignal) < 1
    || CopyBuffer(_handleDE, 3, 0, 1, _prevExtrSignal) < 1)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы формирующихся экстремумов индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
   return (false);           
  }
- Sleep(10000);           
+ Sleep(100);           
  copiedHigh       = CopyBuffer(_handleDE, 0, 0, _historyDepth, _extrHigh);   
  copiedHighTime   = CopyBuffer(_handleDE, 4, 0, _historyDepth, _extrBufferHighTime);     
  copiedLow        = CopyBuffer(_handleDE, 1, 0, _historyDepth, _extrLow);
@@ -220,9 +227,9 @@ bool CExtrContainer::Upload(int bars = 0)
   }
   //проверим есть ли формирующийся экстремум?
   if(_lastExtrSignal[0] != 0)
-   AddExtrToContainer(new CExtremum(1, _lastExtrSignal[0],_extrBufferHighTime[0],EXTR_FORMING));
+   AddExtrToContainer(new CExtremum(1, _lastExtrSignal[0],datetime(_extrBufferHighTime[0]),EXTR_FORMING));
   if(_prevExtrSignal[0] != 0)
-   AddExtrToContainer(new CExtremum(-1, _prevExtrSignal[0],_extrBufferLowTime[0],EXTR_FORMING));
+   AddExtrToContainer(new CExtremum(-1, _prevExtrSignal[0],datetime(_extrBufferLowTime[0]),EXTR_FORMING));
  }
  return (true);
 }
@@ -233,10 +240,8 @@ bool CExtrContainer::Upload(int bars = 0)
 bool  CExtrContainer::UploadOnEvent(string sparam,double dparam,long lparam)
 {
  CExtremum *lastExtr;
- string extrUp = GenEventName("EXTR_UP");
- string extrDown = GenEventName("EXTR_DOWN");
  // если пришел новый экстремум High
- if (sparam == extrUp)
+ if (sparam == _eventExtrUp)
   {
    lastExtr =  new CExtremum(1, dparam, datetime(lparam), EXTR_FORMING); 
    if (lastExtr == NULL)
@@ -245,7 +250,7 @@ bool  CExtrContainer::UploadOnEvent(string sparam,double dparam,long lparam)
     return true;
   } 
  // если пришел новый экстремум Low
- if (sparam == extrDown)
+ if (sparam == _eventExtrDown)
   {
    lastExtr = new CExtremum(-1, dparam, datetime(lparam), EXTR_FORMING); 
    if (lastExtr == NULL)
@@ -346,53 +351,55 @@ CExtremum *CExtrContainer::GetExtrByTime(datetime time)
 }
 
 
-// метод добавляет новый экстремум по хэндлу индикатора по заданной дате
- bool CExtrContainer::AddNewExtrByTime(datetime time)
+//+-----------------------------------------------------------------------+
+// Метод добавляет новый экстремум по хэндлу индикатора по заданной дате  |
+//+-----------------------------------------------------------------------+
+bool CExtrContainer::AddNewExtrByTime(datetime time)
+{
+ double extrHigh[];
+ double extrLow[];
+ double extrHighTime[];
+ double extrLowTime[];
+ datetime timeHigh;
+ datetime timeLow;
+ if ( CopyBuffer(_handleDE,2,time,1,extrHigh)     < 1 || CopyBuffer(_handleDE,3,time,1,extrLow) < 1 || 
+      CopyBuffer(_handleDE,4,time,1,extrHighTime) < 1 || CopyBuffer(_handleDE,5,time,1,extrLowTime) < 1 )
+ {
+  Print("Не удалось прогузить буфер экстремумов");
+  return (false);
+ } 
+  
+ timeHigh = datetime(extrHighTime[0]);
+ timeLow  = datetime(extrLowTime[0]);
+ //если пришел только верхний экстремум
+ if (extrHigh[0]>0 && extrLow[0]==0)
+ {
+  AddExtrToContainer(new CExtremum(1,extrHigh[0],datetime(extrHighTime[0]),EXTR_FORMED));   
+ }
+ //если пришел только нижний экстремум
+ if (extrLow[0]>0 && extrHigh[0]==0)
+ { 
+  AddExtrToContainer(new CExtremum(-1,extrLow[0],datetime(extrLowTime[0]),EXTR_FORMED));
+ }
+ //если пришло оба экстремума
+ if (extrHigh[0]>0 && extrLow[0]>0)
+ { 
+  // если верхний пришел раньше
+  if (extrHighTime[0] < extrLowTime[0])
   {
-   double extrHigh[];
-   double extrLow[];
-   double extrHighTime[];
-   double extrLowTime[];
-   datetime timeHigh;
-   datetime timeLow;
-   if ( CopyBuffer(_handleDE,2,time,1,extrHigh)     < 1 || CopyBuffer(_handleDE,3,time,1,extrLow) < 1 || 
-        CopyBuffer(_handleDE,4,time,1,extrHighTime) < 1 || CopyBuffer(_handleDE,5,time,1,extrLowTime) < 1 )
-    {
-     Print("Не удалось прогузить буфер экстремумов");
-     return (false);
-    } 
-    
-   timeHigh = datetime(extrHighTime[0]);
-   timeLow  = datetime(extrLowTime[0]);
-
-   //если пришел только верхний экстремум
-   if (extrHigh[0]>0 && extrLow[0]==0)
-    {
-     AddExtrToContainer(new CExtremum(1,extrHigh[0],datetime(extrHighTime[0]),EXTR_FORMED));   
-    }
-   //если пришел только нижний экстремум
-   if (extrLow[0]>0 && extrHigh[0]==0)
-    { 
-     AddExtrToContainer(new CExtremum(-1,extrLow[0],datetime(extrLowTime[0]),EXTR_FORMED));
-    }
-   //если пришло оба экстремума
-   if (extrHigh[0]>0 && extrLow[0]>0)
-    { 
-     // если верхний пришел раньше
-     if (extrHighTime[0] < extrLowTime[0])
-      {
-       AddExtrToContainer(new CExtremum(1,extrHigh[0],datetime(extrHighTime[0]),EXTR_FORMED));
-       AddExtrToContainer(new CExtremum(-1,extrLow[0],datetime(extrLowTime[0]),EXTR_FORMED));                                                    
-      }
-     // если нижний пришел раньше
-     if (extrHighTime[0] > extrLowTime[0])
-      {      
-       AddExtrToContainer(new CExtremum(-1,extrLow[0],datetime(extrLowTime[0]),EXTR_FORMED));       
-       AddExtrToContainer(new CExtremum(1,extrHigh[0],datetime(extrHighTime[0]),EXTR_FORMED));             
-      }      
-    }     
-   return (true);
+   AddExtrToContainer(new CExtremum(1,extrHigh[0],datetime(extrHighTime[0]),EXTR_FORMED));
+   AddExtrToContainer(new CExtremum(-1,extrLow[0],datetime(extrLowTime[0]),EXTR_FORMED));                                                    
   }
+  // если нижний пришел раньше
+  if (extrHighTime[0] > extrLowTime[0])
+  {      
+   AddExtrToContainer(new CExtremum(-1,extrLow[0],datetime(extrLowTime[0]),EXTR_FORMED));       
+   AddExtrToContainer(new CExtremum(1,extrHigh[0],datetime(extrHighTime[0]),EXTR_FORMED));             
+  }      
+ }     
+ return (true);
+}
+
 
 //+------------------------------------------------------------------+
 // метод возвращает количество элементов по типу                     |
@@ -415,12 +422,16 @@ int CExtrContainer::GetCountByType(ENUM_EXTR_USE extr_use)
   break;
  }
 }
-
+ 
+ 
+//+------------------------------------------------------------------+  
+// Определение типа последнего сформированного экстремума            |
+//+------------------------------------------------------------------+
 ENUM_EXTR_USE CExtrContainer::GetPrevExtrType(void)
 {
  if(_bufferExtr.Total()!= 0)
  {
-  CExtremum *extr = _bufferExtr.At(0);
+  CExtremum *extr = _bufferExtr.At(1);
   switch ( int(extr.direction) )
   {
    case 1:
@@ -431,7 +442,48 @@ ENUM_EXTR_USE CExtrContainer::GetPrevExtrType(void)
  }
  return EXTR_NO;
 }
-/*void StringToPars(string sparam)
+
+//+------------------------------------------------------------------+
+// Получить последний сформированный экстремум                       |
+//+------------------------------------------------------------------+
+CExtremum *CExtrContainer::GetLastFormedExtr(ENUM_EXTR_USE extr_use)
 {
- StringSplit(sparam, ' ', array);
-}*/
+ CExtremum *extrERROR = new CExtremum(0, -1, 0, EXTR_NO_TYPE);
+ if(_bufferExtr.Total() < 2)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s В контейнере недостаточно элементов чтобы обратиться к сформированному. Всего = %i", MakeFunctionPrefix(__FUNCTION__), _bufferExtr.Total())); 
+  return extrERROR;
+ }     
+ switch (extr_use)
+ {
+  case EXTR_BOTH:
+   return _bufferExtr.At(1);
+  break;
+  case EXTR_HIGH:
+   if(GetPrevExtrType() == EXTR_HIGH)   //Если последний экстремум HIGH. значит он формирующийся
+    return GetExtrByIndex(1, EXTR_HIGH);//Возвращаем последний свформированный HIGH
+   if(GetPrevExtrType() == EXTR_LOW)    //Если последний экстремум LOW. значит последний HIGH сформированный
+    return GetExtrByIndex(0, EXTR_HIGH);
+   return extrERROR;
+  break;
+  case EXTR_LOW:
+   if(GetPrevExtrType() == EXTR_LOW)    //Если последний экстремум LOW. значит он формирующийся
+    return GetExtrByIndex(1, EXTR_LOW); //Возвращаем последний свформированный LOW
+   if(GetPrevExtrType() == EXTR_HIGH)   //Если последний экстремум HIGH. значит последний LOW сформированный
+    return GetExtrByIndex(0, EXTR_LOW);
+   return extrERROR;
+  break;
+ }
+ return extrERROR;
+}
+CExtremum *CExtrContainer::GetLastFormingExtr()
+{
+ if(_bufferExtr.Total() != 0)
+ {
+  CExtremum *extrERROR = new CExtremum(0, -1, 0, EXTR_NO_TYPE);
+  log_file.Write(LOG_DEBUG, StringFormat("%s В контейнере недостаточно элементов чтобы обратиться формирующемуся экстремуму. Всего = %i", MakeFunctionPrefix(__FUNCTION__), _bufferExtr.Total())); 
+  return extrERROR;
+ }     
+ return _bufferExtr.At(0);
+}
+
