@@ -265,7 +265,7 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use)
  int k = 0;             //количество экстремумов соответствующего направления
  if(index >= _bufferExtr.Total() || index < 0) 
  {
-  Print(" Индекс вне границ массива _bufferExtr.Total = ", _bufferExtr.Total());
+  //Print(" Индекс вне границ массива _bufferExtr.Total = ", _bufferExtr.Total());
   return extrERROR;
  } 
  switch(extr_use)

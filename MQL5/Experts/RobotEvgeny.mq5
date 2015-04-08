@@ -176,7 +176,8 @@ void OnTick()
       }
     }    
    prevBid = curBid;
-   prevTrend = trend;
+   if (trend != 0)
+    prevTrend = trend;
   }
 
 // функция обработки внешних событий
