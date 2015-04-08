@@ -61,11 +61,10 @@ class CExtrContainer  : public CObject
  CExtremum    *GetExtrByTime(datetime time);
  void         AddExtrToContainer(CExtremum *extr);                            // добавл€ет экстремум в контейнер
  bool         AddNewExtrByTime(datetime time);                                // добавл€ет экстремум по времени
- CExtremum    *GetExtremum (int index);
  bool         Upload(int bars = -1);
  bool         UploadOnEvent(string sparam,double dparam,long lparam);         
  int          GetCountFormedExtr() {return (_bufferExtr.Total()-1);};         // возвращает количество сформированных экстремумов
- CExtremum    *GetExtrByIndex(int index, ENUM_EXTR_USE extr_use);             // возвращает экстремум по индексу, при учете extr_use
+ CExtremum    *GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EXTR_BOTH);             // возвращает экстремум по индексу, при учете extr_use
  CExtremum    *GetLastFormedExtr(ENUM_EXTR_USE extr_use);                     // возвращает последний сформированный по типу
  CExtremum    *GetLastFormingExtr();                                          // возвращает последний формирующийс€
  ENUM_EXTR_USE GetPrevExtrType(void);
@@ -143,22 +142,7 @@ CExtrContainer::~CExtrContainer() // деструктор класса
  delete extrTemp;
 }
 
-//+------------------------------------------------------------------+
-// метод возвращает экстремум по индексу                             |
-//+------------------------------------------------------------------+
-CExtremum *CExtrContainer::GetExtremum(int index)
-{   
- if (index < 0 || index >= _bufferExtr.Total())
- {
-  CExtremum *nullExtr  = new CExtremum(0,-1, 0, EXTR_NO_TYPE);    //удалить!!!
-  Print("ќшибка метода GetExtrByIndex класса CExtrContainer. »ндекс экстремума вне диапазона");
-  return (nullExtr);
- }  
- CExtremum *extr = _bufferExtr.At(index);
- return (extr);          
-}
- 
- 
+  
 //+------------------------------------------------------------------+
 // обновл€ет данные экстремумов по всей истории                      |
 //+------------------------------------------------------------------+
@@ -264,7 +248,7 @@ bool  CExtrContainer::UploadOnEvent(string sparam,double dparam,long lparam)
 //+------------------------------------------------------------------+
 // ¬озвращ€ает экстремум по индексу и типу                           |
 //+------------------------------------------------------------------+
-CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use)
+CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EXTR_BOTH)
 {
  CExtremum *extrERROR = new CExtremum(0,-1,0,EXTR_NO_TYPE);
  int k = 0;             //количество экстремумов соответствующего направлени€
@@ -276,7 +260,7 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use)
  switch(extr_use)
  {
   case EXTR_BOTH:
-   return(GetExtremum(index));
+   return(_bufferExtr.At(index));
   break;
   case EXTR_HIGH:
    for(int i = 0; i < _bufferExtr.Total(); i++) 
@@ -286,7 +270,7 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use)
     {
      if(k == index)
      {
-      return GetExtremum(i);
+      return extrTemp;
      }
      k++;
     }
@@ -301,7 +285,7 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use)
     {
      if(k == index)
      {
-      return GetExtremum(i);
+      return extrTemp;
      }
      k++;
     }
