@@ -104,6 +104,7 @@ int lastIndex;//Отладка
 // переменные доливок
 int  countAdd          = 0;            // количество доливок
 bool changeLotValid    = false;        // флаг возможности доливки на M1
+bool uploadConteiners  = true;
 // переменные PriceBasedIndicator
 int  lastTrendPBI_1    = 0;            // тип последнего тренда по PBI 
 int  lastTrendPBI_2    = 0;            // тип последнего тренда по PBI
@@ -180,6 +181,7 @@ int OnInit()
   // создаем объекты класса CisNewBar
   isNewBar_D1  = new CisNewBar(_Symbol,PERIOD_D1);
   
+  // заполняем массив aHandleExtremums используемыми хэндлами
   aHandleExtremums[0] = iCustom(_Symbol, PERIOD_M1, "DrawExtremums");
   aHandleExtremums[1] = iCustom(_Symbol, PERIOD_M5, "DrawExtremums");
   aHandleExtremums[2] = iCustom(_Symbol, PERIOD_M15,"DrawExtremums");
@@ -188,6 +190,7 @@ int OnInit()
   containers.Add(new CExtrContainer(aHandleExtremums[1], _Symbol, PERIOD_M5));
   containers.Add(new CExtrContainer(aHandleExtremums[2], _Symbol, PERIOD_M15));
   containers.Add(new CExtrContainer(aHandleExtremums[3], _Symbol, PERIOD_H1));
+
   
   // создаем объекты класса CBlowInfoFromExtremums
   for (int i = 0; i < 4; ++i)
@@ -250,17 +253,26 @@ int lastDeal = 0;
 
 
 void OnTick()
-{   
+{
  int copied = 0;        // Количество скопированных данных из буфера
  int attempts = 0;      // Количество попыток копирования данных из буфера
-
+ Comment("хэндл для трэйлинга = ", indexForTrail);
  if(lastIndex!=indexForTrail) //Отладка
  {
   Print("Был изменен хэндл для трэйлинга, сейчас = ", indexForTrail);
   lastIndex = indexForTrail; 
  }
  ctm.OnTick(); 
- ctm.DoTrailing(aHandleExtremums[indexForTrail]); 
+ ctm.DoTrailing(aHandleExtremums[indexForTrail]);
+ 
+ // Проверим загружены ли все контейнеры экстремумов 
+
+ for(int i = 0; i < 4; i++)  
+ {
+  CExtrContainer *extrContain = containers.At(i);
+  if(!extrContain.isUploaded())
+    return;
+ }
 
  prevPriceAsk = curPriceAsk;                             // сохраним предыдущую цену Ask
  prevPriceBid = curPriceBid;                             // сохраним предыдущую цену Bid

@@ -30,8 +30,8 @@ class CExtrContainer  : public CObject
 {
  private:
  // буферы класса
- double   _extrHigh[];    // буфер высоких экстремумов
- double   _extrLow [];    // буфер низких эксремумов
+ double   _extrHigh[];          // буфер высоких экстремумов
+ double   _extrLow [];          // буфер низких эксремумов
  double   _lastExtrSignal[];    // буфер последнего сформированного экстремума экстремума
  double   _prevExtrSignal[];    // буфер формирующегося экстремума
  double   _extrBufferHighTime[];// буффер времени экстремумов
@@ -40,6 +40,7 @@ class CExtrContainer  : public CObject
  string   _eventExtrUp;         // имя подходящего события для добавления верхнего экстремума     
  string   _eventExtrDown;       // имя подходящего события для добавления нижнего экстремума 
  ENUM_TIMEFRAMES _period;
+ bool    _iUploaded;
  
  CArrayObj       _bufferExtr;       // массив для хранения экстремумов  
  CExtremum       *extrTemp;         
@@ -48,12 +49,14 @@ class CExtrContainer  : public CObject
  int      _historyDepth;            // глубина истории
  int      _countHigh;
  int      _countLow;
- 
+ int      _historyLengh;            // Количество баров на истории которые необходимо прогрузить 
+  
  // приватные методы класса
- string GenEventName (string eventName) { return(eventName+"_"+_symbol+"_"+PeriodToString(_period) ); };
+ string GenEventName (string eventName) { return(eventName +"_"+ _symbol +"_"+ PeriodToString(_period) ); };
  public:
- CExtrContainer(int handleExtremums, string symbol, ENUM_TIMEFRAMES period);          // конструктор класса контейнера экстремумов
- ~CExtrContainer();                                                                   // деструктор класса контейнера экстремумов
+ CExtrContainer(int handleExtremums, string symbol, 
+               ENUM_TIMEFRAMES period, int history_lengh = -1);               // конструктор класса контейнера экстремумов
+ ~CExtrContainer();                                                           // деструктор класса контейнера экстремумов
   
  // методы класса
  int          GetCountByType(ENUM_EXTR_USE extr_use);                         // возвращает количесво нижних/верхних экстремумов в контейнере
@@ -62,7 +65,8 @@ class CExtrContainer  : public CObject
  void         AddExtrToContainer(CExtremum *extr);                            // добавляет экстремум в контейнер
  bool         AddNewExtrByTime(datetime time);                                // добавляет экстремум по времени
  bool         Upload(int bars = -1);
- bool         UploadOnEvent(string sparam,double dparam,long lparam);         
+ bool         UploadOnEvent(string sparam,double dparam,long lparam);   
+ bool         isUploaded();      
  int          GetCountFormedExtr() {return (_bufferExtr.Total()-1);};         // возвращает количество сформированных экстремумов
  CExtremum    *GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EXTR_BOTH);             // возвращает экстремум по индексу, при учете extr_use
  CExtremum    *GetLastFormedExtr(ENUM_EXTR_USE extr_use);                     // возвращает последний сформированный по типу
@@ -116,30 +120,48 @@ void CExtrContainer::AddExtrToContainer(CExtremum *extr)
 //+------------------------------------------------------------------+
 // Конструктор                                                       |
 //+------------------------------------------------------------------+
- CExtrContainer::CExtrContainer(int handleExtremums, string symbol, ENUM_TIMEFRAMES period)                     // конструктор класса
-  {
-   _handleDE = handleExtremums;
-   _symbol = symbol;            
-   _period = period;
-   _countHigh = 0;
-   _countLow = 0;
-   _eventExtrUp =  GenEventName("EXTR_UP");
-   _eventExtrDown = GenEventName("EXTR_DOWN");
-   if(!Upload(150))
-   {
-    Print(__FUNCTION__, "Не удалось обновить контейнер.!");
-   }
-   Print("В контейнере столько элементов  ", _bufferExtr.Total());  //отладка
-   //если баров на истории меньше тысячи, скопировать то, что есть
-  }
+CExtrContainer::CExtrContainer(int handleExtremums, string symbol, ENUM_TIMEFRAMES period, int history_lengh = -1)                     // конструктор класса
+{
+ _handleDE = handleExtremums;                 
+ _symbol = symbol;            
+ _period = period;
+ _countHigh = 0;
+ _countLow = 0;
+ _iUploaded = false;
+ _historyDepth = history_lengh;    
+ _eventExtrUp =  GenEventName("EXTR_UP");
+ _eventExtrDown = GenEventName("EXTR_DOWN");
+ if(!Upload(_historyDepth))
+  StringFormat("%s Не удалось обновить контейнер!", MakeFunctionPrefix(__FUNCTION__));
+}
 
 //+------------------------------------------------------------------+
-// Деструктор                                                       |
+// Деструктор                                                        |
 //+------------------------------------------------------------------+
 CExtrContainer::~CExtrContainer() // деструктор класса
 {
- _bufferExtr.Clear();
+ for(int i = _bufferExtr.Total()-1; i >= 0; i--)
+  delete _bufferExtr.At(i);
  delete extrTemp;
+}
+
+  
+//+--------------------------------------------------------------------------+
+// Возвращает состояние после последней загрузки, (если загружен - true)     |
+// Стоит использовать данную проверку перед использованием контейнера        |
+//                                         например на OnTick()/OnCalculate()|
+//+--------------------------------------------------------------------------+
+bool CExtrContainer::isUploaded()
+{
+ if(!_iUploaded || _bufferExtr.Total() < 1)
+ { 
+  Upload(_historyDepth);
+  //Print ("Произошла перезаугрцзка Upload() Количество элементов в массиве ", _bufferExtr.Total(), "_iUploaded = ", _iUploaded);
+ }
+ if(_iUploaded)
+  return true;
+ else 
+  return false;
 }
 
   
@@ -148,22 +170,22 @@ CExtrContainer::~CExtrContainer() // деструктор класса
 //+------------------------------------------------------------------+
 bool CExtrContainer::Upload(int bars = -1)       
 {
+ _bufferExtr.Clear();
  if(bars == -1)
- bars = Bars(_symbol,_period);
- //bars = 420;
- _historyDepth = bars;
+ {
+   bars = Bars(_symbol,_period);
+  _historyDepth = bars;
+ }
  int copiedHigh     = _historyDepth;
  int copiedLow      = _historyDepth;
  int copiedHighTime = _historyDepth;
  int copiedLowTime  = _historyDepth;
- Sleep(500);
  if ( CopyBuffer(_handleDE, 2, 0, 1, _lastExtrSignal) < 1
    || CopyBuffer(_handleDE, 3, 0, 1, _prevExtrSignal) < 1)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буферы формирующихся экстремумов индикатора DrawExtremums ", MakeFunctionPrefix(__FUNCTION__)));           
   return (false);           
- }
- Sleep(100);           
+ }          
  copiedHigh       = CopyBuffer(_handleDE, 0, 0, _historyDepth, _extrHigh);   
  copiedHighTime   = CopyBuffer(_handleDE, 4, 0, _historyDepth, _extrBufferHighTime);     
  copiedLow        = CopyBuffer(_handleDE, 1, 0, _historyDepth, _extrLow);
@@ -215,6 +237,8 @@ bool CExtrContainer::Upload(int bars = -1)
   if(_prevExtrSignal[0] != 0)
    AddExtrToContainer(new CExtremum(-1, _prevExtrSignal[0],datetime(_extrBufferLowTime[0]),EXTR_FORMING));
  }
+ Print("Контейнер эктремумов на ",PeriodToString(_period)," обновлен. Всего: ",_bufferExtr.Total());
+ _iUploaded = true;
  return (true);
 }
 
@@ -254,7 +278,6 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EX
  int k = 0;             //количество экстремумов соответствующего направления
  if(index >= _bufferExtr.Total() || index < 0) 
  {
-  //Print(" Индекс вне границ массива _bufferExtr.Total = ", _bufferExtr.Total());
   return extrERROR;
  } 
  switch(extr_use)
@@ -349,7 +372,8 @@ bool CExtrContainer::AddNewExtrByTime(datetime time)
  if ( CopyBuffer(_handleDE,2,time,1,extrHigh)     < 1 || CopyBuffer(_handleDE,3,time,1,extrLow) < 1 || 
       CopyBuffer(_handleDE,4,time,1,extrHighTime) < 1 || CopyBuffer(_handleDE,5,time,1,extrLowTime) < 1 )
  {
-  Print("Не удалось прогузить буфер экстремумов");
+  log_file.Write(LOG_DEBUG, 
+  StringFormat("%s Не удалось прогузить буфер экстремумов. Всего = %i", MakeFunctionPrefix(__FUNCTION__), _bufferExtr.Total())); 
   return (false);
  } 
   
@@ -462,7 +486,7 @@ CExtremum *CExtrContainer::GetLastFormedExtr(ENUM_EXTR_USE extr_use)
 }
 CExtremum *CExtrContainer::GetLastFormingExtr()
 {
- if(_bufferExtr.Total() != 0)
+ if(_bufferExtr.Total() == 0)
  {
   CExtremum *extrERROR = new CExtremum(0, -1, 0, EXTR_NO_TYPE);
   log_file.Write(LOG_DEBUG, StringFormat("%s В контейнере недостаточно элементов чтобы обратиться формирующемуся экстремуму. Всего = %i", MakeFunctionPrefix(__FUNCTION__), _bufferExtr.Total())); 
