@@ -358,7 +358,7 @@ int CountStopLossForTrendLines ()
   // если тренд вниз
   if (trend == -1)
    {
-    return (int((MathAbs(curAsk-extr[0].price)+H1*percent)/_Point));
+    return (int((MathAbs(curAsk-extr[0].price)-H1*percent)/_Point));
    }   
   return (0);
  }

@@ -99,7 +99,7 @@ int OnInit()
    NewBarCurrent.SetPeriod(_Period);
    handle_atr = iMA(_Symbol,_Period, 100, 0, MODE_EMA, iATR(_Symbol,_Period, 30));
    trend = new CColoredTrend(_Symbol,_Period, handle_atr, depth,container);
-   if(!is_it_top) handle_top_trend = iCustom(_Symbol, GetTopTimeframe(_Period), "PBIWithNewExtremums", depth, false, true);
+   if(!is_it_top) handle_top_trend = iCustom(_Symbol, GetTopTimeframe(_Period), "PriceBasedIndicator", depth, false, true);
 
    SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
    SetIndexBuffer(1, ColorCandlesBuffer2, INDICATOR_DATA);
@@ -213,11 +213,7 @@ int OnCalculate(const int rates_total,
     last_move = ColorCandlesColors[0]; 
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН", MakeFunctionPrefix(__FUNCTION__));
    }  
-   
-   Comment("последний экстремум = ",DoubleToString(container.GetExtrByIndex(0,EXTR_BOTH).price)); 
-   
-   // рассчет индикатора в реальном времени
-          
+
    // вычисление типа движения в текущий момент
    if(!is_it_top && CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
    {
@@ -276,12 +272,12 @@ void OnChartEvent(const int id,         // идентификатор события
   {
    
    // если удалось догрузить экстремумы в контейнер
-   /*
    if (CheckPointer(container) == POINTER_INVALID)
    {
-    PrintFormat("%s invalid pointer", MakeFunctionPrefix(__FUNCTION__));
+    //PrintFormat("%s invalid pointer", MakeFunctionPrefix(__FUNCTION__));
     return;
-   }*/
+   }
+   
    if (container.UploadOnEvent(sparam,dparam,lparam))
     {
      // если удалось обновить экстремумы
