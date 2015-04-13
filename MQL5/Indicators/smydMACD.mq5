@@ -107,15 +107,15 @@ int OnInit()
  // инициализация глобальных  переменных
  countDiv = 0; // выставляем начальное количество расхождений
    
- event = new CEventBase(100);                            // не оч удобная штука 100                         
+ event = new CEventBase(_Symbol, _Period, 100);                            // не оч удобная штука 100                         
  if (event == NULL)
  {
   Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать объект класса CEventBase");
   return (INIT_FAILED);
  }
  // создаем события
- event.AddNewEvent(_Symbol, _Period, "SELL");
- event.AddNewEvent(_Symbol, _Period, "BUY");
+ event.AddNewEvent("SELL");
+ event.AddNewEvent("BUY");
                                       
  return(INIT_SUCCEEDED); // успешное завершение инициализации индикатора
 }
