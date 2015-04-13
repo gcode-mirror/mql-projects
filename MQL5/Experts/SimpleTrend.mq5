@@ -13,7 +13,6 @@
 #include <Lib CisNewBarDD.mqh>                     // для проверки формирования нового бара
 #include <CompareDoubles.mqh>                      // для сравнения вещественных чисел
 #include <TradeManager\TradeManager.mqh>           // торговая библиотека
-#include <BlowInfoFromExtremums.mqh>               // класс по работе с экстремумами индикатора DrawExtremums
 #include <StringUtilities.mqh>
 
 // константы сигналов
@@ -79,7 +78,7 @@ double   closes[];                                 // массив для хранения цен за
 // объекты классов 
 CTradeManager   *ctm;             // объект торговой библиотеки                                                     
 CisNewBar       *isNewBar_D1;     // новый бар на D1
-CArrayObj       conteiners;        // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
+CArrayObj       containers;        // массив объектов класса получения информации об экстремумах индикатора DrawExtremums 
 // дополнительные системные переменные
 bool firstLaunch       = true;         // флаг первого запуска эксперта
 bool beatM5;                           // флаг пробития на M5
@@ -185,10 +184,10 @@ int OnInit()
   aHandleExtremums[1] = iCustom(_Symbol, PERIOD_M5, "DrawExtremums");
   aHandleExtremums[2] = iCustom(_Symbol, PERIOD_M15,"DrawExtremums");
   aHandleExtremums[3] = iCustom(_Symbol, PERIOD_H1, "DrawExtremums");
-  conteiners.Add(new CExtrContainer(aHandleExtremums[0], _Symbol, PERIOD_M1));
-  conteiners.Add(new CExtrContainer(aHandleExtremums[1], _Symbol, PERIOD_M5));
-  conteiners.Add(new CExtrContainer(aHandleExtremums[2], _Symbol, PERIOD_M15));
-  conteiners.Add(new CExtrContainer(aHandleExtremums[3], _Symbol, PERIOD_H1));
+  containers.Add(new CExtrContainer(aHandleExtremums[0], _Symbol, PERIOD_M1));
+  containers.Add(new CExtrContainer(aHandleExtremums[1], _Symbol, PERIOD_M5));
+  containers.Add(new CExtrContainer(aHandleExtremums[2], _Symbol, PERIOD_M15));
+  containers.Add(new CExtrContainer(aHandleExtremums[3], _Symbol, PERIOD_H1));
   
   // создаем объекты класса CBlowInfoFromExtremums
   for (int i = 0; i < 4; ++i)
@@ -212,7 +211,7 @@ int OnInit()
   trailing.trailingStop = 0;
   trailing.trailingStep = 0;
   trailing.handleForTrailing = 0;
-  trailing.extrContainer = conteiners.At(indexForTrail);
+  trailing.extrContainer = containers.At(indexForTrail);
   lastIndex = indexForTrail;  //Отладка
   return(INIT_SUCCEEDED);
  }
@@ -227,10 +226,10 @@ void OnDeinit(const int reason)
  delete ctm;
  delete isNewBar_D1;
  
- for (int i = conteiners.Total() - 1; i >= 0; i--)
+ for (int i = containers.Total() - 1; i >= 0; i--)
  {
-  delete conteiners.At(i);
-  delete conteiners.At(i);
+  delete containers.At(i);
+  delete containers.At(i);
  }
  // освобождаем хэндлы индикаторов 
  if (usePBI == PBI_SELECTED) IndicatorRelease(handlePBI_1);  
@@ -268,9 +267,9 @@ void OnTick()
  curPriceBid  = SymbolInfoDouble(_Symbol, SYMBOL_BID);   // получаем текущую цену Bid    
  curPriceAsk  = SymbolInfoDouble(_Symbol, SYMBOL_ASK);   // получаем текущую цену Ask
  
- /*for (int i = conteiners.Total() - 1; i >= 0; i--)
+ /*for (int i = containers.Total() - 1; i >= 0; i--)
  {
-  CExtrContainer *cE = conteiners.At(i);
+  CExtrContainer *cE = containers.At(i);
   if (!cE.Upload(EXTR_BOTH,TimeCurrent(),1000))
   {
    log_file.Write(LOG_DEBUG, StringFormat("%s Не удалось прогрузить буфер индикатора DrawExtremums i=%d ", MakeFunctionPrefix(__FUNCTION__), i));           
@@ -292,8 +291,8 @@ void OnTick()
  // получаем новые значения счетчиков экстремумов
  for (int ind = 0; ind < 4; ind++)
  {
-  CExtrContainer *cEHigh = conteiners.At(ind);
-  CExtrContainer *cELow  = conteiners.At(ind);
+  CExtrContainer *cEHigh = containers.At(ind);
+  CExtrContainer *cELow  = containers.At(ind);
   
   countExtrHigh[ind] = cEHigh.GetCountByType(EXTR_HIGH);   // получаем текущее значение счетчика экстремумов HIGH
   countExtrLow[ind]  = cELow.GetCountByType(EXTR_LOW);     // получаем текущее значение счетчика экстремумов LOW
@@ -444,7 +443,7 @@ void OnTick()
    pos_info.sl = stopLoss;    
    pos_info.volume = lotReal; 
    // открываем позицию на BUY
-   trailing.extrContainer = conteiners.At(indexForTrail);
+   trailing.extrContainer = containers.At(indexForTrail);
    if (ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread))
    {
     timeOpenPos = TimeCurrent();       // сохраняем время открытия позиции
@@ -504,7 +503,7 @@ void OnTick()
    pos_info.type = OP_SELL;
    pos_info.sl = stopLoss;   
    pos_info.volume = lotReal;
-   trailing.extrContainer = conteiners.At(indexForTrail);  
+   trailing.extrContainer = containers.At(indexForTrail);  
    // открываем позицию на SELL 
    if (ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread))
    {
@@ -528,7 +527,7 @@ ENUM_TENDENTION GetTendention (double priceOpen,double priceAfter)            //
 
 bool IsExtremumBeaten (int index,int direction)   // проверяет пробитие ценой экстремума
 {
- CExtrContainer *cE = conteiners.At(index);
+ CExtrContainer *cE = containers.At(index);
  
  switch (direction)
  {
@@ -566,7 +565,7 @@ int GetStopLoss()         // вычисляет стоп лосс
  int slValue;             // значение стоп лосса
  int stopLevel;           // стоп левел
  stopLevel = SymbolInfoInteger(_Symbol,SYMBOL_TRADE_STOPS_LEVEL);  // получаем стоп левел
- CExtrContainer *cE = conteiners.At(indexStopLoss);
+ CExtrContainer *cE = containers.At(indexStopLoss);
  switch (openedPosition)
  {
   case BUY:
@@ -595,7 +594,7 @@ int GetStopLoss()         // вычисляет стоп лосс
 
 bool ChangeLot()    // функция изменяет размер лота, если это возможно (доливка)
 {
- CExtrContainer *cE = conteiners.At(indexStopLoss);
+ CExtrContainer *cE = containers.At(indexStopLoss);
  double pricePos = ctm.GetPositionPrice(_Symbol);
  double posAverPrice;  // средняя цена позиции 
  // в зависимости от типа открытой позиции
@@ -807,22 +806,22 @@ void OnChartEvent(const int id,
  Comment(sparam);
  if(strPeriod == PeriodToString(PERIOD_M1))
  {
-  cextr = conteiners.At(0);
+  cextr = containers.At(0);
   cextr.UploadOnEvent(sparam, dparam, lparam);
  }
  if(strPeriod == PeriodToString(PERIOD_M10))
  {
-  cextr = conteiners.At(1);
+  cextr = containers.At(1);
   cextr.UploadOnEvent(sparam, dparam, lparam);
  }
  if(strPeriod == PeriodToString(PERIOD_M15))
  {
-  cextr = conteiners.At(2);
+  cextr = containers.At(2);
   cextr.UploadOnEvent(sparam, dparam, lparam);
  }
  if(strPeriod == PeriodToString(PERIOD_H1))
  {
-  cextr = conteiners.At(3);
+  cextr = containers.At(3);
   cextr.UploadOnEvent(sparam, dparam, lparam);
  }
  
