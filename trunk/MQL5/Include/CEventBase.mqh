@@ -179,7 +179,7 @@ bool CEventBase::AddNewEvent(string eventName)
    }
   // добавляем новое id в буфер
   CEvent *event = new CEvent(tmp_id, generatedName);
-  
+  aEvents.Add(event);
   return (true);
  }  
   
