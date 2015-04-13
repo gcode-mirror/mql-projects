@@ -58,7 +58,7 @@ int prevJumper=0;          // предыдущее значение jumper
 double averageATR;         // среднее значение бара
 double percentage_ATR;     // коэфициент отвечающий за то во сколько раз движение цены должно
                            // превысить средний бар что бы появился новый экстремум 
-                           
+           int k=0;              
 double lastExtrUpValue;    // значение последнего экстремума
 double lastExtrDownValue;  // значение последнего экстемума   
 datetime lastExtrUpTime;   // время последнего экстремума HIGH
@@ -161,6 +161,7 @@ int OnCalculate(const int rates_total,
    // если это первый расчет индикатора
    if(prev_calculated == 0) 
    {   
+    Print("Пересчет: ", k++);
     if (BarsCalculated(handleForAverBar) < 1)
     {
      return (0);
@@ -254,10 +255,11 @@ int OnCalculate(const int rates_total,
    {              
     // получаем тип пришедшего экстремума
     came_extr = isExtremum(time[rates_total-1],true);
+    
       
     // если обновился верхний экстремум
     if (came_extr == CAME_HIGH )
-    {            
+    { 
      bufferAllExtrHigh[rates_total-1] = extrHigh.price;
      bufferTimeExtrHigh[rates_total-1] = double(extrHigh.time);
           
@@ -282,7 +284,7 @@ int OnCalculate(const int rates_total,
     }
     // если обновился нижний экстремум
     if (came_extr == CAME_LOW)
-    {
+    {  
      bufferAllExtrLow[rates_total-1] = extrLow.price;
      bufferTimeExtrLow[rates_total-1] = double(extrLow.time);
           
@@ -294,7 +296,7 @@ int OnCalculate(const int rates_total,
      event.Generate("EXTR_DOWN",eventData,true);               
      if (jumper == 1)
      {             
-      bufferFormedExtrHigh[indexPrevUp] = lastExtrUpValue;        // сохраняемт сформированный экстремум
+      bufferFormedExtrHigh[indexPrevUp] = lastExtrUpValue;        // сохраняет сформированный экстремум
       bufferTimeExtrHigh[indexPrevUp] = long(lastExtrUpTime);     // сохраняем время сформированного экстремума
       // запись инмормации об экстремуме
       eventData.dparam = lastExtrUpValue;  
