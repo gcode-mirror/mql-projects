@@ -68,6 +68,7 @@ CExtrMACDContainer::CExtrMACDContainer(string symbol, ENUM_TIMEFRAMES period, in
 //+------------------------------------------------------------------+
 CExtrMACDContainer::~CExtrMACDContainer()
 {
+ extremums.Clear();
 }
   
 //+------------------------------------------------------------------+
@@ -80,8 +81,7 @@ void CExtrMACDContainer::FilltheExtremums(int startIndex)
 {
  int copiedMACD = 0;
  int copiedDate = 0;
- extremums.Clear();
- Print(__FUNCTION__," was here");
+ //extremums.Clear();
  //----------Копирование значений MACD в буфер valueMACDbuffer-------
  for(int attemps = 0; attemps < 25 && copiedMACD <= 0; attemps++)
  {
@@ -138,8 +138,8 @@ bool CExtrMACDContainer::RecountExtremum(int startIndex, bool fill = false)
   return (_flagFillSucceed);
  }
  
- CExtremumMACD *new_extr = new CExtremumMACD(0, -1, 0.0, 0);         // временная переменная в которую isMACDExtremum 
-                                                                   // запишет текущий экстремум (если он есть)
+ CExtremumMACD *new_extr;                 // временная переменная в которую isMACDExtremum 
+                                          // запишет текущий экстремум (если он есть)
                                                                    
  //--------Копирование значения предполагаемого экстремума------------
  double buf_Value[1];                                       
@@ -173,10 +173,7 @@ bool CExtrMACDContainer::RecountExtremum(int startIndex, bool fill = false)
  int is_extr_exist = isMACDExtremum(startIndex); 
  if (is_extr_exist != 0)
  { 
-  new_extr.direction = is_extr_exist;
-  new_extr.index = 2;    
-  new_extr.value = buf_Value[0];
-  new_extr.time  = date_buf[0];
+  new_extr = new CExtremumMACD(is_extr_exist, 2, buf_Value[0], date_buf[0]);
   extremums.Insert(new_extr, 0);             
  }   
  return(true);
@@ -193,15 +190,22 @@ int CExtrMACDContainer::getCount()
 
 CExtremumMACD *CExtrMACDContainer::getExtr(int i)
 {
- return extremums.At(i);
+ if(i >= 0 && i < extremums.Total())
+  return extremums.At(i);
+ else 
+ {
+  PrintFormat("%s,ВНЕ ГРАНИЦ МАССИВА всего=%d, Нужен i=%d", __FUNCTION__, extremums.Total(), i);
+  return(new CExtremumMACD(0, DEPTH_MACD + 1, -1, 0));
+ }
 }
 
 //+------------------------------------------------------------------+
-//|         maxExtr() - возвращает максимальный экстремум в массиве |
+//|         maxExtr() - возвращает максимальный экстремум в массиве  |
 //+------------------------------------------------------------------+
 CExtremumMACD *CExtrMACDContainer::maxExtr()   //--- ArrayMaximum(extrems,0,whole_array)
 {
- CExtremumMACD *temp_Extr = new CExtremumMACD(0, -1, 0, 0);
+ //Print(__FUNCTION__);
+ CExtremumMACD *temp_Extr;
  int indexMax = 0;
  if(_flagFillSucceed && extremums.Total() > 0)
  {
@@ -221,7 +225,7 @@ CExtremumMACD *CExtrMACDContainer::maxExtr()   //--- ArrayMaximum(extrems,0,whol
   }
   return extremums.At(indexMax);
  }
- return temp_Extr;  
+ return (new CExtremumMACD(0, -1, 0, 0));  
 }
 
 
@@ -230,7 +234,8 @@ CExtremumMACD *CExtrMACDContainer::maxExtr()   //--- ArrayMaximum(extrems,0,whol
 //+------------------------------------------------------------------+
 CExtremumMACD *CExtrMACDContainer::minExtr()  
 {
- CExtremumMACD *temp_Extr = new CExtremumMACD(0, -1, 0, 0);
+ //Print(__FUNCTION__);
+ CExtremumMACD *temp_Extr;
  int indexMin = 0;
  if(_flagFillSucceed && extremums.Total() > 0)
  {
@@ -250,7 +255,7 @@ CExtremumMACD *CExtrMACDContainer::minExtr()
   }
   return extremums.At(indexMin);
  }
- return temp_Extr;  
+ return (new CExtremumMACD(0, -1, 0, 0));  
 }
 
 //+------------------------------------------------------------------+
@@ -275,14 +280,14 @@ int CExtrMACDContainer::isMACDExtremum(int startIndex)
  }
 
    if ( GreatDoubles(iMACD_buf[2], iMACD_buf[0]) && GreatDoubles(iMACD_buf[2], iMACD_buf[1]) &&
-         GreatDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] > 0)
+        GreatDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] > 0)
    {
-      return(1);   
+    return(1);   
    }
    else if ( LessDoubles(iMACD_buf[2], iMACD_buf[0]) && LessDoubles(iMACD_buf[2], iMACD_buf[1]) && 
-           LessDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] < 0) 
+             LessDoubles(iMACD_buf[2], iMACD_buf[3]) && iMACD_buf[2] < 0) 
    {
-      return(-1);     
+    return(-1);     
    }
  return(0);
 }

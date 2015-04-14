@@ -49,13 +49,13 @@ int OnInit()
  handlesmydMACD = iCustom(_Symbol, _Period, "smydMACD");
  if (handlesmydMACD == INVALID_HANDLE )
  {
-  Print("Ошибка при инициализации эксперта UselessPerson. Не удалось создать хэндл ShowMeYourDivMACD");
+  Print("Ошибка при инициализации эксперта TradeDivOnMACD. Не удалось создать хэндл ShowMeYourDivMACD");
   return(INIT_FAILED);
  }
  handlePriceBasedIndicator = iCustom(_Symbol, _Period, "PriceBasedIndicator");
  if (handlePriceBasedIndicator == INVALID_HANDLE )
  {
-  Print("Ошибка при инициализации эксперта UselessPerson. Не удалось создать хэндл PriceBasedIndicator");
+  Print("Ошибка при инициализации эксперта TradeDivOnMACD. Не удалось создать хэндл PriceBasedIndicator");
   return(INIT_FAILED);
  } 
  pos_inf.expiration = 0;                        //время жизни отложенного бара, 0- живет, пока сами не удалим

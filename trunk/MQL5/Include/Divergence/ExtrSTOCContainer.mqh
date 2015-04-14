@@ -60,9 +60,9 @@ CExtrSTOCContainer::CExtrSTOCContainer(string symbol, ENUM_TIMEFRAMES period, in
 //|                                                                  |
 //+------------------------------------------------------------------+
 CExtrSTOCContainer::~CExtrSTOCContainer()
-  {
-  
-  }
+{
+ extremums.Clear();
+}
 
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -79,7 +79,7 @@ void CExtrSTOCContainer::FilltheExtremums(int startIndex)
 {
  int copiedSTOC = 0;
  int copiedDate = 0;
- extremums.Clear();
+ //extremums.Clear();
  Print(__FUNCTION__," was here");
  //----------Копирование значений STOC в буфер valueSTOCbuffer-------
  for(int attemps = 0; attemps < 25 && copiedSTOC <= 0; attemps++)
@@ -138,9 +138,7 @@ bool CExtrSTOCContainer::RecountExtremum(int startIndex, bool fill = false)
   FilltheExtremums(startIndex);
   return (_flagFillSucceed);
  }
- 
- CExtremumSTOC *new_extr = new CExtremumSTOC(0, -1, 0.0, 0);         // временная переменная в которую isSTOCExtremum 
-                                                                     // запишет текущий экстремум (если он есть)
+
  //--------Копирование значения предполагаемого экстремума------------
  double buf_Value[1];                                       
  int copiedSTOC = 0; 
@@ -175,6 +173,7 @@ bool CExtrSTOCContainer::RecountExtremum(int startIndex, bool fill = false)
  int is_extr_exist = isSTOCExtremum(startIndex); 
  if(is_extr_exist != 0)
  {
+  CExtremumSTOC *new_extr = new CExtremumSTOC();                                                    
   new_extr.direction = is_extr_exist;
   new_extr.index = 2;    
   new_extr.value = buf_Value[0];
@@ -204,7 +203,7 @@ CExtremumSTOC *CExtrSTOCContainer::getExtr(int i)
 //+------------------------------------------------------------------+
 CExtremumSTOC *CExtrSTOCContainer::maxExtr()   
 {
- CExtremumSTOC *temp_Extr = new CExtremumSTOC(0, -1, 0, 0);
+ CExtremumSTOC *temp_Extr;
  int indexMax = 0;
  if(_flagFillSucceed && extremums.Total() > 0)
  {
@@ -224,7 +223,7 @@ CExtremumSTOC *CExtrSTOCContainer::maxExtr()
   }
   return extremums.At(indexMax);
  }
- return temp_Extr;  
+ return  new CExtremumSTOC(0, -1, 0, 0);  
 }
 
 
@@ -233,7 +232,7 @@ CExtremumSTOC *CExtrSTOCContainer::maxExtr()
 //+------------------------------------------------------------------+
 CExtremumSTOC *CExtrSTOCContainer::minExtr()  
 {
- CExtremumSTOC *temp_Extr = new CExtremumSTOC(0, 1, 0, 0);
+ CExtremumSTOC *temp_Extr;
  int indexMin = 0;
  if(_flagFillSucceed && extremums.Total() > 0)
  {
@@ -253,7 +252,7 @@ CExtremumSTOC *CExtrSTOCContainer::minExtr()
   }
   return extremums.At(indexMin);
  }
- return temp_Extr;  
+ return  new CExtremumSTOC(0, 1, 0, 0);  
 }
 
 //+------------------------------------------------------------------+
