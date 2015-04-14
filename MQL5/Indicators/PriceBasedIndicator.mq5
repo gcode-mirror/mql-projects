@@ -63,6 +63,7 @@ SEventData eventData;                 // структура полей событий
 
 int OnInit()
   {      
+   
    // привязка индикатора DrawExtremums 
    handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
    if (handleDE == INVALID_HANDLE)
@@ -82,7 +83,6 @@ int OnInit()
      Print("Ошибка при инициализации индикатора PriceBasedIndicator. Не удалось создать объект класса CExtrContainer");
      return (INIT_FAILED);
     }
-
    // создаем объект генерации событий 
    event = new CEventBase(_Symbol,_Period,300);
    if (event == NULL)
@@ -213,7 +213,9 @@ int OnCalculate(const int rates_total,
     last_move = ColorCandlesColors[0]; 
     PrintFormat("%s Первый расчет индикатора ОКОНЧЕН", MakeFunctionPrefix(__FUNCTION__));
    }  
-
+   
+   // рассчет индикатора в реальном времени
+              
    // вычисление типа движения в текущий момент
    if(!is_it_top && CopyBuffer(handle_top_trend, 4, time[0], 1, buffer_top_trend) < 1)
    {
@@ -241,7 +243,7 @@ int OnCalculate(const int rates_total,
     // то обновляем последнее движение
     last_move = ColorCandlesColors[0];
     eventData.dparam = last_move;
-    event.Generate("смена движения",eventData,true);
+    event.Generate("MOVE_CHANGED",eventData,true);
    }
      
    if(NewBarCurrent.isNewBar() && prev_calculated != 0)
@@ -271,6 +273,7 @@ void OnChartEvent(const int id,         // идентификатор события
                  )
   {
    
+   /*
    // если удалось догрузить экстремумы в контейнер
    if (CheckPointer(container) == POINTER_INVALID)
    {
@@ -289,5 +292,16 @@ void OnChartEvent(const int id,         // идентификатор события
          trendCalculated = true;
         }        
     }
-   
+    */
+   if (container.UploadOnEvent(sparam,dparam,lparam))
+    {
+     // если удалось обновить экстремумы
+     if (trend.UpdateExtremums()==1)
+        {
+         // рассчитываем тренд
+         trend.CountTrend();
+         // выставляем флаг того, что тренд был пересчитан
+         trendCalculated = true;
+        }        
+    }    
   } 

@@ -11,11 +11,10 @@
 
 // подключаем необходимые библиотеки
 #include <CLog.mqh>                        // для лога
-#include <StringUtilities.mqh>
+#include <StringUtilities.mqh>             // строковые константы
 #include <CompareDoubles.mqh>              // для сравнения вещественных чисел
 #include <DrawExtremums/CExtremum.mqh>     // для массива эктсремумов
-#include <Arrays\ArrayObj.mqh>
-#include <CLog.mqh>
+#include <Arrays\ArrayObj.mqh>             // класс динамических массивов
 
 // перечисление типов эктсремумов
 enum ENUM_EXTR_USE

@@ -74,7 +74,7 @@ int OnInit()
      Print("Не удалось создать индикатор ATR");
      return (INIT_FAILED);
     }         
-   ctm = new CTradeManager();
+   ctm = new CTradeManager(); //89031736595
    if (ctm == NULL)
     {
      Print("Не удалось создать торговую библиотеку");
