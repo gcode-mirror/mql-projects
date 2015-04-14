@@ -34,7 +34,6 @@ int  handleDE;
 int  handlePBI;
 // счетчики 
 int countTotal = 0; // всего экстремумов
-
 int trend = 0; // текущий тренд 1-й типа
 int prevTrend = 0; // предыдущий тренд
 double curBid; // текущая цена bid
@@ -81,7 +80,7 @@ int OnInit()
   }    
     
    // привязка индикатора PriceBasedIndicator
- /* handlePBI = DoesIndicatorExist(_Symbol,_Period,"PriceBasedIndicator");
+  handlePBI = DoesIndicatorExist(_Symbol,_Period,"PriceBasedIndicator");
   if (handlePBI == INVALID_HANDLE)
   {
    handlePBI = iCustom(_Symbol,_Period,"PriceBasedIndicator");
@@ -92,7 +91,7 @@ int OnInit()
    }
    SetIndicatorByHandle(_Symbol,_Period,handlePBI);
   }     
-  */
+  
   // если удалось прогрузить последние экстремумы
   if (UploadExtremums())
   {
@@ -117,10 +116,9 @@ int OnInit()
 
 void OnDeinit(const int reason)
   {
-   
-   DeleteLines();
-   delete ctm;
+   DeleteLines ();
    delete isNewBar;
+   delete ctm;
   }
   
 void OnTick()
@@ -335,14 +333,12 @@ int  IsTrendNow ()
     // если  последний экстремум - вверх
     if (extr[0].direction == 1)
      {
-     
       H1 = extr[1].price - extr[2].price;
       H2 = extr[3].price - extr[2].price;
       // если наша трендования линия нас удовлетворяет
       if (GreatDoubles(h1,H1*percent) && GreatDoubles(h2,H2*percent) )    
        return (-1);
      }
-
    }   
   return (0);   
  }
