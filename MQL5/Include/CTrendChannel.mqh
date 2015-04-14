@@ -22,10 +22,15 @@ class CTrend : public CObject
    CExtremum *_extrUp0,*_extrUp1; // экстремумы верхней линии
    CExtremum *_extrDown0,*_extrDown1; // экстремумы нижней линии
    CChartObjectTrend _trendLine; // объект класса трендовой линии
-   int _direction; // направление тренда   
+   int _direction; // направление тренда 
+   long _chartID;  // ID графика  
    string _symbol; // символ
    ENUM_TIMEFRAMES _period; // период
-   string uniqName; // уникальное имя трендовой линии
+   string _trendUpName; // уникальное имя трендовой верхней линии
+   string _trendDownName; // уникальное имя трендовой нижней линии
+   // приватные методы класса
+   void GenUniqName (); // генерирует уникальное имя трендового канала
+   bool IsItTrend (); // метод проверяет, является ли создаваемый объект трендом. 
   public:
    CTrend(CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1); // конструктор класса по экстр
   ~CTrend(); // деструктор класса
@@ -35,8 +40,21 @@ class CTrend : public CObject
    void HideTrend (); // скрывает отображение тренда
    
  };
+
  
 // кодирование методов класса трендовых каналов
+
+/////////приватные методы класса
+
+void CTrend::GenUniqName(void) // генерирует уникальное имя трендового канала
+ {
+  
+ }
+ 
+bool CTrend::IsItTrend(void) // проверяет, является ли данный канал трендовым
+ {
+  return (true);
+ }
 
 CTrend::CTrend(CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1)
  {
@@ -49,12 +67,13 @@ CTrend::CTrend(CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtre
 
 void CTrend::ShowTrend(void) // отображает тренд на графике
  {
- // _trendLine.Create(0,"trendUp"+index,0,extrs[2].time,extrs[2].price,extr[0].time,extrs[0].price); // верхняя  линия
+  //_trendLine.Create(0,"trendUp_"+_uniqName,0,extrs[2].time,extrs[2].price,extr[0].time,extrs[0].price); // верхняя  линия
  }
 
 void CTrend::HideTrend(void) // скрывает тренд с графика
  {
-  
+  ObjectDelete(_chartID,_trendUpName);
+  ObjectDelete(_chartID,_trendDownName);
  }
 
 class CTrendChannel 
@@ -78,6 +97,7 @@ CTrendChannel::CTrendChannel(string symbol,ENUM_TIMEFRAMES period,int handleDE)
  {
   int i;
   int extrTotal; 
+  int dirLastExtr;
   _handleDE = handleDE;
   _symbol = symbol;
   _period = period;
@@ -90,10 +110,11 @@ CTrendChannel::CTrendChannel(string symbol,ENUM_TIMEFRAMES period,int handleDE)
     if (_container.isUploaded())
      {    
       extrTotal = _container.GetCountFormedExtr(); // получаем количество экстремумов
+      dirLastExtr = _container.GetLastFormedExtr(EXTR_BOTH).direction;
       // проходим по экстремумам и заполняем буфер трендов
       for (i=0;i<extrTotal-4;i++)
        {
-       // _bufferTrend.Add(new CTrend(_container.GetExtrByIndex(i)
+      //  _bufferTrend.Add(new CTrend(_container.GetExtrByIndex(i)
        }
      }
    }
