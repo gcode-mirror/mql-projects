@@ -107,7 +107,7 @@ int OnInit()
  // инициализация глобальных  переменных
  countDiv = 0; // выставляем начальное количество расхождений
    
- event = new CEventBase(_Symbol, _Period, 100);                            // не оч удобная штука 100                         
+ event = new CEventBase(_Symbol, _Period,101);                            // не оч удобная штука 100                         
  if (event == NULL)
  {
   Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать объект класса CEventBase");

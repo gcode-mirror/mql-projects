@@ -109,15 +109,15 @@ int OnInit()
  SetIndexBuffer(3, bufferExtrLeft,     INDICATOR_CALCULATIONS);   // буфер времени левых экстремумов
  SetIndexBuffer(4, bufferExtrRight,    INDICATOR_CALCULATIONS);   // буфер времени правых экструмумов
  
- event = new CEventBase(100);                            // не оч удобная штука 100                         
+ event = new CEventBase(_Symbol, _Period, 102);                            // не оч удобная штука 100                         
  if (event == NULL)
  {
   Print("Ошибка при инициализации индикатора DrawExtremums. Не удалось создать объект класса CEventBase");
   return (INIT_FAILED);
  }
  // создаем события
- event.AddNewEvent(_Symbol, _Period, "SELL");
- event.AddNewEvent(_Symbol, _Period, "BUY");
+ event.AddNewEvent("SELL");
+ event.AddNewEvent("BUY");
  // инициализация глобальных  переменных
  countDiv = 0;                                             // выставляем начальное количество расхождений
  int lastbars  = Bars(_Symbol, _Period) - DEPTH_STOC;
@@ -128,6 +128,9 @@ int OnInit()
 // деинициализация индикатора
 void OnDeinit(const int reason)
 {
+ //delete divSTOC;
+ delete event;
+ delete divSTOC;
  // удаляем все графические объекты (линии расхождений, а также линии появления сигналов расхождений)  
  ObjectsDeleteAll(0,0,OBJ_TREND); // все трендовые линии с ценового графика 
  ObjectsDeleteAll(0,1,OBJ_TREND); // все трендовые линии с побочного графика
@@ -140,8 +143,7 @@ void OnDeinit(const int reason)
  ArrayFree(bufferExtrRight);
  // освобождаем хэндл Стохастика
  IndicatorRelease(handleSTOC);
- delete divSTOC;
- delete event;
+
 }
 // базовая функция расчета индикатора
 int OnCalculate(const int rates_total,

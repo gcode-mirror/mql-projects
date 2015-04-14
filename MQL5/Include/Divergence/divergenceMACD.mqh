@@ -120,7 +120,8 @@ int CDivergenceMACD::countDivergence(int startIndex = 0, bool ifirstTimeUse = tr
   return(-2);
  } 
  if(((isNewBar.isNewBar() > 0) && (startIndex <= 1))||(startIndex > 0)) // Если пришел новый бар                    
- { if(!extremumsMACD.RecountExtremum(startIndex + 1, ifirstTimeUse)) // Пресчитаем экстремумы Стохастика
+ {
+  if(!extremumsMACD.RecountExtremum(startIndex + 1, ifirstTimeUse)) // Пресчитаем экстремумы MACD
   {
    Print("Пересчет экстремумов неуспешен startIndex = ", startIndex);
    return(-2);
@@ -194,9 +195,9 @@ int CDivergenceMACD::countDivergence(int startIndex = 0, bool ifirstTimeUse = tr
    valueExtrPrice2 = iHigh_buf[index_Price_global_max];
    closePrice      = iClose_buf[index_Price_global_max];
    divconvIndex    = index_Price_global_max;
-   delete tmpExtr;
-   delete extr_local_min;
-   delete extr_local_max;
+   //delete tmpExtr;
+   //delete extr_local_min;
+   //delete extr_local_max;
    return(_Sell);
   }
  }
@@ -281,9 +282,9 @@ int CDivergenceMACD::countDivergence(int startIndex = 0, bool ifirstTimeUse = tr
    Print("Время MACD2 = ", timeExtrMACD2 , " индекс MACD2 = ", index_MACD_global_min);
    Print("Значение MACD2 = ", DoubleToString(valueExtrMACD2,5));
    Print("startIndex = ", startIndex);*/    
-   delete tmpExtr;
-   delete extr_local_min;
-   delete extr_local_max;
+   //delete tmpExtr;
+   //delete extr_local_min;
+   //delete extr_local_max;
    return(_Sell);
    return(_Buy);
   }
@@ -308,16 +309,16 @@ datetime CDivergenceMACD::getLastExtrMaxTime()
  datetime time = 0;
  if (extremumsMACD.getCount() > 0)
  {
-   for(int i = 0; i < extremumsMACD.getCount(); i++)
+  for(int i = 0; i < extremumsMACD.getCount(); i++)
+  {
+   CExtremumMACD *tmpExtr = extremumsMACD.getExtr(i);
+   if(tmpExtr.value >= 0)
    {
-    CExtremumMACD *tmpExtr = extremumsMACD.getExtr(i);
-    if(tmpExtr.value >= 0)
-    {
     time = tmpExtr.time;
-    delete tmpExtr;
+    //delete tmpExtr;
     return time;
-    }
-   } 
+   }
+  } 
  }
  return(time);
 }
@@ -337,7 +338,7 @@ datetime CDivergenceMACD::getLastExtrMinTime()
    if(tmpExtr.value <= 0.0)
    {
     time = tmpExtr.time;
-    delete tmpExtr;
+    //delete tmpExtr;
     return time;
    }
   } 

@@ -67,6 +67,7 @@ CDivergenceSTOC:: CDivergenceSTOC(int handle, string symbol, ENUM_TIMEFRAMES tim
 }
 CDivergenceSTOC:: ~CDivergenceSTOC()
 {
+ delete extrSTOC;
 }
 
 int CDivergenceSTOC::countDivergence(int startIndex = 0, bool ifirstTimeUse = true)
@@ -152,9 +153,9 @@ int CDivergenceSTOC::countDivergence(int startIndex = 0, bool ifirstTimeUse = tr
      valueExtrSTOC1   =  maxExtr.value;                      //STOC_buf[maxExtr.index];
      valueExtrSTOC2   =  extr_temp.value;                    //iSTOC_buf[index_STOC_global_max];
      //Print("maxExtr.value = ", maxExtr.value, " maxExtr.index = ",maxExtr.index," maxExtr.time = ",maxExtr.time);
-     delete maxExtr;
-     delete minExtr;
-     delete extr_temp;
+     //delete maxExtr;
+     //delete minExtr;
+     //delete extr_temp;
      return(SELL);
     }   
    }
@@ -188,9 +189,9 @@ int CDivergenceSTOC::countDivergence(int startIndex = 0, bool ifirstTimeUse = tr
      valueExtrSTOC1   =  minExtr.value;                      //STOC_buf[maxExtr.index];
      valueExtrSTOC2   =  extr_temp.value;                    //iSTOC_buf[index_STOC_global_max];
      
-     delete maxExtr;
-     delete minExtr;
-     delete extr_temp;        
+     //delete maxExtr;
+     //delete minExtr;
+     //delete extr_temp;        
      return(BUY);
     }   
    }

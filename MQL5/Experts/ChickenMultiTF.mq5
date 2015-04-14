@@ -132,7 +132,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
- MqlDateTime timeCurrent;
+ //MqlDateTime timeCurrent;
  int diff_high, diff_low, sl_min, tp;
  double slPrice;
  double highBorder, lowBorder;
