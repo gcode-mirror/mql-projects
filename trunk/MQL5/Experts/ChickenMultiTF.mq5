@@ -38,7 +38,7 @@ struct STradeTF
 {
  CisNewBar *isNewBar;
  int handle_pbi;
- int lastTrend;   // тип последнего тренда по PBI Видbмо нужно запоминать....
+ int lastTrend;   // тип последнего тренда по PBI 
  bool used;
  bool recountInterval;
  ENUM_TIMEFRAMES period;
