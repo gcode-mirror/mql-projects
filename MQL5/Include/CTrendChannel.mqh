@@ -32,15 +32,13 @@ class CTrend : public CObject
    void GenUniqName (); // генерирует уникальное имя трендового канала
    bool IsItTrend (); // метод проверяет, является ли создаваемый объект трендом. 
   public:
-   CTrend(CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1); // конструктор класса по экстр
+   CTrend(int chartID, string symbol, ENUM_TIMEFRAMES period,CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1); // конструктор класса по экстр
   ~CTrend(); // деструктор класса
    // методы класса
    int  GetDirection () { return (_direction); }; // возвращает направление тренда 
    void ShowTrend (); // показывает тренд на графике
    void HideTrend (); // скрывает отображение тренда
-   
  };
-
  
 // кодирование методов класса трендовых каналов
 
@@ -48,26 +46,76 @@ class CTrend : public CObject
 
 void CTrend::GenUniqName(void) // генерирует уникальное имя трендового канала
  {
-  
+  // генерит уникальные имена трендовых линий исходя из символа, периода и времени первого экстремума
+  _trendUpName = "trendUp."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrUp0.time);
+  _trendDownName = "trendDown."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrDown0.time);  
  }
  
 bool CTrend::IsItTrend(void) // проверяет, является ли данный канал трендовым
  {
+  /*
+  double h1,h2;
+  // вычисляем расстояния h1,h2
+  h1 = MathAbs(extrs[0].price - extrs[2].price);
+  h2 = MathAbs(extrs[1].price - extrs[3].price);
+    
+  // если тренд вверх 
+  if (GreatDoubles(_extrUp0.price,_extrUp1.price) && GreatDoubles(_extrDown0.price,_extrDown1.price))
+   {
+    // если последний экстремум - вниз
+    if (_extrDown0.time > _extrUp0.time)
+     {
+      H1 = extrs[1].price - extrs[2].price;
+      H2 = extrs[3].price - extrs[2].price;
+      // если наша трендовая линия нас удовлетворяет
+      if (GreatDoubles(h1,H1*percent) && GreatDoubles(h2,H2*percent) )
+       return (1);
+     }
+   }
+  // если тренд вниз
+  if (LessDoubles(_extrUp0.price,_extrUp1.price) && LessDoubles(_extrDown0.price,_extrDown1.price))
+   {
+    // если  последний экстремум - вверх
+    if (_extrUp0.time > _extrDown0.time)
+     {
+      H1 = extrs[1].price - extrs[2].price;
+      H2 = extrs[3].price - extrs[2].price;
+      // если наша трендования линия нас удовлетворяет
+      if (GreatDoubles(h1,H1*percent) && GreatDoubles(h2,H2*percent) )    
+       return (-1);
+     }
+   }   
+   */
   return (true);
  }
 
-CTrend::CTrend(CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1)
+CTrend::CTrend(int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1)
  {
+  // сохраняем поля класса
+  _chartID = chartID;
+  _symbol = symbol;
+  _period = period;
   // создаем объекты экстремумов для трендовых линий
-  _extrUp0 = new CExtremum(extrUp0.direction,extrUp0.price,extrUp0.time,extrUp0.state);
-  _extrUp1 = new CExtremum(extrUp1.direction,extrUp1.price,extrUp1.time,extrUp1.state);
+  _extrUp0   = new CExtremum(extrUp0.direction,extrUp0.price,extrUp0.time,extrUp0.state);
+  _extrUp1   = new CExtremum(extrUp1.direction,extrUp1.price,extrUp1.time,extrUp1.state);
   _extrDown0 = new CExtremum(extrDown0.direction,extrDown0.price,extrDown0.time,extrDown0.state);
-  _extrDown1 = new CExtremum(extrDown1.direction,extrDown1.price,extrDown1.time,extrDown1.state);      
+  _extrDown1 = new CExtremum(extrDown1.direction,extrDown1.price,extrDown1.time,extrDown1.state);   
+  // генерируем уникальные имена трендовых линий
+  GenUniqName();   
+  // отображаем трендовые линии
+  ShowTrend();
+ }
+ 
+// деструктор класса
+CTrend::~CTrend()
+ {
+ 
  }
 
 void CTrend::ShowTrend(void) // отображает тренд на графике
  {
-  //_trendLine.Create(0,"trendUp_"+_uniqName,0,extrs[2].time,extrs[2].price,extr[0].time,extrs[0].price); // верхняя  линия
+  _trendLine.Create(_chartID,_trendUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхняя линия
+  _trendLine.Create(_chartID,_trendDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхняя линия  
  }
 
 void CTrend::HideTrend(void) // скрывает тренд с графика
@@ -86,18 +134,20 @@ class CTrendChannel
    CExtrContainer *_container; // контейнер экстремумов
    CArrayObj _bufferTrend;// буфер для хранения трендовых линий  
   public:
-   CTrendChannel(string symbol,ENUM_TIMEFRAMES period,int handleDE); // конструктор класса
+   CTrendChannel(int chartID,string symbol,ENUM_TIMEFRAMES period,int handleDE); // конструктор класса
   ~CTrendChannel(); // деструктор класса
   // методы класса
   CTrend * GetTrendByIndex (int index); // возвращает указатель на тренд по индексу
  };
  
 // кодирование методов класса CTrendChannel
-CTrendChannel::CTrendChannel(string symbol,ENUM_TIMEFRAMES period,int handleDE)
+CTrendChannel::CTrendChannel(int chartID, string symbol,ENUM_TIMEFRAMES period,int handleDE)
  {
   int i;
-  int extrTotal; 
+  int extrTotal;
   int dirLastExtr;
+  
+  _chartID = chartID;
   _handleDE = handleDE;
   _symbol = symbol;
   _period = period;
@@ -110,12 +160,28 @@ CTrendChannel::CTrendChannel(string symbol,ENUM_TIMEFRAMES period,int handleDE)
     if (_container.isUploaded())
      {    
       extrTotal = _container.GetCountFormedExtr(); // получаем количество экстремумов
-      dirLastExtr = _container.GetLastFormedExtr(EXTR_BOTH).direction;
+      dirLastExtr = _container.GetLastFormedExtr(EXTR_BOTH).direction; // получаем последнее значение экстремума
       // проходим по экстремумам и заполняем буфер трендов
       for (i=0;i<extrTotal-4;i++)
        {
-      //  _bufferTrend.Add(new CTrend(_container.GetExtrByIndex(i)
+        // если последнее направление тренда - вверх
+        if (dirLastExtr == 1)
+         {
+          _bufferTrend.Add(new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i),_container.GetExtrByIndex(i+2),_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i+3) ) );
+         }
+        // если последнее направление тренда - вниз
+        if (dirLastExtr == -1)
+         {
+          _bufferTrend.Add(new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i+3),_container.GetExtrByIndex(i),_container.GetExtrByIndex(i+2) ) );
+         }
+        dirLastExtr = -dirLastExtr; 
        }
      }
    }
+ }
+ 
+// деструктор класса
+CTrendChannel::~CTrendChannel()
+ {
+  
  }
