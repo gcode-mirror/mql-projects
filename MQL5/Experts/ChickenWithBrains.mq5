@@ -51,7 +51,7 @@ int OnInit()
   }
   SetIndicatorByHandle(_Symbol,_Period,handle_pbi);
  }  
- chicken = new CChickensBrain(_Symbol,_Period,handle_pbi);
+ chicken = new CChickensBrain(_Symbol,_Period,handle_pbi, use_tp);
  pos_info.volume = volume;
  pos_info.expiration = 0;
  trailing.trailingType = trailingType;
@@ -75,89 +75,62 @@ void OnTick()
  ctm.OnTick();
  ctm.DoTrailing();
  MqlDateTime timeCurrent;
- int diff_high, diff_low, sl_min, tp;
- double highBorder, lowBorder;
  double slPrice;
  double curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
  double curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
- static int index_max = -1;
- static int index_min = -1;
  ArraySetAsSeries(buffer_high, false);
  ArraySetAsSeries(buffer_low, false);
  closePosition = true;
- if(newBar.isNewBar())
- {
-  if(CopyClose(_Symbol, _Period, 1, 1, closePrice)     < 1 ||      // цена закрытия последнего сформированного бара
-     CopyHigh(_Symbol, _Period, 1, DEPTH, buffer_high) < DEPTH ||  // буфер максимальных цен всех сформированных баров на заданую глубину
-     CopyLow(_Symbol, _Period, 1, DEPTH, buffer_low)   < DEPTH)    // буфер минимальных цен всех сформированных баров на заданую глубину
-     //CopyBuffer(handle_pbi, 4, 0, 1, buffer_pbi)       < 1)        // последнее полученное движение
+  switch(chicken.GetSignal())
   {
-   index_max = -1;
-   index_min = -1;
-   PrintFormat("%s, Не удалось скопировать буферы цены", MakeFunctionPrefix(__FUNCTION__));
-  }
-  index_max = ArrayMaximum(buffer_high, 0, DEPTH - 1);
-  index_min = ArrayMinimum(buffer_low, 0, DEPTH - 1);
-  highBorder = buffer_high[index_max];
-  lowBorder = buffer_low[index_min];
-  diff_high = (buffer_high[DEPTH - 1] - highBorder)/Point();
-  diff_low = (lowBorder - buffer_low[DEPTH - 1])/Point();
-  pos_info.tp = 0; //???
- }
- switch(chicken.GetSignal())
- {
   case SELL:
-   sl_min = MathMax((int)MathCeil((highBorder - lowBorder)*0.10/Point()), 50);
-   tp = (use_tp) ? (int)MathCeil((highBorder - lowBorder)*0.75/Point()) : 0;
+   Print("Получили сигнал на продажу SELL");
    pos_info.type = OP_SELLSTOP;
-   pos_info.sl = diff_high;
-   pos_info.tp = tp;
-   pos_info.priceDifference = (closePrice[0] - highBorder)/Point();
-   pos_info.expiration = MathMax(DEPTH - index_max, DEPTH - index_min);
-   trailing.minProfit = 2 * diff_high;
-   trailing.trailingStop = diff_high;
+   pos_info.sl = chicken.diff_high;
+   pos_info.tp = chicken.tp;
+   pos_info.priceDifference = chicken.priceDifference;
+   pos_info.expiration = MathMax(DEPTH - chicken.index_max, DEPTH - chicken.index_min);
+   trailing.minProfit = 2*chicken.diff_high;
+   trailing.trailingStop = chicken.diff_high;
    trailing.trailingStep = 5;
-   if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko)
+   if (pos_info.tp == 0 || pos_info.tp > pos_info.sl*tp_ko)
    {
     PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
-   Print("Получили сигнал на продажу SELL");
   break;
   case BUY:
+   Print("Получили сигнал на покупку BUY");
    pos_info.type = OP_BUYSTOP;
-   pos_info.sl = diff_low;
-   pos_info.tp = tp;
-   pos_info.priceDifference = (lowBorder - closePrice[0])/Point();
-   pos_info.expiration = MathMax(DEPTH - index_max, DEPTH - index_min);
-   trailing.minProfit = 2 * diff_low;
-   trailing.trailingStop = diff_low;
+   pos_info.sl   = chicken.diff_low;
+   pos_info.tp   = chicken.tp;
+   pos_info.priceDifference = chicken.priceDifference;
+   pos_info.expiration = MathMax(DEPTH - chicken.index_max, DEPTH - chicken.index_min);
+   trailing.minProfit = 2 * chicken.diff_low;
+   trailing.trailingStop = chicken.diff_low;
    trailing.trailingStep = 5;
    if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko)
    {
     PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
    }
-   Print("Получили сигнал на покупку BUY");
   break;
   case NO_POSITION:
+   Print("Получили сигнал NO_POSITION");
    ctm.ClosePendingPosition(_Symbol);
    closePosition = false;
-   Print("Получили сигнал NO_POSITION");
   break;
   case NO_ENTER:
    closePosition = false;
   break;
  }
- 
  if(closePosition && ctm.GetPositionCount() != 0)
  {
   ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol);
   if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
   {
    slPrice = curAsk;
-   ctm.ModifyPosition(_Symbol, slPrice, 0); 
-   
+   ctm.ModifyPosition(_Symbol, slPrice, 0);  
   }
   if(type == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > curBid) 
   {
@@ -173,11 +146,11 @@ void OnTick()
 //+------------------------------------------------------------------+
 //| ChartEvent function                                              |
 //+------------------------------------------------------------------+
-void OnChartEvent(const int id,
+/*void OnChartEvent(const int id,
                   const long &lparam,
                   const double &dparam,
                   const string &sparam)
 {
 
-}
+}*/
 //+------------------------------------------------------------------+
