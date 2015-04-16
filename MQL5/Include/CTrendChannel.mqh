@@ -148,8 +148,9 @@ class CTrendChannel
   public:
    CTrendChannel(int chartID,string symbol,ENUM_TIMEFRAMES period,int handleDE,double percent); // конструктор класса
   ~CTrendChannel(); // деструктор класса
-  // методы класса
-  CTrend * GetTrendByIndex (int index); // возвращает указатель на тренд по индексу
+   // методы класса
+   CTrend * GetTrendByIndex (int index); // возвращает указатель на тренд по индексу
+   void UploadOnEvent (string sparam,double dparam,long lparam); // метод догружает экстремумы по событиям 
  };
  
 // кодирование методов класса CTrendChannel
@@ -207,4 +208,19 @@ CTrendChannel::CTrendChannel(int chartID, string symbol,ENUM_TIMEFRAMES period,i
 CTrendChannel::~CTrendChannel()
  {
   _bufferTrend.Clear();
+ }
+ 
+// возвращает указатель на тренд по индексу
+CTrend * CTrendChannel::GetTrendByIndex(int index)
+ {
+  CTrend *curTrend = _bufferTrend.At(index);
+  return (curTrend);
+ }
+ 
+// метод обновляет экстремум и тренд
+void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
+ {
+  // догружаем экстремумы
+  _container.UploadOnEvent(sparam,dparam,lparam);
+  //if (sparam == ""
  }
