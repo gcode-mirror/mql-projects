@@ -34,9 +34,19 @@ class CChickensBrain
   double buffer_high[];
   double buffer_low[];
   double highPrice[], lowPrice[], closePrice[];
-  bool recountInterval;
+  bool _use_tp;
  public:
-                     CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi);
+  int diff_high; 
+  int diff_low; 
+  int tp;
+  double highBorder; 
+  double lowBorder;
+  double stoplevel;
+  double priceDifference;
+  int index_max;
+  int index_min;
+  bool recountInterval;
+                     CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi, bool use_tp);
                     ~CChickensBrain();
                    int GetSignal();  //pos_info.tp = 0?
                    int GetLastMoveType (int handle);
@@ -44,11 +54,14 @@ class CChickensBrain
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi)
+CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi, bool use_tp)
 {
  _symbol = symbol;
  _period = period;
- _handle_pbi = handle_pbi; 
+ _handle_pbi = handle_pbi;
+ _use_tp = use_tp; 
+ index_max = -1;
+ index_min = -1;
  isNewBar = new CisNewBar(_symbol, _period);
  lastTrend = 0; 
  recountInterval = false;
@@ -62,8 +75,7 @@ CChickensBrain::~CChickensBrain()
 //+------------------------------------------------------------------+
 int CChickensBrain::GetSignal()
 {
- int diff_high, diff_low, sl_min, tp;
- double highBorder, lowBorder;
+ int sl_min;
  double stoplevel;
  static int index_max = -1;
  static int index_min = -1;
@@ -71,9 +83,9 @@ int CChickensBrain::GetSignal()
  {
   ArraySetAsSeries(buffer_high, false);
   ArraySetAsSeries(buffer_low, false);
-  if(CopyClose(_symbol, _period, 1, 1, closePrice)     < 1 ||      // цена закрытия последнего сформированного бара
-     CopyHigh(_symbol, _period, 1, DEPTH, buffer_high) < DEPTH ||  // буфер максимальных цен всех сформированных баров на заданую глубину
-     CopyLow(_symbol, _period, 1, DEPTH, buffer_low)   < DEPTH ||  // буфер минимальных цен всех сформированных баров на заданую глубину
+  if(CopyClose(_Symbol, _period, 1, 1, closePrice)     < 1 ||      // цена закрытия последнего сформированного бара
+     CopyHigh(_Symbol, _period, 1, DEPTH, buffer_high) < DEPTH ||  // буфер максимальных цен всех сформированных баров на заданую глубину
+     CopyLow(_Symbol, _period, 1, DEPTH, buffer_low)   < DEPTH ||  // буфер минимальных цен всех сформированных баров на заданую глубину
      CopyBuffer(_handle_pbi, 4, 0, 1, buffer_pbi)       < 1)        // последнее полученное движение
   {
    index_max = -1;
@@ -95,8 +107,10 @@ int CChickensBrain::GetSignal()
    highBorder = buffer_high[index_max];
    lowBorder = buffer_low[index_min];
    sl_min = MathMax((int)MathCeil((highBorder - lowBorder) * 0.10 / Point()), 50);
+   tp = (_use_tp) ? (int)MathCeil((highBorder - lowBorder)*0.75/Point()) : 0;
    diff_high = (buffer_high[DEPTH - 1] - highBorder)/Point();
    diff_low = (lowBorder - buffer_low[DEPTH - 1])/Point();
+   
    stoplevel = MathMax(sl_min, SymbolInfoInteger(_symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
    if(index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], highBorder) && diff_high > sl_min && lastTrend == SELL)
    { 
@@ -105,7 +119,7 @@ int CChickensBrain::GetSignal()
           TimeToString(TimeCurrent()),
           closePrice[0],
           sl_min, diff_high);
-   
+    priceDifference = (closePrice[0] - highBorder)/Point();
     return SELL;
    }
     
@@ -116,13 +130,14 @@ int CChickensBrain::GetSignal()
           TimeToString(TimeCurrent()),
           closePrice[0],
           sl_min, diff_low);
-         
+    priceDifference = (lowBorder - closePrice[0])/Point();
     return BUY;
    }
   } 
   else
    return NO_POSITION;
  } 
+ 
  return NO_ENTER;
 }
 

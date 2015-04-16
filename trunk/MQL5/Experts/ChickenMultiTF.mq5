@@ -11,6 +11,7 @@
 #include <Lib CisNewBarDD.mqh>
 #include <TradeManager\TradeManager.mqh>
 
+
 #define DEPTH 20
 #define ALLOW_INTERVAL 16
 
@@ -44,6 +45,7 @@ struct STradeTF
  ENUM_TIMEFRAMES period;
  STrailing trailing;
  CTradeManager *ctm;
+ 
 };
 
 CisNewBar *isNewBarM5;
@@ -260,10 +262,10 @@ void OnTick()
       tradeTF[i].ctm.ClosePendingPosition(_Symbol);
      } 
     }
-   ArrayFree(buffer_pbi); 
-   ArrayFree(buffer_high);
-   ArrayFree(buffer_low);
-   ArrayFree(closePrice); 
+   //ArrayFree(buffer_pbi); 
+   //ArrayFree(buffer_high);
+   //ArrayFree(buffer_low);
+   //ArrayFree(closePrice); 
   }
  }
 }
