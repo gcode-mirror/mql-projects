@@ -1,10 +1,10 @@
 //+------------------------------------------------------------------+
 //|                                               CChickensBrain.mqh |
 //|                        Copyright 2015, MetaQuotes Software Corp. |
-//|                                              http://www.mql5.com |
+//|                                              ht_tp://www.mql5.com |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2015, MetaQuotes Software Corp."
-#property link      "http://www.mql5.com"
+#property link      "ht_tp://www.mql5.com"
 #property version   "1.00"
 
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
@@ -27,42 +27,61 @@ class CChickensBrain
   string _symbol;
   ENUM_TIMEFRAMES _period;
   int _handle_pbi; 
-  CisNewBar *isNewBar;
-  int  tmpLastBar;
-  int  lastTrend;            // тип последнего тренда по PBI 
+  int _tmpLastBar;
+  int _lastTrend;            // тип последнего тренда по PBI 
   double buffer_pbi[];
   double buffer_high[];
   double buffer_low[];
   double highPrice[], lowPrice[], closePrice[];
-  bool _use_tp;
- public:
-  int diff_high; 
-  int diff_low; 
-  int tp,sl_min;
-  double highBorder; 
-  double lowBorder;
-  double stoplevel;
-  double priceDifference;
-  int index_max;
-  int index_min;
+ 
   bool recountInterval;
-                     CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi);
+  CisNewBar *isNewBar;
+  // поля, доступ к которым реализован через функции Get...()
+  int _index_max;
+  int _index_min;
+  int _diff_high; 
+  int _diff_low; 
+  int _tp;
+  int _sl_min;
+  double _highBorder; 
+  double _lowBorder;
+  double _stoplevel;
+  double _priceDifference;
+  
+ public:
+  
+                     CChickensBrain(string symbol, ENUM_TIMEFRAMES period);
                     ~CChickensBrain();
-                   int GetSignal();  //pos_info.tp = 0?
+                   int GetSignal();  //pos_info._tp = 0?
                    int GetLastMoveType (int handle);
+                   int GetIndexMax()      { return _index_max;}
+                   int GetIndexMin()      { return _index_min;}
+                   int GetDiffHigh()      { return _diff_high;}
+                   int GetDiffLow()       { return _diff_low;}
+                   int GetTP()            { return _tp;}
+                   int GetSLmin()         { return _sl_min;}
+                   double GetHighBorder() { return _highBorder;}
+                   double GetLowBorder()  { return _lowBorder;}
+                   double GetPriceDifference(){ return _priceDifference;}
+                   
+                   
 };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi)
+CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period)
 {
  _symbol = symbol;
  _period = period;
- _handle_pbi = handle_pbi;
- index_max = -1;
- index_min = -1;
+ _handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
+ if (_handle_pbi == INVALID_HANDLE)
+ {
+  Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
+ }
+ _index_max = -1;
+ _index_min = -1;
  isNewBar = new CisNewBar(_symbol, _period);
- lastTrend = 0; 
+ _lastTrend = 0; 
  recountInterval = false;
 }
 //+------------------------------------------------------------------+
@@ -74,9 +93,9 @@ CChickensBrain::~CChickensBrain()
 //+------------------------------------------------------------------+
 int CChickensBrain::GetSignal()
 {
- double stoplevel;
- static int index_max = -1;
- static int index_min = -1;
+ double _stoplevel;
+ static int _index_max = -1;
+ static int _index_min = -1;
  if(isNewBar.isNewBar() || recountInterval)
  {
   ArraySetAsSeries(buffer_high, false);
@@ -86,54 +105,52 @@ int CChickensBrain::GetSignal()
      CopyLow(_Symbol, _period, 1, DEPTH, buffer_low)   < DEPTH ||  // буфер минимальных цен всех сформированных баров на заданую глубину
      CopyBuffer(_handle_pbi, 4, 0, 1, buffer_pbi)       < 1)        // последнее полученное движение
   {
-   index_max = -1;
-   index_min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
+   _index_max = -1;
+   _index_min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
    recountInterval = true;
   }
-  index_max = ArrayMaximum(buffer_high, 0, DEPTH - 1);
-  index_min = ArrayMinimum(buffer_low, 0, DEPTH - 1);
+  _index_max = ArrayMaximum(buffer_high, 0, DEPTH - 1);
+  _index_min = ArrayMinimum(buffer_low, 0, DEPTH - 1);
   recountInterval = false;
   
-  tmpLastBar = GetLastMoveType(_handle_pbi);
-  if (tmpLastBar != 0)
+  _tmpLastBar = GetLastMoveType(_handle_pbi);
+  if (_tmpLastBar != 0)
   {
-   lastTrend = tmpLastBar;
+   _lastTrend = _tmpLastBar;
   }
-  
-  if (buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
+  if (buffer_pbi[0] == MOVE_TYPE_FLAT && _index_max != -1 && _index_min != -1)
   {
-   highBorder = buffer_high[index_max];
-   lowBorder = buffer_low[index_min];
-   sl_min = MathMax((int)MathCeil((highBorder - lowBorder)*0.10/Point()), 50);
-   diff_high = (buffer_high[DEPTH - 1] - highBorder)/Point();
-   diff_low = (lowBorder - buffer_low[DEPTH - 1])/Point();
+   _highBorder = buffer_high[_index_max];
+   _lowBorder = buffer_low[_index_min];
+   _sl_min = MathMax((int)MathCeil((_highBorder - _lowBorder)*0.10/Point()), 50);
+   _diff_high = (buffer_high[DEPTH - 1] - _highBorder)/Point();
+   _diff_low = (_lowBorder - buffer_low[DEPTH - 1])/Point();
   
-   if(index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], highBorder) && diff_high > sl_min && lastTrend == SELL)
+   if(_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL)
    { 
-    PrintFormat("Цена закрытия пробила цену максимум = %s, Время = %s, цена = %.05f, sl_min = %d, diff_high = %d",
-          DoubleToString(highBorder, 5),
+    PrintFormat("Цена закрытия пробила цену максимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_high = %d",
+          DoubleToString(_highBorder, 5),
           TimeToString(TimeCurrent()),
           closePrice[0],
-          sl_min, diff_high);
-    priceDifference = (closePrice[0] - highBorder)/Point();
+          _sl_min, _diff_high);
+    _priceDifference = (closePrice[0] - _highBorder)/Point();
     return SELL;
    }
     
-   if(index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], lowBorder) && diff_low > sl_min && lastTrend == BUY)
+   if(_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY)
    {
-    PrintFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, sl_min = %d, diff_low = %d",
-          DoubleToString(lowBorder, 5),
+    PrintFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_low = %d",
+          DoubleToString(_lowBorder, 5),
           TimeToString(TimeCurrent()),
           closePrice[0],
-          sl_min, diff_low);
-    priceDifference = (lowBorder - closePrice[0])/Point();
+          _sl_min, _diff_low);
+    _priceDifference = (_lowBorder - closePrice[0])/Point();
     return BUY;
    }
   } 
   else
    return NO_POSITION;
  } 
- 
  return NO_ENTER;
 }
 
