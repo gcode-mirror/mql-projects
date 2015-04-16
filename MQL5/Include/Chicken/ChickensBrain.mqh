@@ -38,7 +38,7 @@ class CChickensBrain
  public:
   int diff_high; 
   int diff_low; 
-  int tp;
+  int tp,sl_min;
   double highBorder; 
   double lowBorder;
   double stoplevel;
@@ -46,7 +46,7 @@ class CChickensBrain
   int index_max;
   int index_min;
   bool recountInterval;
-                     CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi, bool use_tp);
+                     CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi);
                     ~CChickensBrain();
                    int GetSignal();  //pos_info.tp = 0?
                    int GetLastMoveType (int handle);
@@ -54,12 +54,11 @@ class CChickensBrain
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi, bool use_tp)
+CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period, int handle_pbi)
 {
  _symbol = symbol;
  _period = period;
  _handle_pbi = handle_pbi;
- _use_tp = use_tp; 
  index_max = -1;
  index_min = -1;
  isNewBar = new CisNewBar(_symbol, _period);
@@ -75,7 +74,6 @@ CChickensBrain::~CChickensBrain()
 //+------------------------------------------------------------------+
 int CChickensBrain::GetSignal()
 {
- int sl_min;
  double stoplevel;
  static int index_max = -1;
  static int index_min = -1;
@@ -106,12 +104,10 @@ int CChickensBrain::GetSignal()
   {
    highBorder = buffer_high[index_max];
    lowBorder = buffer_low[index_min];
-   sl_min = MathMax((int)MathCeil((highBorder - lowBorder) * 0.10 / Point()), 50);
-   tp = (_use_tp) ? (int)MathCeil((highBorder - lowBorder)*0.75/Point()) : 0;
+   sl_min = MathMax((int)MathCeil((highBorder - lowBorder)*0.10/Point()), 50);
    diff_high = (buffer_high[DEPTH - 1] - highBorder)/Point();
    diff_low = (lowBorder - buffer_low[DEPTH - 1])/Point();
-   
-   stoplevel = MathMax(sl_min, SymbolInfoInteger(_symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
+  
    if(index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], highBorder) && diff_high > sl_min && lastTrend == SELL)
    { 
     PrintFormat("Цена закрытия пробила цену максимум = %s, Время = %s, цена = %.05f, sl_min = %d, diff_high = %d",
