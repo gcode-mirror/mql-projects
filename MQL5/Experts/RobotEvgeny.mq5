@@ -102,6 +102,7 @@ int OnInit()
     DrawLines ();    
    }
   }
+  
    // сохраняем цены  
   curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
   curAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
