@@ -51,7 +51,7 @@ int OnInit()
   }
   SetIndicatorByHandle(_Symbol,_Period,handle_pbi);
  }  
- chicken = new CChickensBrain(_Symbol,_Period,handle_pbi, use_tp);
+ chicken = new CChickensBrain(_Symbol,_Period,handle_pbi);
  pos_info.volume = volume;
  pos_info.expiration = 0;
  trailing.trailingType = trailingType;
@@ -75,19 +75,22 @@ void OnTick()
  ctm.OnTick();
  ctm.DoTrailing();
  MqlDateTime timeCurrent;
+ int tp, stoplevel;
  double slPrice;
  double curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
  double curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
  ArraySetAsSeries(buffer_high, false);
  ArraySetAsSeries(buffer_low, false);
  closePosition = true;
-  switch(chicken.GetSignal())
-  {
+ switch(chicken.GetSignal())
+ {
   case SELL:
+   //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
    Print("Получили сигнал на продажу SELL");
+   tp = (use_tp) ? (int)MathCeil((chicken.highBorder - chicken.lowBorder)*0.75/Point()) : 0;
    pos_info.type = OP_SELLSTOP;
    pos_info.sl = chicken.diff_high;
-   pos_info.tp = chicken.tp;
+   pos_info.tp = tp;
    pos_info.priceDifference = chicken.priceDifference;
    pos_info.expiration = MathMax(DEPTH - chicken.index_max, DEPTH - chicken.index_min);
    trailing.minProfit = 2*chicken.diff_high;
@@ -100,10 +103,12 @@ void OnTick()
    }
   break;
   case BUY:
+   //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
    Print("Получили сигнал на покупку BUY");
+   tp = (use_tp) ? (int)MathCeil((chicken.highBorder - chicken.lowBorder)*0.75/Point()) : 0;
    pos_info.type = OP_BUYSTOP;
    pos_info.sl   = chicken.diff_low;
-   pos_info.tp   = chicken.tp;
+   pos_info.tp   = tp;
    pos_info.priceDifference = chicken.priceDifference;
    pos_info.expiration = MathMax(DEPTH - chicken.index_max, DEPTH - chicken.index_min);
    trailing.minProfit = 2 * chicken.diff_low;
