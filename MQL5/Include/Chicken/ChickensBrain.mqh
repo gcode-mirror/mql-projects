@@ -41,11 +41,10 @@ class CChickensBrain
   int _index_min;
   int _diff_high; 
   int _diff_low; 
-  int _tp;
+
   int _sl_min;
   double _highBorder; 
   double _lowBorder;
-  double _stoplevel;
   double _priceDifference;
   
  public:
@@ -58,7 +57,6 @@ class CChickensBrain
                    int GetIndexMin()      { return _index_min;}
                    int GetDiffHigh()      { return _diff_high;}
                    int GetDiffLow()       { return _diff_low;}
-                   int GetTP()            { return _tp;}
                    int GetSLmin()         { return _sl_min;}
                    double GetHighBorder() { return _highBorder;}
                    double GetLowBorder()  { return _lowBorder;}
