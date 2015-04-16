@@ -25,8 +25,8 @@ input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 input bool use_tp = false;
 input double tp_ko = 2;
 
-int handle_pbi;
-bool closePosition;
+int handle;
+int chickenSignal;
 CTradeManager ctm;       //торговый класс
 CisNewBar *newBar;
 SPositionInfo pos_info;
@@ -40,22 +40,29 @@ int OnInit()
 {
  newBar = new CisNewBar();
  newBar.isNewBar();
- handle_pbi = DoesIndicatorExist(_Symbol,_Period,"PriceBasedIndicator");
- if (handle_pbi == INVALID_HANDLE)
+ if(trailingType == TRAILING_TYPE_PBI)
  {
-  handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
-  if (handle_pbi == INVALID_HANDLE)
+  handle = iCustom(_Symbol, _Period, "PriceBasedIndicator");
+  if (handle == INVALID_HANDLE)
   {
    Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
    return (INIT_FAILED);
   }
-  SetIndicatorByHandle(_Symbol,_Period,handle_pbi);
  }  
- chicken = new CChickensBrain(_Symbol,_Period,handle_pbi);
+ if(trailingType == TRAILING_TYPE_EXTREMUMS)
+ {
+  handle = iCustom(_Symbol, _Period, "DrawExtremums");
+  if (handle == INVALID_HANDLE)
+  {
+   Print("Не удалось создать хэндл индикатора DrawExtremums");
+   return (INIT_FAILED);
+  }
+ }
+ chicken = new CChickensBrain(_Symbol,_Period);
  pos_info.volume = volume;
  pos_info.expiration = 0;
  trailing.trailingType = trailingType;
- trailing.handleForTrailing = handle_pbi;
+ trailing.handleForTrailing = handle;
  return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
@@ -81,55 +88,41 @@ void OnTick()
  double curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
  ArraySetAsSeries(buffer_high, false);
  ArraySetAsSeries(buffer_low, false);
- closePosition = true;
- switch(chicken.GetSignal())
+ chickenSignal = chicken.GetSignal(); // получаем сигнал с ChickensBrain
+ if(chickenSignal == SELL || chickenSignal == BUY)
  {
-  case SELL:
-   //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
+  if(chickenSignal == SELL)
+  {
    Print("Получили сигнал на продажу SELL");
-   tp = (use_tp) ? (int)MathCeil((chicken.highBorder - chicken.lowBorder)*0.75/Point()) : 0;
-   pos_info.type = OP_SELLSTOP;
-   pos_info.sl = chicken.diff_high;
-   pos_info.tp = tp;
-   pos_info.priceDifference = chicken.priceDifference;
-   pos_info.expiration = MathMax(DEPTH - chicken.index_max, DEPTH - chicken.index_min);
-   trailing.minProfit = 2*chicken.diff_high;
-   trailing.trailingStop = chicken.diff_high;
-   trailing.trailingStep = 5;
-   if (pos_info.tp == 0 || pos_info.tp > pos_info.sl*tp_ko)
-   {
-    PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
-   }
-  break;
-  case BUY:
-   //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
+   pos_info.type = OP_SELLSTOP; 
+   pos_info.sl = chicken.GetDiffHigh();
+   trailing.minProfit = 2*chicken.GetDiffHigh();
+   trailing.trailingStop = chicken.GetDiffHigh();
+  }
+  if(chickenSignal == BUY)
+  {
    Print("Получили сигнал на покупку BUY");
-   tp = (use_tp) ? (int)MathCeil((chicken.highBorder - chicken.lowBorder)*0.75/Point()) : 0;
    pos_info.type = OP_BUYSTOP;
-   pos_info.sl   = chicken.diff_low;
-   pos_info.tp   = tp;
-   pos_info.priceDifference = chicken.priceDifference;
-   pos_info.expiration = MathMax(DEPTH - chicken.index_max, DEPTH - chicken.index_min);
-   trailing.minProfit = 2 * chicken.diff_low;
-   trailing.trailingStop = chicken.diff_low;
-   trailing.trailingStep = 5;
-   if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko)
-   {
-    PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
-   }
-  break;
-  case NO_POSITION:
-   Print("Получили сигнал NO_POSITION");
-   ctm.ClosePendingPosition(_Symbol);
-   closePosition = false;
-  break;
-  case NO_ENTER:
-   closePosition = false;
-  break;
+   pos_info.sl   = chicken.GetDiffLow();
+   trailing.minProfit = 2 * chicken.GetDiffLow();
+   trailing.trailingStop = chicken.GetDiffLow();
+  }
+  //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
+  tp = (use_tp) ? (int)MathCeil((chicken.GetHighBorder() - chicken.GetLowBorder())*0.75/Point()) : 0; 
+  pos_info.tp = tp;
+  pos_info.priceDifference = chicken.GetPriceDifference();
+  pos_info.expiration = MathMax(DEPTH - chicken.GetIndexMax(), DEPTH - chicken.GetIndexMin());
+  trailing.trailingStep = 5;
+  if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko)
+  {
+   PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
+   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, spread);
+  }
  }
- if(closePosition && ctm.GetPositionCount() != 0)
+ 
+ if(chickenSignal == NO_POSITION)
+  ctm.ClosePendingPosition(_Symbol);
+ else if(ctm.GetPositionCount() != 0)
  {
   ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol);
   if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
