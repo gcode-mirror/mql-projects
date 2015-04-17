@@ -28,11 +28,9 @@ input double tp_ko = 2;
 int handleTrailing;
 int chickenSignal;
 CTradeManager ctm;       //торговый класс
-CisNewBar *newBar;
 SPositionInfo pos_info;
 STrailing trailing;
 CChickensBrain *chicken;
-double closePrice[];
 
 int OnInit()
 {
@@ -72,7 +70,6 @@ int OnInit()
 void OnDeinit(const int reason)
 {
  delete chicken;
- delete newBar;
  IndicatorRelease(handleTrailing);
 }
 //+------------------------------------------------------------------+
