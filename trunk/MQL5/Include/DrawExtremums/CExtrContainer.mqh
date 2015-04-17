@@ -495,4 +495,3 @@ CExtremum *CExtrContainer::GetLastFormingExtr()
  }     
  return _bufferExtr.At(0);
 }
-

@@ -52,7 +52,9 @@ int handle_PBI;
 int handle_aATR_M1;
 int handle_aATR_M5;
 int handle_aATR_M15;
-int handleDE;
+int handleDE_M1;
+int handleDE_M5;
+int handleDE_M15;
 //параметры позиции и трейлинга
 SPositionInfo pos_info;
 STrailing     trailing;
@@ -62,6 +64,10 @@ int signalM1;
 int signalM5;
 int signalM15;
 
+bool trendM1Now = false;
+bool trendM5Now = false;
+bool trendM15Now = false;
+
 //+------------------------------------------------------------------+
 //| Инициализация эксперта                                           |
 //+------------------------------------------------------------------+
@@ -69,16 +75,16 @@ int OnInit()
 {
  history_start=TimeCurrent(); //запомним время запуска эксперта для получения торговой истории
  // привязка индикатора DrawExtremums 
- handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
- if (handleDE == INVALID_HANDLE)
+ handleDE_M15 = DoesIndicatorExist(_Symbol,PERIOD_M15,"DrawExtremums");
+ if (handleDE_M15 == INVALID_HANDLE)
   {
-   handleDE = iCustom(_Symbol,_Period,"DrawExtremums");
-   if (handleDE == INVALID_HANDLE)
+   handleDE_M15 = iCustom(_Symbol,PERIOD_M15,"DrawExtremums");
+   if (handleDE_M15 == INVALID_HANDLE)
     {
-     Print("Не удалось создать хэндл индикатора DrawExtremums");
+     Print("Не удалось создать хэндл индикатора DrawExtremums на M15");
      return (INIT_FAILED);
     }
-   SetIndicatorByHandle(_Symbol,_Period,handleDE);
+   SetIndicatorByHandle(_Symbol,_Period,handleDE_M15);
   }     
  switch (pending_orders_type) //вычисление priceDifference
  {
@@ -100,9 +106,9 @@ int OnInit()
  isNewBarM5= new CisNewBar(_Symbol,PERIOD_M5);
  isNewBarM15=new CisNewBar(_Symbol,PERIOD_M15);
  // создаем объекты классов контейнеров трендов
- trendM1 = new CTrendChannel(0,_Symbol,PERIOD_M1,handleDE,percent);
- trendM5 = new CTrendChannel(0,_Symbol,PERIOD_M5,handleDE,percent);
- trendM15 = new CTrendChannel(0,_Symbol,PERIOD_M15,handleDE,percent);  
+ //trendM1 = new CTrendChannel(0,_Symbol,PERIOD_M1,handleDE,percent);
+// trendM5 = new CTrendChannel(0,_Symbol,PERIOD_M5,handleDE,percent);
+ trendM15 = new CTrendChannel(0,_Symbol,PERIOD_M15,handleDE_M15,percent);  
  // создаем хэндл PriceBasedIndicator
  handle_PBI= iCustom(_Symbol,PERIOD_M15,"PriceBasedIndicator");
  handle_aATR_M1=iMA(_Symbol,PERIOD_M1,100,0,MODE_EMA,iATR(_Symbol,PERIOD_M1,30));
@@ -126,13 +132,19 @@ void OnDeinit(const int reason)
   delete isNewBarM1;
   delete isNewBarM15;
   delete isNewBarM5;
-  delete trendM1;
+  //delete trendM1;
   delete trendM15;
-  delete trendM5;
+  //delete trendM5;
  }
 
 void OnTick()
 {
+ CTrend *temparyTrend = trendM15.GetTrendByIndex(0);
+ if (temparyTrend != NULL)
+  Comment("Последний тренд: ",DoubleToString(trendM15.GetTrendByIndex(0).GetDirection () ) );
+ 
+        
+
  ctm.OnTick();
    
  pos_info.type = OP_UNKNOWN;
@@ -165,10 +177,12 @@ void OnTick()
  */
  if(isNewBarM15.isNewBar())
  {
+  // получаем сигнал на M15 
   GetTradeSignal(PERIOD_M15, handle_aATR_M15, M15_supremacyPercent, pos_info);
-  if (pos_info.type == opBuy)
+  //
+  if (pos_info.type == opBuy && trendM15Now && trendM15.GetTrendByIndex(0).GetDirection ()==-1 && trendM15.GetTrendByIndex(1).GetDirection ()==-1 )
    signalM15 = 1;
-  else if (pos_info.type == opSell)
+  else if (pos_info.type == opSell && trendM15Now && trendM15.GetTrendByIndex(0).GetDirection ()==1 && trendM15.GetTrendByIndex(1).GetDirection ()==1)
    signalM15 = -1; 
   else
    signalM15 = 0;    
@@ -177,6 +191,7 @@ void OnTick()
  {
   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);   
  }
+ 
 }
 
 void OnTrade()
@@ -195,25 +210,10 @@ void OnChartEvent(const int id,         // идентификатор события
                   const string& sparam  // параметр события типа string 
                  )
   {
-   /*
-   double price;
-   // пришло событие "сформировался новых экстремум"
-   if (sparam == eventExtrDownName || sparam == eventExtrUpName)
-    {
-     // удаляем линии с графика
-     DeleteLines();
-     // получаем новые значение экстремумов и смещаем
-     UploadExtremums ();
-
-     trend = IsTrendNow();
-     if (trend)
-      {  
-       // перерисовываем линии
-       DrawLines ();     
-      }
-       
-    }
-   */
+   //trendM1.UploadOnEvent(sparam,dparam,lparam);
+   //trendM15.UploadOnEvent(sparam,dparam,lparam);
+   trendM15.UploadOnEvent(sparam,dparam,lparam);
+   trendM15Now = trendM15.IsTrendNow();
   } 
 
 //функция получения торгового сигнала (возвращает заполненную структуру позиции) 
@@ -335,10 +335,10 @@ int CountStoploss(int point)
 bool  InputFilter ()
  {
   // если все сигналы не BUY (т.е. нет противоречий)
-  if (signalM1!=1 && signalM5!=1 && signalM15!=1)
+  if (/*signalM1!=1 && signalM5!=1 && */ signalM15!=1)
    return(true);
   // если все сигналы не SELL (т.е. нет противоречий)
-  if (signalM1!=-1 && signalM5!=-1 && signalM15!=-1)
+  if (/*signalM1!=-1 && signalM5!=-1 && */ signalM15!=-1)
    return(true);
   return(false);
  }
