@@ -36,8 +36,6 @@ double closePrice[];
 
 int OnInit()
 {
- newBar = new CisNewBar();
- newBar.isNewBar();
  if(trailingType == TRAILING_TYPE_PBI)
  {
   handleTrailing = DoesIndicatorExist(_Symbol,_Period,"PriceBasedIndicator");

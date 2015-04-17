@@ -31,11 +31,7 @@ input int trailingStep = 5;
 */
 struct STradeTF
 {
- CisNewBar *isNewBar;
- int handle;
- int lastTrend;   // тип последнего тренда по PBI 
  bool used;
- bool recountInterval;
  ENUM_TIMEFRAMES period;
  STrailing trailing;
  CTradeManager *ctm;
@@ -87,10 +83,9 @@ if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
   if(tradeTF[i].used == true)
   {
    tradeTF[i].ctm = new CTradeManager();
-   tradeTF[i].isNewBar = new CisNewBar(_Symbol, tradeTF[i].period);
    if(trailingType == TRAILING_TYPE_PBI)
    {
-    tradeTF[i].handle = DoesIndicatorExist(_Symbol,tradeTF[i].period,"PriceBasedIndicator");
+    handle = DoesIndicatorExist(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
     if (handle == INVALID_HANDLE)
     {
      handle = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
@@ -111,16 +106,13 @@ if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
      return (INIT_FAILED);
     }
    }
-   tradeTF[i].handle = handle;
    tradeTF[i].trailing.trailingType = trailingType;
-   tradeTF[i].trailing.handleForTrailing = tradeTF[i].handle;
+   tradeTF[i].trailing.handleForTrailing = handle;
    /*
    trailing.minProfit    = minProfit;
    trailing.trailingStop = trailingStop;
    trailing.trailingStep = trailingStep;
    */
-   tradeTF[i].recountInterval = false;
-   tradeTF[i].lastTrend = 0;
    tradeTF[i].chicken = new CChickensBrain(_Symbol, tradeTF[i].period);
   } 
  }
@@ -136,10 +128,6 @@ if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
- for(int i = 0; i < 3 && tradeTF[i].used == true; i++)
- {
-  IndicatorRelease(tradeTF[i].handle); 
- }
    
 }
 //+------------------------------------------------------------------+
