@@ -147,6 +147,7 @@ void OnDeinit(const int reason)
    IndicatorRelease(handleDE);
    IndicatorRelease(handle_atr);
    delete trend;
+   Print(__FUNCTION__," Удаляем контейнер"); //ОТЛАДКА
    delete container;
 }
 

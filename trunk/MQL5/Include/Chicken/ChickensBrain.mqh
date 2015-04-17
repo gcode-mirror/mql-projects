@@ -87,13 +87,20 @@ CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period)
 //+------------------------------------------------------------------+
 CChickensBrain::~CChickensBrain()
 {
+ delete isNewBar;
+ ArrayFree(closePrice);
+ ArrayFree(buffer_high);
+ ArrayFree(buffer_low);
+ ArrayFree(closePrice);
+ IndicatorRelease(_handle_pbi);
+ 
 }
 //+------------------------------------------------------------------+
 int CChickensBrain::GetSignal()
 {
  double _stoplevel;
- static int _index_max = -1;
- static int _index_min = -1;
+ _index_max = -1;
+ _index_min = -1;
  if(isNewBar.isNewBar() || recountInterval)
  {
   ArraySetAsSeries(buffer_high, false);

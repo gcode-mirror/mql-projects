@@ -25,15 +25,13 @@ input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 input bool use_tp = false;
 input double tp_ko = 2;
 
-int handle;
+int handleTrailing;
 int chickenSignal;
 CTradeManager ctm;       //торговый класс
 CisNewBar *newBar;
 SPositionInfo pos_info;
 STrailing trailing;
 CChickensBrain *chicken;
-double buffer_high[];
-double buffer_low[];
 double closePrice[];
 
 int OnInit()
@@ -42,19 +40,24 @@ int OnInit()
  newBar.isNewBar();
  if(trailingType == TRAILING_TYPE_PBI)
  {
-  handle = iCustom(_Symbol, _Period, "PriceBasedIndicator");
-  if (handle == INVALID_HANDLE)
+  handleTrailing = DoesIndicatorExist(_Symbol,_Period,"PriceBasedIndicator");
+  if (handleTrailing == INVALID_HANDLE)
   {
-   Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
-   return (INIT_FAILED);
+   handleTrailing = iCustom(_Symbol, _Period, "PriceBasedIndicator");
+   if (handleTrailing == INVALID_HANDLE)
+   {
+    Print(__FUNCTION__,"Не удалось создать хэндл индикатора PriceBasedIndicator");
+    return (INIT_FAILED);
+   }
   }
- }  
+  SetIndicatorByHandle(_Symbol,_Period,handleTrailing);
+ }   
  if(trailingType == TRAILING_TYPE_EXTREMUMS)
  {
-  handle = iCustom(_Symbol, _Period, "DrawExtremums");
-  if (handle == INVALID_HANDLE)
+  handleTrailing = iCustom(_Symbol, _Period, "DrawExtremums");
+  if (handleTrailing == INVALID_HANDLE)
   {
-   Print("Не удалось создать хэндл индикатора DrawExtremums");
+   Print(__FUNCTION__,"Не удалось создать хэндл индикатора DrawExtremums");
    return (INIT_FAILED);
   }
  }
@@ -62,7 +65,7 @@ int OnInit()
  pos_info.volume = volume;
  pos_info.expiration = 0;
  trailing.trailingType = trailingType;
- trailing.handleForTrailing = handle;
+ trailing.handleForTrailing = handleTrailing;
  return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
@@ -71,8 +74,8 @@ int OnInit()
 void OnDeinit(const int reason)
 {
  delete chicken;
- ArrayFree(buffer_high);
- ArrayFree(buffer_low);
+ delete newBar;
+ IndicatorRelease(handleTrailing);
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -81,13 +84,11 @@ void OnTick()
 { 
  ctm.OnTick();
  ctm.DoTrailing();
- MqlDateTime timeCurrent;
- int tp, stoplevel;
+ //MqlDateTime timeCurrent;
+ int tp;
  double slPrice;
  double curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
  double curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
- ArraySetAsSeries(buffer_high, false);
- ArraySetAsSeries(buffer_low, false);
  chickenSignal = chicken.GetSignal(); // получаем сигнал с ChickensBrain
  if(chickenSignal == SELL || chickenSignal == BUY)
  {
@@ -121,7 +122,10 @@ void OnTick()
  }
  
  if(chickenSignal == NO_POSITION)
+ {
+  Print("Получили сигнал на  NO_POSITION");
   ctm.ClosePendingPosition(_Symbol);
+ }
  else if(ctm.GetPositionCount() != 0)
  {
   ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol);
@@ -144,11 +148,11 @@ void OnTick()
 //+------------------------------------------------------------------+
 //| ChartEvent function                                              |
 //+------------------------------------------------------------------+
-/*void OnChartEvent(const int id,
+void OnChartEvent(const int id,
                   const long &lparam,
                   const double &dparam,
                   const string &sparam)
 {
 
-}*/
+}
 //+------------------------------------------------------------------+
