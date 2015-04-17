@@ -38,9 +38,6 @@ struct STradeTF
  CChickensBrain *chicken;
 };
 
-CisNewBar *isNewBarM5;
-CisNewBar *isNewBarM15;
-CisNewBar *isNewBarH1;
 SPositionInfo pos_info;
 STrailing trailing;
 STradeTF  tradeTF[3];
@@ -94,8 +91,8 @@ if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
       Print(__FUNCTION__,"Не удалось создать хэндл индикатора PriceBasedIndicator");
       return (INIT_FAILED);
      }
+     SetIndicatorByHandle(_Symbol,tradeTF[i].period,handle);
     }
-    SetIndicatorByHandle(_Symbol,tradeTF[i].period,handle);
    }   
    if(trailingType == TRAILING_TYPE_EXTREMUMS)
    {

@@ -36,17 +36,12 @@ int OnInit()
 {
  if(trailingType == TRAILING_TYPE_PBI)
  {
-  handleTrailing = DoesIndicatorExist(_Symbol,_Period,"PriceBasedIndicator");
-  if (handleTrailing == INVALID_HANDLE)
-  {
    handleTrailing = iCustom(_Symbol, _Period, "PriceBasedIndicator");
    if (handleTrailing == INVALID_HANDLE)
    {
     Print(__FUNCTION__,"Не удалось создать хэндл индикатора PriceBasedIndicator");
     return (INIT_FAILED);
    }
-  }
-  SetIndicatorByHandle(_Symbol,_Period,handleTrailing);
  }   
  if(trailingType == TRAILING_TYPE_EXTREMUMS)
  {
