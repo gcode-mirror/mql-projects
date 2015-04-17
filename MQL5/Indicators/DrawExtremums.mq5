@@ -58,7 +58,7 @@ int prevJumper=0;          // предыдущее значение jumper
 double averageATR;         // среднее значение бара
 double percentage_ATR;     // коэфициент отвечающий за то во сколько раз движение цены должно
                            // превысить средний бар что бы появился новый экстремум 
-           int k=0;              
+int k=0;              
 double lastExtrUpValue;    // значение последнего экстремума
 double lastExtrDownValue;  // значение последнего экстемума   
 datetime lastExtrUpTime;   // время последнего экстремума HIGH

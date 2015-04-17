@@ -14,6 +14,7 @@
 #include <DrawExtremums/CExtrContainer.mqh> // контейнер экстремумов
 #include <CompareDoubles.mqh> // для сравнения вещественных чисел
 #include <Arrays\ArrayObj.mqh> // класс динамических массивов
+#include <StringUtilities.mqh> // строковые утилиты
 
 // класс трендовых каналов
 class CTrend : public CObject
@@ -37,6 +38,7 @@ class CTrend : public CObject
   ~CTrend(); // деструктор класса
    // методы класса
    int  GetDirection () { return (_direction); }; // возвращает направление тренда 
+   double GetPriceExtrUp() { return (_extrUp0.price); };
    void ShowTrend (); // показывает тренд на графике
    void HideTrend (); // скрывает отображение тренда
  };
@@ -49,7 +51,9 @@ void CTrend::GenUniqName(void) // генерирует уникальное имя трендового канала
  {
   // генерит уникальные имена трендовых линий исходя из символа, периода и времени первого экстремума
   _trendUpName = "trendUp."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrUp0.time);
-  _trendDownName = "trendDown."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrDown0.time);  
+  _trendDownName = "trendDown."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrDown0.time);
+  //Print("trendUp (",DoubleToString(_extrUp0.price),";",TimeToString(_extrUp0.time),") (",DoubleToString(_extrUp1.price),";",TimeToString(_extrUp1.time),")");  
+  //Print("trendDown (",DoubleToString(_extrDown0.price),";",TimeToString(_extrDown0.time),") (",DoubleToString(_extrDown1.price),";",TimeToString(_extrDown1.time),")");    
  }
  
 int CTrend::IsItTrend(void) // проверяет, является ли данный канал трендовым
@@ -141,16 +145,24 @@ class CTrendChannel
    int _handleDE; // хэндл индикатора DrawExtremums
    int _chartID; //ID графика
    string _symbol; // символ
+   string _eventExtrUp; // имя события прихода верхнего экстремума
+   string _eventExtrDown; // имя события прихода нижнего экстремума 
    double _percent; // процент рассчета тренда
    ENUM_TIMEFRAMES _period; // период
+   bool _trendNow; // флаг того, что в данный момент есть или нет тренда
    CExtrContainer *_container; // контейнер экстремумов
    CArrayObj _bufferTrend;// буфер для хранения трендовых линий  
+   // приватные методы класса
+   string GenEventName (string eventName) { return(eventName +"_"+ _symbol +"_"+ PeriodToString(_period) ); };
   public:
+   // публичные методы класса
    CTrendChannel(int chartID,string symbol,ENUM_TIMEFRAMES period,int handleDE,double percent); // конструктор класса
   ~CTrendChannel(); // деструктор класса
    // методы класса
    CTrend * GetTrendByIndex (int index); // возвращает указатель на тренд по индексу
+   bool IsTrendNow () { return (_trendNow); }; // возвращает true, если в текущий момент - тренд, false - если в текущий момент - нет тренд
    void UploadOnEvent (string sparam,double dparam,long lparam); // метод догружает экстремумы по событиям 
+   
  };
  
 // кодирование методов класса CTrendChannel
@@ -166,6 +178,9 @@ CTrendChannel::CTrendChannel(int chartID, string symbol,ENUM_TIMEFRAMES period,i
   _period = period;
   _percent = percent;
   _container = new CExtrContainer(handleDE,symbol,period);
+  // формируем уникальные имена событий
+  _eventExtrDown = GenEventName("EXTR_DOWN_FORMED");
+  _eventExtrUp = GenEventName("EXTR_UP_FORMED");
   // если удалось создать объект контейнера
   if (_container != NULL)
    {
@@ -220,7 +235,35 @@ CTrend * CTrendChannel::GetTrendByIndex(int index)
 // метод обновляет экстремум и тренд
 void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
  {
+  CTrend *temparyTrend; 
   // догружаем экстремумы
   _container.UploadOnEvent(sparam,dparam,lparam);
-  //if (sparam == ""
- }
+  _trendNow = false;
+  // если последний экстремум - нижний
+  if (sparam == _eventExtrDown)
+   {
+     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_container.GetExtrByIndex(0),_container.GetExtrByIndex(2),_percent );         
+     if (temparyTrend != NULL)
+        {
+         // 
+         if (temparyTrend.GetDirection() != 0)
+           {
+            _trendNow = true;
+            _bufferTrend.Add(temparyTrend);
+           }
+        }     
+   }
+  // если последний экстремум - верхний
+  if (sparam == _eventExtrUp)
+   {
+     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(0),_container.GetExtrByIndex(2),_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_percent );
+     if (temparyTrend != NULL)
+        {
+         if (temparyTrend.GetDirection() != 0)
+           {
+            _trendNow = true;
+            _bufferTrend.Add(temparyTrend);
+           }
+        }   
+   }
+ } 
