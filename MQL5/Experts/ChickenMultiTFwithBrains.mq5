@@ -82,17 +82,17 @@ if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
    tradeTF[i].ctm = new CTradeManager();
    if(trailingType == TRAILING_TYPE_PBI)
    {
-    handle = DoesIndicatorExist(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
-    if (handle == INVALID_HANDLE)
-    {
+    ///handle = DoesIndicatorExist(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
+    //if (handle == INVALID_HANDLE)
+    //{
      handle = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
      if (handle == INVALID_HANDLE)
      {
       Print(__FUNCTION__,"Не удалось создать хэндл индикатора PriceBasedIndicator");
       return (INIT_FAILED);
      }
-     SetIndicatorByHandle(_Symbol,tradeTF[i].period,handle);
-    }
+     //SetIndicatorByHandle(_Symbol,tradeTF[i].period,handle);
+    //}
    }   
    if(trailingType == TRAILING_TYPE_EXTREMUMS)
    {
@@ -125,7 +125,14 @@ if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
-   
+ for(int i = 0; i < 3; i++)
+ {
+  if(tradeTF[i].used == true)
+  { 
+   delete tradeTF[i].ctm;
+   IndicatorRelease(tradeTF[i].trailing.handleForTrailing);
+  } 
+ }
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -158,15 +165,15 @@ void OnTick()
    {
     if(chickenSignal == SELL)
     {
-     Print("Получили сигнал на продажу SELL");
+     PrintFormat("%s%s Получили сигнал на продажу SELL", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period));
      pos_info.type = OP_SELLSTOP; 
      pos_info.sl = tradeTF[i].chicken.GetDiffHigh();
-     tradeTF[i].trailing.minProfit = 2*tradeTF[i].chicken.GetDiffHigh();
+     tradeTF[i].trailing.minProfit = 2 * tradeTF[i].chicken.GetDiffHigh();
      tradeTF[i].trailing.trailingStop = tradeTF[i].chicken.GetDiffHigh();
     }
     if(chickenSignal == BUY)
     {
-     Print("Получили сигнал на покупку BUY");
+     PrintFormat("%s%s Получили сигнал на продажу BUY", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period));
      pos_info.type = OP_BUYSTOP;
      pos_info.sl   = tradeTF[i].chicken.GetDiffLow();
      tradeTF[i].trailing.minProfit = 2 * tradeTF[i].chicken.GetDiffLow();
@@ -184,10 +191,9 @@ void OnTick()
      tradeTF[i].ctm.OpenUniquePosition(_Symbol, _Period, pos_info, tradeTF[i].trailing, spread);
     }
    }
- 
    if(chickenSignal == NO_POSITION)
    {
-    Print("Получили сигнал на  NO_POSITION");
+    PrintFormat("%s%s Получили сигнал на продажу NO_POSITION", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period));
     tradeTF[i].ctm.ClosePendingPosition(_Symbol);
    }
    else if(tradeTF[i].ctm.GetPositionCount() != 0)

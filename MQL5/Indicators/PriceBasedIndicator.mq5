@@ -65,17 +65,17 @@ int OnInit()
   {      
    
    // привязка индикатора DrawExtremums 
-   handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
-   if (handleDE == INVALID_HANDLE)
-    {
+   //handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
+   //if (handleDE == INVALID_HANDLE)
+   // {
      handleDE = iCustom(_Symbol,_Period,"DrawExtremums");
      if (handleDE == INVALID_HANDLE)
       {
        Print("Не удалось создать хэндл индикатора DrawExtremums");
        return (INIT_FAILED);
       }
-     SetIndicatorByHandle(_Symbol,_Period,handleDE);
-    }   
+   // SetIndicatorByHandle(_Symbol,_Period,handleDE);
+   //}   
    // выделяем память под объект класса для доступа     
    container = new CExtrContainer(handleDE,_Symbol,_Period);
    if ( container == NULL )
