@@ -139,6 +139,10 @@ void OnTick()
   // если два последних тренда существуют
   if (trendM1.GetTrendByIndex(0)!=NULL && trendM1.GetTrendByIndex(1)!=NULL)
    {
+    Comment("ѕоследний тренд = ",trendM1.GetTrendByIndex(0).GetDirection(),
+            "\nѕредыдущий тренд = ",trendM1.GetTrendByIndex(1).GetDirection()
+            );
+    
     // если существует тренд в текущий момент и два последних тренда в противоположную сторону
     if (pos_info.type == opBuy && trendM1Now && trendM1.GetTrendByIndex(0).GetDirection() == -1 && trendM1.GetTrendByIndex(1).GetDirection() == -1)
      signalM1 = 1;

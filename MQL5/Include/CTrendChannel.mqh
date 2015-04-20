@@ -109,7 +109,7 @@ CTrend::CTrend(int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrU
   _extrUp0   = new CExtremum(extrUp0.direction,extrUp0.price,extrUp0.time,extrUp0.state);
   _extrUp1   = new CExtremum(extrUp1.direction,extrUp1.price,extrUp1.time,extrUp1.state);
   _extrDown0 = new CExtremum(extrDown0.direction,extrDown0.price,extrDown0.time,extrDown0.state);
-  _extrDown1 = new CExtremum(extrDown1.direction,extrDown1.price,extrDown1.time,extrDown1.state);   
+  _extrDown1 = new CExtremum(extrDown1.direction,extrDown1.price,extrDown1.time,extrDown1.state);
   // генерируем уникальные имена трендовых линий
   GenUniqName();   
   // получаем тип движения
@@ -195,7 +195,7 @@ CTrendChannel::~CTrendChannel()
 // возвращает указатель на тренд по индексу
 CTrend * CTrendChannel::GetTrendByIndex(int index)
  {
-  CTrend *curTrend = _bufferTrend.At(index);
+  CTrend *curTrend = _bufferTrend.At(_bufferTrend.Total()-1-index);
   if (curTrend == NULL)
    Print("не нулевой индекс ",index);
   return (curTrend);
@@ -233,7 +233,6 @@ void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
            {
             _trendNow = true;
             _bufferTrend.Add(temparyTrend);
-            Comment("размер массива = ",_bufferTrend.Total());
            }
         }   
    }
