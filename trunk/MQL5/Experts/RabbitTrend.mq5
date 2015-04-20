@@ -125,9 +125,10 @@ void OnTick()
   // получаем сигнал на M1 
   GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent, pos_info);
   //
-  if (pos_info.type == opBuy && trendM1Now && trendM1.GetTrendByIndex(0).GetDirection ()==-1 && trendM1.GetTrendByIndex(1).GetDirection ()==-1 )
+  Comment("trendM1Now = ",trendM1.GetTrendByIndex(0).GetDirection ());
+  if (pos_info.type == opBuy && trendM1Now && trendM1.GetTrendByIndex(0).GetDirection ()==-1 /*&& trendM1.GetTrendByIndex(1).GetDirection ()==-1*/ )
    signalM1 = 1;
-  else if (pos_info.type == opSell && trendM1Now && trendM1.GetTrendByIndex(0).GetDirection ()==1 && trendM1.GetTrendByIndex(1).GetDirection ()==1)
+  else if (pos_info.type == opSell  && trendM1Now && trendM1.GetTrendByIndex(0).GetDirection ()==1 /*&& trendM1.GetTrendByIndex(1).GetDirection ()==1*/)
    signalM1 = -1; 
   else
    signalM1 = 0;    
