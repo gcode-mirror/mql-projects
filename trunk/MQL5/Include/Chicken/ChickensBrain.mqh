@@ -19,7 +19,8 @@
 #define NO_POSITION 0
 #define NO_ENTER 2
 //+------------------------------------------------------------------+
-//|                                                                  |
+//|        Класс CChickensBrain  предназанчен для вычисления типа    |
+//|                              сигнала продажи согласно алгоритму  |                                                          |
 //+------------------------------------------------------------------+
 class CChickensBrain
 {
@@ -65,7 +66,7 @@ class CChickensBrain
                    
 };
 //+------------------------------------------------------------------+
-//|                                                                  |
+//|      Конструктор                                                 |
 //+------------------------------------------------------------------+
 CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period)
 {
@@ -76,14 +77,14 @@ CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period)
  {
   Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
  }
+ isNewBar = new CisNewBar(_symbol, _period);
  _index_max = -1;
  _index_min = -1;
- isNewBar = new CisNewBar(_symbol, _period);
  _lastTrend = 0; 
  recountInterval = false;
 }
 //+------------------------------------------------------------------+
-//|                                                                  |
+//|      Деструктор                                                  |
 //+------------------------------------------------------------------+
 CChickensBrain::~CChickensBrain()
 {
@@ -96,6 +97,8 @@ CChickensBrain::~CChickensBrain()
  
 }
 //+------------------------------------------------------------------+
+//|      Метод GetSignal() возвращает сигнал торговли SELL/BUY       |                                                 
+//+------------------------------------------------------------------+
 int CChickensBrain::GetSignal()
 {
  double _stoplevel;
@@ -103,6 +106,7 @@ int CChickensBrain::GetSignal()
  _index_min = -1;
  if(isNewBar.isNewBar() || recountInterval)
  {
+  // установить индексацию буферов как в таймсерии
   ArraySetAsSeries(buffer_high, false);
   ArraySetAsSeries(buffer_low, false);
   if(CopyClose(_Symbol, _period, 1, 1, closePrice)     < 1 ||      // цена закрытия последнего сформированного бара
@@ -114,10 +118,11 @@ int CChickensBrain::GetSignal()
    _index_min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
    recountInterval = true;
   }
+  // Вычислим границы движения цены на рассматриваемом отрезке
   _index_max = ArrayMaximum(buffer_high, 0, DEPTH - 1);
   _index_min = ArrayMinimum(buffer_low, 0, DEPTH - 1);
   recountInterval = false;
-  
+  // Вычислим тип движения на последнем баре
   _tmpLastBar = GetLastMoveType(_handle_pbi);
   if (_tmpLastBar != 0)
   {
@@ -125,11 +130,12 @@ int CChickensBrain::GetSignal()
   }
   if (buffer_pbi[0] == MOVE_TYPE_FLAT && _index_max != -1 && _index_min != -1)
   {
+   // Сохраним верхнюю и нижнюю цены в поля
    _highBorder = buffer_high[_index_max];
-   _lowBorder = buffer_low[_index_min];
-   _sl_min = MathMax((int)MathCeil((_highBorder - _lowBorder)*0.10/Point()), 50);
-   _diff_high = (buffer_high[DEPTH - 1] - _highBorder)/Point();
-   _diff_low = (_lowBorder - buffer_low[DEPTH - 1])/Point();
+   _lowBorder  = buffer_low[_index_min];
+   _sl_min     = MathMax((int)MathCeil((_highBorder - _lowBorder)*0.10/Point()), 50);
+   _diff_high  = (buffer_high[DEPTH - 1] - _highBorder)/Point();
+   _diff_low   = (_lowBorder - buffer_low[DEPTH - 1])/Point();
   
    if(_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL)
    { 
@@ -159,6 +165,9 @@ int CChickensBrain::GetSignal()
  return NO_ENTER;
 }
 
+//+------------------------------------------------------------------+
+//|      Метод GetLastMoveType()тип движения цены на последнем баре  |                                                 
+//+------------------------------------------------------------------+
 int  CChickensBrain::GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndicator
 {
  int copiedPBI;
