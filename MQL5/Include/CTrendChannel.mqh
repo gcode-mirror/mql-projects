@@ -229,6 +229,7 @@ CTrendChannel::~CTrendChannel()
 CTrend * CTrendChannel::GetTrendByIndex(int index)
  {
   CTrend *curTrend = _bufferTrend.At(index);
+  
   return (curTrend);
  }
  
@@ -238,14 +239,14 @@ void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
   CTrend *temparyTrend; 
   // догружаем экстремумы
   _container.UploadOnEvent(sparam,dparam,lparam);
-  _trendNow = false;
+  
   // если последний экстремум - нижний
   if (sparam == _eventExtrDown)
    {
-     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_container.GetExtrByIndex(0),_container.GetExtrByIndex(2),_percent );         
+     _trendNow = false;
+     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_percent );         
      if (temparyTrend != NULL)
         {
-         // 
          if (temparyTrend.GetDirection() != 0)
            {
             _trendNow = true;
@@ -256,7 +257,8 @@ void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
   // если последний экстремум - верхний
   if (sparam == _eventExtrUp)
    {
-     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(0),_container.GetExtrByIndex(2),_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_percent );
+     _trendNow = false;
+     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_percent );
      if (temparyTrend != NULL)
         {
          if (temparyTrend.GetDirection() != 0)
