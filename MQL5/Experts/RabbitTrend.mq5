@@ -213,7 +213,7 @@ int CountStoploss(ENUM_TIMEFRAMES period,int point)
 {
  MqlRates rates[];
  double price;
- if (CopyRates(_Symbol,period,0,1,rates) < 1)
+ if (CopyRates(_Symbol,period,1,1,rates) < 1)
   {
    return (0);
   }
