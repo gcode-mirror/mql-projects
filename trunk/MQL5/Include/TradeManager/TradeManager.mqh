@@ -37,13 +37,11 @@ private:
   bool   CloseReProcessingPosition(int i,color Color=CLR_NONE);
   string CreateFilename(ENUM_FILENAME filename);
   bool   FindHistoryTicket(long ticket);
-  long   MakeMagic(string strSymbol = "");
   bool   LoadArrayFromFile(string file_url,CPositionArray *array);
   bool   SaveArrayToFile(string file_url,CPositionArray *array);  
   bool   ValidSelectedPosition();
   
 protected:
-  ulong _magic;
   bool _useSound;
   string _nameFileSound;   // Ќаименование звукового файла
   string rescueDataFileName, historyDataFileName;
@@ -80,6 +78,7 @@ public:
   bool isMinProfit();
   bool isMinProfit(string symbol);
   bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменени€ истории 
+  long MakeMagic(string strSymbol = "", ENUM_TIMEFRAMES period = PERIOD_CURRENT);
   void ModifyPosition(int sl = 0, int tp = 0);                // »змен€ет заранее выбранную позицию
   void ModifyPosition(string symbol, double sl = 0, double tp = 0); // »змен€ет заранее выбранную позицию
   void OnTick();
@@ -102,7 +101,7 @@ void CTradeManager::CTradeManager():
  _openPositions           = new CPositionArray();
  _positionsHistory        = new CPositionArray();
  
- _magic = MakeMagic();
+ //_magic = MakeMagic();
  _historyStart = TimeCurrent(); 
  
  _historyChanged = false;  
@@ -434,6 +433,23 @@ bool CTradeManager::isMinProfit(string symbol)
  return false;
 }
 
+//+------------------------------------------------------------------+
+/// Create magic number
+/// \param [string] str       symbol
+/// \return							generated magic number
+//+------------------------------------------------------------------+
+long CTradeManager::MakeMagic(string strSymbol = "", ENUM_TIMEFRAMES period = PERIOD_CURRENT)
+{
+ if(strSymbol == "") strSymbol = Symbol();
+ string s = strSymbol + PeriodToString(period) + MQL5InfoString(MQL5_PROGRAM_NAME);
+ ulong ulHash = 5381;
+ for(int i = StringLen(s) - 1; i >= 0; i--)
+ {
+  ulHash = ((ulHash<<5) + ulHash) + StringGetCharacter(s,i);
+ }
+ return MathAbs((long)ulHash);
+}
+
 //+------------------------------------------------------------------+ 
 // ‘ункци€ модификации позиции
 //+------------------------------------------------------------------+
@@ -654,12 +670,13 @@ void CTradeManager::OnTrade(datetime history_start=0)
 //+------------------------------------------------------------------+
 bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0)
 {
+ long magic = MakeMagic(symbol, timeframe);
  if (maxSpread > 0 && SymbolInfoInteger(symbol,SYMBOL_SPREAD) > maxSpread)
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s Ќевозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
   return false;  
  }
- if (_positionsToReProcessing.OrderCount(symbol, _magic) > 0) 
+ if (_positionsToReProcessing.OrderCount(symbol, magic) > 0) 
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s Ќевозможно открыть позицию так как еще есть позиции в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));
   return false;
@@ -750,7 +767,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
    break;
  }
  
- total = _openPositions.OrderCount(symbol, _magic) + _positionsToReProcessing.OrderCount(symbol, _magic);
+ total = _openPositions.OrderCount(symbol, magic) + _positionsToReProcessing.OrderCount(symbol, magic);
  if (total <= 0)
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
@@ -761,7 +778,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
   }
   
   ResetLastError();
-  pos = new CPosition(_magic, symbol, timeframe, pos_info, trailing);
+  pos = new CPosition(magic, symbol, timeframe, pos_info, trailing);
   ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
   {
@@ -792,6 +809,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
 bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing)
 {
  int i = 0;
+ long magic = MakeMagic(symbol, timeframe);
  int total = _openPositions.Total();
  CPosition *pos;
  //log_file.Write(LOG_CRITICAL
@@ -800,7 +818,7 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe, 
  log_file.Write(LOG_CRITICAL, StringFormat("%s, ќткрываем мульти-позицию %s. ќткрытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), total) ); 
 // log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // –аспечатка всех позиций из массива _openPositions
  
- pos = new CPosition(_magic, symbol, timeframe, pos_info, trailing);
+ pos = new CPosition(magic, symbol, timeframe, pos_info, trailing);
  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
  //Print("openingResult=", PositionStatusToStr(openingResult));
  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
@@ -1025,23 +1043,6 @@ bool CTradeManager::LoadArrayFromFile(string file_url,CPositionArray *array)
  FileClose(file_handle);          //закрывает файл  
  return (true);
 } 
-
-//+------------------------------------------------------------------+
-/// Create magic number
-/// \param [string] str       symbol
-/// \return							generated magic number
-//+------------------------------------------------------------------+
-long CTradeManager::MakeMagic(string strSymbol = "")
-{
- if(strSymbol == "") strSymbol = Symbol();
- string s = strSymbol + PeriodToString(Period()) + MQL5InfoString(MQL5_PROGRAM_NAME);
- ulong ulHash = 5381;
- for(int i = StringLen(s) - 1; i >= 0; i--)
- {
-  ulHash = ((ulHash<<5) + ulHash) + StringGetCharacter(s,i);
- }
- return MathAbs((long)ulHash);
-}
 
 //+----------------------------------------------------
 //  —охранение в файл массива позиций                 |

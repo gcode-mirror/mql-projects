@@ -45,7 +45,6 @@ struct STradeTF
  ENUM_TIMEFRAMES period;
  STrailing trailing;
  CTradeManager *ctm;
- 
 };
 
 CisNewBar *isNewBarM5;
@@ -61,7 +60,6 @@ STradeTF    tradeH1;
 double      buffer_pbi[];
 double      buffer_high[];
 double      buffer_low[];
-
 
 double highPrice[], lowPrice[], closePrice[];
 bool   recountInterval;
