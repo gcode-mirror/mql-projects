@@ -54,6 +54,7 @@ int signalM1;
 
 bool trendM1Now = false;
 
+bool firstUploadedM1 = false; // флаг первой загрузки трендов
 
 //+------------------------------------------------------------------+
 //| Инициализация эксперта                                           |
@@ -85,13 +86,15 @@ int OnInit()
   break;
   case USE_NO_ORDERS:
   opBuy = OP_BUY;
-  opSell= OP_SELL;      
+  opSell= OP_SELL;
   break;
  }   
  //создаем объекты класса для обнаружения появления нового бара
  isNewBarM1= new CisNewBar(_Symbol,PERIOD_M1);
  // создаем объекты классов контейнеров трендов
  trendM1 = new CTrendChannel(0,_Symbol,PERIOD_M1,handleDE_M1,percent);
+ // первая попытка прогрузить историю трендов
+ firstUploadedM1 = trendM1.UploadOnHistory();
  // создаем хэндл PriceBasedIndicator
  handle_PBI= iCustom(_Symbol,PERIOD_M1,"PriceBasedIndicator");
  handle_aATR_M1=iMA(_Symbol,PERIOD_M1,100,0,MODE_EMA,iATR(_Symbol,PERIOD_M1,30));    
@@ -100,6 +103,7 @@ int OnInit()
   log_file.Write(LOG_DEBUG,StringFormat("%s Не удалось получить хэндл одного из вспомогательных индикаторов", MakeFunctionPrefix(__FUNCTION__)));  
   return (INIT_FAILED);
  }       
+ 
     
  trailing.trailingType = TRAILING_TYPE_EASY_LOSSLESS;
  trailing.trailingStop = 0;
@@ -120,18 +124,29 @@ void OnTick()
  pos_info.type = OP_UNKNOWN;
  signalM1  = 0;
 
+ // если еще не загружены экстремумы
+ if (!firstUploadedM1)
+  firstUploadedM1 = trendM1.UploadOnHistory();
+  
+ // если не все тренды на всех таймфреймах прогружены, то ретёрним
+ if (!firstUploadedM1)
+  return;  
+
  if(isNewBarM1.isNewBar())
  {
   // получаем сигнал на M1 
   GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent, pos_info);
-  //
-  Comment("trendM1Now = ",trendM1.GetTrendByIndex(0).GetDirection ());
-  if (pos_info.type == opBuy && trendM1Now && trendM1.GetTrendByIndex(0).GetDirection ()==-1 /*&& trendM1.GetTrendByIndex(1).GetDirection ()==-1*/ )
-   signalM1 = 1;
-  else if (pos_info.type == opSell  && trendM1Now && trendM1.GetTrendByIndex(0).GetDirection ()==1 /*&& trendM1.GetTrendByIndex(1).GetDirection ()==1*/)
-   signalM1 = -1; 
-  else
-   signalM1 = 0;    
+  // если два последних тренда существуют
+  if (trendM1.GetTrendByIndex(0)!=NULL && trendM1.GetTrendByIndex(1)!=NULL)
+   {
+    // если существует тренд в текущий момент и два последних тренда в противоположную сторону
+    if (pos_info.type == opBuy && trendM1Now && trendM1.GetTrendByIndex(0).GetDirection() == -1 && trendM1.GetTrendByIndex(1).GetDirection() == -1)
+     signalM1 = 1;
+    else if (pos_info.type == opSell && trendM1Now && trendM1.GetTrendByIndex(0).GetDirection() == 1 && trendM1.GetTrendByIndex(1).GetDirection() == 1)
+     signalM1 = -1; 
+    else
+     signalM1 = 0;    
+   }
  }
  if( (signalM1 == 1 || signalM1 == -1 ) )
  {
@@ -183,7 +198,7 @@ void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,
  {
   if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
   {   
-
+   
    pos.tp=(int)MathCeil((MathAbs(open_buf[0] - close_buf[0])/_Point)*(1+profitPercent));
    pos.sl=CountStoploss(-1);
    //если вычисленный тейк профит в kp раза или более раз больше, чем вычисленный стоп лосс
