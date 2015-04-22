@@ -212,7 +212,7 @@ int CPositionArray::TicketToIndex(long lTicket)
      {
       CPosition *pos=Position(i);
       //LogFile.Log(LOG_VERBOSE,__FUNCTION__,StringFormat("(%d) looking at open virtual order #%d",lTicket,pos.Ticket()));
-      if(pos.getOrderTicket()==lTicket)
+      if(pos.getTMTicket()==lTicket)
         {
          //LogFile.Log(LOG_VERBOSE,__FUNCTION__,StringFormat("(%d) returning %d",lTicket,i));
          return(i);
