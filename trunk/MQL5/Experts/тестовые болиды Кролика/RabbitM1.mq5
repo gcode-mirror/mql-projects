@@ -116,15 +116,24 @@ void OnTick()
   GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent, pos_info);
   
   // если два последних тренда существуют
-  if (trendM1.GetTrendByIndex(0)!=NULL && trendM1.GetTrendByIndex(1)!=NULL && trendM1.GetTrendByIndex(2)!=NULL)
+  if (trendM1.GetTrendByIndex(0)!=NULL && trendM1.GetTrendByIndex(1)!=NULL)
    { 
     // если существует тренд в текущий момент и два последних тренда в противоположную сторону
-    if (pos_info.type == opBuy && trendM1Now /*&&  trendM1.GetTrendByIndex(0).GetDirection() == -1  && trendM1.GetTrendByIndex(1).GetDirection() == -1 && trendM1.GetTrendByIndex(2).GetDirection() == -1*/ )
-     signalM1 = 1;
-    else if (pos_info.type == opSell  && trendM1Now /*&&  trendM1.GetTrendByIndex(0).GetDirection() == 1 && trendM1.GetTrendByIndex(1).GetDirection() == 1 && trendM1.GetTrendByIndex(2).GetDirection() == 1*/ )
-     signalM1 = -1; 
+    if (pos_info.type == opBuy /* && trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == 1 && TestLargeBarOnChannel(PERIOD_M1)  && trendM1.GetTrendByIndex(1).GetDirection() == -1 && TestLargeBarOnChannel(PERIOD_M1)*/ )
+     {
+     // if (!TestTrendsDirection(0,-1))
+       signalM1 = 1;
+     }
+    else if (pos_info.type == opSell  /*&& trendM1Now  &&  trendM1.GetTrendByIndex(0).GetDirection() == -1 && TestLargeBarOnChannel(PERIOD_M1)  && trendM1.GetTrendByIndex(1).GetDirection() == 1 && TestLargeBarOnChannel(PERIOD_M1)*/ )
+     {
+     // if (!TestTrendsDirection(0,1))
+       signalM1 = -1; 
+     }
     else
-     signalM1 = 0;    
+     signalM1 = 0;  
+    // обработка фильтров
+    
+     
    }
  }
  if( (signalM1 == 1 || signalM1 == -1 ) )
@@ -216,7 +225,7 @@ int CountStoploss(ENUM_TIMEFRAMES period,int point)
 {
  MqlRates rates[];
  double price;
- if (CopyRates(_Symbol,period,0,1,rates) < 1)
+ if (CopyRates(_Symbol,period,1,1,rates) < 1)
   {
    return (0);
   }
@@ -235,7 +244,22 @@ int CountStoploss(ENUM_TIMEFRAMES period,int point)
  return( int( MathAbs(price - (rates[0].open+rates[0].close)/2) / _Point) );
 }
 
-/*
+// фильтры
+
+// функция возвращает true, если последние два тренда в одну сторону
+bool TestTrendsDirection (int type,int direction)
+ {
+  switch (type)
+   {
+    // M1
+    case 0:
+     if (trendM1.GetTrendByIndex(0).GetDirection() == direction && trendM1.GetTrendByIndex(1).GetDirection() == direction)
+       return (true);
+    break; 
+   }
+  return (false);
+ }
+
 // функция для проверки, что бар закрылся внутри канала
 bool TestLargeBarOnChannel (ENUM_TIMEFRAMES period) // функция тестирует 
  {
@@ -254,4 +278,4 @@ bool TestLargeBarOnChannel (ENUM_TIMEFRAMES period) // функция тестирует
    return (false);
   return (true);
  }
- */
+ 

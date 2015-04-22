@@ -42,6 +42,8 @@ class CTrend : public CObject
    double GetPriceLineDown(datetime time); // возвращает цену на нижней линии по времени
    void ShowTrend (); // показывает тренд на графике
    void HideTrend (); // скрывает отображение тренда
+   void SetRayTrend(); // задает линиям тренда луч
+   void RemoveRayTrend(); // задает линиям тренда луч
  };
  
 // кодирование методов класса трендовых каналов
@@ -130,12 +132,17 @@ CTrend::~CTrend()
  
 double CTrend::GetPriceLineUp(datetime time) // возвращает цену на верхней линии 
  {
-  return (0.0);
+  return (ObjectGetValueByTime(_chartID,_trendUpName,time));
  } 
+ 
+double CTrend::GetPriceLineDown(datetime time) // возвращает цену на нижней линии
+ {
+  return (ObjectGetValueByTime(_chartID,_trendDownName,time));
+ }
 
 void CTrend::ShowTrend(void) // отображает тренд на графике
  {
-  _trendLine.Create(_chartID,_trendUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхняя линия
+  _trendLine.Create(_chartID,_trendUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхняя линия  
   _trendLine.Create(_chartID,_trendDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхняя линия  
  }
 
@@ -143,6 +150,18 @@ void CTrend::HideTrend(void) // скрывает тренд с графика
  {
   ObjectDelete(_chartID,_trendUpName);
   ObjectDelete(_chartID,_trendDownName);
+ }
+
+void CTrend::SetRayTrend(void) // задает лучи
+ {
+  ObjectSetInteger(_chartID,_trendUpName,OBJPROP_RAY_LEFT,1); 
+  ObjectSetInteger(_chartID,_trendDownName,OBJPROP_RAY_LEFT,1); 
+ }
+
+void CTrend::RemoveRayTrend(void) // убирает лучи
+ {
+  HideTrend();
+  ShowTrend(); 
  }
 
 class CTrendChannel 
@@ -168,8 +187,7 @@ class CTrendChannel
    CTrend * GetTrendByIndex (int index); // возвращает указатель на тренд по индексу
    bool IsTrendNow () { return (_trendNow); }; // возвращает true, если в текущий момент - тренд, false - если в текущий момент - нет тренд
    void UploadOnEvent (string sparam,double dparam,long lparam); // метод догружает экстремумы по событиям 
-   bool UploadOnHistory (); // метод загружает тренды в буфер на истории
-   
+   bool UploadOnHistory (); // метод загружает тренды в буфер на истории 
  };
  
 // кодирование методов класса CTrendChannel
@@ -211,9 +229,13 @@ CTrend * CTrendChannel::GetTrendByIndex(int index)
 void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
  {
   CTrend *temparyTrend; 
+  CTrend *currentTrend;
+  CTrend *previewTrend;
+  
   // догружаем экстремумы
   _container.UploadOnEvent(sparam,dparam,lparam);
-  
+  previewTrend = GetTrendByIndex(0);
+  previewTrend.RemoveRayTrend();
   // если последний экстремум - нижний
   if (sparam == _eventExtrDown)
    {
@@ -225,6 +247,8 @@ void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
            {
             _trendNow = true;
             _bufferTrend.Add(temparyTrend);
+            currentTrend = GetTrendByIndex(0);   
+            currentTrend.SetRayTrend();
            }
         }     
    }
@@ -239,6 +263,8 @@ void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
            {
             _trendNow = true;
             _bufferTrend.Add(temparyTrend);
+            currentTrend = GetTrendByIndex(0);
+            currentTrend.SetRayTrend();        
            }
         }   
    }

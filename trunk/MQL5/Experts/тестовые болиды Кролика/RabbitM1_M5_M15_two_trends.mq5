@@ -181,9 +181,9 @@ void OnTick()
   if (trendM1.GetTrendByIndex(0)!=NULL && trendM1.GetTrendByIndex(1)!=NULL)
    { 
     // если существует тренд в текущий момент и два последних тренда в противоположную сторону
-    if (pos_info.type == opBuy && trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == -1  && trendM1.GetTrendByIndex(1).GetDirection() == -1  )
+    if (pos_info.type == opBuy && trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == -1  && trendM1.GetTrendByIndex(1).GetDirection() == -1 && TestLargeBarOnChannel (PERIOD_M1)   )
      signalM1 = 1;
-    else if (pos_info.type == opSell  && trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == 1 && trendM1.GetTrendByIndex(1).GetDirection() == 1)
+    else if (pos_info.type == opSell  && trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == 1 && trendM1.GetTrendByIndex(1).GetDirection() == 1 && TestLargeBarOnChannel (PERIOD_M1))
      signalM1 = -1; 
     else
      signalM1 = 0;    
@@ -200,9 +200,9 @@ void OnTick()
   if (trendM5.GetTrendByIndex(0)!=NULL && trendM5.GetTrendByIndex(1)!=NULL )
    { 
     // если существует тренд в текущий момент и два последних тренда в противоположную сторону
-    if (pos_info.type == opBuy && trendM5Now &&  trendM5.GetTrendByIndex(0).GetDirection() == -1  && trendM5.GetTrendByIndex(1).GetDirection() == -1 )
+    if (pos_info.type == opBuy && trendM5Now &&  trendM5.GetTrendByIndex(0).GetDirection() == -1  && trendM5.GetTrendByIndex(1).GetDirection() == -1 && TestLargeBarOnChannel (PERIOD_M5) )
      signalM5 = 1;
-    else if (pos_info.type == opSell  && trendM5Now &&  trendM5.GetTrendByIndex(0).GetDirection() == 1 && trendM5.GetTrendByIndex(1).GetDirection() == 1 )
+    else if (pos_info.type == opSell  && trendM5Now &&  trendM5.GetTrendByIndex(0).GetDirection() == 1 && trendM5.GetTrendByIndex(1).GetDirection() == 1 && TestLargeBarOnChannel (PERIOD_M5) )
      signalM5 = -1; 
     else
      signalM5 = 0;    
@@ -219,9 +219,9 @@ void OnTick()
   if (trendM15.GetTrendByIndex(0)!=NULL && trendM15.GetTrendByIndex(1)!=NULL)
    { 
     // если существует тренд в текущий момент и два последних тренда в противоположную сторону
-    if (pos_info.type == opBuy && trendM15Now &&  trendM15.GetTrendByIndex(0).GetDirection() == -1  && trendM15.GetTrendByIndex(1).GetDirection() == -1 )
+    if (pos_info.type == opBuy && trendM15Now &&  trendM15.GetTrendByIndex(0).GetDirection() == -1  && trendM15.GetTrendByIndex(1).GetDirection() == -1 && TestLargeBarOnChannel (PERIOD_M15) )
      signalM15 = 1;
-    else if (pos_info.type == opSell  && trendM15Now &&  trendM15.GetTrendByIndex(0).GetDirection() == 1 && trendM15.GetTrendByIndex(1).GetDirection() == 1 )
+    else if (pos_info.type == opSell  && trendM15Now &&  trendM15.GetTrendByIndex(0).GetDirection() == 1 && trendM15.GetTrendByIndex(1).GetDirection() == 1 && TestLargeBarOnChannel (PERIOD_M15) )
      signalM15 = -1; 
     else
      signalM15 = 0;    
@@ -351,4 +351,23 @@ bool  InputFilter ()
   if (signalM1!=-1 && signalM5!=-1 && signalM15!=-1)
    return(true);
   return(false);
+ }
+ 
+ // функция для проверки, что бар закрылся внутри канала
+bool TestLargeBarOnChannel (ENUM_TIMEFRAMES period) // функция тестирует 
+ {
+  double priceLineUp;
+  double priceLineDown;
+  double closeLargeBar[];
+  datetime timeBuffer[];
+  if (CopyClose(_Symbol,period,1,1,closeLargeBar) < 1 || CopyTime(_Symbol,period,1,1,timeBuffer) < 1) 
+   {
+    Print("Не удалось прогрузить буфер цены закрытия предыдущего бара");
+    return (false);
+   }
+  priceLineUp = trendM1.GetTrendByIndex(0).GetPriceLineUp(timeBuffer[0]);
+  priceLineDown = trendM1.GetTrendByIndex(0).GetPriceLineDown(timeBuffer[0]);
+  if ( LessOrEqualDoubles( closeLargeBar[0],priceLineUp) && GreatOrEqualDoubles(closeLargeBar[0],priceLineDown) )
+   return (false);
+  return (true);
  }
