@@ -71,7 +71,7 @@ public:
    void CPosition(string symbol, ENUM_TIMEFRAMES period
                  , ENUM_TM_POSITION_TYPE type, double volume
                  , double profit, double priceOpen, double priceClose); // Конструктор для отыгрыша позиций
-   void CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositionInfo& pi, STrailing& tr); // Конструктор с параметрами
+   void CPosition(string symbol, ENUM_TIMEFRAMES period, SPositionInfo& pi, STrailing& tr); // Конструктор с параметрами
    void ~CPosition() {delete trade; delete trailingStop;}
 // GET   
    datetime getClosePosDT()      {return(_posCloseTime);};    //получает дату закрытия позиции
@@ -195,8 +195,7 @@ CPosition::CPosition(CPosition *pos)
 //+------------------------------------------------------------------+
 //| Constructor with parameters                                      |
 //+------------------------------------------------------------------+
-CPosition::CPosition(ulong magic, string symbol, ENUM_TIMEFRAMES period, SPositionInfo &pi, STrailing &tr): 
-                     _magic(magic), 
+CPosition::CPosition(string symbol, ENUM_TIMEFRAMES period, SPositionInfo &pi, STrailing &tr): 
                      _symbol(symbol), 
                      _period(period)
 {
