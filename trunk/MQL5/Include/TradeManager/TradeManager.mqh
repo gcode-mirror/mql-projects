@@ -390,7 +390,7 @@ bool CTradeManager::ClosePosition(CPosition *pos,color Color=CLR_NONE)
 {
  int i = _openPositions.TicketToIndex(pos.getTMTicket());
  if (pos.ClosePosition())
- {
+ { PrintFormat("%s удаляем позицию %d",MakeFunctionPrefix(__FUNCTION__),i);
   _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
   _historyChanged = true;                          // меняем флаг, что история увеличилась 
   SaveArrayToFile(historyDataFileName,_positionsHistory); 
