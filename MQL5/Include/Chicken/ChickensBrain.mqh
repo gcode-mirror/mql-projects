@@ -10,6 +10,7 @@
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <TradeManager\TradeManager.mqh>   //Ради одной структуры, стоит ли?
+#include <CLog.mqh>                         // для лога
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 16
@@ -75,12 +76,14 @@ CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period)
  _handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
  if (_handle_pbi == INVALID_HANDLE)
  {
-  Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
+  log_file.Write(LOG_DEBUG, "Не удалось создать хэндл индикатора PriceBasedIndicator");
+  //Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
  }
  isNewBar = new CisNewBar(_symbol, _period);
  _index_max = -1;
  _index_min = -1;
  _lastTrend = 0; 
+ isNewBar.isNewBar();
  recountInterval = false;
 }
 //+------------------------------------------------------------------+
@@ -105,7 +108,7 @@ int CChickensBrain::GetSignal()
  _index_max = -1;
  _index_min = -1;
  if(isNewBar.isNewBar() || recountInterval)
- {
+ { 
   // установить индексацию буферов как в таймсерии
   ArraySetAsSeries(buffer_high, false);
   ArraySetAsSeries(buffer_low, false);
@@ -117,6 +120,7 @@ int CChickensBrain::GetSignal()
    _index_max = -1;
    _index_min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
    recountInterval = true;
+   log_file.Write(LOG_DEBUG,"Ошибка при копировании буферов");
   }
   // Вычислим границы движения цены на рассматриваемом отрезке
   _index_max = ArrayMaximum(buffer_high, 0, DEPTH - 1);
@@ -130,31 +134,48 @@ int CChickensBrain::GetSignal()
   }
   if (buffer_pbi[0] == MOVE_TYPE_FLAT && _index_max != -1 && _index_min != -1)
   {
+   log_file.Write(LOG_DEBUG,"buffer_pbi[0] == MOVE_TYPE_FLAT индексы не равны -1");
+   log_file.Write(LOG_DEBUG,StringFormat("time[0] = %s", TimeToString(TimeCurrent())));
+   //Print();
    // Сохраним верхнюю и нижнюю цены в поля
    _highBorder = buffer_high[_index_max];
    _lowBorder  = buffer_low[_index_min];
    _sl_min     = MathMax((int)MathCeil((_highBorder - _lowBorder)*0.10/Point()), 50);
    _diff_high  = (buffer_high[DEPTH - 1] - _highBorder)/Point();
    _diff_low   = (_lowBorder - buffer_low[DEPTH - 1])/Point();
-  
+   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,closePrice[0],_highBorder,_diff_high,_sl_min,_lastTrend));
+   //PrintFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,closePrice[0],_highBorder,_diff_high,_sl_min,_lastTrend);
+   log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
+   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %f > %d && _lastTrend = %d", _index_min, ALLOW_INTERVAL,closePrice[0],_lowBorder,_diff_low,_sl_min,_lastTrend));
+   log_file.Write(LOG_DEBUG, "_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY");
    if(_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL)
    { 
-    PrintFormat("Цена закрытия пробила цену максимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_high = %d",
+    log_file.Write(LOG_DEBUG, StringFormat("Цена закрытия пробила цену максимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_high = %d",
           DoubleToString(_highBorder, 5),
           TimeToString(TimeCurrent()),
           closePrice[0],
-          _sl_min, _diff_high);
+          _sl_min, _diff_high));
+    /*PrintFormat("Цена закрытия пробила цену максимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_high = %d",
+          DoubleToString(_highBorder, 5),
+          TimeToString(TimeCurrent()),
+          closePrice[0],
+          _sl_min, _diff_high);*/
     _priceDifference = (closePrice[0] - _highBorder)/Point();
     return SELL;
    }
     
    if(_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY)
    {
-    PrintFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_low = %d",
+    log_file.Write(LOG_DEBUG, StringFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_low = %d",
           DoubleToString(_lowBorder, 5),
           TimeToString(TimeCurrent()),
           closePrice[0],
-          _sl_min, _diff_low);
+          _sl_min, _diff_low));
+    /*PrintFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_low = %d",
+          DoubleToString(_lowBorder, 5),
+          TimeToString(TimeCurrent()),
+          closePrice[0],
+          _sl_min, _diff_low);*/
     _priceDifference = (_lowBorder - closePrice[0])/Point();
     return BUY;
    }
@@ -174,8 +195,13 @@ int  CChickensBrain::GetLastMoveType (int handle) // получаем последнее значение
  int signTrend;
  copiedPBI = CopyBuffer(handle, 4, 1, 1, buffer_pbi);
  if (copiedPBI < 1)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("Не удалось скопировать тип тренда на периоде  %s", PeriodToString(_period)));
   return (0);
+ }
  signTrend = int(buffer_pbi[0]);
+ log_file.Write(LOG_DEBUG, StringFormat("Тип тренда на последнем баре: %d", signTrend));
+ //PrintFormat("Тип тренда на последнем баре: %d", signTrend);
   // если тренд вверх
  if (signTrend == 1 || signTrend == 2)
   return (1);

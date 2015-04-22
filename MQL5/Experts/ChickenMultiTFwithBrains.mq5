@@ -12,6 +12,7 @@
 #include <TradeManager\TradeManager.mqh>
 #include <Chicken\ChickensBrain.mqh>                 // объект по вычислению сигналов для торговли
 #include <SystemLib/IndicatorManager.mqh>            // библиотека по работе с индикаторами
+#include <CLog.mqh>                         // для лога
 
 //+------------------------------------------------------------------+
 //| Expert parametrs                                                 |
@@ -88,6 +89,7 @@ if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
      handle = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
      if (handle == INVALID_HANDLE)
      {
+      log_file.Write(LOG_DEBUG,"Не удалось создать хэндл индикатора PriceBasedIndicator");
       Print(__FUNCTION__,"Не удалось создать хэндл индикатора PriceBasedIndicator");
       return (INIT_FAILED);
      }
@@ -99,6 +101,7 @@ if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
     handle = iCustom(_Symbol, tradeTF[i].period, "DrawExtremums");
     if (handle == INVALID_HANDLE)
     {
+     log_file.Write(LOG_DEBUG,"Не удалось создать хэндл индикатора DrawExtremums");
      Print(__FUNCTION__,"Не удалось создать хэндл индикатора DrawExtremums");
      return (INIT_FAILED);
     }
@@ -165,7 +168,7 @@ void OnTick()
    {
     if(chickenSignal == SELL)
     {
-     PrintFormat("%s%s Получили сигнал на продажу SELL", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period));
+     log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу SELL", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
      pos_info.type = OP_SELLSTOP; 
      pos_info.sl = tradeTF[i].chicken.GetDiffHigh();
      tradeTF[i].trailing.minProfit = 2 * tradeTF[i].chicken.GetDiffHigh();
@@ -173,7 +176,7 @@ void OnTick()
     }
     if(chickenSignal == BUY)
     {
-     PrintFormat("%s%s Получили сигнал на продажу BUY", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period));
+     log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу BUY", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
      pos_info.type = OP_BUYSTOP;
      pos_info.sl   = tradeTF[i].chicken.GetDiffLow();
      tradeTF[i].trailing.minProfit = 2 * tradeTF[i].chicken.GetDiffLow();
@@ -187,13 +190,13 @@ void OnTick()
     tradeTF[i].trailing.trailingStep = 5;
     if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko)
     {
-     PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
+     log_file.Write(LOG_DEBUG, StringFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
      tradeTF[i].ctm.OpenUniquePosition(_Symbol, _Period, pos_info, tradeTF[i].trailing, spread);
     }
    }
    if(chickenSignal == NO_POSITION)
    {
-    PrintFormat("%s%s Получили сигнал на продажу NO_POSITION", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period));
+    log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал NO_POSITION", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
     tradeTF[i].ctm.ClosePendingPosition(_Symbol);
    }
    else if(tradeTF[i].ctm.GetPositionCount() != 0)
