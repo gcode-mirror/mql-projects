@@ -121,12 +121,12 @@ void OnTick()
     // если существует тренд в текущий момент и два последних тренда в противоположную сторону
     if (pos_info.type == opBuy /* && trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == 1 && TestLargeBarOnChannel(PERIOD_M1)  && trendM1.GetTrendByIndex(1).GetDirection() == -1 && TestLargeBarOnChannel(PERIOD_M1)*/ )
      {
-     // if (!TestTrendsDirection(0,-1))
+      if (!TestTrendsDirection(0,-1))
        signalM1 = 1;
      }
     else if (pos_info.type == opSell  /*&& trendM1Now  &&  trendM1.GetTrendByIndex(0).GetDirection() == -1 && TestLargeBarOnChannel(PERIOD_M1)  && trendM1.GetTrendByIndex(1).GetDirection() == 1 && TestLargeBarOnChannel(PERIOD_M1)*/ )
      {
-     // if (!TestTrendsDirection(0,1))
+      if (!TestTrendsDirection(0,1))
        signalM1 = -1; 
      }
     else
