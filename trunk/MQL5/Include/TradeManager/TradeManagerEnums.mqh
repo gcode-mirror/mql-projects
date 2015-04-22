@@ -273,7 +273,7 @@ class ReplayPos
 //+------------------------------------------------------------------+
 struct SPositionInfo
 {
- int magic;
+ long magic;
  ENUM_TM_POSITION_TYPE type;   // тип позиции/ордера
  double volume;                // объем позиции/ордера
  int sl;                       // стоплосс в пунктах

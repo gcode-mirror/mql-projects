@@ -44,9 +44,9 @@ struct STradeTF
  bool recountInterval;
  ENUM_TIMEFRAMES period;
  STrailing trailing;
- CTradeManager *ctm;
 };
 
+CTradeManager *ctm;
 CisNewBar *isNewBarM5;
 CisNewBar *isNewBarM15;
 CisNewBar *isNewBarH1;
@@ -75,6 +75,8 @@ int OnInit()
   PrintFormat("tradeTFM5 = %b, tradeTFM15 = %b, tradeTFH1 = %b",tradeTFM5,tradeTFM15,tradeTFH1);
   return(INIT_FAILED);
  }
+ 
+ ctm = new CTradeManager();
   
  tradeM5.used    = tradeTFM5;
  tradeM5.period  = PERIOD_M5;
@@ -90,7 +92,6 @@ int OnInit()
  {
   if(tradeTF[i].used == true)
   {
-   tradeTF[i].ctm = new CTradeManager();
    tradeTF[i].isNewBar = new CisNewBar(_Symbol, tradeTF[i].period);
    tradeTF[i].handle_pbi = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
    if(tradeTF[i].handle_pbi == INVALID_HANDLE)
@@ -141,18 +142,15 @@ void OnTick()
  static int index_min;
  double curAsk;
  double curBid;
+ 
+ ctm.OnTick();
+ ctm.DoTrailing();
+
  for(int i = 0; i < 3; i++)
  { 
   if(tradeTF[i].used == true)
   {
-   tradeTF[i].ctm.OnTick();
-   tradeTF[i].ctm.DoTrailing();
-  }
- }
- for(int i = 0; i < 3; i++)
- { 
-  if(tradeTF[i].used == true)
-  {
+   long magic = ctm.MakeMagic(_Symbol, tradeTF[i].period);
    index_max = -1;
    index_min = -1;
    curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
@@ -197,6 +195,7 @@ void OnTick()
             TimeToString(TimeCurrent()),
             closePrice[0],
             sl_min, diff_high);
+      pos_info.magic = magic;
       pos_info.type = OP_SELLSTOP;
       pos_info.sl = diff_high;
       pos_info.tp = tp;
@@ -209,7 +208,7 @@ void OnTick()
       {
        PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
        Print(" TF = ", tradeTF[i].period);
-       tradeTF[i].ctm.OpenUniquePosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
+       ctm.OpenUniquePosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
       }
      }
       
@@ -220,7 +219,7 @@ void OnTick()
             TimeToString(TimeCurrent()),
             closePrice[0],
             sl_min, diff_low);
-               
+      pos_info.magic = magic;
       pos_info.type = OP_BUYSTOP;
       pos_info.sl = diff_low;
       pos_info.tp = tp;
@@ -232,38 +231,34 @@ void OnTick()
       if (pos_info.tp == 0 || pos_info.tp > pos_info.sl*tp_ko)
       {
        PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
-       tradeTF[i].ctm.OpenUniquePosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
+       ctm.OpenUniquePosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
       }
      }
      
-     if(tradeTF[i].ctm.GetPositionCount() != 0)
+     if(ctm.GetPositionCount() != 0)
      {
-      ENUM_TM_POSITION_TYPE type = tradeTF[i].ctm.GetPositionType(_Symbol);
-       if(type == OP_SELLSTOP && tradeTF[i].ctm.GetPositionStopLoss(_Symbol) < curAsk) 
-       {
-        slPrice = curAsk;
-        tradeTF[i].ctm.ModifyPosition(_Symbol, slPrice, 0); 
-       }
-       if(type == OP_BUYSTOP  && tradeTF[i].ctm.GetPositionStopLoss(_Symbol) > curBid) 
-       {
-        slPrice = curBid;
-        tradeTF[i].ctm.ModifyPosition(_Symbol, slPrice, 0); 
-       }
-       if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp >0 && pos_info.tp <= pos_info.sl*tp_ko))
-       {
-        tradeTF[i].ctm.ClosePendingPosition(_Symbol);
-       } 
+      ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol);
+      if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
+      {
+       slPrice = curAsk;
+       ctm.ModifyPosition(_Symbol, slPrice, 0); 
       }
-     } 
-     else
-     {
-      tradeTF[i].ctm.ClosePendingPosition(_Symbol);
-     } 
-    }
-   //ArrayFree(buffer_pbi); 
-   //ArrayFree(buffer_high);
-   //ArrayFree(buffer_low);
-   //ArrayFree(closePrice); 
+      if(type == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > curBid) 
+      {
+       slPrice = curBid;
+       ctm.ModifyPosition(_Symbol, slPrice, 0); 
+      }
+      if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp >0 && pos_info.tp <= pos_info.sl*tp_ko))
+      {
+       ctm.ClosePendingPosition(_Symbol);
+      } 
+     }
+    } 
+    else
+    {
+     ctm.ClosePendingPosition(_Symbol);
+    } 
+   }
   }
  }
 }

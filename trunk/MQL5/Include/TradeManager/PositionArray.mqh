@@ -69,7 +69,7 @@ CPosition *CPositionArray::AtTicket(long lTicket)
    for(int i= Total()- 1; i >= 0; i--)
      {
       CPosition *pos=Position(i);
-      if(pos.getOrderTicket()==lTicket)
+      if(pos.getTMTicket()==lTicket)
         {
          //LogFile.Log(LOG_VERBOSE,__FUNCTION__,StringFormat("(%d) returning valid CPosition",lTicket));
          return(pos);
@@ -264,6 +264,7 @@ string CPositionArray::SummaryList()
    return(strSummary);*/
    return("");
   }
+  
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
