@@ -520,6 +520,9 @@ bool CPosition::ClosePosition()
       && _sl_status != STOPLEVEL_STATUS_NOT_DELETED);
 }
 
+//+------------------------------------------------------------------+
+//| Трейлинг позиции
+//+------------------------------------------------------------------+
 void CPosition::DoTrailing()
 {
  double sl = 0;

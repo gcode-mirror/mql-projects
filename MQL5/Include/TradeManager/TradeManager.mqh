@@ -67,20 +67,21 @@ public:
   double GetPositionPrice (string symbol);                    // возвращает цену позицию по текущему символу
   double GetPositionStopLoss(string symbol);                  // возвращает текущий стоп лосс позиции по символу
   double GetPositionTakeProfit(string symbol);                // возвращает текущий тейк профит позиции по символу
-  ENUM_TM_POSITION_TYPE GetPositionType();
-  ENUM_TM_POSITION_TYPE GetPositionType(string symbol);
+  ENUM_TM_POSITION_TYPE GetPositionType();                    // возвращает тип выбранной позиции
+  ENUM_TM_POSITION_TYPE GetPositionType(string symbol, long magic = 0);       // возвращает тип позиции по символу и мэджику
   
-  bool ClosePendingPosition(string symbol, color Color=CLR_NONE); // Закрытие отложенной позиции по символу
-  bool ClosePosition(string symbol, color Color=CLR_NONE);    // Закртыие позиции по символу
-  bool ClosePosition(long ticket, color Color = CLR_NONE);    // Закртыие позиции по тикету
-  bool ClosePosition(int i, color Color = CLR_NONE);          // Закрытие позиции по индексу в массиве позиций
+  bool ClosePendingPosition(string symbol, long magic = 0, color Color=CLR_NONE);      // Закрытие отложенной позиции по символу
+  bool ClosePosition(string symbol, color Color=CLR_NONE);             // Закртыие позиции по символу
+  bool ClosePosition(long ticket, color Color = CLR_NONE);             // Закртыие позиции по тикету
+  bool ClosePosition(int i, color Color = CLR_NONE);                   // Закрытие позиции по индексу в массиве позиций
+  bool ClosePosition(CPosition *pos, color Color = CLR_NONE);          // Закрытие позиции по указателю в массиве позиций
+  bool CloseSelectedPosition(color Color=CLR_NONE);                                         // Закрытие выбранной позиции 
   void DoTrailing(int handleExtr = 0);                        // Вызов трейла
   bool isMinProfit();
   bool isMinProfit(string symbol);
   bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменения истории 
   long MakeMagic(string strSymbol = "", ENUM_TIMEFRAMES period = PERIOD_CURRENT);
-  void ModifyPosition(int sl = 0, int tp = 0);                // Изменяет заранее выбранную позицию
-  void ModifyPosition(string symbol, double sl = 0, double tp = 0); // Изменяет заранее выбранную позицию
+  void ModifyPosition(string symbol, double sl = 0, double tp = 0); // Изменяет позицию по символу
   void OnTick();
   void OnTrade(datetime history_start);
   bool OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0);
@@ -268,7 +269,7 @@ ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType()
 /// \param [long] ticket       number of ticket to search
 /// \return                    true if successful, false if not
 //+------------------------------------------------------------------+
-ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
+ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol, long magic = 0)
 {
  int total = _openPositions.Total();
  CPosition *pos;
@@ -277,7 +278,10 @@ ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol)
   pos = _openPositions.At(i);
   if (pos.getSymbol() == symbol)
   {
-   return(pos.getType());
+   if (pos.getMagic() == magic || magic == 0)
+   {
+    return(pos.getType());
+   }
   }
  }
  return OP_UNKNOWN;
@@ -324,7 +328,7 @@ bool CTradeManager::ClosePosition(string symbol, color Color=CLR_NONE)
 /// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
 /// \return							true if successful, false if not
 //+------------------------------------------------------------------+
-bool CTradeManager::ClosePendingPosition(string symbol, color Color=CLR_NONE)
+bool CTradeManager::ClosePendingPosition(string symbol, long magic = 0, color Color=CLR_NONE)
 {
  int i = 0;
  int total = _openPositions.Total();
@@ -337,11 +341,14 @@ bool CTradeManager::ClosePendingPosition(string symbol, color Color=CLR_NONE)
    pos = _openPositions.At(i);
    if (pos.getSymbol() == symbol)
    {
-    if(pos.getType() == OP_SELLSTOP || pos.getType() == OP_SELLLIMIT ||
-       pos.getType() == OP_BUYSTOP  || pos.getType() == OP_BUYLIMIT )
+    if (pos.getMagic() == magic || magic == 0)
     {
-     if (ClosePosition(i)) return (true);
-     else return (false);
+     if(pos.getType() == OP_SELLSTOP || pos.getType() == OP_SELLLIMIT ||
+        pos.getType() == OP_BUYSTOP  || pos.getType() == OP_BUYLIMIT )
+     {
+      if (ClosePosition(i)) return (true);
+      else return (false);
+     }
     }
    }
   }
@@ -357,8 +364,8 @@ bool CTradeManager::ClosePendingPosition(string symbol, color Color=CLR_NONE)
 //+------------------------------------------------------------------+
 bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 {
- int index = _openPositions.TicketToIndex(ticket);
- return ClosePosition(index);
+ CPosition *pos = _openPositions.AtTicket(ticket);
+ return ClosePosition(pos);
 }
 
 //+------------------------------------------------------------------+
@@ -370,6 +377,18 @@ bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
 {
  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
+ return ClosePosition(pos);
+}
+
+//+------------------------------------------------------------------+
+/// Close a virtual position by handle.
+/// \param [in] i			      pos index in array of positions
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::ClosePosition(CPosition *pos,color Color=CLR_NONE)
+{
+ int i = _openPositions.TicketToIndex(pos.getTMTicket());
  if (pos.ClosePosition())
  {
   _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
@@ -389,6 +408,24 @@ bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
  return(false);
 }
 
+
+//+------------------------------------------------------------------+
+/// Close the selected virtual position.
+/// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
+/// \return							true if successful, false if not
+//+------------------------------------------------------------------+
+bool CTradeManager::CloseSelectedPosition(color Color=CLR_NONE)
+{
+ bool res = false;
+ if (ValidSelectedPosition())
+  if (ClosePosition(_SelectedPosition)) res = true;
+ return (res);
+}
+
+//+------------------------------------------------------------------+
+/// Trailing with all virtual positions.
+/// \param [in] handleExtr 	
+//+------------------------------------------------------------------+
 void CTradeManager::DoTrailing(int handleExtr = 0)
 {
  int total = _openPositions.Total();
@@ -448,15 +485,6 @@ long CTradeManager::MakeMagic(string strSymbol = "", ENUM_TIMEFRAMES period = PE
   ulHash = ((ulHash<<5) + ulHash) + StringGetCharacter(s,i);
  }
  return MathAbs((long)ulHash);
-}
-
-//+------------------------------------------------------------------+ 
-// Функция модификации позиции
-//+------------------------------------------------------------------+
-void CTradeManager::ModifyPosition(int sl = 0, int tp = 0)
-{
- if (sl > 0){}
- if (tp > 0){}
 }
 
 //+------------------------------------------------------------------+ 
@@ -901,8 +929,8 @@ bool CTradeManager::PositionSelect(long index, ENUM_SELECT_TYPE type, ENUM_SELEC
   case SELECT_BY_POS:
    switch(pool)
    {
-    case MODE_TRADES: _SelectedPosition = _openPositions.At((int)index); return(true);
-    case MODE_HISTORY: _SelectedPosition = _positionsHistory.At((int)index); return(true);
+    case MODE_TRADES: _SelectedPosition = _openPositions.Position((int)index); return(true);
+    case MODE_HISTORY: _SelectedPosition = _positionsHistory.Position((int)index); return(true);
     default:
      log_file.Write(LOG_CRITICAL, StringFormat("%s error: Unknown pool id %s", MakeFunctionPrefix(__FUNCTION__),(string)pool));
      return(false);
