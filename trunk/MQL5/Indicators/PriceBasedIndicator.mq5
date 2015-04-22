@@ -62,77 +62,76 @@ CEventBase *event;                    // для генерации событий
 SEventData eventData;                 // структура полей событий
 
 int OnInit()
-  {      
+{      
+ // привязка индикатора DrawExtremums 
+ //handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
+ //if (handleDE == INVALID_HANDLE)
+ // {
+ handleDE = iCustom(_Symbol,_Period,"DrawExtremums");
+ if (handleDE == INVALID_HANDLE)
+ {
+  Print("Не удалось создать хэндл индикатора DrawExtremums");
+  return (INIT_FAILED);
+ }
+ // SetIndicatorByHandle(_Symbol,_Period,handleDE);
+ //}   
+ // выделяем память под объект класса для доступа     
+ container = new CExtrContainer(handleDE,_Symbol,_Period);
+ if ( container == NULL )
+ {
+  Print("Ошибка при инициализации индикатора PriceBasedIndicator. Не удалось создать объект класса CExtrContainer");
+  return (INIT_FAILED);
+ }
+ // создаем объект генерации событий 
+ event = new CEventBase(_Symbol,_Period,300);
+ if (event == NULL)
+ {
+  Print("Ошибка при инициализации индикатора PriceBasedIndicator. Не удалось создать объект класса CEventBase");
+  return (INIT_FAILED);
+ }
+ // создаем события
+ event.AddNewEvent("MOVE_CHANGED"); 
+ 
+ if(Bars(_Symbol,_Period) < depth) depth = Bars(_Symbol,_Period)-1;
+  PrintFormat("Глубина поиска равна: %d", depth);
    
-   // привязка индикатора DrawExtremums 
-   //handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
-   //if (handleDE == INVALID_HANDLE)
-   // {
-     handleDE = iCustom(_Symbol,_Period,"DrawExtremums");
-     if (handleDE == INVALID_HANDLE)
-      {
-       Print("Не удалось создать хэндл индикатора DrawExtremums");
-       return (INIT_FAILED);
-      }
-   // SetIndicatorByHandle(_Symbol,_Period,handleDE);
-   //}   
-   // выделяем память под объект класса для доступа     
-   container = new CExtrContainer(handleDE,_Symbol,_Period);
-   if ( container == NULL )
-    {
-     Print("Ошибка при инициализации индикатора PriceBasedIndicator. Не удалось создать объект класса CExtrContainer");
-     return (INIT_FAILED);
-    }
-   // создаем объект генерации событий 
-   event = new CEventBase(_Symbol,_Period,300);
-   if (event == NULL)
-    {
-     Print("Ошибка при инициализации индикатора PriceBasedIndicator. Не удалось создать объект класса CEventBase");
-     return (INIT_FAILED);
-    }
-   // создаем события
-   event.AddNewEvent("MOVE_CHANGED"); 
+ NewBarCurrent.SetPeriod(_Period);
+ handle_atr = iMA(_Symbol,_Period, 100, 0, MODE_EMA, iATR(_Symbol,_Period, 30));
+ trend = new CColoredTrend(_Symbol,_Period, handle_atr, depth,container);
+ if(!is_it_top) handle_top_trend = iCustom(_Symbol, GetTopTimeframe(_Period), "PriceBasedIndicator", depth, false, true);
+
+ SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
+ SetIndexBuffer(1, ColorCandlesBuffer2, INDICATOR_DATA);
+ SetIndexBuffer(2, ColorCandlesBuffer3, INDICATOR_DATA);
+ SetIndexBuffer(3, ColorCandlesBuffer4, INDICATOR_DATA);
+
+ if(show_top)    //выбор раскраску с какого таймфрейма мы показываем: current или top
+ {
+  SetIndexBuffer(4, ColorCandlesColorsTop, INDICATOR_DATA);
+  SetIndexBuffer(5, ColorCandlesColors,    INDICATOR_CALCULATIONS);
+ }
+ else
+ {
+  SetIndexBuffer(4, ColorCandlesColors,    INDICATOR_DATA);
+  SetIndexBuffer(5, ColorCandlesColorsTop, INDICATOR_CALCULATIONS);
+ }
+
+ InitializeIndicatorBuffers();
+ 
+ PlotIndexSetInteger(1, PLOT_ARROW, 218);
+ PlotIndexSetInteger(2, PLOT_ARROW, 217);
+ PlotIndexSetInteger(3, PLOT_ARROW, 234);
+ PlotIndexSetInteger(4, PLOT_ARROW, 233);
+ 
+ ArraySetAsSeries(ColorCandlesBuffer1,   true);
+ ArraySetAsSeries(ColorCandlesBuffer2,   true);
+ ArraySetAsSeries(ColorCandlesBuffer3,   true);
+ ArraySetAsSeries(ColorCandlesBuffer4,   true);
+ ArraySetAsSeries(ColorCandlesColors,    true);
+ ArraySetAsSeries(ColorCandlesColorsTop, true);
   
-   if(Bars(_Symbol,_Period) < depth) depth = Bars(_Symbol,_Period)-1;
-   PrintFormat("Глубина поиска равна: %d", depth);
-   
-   NewBarCurrent.SetPeriod(_Period);
-   handle_atr = iMA(_Symbol,_Period, 100, 0, MODE_EMA, iATR(_Symbol,_Period, 30));
-   trend = new CColoredTrend(_Symbol,_Period, handle_atr, depth,container);
-   if(!is_it_top) handle_top_trend = iCustom(_Symbol, GetTopTimeframe(_Period), "PriceBasedIndicator", depth, false, true);
-
-   SetIndexBuffer(0, ColorCandlesBuffer1, INDICATOR_DATA);
-   SetIndexBuffer(1, ColorCandlesBuffer2, INDICATOR_DATA);
-   SetIndexBuffer(2, ColorCandlesBuffer3, INDICATOR_DATA);
-   SetIndexBuffer(3, ColorCandlesBuffer4, INDICATOR_DATA);
-   
-   if(show_top)    //выбор раскраску с какого таймфрейма мы показываем: current или top
-   {
-    SetIndexBuffer(4, ColorCandlesColorsTop, INDICATOR_DATA);
-    SetIndexBuffer(5, ColorCandlesColors,    INDICATOR_CALCULATIONS);
-   }
-   else
-   {
-    SetIndexBuffer(4, ColorCandlesColors,    INDICATOR_DATA);
-    SetIndexBuffer(5, ColorCandlesColorsTop, INDICATOR_CALCULATIONS);
-   }
-
-   InitializeIndicatorBuffers();
-   
-   PlotIndexSetInteger(1, PLOT_ARROW, 218);
-   PlotIndexSetInteger(2, PLOT_ARROW, 217);
-   PlotIndexSetInteger(3, PLOT_ARROW, 234);
-   PlotIndexSetInteger(4, PLOT_ARROW, 233);
-   
-   ArraySetAsSeries(ColorCandlesBuffer1,   true);
-   ArraySetAsSeries(ColorCandlesBuffer2,   true);
-   ArraySetAsSeries(ColorCandlesBuffer3,   true);
-   ArraySetAsSeries(ColorCandlesBuffer4,   true);
-   ArraySetAsSeries(ColorCandlesColors,    true);
-   ArraySetAsSeries(ColorCandlesColorsTop, true);
-   
-   return(INIT_SUCCEEDED);
-  }
+ return(INIT_SUCCEEDED);
+}
 
 void OnDeinit(const int reason)
 {
@@ -180,9 +179,14 @@ int OnCalculate(const int rates_total,
     trend.Zeros();
     InitializeIndicatorBuffers();
     //depth = rates_total;
+    if(ArraySize(time) < depth && depth >0)  //удалить проверку елси работает исправно
+    {
+     Print("Элемент вне границ массивы time[depth]");
+     depth = ArraySize(time);
+    }
     NewBarCurrent.isNewBar(time[depth]);
-  //  if (!container.Upload())
-  //   return (0);
+    //  if (!container.Upload())
+    //   return (0);
     
     for(int i = depth-1; i >= 0;  i--)    
     {

@@ -208,7 +208,7 @@ void OnTick()
       {
        PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
        Print(" TF = ", tradeTF[i].period);
-       ctm.OpenUniquePosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
+       ctm.OpenMultiPosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
       }
      }
       
@@ -231,32 +231,32 @@ void OnTick()
       if (pos_info.tp == 0 || pos_info.tp > pos_info.sl*tp_ko)
       {
        PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
-       ctm.OpenUniquePosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
+       ctm.OpenMultiPosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
       }
      }
      
      if(ctm.GetPositionCount() != 0)
      {
-      ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol);
-      if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol) < curAsk) 
+      ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol, magic);
+      if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol, magic) < curAsk) 
       {
        slPrice = curAsk;
-       ctm.ModifyPosition(_Symbol, slPrice, 0); 
+       ctm.ModifyPosition(_Symbol, magic, slPrice, 0); 
       }
-      if(type == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol) > curBid) 
+      if(type == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol, magic) > curBid) 
       {
        slPrice = curBid;
-       ctm.ModifyPosition(_Symbol, slPrice, 0); 
+       ctm.ModifyPosition(_Symbol, magic, slPrice, 0); 
       }
-      if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp >0 && pos_info.tp <= pos_info.sl*tp_ko))
+      if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp > 0 && pos_info.tp <= pos_info.sl * tp_ko))
       {
-       ctm.ClosePendingPosition(_Symbol);
+       ctm.ClosePendingPosition(_Symbol, magic);
       } 
      }
     } 
     else
     {
-     ctm.ClosePendingPosition(_Symbol);
+     ctm.ClosePendingPosition(_Symbol, magic);
     } 
    }
   }

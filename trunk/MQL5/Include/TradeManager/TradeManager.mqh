@@ -65,7 +65,7 @@ public:
   int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
   int    GetPositionPointsProfit(string symbol);
   double GetPositionPrice (string symbol);                    // возвращает цену позицию по текущему символу
-  double GetPositionStopLoss(string symbol);                  // возвращает текущий стоп лосс позиции по символу
+  double GetPositionStopLoss(string symbol, long magic = 0);                  // возвращает текущий стоп лосс позиции по символу
   double GetPositionTakeProfit(string symbol);                // возвращает текущий тейк профит позиции по символу
   ENUM_TM_POSITION_TYPE GetPositionType();                    // возвращает тип выбранной позиции
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol, long magic = 0);       // возвращает тип позиции по символу и мэджику
@@ -81,7 +81,7 @@ public:
   bool isMinProfit(string symbol);
   bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменения истории 
   long MakeMagic(string strSymbol = "", ENUM_TIMEFRAMES period = PERIOD_CURRENT);
-  void ModifyPosition(string symbol, double sl = 0, double tp = 0); // Изменяет позицию по символу
+  void ModifyPosition(string symbol, long magic = 0, double sl = 0, double tp = 0); // Изменяет позицию по символу
   void OnTick();
   void OnTrade(datetime history_start);
   bool OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0);
@@ -219,7 +219,7 @@ double CTradeManager::GetPositionPrice(string symbol)
 //+------------------------------------------------------------------+
 //|  Возвращает текущий стоп лосс позиции по символу                 |
 //+------------------------------------------------------------------+
-double CTradeManager::GetPositionStopLoss(string symbol)
+double CTradeManager::GetPositionStopLoss(string symbol, long magic = 0 )
 {
  int total = _openPositions.Total();
  CPosition *pos;
@@ -228,7 +228,10 @@ double CTradeManager::GetPositionStopLoss(string symbol)
   pos = _openPositions.At(i);
   if (pos.getSymbol() == symbol)
   {
-   return(pos.getStopLossPrice());
+   if (pos.getMagic() == magic||magic == 0)
+   {
+    return(pos.getStopLossPrice());
+   }
   }
  }
  return(0);
@@ -374,7 +377,7 @@ bool CTradeManager::ClosePosition(long ticket, color Color=CLR_NONE)
 /// \param [in] arrow_color 	Default=CLR_NONE. This parameter is provided for MT4 compatibility and is not used.
 /// \return							true if successful, false if not
 //+------------------------------------------------------------------+
-bool CTradeManager::ClosePosition(int i,color Color=CLR_NONE)
+bool CTradeManager::ClosePosition(int i, color Color = CLR_NONE)
 {
  CPosition *pos = _openPositions.Position(i);  // получаем из массива указатель на позицию по ее индексу
  return ClosePosition(pos);
@@ -490,19 +493,22 @@ long CTradeManager::MakeMagic(string strSymbol = "", ENUM_TIMEFRAMES period = PE
 //+------------------------------------------------------------------+ 
 // Функция модификации позиции
 //+------------------------------------------------------------------+
-void CTradeManager::ModifyPosition(string symbol, double sl = 0, double tp = 0)
+void CTradeManager::ModifyPosition(string symbol, long magic = 0, double sl = 0, double tp = 0)
 {
  int total = _openPositions.Total();
  CPosition *pos;
  for (int i = 0; i < total; i++)
  {
   pos = _openPositions.At(i);
-  if (pos.getSymbol() == symbol)
+  if(pos.getSymbol() == symbol)
   {
-   if(sl > 0)
-    pos.ModifySL(sl);
-   if(tp > 0)
-    pos.ModifyTP(tp);
+   if (pos.getMagic() == magic|| magic == 0)
+   {
+    if(sl > 0)
+     pos.ModifySL(sl);
+    if(tp > 0)
+     pos.ModifyTP(tp);
+   }
   }
  }
 }
@@ -698,7 +704,7 @@ void CTradeManager::OnTrade(datetime history_start=0)
 //+------------------------------------------------------------------+
 bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0)
 {
- if (maxSpread > 0 && SymbolInfoInteger(symbol,SYMBOL_SPREAD) > maxSpread)
+ if (maxSpread > 0 && SymbolInfoInteger(symbol, SYMBOL_SPREAD) > maxSpread)
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s Невозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
   return false;  
