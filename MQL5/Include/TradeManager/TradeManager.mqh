@@ -703,7 +703,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
   log_file.Write(LOG_CRITICAL, StringFormat("%s Невозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
   return false;  
  }
- if (_positionsToReProcessing.OrderCount(symbol, magic) > 0) 
+ if (_positionsToReProcessing.OrderCount(symbol, pos_info.magic) > 0) 
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s Невозможно открыть позицию так как еще есть позиции в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));
   return false;
@@ -794,7 +794,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
    break;
  }
  
- total = _openPositions.OrderCount(symbol, magic) + _positionsToReProcessing.OrderCount(symbol, magic);
+ total = _openPositions.OrderCount(symbol, pos_info.magic) + _positionsToReProcessing.OrderCount(symbol, pos_info.magic);
  if (total <= 0)
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
