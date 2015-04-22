@@ -38,7 +38,8 @@ class CTrend : public CObject
   ~CTrend(); // деструктор класса
    // методы класса
    int  GetDirection () { return (_direction); }; // возвращает направление тренда 
-   double GetPriceExtrUp() { return (_extrUp0.price); };
+   double GetPriceLineUp(datetime time); // возвращает цену на верхней линии по времени
+   double GetPriceLineDown(datetime time); // возвращает цену на нижней линии по времени
    void ShowTrend (); // показывает тренд на графике
    void HideTrend (); // скрывает отображение тренда
  };
@@ -126,6 +127,11 @@ CTrend::~CTrend()
  {
  
  }
+ 
+double CTrend::GetPriceLineUp(datetime time) // возвращает цену на верхней линии 
+ {
+  return (0.0);
+ } 
 
 void CTrend::ShowTrend(void) // отображает тренд на графике
  {

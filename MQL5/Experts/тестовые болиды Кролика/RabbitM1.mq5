@@ -119,9 +119,9 @@ void OnTick()
   if (trendM1.GetTrendByIndex(0)!=NULL && trendM1.GetTrendByIndex(1)!=NULL && trendM1.GetTrendByIndex(2)!=NULL)
    { 
     // если существует тренд в текущий момент и два последних тренда в противоположную сторону
-    if (pos_info.type == opBuy && trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == 1  && trendM1.GetTrendByIndex(1).GetDirection() == -1 && trendM1.GetTrendByIndex(2).GetDirection() == -1 )
+    if (pos_info.type == opBuy /*&& trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == -1  && trendM1.GetTrendByIndex(1).GetDirection() == -1 && trendM1.GetTrendByIndex(2).GetDirection() == -1*/ )
      signalM1 = 1;
-    else if (pos_info.type == opSell  && trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == -1 && trendM1.GetTrendByIndex(1).GetDirection() == 1 && trendM1.GetTrendByIndex(2).GetDirection() == 1 )
+    else if (pos_info.type == opSell  /*&& trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == 1 && trendM1.GetTrendByIndex(1).GetDirection() == 1 && trendM1.GetTrendByIndex(2).GetDirection() == 1*/ )
      signalM1 = -1; 
     else
      signalM1 = 0;    
@@ -216,7 +216,7 @@ int CountStoploss(ENUM_TIMEFRAMES period,int point)
 {
  MqlRates rates[];
  double price;
- if (CopyRates(_Symbol,period,1,1,rates) < 1)
+ if (CopyRates(_Symbol,period,0,1,rates) < 1)
   {
    return (0);
   }
@@ -230,7 +230,28 @@ int CountStoploss(ENUM_TIMEFRAMES period,int point)
   {
    price = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
   }
- PrintFormat("price = %.05f open = %.05f close = %.05f",price,rates[0].open,rates[0].close);
+ //PrintFormat("price = %.05f open = %.05f close = %.05f",price,rates[0].open,rates[0].close);
       
  return( int( MathAbs(price - (rates[0].open+rates[0].close)/2) / _Point) );
 }
+
+/*
+// функция для проверки, что бар закрылся внутри канала
+bool TestLargeBarOnChannel (ENUM_TIMEFRAMES period) // функция тестирует 
+ {
+  double priceLineUp;
+  double priceLineDown;
+  double closeLargeBar[];
+  datetime timeBuffer[];
+  if (CopyClose(_Symbol,period,1,1,closeLargeBar) < 1 || CopyTime(_Symbol,period,1,1,timeBuffer) < 1) 
+   {
+    Print("Не удалось прогрузить буфер цены закрытия предыдущего бара");
+    return (false);
+   }
+  priceLineUp = trendM1.GetTrendByIndex(0).GetPriceLineUp(timeBuffer[0]);
+  priceLineDown = trendM1.GetTrendByIndex(0).GetPriceLineDown(timeBuffer[0]);
+  if ( LessOrEqualDoubles( closeLargeBar[0],priceLineUp) && GreatOrEqualDoubles(closeLargeBar[0],priceLineDown) )
+   return (false);
+  return (true);
+ }
+ */
