@@ -698,7 +698,6 @@ void CTradeManager::OnTrade(datetime history_start=0)
 //+------------------------------------------------------------------+
 bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0)
 {
- long magic = MakeMagic(symbol, timeframe);
  if (maxSpread > 0 && SymbolInfoInteger(symbol,SYMBOL_SPREAD) > maxSpread)
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s Ќевозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
@@ -806,7 +805,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
   }
   
   ResetLastError();
-  pos = new CPosition(magic, symbol, timeframe, pos_info, trailing);
+  pos = new CPosition(symbol, timeframe, pos_info, trailing);
   ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
   if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
   {
@@ -837,7 +836,6 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
 bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing)
 {
  int i = 0;
- long magic = MakeMagic(symbol, timeframe);
  int total = _openPositions.Total();
  CPosition *pos;
  //log_file.Write(LOG_CRITICAL
@@ -846,7 +844,7 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe, 
  log_file.Write(LOG_CRITICAL, StringFormat("%s, ќткрываем мульти-позицию %s. ќткрытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), total) ); 
 // log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // –аспечатка всех позиций из массива _openPositions
  
- pos = new CPosition(magic, symbol, timeframe, pos_info, trailing);
+ pos = new CPosition(symbol, timeframe, pos_info, trailing);
  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
  //Print("openingResult=", PositionStatusToStr(openingResult));
  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
