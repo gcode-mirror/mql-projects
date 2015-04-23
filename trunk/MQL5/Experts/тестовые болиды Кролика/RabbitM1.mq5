@@ -11,18 +11,25 @@
 //+------------------------------------------------------------------+
 //подключение необходимых библиотек
 #include <Lib CIsNewBar.mqh>
-#include <TradeManager\TradeManager.mqh> // 
+#include <TradeManager/TradeManager.mqh> // 
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
+#include <ColoredTrend/ColoredTrendUtilities.mqh> 
 #include <CTrendChannel.mqh> // трендовый контейнер
 //константы
 #define KO 3 //коэффициент для условия открытия позиции, во сколько как минимум вычисленный тейк профит должен превышать вычисленный стоп лосс
 #define SPREAD 30 // размер спреда 
 //вводимые пользователем параметры
+input string base_param = ""; // БАЗОВЫЕ ПАРАМЕТРЫ
 input double lot = 1; // лот
 input double percent = 0.1; // процент
 input double M1_supremacyPercent  = 5;//процент, насколько бар M1 больше среднего значения
 input double profitPercent = 0.5;// процент прибыли                                                          
 input int priceDifference = 50;//Price Difference
+input string filters_param = ""; // ФИЛЬТРЫ
+input bool useTwoTrends = true; // по двум последним трендам
+input bool useChannel = true; // закрытие внутри канала
+input bool useClose = true; // закрытие позиции в противоположном тренде
+input bool use19Lines = true; // 19 линий
 
 // переменные робота 
 datetime history_start;
@@ -39,6 +46,7 @@ CTrendChannel *trendM1;
 //хэндлы индикаторов
 int handle_aATR_M1;
 int handleDE_M1;
+int handle19Lines; 
 //параметры позиции и трейлинга
 SPositionInfo pos_info;
 STrailing     trailing;
@@ -47,6 +55,8 @@ double volume = 1.0;   //объем
 int signalM1;
 
 bool trendM1Now = false;
+
+int posOpenedDirection = 0; // направление открытия позиции
 
 bool firstUploadedM1 = false; // флаг первой загрузки трендов
 
@@ -69,6 +79,19 @@ int OnInit()
    SetIndicatorByHandle(_Symbol,_Period,handleDE_M1);
   }        
   
+  ENUM_TIMEFRAMES eldPeriodForM1 = GetTopTimeframe(PERIOD_M1); // привязка индикатора DrawExtremums M1
+  handle19Lines = DoesIndicatorExist(_Symbol,_Period,"NineTeenLines");
+  if (handle19Lines == INVALID_HANDLE)
+   {
+    handle19Lines = iCustom(_Symbol,_Period,"NineTeenLines");
+    if (handle19Lines == INVALID_HANDLE)
+     {
+      Print("Не удалось создать хэндл индикатора NineTeenLines");
+      return (INIT_FAILED);
+     }
+    SetIndicatorByHandle(_Symbol,_Period,handle19Lines);
+   } 
+   
   opBuy = OP_BUY;
   opSell= OP_SELL;
   
@@ -96,9 +119,14 @@ void OnDeinit(const int reason)
 
 void OnTick()
 {
+ int tempPosDirection=0;
  ctm.OnTick();
  pos_info.type = OP_UNKNOWN;
  signalM1  = 0;
+
+ // если не открыта ни одна позиция
+ if (ctm.GetPositionCount() == 0)
+  posOpenedDirection = 0;
 
  // если еще не загружены экстремумы
  if (!firstUploadedM1)
@@ -107,8 +135,6 @@ void OnTick()
  // если не все тренды на всех таймфреймах прогружены, то ретёрним
  if (!firstUploadedM1)
   return;  
-
-
 
  if(isNewBarM1.isNewBar()>0)
  {
@@ -119,18 +145,31 @@ void OnTick()
   if (trendM1.GetTrendByIndex(0)!=NULL && trendM1.GetTrendByIndex(1)!=NULL)
    { 
     // если существует тренд в текущий момент и два последних тренда в противоположную сторону
-    if (pos_info.type == opBuy /* && trendM1Now &&  trendM1.GetTrendByIndex(0).GetDirection() == 1 && TestLargeBarOnChannel(PERIOD_M1)  && trendM1.GetTrendByIndex(1).GetDirection() == -1 && TestLargeBarOnChannel(PERIOD_M1)*/ )
+    if (pos_info.type == opBuy  )
      {
-      if (!TestTrendsDirection(0,-1))
-       signalM1 = 1;
+      tempPosDirection = 1;
+      signalM1 = 1;
+      // обрабатываем фильтры
+      if (trendM1.IsTrendNow() && TestTrendsDirection(0,1) && useTwoTrends) // фильтр двух последних трендов при условии наличия текущего тренда
+       signalM1 = 0;
+      if (trendM1.IsTrendNow() && TestLargeBarOnChannel(PERIOD_M1) && useChannel) // фильтр закрытия большого бара внутри канала
+       signalM1 = 0;
      }
-    else if (pos_info.type == opSell  /*&& trendM1Now  &&  trendM1.GetTrendByIndex(0).GetDirection() == -1 && TestLargeBarOnChannel(PERIOD_M1)  && trendM1.GetTrendByIndex(1).GetDirection() == 1 && TestLargeBarOnChannel(PERIOD_M1)*/ )
+    else if (pos_info.type == opSell )
      {
-      if (!TestTrendsDirection(0,1))
-       signalM1 = -1; 
+      tempPosDirection = -1;
+      signalM1 = -1;
+      // обрабатываем фильтры
+      if (trendM1.IsTrendNow() && TestTrendsDirection(0,-1) && useTwoTrends) // фильтр двух последних трендов при условии наличия текущего тренда
+       signalM1 = 0; 
+      if (trendM1.IsTrendNow() && TestLargeBarOnChannel(PERIOD_M1) && useChannel) // фильтр закрытия большого бара внутри канала
+       signalM1 = 0;       
      }
     else
-     signalM1 = 0;  
+     {
+      tempPosDirection = 0;
+      signalM1 = 0;  
+     }
     // обработка фильтров
     
      
@@ -138,6 +177,7 @@ void OnTick()
  }
  if( (signalM1 == 1 || signalM1 == -1 ) )
  {
+  posOpenedDirection = tempPosDirection;
   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);   
  }
  
@@ -159,8 +199,22 @@ void OnChartEvent(const int id,         // идентификатор события
                   const string& sparam  // параметр события типа string 
                  )
   {
+   int newDirection;
    trendM1.UploadOnEvent(sparam,dparam,lparam);
    trendM1Now = trendM1.IsTrendNow();
+   
+   // если пришел новый тренд и мы используем фильтр закрытия позиции по приходу противоположного тренда
+   if (trendM1Now && useClose )
+    {
+     newDirection = trendM1.GetTrendByIndex(0).GetDirection();
+     // если пришел противоположный направлению позиции тренд
+     if (posOpenedDirection !=0 && newDirection == -posOpenedDirection && ctm.GetPositionCount() > 0 )
+      {
+       // закрываем позицию
+       ctm.ClosePosition(0);
+       posOpenedDirection = 0;
+      }
+    }
   } 
 
 //функция получения торгового сигнала (возвращает заполненную структуру позиции) 
@@ -275,7 +329,25 @@ bool TestLargeBarOnChannel (ENUM_TIMEFRAMES period) // функция тестирует
   priceLineUp = trendM1.GetTrendByIndex(0).GetPriceLineUp(timeBuffer[0]);
   priceLineDown = trendM1.GetTrendByIndex(0).GetPriceLineDown(timeBuffer[0]);
   if ( LessOrEqualDoubles( closeLargeBar[0],priceLineUp) && GreatOrEqualDoubles(closeLargeBar[0],priceLineDown) )
-   return (false);
-  return (true);
+   return (true);
+  return (false);
  }
  
+bool FilterBy19Lines (int direction,ENUM_TIMEFRAMES period,int stopLoss)
+ {
+ /*
+  double currentPrice;
+  double level3[];
+  double level4[];
+  if (direction == 1)
+   {
+    currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+   }
+  if (direction == -1)
+   {
+    currentPrice = SymbolInfoDouble(_Symbol,SYMBOL_BID);    
+   }
+  if (CopyBuffer(handle19Lines,
+  */
+  return (true);
+ }
