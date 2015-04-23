@@ -9,7 +9,8 @@
 
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
 #include <Lib CisNewBarDD.mqh>
-#include <TradeManager/TradeManager.mqh>   //Ради одной структуры, стоит ли?
+#include <CompareDoubles.mqh>
+#include <StringUtilities.mqh>
 #include <CLog.mqh>                         // для лога
 
 #define DEPTH 20
