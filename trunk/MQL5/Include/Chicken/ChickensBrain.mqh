@@ -76,12 +76,6 @@ CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period)
 {
  _symbol = symbol;
  _period = period;
- _handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");
- if (_handle_pbi == INVALID_HANDLE)
- {
-  log_file.Write(LOG_DEBUG, "Не удалось создать хэндл индикатора PriceBasedIndicator");
-  //Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
- }
  isNewBar = new CisNewBar(_symbol, _period);
  _index_max = -1;
  _index_min = -1;
