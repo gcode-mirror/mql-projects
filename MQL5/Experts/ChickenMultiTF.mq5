@@ -315,3 +315,15 @@ int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndic
   return (-1);
  return (0);
 }
+//+------------------------------------------------------------------+
+//| ChartEvent function                                              |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id,
+                  const long &lparam,
+                  const double &dparam,
+                  const string &sparam)
+{
+
+   
+}
+//+------------------------------------------------------------------+
