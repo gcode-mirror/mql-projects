@@ -7,7 +7,6 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
-#include <ColoredTrend/ColoredTrendUtilities.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <TradeManager\TradeManager.mqh>
 
