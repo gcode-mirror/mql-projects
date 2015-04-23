@@ -9,7 +9,7 @@
 
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
 #include <Lib CisNewBarDD.mqh>
-#include <TradeManager\TradeManager.mqh>   //–ади одной структуры, стоит ли?
+#include <TradeManager/TradeManager.mqh>   //–ади одной структуры, стоит ли?
 #include <CLog.mqh>                         // дл€ лога
 
 #define DEPTH 20
@@ -18,7 +18,9 @@
 #define BUY   1    
 #define SELL -1 
 #define NO_POSITION 0
-#define NO_ENTER 2
+#define NO_ENTER 2 //отладка
+
+
 //+------------------------------------------------------------------+
 //|         ласс CChickensBrain  предназанчен дл€ вычислени€ типа    |
 //|                              сигнала продажи согласно алгоритму  |                                                          |
