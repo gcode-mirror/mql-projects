@@ -98,51 +98,51 @@ SLevel extr_levelH4[4];
 SLevel extr_levelH1[4];
 SLevel price_levelD1[4];
  
-double Extr_MN_Buffer1[];
-double Extr_MN_Buffer2[];
-double Extr_MN_Buffer3[];
-double Extr_MN_Buffer4[];
-double  ATR_MN_Buffer1[];
-double  ATR_MN_Buffer2[];
-double  ATR_MN_Buffer3[];
-double  ATR_MN_Buffer4[]; 
-double Extr_W1_Buffer1[];
-double Extr_W1_Buffer2[];
-double Extr_W1_Buffer3[];
-double Extr_W1_Buffer4[];
-double  ATR_W1_Buffer1[];
-double  ATR_W1_Buffer2[];
-double  ATR_W1_Buffer3[];
-double  ATR_W1_Buffer4[];
-double Extr_D1_Buffer1[];
-double Extr_D1_Buffer2[];
-double Extr_D1_Buffer3[];
-double Extr_D1_Buffer4[];
-double  ATR_D1_Buffer1[];
-double  ATR_D1_Buffer2[];
-double  ATR_D1_Buffer3[];
-double  ATR_D1_Buffer4[];
-double Extr_H4_Buffer1[];
-double Extr_H4_Buffer2[];
-double Extr_H4_Buffer3[];
-double Extr_H4_Buffer4[];
-double  ATR_H4_Buffer1[];
-double  ATR_H4_Buffer2[];
-double  ATR_H4_Buffer3[];
-double  ATR_H4_Buffer4[];
-double Extr_H1_Buffer1[];
-double Extr_H1_Buffer2[];
-double Extr_H1_Buffer3[];
-double Extr_H1_Buffer4[];
-double  ATR_H1_Buffer1[];
-double  ATR_H1_Buffer2[];
-double  ATR_H1_Buffer3[];
-double  ATR_H1_Buffer4[];
-double Price_D1_Buffer1[];
-double Price_D1_Buffer2[];
-double Price_D1_Buffer3[];
-double Price_D1_Buffer4[];
-double   ATR_D1_Buffer [];
+double Extr_MN_Buffer1[];   // 0
+double Extr_MN_Buffer2[];   // 1
+double Extr_MN_Buffer3[];   // 2
+double Extr_MN_Buffer4[];   // 3 
+double  ATR_MN_Buffer1[];   // 4
+double  ATR_MN_Buffer2[];   // 5
+double  ATR_MN_Buffer3[];   // 6
+double  ATR_MN_Buffer4[];   // 7
+double Extr_W1_Buffer1[];   // 8
+double Extr_W1_Buffer2[];   // 9
+double Extr_W1_Buffer3[];   // 10
+double Extr_W1_Buffer4[];   // 11
+double  ATR_W1_Buffer1[];   // 12
+double  ATR_W1_Buffer2[];   // 13
+double  ATR_W1_Buffer3[];   // 14
+double  ATR_W1_Buffer4[];   // 15
+double Extr_D1_Buffer1[];   // 16
+double Extr_D1_Buffer2[];   // 17
+double Extr_D1_Buffer3[];   // 18
+double Extr_D1_Buffer4[];   // 19
+double  ATR_D1_Buffer1[];   // 20 
+double  ATR_D1_Buffer2[];   // 21
+double  ATR_D1_Buffer3[];   // 22
+double  ATR_D1_Buffer4[];   // 23
+double Extr_H4_Buffer1[];   // 24
+double Extr_H4_Buffer2[];   // 25
+double Extr_H4_Buffer3[];   // 26
+double Extr_H4_Buffer4[];   // 27
+double  ATR_H4_Buffer1[];   // 28
+double  ATR_H4_Buffer2[];   // 29
+double  ATR_H4_Buffer3[];   // 30
+double  ATR_H4_Buffer4[];   // 31
+double Extr_H1_Buffer1[];   // 32
+double Extr_H1_Buffer2[];   // 33
+double Extr_H1_Buffer3[];   // 34
+double Extr_H1_Buffer4[];   // 35
+double  ATR_H1_Buffer1[];   // 36
+double  ATR_H1_Buffer2[];   // 37
+double  ATR_H1_Buffer3[];   // 38
+double  ATR_H1_Buffer4[];   // 39
+double Price_D1_Buffer1[];  // 40
+double Price_D1_Buffer2[];  // 41
+double Price_D1_Buffer3[];  // 42
+double Price_D1_Buffer4[];  // 43
+double   ATR_D1_Buffer [];  // 44
 
 int handle_atr_MN;
 int handle_atr_W1;
