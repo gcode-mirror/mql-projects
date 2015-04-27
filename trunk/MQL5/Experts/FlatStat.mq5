@@ -14,6 +14,7 @@
 #include <ColoredTrend/ColoredTrendUtilities.mqh> 
 #include <DrawExtremums/CExtrContainer.mqh> // контейнер экстремумов
 #include <CTrendChannel.mqh> // трендовый контейнер
+#include <CompareDoubles.mqh> // для сравнения вещественных чисел
 // параметры
 input double percent = 0.1; // процент
 // базовые переменные
@@ -127,12 +128,71 @@ void OnChartEvent(const int id,         // идентификатор события
      extrUp1 = container.GetExtrByIndex(1,EXTR_HIGH).price;
      extrDown0 = container.GetExtrByIndex(0,EXTR_LOW).price;
      extrDown1 = container.GetExtrByIndex(1,EXTR_LOW).price;
+     H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
     }
   }   
   
 // функции обработки типов флэтов
 bool IsFlatA ()
  {
-  
+  //  если 
+  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
+       GreatDoubles (extrUp0 - extrUp1,percent*H)
+     )
+    {
+     return (true);
+    }
   return (false);
  }
+ 
+// функции обработки типов флэтов
+bool IsFlatA ()
+ {
+  //  если 
+  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
+       GreatDoubles (extrUp0 - extrUp1,percent*H)
+     )
+    {
+     return (true);
+    }
+  return (false);
+ }
+ 
+// функции обработки типов флэтов
+bool IsFlatA ()
+ {
+  //  если 
+  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
+       GreatDoubles (extrUp0 - extrUp1,percent*H)
+     )
+    {
+     return (true);
+    }
+  return (false);
+ }
+ 
+// функции обработки типов флэтов
+bool IsFlatA ()
+ {
+  //  если 
+  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
+       GreatDoubles (extrUp0 - extrUp1,percent*H)
+     )
+    {
+     return (true);
+    }
+  return (false);
+ }
+ 
+// функции обработки типов флэтов
+bool IsFlatA ()
+ {
+  //  если 
+  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
+       GreatDoubles (extrUp0 - extrUp1,percent*H)
+     )
+    {
+     return (true);
+    }
+  return (false);
+ }    
