@@ -21,6 +21,7 @@ input double percent = 0.1; // процент
 bool trendNow = false;
 bool firstUploaded = false; // флаг загрузки истории трендов
 int  calcMode = 0;  // режим вычисления
+int  flatType = 0;
 // хэндлы
 int handleDE;
 // счетчики ситуаций
@@ -129,15 +130,47 @@ void OnChartEvent(const int id,         // идентификатор события
      extrDown0 = container.GetExtrByIndex(0,EXTR_LOW).price;
      extrDown1 = container.GetExtrByIndex(1,EXTR_LOW).price;
      H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
+     top_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) + H*0.75;
+     bottom_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) - H*0.75;     
+     // вычисляем тип флэта
+     if (IsFlatA())
+      flatType = 1;
+     if (IsFlatB())
+      flatType = 2;
+     if (IsFlatC())
+      flatType = 3;
+     if (IsFlatD())
+      flatType = 4;
+     if (IsFlatE())
+      flatType = 5;
+     // если удалось вычислить флэт
+     if (flatType != 0)
+      {
+       // переходим в режим подсчета статистики
+       calcMode = 3;
+      }                       
+    }
+   else if (calcMode == 3)
+    {
+      // если цена достигла верхнего уровня
+      if ( GreatOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),top_point) )
+       {
+        if (flatType == 1)
+         {
+         
+         
+       }
     }
   }   
   
 // функции обработки типов флэтов
+
+
 bool IsFlatA ()
  {
   //  если 
-  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
-       GreatDoubles (extrUp0 - extrUp1,percent*H)
+  if ( LessDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
+       GreatDoubles (extrDown0 - extrDown1,percent*H)
      )
     {
      return (true);
@@ -145,12 +178,23 @@ bool IsFlatA ()
   return (false);
  }
  
-// функции обработки типов флэтов
-bool IsFlatA ()
+bool IsFlatB ()
  {
   //  если 
-  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
-       GreatDoubles (extrUp0 - extrUp1,percent*H)
+  if ( GreatDoubles (extrUp1-extrUp0,percent*H) &&
+       LessDoubles (MathAbs(extrDown0 - extrDown1),percent*H)
+     )
+    {
+     return (true);
+    }
+  return (false);
+ }
+
+bool IsFlatC ()
+ {
+  //  если 
+  if ( LessDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
+       LessDoubles (MathAbs(extrDown0 - extrDown1),percent*H)
      )
     {
      return (true);
@@ -158,12 +202,11 @@ bool IsFlatA ()
   return (false);
  }
  
-// функции обработки типов флэтов
-bool IsFlatA ()
+bool IsFlatD ()
  {
   //  если 
-  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
-       GreatDoubles (extrUp0 - extrUp1,percent*H)
+  if ( GreatDoubles (extrUp1-extrUp0,percent*H) &&
+       GreatDoubles (extrDown0 - extrDown1,percent*H)
      )
     {
      return (true);
@@ -171,25 +214,11 @@ bool IsFlatA ()
   return (false);
  }
  
-// функции обработки типов флэтов
-bool IsFlatA ()
+bool IsFlatE ()
  {
   //  если 
-  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
-       GreatDoubles (extrUp0 - extrUp1,percent*H)
-     )
-    {
-     return (true);
-    }
-  return (false);
- }
- 
-// функции обработки типов флэтов
-bool IsFlatA ()
- {
-  //  если 
-  if ( GreatDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
-       GreatDoubles (extrUp0 - extrUp1,percent*H)
+  if ( GreatDoubles (extrUp0-extrUp1,percent*H) &&
+       GreatDoubles (extrDown1 - extrDown0,percent*H)
      )
     {
      return (true);
