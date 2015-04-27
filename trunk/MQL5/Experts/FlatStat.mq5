@@ -22,6 +22,7 @@ bool trendNow = false;
 bool firstUploaded = false; // флаг загрузки истории трендов
 int  calcMode = 0;  // режим вычисления
 int  flatType = 0;
+int  trendType = 0;
 // хэндлы
 int handleDE;
 // счетчики ситуаций
@@ -155,11 +156,79 @@ void OnChartEvent(const int id,         // идентификатор события
       // если цена достигла верхнего уровня
       if ( GreatOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),top_point) )
        {
-        if (flatType == 1)
+        switch (flatType)
          {
-         
-         
+          case 1: 
+           if (trendType == 1) 
+            flat_a_up_tup ++;
+           if (trendType == -1)
+            flat_a_up_tdown ++;
+          break;
+          case 2: 
+           if (trendType == 1) 
+            flat_b_up_tup ++;
+           if (trendType == -1)
+            flat_b_up_tdown ++;
+          break;
+          case 3: 
+           if (trendType == 1) 
+            flat_c_up_tup ++;
+           if (trendType == -1)
+            flat_c_up_tdown ++;
+          break;
+          case 4: 
+           if (trendType == 1) 
+            flat_d_up_tup ++;
+           if (trendType == -1)
+            flat_d_up_tdown ++;
+          break;
+          case 5: 
+           if (trendType == 1) 
+            flat_e_up_tup ++;
+           if (trendType == -1)
+            flat_e_up_tdown ++;
+          break;                                        
+         }    
+        calcMode = 0; // снова возвращаемся в старый режим  
        }
+      // если цена достигла нижнего уровня
+      if ( LessOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),bottom_point) )
+       {
+        switch (flatType)
+         {
+          case 1: 
+           if (trendType == 1) 
+            flat_a_down_tup ++;
+           if (trendType == -1)
+            flat_a_down_tdown ++;
+          break;
+          case 2: 
+           if (trendType == 1) 
+            flat_b_down_tup ++;
+           if (trendType == -1)
+            flat_b_down_tdown ++;
+          break;
+          case 3: 
+           if (trendType == 1) 
+            flat_c_down_tup ++;
+           if (trendType == -1)
+            flat_c_down_tdown ++;
+          break;
+          case 4: 
+           if (trendType == 1) 
+            flat_d_down_tup ++;
+           if (trendType == -1)
+            flat_d_down_tdown ++;
+          break;
+          case 5: 
+           if (trendType == 1) 
+            flat_e_down_tup ++;
+           if (trendType == -1)
+            flat_e_down_tdown ++;
+          break;                                        
+         }      
+        calcMode = 0; // снова возвращаемся в старый режим           
+       }       
     }
   }   
   
