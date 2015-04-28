@@ -22,6 +22,9 @@
 input string base_param = ""; // БАЗОВЫЕ ПАРАМЕТРЫ
 input double lot = 1; // лот
 input double percent = 0.1; // процент
+input bool useM1 = true; // использовать M1
+input bool useM5 = true; // использовать M5
+input bool useM15 = true; // использовать M15 
 input double M1_supremacyPercent  = 5;//процент, насколько бар M1 больше среднего значения
 input double M5_supremacyPercent  = 3;//процент, насколько бар M5 больше среднего значения
 input double M15_supremacyPercent  = 1;//процент, насколько бар M15 больше среднего значения
@@ -33,6 +36,7 @@ input bool useChannel = true; // закрытие внутри канала
 input bool useClose = true; // закрытие позиции в противоположном тренде
 input bool use19Lines = true; // 19 линий
 input bool checkFilter = true; // фильтр входных сигналов 
+
 
 // переменные робота 
 datetime history_start;
@@ -290,7 +294,7 @@ void OnTick()
    }
  } 
  
- if( (signalM1 == 1 || signalM1 == -1 || signalM5 == 1 || signalM5 == -1 ) && (InputFilter() || !checkFilter) )
+ if( ( useM1 && (signalM1 == 1 || signalM1 == -1) || useM5 && (signalM5 == 1 || signalM5 == -1) ) && (InputFilter() || !checkFilter) )
  {
   posOpenedDirection = tempPosDirection;
   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);   
