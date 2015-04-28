@@ -33,8 +33,8 @@ class CExtrContainer  : public CObject
  double   _extrLow [];          // буфер низких эксремумов
  double   _lastExtrSignal[];    // буфер последнего сформированного экстремума экстремума
  double   _prevExtrSignal[];    // буфер формирующегося экстремума
- double   _extrBufferHighTime[];// буффер времени экстремумов
- double   _extrBufferLowTime[]; // буффер времени экстремумов
+ double   _extrBufferHighTime[];// буфер времени экстремумов
+ double   _extrBufferLowTime[]; // буфер времени экстремумов
  string   _symbol;              // символ, на котром был создан контейнер
  string   _eventExtrUp;         // имя подходящего события для добавления верхнего экстремума     
  string   _eventExtrDown;       // имя подходящего события для добавления нижнего экстремума 

@@ -11,6 +11,7 @@
 //+------------------------------------------------------------------+
 // библиотеки
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
+#include <ChartObjects/ChartObjectsLines.mqh> // дл€ рисовани€ линий тренда
 #include <ColoredTrend/ColoredTrendUtilities.mqh> 
 #include <DrawExtremums/CExtrContainer.mqh> // контейнер экстремумов
 #include <CTrendChannel.mqh> // трендовый контейнер
@@ -19,10 +20,12 @@
 input double percent = 0.1; // процент
 // базовые переменные
 bool trendNow = false;
-bool firstUploaded = false; // флаг загрузки истории трендов
+bool firstUploaded = false; // флаг загрузки истории Ёкстремумов
+bool firstUploadedTrend = false; // флаг загрузки истории трендов
 int  calcMode = 0;  // режим вычислени€
 int  flatType = 0;
 int  trendType = 0;
+int  countFlat = 0;
 // хэндлы
 int handleDE;
 // счетчики ситуаций
@@ -41,16 +44,20 @@ int flat_d_up_tdown = 0,flat_d_down_tdown = 0;
 int flat_e_up_tup = 0,flat_e_down_tup = 0; 
 int flat_e_up_tdown = 0,flat_e_down_tdown = 0; 
 
-
 // переменные дл€ хранени€ инфы о флэтах
 double extrUp0,extrUp1;
+datetime timeUp0,timeUp1;
 double extrDown0,extrDown1;
+datetime timeDown0,timeDown1;
 double H; // высота флэта
 double top_point; // верхн€€ точка, которую нужно достичь
 double bottom_point; // нижн€€ точка, которую нужно достичь
 // объекты классов
 CExtrContainer *container;
 CTrendChannel *trend;
+CChartObjectTrend flatLine; // объект класса флэтовой линии
+CChartObjectHLine topLevel; // верхний уровень
+CChartObjectHLine bottomLevel; // нижний уровень
 
 int OnInit()
   {
@@ -75,7 +82,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    // удал€ем объекты
-   delete trend;
+   delete trend; 
    delete container;
   }
 
@@ -85,9 +92,16 @@ void OnTick()
     {
      firstUploaded = container.Upload();
     }
-   if (!firstUploaded)
+   if (!firstUploadedTrend)
+    {
+     firstUploadedTrend = trend.UploadOnHistory();
+    }
+   if (!firstUploaded || !firstUploadedTrend)
     return;
-   
+   Comment("mode = ",calcMode,
+           "\n тренд = ",trendType,
+           "\n флэт = ",flatType
+          );
   }
   
 // функци€ обработки внешних событий
@@ -109,6 +123,7 @@ void OnChartEvent(const int id,         // идентификатор событи€
        {
         // переходим в режим обработки флэтовых движений
         calcMode = 1;
+        trendType = trend.GetTrendByIndex(0).GetDirection();
        }
     }
    // если сейчас режим "нашли тренд, нужно искать ближайший флэт"
@@ -128,8 +143,12 @@ void OnChartEvent(const int id,         // идентификатор событи€
      // загружаем последние экстремумы
      extrUp0 = container.GetExtrByIndex(0,EXTR_HIGH).price;
      extrUp1 = container.GetExtrByIndex(1,EXTR_HIGH).price;
+     timeUp0 = container.GetExtrByIndex(0,EXTR_HIGH).time;
+     timeUp1 = container.GetExtrByIndex(1,EXTR_HIGH).time;
      extrDown0 = container.GetExtrByIndex(0,EXTR_LOW).price;
      extrDown1 = container.GetExtrByIndex(1,EXTR_LOW).price;
+     timeDown0 = container.GetExtrByIndex(0,EXTR_LOW).time;
+     timeDown1 = container.GetExtrByIndex(1,EXTR_LOW).time;
      H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
      top_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) + H*0.75;
      bottom_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) - H*0.75;     
@@ -149,6 +168,8 @@ void OnChartEvent(const int id,         // идентификатор событи€
       {
        // переходим в режим подсчета статистики
        calcMode = 3;
+       countFlat ++; // увеличиваем количество флэтов
+       GenFlatName (); // отрисовываем флэт
       }                       
     }
    else if (calcMode == 3)
@@ -190,6 +211,8 @@ void OnChartEvent(const int id,         // идентификатор событи€
           break;                                        
          }    
         calcMode = 0; // снова возвращаемс€ в старый режим  
+        topLevel.Delete();           
+        bottomLevel.Delete();        
        }
       // если цена достигла нижнего уровн€
       if ( LessOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),bottom_point) )
@@ -227,13 +250,14 @@ void OnChartEvent(const int id,         // идентификатор событи€
             flat_e_down_tdown ++;
           break;                                        
          }      
-        calcMode = 0; // снова возвращаемс€ в старый режим           
+        calcMode = 0; // снова возвращаемс€ в старый режим
+        topLevel.Delete();           
+        bottomLevel.Delete();
        }       
     }
   }   
   
 // функции обработки типов флэтов
-
 
 bool IsFlatA ()
  {
@@ -294,3 +318,19 @@ bool IsFlatE ()
     }
   return (false);
  }    
+ 
+ // дополнительные функции
+ void GenFlatName ()  // создает линии флэта
+  {
+   flatLine.Color(clrYellow);
+   flatLine.Width(5);
+   flatLine.Create(0,"flatUp_"+countFlat,0,timeUp0,extrUp0,timeUp1,extrUp1); // верхн€€ лини€  
+   flatLine.Color(clrYellow);
+   flatLine.Width(5);
+   flatLine.Create(0,"flatDown_"+countFlat,0,timeDown0,extrDown0,timeDown1,extrDown1); // нижн€€ лини€
+    
+   topLevel.Delete();
+   topLevel.Create(0,"topLevel",0,top_point);
+   bottomLevel.Delete();
+   bottomLevel.Create(0,"bottomLevel",0,bottom_point);   
+  }
