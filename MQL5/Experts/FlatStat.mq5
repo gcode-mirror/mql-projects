@@ -42,7 +42,7 @@ int flat_d_up_tup = 0,flat_d_down_tup = 0;
 int flat_d_up_tdown = 0,flat_d_down_tdown = 0; 
 
 int flat_e_up_tup = 0,flat_e_down_tup = 0; 
-int flat_e_up_tdown = 0,flat_e_down_tdown = 0; 
+int flat_e_up_tdown = 0,flat_e_down_tdown = 0;   
 
 // переменные для хранения инфы о флэтах
 double extrUp0,extrUp1;
@@ -59,6 +59,9 @@ CChartObjectTrend flatLine; // объект класса флэтовой линии
 CChartObjectHLine topLevel; // верхний уровень
 CChartObjectHLine bottomLevel; // нижний уровень
 
+int fileTestStat; // хэндл файла
+
+
 int OnInit()
   {
    // привязка индикатора DrawExtremums
@@ -73,6 +76,13 @@ int OnInit()
       }
      SetIndicatorByHandle(_Symbol,_Period,handleDE);
     }  
+    // создаем хэндл файла тестирования статистики прохождения уровней
+    fileTestStat = FileOpen("FlatStat.txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+    if (fileTestStat == INVALID_HANDLE) //не удалось открыть файл
+     {
+      Print("Не удалось создать файл тестирования статистики прохождения уровней");
+      return (INIT_FAILED);
+     }           
    // создаем объекты классов
    container = new CExtrContainer(handleDE,_Symbol,_Period);
    trend = new CTrendChannel(0,_Symbol,_Period,handleDE,percent);
@@ -81,6 +91,19 @@ int OnInit()
 
 void OnDeinit(const int reason)
   {
+   FileWriteString(fileTestStat,"тренд вверх: ");
+   FileWriteString(fileTestStat,"флэт а: "+" верх: "+IntegerToString(flat_a_up_tup)+" низ: "+IntegerToString(flat_a_up_tdown));
+   FileWriteString(fileTestStat,"флэт b: "+" верх: "+IntegerToString(flat_b_up_tup)+" низ: "+IntegerToString(flat_b_up_tdown));                                
+   FileWriteString(fileTestStat,"флэт c: "+" верх: "+IntegerToString(flat_c_up_tup)+" низ: "+IntegerToString(flat_c_up_tdown));
+   FileWriteString(fileTestStat,"флэт d: "+" верх: "+IntegerToString(flat_d_up_tup)+" низ: "+IntegerToString(flat_d_up_tdown));   
+   FileWriteString(fileTestStat,"флэт e: "+" верх: "+IntegerToString(flat_e_up_tup)+" низ: "+IntegerToString(flat_e_up_tdown));
+   FileWriteString(fileTestStat,"тренд вниз: ");
+   FileWriteString(fileTestStat,"флэт а: "+" верх: "+IntegerToString(flat_a_down_tup)+" низ: "+IntegerToString(flat_a_down_tdown));
+   FileWriteString(fileTestStat,"флэт b: "+" верх: "+IntegerToString(flat_b_down_tup)+" низ: "+IntegerToString(flat_b_down_tdown));                                
+   FileWriteString(fileTestStat,"флэт c: "+" верх: "+IntegerToString(flat_c_down_tup)+" низ: "+IntegerToString(flat_c_down_tdown));
+   FileWriteString(fileTestStat,"флэт d: "+" верх: "+IntegerToString(flat_d_down_tup)+" низ: "+IntegerToString(flat_d_down_tdown));   
+   FileWriteString(fileTestStat,"флэт e: "+" верх: "+IntegerToString(flat_e_down_tup)+" низ: "+IntegerToString(flat_e_down_tdown));    
+   FileClose(fileTestStat); 
    // удаляем объекты
    delete trend; 
    delete container;
@@ -98,6 +121,8 @@ void OnTick()
     }
    if (!firstUploaded || !firstUploadedTrend)
     return;
+    
+   
    Comment("mode = ",calcMode,
            "\n тренд = ",trendType,
            "\n флэт = ",flatType
@@ -149,6 +174,7 @@ void OnChartEvent(const int id,         // идентификатор события
      extrDown1 = container.GetExtrByIndex(1,EXTR_LOW).price;
      timeDown0 = container.GetExtrByIndex(0,EXTR_LOW).time;
      timeDown1 = container.GetExtrByIndex(1,EXTR_LOW).time;
+     
      H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
      top_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) + H*0.75;
      bottom_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) - H*0.75;     
@@ -262,8 +288,8 @@ void OnChartEvent(const int id,         // идентификатор события
 bool IsFlatA ()
  {
   //  если 
-  if ( LessDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
-       GreatDoubles (extrDown0 - extrDown1,percent*H)
+  if ( LessOrEqualDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
+       GreatOrEqualDoubles (extrDown0 - extrDown1,percent*H)
      )
     {
      return (true);
@@ -274,8 +300,8 @@ bool IsFlatA ()
 bool IsFlatB ()
  {
   //  если 
-  if ( GreatDoubles (extrUp1-extrUp0,percent*H) &&
-       LessDoubles (MathAbs(extrDown0 - extrDown1),percent*H)
+  if ( GreatOrEqualDoubles (extrUp1-extrUp0,percent*H) &&
+       LessOrEqualDoubles (MathAbs(extrDown0 - extrDown1),percent*H)
      )
     {
      return (true);
@@ -286,8 +312,8 @@ bool IsFlatB ()
 bool IsFlatC ()
  {
   //  если 
-  if ( LessDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
-       LessDoubles (MathAbs(extrDown0 - extrDown1),percent*H)
+  if ( LessOrEqualDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
+       LessOrEqualDoubles (MathAbs(extrDown0 - extrDown1),percent*H)
      )
     {
      return (true);
@@ -298,8 +324,8 @@ bool IsFlatC ()
 bool IsFlatD ()
  {
   //  если 
-  if ( GreatDoubles (extrUp1-extrUp0,percent*H) &&
-       GreatDoubles (extrDown0 - extrDown1,percent*H)
+  if ( GreatOrEqualDoubles (extrUp1-extrUp0,percent*H) &&
+       GreatOrEqualDoubles (extrDown0 - extrDown1,percent*H)
      )
     {
      return (true);
@@ -310,8 +336,8 @@ bool IsFlatD ()
 bool IsFlatE ()
  {
   //  если 
-  if ( GreatDoubles (extrUp0-extrUp1,percent*H) &&
-       GreatDoubles (extrDown1 - extrDown0,percent*H)
+  if ( GreatOrEqualDoubles (extrUp0-extrUp1,percent*H) &&
+       GreatOrEqualDoubles (extrDown1 - extrDown0,percent*H)
      )
     {
      return (true);
@@ -328,7 +354,7 @@ bool IsFlatE ()
    flatLine.Color(clrYellow);
    flatLine.Width(5);
    flatLine.Create(0,"flatDown_"+countFlat,0,timeDown0,extrDown0,timeDown1,extrDown1); // нижняя линия
-    
+   
    topLevel.Delete();
    topLevel.Create(0,"topLevel",0,top_point);
    bottomLevel.Delete();
