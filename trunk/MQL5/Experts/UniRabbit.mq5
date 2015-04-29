@@ -204,8 +204,12 @@ void OnTick()
  if (!firstUploadedM5)
   firstUploadedM5 = trendM5.UploadOnHistory();  
   
+ // если еще не загружены экстремумы на M5
+ if (!firstUploadedM15)
+  firstUploadedM15 = trendM15.UploadOnHistory();    
+  
  // если не все тренды на всех таймфреймах прогружены, то ретёрним
- if (!firstUploadedM1 || !firstUploadedM5)
+ if (!firstUploadedM1 || !firstUploadedM5 || !firstUploadedM15)
   return;  
   
  // обработка сигналов на M1
@@ -294,7 +298,50 @@ void OnTick()
    }
  } 
  
- if( ( useM1 && (signalM1 == 1 || signalM1 == -1) || useM5 && (signalM5 == 1 || signalM5 == -1) ) && (InputFilter() || !checkFilter) )
+// обработка сигналов на M15
+ if(isNewBarM15.isNewBar()>0)
+ {
+  // получаем сигнал на M15 
+  GetTradeSignal(PERIOD_M15, handle_aATR_M15, M15_supremacyPercent, pos_info);
+  
+  // если два последних тренда существуют
+  if (trendM15.GetTrendByIndex(0)!=NULL && trendM15.GetTrendByIndex(1)!=NULL)
+   { 
+    // если существует тренд в текущий момент и два последних тренда в противоположную сторону
+    if (pos_info.type == opBuy  )
+     {
+      tempPosDirection = 1;
+      signalM15 = 1;
+      // обрабатываем фильтры
+      if (trendM15.IsTrendNow() && TestTrendsDirection(2,1) && useTwoTrends) // фильтр двух последних трендов при условии наличия текущего тренда
+       signalM15 = 0;
+      if (trendM15.IsTrendNow() && TestLargeBarOnChannel(PERIOD_M15) && useChannel) // фильтр закрытия большого бара внутри канала
+       signalM15 = 0;
+      if (!FilterBy19Lines(1,PERIOD_M15,0) && use19Lines)
+       signalM15 = 0;
+     }
+    else if (pos_info.type == opSell )
+     {
+      tempPosDirection = -1;
+      signalM15 = -1;
+      // обрабатываем фильтры
+      if (trendM15.IsTrendNow() && TestTrendsDirection(2,-1) && useTwoTrends) // фильтр двух последних трендов при условии наличия текущего тренда
+       signalM15 = 0; 
+      if (trendM15.IsTrendNow() && TestLargeBarOnChannel(PERIOD_M15) && useChannel) // фильтр закрытия большого бара внутри канала
+       signalM15 = 0;       
+      if (!FilterBy19Lines(-1,PERIOD_M15,0) && use19Lines)
+       signalM15 = 0;
+     }
+    else
+     {
+      tempPosDirection = 0;
+      signalM15 = 0;  
+     }
+       
+   }
+ }  
+ 
+ if( ( useM1 && (signalM1 == 1 || signalM1 == -1) || useM5 && (signalM5 == 1 || signalM5 == -1) || useM15  ) && (InputFilter() || !checkFilter) )
  {
   posOpenedDirection = tempPosDirection;
   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing,SPREAD);   
@@ -350,6 +397,22 @@ void OnChartEvent(const int id,         // идентификатор события
        posOpenedDirection = 0;
       }
     }    
+    
+   trendM15.UploadOnEvent(sparam,dparam,lparam);
+   trendM15Now = trendM15.IsTrendNow();
+   
+   // если пришел новый тренд и мы используем фильтр закрытия позиции по приходу противоположного тренда
+   if (trendM15Now && useClose )
+    {
+     newDirection = trendM15.GetTrendByIndex(0).GetDirection();
+     // если пришел противоположный направлению позиции тренд
+     if (posOpenedDirection !=0 && newDirection == -posOpenedDirection && ctm.GetPositionCount() > 0 )
+      {
+       // закрываем позицию
+       ctm.ClosePosition(0);
+       posOpenedDirection = 0;
+      }
+    }        
     
   } 
 
@@ -548,10 +611,10 @@ bool FilterBy19Lines (int direction,ENUM_TIMEFRAMES period,int stopLoss)
 bool  InputFilter ()
  {
   // если все сигналы не BUY (т.е. нет противоречий)
-  if (signalM1!=1 && signalM5!=1)
+  if (signalM1!=1 && signalM5!=1 && signalM15!=1)
    return(true);
   // если все сигналы не SELL (т.е. нет противоречий)
-  if (signalM1!=-1 && signalM5!=-1)
+  if (signalM1!=-1 && signalM5!=-1 && signalM15!=-1)
    return(true);
   return(false);
  } 
