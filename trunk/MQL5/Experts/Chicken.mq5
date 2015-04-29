@@ -146,11 +146,10 @@ void OnTick()
    
    if(index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], highBorder) && diff_high > sl_min && lastTrend == SELL)
    { 
-    PrintFormat("Цена закрытия пробила цену максимум = %s, Время = %s, цена = %.05f, sl_min = %d, diff_high = %d",
-          DoubleToString(highBorder, 5),
-          TimeToString(TimeCurrent()),
+    PrintFormat(" максимум = %.05f < цена = %.05f, sl_min = %d, diff_high = %d, last_high = %.05f, highBorder = %.05f, index_max = %d",
+          highBorder,
           closePrice[0],
-          sl_min, diff_high);
+          sl_min, diff_high, buffer_high[DEPTH - 1], highBorder, index_max);
     pos_info.type = OP_SELLSTOP;
     pos_info.sl = diff_high;
     pos_info.tp = tp;

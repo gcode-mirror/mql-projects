@@ -221,7 +221,7 @@ CTrend * CTrendChannel::GetTrendByIndex(int index)
  {
   CTrend *curTrend = _bufferTrend.At(_bufferTrend.Total()-1-index);
   if (curTrend == NULL)
-   Print("не нулевой индекс ",index);
+   PrintFormat("%s не нулевой индекс i=%d, total=%d", MakeFunctionPrefix(__FUNCTION__), index, _bufferTrend.Total());
   return (curTrend);
  }
  
