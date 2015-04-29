@@ -60,14 +60,14 @@ class CExtrContainer  : public CObject
  // методы класса
  int          GetCountByType(ENUM_EXTR_USE extr_use);                         // возвращает количесво нижних/верхних экстремумов в контейнере
  int          GetExtrIndexByTime (datetime time);                             // возвращает индекс экстремума 
- CExtremum    *GetExtrByTime(datetime time);
+ CExtremum    *GetExtrByTime(datetime time);                                  // возвращает индекс экстремума согласно времении или более ранний
  void         AddExtrToContainer(CExtremum *extr);                            // добавляет экстремум в контейнер
  bool         AddNewExtrByTime(datetime time);                                // добавляет экстремум по времени
  bool         Upload(int bars = -1);
  bool         UploadOnEvent(string sparam,double dparam,long lparam);   
  bool         isUploaded();      
  int          GetCountFormedExtr() {return (_bufferExtr.Total()-1);};         // возвращает количество сформированных экстремумов
- CExtremum    *GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EXTR_BOTH);             // возвращает экстремум по индексу, при учете extr_use
+ CExtremum    *GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EXTR_BOTH); // возвращает экстремум по индексу, при учете extr_use
  CExtremum    *GetLastFormedExtr(ENUM_EXTR_USE extr_use);                     // возвращает последний сформированный по типу
  CExtremum    *GetLastFormingExtr();                                          // возвращает последний формирующийся
  ENUM_EXTR_USE GetPrevExtrType(void);

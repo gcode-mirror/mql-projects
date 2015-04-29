@@ -166,14 +166,14 @@ void OnChartEvent(const int id,         // идентификатор события
    else if (calcMode == 2)
     {
      // загружаем последние экстремумы
-     extrUp0 = container.GetExtrByIndex(0,EXTR_HIGH).price;
-     extrUp1 = container.GetExtrByIndex(1,EXTR_HIGH).price;
-     timeUp0 = container.GetExtrByIndex(0,EXTR_HIGH).time;
-     timeUp1 = container.GetExtrByIndex(1,EXTR_HIGH).time;
-     extrDown0 = container.GetExtrByIndex(0,EXTR_LOW).price;
-     extrDown1 = container.GetExtrByIndex(1,EXTR_LOW).price;
-     timeDown0 = container.GetExtrByIndex(0,EXTR_LOW).time;
-     timeDown1 = container.GetExtrByIndex(1,EXTR_LOW).time;
+     extrUp0 = container.GetExtrByIndex(1,EXTR_HIGH).price;
+     extrUp1 = container.GetExtrByIndex(2,EXTR_HIGH).price;
+     timeUp0 = container.GetExtrByIndex(1,EXTR_HIGH).time;
+     timeUp1 = container.GetExtrByIndex(2,EXTR_HIGH).time;
+     extrDown0 = container.GetExtrByIndex(1,EXTR_LOW).price;
+     extrDown1 = container.GetExtrByIndex(2,EXTR_LOW).price;
+     timeDown0 = container.GetExtrByIndex(1,EXTR_LOW).time;
+     timeDown1 = container.GetExtrByIndex(2,EXTR_LOW).time;
      
      H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
      top_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) + H*0.75;
