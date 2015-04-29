@@ -10,6 +10,7 @@
 #include <ColoredTrend/ColoredTrendUtilities.mqh>
 #include <Lib CisNewBarDD.mqh>
 #include <TradeManager\TradeManager.mqh>
+#include <DrawExtremums/CExtrContainer.mqh> // контейнер экстремумов
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 16
@@ -39,6 +40,7 @@ SPositionInfo pos_info;
 STrailing trailing;
 
 int handle_pbi;
+int handle_ext;
 double buffer_pbi[];
 double buffer_high[];
 double buffer_low[];
@@ -53,6 +55,14 @@ int  lastTrend = 0;            // тип последнего тренда по PBI
 int OnInit()
 {
  isNewBar = new CisNewBar(_Symbol, _Period);
+ /*handle_ext = iCustom(_Symbol, _Period, "DrawExtremums");//
+ if ( handle_ext == INVALID_HANDLE )
+ {
+  Print("Ошибка при иниализации эксперта. Не удалось создать хэндл индикатора DrawExtremums");
+  return (INIT_FAILED);
+ }  
+ extrContainer = new CExtrContainer(handle_ext, _Symbol, _Period,*/   //УДАЛИТЬ
+ 
  handle_pbi = iCustom(_Symbol, _Period, "PriceBasedIndicator");//
  if ( handle_pbi == INVALID_HANDLE )
  {
