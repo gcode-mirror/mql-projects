@@ -16,6 +16,7 @@
 #include <DrawExtremums/CExtrContainer.mqh> // контейнер экстремумов
 #include <CTrendChannel.mqh> // трендовый контейнер
 #include <CompareDoubles.mqh> // для сравнения вещественных чисел
+#include <StringUtilities.mqh> // строковые константы
 // параметры
 input double percent = 0.1; // процент
 // базовые переменные
@@ -28,7 +29,7 @@ int  trendType = 0;
 int  countFlat = 0;
 // хэндлы
 int handleDE;
-// счетчики ситуаций
+// счетчики ситуаций для случаев, когда последний экстремум - верхний
 int flat_a_up_tup = 0,flat_a_down_tup = 0; 
 int flat_a_up_tdown = 0,flat_a_down_tdown = 0; 
 
@@ -43,6 +44,22 @@ int flat_d_up_tdown = 0,flat_d_down_tdown = 0;
 
 int flat_e_up_tup = 0,flat_e_down_tup = 0; 
 int flat_e_up_tdown = 0,flat_e_down_tdown = 0;   
+
+// счетчики ситуаций для случаев, когда последний экстремум - нижний
+int flat_a_up_tup2 = 0,flat_a_down_tup2 = 0; 
+int flat_a_up_tdown2 = 0,flat_a_down_tdown2 = 0; 
+
+int flat_b_up_tup2 = 0,flat_b_down_tup2 = 0; 
+int flat_b_up_tdown2 = 0,flat_b_down_tdown2 = 0; 
+
+int flat_c_up_tup2 = 0,flat_c_down_tup2 = 0; 
+int flat_c_up_tdown2 = 0,flat_c_down_tdown2 = 0; 
+
+int flat_d_up_tup2 = 0,flat_d_down_tup2 = 0; 
+int flat_d_up_tdown2 = 0,flat_d_down_tdown2 = 0; 
+
+int flat_e_up_tup2 = 0,flat_e_down_tup2 = 0; 
+int flat_e_up_tdown2 = 0,flat_e_down_tdown2 = 0;   
 
 // переменные для хранения инфы о флэтах
 double extrUp0,extrUp1;
@@ -77,7 +94,7 @@ int OnInit()
      SetIndicatorByHandle(_Symbol,_Period,handleDE);
     }  
     // создаем хэндл файла тестирования статистики прохождения уровней
-    fileTestStat = FileOpen("FlatStat.txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+    fileTestStat = FileOpen("FlatStat_"+_Symbol+"_"+PeriodToString(_Period)+".txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
     if (fileTestStat == INVALID_HANDLE) //не удалось открыть файл
      {
       Print("Не удалось создать файл тестирования статистики прохождения уровней");
@@ -91,18 +108,36 @@ int OnInit()
 
 void OnDeinit(const int reason)
   {
-   FileWriteString(fileTestStat,"тренд вверх: ");
+   FileWriteString(fileTestStat,"когда последний экстремум - верхний: \n");  
+   
+   FileWriteString(fileTestStat,"тренд вверх: \n");
    FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_up_tup)+" низ: "+IntegerToString(flat_a_up_tdown)+"\n");
    FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_up_tup)+" низ: "+IntegerToString(flat_b_up_tdown)+"\n");                                
    FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_up_tup)+" низ: "+IntegerToString(flat_c_up_tdown)+"\n");
    FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_up_tup)+" низ: "+IntegerToString(flat_d_up_tdown)+"\n");   
-   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_up_tup)+" низ: "+IntegerToString(flat_e_up_tdown)+"\n");
-   FileWriteString(fileTestStat,"тренд вниз: ");
+   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_up_tup)+" низ: "+IntegerToString(flat_e_up_tdown)+"\n");   
+   FileWriteString(fileTestStat,"тренд вниз: \n");
    FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_down_tup)+" низ: "+IntegerToString(flat_a_down_tdown)+"\n");
    FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_down_tup)+" низ: "+IntegerToString(flat_b_down_tdown)+"\n");                                
    FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_down_tup)+" низ: "+IntegerToString(flat_c_down_tdown)+"\n");
    FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_down_tup)+" низ: "+IntegerToString(flat_d_down_tdown)+"\n");   
-   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_down_tup)+" низ: "+IntegerToString(flat_e_down_tdown)+"\n");    
+   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_down_tup)+" низ: "+IntegerToString(flat_e_down_tdown)+"\n");   
+   
+   FileWriteString(fileTestStat,"когда последний экстремум - нижний: \n");  
+   
+   FileWriteString(fileTestStat,"тренд вверх: \n");
+   FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_up_tup2)+" низ: "+IntegerToString(flat_a_up_tdown2)+"\n");
+   FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_up_tup2)+" низ: "+IntegerToString(flat_b_up_tdown2)+"\n");                                
+   FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_up_tup2)+" низ: "+IntegerToString(flat_c_up_tdown2)+"\n");
+   FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_up_tup2)+" низ: "+IntegerToString(flat_d_up_tdown2)+"\n");   
+   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_up_tup2)+" низ: "+IntegerToString(flat_e_up_tdown2)+"\n");   
+   FileWriteString(fileTestStat,"тренд вниз: \n");
+   FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_down_tup2)+" низ: "+IntegerToString(flat_a_down_tdown2)+"\n");
+   FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_down_tup2)+" низ: "+IntegerToString(flat_b_down_tdown2)+"\n");                                
+   FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_down_tup2)+" низ: "+IntegerToString(flat_c_down_tdown2)+"\n");
+   FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_down_tup2)+" низ: "+IntegerToString(flat_d_down_tdown2)+"\n");   
+   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_down_tup2)+" низ: "+IntegerToString(flat_e_down_tdown2)+"\n");    
+    
    FileClose(fileTestStat); 
    // удаляем объекты
    delete trend; 
@@ -122,11 +157,12 @@ void OnTick()
    if (!firstUploaded || !firstUploadedTrend)
     return;
     
-   
+   /*
    Comment("mode = ",calcMode,
            "\n тренд = ",trendType,
            "\n флэт = ",flatType
           );
+   */
   }
   
 // функция обработки внешних событий
@@ -178,6 +214,7 @@ void OnChartEvent(const int id,         // идентификатор события
      H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
      top_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) + H*0.75;
      bottom_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) - H*0.75;     
+     flatType = 0;
      // вычисляем тип флэта
      if (IsFlatA())
       flatType = 1;
@@ -207,33 +244,83 @@ void OnChartEvent(const int id,         // идентификатор события
          {
           case 1: 
            if (trendType == 1) 
-            flat_a_up_tup ++;
+            {
+             if (timeUp0 > timeDown0)
+              flat_a_up_tup ++;
+             else
+              flat_a_up_tup2 ++;
+            }
            if (trendType == -1)
-            flat_a_up_tdown ++;
+            {
+             if (timeUp0 > timeDown0)
+              flat_a_up_tdown ++;
+             else
+              flat_a_up_tdown2 ++;
+            }
           break;
           case 2: 
            if (trendType == 1) 
-            flat_b_up_tup ++;
+            {
+             if (timeUp0 > timeDown0)
+              flat_b_up_tup ++;
+             else
+              flat_b_up_tup2++;
+            }
            if (trendType == -1)
-            flat_b_up_tdown ++;
+            {
+             if (timeUp0 > timeDown0) 
+              flat_b_up_tdown ++;
+             else
+              flat_b_up_tdown2 ++;
+            }
           break;
           case 3: 
            if (trendType == 1) 
-            flat_c_up_tup ++;
+            {
+             if (timeUp0 > timeDown0)          
+              flat_c_up_tup ++;
+             else
+              flat_c_up_tup2 ++;
+            }
            if (trendType == -1)
-            flat_c_up_tdown ++;
+            {
+             if (timeUp0 > timeDown0)             
+              flat_c_up_tdown ++;
+             else
+              flat_c_up_tdown2 ++;
+            }
           break;
           case 4: 
            if (trendType == 1) 
-            flat_d_up_tup ++;
+            {
+             if (timeUp0 > timeDown0)             
+              flat_d_up_tup ++;
+             else
+              flat_d_up_tup2 ++;
+            }
            if (trendType == -1)
-            flat_d_up_tdown ++;
+            {
+             if (timeUp0 > timeDown0) 
+              flat_d_up_tdown ++;
+             else 
+              flat_d_up_tdown2 ++;
+            }
           break;
           case 5: 
            if (trendType == 1) 
-            flat_e_up_tup ++;
+            {
+             if (timeUp0 > timeDown0)             
+              flat_e_up_tup ++;
+             else
+              flat_e_up_tup2 ++;
+            }
            if (trendType == -1)
-            flat_e_up_tdown ++;
+            {
+             if (timeUp0 > timeDown0)             
+              flat_e_up_tdown ++;
+             else
+              flat_e_up_tdown2 ++;
+            }
           break;                                        
          }    
         calcMode = 0; // снова возвращаемся в старый режим  
@@ -247,34 +334,84 @@ void OnChartEvent(const int id,         // идентификатор события
          {
           case 1: 
            if (trendType == 1) 
-            flat_a_down_tup ++;
+            {
+             if (timeUp0 > timeDown0)                
+              flat_a_down_tup ++;
+             else
+              flat_a_down_tup2 ++;
+            }
            if (trendType == -1)
-            flat_a_down_tdown ++;
+            {
+             if (timeUp0 > timeDown0)                
+              flat_a_down_tdown ++;
+             else
+              flat_a_down_tdown2 ++;
+            }
           break;
           case 2: 
-           if (trendType == 1) 
-            flat_b_down_tup ++;
+           if (trendType == 1)
+            { 
+             if (timeUp0 > timeDown0)                
+              flat_b_down_tup ++;
+             else
+              flat_b_down_tup2 ++;
+            }
            if (trendType == -1)
-            flat_b_down_tdown ++;
+            {
+             if (timeUp0 > timeDown0)                
+              flat_b_down_tdown ++;
+             else
+              flat_b_down_tdown2 ++;
+            }
           break;
           case 3: 
            if (trendType == 1) 
-            flat_c_down_tup ++;
+            {
+             if (timeUp0 > timeDown0)    
+              flat_c_down_tup ++;
+             else
+              flat_c_down_tup2 ++;
+            }
            if (trendType == -1)
-            flat_c_down_tdown ++;
+            {
+             if (timeUp0 > timeDown0)                
+              flat_c_down_tdown ++;
+             else
+              flat_c_down_tdown2 ++;
+            }
           break;
           case 4: 
            if (trendType == 1) 
-            flat_d_down_tup ++;
+            {
+             if (timeUp0 > timeDown0)                
+              flat_d_down_tup ++;
+             else
+              flat_d_down_tup2 ++;
+            }
            if (trendType == -1)
-            flat_d_down_tdown ++;
+            {
+             if (timeUp0 > timeDown0)                
+              flat_d_down_tdown ++;
+             else
+              flat_d_down_tdown2 ++;
+            }
           break;
           case 5: 
            if (trendType == 1) 
-            flat_e_down_tup ++;
+            {
+             if (timeUp0 > timeDown0)                
+              flat_e_down_tup ++;
+             else
+              flat_e_down_tup2 ++;
+            }
            if (trendType == -1)
-            flat_e_down_tdown ++;
-          break;                                        
+            {
+             if (timeUp0 > timeDown0)                
+              flat_e_down_tdown ++;
+             else
+              flat_e_down_tdown2 ++;
+            }
+           break;                                        
          }      
         calcMode = 0; // снова возвращаемся в старый режим
         topLevel.Delete();           
@@ -348,17 +485,22 @@ bool IsFlatE ()
  // дополнительные функции
  void GenFlatName ()  // создает линии флэта
   {
-   flatLine.Color(clrYellow);
-   flatLine.Width(5);
+
    flatLine.Create(0, "flatUp_" + countFlat, 0, timeUp0, extrUp0, timeUp1, extrUp1); // верхняя линия  
    flatLine.Color(clrYellow);
    flatLine.Width(5);
    flatLine.Create(0,"flatDown_" + countFlat, 0, timeDown0, extrDown0, timeDown1, extrDown1); // нижняя линия
+   flatLine.Color(clrYellow);
+   flatLine.Width(5);
+      
+   Comment("flatUp = ",DoubleToString(extrUp0)," ",TimeToString(timeUp0),
+           "\nflatDown = ",DoubleToString(extrDown0)," ",TimeToString(timeDown1)
+   
+           );
    
    topLevel.Delete();
    topLevel.Create(0, "topLevel", 0, top_point);
    bottomLevel.Delete();
    bottomLevel.Create(0, "bottomLevel", 0, bottom_point);   
    
-  
   }
