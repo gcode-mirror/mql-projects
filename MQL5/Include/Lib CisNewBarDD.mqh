@@ -8,8 +8,10 @@
 //| Class CisNewBar.                                                 |
 //| Appointment: Класс функций для определения появления нового бара |
 //+------------------------------------------------------------------+
+#include <Arrays\ArrayObj.mqh>
 
-class CisNewBar 
+class CisNewBar : public CObject
+
   {
    protected:
       datetime          m_lastbar_time;   // Время открытия последнего бара

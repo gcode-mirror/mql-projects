@@ -28,7 +28,7 @@ input double   tp_ko  = 2;
 input bool tradeTFM5  = true;
 input bool tradeTFM15 = true;
 input bool tradeTFH1  = true;
-input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
+input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_NONE;//TRAILING_TYPE_PBI;
 /*
 input int minProfit = 250;
 input int trailingStop = 150;
@@ -74,7 +74,7 @@ int OnInit()
   PrintFormat("tradeTFM5 = %b, tradeTFM15 = %b, tradeTFH1 = %b",tradeTFM5,tradeTFM15,tradeTFH1);
   return(INIT_FAILED);
  }
- 
+  log_file.Write(LOG_DEBUG, "ChickenMultiTF запущен");
  ctm = new CTradeManager();
   
  tradeM5.used    = tradeTFM5;
@@ -92,19 +92,15 @@ int OnInit()
   if(tradeTF[i].used == true)
   {
    tradeTF[i].isNewBar = new CisNewBar(_Symbol, tradeTF[i].period);
-   tradeTF[i].handle_pbi = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
+   /*tradeTF[i].handle_pbi = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
    if(tradeTF[i].handle_pbi == INVALID_HANDLE)
    {
     Print("Ошибка при иниализации эксперта. Не удалось создать хэндл индикатора PriceBasedIndicator");
     return (INIT_FAILED);
-   } 
+   } */
    tradeTF[i].trailing.trailingType = trailingType;
-   tradeTF[i].trailing.handleForTrailing = tradeTF[i].handle_pbi;
-   /*
-   trailing.minProfit    = minProfit;
-   trailing.trailingStop = trailingStop;
-   trailing.trailingStep = trailingStep;
-   */
+   //tradeTF[i].trailing.handleForTrailing = tradeTF[i].handle_pbi;
+
    tradeTF[i].recountInterval = false;
    tradeTF[i].lastTrend = 0;
   } 
@@ -143,7 +139,7 @@ void OnTick()
  double curBid;
  
  ctm.OnTick();
- ctm.DoTrailing();
+ //ctm.DoTrailing();
 
  for(int i = 0; i < 3; i++)
  { 
@@ -186,6 +182,16 @@ void OnTick()
      diff_low = (lowBorder - buffer_low[DEPTH - 1])/Point();
      stoplevel = MathMax(sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
      pos_info.tp = 0;
+     
+     log_file.Write(LOG_DEBUG,StringFormat("time[0] = %s", TimeToString(TimeCurrent())));
+     log_file.Write(LOG_DEBUG,StringFormat("_lowBorder = %f  - Low[DEPTH] = %f ",  lowBorder, buffer_low[DEPTH - 1]));
+     log_file.Write(LOG_DEBUG,StringFormat("High[DEPTH] = %f  - _highBorder = %f ", buffer_high[DEPTH - 1], highBorder)); 
+     
+     log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", index_max, ALLOW_INTERVAL,closePrice[0],highBorder,diff_high,sl_min,tradeTF[i].lastTrend));
+     //PrintFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,closePrice[0],_highBorder,_diff_high,_sl_min,_lastTrend);
+     log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
+     log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %f > %d && _lastTrend = %d", index_min, ALLOW_INTERVAL,closePrice[0],lowBorder,diff_low,sl_min,tradeTF[i].lastTrend));
+     log_file.Write(LOG_DEBUG, "_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY");
      
      if(index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], highBorder) && diff_high > sl_min && tradeTF[i].lastTrend == SELL)
      { 

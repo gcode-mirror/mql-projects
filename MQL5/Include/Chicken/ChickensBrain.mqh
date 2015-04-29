@@ -12,6 +12,7 @@
 #include <CompareDoubles.mqh>
 #include <StringUtilities.mqh>
 #include <CLog.mqh>                         // для лога
+#include <Chicken/ContainerBuffers.mqh>
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 16
@@ -41,39 +42,42 @@ class CChickensBrain
  
   bool recountInterval;
   CisNewBar *isNewBar;
+  CContainerBuffers *_conbuf;
   // поля, доступ к которым реализован через функции Get...()
   int _index_max;
   int _index_min;
   int _diff_high; 
   int _diff_low; 
-
+  int _priceDifference;
   int _sl_min;
   double _highBorder; 
   double _lowBorder;
-  double _priceDifference;
+
   
  public:
   
-                     CChickensBrain(string symbol, ENUM_TIMEFRAMES period);
+                     CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf);
                     ~CChickensBrain();
                    int GetSignal();  //pos_info._tp = 0?
-                   int GetLastMoveType (int handle);
+                   int GetLastMoveType (CContainerBuffers &conbuf);
                    int GetIndexMax()      { return _index_max;}
                    int GetIndexMin()      { return _index_min;}
                    int GetDiffHigh()      { return _diff_high;}
                    int GetDiffLow()       { return _diff_low;}
                    int GetSLmin()         { return _sl_min;}
+                   int GetPriceDifference(){ return _priceDifference;}
                    double GetHighBorder() { return _highBorder;}
                    double GetLowBorder()  { return _lowBorder;}
-                   double GetPriceDifference(){ return _priceDifference;}
+                  
                    
                    
 };
 //+------------------------------------------------------------------+
 //|      Конструктор                                                 |
 //+------------------------------------------------------------------+
-CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period)
+CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf)
 {
+ _conbuf = conbuf;
  _symbol = symbol;
  _period = period;
  isNewBar = new CisNewBar(_symbol, _period);
@@ -82,6 +86,7 @@ CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period)
  _lastTrend = 0; 
  isNewBar.isNewBar();
  recountInterval = false;
+ log_file.Write(LOG_DEBUG, StringFormat(" CChickensBrain на %s создан успешно ", PeriodToString(_period)));
 }
 //+------------------------------------------------------------------+
 //|      Деструктор                                                  |
@@ -89,25 +94,26 @@ CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period)
 CChickensBrain::~CChickensBrain()
 {
  delete isNewBar;
+ delete _conbuf;
  ArrayFree(closePrice);
  ArrayFree(buffer_high);
  ArrayFree(buffer_low);
  ArrayFree(closePrice);
  IndicatorRelease(_handle_pbi);
- 
 }
 //+------------------------------------------------------------------+
 //|      Метод GetSignal() возвращает сигнал торговли SELL/BUY       |                                                 
 //+------------------------------------------------------------------+
 int CChickensBrain::GetSignal()
 {
- double _stoplevel;
  _index_max = -1;
  _index_min = -1;
  if(isNewBar.isNewBar() || recountInterval)
  { 
+  if(!_conbuf.isAvailable(_period))
+   log_file.Write(LOG_DEBUG,"%s Зашел на алгоритм при незаполненных буферах");
   // установить индексацию буферов как в таймсерии
-  ArraySetAsSeries(buffer_high, false);
+  /*ArraySetAsSeries(buffer_high, false);
   ArraySetAsSeries(buffer_low, false);
   if(CopyClose(_Symbol, _period, 1, 1, closePrice)     < 1 ||      // цена закрытия последнего сформированного бара
      CopyHigh(_Symbol, _period, 1, DEPTH, buffer_high) < DEPTH ||  // буфер максимальных цен всех сформированных баров на заданую глубину
@@ -118,50 +124,51 @@ int CChickensBrain::GetSignal()
    _index_min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
    recountInterval = true;
    log_file.Write(LOG_DEBUG,"Ошибка при копировании буферов");
-  }
+  }*/
   // Вычислим границы движения цены на рассматриваемом отрезке
-  _index_max = ArrayMaximum(buffer_high, 0, DEPTH - 1);
-  _index_min = ArrayMinimum(buffer_low, 0, DEPTH - 1);
+  _index_max = ArrayMaximum(_conbuf.GetHigh(_period).buffer, 1, DEPTH);
+  _index_min = ArrayMinimum(_conbuf.GetLow(_period).buffer, 1, DEPTH);
   recountInterval = false;
   // Вычислим тип движения на последнем баре
-  _tmpLastBar = GetLastMoveType(_handle_pbi);
+  _tmpLastBar = GetLastMoveType(_conbuf);
   if (_tmpLastBar != 0)
   {
    _lastTrend = _tmpLastBar;
   }
-  if (buffer_pbi[0] == MOVE_TYPE_FLAT && _index_max != -1 && _index_min != -1)
+  if (_conbuf.GetPBI(_period).buffer[0] == MOVE_TYPE_FLAT && _index_max != -1 && _index_min != -1)
   {
    log_file.Write(LOG_DEBUG,"buffer_pbi[0] == MOVE_TYPE_FLAT индексы не равны -1");
-   log_file.Write(LOG_DEBUG,StringFormat("time[0] = %s", TimeToString(TimeCurrent())));
-   //Print();
+   log_file.Write(LOG_DEBUG,StringFormat("time[0] = %s ТФ = %s", TimeToString(TimeCurrent()), PeriodToString(_period)));
+   log_file.Write(LOG_DEBUG,StringFormat("_lowBorder = %f  - Low[DEPTH] = %f ",  _lowBorder, _conbuf.GetLow(_period).buffer[DEPTH]));
+   log_file.Write(LOG_DEBUG,StringFormat("High[DEPTH] = %f  - _highBorder = %f ",  _conbuf.GetHigh(_period).buffer[DEPTH], _highBorder)); 
    // Сохраним верхнюю и нижнюю цены в поля
-   _highBorder = buffer_high[_index_max];
-   _lowBorder  = buffer_low[_index_min];
+   _highBorder = _conbuf.GetHigh(_period).buffer[_index_max];
+   _lowBorder  = _conbuf.GetLow(_period).buffer[_index_min];
    _sl_min     = MathMax((int)MathCeil((_highBorder - _lowBorder)*0.10/Point()), 50);
-   _diff_high  = (buffer_high[DEPTH - 1] - _highBorder)/Point();
-   _diff_low   = (_lowBorder - buffer_low[DEPTH - 1])/Point();
-   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,closePrice[0],_highBorder,_diff_high,_sl_min,_lastTrend));
+   _diff_high  = (_conbuf.GetHigh(_period).buffer[DEPTH] - _highBorder)/Point();
+   _diff_low   = (_lowBorder - _conbuf.GetLow(_period).buffer[DEPTH])/Point();
+   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_highBorder,_diff_high,_sl_min,_lastTrend));
    //PrintFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,closePrice[0],_highBorder,_diff_high,_sl_min,_lastTrend);
    log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
-   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %f > %d && _lastTrend = %d", _index_min, ALLOW_INTERVAL,closePrice[0],_lowBorder,_diff_low,_sl_min,_lastTrend));
+   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %f > %d && _lastTrend = %d", _index_min, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_lowBorder,_diff_low,_sl_min,_lastTrend));
    log_file.Write(LOG_DEBUG, "_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY");
-   if(_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL)
+   if(_index_max < ALLOW_INTERVAL && GreatDoubles(_conbuf.GetClose(_period).buffer[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL)
    { 
     log_file.Write(LOG_DEBUG, StringFormat("Цена закрытия пробила цену максимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_high = %d",
           DoubleToString(_highBorder, 5),
           TimeToString(TimeCurrent()),
-          closePrice[0],
+          _conbuf.GetClose(_period).buffer[0],
           _sl_min, _diff_high));
     /*PrintFormat("Цена закрытия пробила цену максимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_high = %d",
           DoubleToString(_highBorder, 5),
           TimeToString(TimeCurrent()),
           closePrice[0],
           _sl_min, _diff_high);*/
-    _priceDifference = (closePrice[0] - _highBorder)/Point();
+    _priceDifference = (_conbuf.GetClose(_period).buffer[0] - _highBorder)/Point();
     return SELL;
    }
     
-   if(_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY)
+   if(_index_min < ALLOW_INTERVAL && LessDoubles(_conbuf.GetClose(_period).buffer[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY)
    {
     log_file.Write(LOG_DEBUG, StringFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_low = %d",
           DoubleToString(_lowBorder, 5),
@@ -173,7 +180,7 @@ int CChickensBrain::GetSignal()
           TimeToString(TimeCurrent()),
           closePrice[0],
           _sl_min, _diff_low);*/
-    _priceDifference = (_lowBorder - closePrice[0])/Point();
+    _priceDifference = (_lowBorder - _conbuf.GetClose(_period).buffer[0])/Point();
     return BUY;
    }
   } 
@@ -186,17 +193,17 @@ int CChickensBrain::GetSignal()
 //+------------------------------------------------------------------+
 //|      Метод GetLastMoveType()тип движения цены на последнем баре  |                                                 
 //+------------------------------------------------------------------+
-int  CChickensBrain::GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndicator
+int  CChickensBrain::GetLastMoveType (CContainerBuffers &conbuf) // получаем последнее значение PriceBasedIndicator
 {
- int copiedPBI;
+ //int copiedPBI;
  int signTrend;
- copiedPBI = CopyBuffer(handle, 4, 1, 1, buffer_pbi);
+ /*copiedPBI = CopyBuffer(handle, 4, 1, 1, buffer_pbi);
  if (copiedPBI < 1)
  {
   log_file.Write(LOG_DEBUG, StringFormat("Не удалось скопировать тип тренда на периоде  %s", PeriodToString(_period)));
   return (0);
- }
- signTrend = int(buffer_pbi[0]);
+ }*/
+ signTrend = int(conbuf.GetPBI(_period).buffer[1]);
  log_file.Write(LOG_DEBUG, StringFormat("Тип тренда на последнем баре: %d", signTrend));
  //PrintFormat("Тип тренда на последнем баре: %d", signTrend);
   // если тренд вверх

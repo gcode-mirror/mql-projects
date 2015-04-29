@@ -92,17 +92,17 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    FileWriteString(fileTestStat,"тренд вверх: ");
-   FileWriteString(fileTestStat,"флэт а: "+" верх: "+IntegerToString(flat_a_up_tup)+" низ: "+IntegerToString(flat_a_up_tdown));
-   FileWriteString(fileTestStat,"флэт b: "+" верх: "+IntegerToString(flat_b_up_tup)+" низ: "+IntegerToString(flat_b_up_tdown));                                
-   FileWriteString(fileTestStat,"флэт c: "+" верх: "+IntegerToString(flat_c_up_tup)+" низ: "+IntegerToString(flat_c_up_tdown));
-   FileWriteString(fileTestStat,"флэт d: "+" верх: "+IntegerToString(flat_d_up_tup)+" низ: "+IntegerToString(flat_d_up_tdown));   
-   FileWriteString(fileTestStat,"флэт e: "+" верх: "+IntegerToString(flat_e_up_tup)+" низ: "+IntegerToString(flat_e_up_tdown));
+   FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_up_tup)+" низ: "+IntegerToString(flat_a_up_tdown)+"\n");
+   FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_up_tup)+" низ: "+IntegerToString(flat_b_up_tdown)+"\n");                                
+   FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_up_tup)+" низ: "+IntegerToString(flat_c_up_tdown)+"\n");
+   FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_up_tup)+" низ: "+IntegerToString(flat_d_up_tdown)+"\n");   
+   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_up_tup)+" низ: "+IntegerToString(flat_e_up_tdown)+"\n");
    FileWriteString(fileTestStat,"тренд вниз: ");
-   FileWriteString(fileTestStat,"флэт а: "+" верх: "+IntegerToString(flat_a_down_tup)+" низ: "+IntegerToString(flat_a_down_tdown));
-   FileWriteString(fileTestStat,"флэт b: "+" верх: "+IntegerToString(flat_b_down_tup)+" низ: "+IntegerToString(flat_b_down_tdown));                                
-   FileWriteString(fileTestStat,"флэт c: "+" верх: "+IntegerToString(flat_c_down_tup)+" низ: "+IntegerToString(flat_c_down_tdown));
-   FileWriteString(fileTestStat,"флэт d: "+" верх: "+IntegerToString(flat_d_down_tup)+" низ: "+IntegerToString(flat_d_down_tdown));   
-   FileWriteString(fileTestStat,"флэт e: "+" верх: "+IntegerToString(flat_e_down_tup)+" низ: "+IntegerToString(flat_e_down_tdown));    
+   FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_down_tup)+" низ: "+IntegerToString(flat_a_down_tdown)+"\n");
+   FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_down_tup)+" низ: "+IntegerToString(flat_b_down_tdown)+"\n");                                
+   FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_down_tup)+" низ: "+IntegerToString(flat_c_down_tdown)+"\n");
+   FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_down_tup)+" низ: "+IntegerToString(flat_d_down_tdown)+"\n");   
+   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_down_tup)+" низ: "+IntegerToString(flat_e_down_tdown)+"\n");    
    FileClose(fileTestStat); 
    // удаляем объекты
    delete trend; 
@@ -144,7 +144,7 @@ void OnChartEvent(const int id,         // идентификатор события
     { 
      trendNow = trend.IsTrendNow();
      // если сейчас таки тренд 
-     if (trendNow )
+     if (trendNow)
        {
         // переходим в режим обработки флэтовых движений
         calcMode = 1;
@@ -350,13 +350,13 @@ bool IsFlatE ()
   {
    flatLine.Color(clrYellow);
    flatLine.Width(5);
-   flatLine.Create(0,"flatUp_"+countFlat,0,timeUp0,extrUp0,timeUp1,extrUp1); // верхняя линия  
+   flatLine.Create(0, "flatUp_" + countFlat, 0, timeUp0, extrUp0, timeUp1, extrUp1); // верхняя линия  
    flatLine.Color(clrYellow);
    flatLine.Width(5);
-   flatLine.Create(0,"flatDown_"+countFlat,0,timeDown0,extrDown0,timeDown1,extrDown1); // нижняя линия
+   flatLine.Create(0,"flatDown_" + countFlat, 0, timeDown0, extrDown0, timeDown1, extrDown1); // нижняя линия
    
    topLevel.Delete();
-   topLevel.Create(0,"topLevel",0,top_point);
+   topLevel.Create(0, "topLevel", 0, top_point);
    bottomLevel.Delete();
-   bottomLevel.Create(0,"bottomLevel",0,bottom_point);   
+   bottomLevel.Create(0, "bottomLevel", 0, bottom_point);   
   }
