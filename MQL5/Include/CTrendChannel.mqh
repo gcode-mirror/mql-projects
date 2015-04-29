@@ -142,20 +142,20 @@ double CTrend::GetPriceLineDown(datetime time) // возвращает цену на нижней лини
 
 void CTrend::ShowTrend(void) // отображает тренд на графике
  {
-  _trendLine.Create(_chartID,_trendUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхн€€ лини€  
-  _trendLine.Create(_chartID,_trendDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхн€€ лини€  
+  //_trendLine.Create(_chartID,_trendUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхн€€ лини€  
+  //_trendLine.Create(_chartID,_trendDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхн€€ лини€  
  }
 
 void CTrend::HideTrend(void) // скрывает тренд с графика
  {
-  ObjectDelete(_chartID,_trendUpName);
-  ObjectDelete(_chartID,_trendDownName);
+  //ObjectDelete(_chartID,_trendUpName);
+  //ObjectDelete(_chartID,_trendDownName);
  }
 
 void CTrend::SetRayTrend(void) // задает лучи
  {
-  ObjectSetInteger(_chartID,_trendUpName,OBJPROP_RAY_LEFT,1); 
-  ObjectSetInteger(_chartID,_trendDownName,OBJPROP_RAY_LEFT,1); 
+  //ObjectSetInteger(_chartID,_trendUpName,OBJPROP_RAY_LEFT,1); 
+  //ObjectSetInteger(_chartID,_trendDownName,OBJPROP_RAY_LEFT,1); 
  }
 
 void CTrend::RemoveRayTrend(void) // убирает лучи
