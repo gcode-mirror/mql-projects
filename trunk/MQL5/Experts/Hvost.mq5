@@ -36,8 +36,8 @@ double price_ask;            // текущая цена ask
 double prev_price_bid=0;     // предыдущая цена bid
 double prev_price_ask=0;     // предыдущая цена ask
 double average_price;        // значение средней цены на момент получения сигнала о скачке (присваивание переменных wait_for_sell или wait_for_buy)
-bool wait_for_sell=false;    // флаг ожидания условия открытия на SELL
-bool wait_for_buy=false;     // флаг ожидания условия открытия на BUY
+bool wait_for_sell = false;  // флаг ожидания условия открытия на SELL
+bool wait_for_buy = false;   // флаг ожидания условия открытия на BUY
 bool is_flat_now;            // флаг, показывающий, флэт ли сейчас на графике или нет 
 int opened_position = 0;     // флаг открытой позиции (0 - нет позиции, 1 - buy, (-1) - sell)
 int countBars;
@@ -63,20 +63,21 @@ int OnInit()
      Print("Не удалось создать объект класса CTradeManager");
      return (INIT_FAILED);
     }    
+   // сохраняем период страшего таймфрейма 
+   periodEld = GetTopTimeframe(_Period);   // заменить на функцию, которая определяет старший ТФ по отношению к текущему    
    // если удалось вычислить параметры канала движения на старшем ТФ
    if (CountChannel()) 
     average_price = (max_price + min_price)/2;            
-   // сохраняем период страшего таймфрейма 
-   periodEld = GetTopTimeframe(_Period);   // заменить на функцию, которая определяет старший ТФ по отношению к текущему
+
    // заполняем поля позиции
    pos_info.volume = lot;
    pos_info.expiration = 0;
    // заполняем 
    trailing.trailingType = TRAILING_TYPE_NONE;
    isNewBar = new CisNewBar(_Symbol,_Period);
-   isNewBarEld = new CisNewBar(_Symbol,periodEld);
+   isNewBarEld = new CisNewBar(_Symbol, periodEld);
    // создаем хэндл индикатора PriceBasedIndicator
-   handlePBI = iCustom(_Symbol,periodEld,"PriceBasedIndicator");
+   handlePBI = iCustom(_Symbol, periodEld, "PriceBasedIndicator");
    if (handlePBI == INVALID_HANDLE)
     {
      Print("Не удалось создать хэндл индикатора PriceBasedIndicator");

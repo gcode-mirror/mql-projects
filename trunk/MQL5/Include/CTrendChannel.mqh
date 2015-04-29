@@ -285,7 +285,7 @@ bool CTrendChannel::UploadOnHistory(void)
       extrTotal = _container.GetCountFormedExtr(); // получаем количество экстремумов
       dirLastExtr = _container.GetLastFormedExtr(EXTR_BOTH).direction; // получаем последнее значение экстремума
       // проходим по экстремумам и заполняем буфер трендов
-      for (i=0;i<extrTotal-4;i++)
+      for (i=0; i < extrTotal-4; i++)
        {
         // если последнее направление экстремума - вверх
         if (dirLastExtr == 1)

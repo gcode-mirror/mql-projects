@@ -10,7 +10,8 @@
 #include <TradeManager/TradeManager.mqh>
 #include <Chicken/ChickensBrain.mqh>                 // объект по вычислению сигналов для торговли
 #include <SystemLib/IndicatorManager.mqh>            // библиотека по работе с индикаторами
-#include <CLog.mqh>                         // для лога
+#include <CLog.mqh>                                  // для лога
+#include <Chicken/ContainerBuffers.mqh>
 
 //+------------------------------------------------------------------+
 //| Expert parametrs                                                 |
@@ -43,13 +44,14 @@ STradeTF  tradeTF[3];
 STradeTF    tradeM5;
 STradeTF    tradeM15;
 STradeTF    tradeH1;
-double      buffer_pbi[];
-double      buffer_high[];
-double      buffer_low[];
+//double      buffer_pbi[];
+//double      buffer_high[];
+//double      buffer_low[];
 
 CTradeManager *ctm;
+CContainerBuffers *conbuf;
 
-double highPrice[], lowPrice[], closePrice[];
+//double highPrice[], lowPrice[], closePrice[];
 bool   closePosition;
 int    tmpLastBar;
 int    handle;
@@ -59,6 +61,9 @@ int    handle;
 //+------------------------------------------------------------------+
 int OnInit()
 {
+ log_file.Write(LOG_DEBUG,"ChickenMultiTFwithBrains запущен");
+ ENUM_TIMEFRAMES TFs[] = {PERIOD_M5, PERIOD_M15, PERIOD_H1};
+ conbuf = new CContainerBuffers(TFs);
  if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
  {
   PrintFormat("tradeTFM5 = %b, tradeTFM15 = %b, tradeTFH1 = %b", tradeTFM5, tradeTFM15, tradeTFH1);
@@ -80,9 +85,9 @@ int OnInit()
   {
    if(trailingType == TRAILING_TYPE_PBI)
    {
-    handle = DoesIndicatorExist(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
-    if (handle == INVALID_HANDLE)
-    {
+    //handle = DoesIndicatorExist(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
+    //if (handle == INVALID_HANDLE)
+    //{
      handle = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
      if (handle == INVALID_HANDLE)
      {
@@ -90,8 +95,8 @@ int OnInit()
       Print(__FUNCTION__,"Не удалось создать хэндл индикатора PriceBasedIndicator");
       return (INIT_FAILED);
      }
-     SetIndicatorByHandle(_Symbol,tradeTF[i].period,handle);
-    }
+     //SetIndicatorByHandle(_Symbol,tradeTF[i].period,handle);
+     //}
    }   
    if(trailingType == TRAILING_TYPE_EXTREMUMS)
    {
@@ -110,7 +115,7 @@ int OnInit()
    trailing.trailingStop = trailingStop;
    trailing.trailingStep = trailingStep;
    */
-   tradeTF[i].chicken = new CChickensBrain(_Symbol, tradeTF[i].period);
+   tradeTF[i].chicken = new CChickensBrain(_Symbol, tradeTF[i].period, conbuf);
   } 
  }
  //recountInterval = false;
@@ -147,74 +152,78 @@ void OnTick()
  double curBid;
  ctm.OnTick();
  ctm.DoTrailing();
-
- for(int i = 0; i < 3; i++)
- { 
-  // если i-ый таймфрейм используется
-  if(tradeTF[i].used == true)
-  {
-   long magic = ctm.MakeMagic(_Symbol, tradeTF[i].period);
-   curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-   curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   chickenSignal = tradeTF[i].chicken.GetSignal(); // получаем сигнал с ChickensBrain
-   if(chickenSignal == SELL || chickenSignal == BUY)
+ if(conbuf.Update()) // если удалось прогрузить буферы на всех таймфреймах переходим к алгоритму
+ {
+  for(int i = 0; i < 3; i++)
+  { 
+   // если i-ый таймфрейм используется
+   if(tradeTF[i].used == true)
    {
-    if(chickenSignal == SELL)
+    long magic = ctm.MakeMagic(_Symbol, tradeTF[i].period);
+    curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+    curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+    chickenSignal = tradeTF[i].chicken.GetSignal(); // получаем сигнал с ChickensBrain
+    if(chickenSignal == SELL || chickenSignal == BUY)
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу SELL", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
-     pos_info.type = OP_SELLSTOP; 
-     pos_info.sl = tradeTF[i].chicken.GetDiffHigh();
-     tradeTF[i].trailing.minProfit = 2 * tradeTF[i].chicken.GetDiffHigh();
-     tradeTF[i].trailing.trailingStop = tradeTF[i].chicken.GetDiffHigh();
+     if(chickenSignal == SELL)
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу SELL", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
+      pos_info.type = OP_SELLSTOP; 
+      pos_info.sl = tradeTF[i].chicken.GetDiffHigh();
+      tradeTF[i].trailing.minProfit = 2 * tradeTF[i].chicken.GetDiffHigh();
+      tradeTF[i].trailing.trailingStop = tradeTF[i].chicken.GetDiffHigh();
+     }
+     if(chickenSignal == BUY)
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу BUY", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
+      pos_info.type = OP_BUYSTOP;
+      pos_info.sl   = tradeTF[i].chicken.GetDiffLow();
+      tradeTF[i].trailing.minProfit = 2 * tradeTF[i].chicken.GetDiffLow();
+      tradeTF[i].trailing.trailingStop = tradeTF[i].chicken.GetDiffLow();
+     }
+     //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
+     tp = (use_tp) ? (int)MathCeil((tradeTF[i].chicken.GetHighBorder() - tradeTF[i].chicken.GetLowBorder())*0.75/Point()) : 0; 
+     pos_info.tp = tp;
+     pos_info.magic = magic;
+     pos_info.priceDifference = tradeTF[i].chicken.GetPriceDifference();
+     pos_info.expiration = MathMax(DEPTH - tradeTF[i].chicken.GetIndexMax(), DEPTH - tradeTF[i].chicken.GetIndexMin());
+     tradeTF[i].trailing.trailingStep = 5;
+     if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko)
+     {
+      log_file.Write(LOG_DEBUG, StringFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
+      ctm.OpenMultiPosition(_Symbol, _Period, pos_info, tradeTF[i].trailing, spread);
+     }
     }
-    if(chickenSignal == BUY)
+    if(chickenSignal == NO_POSITION)
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу BUY", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
-     pos_info.type = OP_BUYSTOP;
-     pos_info.sl   = tradeTF[i].chicken.GetDiffLow();
-     tradeTF[i].trailing.minProfit = 2 * tradeTF[i].chicken.GetDiffLow();
-     tradeTF[i].trailing.trailingStop = tradeTF[i].chicken.GetDiffLow();
-    }
-    //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
-    tp = (use_tp) ? (int)MathCeil((tradeTF[i].chicken.GetHighBorder() - tradeTF[i].chicken.GetLowBorder())*0.75/Point()) : 0; 
-    pos_info.tp = tp;
-    pos_info.magic = magic;
-    pos_info.priceDifference = tradeTF[i].chicken.GetPriceDifference();
-    pos_info.expiration = MathMax(DEPTH - tradeTF[i].chicken.GetIndexMax(), DEPTH - tradeTF[i].chicken.GetIndexMin());
-    tradeTF[i].trailing.trailingStep = 5;
-    if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko)
-    {
-     log_file.Write(LOG_DEBUG, StringFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
-     ctm.OpenMultiPosition(_Symbol, _Period, pos_info, tradeTF[i].trailing, spread);
-    }
-   }
-   if(chickenSignal == NO_POSITION)
-   {
-    log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал NO_POSITION", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
-    ctm.ClosePendingPosition(_Symbol, magic);
-   }
-   else if(ctm.GetPositionCount() != 0)
-   {
-    ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol, magic);
-    if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol, magic) < curAsk) 
-    {
-     slPrice = curAsk;
-     ctm.ModifyPosition(_Symbol, magic, slPrice, 0);  
-    }
-    if(type == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol, magic) > curBid) 
-    {
-     slPrice = curBid;
-     ctm.ModifyPosition(_Symbol, magic, slPrice, 0); 
-    }
-    if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp >0 && pos_info.tp <= pos_info.sl*tp_ko))
-    {
+     log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал NO_POSITION", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
      ctm.ClosePendingPosition(_Symbol, magic);
-    } 
-   }
-  }
+    }
+    else if(ctm.GetPositionCount() != 0)
+    {
+     ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol, magic);
+     if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol, magic) < curAsk) 
+     {
+      slPrice = curAsk;
+      ctm.ModifyPosition(_Symbol, magic, slPrice, 0);  
+     }
+     if(type == OP_BUYSTOP  && ctm.GetPositionStopLoss(_Symbol, magic) > curBid) 
+     {
+      slPrice = curBid;
+      ctm.ModifyPosition(_Symbol, magic, slPrice, 0); 
+     }
+     if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp >0 && pos_info.tp <= pos_info.sl*tp_ko))
+     {
+      ctm.ClosePendingPosition(_Symbol, magic);
+     } 
+    }
+   } 
+  }   
  } 
+ else
+ log_file.Write(LOG_DEBUG, StringFormat("%s conbuf.Update() не успешен ", MakeFunctionPrefix(__FUNCTION__)));
 } 
-//+------------------------------------------------------------------+
+ //+------------------------------------------------------------------+
 //| ChartEvent function                                              |
 //+------------------------------------------------------------------+
 void OnChartEvent(const int id,

@@ -211,7 +211,7 @@ bool CEventBase::Generate(long _chart_id, int _id_ind, SEventData &_data,
          {
           Print("is_generated = ", is_generated);
           PrintFormat("%s Error while generating a custom event: %d", __FUNCTION__,_LastError);
-          Print( ChartSymbol(_chart_id)," ",ChartPeriod(_chart_id), "Îøèáêà! _chart_id =", _chart_id, " event.id = ", event.id, " data.dparam = " ,this._data.dparam, " data.sparam = ", this._data.sparam);
+          Print( ChartSymbol(_chart_id)," ",PeriodToString(ChartPeriod(_chart_id)), "Îøèáêà! _chart_id =", _chart_id, " event.id = ", event.id, " data.dparam = " ,this._data.dparam, " data.sparam = ", this._data.sparam);
          }
      }
    return is_generated;
