@@ -139,6 +139,7 @@ void OnDeinit(const int reason)
    FileWriteString(fileTestStat,"флэт e: " + " верх: " + IntegerToString(flat_e_down_tup2)+" низ: "+IntegerToString(flat_e_down_tdown2)+"\n");    
     
    FileClose(fileTestStat); 
+   
    // удаляем объекты
    delete trend; 
    delete container;
