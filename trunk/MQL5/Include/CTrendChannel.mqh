@@ -240,7 +240,9 @@ void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
   if (sparam == _eventExtrDown)
    {
      _trendNow = false;
-     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_percent );         
+     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_percent );     
+
+    
      if (temparyTrend != NULL)
         {
          if (temparyTrend.GetDirection() != 0)
@@ -290,7 +292,9 @@ bool CTrendChannel::UploadOnHistory(void)
         // если последнее направление экстремума - вверх
         if (dirLastExtr == 1)
          {
-           temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i),_container.GetExtrByIndex(i+2),_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i+3),_percent );
+           temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i),_container.GetExtrByIndex(i+2),_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i
+
++3),_percent );
            if (temparyTrend != NULL)
             {
              if (temparyTrend.GetDirection() != 0)
@@ -300,7 +304,9 @@ bool CTrendChannel::UploadOnHistory(void)
         // если последнее направление экстремума - вниз
         if (dirLastExtr == -1)
          {
-           temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i+3),_container.GetExtrByIndex(i),_container.GetExtrByIndex(i+2),_percent );         
+           temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i+3),_container.GetExtrByIndex(i),_container.GetExtrByIndex(i
+
++2),_percent );         
            if (temparyTrend != NULL)
             {
              if (temparyTrend.GetDirection() != 0)
