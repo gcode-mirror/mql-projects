@@ -140,9 +140,10 @@ CExtrContainer::CExtrContainer(int handleExtremums, string symbol, ENUM_TIMEFRAM
 CExtrContainer::~CExtrContainer() // деструктор класса
 { 
  Print(__FUNCTION__," Очищение буфера.");
+ 
+ for(int i = _bufferExtr.Total()-1; i >= 0; i--)
+  delete _bufferExtr.At(i);
  _bufferExtr.Clear();
- //for(int i = _bufferExtr.Total()-1; i >= 0; i--)
-  //delete _bufferExtr.At(i);
  delete extrTemp;
 }
 

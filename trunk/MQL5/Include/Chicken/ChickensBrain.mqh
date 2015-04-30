@@ -145,8 +145,8 @@ int CChickensBrain::GetSignal()
    _highBorder = _conbuf.GetHigh(_period).buffer[_index_max];
    _lowBorder  = _conbuf.GetLow(_period).buffer[_index_min];
    _sl_min     = MathMax((int)MathCeil((_highBorder - _lowBorder)*0.10/Point()), 50);
-   _diff_high  = (_conbuf.GetHigh(_period).buffer[DEPTH] - _highBorder)/Point();
-   _diff_low   = (_lowBorder - _conbuf.GetLow(_period).buffer[DEPTH])/Point();
+   _diff_high  = (_conbuf.GetHigh(_period).buffer[0] - _highBorder)/Point();
+   _diff_low   = (_lowBorder - _conbuf.GetLow(_period).buffer[0])/Point();
    log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_highBorder,_diff_high,_sl_min,_lastTrend));
    //PrintFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,closePrice[0],_highBorder,_diff_high,_sl_min,_lastTrend);
    log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");

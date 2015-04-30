@@ -82,27 +82,27 @@ int fileTestStat; // хэндл файла
 int OnInit()
   {
    // привязка индикатора DrawExtremums
-   handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
+   handleDE = DoesIndicatorExist(_Symbol, _Period, "DrawExtremums");
    if (handleDE == INVALID_HANDLE)
     {
-     handleDE = iCustom(_Symbol,_Period,"DrawExtremums");
+     handleDE = iCustom(_Symbol, _Period, "DrawExtremums");
      if (handleDE == INVALID_HANDLE)
       {
        Print("Не удалось создать хэндл индикатора DrawExtremums");
        return (INIT_FAILED);
       }
-     SetIndicatorByHandle(_Symbol,_Period,handleDE);
+     SetIndicatorByHandle(_Symbol, _Period, handleDE);
     }  
     // создаем хэндл файла тестирования статистики прохождения уровней
-    fileTestStat = FileOpen("FlatStat_"+_Symbol+"_"+PeriodToString(_Period)+".txt",FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+    fileTestStat = FileOpen("FlatStat/FlatStat_" + _Symbol+"_" + PeriodToString(_Period) + ".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
     if (fileTestStat == INVALID_HANDLE) //не удалось открыть файл
      {
       Print("Не удалось создать файл тестирования статистики прохождения уровней");
       return (INIT_FAILED);
      }           
    // создаем объекты классов
-   container = new CExtrContainer(handleDE,_Symbol,_Period);
-   trend = new CTrendChannel(0,_Symbol,_Period,handleDE,percent);
+   container = new CExtrContainer(handleDE, _Symbol, _Period);
+   trend = new CTrendChannel(0, _Symbol, _Period, handleDE, percent);
    return(INIT_SUCCEEDED);
   }
 
@@ -111,32 +111,32 @@ void OnDeinit(const int reason)
    FileWriteString(fileTestStat,"когда последний экстремум - верхний: \n");  
    
    FileWriteString(fileTestStat,"тренд вверх: \n");
-   FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_up_tup)+" низ: "+IntegerToString(flat_a_up_tdown)+"\n");
-   FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_up_tup)+" низ: "+IntegerToString(flat_b_up_tdown)+"\n");                                
-   FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_up_tup)+" низ: "+IntegerToString(flat_c_up_tdown)+"\n");
-   FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_up_tup)+" низ: "+IntegerToString(flat_d_up_tdown)+"\n");   
-   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_up_tup)+" низ: "+IntegerToString(flat_e_up_tdown)+"\n");   
+   FileWriteString(fileTestStat,"флэт а: " + " верх: " + IntegerToString(flat_a_up_tup) + " низ: "+IntegerToString(flat_a_up_tdown)+"\n");
+   FileWriteString(fileTestStat,"флэт b: " + " верх: " + IntegerToString(flat_b_up_tup) + " низ: "+IntegerToString(flat_b_up_tdown)+"\n");                                
+   FileWriteString(fileTestStat,"флэт c: " + " верх: " + IntegerToString(flat_c_up_tup) + " низ: "+IntegerToString(flat_c_up_tdown)+"\n");
+   FileWriteString(fileTestStat,"флэт d: " + " верх: " + IntegerToString(flat_d_up_tup) + " низ: "+IntegerToString(flat_d_up_tdown)+"\n");   
+   FileWriteString(fileTestStat,"флэт e: " + " верх: " + IntegerToString(flat_e_up_tup) + " низ: "+IntegerToString(flat_e_up_tdown)+"\n");   
    FileWriteString(fileTestStat,"тренд вниз: \n");
-   FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_down_tup)+" низ: "+IntegerToString(flat_a_down_tdown)+"\n");
-   FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_down_tup)+" низ: "+IntegerToString(flat_b_down_tdown)+"\n");                                
-   FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_down_tup)+" низ: "+IntegerToString(flat_c_down_tdown)+"\n");
-   FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_down_tup)+" низ: "+IntegerToString(flat_d_down_tdown)+"\n");   
-   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_down_tup)+" низ: "+IntegerToString(flat_e_down_tdown)+"\n");   
+   FileWriteString(fileTestStat,"флэт а: " + " верх: " + IntegerToString(flat_a_down_tup) + " низ: "+IntegerToString(flat_a_down_tdown)+"\n");
+   FileWriteString(fileTestStat,"флэт b: " + " верх: " + IntegerToString(flat_b_down_tup) + " низ: "+IntegerToString(flat_b_down_tdown)+"\n");                                
+   FileWriteString(fileTestStat,"флэт c: " + " верх: " + IntegerToString(flat_c_down_tup) + " низ: "+IntegerToString(flat_c_down_tdown)+"\n");
+   FileWriteString(fileTestStat,"флэт d: " + " верх: " + IntegerToString(flat_d_down_tup) + " низ: "+IntegerToString(flat_d_down_tdown)+"\n");   
+   FileWriteString(fileTestStat,"флэт e: " + " верх: " + IntegerToString(flat_e_down_tup) + " низ: "+IntegerToString(flat_e_down_tdown)+"\n");   
    
    FileWriteString(fileTestStat,"когда последний экстремум - нижний: \n");  
    
    FileWriteString(fileTestStat,"тренд вверх: \n");
-   FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_up_tup2)+" низ: "+IntegerToString(flat_a_up_tdown2)+"\n");
-   FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_up_tup2)+" низ: "+IntegerToString(flat_b_up_tdown2)+"\n");                                
-   FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_up_tup2)+" низ: "+IntegerToString(flat_c_up_tdown2)+"\n");
-   FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_up_tup2)+" низ: "+IntegerToString(flat_d_up_tdown2)+"\n");   
-   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_up_tup2)+" низ: "+IntegerToString(flat_e_up_tdown2)+"\n");   
+   FileWriteString(fileTestStat,"флэт а: " + " верх: " + IntegerToString(flat_a_up_tup2) + " низ: "+IntegerToString(flat_a_up_tdown2)+"\n");
+   FileWriteString(fileTestStat,"флэт b: " + " верх: " + IntegerToString(flat_b_up_tup2) + " низ: "+IntegerToString(flat_b_up_tdown2)+"\n");                                
+   FileWriteString(fileTestStat,"флэт c: " + " верх: " + IntegerToString(flat_c_up_tup2) + " низ: "+IntegerToString(flat_c_up_tdown2)+"\n");
+   FileWriteString(fileTestStat,"флэт d: " + " верх: " + IntegerToString(flat_d_up_tup2) + " низ: "+IntegerToString(flat_d_up_tdown2)+"\n");   
+   FileWriteString(fileTestStat,"флэт e: " + " верх: " + IntegerToString(flat_e_up_tup2) + " низ: "+IntegerToString(flat_e_up_tdown2)+"\n");   
    FileWriteString(fileTestStat,"тренд вниз: \n");
-   FileWriteString(fileTestStat,"флэт а: " + " верх: "+IntegerToString(flat_a_down_tup2)+" низ: "+IntegerToString(flat_a_down_tdown2)+"\n");
-   FileWriteString(fileTestStat,"флэт b: " + " верх: "+IntegerToString(flat_b_down_tup2)+" низ: "+IntegerToString(flat_b_down_tdown2)+"\n");                                
-   FileWriteString(fileTestStat,"флэт c: " + " верх: "+IntegerToString(flat_c_down_tup2)+" низ: "+IntegerToString(flat_c_down_tdown2)+"\n");
-   FileWriteString(fileTestStat,"флэт d: " + " верх: "+IntegerToString(flat_d_down_tup2)+" низ: "+IntegerToString(flat_d_down_tdown2)+"\n");   
-   FileWriteString(fileTestStat,"флэт e: " + " верх: "+IntegerToString(flat_e_down_tup2)+" низ: "+IntegerToString(flat_e_down_tdown2)+"\n");    
+   FileWriteString(fileTestStat,"флэт а: " + " верх: " + IntegerToString(flat_a_down_tup2)+" низ: "+IntegerToString(flat_a_down_tdown2)+"\n");
+   FileWriteString(fileTestStat,"флэт b: " + " верх: " + IntegerToString(flat_b_down_tup2)+" низ: "+IntegerToString(flat_b_down_tdown2)+"\n");                                
+   FileWriteString(fileTestStat,"флэт c: " + " верх: " + IntegerToString(flat_c_down_tup2)+" низ: "+IntegerToString(flat_c_down_tdown2)+"\n");
+   FileWriteString(fileTestStat,"флэт d: " + " верх: " + IntegerToString(flat_d_down_tup2)+" низ: "+IntegerToString(flat_d_down_tdown2)+"\n");   
+   FileWriteString(fileTestStat,"флэт e: " + " верх: " + IntegerToString(flat_e_down_tup2)+" низ: "+IntegerToString(flat_e_down_tdown2)+"\n");    
     
    FileClose(fileTestStat); 
    // удаляем объекты
@@ -246,7 +246,9 @@ void OnChartEvent(const int id,         // идентификатор события
            if (trendType == 1) 
             {
              if (timeUp0 > timeDown0)
+             {
               flat_a_up_tup ++;
+             }
              else
               flat_a_up_tup2 ++;
             }
