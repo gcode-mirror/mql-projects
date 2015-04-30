@@ -37,7 +37,6 @@ input bool useClose = true; // закрытие позиции в противоположном тренде
 input bool use19Lines = true; // 19 линий
 input bool checkFilter = true; // фильтр входных сигналов 
 
-
 // переменные робота 
 datetime history_start;
 //торговый класс
@@ -77,13 +76,13 @@ bool trendM15Now = false;
 // направление открытия позиции
 int posOpenedDirection = 0;
 // флаги первых загрузок трендов
-bool firstUploadedM1 = false; 
+bool firstUploadedM1 = false;
 bool firstUploadedM5 = false;
 bool firstUploadedM15 = false;
 // периоды старших ТФ 
-ENUM_TIMEFRAMES eldPeriodForM1 = GetTopTimeframe(PERIOD_M1); 
-ENUM_TIMEFRAMES eldPeriodForM5 = GetTopTimeframe(PERIOD_M5); 
-ENUM_TIMEFRAMES eldPeriodForM15 = GetTopTimeframe(PERIOD_M15); 
+ENUM_TIMEFRAMES eldPeriodForM1 = GetTopTimeframe(PERIOD_M1);
+ENUM_TIMEFRAMES eldPeriodForM5 = GetTopTimeframe(PERIOD_M5);
+ENUM_TIMEFRAMES eldPeriodForM15 = GetTopTimeframe(PERIOD_M15);
 
 //+------------------------------------------------------------------+
 //| Инициализация эксперта                                           |
@@ -131,7 +130,7 @@ int OnInit()
      return (INIT_FAILED);
     }
    SetIndicatorByHandle(_Symbol,_Period,handleDE_M15);
-  }    
+  }      
   //----------- Конец обработки индикатора DrawExtremums
         
   //----------- Обработка индикатора NineTeenLines
