@@ -142,6 +142,7 @@ void OnDeinit(const int reason)
    // удал€ем объекты
    delete trend; 
    delete container;
+
   }
 
 void OnTick()
@@ -487,7 +488,6 @@ bool IsFlatE ()
  // дополнительные функции
  void GenFlatName ()  // создает линии флэта
   {
-
    flatLine.Create(0, "flatUp_" + countFlat, 0, timeUp0, extrUp0, timeUp1, extrUp1); // верхн€€ лини€  
    flatLine.Color(clrYellow);
    flatLine.Width(5);
@@ -497,12 +497,10 @@ bool IsFlatE ()
       
    Comment("flatUp = ",DoubleToString(extrUp0)," ",TimeToString(timeUp0),
            "\nflatDown = ",DoubleToString(extrDown0)," ",TimeToString(timeDown1)
-   
            );
    
    topLevel.Delete();
    topLevel.Create(0, "topLevel", 0, top_point);
    bottomLevel.Delete();
    bottomLevel.Create(0, "bottomLevel", 0, bottom_point);   
-   
   }
