@@ -212,8 +212,8 @@ void OnChartEvent(const int id,         // идентификатор события
      timeDown1 = container.GetExtrByIndex(2,EXTR_LOW).time;
      
      H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
-     top_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) + H*0.75;
-     bottom_point = SymbolInfoDouble(_Symbol,SYMBOL_BID) - H*0.75;     
+     top_point = extrUp0 + H*0.75;
+     bottom_point = extrDown0 - H*0.75;     
      flatType = 0;
      // вычисляем тип флэта
      if (IsFlatA())
