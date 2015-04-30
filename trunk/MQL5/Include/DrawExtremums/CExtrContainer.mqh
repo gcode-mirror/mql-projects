@@ -255,7 +255,10 @@ bool  CExtrContainer::UploadOnEvent(string sparam,double dparam,long lparam)
   {
    lastExtr =  new CExtremum(1, dparam, datetime(lparam), EXTR_FORMING); 
    if (lastExtr == NULL)
-    return false;
+    {
+     delete lastExtr;
+     return false;
+    }
    AddExtrToContainer(lastExtr);
     return true;
   } 
@@ -264,7 +267,10 @@ bool  CExtrContainer::UploadOnEvent(string sparam,double dparam,long lparam)
   {
    lastExtr = new CExtremum(-1, dparam, datetime(lparam), EXTR_FORMING); 
    if (lastExtr == NULL)
+   {
+    delete lastExtr;
     return false;
+   }
    AddExtrToContainer(lastExtr);
     return true;
   }  
@@ -276,11 +282,10 @@ bool  CExtrContainer::UploadOnEvent(string sparam,double dparam,long lparam)
 //+------------------------------------------------------------------+
 CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EXTR_BOTH)
 {
- CExtremum *extrERROR = new CExtremum(0,-1,0,EXTR_NO_TYPE);
  int k = 0;             //количество экстремумов соответствующего направления
  if(index >= _bufferExtr.Total() || index < 0) 
  {
-  return extrERROR;
+  return new CExtremum(0,-1,0,EXTR_NO_TYPE);;
  } 
  switch(extr_use)
  {
@@ -300,7 +305,7 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EX
      k++;
     }
    }
-   return extrERROR;
+   return new CExtremum(0,-1,0,EXTR_NO_TYPE);;
   break;
   case EXTR_LOW:
    for(int i = 0; i < _bufferExtr.Total(); i++) 
@@ -315,10 +320,10 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EX
      k++;
     }
    }
-   return extrERROR;
+   return new CExtremum(0,-1,0,EXTR_NO_TYPE);;
   break;
   default:
-  return extrERROR;
+  return new CExtremum(0,-1,0,EXTR_NO_TYPE);;
   break;
  }
 }
@@ -329,7 +334,6 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EX
 int CExtrContainer::GetExtrIndexByTime(datetime time)
 {
  CExtremum *extr;
- CExtremum *errorExtr = new CExtremum(0, -1, 0, EXTR_NO_TYPE);
  for(int i = 0; i < _bufferExtr.Total(); i++)
  {
   extr = _bufferExtr.At(i);
@@ -347,7 +351,6 @@ int CExtrContainer::GetExtrIndexByTime(datetime time)
 CExtremum *CExtrContainer::GetExtrByTime(datetime time)
 {
  CExtremum *extr;
- CExtremum *errorExtr = new CExtremum(0, -1, 0, EXTR_NO_TYPE);
  for(int i = 0; i < _bufferExtr.Total(); i++)
  {
   extr = _bufferExtr.At(i);
@@ -356,7 +359,7 @@ CExtremum *CExtrContainer::GetExtrByTime(datetime time)
    return extr;
   }
  }
- return errorExtr;
+ return new CExtremum(0,-1,0,EXTR_NO_TYPE);;
 }
 
 
@@ -458,11 +461,10 @@ ENUM_EXTR_USE CExtrContainer::GetPrevExtrType(void)
 //+------------------------------------------------------------------+
 CExtremum *CExtrContainer::GetLastFormedExtr(ENUM_EXTR_USE extr_use)
 {
- CExtremum *extrERROR = new CExtremum(0, -1, 0, EXTR_NO_TYPE);
  if(_bufferExtr.Total() < 2)
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s В контейнере недостаточно элементов чтобы обратиться к сформированному. Всего = %i", MakeFunctionPrefix(__FUNCTION__), _bufferExtr.Total())); 
-  return extrERROR;
+  return new CExtremum(0, -1, 0, EXTR_NO_TYPE);
  }     
  switch (extr_use)
  {
@@ -474,25 +476,24 @@ CExtremum *CExtrContainer::GetLastFormedExtr(ENUM_EXTR_USE extr_use)
     return GetExtrByIndex(1, EXTR_HIGH);//Возвращаем последний свформированный HIGH
    if(GetPrevExtrType() == EXTR_LOW)    //Если последний экстремум LOW. значит последний HIGH сформированный
     return GetExtrByIndex(0, EXTR_HIGH);
-   return extrERROR;
+   return new CExtremum(0, -1, 0, EXTR_NO_TYPE);
   break;
   case EXTR_LOW:
    if(GetPrevExtrType() == EXTR_LOW)    //Если последний экстремум LOW. значит он формирующийся
     return GetExtrByIndex(1, EXTR_LOW); //Возвращаем последний свформированный LOW
    if(GetPrevExtrType() == EXTR_HIGH)   //Если последний экстремум HIGH. значит последний LOW сформированный
     return GetExtrByIndex(0, EXTR_LOW);
-   return extrERROR;
+   return new CExtremum(0, -1, 0, EXTR_NO_TYPE);
   break;
  }
- return extrERROR;
+ return new CExtremum(0, -1, 0, EXTR_NO_TYPE);
 }
 CExtremum *CExtrContainer::GetLastFormingExtr()
 {
  if(_bufferExtr.Total() == 0)
  {
-  CExtremum *extrERROR = new CExtremum(0, -1, 0, EXTR_NO_TYPE);
   log_file.Write(LOG_DEBUG, StringFormat("%s В контейнере недостаточно элементов чтобы обратиться формирующемуся экстремуму. Всего = %i", MakeFunctionPrefix(__FUNCTION__), _bufferExtr.Total())); 
-  return extrERROR;
+  return new CExtremum(0, -1, 0, EXTR_NO_TYPE);
  }     
  return _bufferExtr.At(0);
 }

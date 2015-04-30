@@ -127,7 +127,10 @@ CTrend::CTrend(int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrU
 // деструктор класса
 CTrend::~CTrend()
  {
- 
+  delete _extrUp0;
+  delete _extrUp1;
+  delete _extrDown0;
+  delete _extrDown1;
  }
  
 double CTrend::GetPriceLineUp(datetime time) // возвращает цену на верхней линии 
@@ -214,6 +217,7 @@ CTrendChannel::CTrendChannel(int chartID, string symbol,ENUM_TIMEFRAMES period,i
 CTrendChannel::~CTrendChannel()
  {
   _bufferTrend.Clear();
+  delete _container;
  }
  
 // возвращает указатель на тренд по индексу
