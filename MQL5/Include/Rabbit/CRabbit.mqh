@@ -94,7 +94,6 @@ class CRabbit
    delete _trendChannel; 
   }
   
- 
  // метод возвращает сигнал открытия 
  int CRabbit::GetSignal(void)
   {
