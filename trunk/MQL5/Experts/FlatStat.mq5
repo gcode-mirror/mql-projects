@@ -66,6 +66,10 @@ double extrUp0,extrUp1;
 datetime timeUp0,timeUp1;
 double extrDown0,extrDown1;
 datetime timeDown0,timeDown1;
+
+datetime lastExtrTime;
+datetime tempLastExtrTime;  
+
 double H; // высота флэта
 double top_point; // верхняя точка, которую нужно достичь
 double bottom_point; // нижняя точка, которую нужно достичь
@@ -159,86 +163,23 @@ void OnTick()
    if (!firstUploaded || !firstUploadedTrend)
     return;
     
-   /*
-   Comment("mode = ",calcMode,
-           "\n тренд = ",trendType,
-           "\n флэт = ",flatType
-          );
-   */
-  }
-  
-// функция обработки внешних событий
-void OnChartEvent(const int id,         // идентификатор события  
-                  const long& lparam,   // параметр события типа long
-                  const double& dparam, // параметр события типа double
-                  const string& sparam  // параметр события типа string 
-                 )
-  {
-   int newDirection;
-   trend.UploadOnEvent(sparam,dparam,lparam);
-   container.UploadOnEvent(sparam,dparam,lparam);
-   // если сейчас режим "пока не было тренда"
-   if (calcMode == 0)
-    { 
-     trendNow = trend.IsTrendNow();
-     // если сейчас таки тренд 
-     if (trendNow)
+ if (calcMode == 3)
+    {
+      tempLastExtrTime = container.GetExtrByIndex(0,EXTR_BOTH).time;
+      tempTrendNow = trend.IsTrendNow();
+      
+      if (trendNow)
        {
-        // переходим в режим обработки флэтовых движений
-        calcMode = 1;
-        trendType = trend.GetTrendByIndex(0).GetDirection();
+        tempTrendType = //запомни тип найденного  тренда
        }
-    }
-   // если сейчас режим "нашли тренд, нужно искать ближайший флэт"
-   else if (calcMode == 1)
-    {
-     trendNow = trend.IsTrendNow();
-     // если сейчас не тренд
-     if (!trendNow)
-      {
-       // то значит сейчас флэт и мы переходим в режим обработки статистики
-       calcMode = 2;
-      }
-    }
-   // если сейчас режим "обрабатываем флэт"
-   else if (calcMode == 2)
-    {
-     // загружаем последние экстремумы
-     extrUp0 = container.GetExtrByIndex(1,EXTR_HIGH).price;
-     extrUp1 = container.GetExtrByIndex(2,EXTR_HIGH).price;
-     timeUp0 = container.GetExtrByIndex(1,EXTR_HIGH).time;
-     timeUp1 = container.GetExtrByIndex(2,EXTR_HIGH).time;
-     extrDown0 = container.GetExtrByIndex(1,EXTR_LOW).price;
-     extrDown1 = container.GetExtrByIndex(2,EXTR_LOW).price;
-     timeDown0 = container.GetExtrByIndex(1,EXTR_LOW).time;
-     timeDown1 = container.GetExtrByIndex(2,EXTR_LOW).time;
-     
-     H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
-     top_point = extrUp0 + H*0.75;
-     bottom_point = extrDown0 - H*0.75;     
-     flatType = 0;
-     // вычисляем тип флэта
-     if (IsFlatA())
-      flatType = 1;
-     if (IsFlatB())
-      flatType = 2;
-     if (IsFlatC())
-      flatType = 3;
-     if (IsFlatD())
-      flatType = 4;
-     if (IsFlatE())
-      flatType = 5;
-     // если удалось вычислить флэт
-     if (flatType != 0)
-      {
-       // переходим в режим подсчета статистики
-       calcMode = 3;
-       countFlat ++; // увеличиваем количество флэтов
-       GenFlatName (); // отрисовываем флэт
-      }                       
-    }
-   else if (calcMode == 3)
-    {
+      else // значит новый флэт? if(
+       {
+        // переписываем коридоры
+        trendType = tempTrendType;
+        
+       }
+      
+      if (tempLastExtrTime > lastExtrTime)
       // если цена достигла верхнего уровня
       if ( GreatOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),top_point) )
        {
@@ -420,8 +361,85 @@ void OnChartEvent(const int id,         // идентификатор события
         calcMode = 0; // снова возвращаемся в старый режим
         topLevel.Delete();           
         bottomLevel.Delete();
-       }       
+       } 
+      }       
+  }
+  
+
+  
+// функция обработки внешних событий
+void OnChartEvent(const int id,         // идентификатор события  
+                  const long& lparam,   // параметр события типа long
+                  const double& dparam, // параметр события типа double
+                  const string& sparam  // параметр события типа string 
+                 )
+  {
+   int newDirection;
+   trend.UploadOnEvent(sparam,dparam,lparam);
+   container.UploadOnEvent(sparam,dparam,lparam);
+   // если сейчас режим "пока не было тренда"
+   if (calcMode == 0)
+    { 
+     trendNow = trend.IsTrendNow();
+     // если сейчас таки тренд 
+     if (trendNow)
+       {
+        // переходим в режим обработки флэтовых движений
+        calcMode = 1;
+        trendType = trend.GetTrendByIndex(0).GetDirection();
+       }
     }
+   // если сейчас режим "нашли тренд, нужно искать ближайший флэт"
+   else if (calcMode == 1)
+    {
+     trendNow = trend.IsTrendNow();
+     // если сейчас не тренд
+     if (!trendNow)
+      {
+       // то значит сейчас флэт и мы переходим в режим обработки статистики
+       calcMode = 2;
+      }
+    }
+   // если сейчас режим "обрабатываем флэт"
+   else if (calcMode == 2)
+    {
+     // загружаем последние экстремумы
+     extrUp0 = container.GetExtrByIndex(1,EXTR_HIGH).price;
+     extrUp1 = container.GetExtrByIndex(2,EXTR_HIGH).price;
+     timeUp0 = container.GetExtrByIndex(1,EXTR_HIGH).time;
+     timeUp1 = container.GetExtrByIndex(2,EXTR_HIGH).time;
+     extrDown0 = container.GetExtrByIndex(1,EXTR_LOW).price;
+     extrDown1 = container.GetExtrByIndex(2,EXTR_LOW).price;
+     timeDown0 = container.GetExtrByIndex(1,EXTR_LOW).time;
+     timeDown1 = container.GetExtrByIndex(2,EXTR_LOW).time;
+     
+     lastExtrTime = container.GetExtrByIndex(0,EXTR_BOTH).time; // время последнего экстремума
+     
+     H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
+     top_point = extrUp0 + H*0.75;
+     bottom_point = extrDown0 - H*0.75;     
+     flatType = 0;
+     // вычисляем тип флэта
+     if (IsFlatA())
+      flatType = 1;
+     if (IsFlatB())
+      flatType = 2;
+     if (IsFlatC())
+      flatType = 3;
+     if (IsFlatD())
+      flatType = 4;
+     if (IsFlatE())
+      flatType = 5;
+     // если удалось вычислить флэт
+     if (flatType != 0)
+      {
+       // переходим в режим подсчета статистики
+       calcMode = 3;
+       countFlat ++; // увеличиваем количество флэтов
+       GenFlatName (); // отрисовываем флэт
+      }                       
+    }
+
   }   
   
 // функции обработки типов флэтов
