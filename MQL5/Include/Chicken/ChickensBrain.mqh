@@ -7,12 +7,12 @@
 #property link      "ht_tp://www.mql5.com"
 #property version   "1.00"
 
-#include <ColoredTrend/ColoredTrendUtilities.mqh>
-#include <Lib CisNewBarDD.mqh>
-#include <CompareDoubles.mqh>
-#include <StringUtilities.mqh>
+#include <ColoredTrend/ColoredTrendUtilities.mqh>  
+#include <Lib CisNewBarDD.mqh>              // использование нового бара
+#include <CompareDoubles.mqh>               // сравнение вещественных чисел
+#include <StringUtilities.mqh>              // строковое преобразование
 #include <CLog.mqh>                         // для лога
-#include <Chicken/ContainerBuffers.mqh>
+#include <Chicken/ContainerBuffers.mqh>     // класс контейнер буферов
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 16
@@ -147,10 +147,10 @@ int CChickensBrain::GetSignal()
    _sl_min     = MathMax((int)MathCeil((_highBorder - _lowBorder)*0.10/Point()), 50);
    _diff_high  = (_conbuf.GetHigh(_period).buffer[0] - _highBorder)/Point();
    _diff_low   = (_lowBorder - _conbuf.GetLow(_period).buffer[0])/Point();
-   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_highBorder,_diff_high,_sl_min,_lastTrend));
+   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %d > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_highBorder,_diff_high,_sl_min,_lastTrend));
    //PrintFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,closePrice[0],_highBorder,_diff_high,_sl_min,_lastTrend);
    log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
-   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %f > %d && _lastTrend = %d", _index_min, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_lowBorder,_diff_low,_sl_min,_lastTrend));
+   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %d > %d && _lastTrend = %d", _index_min, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_lowBorder,_diff_low,_sl_min,_lastTrend));
    log_file.Write(LOG_DEBUG, "_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY");
    if(_index_max < ALLOW_INTERVAL && GreatDoubles(_conbuf.GetClose(_period).buffer[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL)
    { 
