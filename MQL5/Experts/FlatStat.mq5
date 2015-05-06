@@ -164,21 +164,7 @@ void OnTick()
     return;
     
  if (calcMode == 3)
-    {
-      tempLastExtrTime = container.GetExtrByIndex(0,EXTR_BOTH).time;
-      tempTrendNow = trend.IsTrendNow();
-      
-      if (trendNow)
-       {
-        tempTrendType = //запомни тип найденного  тренда
-       }
-      else // значит новый флэт? if(
-       {
-        // переписываем коридоры
-        trendType = tempTrendType;
-        
-       }
-      
+    {      
       if (tempLastExtrTime > lastExtrTime)
       // если цена достигла верхнего уровня
       if ( GreatOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),top_point) )
