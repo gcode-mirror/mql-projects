@@ -26,8 +26,8 @@ bool firstUploadedTrend = false; // флаг загрузки истории трендов
 int  calcMode = 0;  // режим вычисления
 int  flatType = 0;
 int  trendType = 0;
-int  countFlat = 0;
 int  tempTrendType = 0;
+int  countDrawedFlat = 0; 
 // хэндлы
 int handleDE;
 // счетчики ситуаций для случаев, когда последний экстремум - верхний
@@ -163,11 +163,24 @@ void OnTick()
     }
    if (!firstUploaded || !firstUploadedTrend)
     return;
+  
+  Comment("Режим = ",calcMode,
+          "\n flatType = ", flatType,
+          "\n цена = ",SymbolInfoDouble(_Symbol,SYMBOL_BID),
+          "\n уровень UP = ",top_point, 
+          "\n уровень DOWN=",bottom_point
+          );
     
  if (calcMode == 3)
     {
+
+        
+      /*Comment("цена = ",SymbolInfoDouble(_Symbol,SYMBOL_BID),
+              "\n уровень = ",top_point );  
+    */
       if ( GreatOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),top_point) )
        {
+        Print("Пробили линию верхнюю SYMBOL_BID = ", SymbolInfoDouble(_Symbol,SYMBOL_BID), " top_point =  ",top_point );
         switch (flatType)
          {
           case 1: 
@@ -254,13 +267,14 @@ void OnTick()
           break;                                        
          }    
         calcMode = 0; // снова возвращаемся в старый режим 
-        countFlat ++; // увеличиваем количество флэтов  
         topLevel.Delete();           
-        bottomLevel.Delete();        
+        bottomLevel.Delete(); 
+        Print("Пробил верхний коридор");               
        }
       // если цена достигла нижнего уровня
       if ( LessOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),bottom_point) )
-       {
+       { 
+       Print("Пробили линию нижнюю SYMBOL_BID = ", SymbolInfoDouble(_Symbol,SYMBOL_BID), " bottom_point =  ",bottom_point );
         switch (flatType)
          {
           case 1: 
@@ -347,6 +361,7 @@ void OnTick()
         calcMode = 0; // снова возвращаемся в старый режим
         topLevel.Delete();           
         bottomLevel.Delete();
+        Print("Пробил нижний коридор");
        } 
       }       
   }
@@ -361,8 +376,12 @@ void OnChartEvent(const int id,         // идентификатор события
                  )
   {
    int newDirection;
+   
+   
+   
    trend.UploadOnEvent(sparam,dparam,lparam);
    container.UploadOnEvent(sparam,dparam,lparam);
+   
    // если сейчас режим "пока не было тренда"
    if (calcMode == 0)
     { 
@@ -390,16 +409,22 @@ void OnChartEvent(const int id,         // идентификатор события
    else if (calcMode == 2)
     {
      // загружаем последние экстремумы
-     extrUp0 = container.GetExtrByIndex(1,EXTR_HIGH).price;
-     extrUp1 = container.GetExtrByIndex(2,EXTR_HIGH).price;
-     timeUp0 = container.GetExtrByIndex(1,EXTR_HIGH).time;
-     timeUp1 = container.GetExtrByIndex(2,EXTR_HIGH).time;
-     extrDown0 = container.GetExtrByIndex(1,EXTR_LOW).price;
-     extrDown1 = container.GetExtrByIndex(2,EXTR_LOW).price;
-     timeDown0 = container.GetExtrByIndex(1,EXTR_LOW).time;
-     timeDown1 = container.GetExtrByIndex(2,EXTR_LOW).time;
      
-     lastExtrTime = container.GetExtrByIndex(0,EXTR_BOTH).time; // время последнего экстремума
+     extrUp0 = container.GetFormedExtrByIndex(0,EXTR_HIGH).price;
+     extrUp1 = container.GetFormedExtrByIndex(1,EXTR_HIGH).price;
+     timeUp0 = container.GetFormedExtrByIndex(0,EXTR_HIGH).time;
+     timeUp1 = container.GetFormedExtrByIndex(1,EXTR_HIGH).time;
+     extrDown0 = container.GetFormedExtrByIndex(0,EXTR_LOW).price;
+     extrDown1 = container.GetFormedExtrByIndex(1,EXTR_LOW).price;
+     timeDown0 = container.GetFormedExtrByIndex(0,EXTR_LOW).time;
+     timeDown1 = container.GetFormedExtrByIndex(1,EXTR_LOW).time;
+     
+     /*
+     Comment ("extr0 = ",DoubleToString(extrUp0),
+              "\nextrUp1 = ",DoubleToString(extrUp1) 
+             );
+     */
+     lastExtrTime = container.GetFormedExtrByIndex(0,EXTR_BOTH).time; // время последнего экстремума
      
      H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
      top_point = extrUp0 + H*0.75;
@@ -431,7 +456,7 @@ void OnChartEvent(const int id,         // идентификатор события
     
     else if (calcMode == 3)
      {
-      tempLastExtrTime = container.GetExtrByIndex(0, EXTR_BOTH).time;
+     // tempLastExtrTime = container.GetFormedExtrByIndex(0, EXTR_BOTH).time;
       trendNow = trend.IsTrendNow();
       if (trendNow)
        {
@@ -441,8 +466,7 @@ void OnChartEvent(const int id,         // идентификатор события
        {
         if (tempTrendType != 0) // новый флэт
          {
-          trendType = tempTrendType;
-          countFlat ++; // увеличиваем количество флэтов     
+          trendType = tempTrendType;   
           //Print("Новый флэт", countFlat);
          }
         //CreateFlatLine();
@@ -517,16 +541,14 @@ bool IsFlatE ()
  // дополнительные функции
  void CreateFlatLine ()  // создает линии флэта
   {
-   flatLine.Create(0, "flatUp_" + countFlat, 0, timeUp0, extrUp0, timeUp1, extrUp1); // верхняя линия  
+   
+   flatLine.Create(0, "flatUp_" + countDrawedFlat, 0, timeUp0, extrUp0, timeUp1, extrUp1); // верхняя линия  
    flatLine.Color(clrYellow);
-   flatLine.Width(5);
-   flatLine.Create(0,"flatDown_" + countFlat, 0, timeDown0, extrDown0, timeDown1, extrDown1); // нижняя линия
+   flatLine.Width(1);
+   flatLine.Create(0,"flatDown_" + countDrawedFlat, 0, timeDown0, extrDown0, timeDown1, extrDown1); // нижняя линия
    flatLine.Color(clrYellow);
-   flatLine.Width(5);
-      
-   Comment("flatUp = ",DoubleToString(extrUp0)," ",TimeToString(timeUp0),
-           "\nflatDown = ",DoubleToString(extrDown0)," ",TimeToString(timeDown1)
-           );
+   flatLine.Width(1);
+   countDrawedFlat ++;   
    
    topLevel.Delete();
    topLevel.Create(0, "topLevel", 0, top_point);
