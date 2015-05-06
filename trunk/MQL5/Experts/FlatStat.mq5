@@ -481,7 +481,7 @@ bool IsFlatD ()
 bool IsFlatE ()
  {
   //  если 
-  if ( GreatOrEqualDoubles (extrUp0-extrUp1,percent*H) &&
+  if ( GreatOrEqualDoubles (extrUp0 - extrUp1,percent*H) &&
        GreatOrEqualDoubles (extrDown1 - extrDown0,percent*H)
      )
     {
