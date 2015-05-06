@@ -70,6 +70,7 @@ class CExtrContainer  : public CObject
  CExtremum    *GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EXTR_BOTH); // возвращает экстремум по индексу, при учете extr_use
  CExtremum    *GetLastFormedExtr(ENUM_EXTR_USE extr_use);                     // возвращает последний сформированный по типу
  CExtremum    *GetLastFormingExtr();                                          // возвращает последний формирующийс€
+ CExtremum    *GetFormedExtrByIndex(int index, ENUM_EXTR_USE extr_use = EXTR_BOTH);
  ENUM_EXTR_USE GetPrevExtrType(void);
 };
  
@@ -309,6 +310,59 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EX
   break;
   case EXTR_LOW:
    for(int i = 0; i < _bufferExtr.Total(); i++) 
+   {
+    extrTemp = _bufferExtr.At(i);
+    if(extrTemp.direction == -1)
+    {
+     if(k == index)
+     {
+      return extrTemp;
+     }
+     k++;
+    }
+   }
+   return new CExtremum(0,-1,0,EXTR_NO_TYPE);;
+  break;
+  default:
+  return new CExtremum(0,-1,0,EXTR_NO_TYPE);;
+  break;
+ }
+}
+
+
+//+------------------------------------------------------------------+
+// ¬озвращ€ае только сформированный экстремум по индексу и типу                           |
+//+------------------------------------------------------------------+
+CExtremum *CExtrContainer::GetFormedExtrByIndex(int index, ENUM_EXTR_USE extr_use = EXTR_BOTH)
+{
+ int k = 0;             //количество экстремумов соответствующего направлени€
+ int in_index = index + 1;
+ if(index >= _bufferExtr.Total() || index < 0) 
+ {
+  return new CExtremum(0,-1,0,EXTR_NO_TYPE);
+ } 
+ switch(extr_use)
+ {
+  case EXTR_BOTH:
+   return(_bufferExtr.At(in_index));
+  break;
+  case EXTR_HIGH:
+   for(int i = 1; i < _bufferExtr.Total(); i++) 
+   {
+    extrTemp = _bufferExtr.At(i);
+    if(extrTemp.direction == 1)
+    {
+     if(k == index)
+     {
+      return extrTemp;
+     }
+     k++;
+    }
+   }
+   return new CExtremum(0,-1,0,EXTR_NO_TYPE);;
+  break;
+  case EXTR_LOW:
+   for(int i = 1; i < _bufferExtr.Total(); i++) 
    {
     extrTemp = _bufferExtr.At(i);
     if(extrTemp.direction == -1)
