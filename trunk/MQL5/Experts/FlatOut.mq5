@@ -139,9 +139,9 @@ void OnChartEvent(const int id,         // идентификатор события
          extrDown1 = container.GetFormedExtrByIndex(1,EXTR_LOW).price;
          extrUp0Time = container.GetFormedExtrByIndex(0,EXTR_HIGH).time;
          extrDown0Time = container.GetFormedExtrByIndex(0,EXTR_LOW).time;
-         Print ("Попали сюда и ждем чуда extr0 = ",TimeToString(extrUp0Time)," extrDown = ",TimeToString(extrDown0Time));
+        // Print ("Попали сюда и ждем чуда extr0 = ",TimeToString(extrUp0Time)," extrDown = ",TimeToString(extrDown0Time));
          //---------- обработка всех условий
-         
+       //  Print("flatA = ",IsFlatA()," flatD = ",IsFlatD());
          // если сейчас флэт А и последний экстремум - верхний
          if (IsFlatA() && extrUp0Time > extrDown0Time)
           {
@@ -155,7 +155,7 @@ void OnChartEvent(const int id,         // идентификатор события
           }
           
          // если сейчас флэт А и последний экстремум - верхний
-       /*  if (IsFlatA() && extrUp0Time > extrDown0Time)
+         if (IsFlatD() && extrUp0Time > extrDown0Time)
           {
            H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
            top_point = extrUp0 + H*0.75;
@@ -165,7 +165,7 @@ void OnChartEvent(const int id,         // идентификатор события
            pos_info.type = OP_BUY;
            ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);     
           }          
-       */    
+           
        // переходим в режим 0 (ищем другой тренд)
        mode = 0;
         
