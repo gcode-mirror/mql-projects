@@ -285,7 +285,7 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EX
  int k = 0;             //количество экстремумов соответствующего направления
  if(index >= _bufferExtr.Total() || index < 0) 
  {
-  return new CExtremum(0,-1,0,EXTR_NO_TYPE);;
+  return new CExtremum(0,-1,0,EXTR_NO_TYPE);
  } 
  switch(extr_use)
  {

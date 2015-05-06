@@ -196,7 +196,6 @@ class CTrendChannel
 // кодирование методов класса CTrendChannel
 CTrendChannel::CTrendChannel(int chartID, string symbol,ENUM_TIMEFRAMES period,int handleDE,double percent)
  {
-
   _chartID = chartID;
   _handleDE = handleDE;
   _symbol = symbol;

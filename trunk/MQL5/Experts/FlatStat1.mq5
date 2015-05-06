@@ -166,8 +166,6 @@ void OnTick()
     
  if (calcMode == 3)
     {
-      if (tempLastExtrTime > lastExtrTime)
-      // если цена достигла верхнего уровня
       if ( GreatOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),top_point) )
        {
         switch (flatType)
@@ -255,7 +253,8 @@ void OnTick()
             }
           break;                                        
          }    
-        calcMode = 0; // снова возвращаемся в старый режим  
+        calcMode = 0; // снова возвращаемся в старый режим 
+        countFlat ++; // увеличиваем количество флэтов  
         topLevel.Delete();           
         bottomLevel.Delete();        
        }
@@ -345,7 +344,6 @@ void OnTick()
             }
            break;                                        
          } 
-        countFlat ++; // увеличиваем количество флэтов     
         calcMode = 0; // снова возвращаемся в старый режим
         topLevel.Delete();           
         bottomLevel.Delete();
@@ -421,12 +419,16 @@ void OnChartEvent(const int id,         // идентификатор события
      // если удалось вычислить флэт
      if (flatType != 0)
       {
+       //topLevel.Delete();           
+       //bottomLevel.Delete();
        // переходим в режим подсчета статистики
        calcMode = 3;
-       CreateFletLine (); // отрисовываем флэт
+       CreateFlatLine(); // отрисовываем флэт
       } 
      tempTrendType = 0;                      
     }
+    
+    
     else if (calcMode == 3)
      {
       tempLastExtrTime = container.GetExtrByIndex(0, EXTR_BOTH).time;
@@ -438,7 +440,12 @@ void OnChartEvent(const int id,         // идентификатор события
       else // значит флэт
        {
         if (tempTrendType != 0) // новый флэт
-         trendType = tempTrendType;
+         {
+          trendType = tempTrendType;
+          countFlat ++; // увеличиваем количество флэтов     
+          //Print("Новый флэт", countFlat);
+         }
+        //CreateFlatLine();
         calcMode = 2;   // переходим в режим рассчета коридоа
        }
      }
@@ -508,7 +515,7 @@ bool IsFlatE ()
  }    
  
  // дополнительные функции
- void CreateFletLine ()  // создает линии флэта
+ void CreateFlatLine ()  // создает линии флэта
   {
    flatLine.Create(0, "flatUp_" + countFlat, 0, timeUp0, extrUp0, timeUp1, extrUp1); // верхняя линия  
    flatLine.Color(clrYellow);
