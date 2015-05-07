@@ -67,6 +67,10 @@ datetime timeUp0,timeUp1;
 double extrDown0,extrDown1;
 datetime timeDown0,timeDown1;
 
+//период тестирования 
+datetime timeStart;
+datetime timeFinish;
+
 datetime lastExtrTime;
 datetime tempLastExtrTime;  
 
@@ -98,7 +102,7 @@ int OnInit()
      SetIndicatorByHandle(_Symbol, _Period, handleDE);
     }  
     // создаем хэндл файла тестирования статистики прохождения уровней
-    fileTestStat = FileOpen("FlatStat/FlatStat_" + _Symbol+"_" + PeriodToString(_Period) + ".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+    fileTestStat = FileOpen("FlatStat 7.5.15/FlatStat_" + _Symbol+"_" + PeriodToString(_Period) + ".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
     if (fileTestStat == INVALID_HANDLE) //не удалось открыть файл
      {
       Print("Не удалось создать файл тестирования статистики прохождения уровней");
@@ -107,11 +111,14 @@ int OnInit()
    // создаем объекты классов
    container = new CExtrContainer(handleDE, _Symbol, _Period);
    trend = new CTrendChannel(0, _Symbol, _Period, handleDE, percent);
+   timeStart = TimeCurrent();
    return(INIT_SUCCEEDED);
   }
 
 void OnDeinit(const int reason)
   {
+   timeFinish = TimeCurrent();
+   FileWriteString(fileTestStat,"Запуск тестирвоания с " + TimeToString(timeStart) + " по " + TimeToString(timeFinish) + " \n");
    FileWriteString(fileTestStat,"когда последний экстремум - верхний: \n");  
    
    FileWriteString(fileTestStat,"тренд вверх: \n");
@@ -165,7 +172,6 @@ void OnTick()
     
  if (calcMode == 3)
     {      
-      if (tempLastExtrTime > lastExtrTime)
       // если цена достигла верхнего уровня
       if ( GreatOrEqualDoubles (SymbolInfoDouble(_Symbol,SYMBOL_BID),top_point) )
        {

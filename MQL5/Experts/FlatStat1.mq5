@@ -79,7 +79,10 @@ double extrUp0,extrUp1;
 datetime timeUp0,timeUp1;
 double extrDown0,extrDown1;
 datetime timeDown0,timeDown1;
-datetime tempLastExtrTime;  
+datetime tempLastExtrTime; 
+//период тестирования 
+datetime timeStart;
+datetime timeFinish;
 
 double H; // высота флэта
 double top_point; // верхняя точка, которую нужно достичь
@@ -118,11 +121,14 @@ int OnInit()
    // создаем объекты классов
    container = new CExtrContainer(handleDE, _Symbol, _Period);
    trend = new CTrendChannel(0, _Symbol, _Period, handleDE, percent);
+   timeStart = TimeCurrent();
    return(INIT_SUCCEEDED);
   }
 
 void OnDeinit(const int reason)
   {
+   timeFinish = TimeCurrent();
+   FileWriteString(fileTestStat,"Запуск тестирвоания с " + TimeToString(timeStart) + " по " + TimeToString(timeFinish) + " \n");
    FileWriteString(fileTestStat,"когда последний экстремум - верхний: \n");  
    
    FileWriteString(fileTestStat,"тренд вверх: \n");
@@ -218,12 +224,14 @@ void OnTick()
           case 1: 
            if (trendType == 1) 
             {
+             Print ("Верхняя граница пробита на флэте А trendType = ", trendType);
              if (timeUp0 > timeDown0)
              {
               flat_a_up_tup ++;
              }
              else
               flat_a_up_tup2 ++;
+              Print ("flat_a_up_tup = ", flat_a_up_tup, "flat_a_up_tup2 = ", flat_a_up_tup2);
             }
            if (trendType == -1)
             {
@@ -470,7 +478,6 @@ void OnChartEvent(const int id,         // идентификатор события
                   const string& sparam  // параметр события типа string 
                  )
   {
-   int newDirection;
    trend.UploadOnEvent(sparam,dparam,lparam);
    container.UploadOnEvent(sparam,dparam,lparam);
    
@@ -599,8 +606,8 @@ bool IsFlatB ()
 bool IsFlatC ()
  {
   //  если 
-  if ( LessOrEqualDoubles (MathAbs(extrUp1-extrUp0),percent*H) &&
-       LessOrEqualDoubles (MathAbs(extrDown0 - extrDown1),percent*H)
+  if ( LessOrEqualDoubles (MathAbs(extrUp1-extrUp0), percent*H) &&
+       LessOrEqualDoubles (MathAbs(extrDown0 - extrDown1), percent*H)
      )
     {
      return (true);
@@ -623,8 +630,8 @@ bool IsFlatD ()
 bool IsFlatE ()
  {
   //  если 
-  if ( GreatOrEqualDoubles (extrUp0-extrUp1,percent*H) &&
-       GreatOrEqualDoubles (extrDown1 - extrDown0,percent*H)
+  if ( GreatOrEqualDoubles (extrUp0-extrUp1, percent*H) &&
+       GreatOrEqualDoubles (extrDown1 - extrDown0, percent*H)
      )
     {
      return (true);
