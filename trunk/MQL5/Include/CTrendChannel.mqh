@@ -109,10 +109,10 @@ CTrend::CTrend(int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrU
   _period = period;
   _percent = percent;
   // создаем объекты экстремумов дл€ трендовых линий
-  _extrUp0   = new CExtremum(extrUp0.direction,extrUp0.price,extrUp0.time,extrUp0.state);
-  _extrUp1   = new CExtremum(extrUp1.direction,extrUp1.price,extrUp1.time,extrUp1.state);
-  _extrDown0 = new CExtremum(extrDown0.direction,extrDown0.price,extrDown0.time,extrDown0.state);
-  _extrDown1 = new CExtremum(extrDown1.direction,extrDown1.price,extrDown1.time,extrDown1.state);
+  _extrUp0   = extrUp0;//new CExtremum(extrUp0.direction,extrUp0.price,extrUp0.time,extrUp0.state);
+  _extrUp1   = extrUp1;//new CExtremum(extrUp1.direction,extrUp1.price,extrUp1.time,extrUp1.state);
+  _extrDown0 = extrDown0;//new CExtremum(extrDown0.direction,extrDown0.price,extrDown0.time,extrDown0.state);
+  _extrDown1 = extrDown1;//new CExtremum(extrDown1.direction,extrDown1.price,extrDown1.time,extrDown1.state);
   // генерируем уникальные имена трендовых линий
   GenUniqName();   
   // получаем тип движени€
@@ -145,8 +145,10 @@ double CTrend::GetPriceLineDown(datetime time) // возвращает цену на нижней лини
 
 void CTrend::ShowTrend(void) // отображает тренд на графике
  {
-  //_trendLine.Create(_chartID,_trendUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхн€€ лини€  
-  //_trendLine.Create(_chartID,_trendDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхн€€ лини€  
+  _trendLine.Create(_chartID,_trendUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхн€€ лини€ 
+  _trendLine.Color(clrRed); 
+  _trendLine.Create(_chartID,_trendDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхн€€ лини€  
+  _trendLine.Color(clrRed);
  }
 
 void CTrend::HideTrend(void) // скрывает тренд с графика
