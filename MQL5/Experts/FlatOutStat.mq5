@@ -21,6 +21,14 @@
 input double percent = 0.1; // процент
 input double volume = 1.0; // лот
 
+struct statElem
+ {
+  int count;    // количество таких случаев в истории
+  int trend;    // тип тренда 
+  int flat;     // тип флэта
+  int lastExtr; // тип последнего экстремума
+ };
+
 CTradeManager *ctm;
 CExtrContainer *container;
 CTrendChannel *trend;
@@ -32,6 +40,7 @@ string formedExtrHighEvent;
 string formedExtrLowEvent;
 int mode = 0;
 int trendType;
+int countFlat = 0;
 double H; // высота флэта
 double top_point; // верхняя точка, которую нужно достичь
 double bottom_point; // нижняя точка, которую нужно достичь
@@ -39,6 +48,16 @@ double extrUp0,extrUp1;
 double extrDown0,extrDown1;
 datetime extrUp0Time;
 datetime extrDown0Time;
+datetime extrUp1Time;
+datetime extrDown1Time;
+
+CChartObjectTrend flatLine; // объект класса флэтовой линии
+CChartObjectHLine topLevel; // верхний уровень
+CChartObjectHLine bottomLevel; // нижний уровень
+
+
+// массив ситуаций
+statElem elem[28];
 
 // структуры позиции и трейлинга
 SPositionInfo pos_info;      // структура информации о позиции
@@ -79,6 +98,8 @@ int OnInit()
    // сохраняем имена событий
    formedExtrHighEvent = GenUniqEventName("EXTR_UP_FORMED");
    formedExtrLowEvent = GenUniqEventName("EXTR_DOWN_FORMED");
+   // сбрасываем параметры ситуаций
+   ResetAllElems (); 
    return(INIT_SUCCEEDED);
   }
 
@@ -142,23 +163,32 @@ void OnChartEvent(const int id,         // идентификатор события
          extrDown0 = container.GetFormedExtrByIndex(0,EXTR_LOW).price;
          extrDown1 = container.GetFormedExtrByIndex(1,EXTR_LOW).price;
          extrUp0Time = container.GetFormedExtrByIndex(0,EXTR_HIGH).time;
+         extrUp1Time = container.GetFormedExtrByIndex(1,EXTR_HIGH).time;
          extrDown0Time = container.GetFormedExtrByIndex(0,EXTR_LOW).time;
+         extrDown1Time = container.GetFormedExtrByIndex(1,EXTR_LOW).time;
          
          //---------- обработка всех условий
 
-         // если сейчас флэт А и последний экстремум - верхний
-         if (IsFlatA() && extrUp0Time > extrDown0Time )
+         // если сейчас флэт А и последний экстремум - верхний, тренд вверх
+         if (IsFlatA() && extrUp0Time > extrDown0Time && trendType == 1 )
           {
-           H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
-           top_point = extrUp0 + H*0.75;
-           bottom_point = extrDown0 - H*0.75;
-           
-           pos_info.sl = int(MathAbs(SymbolInfoDouble(_Symbol,SYMBOL_BID)-bottom_point)/_Point);
-           pos_info.tp = int(MathAbs(SymbolInfoDouble(_Symbol,SYMBOL_BID)-top_point)/_Point);
-           pos_info.volume = volume;
-           pos_info.type = OP_BUY;
-           ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
+           CalcFlat(0,1,1,1);
           }
+         // если сейчас флэт А и последний экстремум - верхний, тренд вниз
+         if (IsFlatA() && extrUp0Time > extrDown0Time && trendType == -1 )
+          {
+           CalcFlat(1,1,1,-1);
+          }   
+         // если сейчас флэт А и последний экстремум - нижний, тренд вверх
+         if (IsFlatA() && extrUp0Time > extrDown0Time && trendType == -1 )
+          {
+           CalcFlat(2,1,-1,1);
+          }                    
+         // если сейчас флэт А и последний экстремум - нижний, тренд вниз
+         if (IsFlatA() && extrUp0Time > extrDown0Time && trendType == -1 )
+          {
+           CalcFlat(3,1,-1,-1);
+          }            
            
         
         }
@@ -233,3 +263,42 @@ bool IsFlatE ()
     }
   return (false);
  }
+ 
+void ResetAllElems ()
+ {
+  for (int i = 0;i<28;i++)
+   {
+    elem[i].count = 0;
+    elem[i].flat = 0;
+    elem[i].lastExtr = 0;
+    elem[i].trend = 0;
+   }
+ }
+ 
+ // дополнительные функции
+ void DrawFlatLines ()  // создает линии флэта
+  {
+   flatLine.Create(0, "flatUp_" + countFlat, 0, extrUp0Time, extrUp0, extrUp1Time, extrUp1); // верхняя линия  
+   flatLine.Color(clrYellow);
+   flatLine.Width(1);
+   flatLine.Create(0,"flatDown_" + countFlat, 0, extrDown0Time, extrDown0, extrDown1Time, extrDown1); // нижняя линия
+   flatLine.Color(clrYellow);
+   flatLine.Width(1);
+   countFlat ++;   
+   topLevel.Delete();
+   topLevel.Create(0, "topLevel", 0, top_point);
+   bottomLevel.Delete();
+   bottomLevel.Create(0, "bottomLevel", 0, bottom_point);   
+  } 
+  
+ // вычисление параметров текущего флэта при его обнаружениии
+ void CalcFlat (int index,int flatType,int lastExtr,int trend)
+  {
+   H = MathMax(extrUp0,extrUp1) - MathMin(extrDown0,extrDown1);
+   top_point = extrUp0 + H*0.75;
+   bottom_point = extrDown0 - H*0.75;
+   DrawFlatLines ();
+   elem[index].flat = 1;
+   elem[index].lastExtr = 1;
+   elem[index].trend = 1;
+  }
