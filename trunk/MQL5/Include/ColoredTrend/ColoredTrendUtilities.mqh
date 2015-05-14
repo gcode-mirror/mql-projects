@@ -81,15 +81,15 @@ ENUM_TIMEFRAMES GetTopTimeframe(ENUM_TIMEFRAMES timeframe)
       case PERIOD_M10: return(PERIOD_H1);
       case PERIOD_M12: return(PERIOD_H1);
       case PERIOD_M15: return(PERIOD_H4);
-      case PERIOD_M20: return(PERIOD_H1);
+      case PERIOD_M20: return(PERIOD_H4);
       case PERIOD_M30: return(PERIOD_H4);
-      case PERIOD_H1: return(PERIOD_H4);
+      case PERIOD_H1: return(PERIOD_D1);
       case PERIOD_H2: return(PERIOD_D1);
       case PERIOD_H3: return(PERIOD_D1);
-      case PERIOD_H4: return(PERIOD_D1);
-      case PERIOD_H6: return(PERIOD_D1);
-      case PERIOD_H8: return(PERIOD_D1);
-      case PERIOD_D1: return(PERIOD_W1);
+      case PERIOD_H4: return(PERIOD_W1);
+      case PERIOD_H6: return(PERIOD_W1);
+      case PERIOD_H8: return(PERIOD_W1);
+      case PERIOD_D1: return(PERIOD_MN1);
       case PERIOD_W1: return(PERIOD_MN1);
       case PERIOD_MN1: return(PERIOD_MN1);
       default: 

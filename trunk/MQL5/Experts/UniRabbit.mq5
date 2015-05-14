@@ -166,6 +166,11 @@ int OnInit()
  
  handle_aATR_M1=iMA(_Symbol,PERIOD_M1,100,0,MODE_EMA,iATR(_Symbol,PERIOD_M1,30));        
  
+ pos_info.expiration = 0; 
+ pos_info.expiration_time = 0;
+ pos_info.volume = volume;
+ pos_info.priceDifference = priceDifference; 
+   
  trailing.trailingType = TRAILING_TYPE_NONE;
  trailing.trailingStop = 0;
  trailing.trailingStep = 0;
@@ -215,7 +220,7 @@ void OnTick()
  if(isNewBarM1.isNewBar()>0)
  {
   // получаем сигнал на M1 
-  GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent, pos_info);
+  GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent);
   
   // если два последних тренда существуют
   if (trendM1.GetTrendByIndex(0)!=NULL && trendM1.GetTrendByIndex(1)!=NULL)
@@ -250,7 +255,6 @@ void OnTick()
       tempPosDirection = 0;
       signalM1 = 0;  
      }
-       
    }
  }
  
@@ -258,7 +262,7 @@ void OnTick()
  if(isNewBarM5.isNewBar()>0)
  {
   // получаем сигнал на M5 
-  GetTradeSignal(PERIOD_M5, handle_aATR_M5, M5_supremacyPercent, pos_info);
+  GetTradeSignal(PERIOD_M5, handle_aATR_M5, M5_supremacyPercent);
   
   // если два последних тренда существуют
   if (trendM5.GetTrendByIndex(0)!=NULL && trendM5.GetTrendByIndex(1)!=NULL)
@@ -301,7 +305,7 @@ void OnTick()
  if(isNewBarM15.isNewBar()>0)
  {
   // получаем сигнал на M15 
-  GetTradeSignal(PERIOD_M15, handle_aATR_M15, M15_supremacyPercent, pos_info);
+  GetTradeSignal(PERIOD_M15, handle_aATR_M15, M15_supremacyPercent);
   
   // если два последних тренда существуют
   if (trendM15.GetTrendByIndex(0)!=NULL && trendM15.GetTrendByIndex(1)!=NULL)
@@ -416,7 +420,7 @@ void OnChartEvent(const int id,         // идентификатор события
   } 
 
 //функция получения торгового сигнала (возвращает заполненную структуру позиции) 
-void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent, SPositionInfo &pos)
+void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent)
 {   
  //если не удалось прогрузить все буферы 
  if (CopyClose(_Symbol,tf,1,1,close_buf)<1 ||
@@ -433,38 +437,34 @@ void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,
   if(LessDoubles(close_buf[0], open_buf[0])) // на последнем баре close < open (бар вниз)
   {   
    
-   pos.tp=(int)MathCeil((MathAbs(open_buf[0] - close_buf[0])/_Point)*(1+profitPercent));
-   pos.sl=CountStoploss(tf,-1);
+   pos_info.tp=(int)MathCeil((MathAbs(open_buf[0] - close_buf[0])/_Point)*(1+profitPercent));
+   pos_info.sl=CountStoploss(tf,-1);
    
    //если вычисленный тейк профит в kp раза или более раз больше, чем вычисленный стоп лосс
-   if(pos.tp >= KO*pos.sl)
-    pos.type = opSell;
+   if(pos_info.tp >= KO*pos_info.sl)
+    pos_info.type = opSell;
    else
    {
-    pos.type = OP_UNKNOWN;
+    pos_info.type = OP_UNKNOWN;
     return;
    }   
   }
   if(GreatDoubles(close_buf[0], open_buf[0]))
   { 
       
-   pos.tp = (int)MathCeil((MathAbs(open_buf[0] - close_buf[0])/_Point)*(1+profitPercent));
-   pos.sl = CountStoploss(tf,1);
+   pos_info.tp = (int)MathCeil((MathAbs(open_buf[0] - close_buf[0])/_Point)*(1+profitPercent));
+   pos_info.sl = CountStoploss(tf,1);
    // если вычисленный тейк профит в kp раза или более раз больше, чем вычисленный стоп лосс
-   if(pos.tp >= KO*pos.sl)
-    pos.type = opBuy;
+   if(pos_info.tp >= KO*pos_info.sl)
+    pos_info.type = opBuy;
    else
    {
-    pos.type = OP_UNKNOWN;
+    pos_info.type = OP_UNKNOWN;
     return;
    }
   }
-  pos.expiration = 0; 
-  pos.expiration_time = 0;
-  pos.volume = volume;
-  pos.priceDifference = priceDifference; 
   // выставляем minProfit как два стоп лосса
-  trailing.minProfit = pos.sl*2;
+  trailing.minProfit = pos_info.sl*2;
  }
  ArrayInitialize(ave_atr_buf,EMPTY_VALUE);
  ArrayInitialize(close_buf,EMPTY_VALUE);
