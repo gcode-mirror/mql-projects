@@ -49,6 +49,7 @@ double bottomLevel; // нижний уровень, который нужно пробить
 double H;  // ширина канала
 int lastTrendDirection = 0; // направление последнего тренда
 int flatType = 0; // тип флэта
+int lastExtr = 0; // последний экстремум
 int mode = 0; // режим
 
 stat_elem stat[]; // буфер статистики
@@ -86,6 +87,8 @@ int OnInit()
 
 void OnDeinit(const int reason)
   {
+   // сохраняем файл статистики
+   SaveStatToFile ();   
    delete extrContainer;
    delete moveContainer;
   }
@@ -139,6 +142,10 @@ void OnChartEvent(const int id,         // идентификатор события
    // то загружаем данные в контейнер экстремумов и трендов
    moveContainer.UploadOnEvent(sparam,dparam,lparam);
    extrContainer.UploadOnEvent(sparam,dparam,lparam); 
+   if (sparam == eventExtrUpFormed)
+    lastExtr = 1;
+   if (sparam == eventExtrDownFormed)
+    lastExtr = -1;
    // если пришло событие "сформировался экстремум"
    if (sparam == eventExtrUpFormed || sparam == eventExtrDownFormed)
     { 
@@ -189,8 +196,12 @@ void OnChartEvent(const int id,         // идентификатор события
         // если пришел другой тренд
         if (moveContainer.GetMoveByIndex(0).GetMoveType() == 1 || moveContainer.GetMoveByIndex(0).GetMoveType() == -1)
          {
-          mode = 0;
+          // переводим в режим поиска ситуации
+          mode = 0; 
+          // удаляем канал
           DeleteChannel ();
+          // сохраняем ситуацию
+         // SaveFlatParams (lastTrendDirection,flatType,
          }
        }
      
@@ -250,4 +261,51 @@ string GetFlatTypeStat (string flatType,int trend,int flat,int extr)
   // формируем строку
   str = "Тип флэта: "+flatType+" тренд: "+trend+" flat: "+flat+" extr: "+extr+" верха: "+countUp+" низа: "+countDown;
   return str;
+ }
+ 
+// функция сохраняет статистику в файл
+void SaveStatToFile ()
+ {
+   // создаем хэндл файла тестирования статистики прохождения уровней
+   int fileTestStat = FileOpen("AnotherFlatStat/FlatStat_" + _Symbol+"_" + PeriodToString(_Period) + ".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+   if (fileTestStat == INVALID_HANDLE) //не удалось открыть файл
+     {
+      Print("Не удалось создать файл тестирования статистики прохождения уровней");
+      return;
+     }
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("A",1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("A",1,1,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("A",-1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("A",-1,1,-1)+"\n\n");    
+
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",1,1,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",-1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",-1,1,-1)+"\n\n"); 
+   
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",1,1,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",-1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",-1,1,-1)+"\n\n"); 
+
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",1,1,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",-1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",-1,1,-1)+"\n\n"); 
+   
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",1,1,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",-1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",-1,1,-1)+"\n\n"); 
+   
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",1,1,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",-1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",-1,1,-1)+"\n\n"); 
+   
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",1,1,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",-1,1,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",-1,1,-1)+"\n\n");                                         
+   FileClose(fileTestStat);
  }
