@@ -291,7 +291,7 @@ CExtremum *CExtrContainer::GetExtrByIndex(int index, ENUM_EXTR_USE extr_use = EX
  switch(extr_use)
  {
   case EXTR_BOTH:
-   return(_bufferExtr.At(index));
+    return(_bufferExtr.At(index));
   break;
   case EXTR_HIGH:
    for(int i = 0; i < _bufferExtr.Total(); i++) 
