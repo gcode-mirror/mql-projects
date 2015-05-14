@@ -16,45 +16,43 @@
 //+------------------------------------------------------------------+
 //| Expert parametrs                                                 |
 //+------------------------------------------------------------------+
-input double  volume  = 0.1;
+input double  volume  = 0.1;        // размер лота
 input int     spread  = 30;         // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
-input bool    use_tp  = false;
-input double   tp_ko  = 2;
-input bool tradeTFM5  = true;
-input bool tradeTFM15 = true;
-input bool tradeTFH1  = true;
+input bool    use_tp  = false;      // использование takeProfit
+input double   tp_ko  = 2;          //
+input bool tradeTFM5  = true;       // осуществление торговли на  М5
+input bool tradeTFM15 = true;       // осуществление торговли на  M15
+input bool tradeTFH1  = true;       // осуществление торговли на Н1
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 /*
 input int minProfit = 250;
 input int trailingStop = 150;
 input int trailingStep = 5;
 */
-struct STradeTF
+struct STradeTF  // хранение данных, соотносимых к определенному Тф
 {
- bool used;
- ENUM_TIMEFRAMES period;
- STrailing trailing;
- CChickensBrain *chicken;
+ ENUM_TIMEFRAMES period;   // период Тф
+ bool used;                // использование данного Тф                           
+ STrailing trailing;       // трэйлинг, используемый на этом Тф 
+ CChickensBrain *chicken;  // chicken - класс, производящий основные рассчеты 
+                           // и возвращающий сигнал на торговлю (SELL/BUY)
 };
 
-SPositionInfo pos_info;
+SPositionInfo pos_info;    
 STrailing trailing;
-STradeTF  tradeTF[3];
+STradeTF  tradeTF[3];      // массив Тф, на которых может производииться торговля
 
 STradeTF    tradeM5;
 STradeTF    tradeM15;
 STradeTF    tradeH1;
-//double      buffer_pbi[];
-//double      buffer_high[];
-//double      buffer_low[];
 
 CTradeManager *ctm;
-CContainerBuffers *conbuf;
-
-//double highPrice[], lowPrice[], closePrice[];
+CContainerBuffers *conbuf; // буфер контейнеров на различных Тф, заполняемый на OnTick()
+                           // highPrice[], lowPrice[], closePrice[] и т.д;
 bool   closePosition;
 int    tmpLastBar;
 int    handle;
+int    fileTrade; // хэндл файла
             
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -79,11 +77,18 @@ int OnInit()
  tradeTF[1] = tradeM15; // 1 - индекс таймфрейма М15
  tradeTF[2] = tradeH1;  // 2 - индекс таймфрейма H1
  ctm = new CTradeManager();
- for(int i = 0; i < 3; i++)
+ fileTrade = FileOpen("ChickenMultiTFwithBrains/Chicken 8.05.15/Trade" + _Symbol +".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+ if (fileTrade == INVALID_HANDLE) //не удалось открыть файл
  {
-  if(tradeTF[i].used == true)
+  Print("Не удалось создать файл тестирования статистики прохождения уровней");
+  return (INIT_FAILED);
+ }      
+      
+ for(int i = 0; i < 3; i++)  // проходим по каждому Тф
+ {
+  if(tradeTF[i].used == true) // если Тф включен в число используемых
   {
-   if(trailingType == TRAILING_TYPE_PBI)
+   if(trailingType == TRAILING_TYPE_PBI) 
    {
     //handle = DoesIndicatorExist(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
     //if (handle == INVALID_HANDLE)
@@ -108,7 +113,7 @@ int OnInit()
      return (INIT_FAILED);
     }
    }
-   tradeTF[i].trailing.trailingType = trailingType;
+   tradeTF[i].trailing.trailingType = trailingType; //заполняем тип трэйлинга для i-ого Тф
    tradeTF[i].trailing.handleForTrailing = handle;
    /*
    trailing.minProfit    = minProfit;
@@ -138,6 +143,7 @@ void OnDeinit(const int reason)
    IndicatorRelease(tradeTF[i].trailing.handleForTrailing);
   } 
  }
+ FileClose(fileTrade); 
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -152,21 +158,21 @@ void OnTick()
  double curBid;
  ctm.OnTick();
  ctm.DoTrailing();
- if(conbuf.Update()) // если удалось прогрузить буферы на всех таймфреймах переходим к алгоритму
+ if(conbuf.Update()) // если удалось прогрузить буферы на всех таймфреймах переходим к алгоритму(BarsCalculated(handle)>0 )
  {
   for(int i = 0; i < 3; i++)
   { 
    // если i-ый таймфрейм используется
    if(tradeTF[i].used == true)
    {
-    long magic = ctm.MakeMagic(_Symbol, tradeTF[i].period);
+    long magic = ctm.MakeMagic(_Symbol, tradeTF[i].period);// создаем уникальный номер для позиции на Тф
     curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
     curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-    chickenSignal = tradeTF[i].chicken.GetSignal(); // получаем сигнал с ChickensBrain
+    chickenSignal = tradeTF[i].chicken.GetSignal();        // получаем сигнал с ChickensBrain
     if(chickenSignal == SELL || chickenSignal == BUY)
     {
      if(chickenSignal == SELL)
-     {
+     {// запоняем позицию на SELL
       log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу SELL", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
       pos_info.type = OP_SELLSTOP; 
       pos_info.sl = tradeTF[i].chicken.GetDiffHigh();
@@ -174,7 +180,7 @@ void OnTick()
       tradeTF[i].trailing.trailingStop = tradeTF[i].chicken.GetDiffHigh();
      }
      if(chickenSignal == BUY)
-     {
+     {// запоняем позицию на BUY
       log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу BUY", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
       pos_info.type = OP_BUYSTOP;
       pos_info.sl   = tradeTF[i].chicken.GetDiffLow();
@@ -188,18 +194,20 @@ void OnTick()
      pos_info.priceDifference = tradeTF[i].chicken.GetPriceDifference();
      pos_info.expiration = MathMax(DEPTH - tradeTF[i].chicken.GetIndexMax(), DEPTH - tradeTF[i].chicken.GetIndexMin());
      tradeTF[i].trailing.trailingStep = 5;
-     if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko)
+     if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko) //елси tp вычислен верно открываем позицию
      {
       log_file.Write(LOG_DEBUG, StringFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
+      FileWriteString(fileTrade, "Была открыта позиция на" + _Symbol+ "на" + PeriodToString(tradeTF[i].period) +" \n");
+      FileWriteString(fileTrade, StringFormat("%s, date = %s ,tp = %d, sl = %d", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent()), pos_info.tp, pos_info.sl)); 
       ctm.OpenMultiPosition(_Symbol, _Period, pos_info, tradeTF[i].trailing, spread);
      }
     }
-    if(chickenSignal == NO_POSITION)
+    if(chickenSignal == NO_POSITION) // если пришел сигнал NO_POSITION закрываем текущую позицию
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал NO_POSITION", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(tradeTF[i].period)));
+     log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал NO_POSITION", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION), PeriodToString(tradeTF[i].period)));
      ctm.ClosePendingPosition(_Symbol, magic);
     }
-    else if(ctm.GetPositionCount() != 0)
+    else if(ctm.GetPositionCount() != 0) //если сигнала NO_POSITION не было, меняем стоплосс и закрываем позицию по условию
     {
      ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol, magic);
      if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol, magic) < curAsk) 

@@ -9,6 +9,7 @@
 
 #include <Lib CisNewBarDD.mqh>
 #include <TradeManager\TradeManager.mqh>
+#include <CLog.mqh>                                
 
 
 #define DEPTH 20
@@ -74,6 +75,7 @@ int OnInit()
   PrintFormat("tradeTFM5 = %b, tradeTFM15 = %b, tradeTFH1 = %b",tradeTFM5,tradeTFM15,tradeTFH1);
   return(INIT_FAILED);
  }
+ 
   log_file.Write(LOG_DEBUG, "ChickenMultiTF запущен");
  ctm = new CTradeManager();
   
@@ -172,6 +174,7 @@ void OnTick()
     {
      tradeTF[i].lastTrend = tmpLastBar;
     }
+    log_file.Write(LOG_DEBUG,StringFormat("buffer_pbi[0] = %i index_max = %d, index_min = %d", buffer_pbi[0],index_max, index_min ));
     if (buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
     {
      highBorder = buffer_high[index_max];
@@ -183,12 +186,12 @@ void OnTick()
      stoplevel = MathMax(sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
      pos_info.tp = 0;
      
-     log_file.Write(LOG_DEBUG,StringFormat("time[0] = %s", TimeToString(TimeCurrent())));
-     log_file.Write(LOG_DEBUG,StringFormat("_lowBorder = %f  - Low[DEPTH] = %f ",  lowBorder, buffer_low[DEPTH - 1]));
-     log_file.Write(LOG_DEBUG,StringFormat("High[DEPTH] = %f  - _highBorder = %f ", buffer_high[DEPTH - 1], highBorder)); 
+     log_file.Write(LOG_DEBUG, StringFormat("Время = %s ТФ = %s", TimeToString(TimeCurrent()), PeriodToString(tradeTF[i].period)));
+     log_file.Write(LOG_DEBUG, StringFormat("buffer_pbi[0] == %d  _index_max = %d _index_min = %d", MOVE_TYPE_FLAT, index_max ,index_min ));
+     log_file.Write(LOG_DEBUG,StringFormat("_lowBorder ( %f )  - Low[DEPTH] ( %f ) = %f",  lowBorder, buffer_low[DEPTH - 1], lowBorder - buffer_low[DEPTH - 1]));
+     log_file.Write(LOG_DEBUG,StringFormat("High[DEPTH]( %f )  - _highBorder( %f ) = %f", buffer_high[DEPTH - 1], highBorder, buffer_high[DEPTH - 1]- highBorder)); 
      
      log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", index_max, ALLOW_INTERVAL,closePrice[0],highBorder,diff_high,sl_min,tradeTF[i].lastTrend));
-     //PrintFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,closePrice[0],_highBorder,_diff_high,_sl_min,_lastTrend);
      log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
      log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %f > %d && _lastTrend = %d", index_min, ALLOW_INTERVAL,closePrice[0],lowBorder,diff_low,sl_min,tradeTF[i].lastTrend));
      log_file.Write(LOG_DEBUG, "_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY");

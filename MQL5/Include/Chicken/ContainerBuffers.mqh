@@ -47,14 +47,14 @@ class CBufferTF : public CObject      //не лучше ли добавить handle сюда?
 class CContainerBuffers
 {
  private: 
- CArrayObj  *_bufferHigh;
- CArrayObj  *_bufferLow;
- CArrayObj  *_bufferPBI;
- CArrayObj  *_bufferClose;
- CArrayObj  *_allNewBars;
+ CArrayObj  *_bufferHigh; // массив буферов High на всех таймфреймах
+ CArrayObj  *_bufferLow;  // массив буферов Low на всех таймфреймах
+ CArrayObj  *_bufferPBI;  // массив буферов PBI на всех таймфреймах
+ CArrayObj  *_bufferClose;// массив буферов Close на всех таймфреймах
+ CArrayObj  *_allNewBars; // массив newbars для каждого Тф
  
- int     _handlePBI[];
- int     _tfCount;
+ int     _handlePBI[];    // массив хэндлов PBI
+ int     _tfCount;        // количесвто Тф
  
  bool    _handleAvailable[];
  double  tempBuffer[];
@@ -80,7 +80,7 @@ class CContainerBuffers
 //+------------------------------------------------------------------+
 CContainerBuffers::CContainerBuffers(ENUM_TIMEFRAMES &TFs[])
 {
- ArrayCopy(_TFs, TFs);   //не особо нужно пока
+ ArrayCopy(_TFs, TFs);           //не особо нужно пока
  _tfCount =  ArraySize(TFs);
  _bufferHigh  = new CArrayObj();
  _bufferLow   = new CArrayObj();
@@ -137,13 +137,13 @@ bool CContainerBuffers::Update()
    CBufferTF *bufferLow  =  _bufferLow.At(i);
    CBufferTF *bufferPBI  =  _bufferPBI.At(i);
    CBufferTF *bufferClose = _bufferClose.At(i);
-   ArraySetAsSeries(bufferHigh.buffer, false);
-   ArraySetAsSeries(bufferLow.buffer, false);
-   ArraySetAsSeries(bufferPBI.buffer, false);
-   ArraySetAsSeries(bufferClose.buffer, false); 
+   ArraySetAsSeries(bufferHigh.buffer, true);
+   ArraySetAsSeries(bufferLow.buffer, true);
+   ArraySetAsSeries(bufferPBI.buffer, true);
+   ArraySetAsSeries(bufferClose.buffer, true); 
    if(GetNewBar(_TFs[i]).isNewBar()||recalculate)
    { 
-    if(CopyHigh(_Symbol, bufferHigh.GetTF(), 0, DEPTH_MAX, bufferHigh.buffer)   < DEPTH_MAX) // цена закрытия последнего сформированного бара
+    if(CopyHigh(_Symbol, bufferHigh.GetTF(), 1, DEPTH_MAX, bufferHigh.buffer)   < DEPTH_MAX) // цена закрытия последнего сформированного бара
     {
      bufferHigh.SetAvailable(false); 
      log_file.Write(LOG_DEBUG,StringFormat("%s Ошибка при копировании буфера High на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferHigh.GetTF())));
@@ -157,7 +157,7 @@ bool CContainerBuffers::Update()
      PrintFormat("%s Ошибка при копировании буфера Low на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferLow.GetTF()));
      return false;
     }   
-    if(CopyClose(_Symbol, bufferClose.GetTF(), 1, DEPTH_MIN, bufferClose.buffer)   < DEPTH_MIN)     // буфер минимальных цен всех сформированных баров на заданую глубину
+    if(CopyClose(_Symbol, bufferClose.GetTF(), 0, DEPTH_MIN, bufferClose.buffer)   < DEPTH_MIN)     // буфер минимальных цен всех сформированных баров на заданую глубину
     {
      bufferClose.SetAvailable(false);
      log_file.Write(LOG_DEBUG,StringFormat("%s Ошибка при копировании буфера Low на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferClose.GetTF())));

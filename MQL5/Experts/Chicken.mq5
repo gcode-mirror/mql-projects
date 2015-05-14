@@ -131,9 +131,10 @@ void OnTick()
   {
    lastTrend = tmpLastBar;
   }
-  
+  log_file.Write(LOG_DEBUG,StringFormat("buffer_pbi[0] = %i index_max = %d, index_min = %d", buffer_pbi[0],index_max, index_min ));
   if (buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
   {
+   
    highBorder = buffer_high[index_max];
    lowBorder = buffer_low[index_min];
    sl_min = MathMax((int)MathCeil((highBorder - lowBorder)*0.10/Point()), 50);
@@ -143,7 +144,16 @@ void OnTick()
    stoplevel = MathMax(sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
  
    pos_info.tp = 0;
+   //отладка удалить
    
+   log_file.Write(LOG_DEBUG, StringFormat("Время = %s ТФ = %s", TimeToString(TimeCurrent()), PeriodToString(_Period)));
+   log_file.Write(LOG_DEBUG, StringFormat("buffer_pbi[0] == %d  _index_max = %d _index_min = %d", MOVE_TYPE_FLAT, index_max ,index_min ));
+   log_file.Write(LOG_DEBUG, StringFormat("lowBorder ( %f )  - Low[DEPTH] ( %f ) = %f",  lowBorder, buffer_low[DEPTH - 1], lowBorder - buffer_low[DEPTH - 1]));
+   log_file.Write(LOG_DEBUG, StringFormat("High[DEPTH]( %f )  - _highBorder( %f ) = %f", buffer_high[DEPTH - 1], highBorder, buffer_high[DEPTH - 1]- highBorder));
+   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %d > %d && _lastTrend = %d", index_max, ALLOW_INTERVAL,closePrice[0],highBorder,diff_high,sl_min,lastTrend));
+   log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
+   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %d > %d && _lastTrend = %d", index_min, ALLOW_INTERVAL,closePrice[0],lowBorder,diff_low,sl_min,lastTrend));
+   log_file.Write(LOG_DEBUG, "_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY");
    if(index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], highBorder) && diff_high > sl_min && lastTrend == SELL)
    { 
     PrintFormat(" максимум = %.05f < цена = %.05f, sl_min = %d, diff_high = %d, last_high = %.05f, highBorder = %.05f, index_max = %d",
@@ -155,7 +165,7 @@ void OnTick()
     pos_info.tp = tp;
     pos_info.priceDifference = (closePrice[0] - highBorder)/Point();
     pos_info.expiration = MathMax(DEPTH - index_max, DEPTH - index_min);
-    trailing.minProfit = 2*diff_high;
+    trailing.minProfit = 2 * diff_high;
     trailing.trailingStop = diff_high;
     trailing.trailingStep = 5;
     if (pos_info.tp == 0 || pos_info.tp > pos_info.sl*tp_ko)
@@ -266,3 +276,15 @@ int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndic
   return (-1);
  return (0);
 }
+//+------------------------------------------------------------------+
+//| ChartEvent function                                              |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id,
+                  const long &lparam,
+                  const double &dparam,
+                  const string &sparam)
+{
+
+   
+}
+//+------------------------------------------------------------------+
