@@ -27,9 +27,9 @@ input double profitPercent = 0.5;// процент прибыли
 input int priceDifference = 50;//Price Difference
 input string filters_param = ""; // ‘»Ћ№“–џ
 input bool useTwoTrends = true; // по двум последним трендам
-input bool useChannel = true; // закрытие внутри канала
-input bool useClose = true; // закрытие позиции в противоположном тренде
-input bool use19Lines = true; // 19 линий
+input bool useChannel = true;   // закрытие внутри канала
+input bool useClose = true;     // закрытие позиции в противоположном тренде
+input bool use19Lines = true;   // 19 линий
 
 // переменные робота 
 datetime history_start;
@@ -339,6 +339,8 @@ void GetTradeSignal(ENUM_TIMEFRAMES tf, int handle_atr, double supremacyPercent,
  ArrayInitialize(pbi_buf,EMPTY_VALUE);
  return;
 } 
+
+
 // функци€ вычисл€ет стоп лосс
 int CountStoploss(ENUM_TIMEFRAMES period,int point)
 {
@@ -363,8 +365,8 @@ int CountStoploss(ENUM_TIMEFRAMES period,int point)
  return( int( MathAbs(price - (rates[0].open+rates[0].close)/2) / _Point) );
 }
 
-// фильтры
 
+// фильтры
 // функци€ возвращает true, если последние два тренда в одну сторону
 bool TestTrendsDirection (int type,int direction)
  {
