@@ -161,6 +161,7 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
   {
+  
    static int buffer_index = 0;
    double buffer_top_trend[1] = {MOVE_TYPE_UNKNOWN};  // масссив для хранения типа движения на старшем таймфреме
    int countMoveTypeEvent;
@@ -196,7 +197,6 @@ int OnCalculate(const int rates_total,
        PrintFormat("%s Не удалось подгрузить значения TOP TREND. %d", EnumToString((ENUM_TIMEFRAMES)_Period), GetLastError());
        return(0);
       }       
-       
        // пытаемся добавить экстремумы если это возможно
        container.AddNewExtrByTime(time[i]);  
        // получаем событие от метода вычисления движения

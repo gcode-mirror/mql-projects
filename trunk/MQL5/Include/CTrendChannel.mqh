@@ -120,7 +120,7 @@ CTrend::CTrend(int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrU
   if (_direction != 0)
    {
     // отображаем трендовые линии
-    ShowTrend();
+    //ShowTrend();
    }
  }
  
@@ -164,8 +164,8 @@ void CTrend::SetRayTrend(void) // задает лучи
 
 void CTrend::RemoveRayTrend(void) // убирает лучи
  {
-  HideTrend();
-  ShowTrend(); 
+  //HideTrend();
+  //ShowTrend(); 
  }
 
 class CTrendChannel 

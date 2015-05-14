@@ -68,7 +68,7 @@ STrailing     trailing;      // структура информации о трейлинге
 int OnInit()
   {
    // создаем хэндл файла тестирования статистики прохождения уровней
-   fileTestStat = FileOpen("FlatOutStat 7.5.15/FlatStat_" + _Symbol+"_" + PeriodToString(_Period) + ".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+   fileTestStat = FileOpen("FlatOutStat/FlatOutStat 8.5.15/FlatStat_" + _Symbol+"_" + PeriodToString(_Period) + ".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
    if (fileTestStat == INVALID_HANDLE) //не удалось открыть файл
     {
      Print("Не удалось создать файл тестирования статистики прохождения уровней");
