@@ -32,7 +32,7 @@ string formedExtrLowEvent;
 int mode = 0;
 int trendType;
 int countFlat = 0;
-int indexOfElemNow = 0; // индекс текущей ситуации в массиве ситуаций 
+int indexOfElemNow = 0; // индекс текущей ситуации в массиве ситуаций
 double H; // высота флэта
 double top_point; // верхн€€ точка, которую нужно достичь
 double bottom_point; // нижн€€ точка, которую нужно достичь
