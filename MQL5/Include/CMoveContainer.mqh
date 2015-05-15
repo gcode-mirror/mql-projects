@@ -30,6 +30,7 @@ class CPriceMovement : public CObject
    string _lineUpName; // уникальное имя трендовой верхней линии
    string _lineDownName; // уникальное имя трендовой нижней линии
    double _percent; // процент рассчета тренда
+   
    // приватные методы класса
    void GenUniqName (); // генерирует уникальное имя трендового канала
    // методы вычисления типа движения
@@ -235,7 +236,7 @@ CPriceMovement::CPriceMovement(int chartID,string symbol,ENUM_TIMEFRAMES period,
     ObjectSetInteger(_chartID,_lineUpName,OBJPROP_COLOR,clrRed);
     _moveLine.Create(_chartID,_lineDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхняя линия 
     ObjectSetInteger(_chartID,_lineDownName,OBJPROP_COLOR,clrRed);     
-    //Comment("");         
+    Print("Тренд = ",TimeToString(TimeCurrent()));         
    }
   else if (_moveType > 1) // если словили флэтовое движение
    {
