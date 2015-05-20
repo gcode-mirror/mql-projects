@@ -55,8 +55,16 @@ int mode = 0; // режим
 stat_elem stat[]; // буфер статистики
 int countSit = 0; // количество ситуаций
 
+int fileHandle;
+
 int OnInit()
   {
+   fileHandle = FileOpen("Another/FlatStat_" + _Symbol+"_" + PeriodToString(_Period) + ".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+   if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
+     {
+      Print("Не удалось создать файл тестирования статистики прохождения уровней");
+      return (INIT_FAILED);
+     }  
    // привязка индикатора DrawExtremums 
    handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");
    if (handleDE == INVALID_HANDLE)
@@ -74,6 +82,9 @@ int OnInit()
    // генерируем уникальные имена событий прихода новых сформированных экстремумов
    eventExtrDownFormed = GenUniqEventName("EXTR_UP_FORMED");
    eventExtrUpFormed = GenUniqEventName("EXTR_DOWN_FORMED");
+   
+  
+   
    if (!firstUploadedMovements)
     {
      firstUploadedMovements = moveContainer.UploadOnHistory();
@@ -87,6 +98,7 @@ int OnInit()
 
 void OnDeinit(const int reason)
   {
+   FileClose(fileHandle);
    // сохраняем файл статистики
    SaveStatToFile ();   
    delete extrContainer;
@@ -111,6 +123,23 @@ void OnTick()
      // если цена достигла верхней линии
      if (GreatOrEqualDoubles(SymbolInfoDouble(_Symbol,SYMBOL_BID),topLevel))
       {
+       // сохраняем параметры ситуации статистики
+       stat[countSit-1].countDown = 0;
+       stat[countSit-1].countUp = 1;
+       stat[countSit-1].flat_type = flatType;
+       stat[countSit-1].trend_direction = lastTrendDirection;  
+       stat[countSit-1].last_extr = lastExtr;
+       
+       /*Print("тренд = ",stat[countSit-1].trend_direction,
+               "\nфлэт = ",stat[countSit-1].flat_type,
+               "\nэкстремум  = ",stat[countSit-1].last_extr,
+               "\nверх = ",stat[countSit-1].countUp,
+               "\nниза = ",stat[countSit-1].countDown,
+               "\n----------------------------------------"
+              );
+       */
+       FileWriteString(fileHandle,"\n# "+countSit+"\nflat_type = "+stat[countSit-1].flat_type+"\ntrend = "+stat[countSit-1].trend_direction+"\nlast_extr = "+stat[countSit-1].last_extr+"\nup = "+stat[countSit-1].countUp+"\ndown = "+stat[countSit-1].countDown);
+       
        // переводим в режим поиска тренда
        mode = 0;
        // удаляем линии канала 
@@ -120,8 +149,22 @@ void OnTick()
      if (LessOrEqualDoubles(SymbolInfoDouble(_Symbol,SYMBOL_ASK),bottomLevel))
       {
        // сохраняем параметры ситуации статистики
-       stat[countSit-1].countDown ++;
-       stat[countSit-1].flat_type =        
+       stat[countSit-1].countDown = 1;
+       stat[countSit-1].countUp = 0;
+       stat[countSit-1].flat_type = flatType;
+       stat[countSit-1].trend_direction = lastTrendDirection;  
+       stat[countSit-1].last_extr = lastExtr;
+  
+    /*   Print("тренд = ",stat[countSit-1].trend_direction,
+               "\nфлэт = ",stat[countSit-1].flat_type,
+               "\nэкстремум  = ",stat[countSit-1].last_extr,
+               "\nверх = ",stat[countSit-1].countUp,
+               "\nниза = ",stat[countSit-1].countDown,
+               "\n_______________________________________"
+              );  
+      */ 
+    FileWriteString(fileHandle,"\n# "+countSit+"\nflat_type = "+stat[countSit-1].flat_type+"\ntrend = "+stat[countSit-1].trend_direction+"\nlast_extr = "+stat[countSit-1].last_extr+"\nup = "+stat[countSit-1].countUp+"\ndown = "+stat[countSit-1].countDown);      
+       
        // переводим в режим поиска тренда
        mode = 0;
        // удаляем линии канала
@@ -231,11 +274,13 @@ void DeleteChannel ()
 // сохраняет параметры флэта 
 void SaveFlatParams (int trend,int flat,int extr,int up,int down)
  {
+
   stat[countSit-1].countDown = down;
   stat[countSit-1].countUp = up;
   stat[countSit-1].flat_type = flat;
   stat[countSit-1].last_extr = extr;
   stat[countSit-1].trend_direction = trend;
+  
  }
  
 // функция возвращает строку с подсчитанными данными для типа тренда
@@ -278,34 +323,35 @@ void SaveStatToFile ()
    FileWriteString(fileTestStat,""+GetFlatTypeStat("A",-1,1,1)+"\n\n");
    FileWriteString(fileTestStat,""+GetFlatTypeStat("A",-1,1,-1)+"\n\n");    
 
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",1,1,-1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",-1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",-1,1,-1)+"\n\n"); 
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",1,2,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",1,2,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",-1,2,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("B",-1,2,-1)+"\n\n"); 
    
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",1,1,-1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",-1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",-1,1,-1)+"\n\n"); 
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",1,3,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",1,3,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",-1,3,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("C",-1,3,-1)+"\n\n"); 
 
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",1,1,-1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",-1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",-1,1,-1)+"\n\n"); 
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",1,4,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",1,4,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",-1,4,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("D",-1,4,-1)+"\n\n"); 
    
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",1,1,-1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",-1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",-1,1,-1)+"\n\n"); 
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",1,5,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",1,5,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",-1,5,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("E",-1,5,-1)+"\n\n"); 
    
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",1,1,-1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",-1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",-1,1,-1)+"\n\n"); 
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",1,6,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",1,6,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",-1,6,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("F",-1,7,-1)+"\n\n"); 
    
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",1,1,-1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",-1,1,1)+"\n\n");
-   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",-1,1,-1)+"\n\n");                                         
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",1,7,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",1,7,-1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",-1,7,1)+"\n\n");
+   FileWriteString(fileTestStat,""+GetFlatTypeStat("G",-1,7,-1)+"\n\n");  
+                                          
    FileClose(fileTestStat);
  }

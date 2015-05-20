@@ -47,8 +47,8 @@ class CPriceMovement : public CObject
   ~CPriceMovement(); // деструктор класса
    // методы класса
    int    GetMoveType () { return (_moveType); }; // возвращает тип движения 
-   double GetPriceLineUp(datetime time); // возвращает цену на верхней линии по времени
-   double GetPriceLineDown(datetime time); // возвращает цену на нижней линии по времени
+   double GetPriceLineUp (datetime time); // возвращает цену на верхней линии по времени
+   double GetPriceLineDown (datetime time); // возвращает цену на нижней линии по времени
  };
 
 // кодирование методов класса ценовых движений
@@ -58,8 +58,8 @@ class CPriceMovement : public CObject
 void CPriceMovement::GenUniqName(void) // генерирует уникальное имя трендового канала
  {
   // генерит уникальные имена трендовых линий исходя из символа, периода и времени первого экстремума
-  _lineUpName = "moveLineUp."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrUp0.time);
-  _lineDownName = "moveLineDown."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrDown0.time);
+  _lineUpName = "moveLineUp."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrUp0.time)+"."+TimeToString(_extrUp1.time);
+  _lineDownName = "moveLineDown."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrDown0.time)+"."+TimeToString(_extrDown1.time);
  }
  
 int CPriceMovement::IsItTrend(void) // проверяет, является ли данный канал трендовым
@@ -67,7 +67,7 @@ int CPriceMovement::IsItTrend(void) // проверяет, является ли данный канал тренд
   double h1,h2;
   double H1,H2;
   // если тренд вверх 
-  if (GreatDoubles(_extrUp0.price,_extrUp1.price) && GreatDoubles(_extrDown0.price,_extrDown1.price))
+  if ( GreatDoubles(_extrUp0.price,_extrUp1.price) && GreatDoubles(_extrDown0.price,_extrDown1.price))
    {
     // если последний экстремум - вниз
     if (_extrDown0.time > _extrUp0.time)
@@ -83,7 +83,7 @@ int CPriceMovement::IsItTrend(void) // проверяет, является ли данный канал тренд
    
    }
   // если тренд вниз
-  if (LessDoubles(_extrUp0.price,_extrUp1.price) && LessDoubles(_extrDown0.price,_extrDown1.price))
+  if ( LessDoubles(_extrUp0.price,_extrUp1.price) && LessDoubles(_extrDown0.price,_extrDown1.price))
    {
     
     // если  последний экстремум - вверх
@@ -106,6 +106,8 @@ int CPriceMovement::IsItTrend(void) // проверяет, является ли данный канал тренд
 // кодирование методов вычисления типов ценового движения
 
 // функции обработки типов флэтов
+
+
 
 int CPriceMovement::IsFlatA ()  // флэт А  
  {
@@ -190,6 +192,7 @@ int CPriceMovement::IsFlatG () // флэт G
     }
   return (false);
  }  
+ 
 
 ///////////// публичные методы класса
 
@@ -207,6 +210,7 @@ CPriceMovement::CPriceMovement(int chartID,string symbol,ENUM_TIMEFRAMES period,
   _extrUp1   = extrUp1;
   _extrDown0 = extrDown0;
   _extrDown1 = extrDown1;
+  
   // генерируем уникальные имена трендовых линий
   GenUniqName();
   // обрабатываем типы движений
@@ -215,6 +219,7 @@ CPriceMovement::CPriceMovement(int chartID,string symbol,ENUM_TIMEFRAMES period,
     _moveType = 1;
   if (tempDir == -1) // если найден тренд вниз
     _moveType = -1; 
+  /*  
   if (IsFlatA())     // если найден флэт А
     _moveType = 2;
   if (IsFlatB())     // если найден флэт B
@@ -229,14 +234,16 @@ CPriceMovement::CPriceMovement(int chartID,string symbol,ENUM_TIMEFRAMES period,
     _moveType = 7;
   if (IsFlatG())     // если найден флэт G
     _moveType = 8;  
+  */
   // если мы нашли движение 
   if (_moveType == 1 || _moveType == -1)  // если словили трендовое движение
    {
+    
     _moveLine.Create(_chartID,_lineUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхняя линия
     ObjectSetInteger(_chartID,_lineUpName,OBJPROP_COLOR,clrRed);
     _moveLine.Create(_chartID,_lineDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхняя линия 
     ObjectSetInteger(_chartID,_lineDownName,OBJPROP_COLOR,clrRed);     
-    Print("Тренд = ",TimeToString(TimeCurrent()));         
+       
    }
   else if (_moveType > 1) // если словили флэтовое движение
    {
@@ -305,8 +312,8 @@ CMoveContainer::CMoveContainer(int chartID, string symbol,ENUM_TIMEFRAMES period
   // формируем уникальные имена событий
   _eventExtrDown = GenEventName("EXTR_DOWN_FORMED");
   _eventExtrUp = GenEventName("EXTR_UP_FORMED");
- }
- 
+ } 
+  
 // деструктор класса
 CMoveContainer::~CMoveContainer()
  {
@@ -341,8 +348,11 @@ void CMoveContainer::UploadOnEvent(string sparam,double dparam,long lparam)
   // если последний экстремум - нижний
   if (sparam == _eventExtrDown)
    {
+   
+   //    CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1,double percent)
+   
      // получаем значение текущего движения
-     temparyMove = new CPriceMovement(_chartID, _symbol, _period,_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_percent );     
+     temparyMove = new CPriceMovement(_chartID, _symbol, _period,_container.GetFormedExtrByIndex(0,EXTR_HIGH),_container.GetFormedExtrByIndex(1,EXTR_HIGH),_container.GetFormedExtrByIndex(0,EXTR_LOW),_container.GetFormedExtrByIndex(1,EXTR_LOW),_percent );     
      // если удалось получить текущее движение
      if (temparyMove != NULL)
         {
@@ -355,6 +365,7 @@ void CMoveContainer::UploadOnEvent(string sparam,double dparam,long lparam)
            RemoveAll();
            // и добавляем тренд в буфер
            _bufferMove.Add(temparyMove);
+           //Print("_bufferMove ");
           }
          // иначе если  это флэт
          else if (temparyMove.GetMoveType() > 1)
@@ -367,14 +378,14 @@ void CMoveContainer::UploadOnEvent(string sparam,double dparam,long lparam)
   // если последний экстремум - верхний
   if (sparam == _eventExtrUp)
    {
-     temparyMove = new CPriceMovement(_chartID, _symbol, _period,_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_percent );
+     temparyMove = new CPriceMovement(_chartID, _symbol, _period,_container.GetFormedExtrByIndex(0,EXTR_HIGH),_container.GetFormedExtrByIndex(1,EXTR_HIGH),_container.GetFormedExtrByIndex(0,EXTR_LOW),_container.GetFormedExtrByIndex(1,EXTR_LOW),_percent );
      if (temparyMove != NULL)
         {
          // если словили тренд
          if (temparyMove.GetMoveType() == 1 || temparyMove.GetMoveType() == -1)
           {
            // то очищаем буфер
-           RemoveAll();
+           RemoveAll();          
            // и добавляем тренд в буфер
            _bufferMove.Add(temparyMove);
           }
@@ -408,7 +419,7 @@ bool CMoveContainer::UploadOnHistory(void)
         // если последнее направление экстремума - вверх
         if (dirLastExtr == 1)
          {
-           temparyMove = new CPriceMovement(_chartID, _symbol, _period,_container.GetExtrByIndex(i),_container.GetExtrByIndex(i+2),_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i+3),_percent );
+           temparyMove = new CPriceMovement(_chartID, _symbol, _period,_container.GetFormedExtrByIndex(i,EXTR_BOTH),_container.GetFormedExtrByIndex(i+2,EXTR_BOTH),_container.GetFormedExtrByIndex(i+1,EXTR_BOTH),_container.GetFormedExtrByIndex(i+3,EXTR_BOTH),_percent );
            if (temparyMove != NULL)
             {
              // если обнаружили тренд
@@ -432,7 +443,7 @@ bool CMoveContainer::UploadOnHistory(void)
         // если последнее направление экстремума - вниз
         if (dirLastExtr == -1)
          {
-           temparyMove = new CPriceMovement(_chartID, _symbol, _period,_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i+3),_container.GetExtrByIndex(i),_container.GetExtrByIndex(i+2),_percent );         
+           temparyMove = new CPriceMovement(_chartID, _symbol, _period,_container.GetFormedExtrByIndex(i+1,EXTR_BOTH),_container.GetFormedExtrByIndex(i+3,EXTR_BOTH),_container.GetFormedExtrByIndex(i,EXTR_BOTH),_container.GetFormedExtrByIndex(i+2,EXTR_BOTH),_percent );         
            if (temparyMove != NULL)
             {
              // если словили тренд
