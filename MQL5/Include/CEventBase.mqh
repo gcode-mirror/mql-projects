@@ -89,6 +89,7 @@ public:
       this._symbol = symbol;
       this._period = period;
       aEvents = new CArrayObj();
+      log_file.Write(LOG_DEBUG, StringFormat("Был создан объект CEventBase с параметрами start_id = %i symbol  = %s period = %s", startid, symbol, PeriodToString(period)));
      };
    void ~CEventBase(void){};
    //--
@@ -212,6 +213,10 @@ bool CEventBase::Generate(long _chart_id, int _id_ind, SEventData &_data,
           Print("is_generated = ", is_generated);
           PrintFormat("%s Error while generating a custom event: %d", __FUNCTION__,_LastError);
           Print( ChartSymbol(_chart_id)," ",PeriodToString(ChartPeriod(_chart_id)), "Ошибка! _chart_id =", _chart_id, " event.id = ", event.id, " data.dparam = " ,this._data.dparam, " data.sparam = ", this._data.sparam);
+          log_file.Write(LOG_DEBUG, StringFormat("time = %s", TimeToString(TimeCurrent())));
+          log_file.Write(LOG_DEBUG, StringFormat("is_generated = %b", is_generated));
+          log_file.Write(LOG_DEBUG, StringFormat("%s Error while generating a custom event: %d", __FUNCTION__,_LastError));
+          log_file.Write(LOG_DEBUG, StringFormat("chart_id = %s , ChartPeriod = %s  Ошибка! event.id = %d data.dparam = %f data.sparam = %s", ChartSymbol(_chart_id),PeriodToString(ChartPeriod(_chart_id)), event.id, this._data.dparam,  this._data.sparam));
          }
      }
    return is_generated;

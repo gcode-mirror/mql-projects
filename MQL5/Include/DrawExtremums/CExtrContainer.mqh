@@ -173,6 +173,7 @@ bool CExtrContainer::isUploaded()
 //+------------------------------------------------------------------+
 bool CExtrContainer::Upload(int bars = -1)       
 {
+ //if(isUploaded())
  _bufferExtr.Clear();
  if(bars == -1)
  {

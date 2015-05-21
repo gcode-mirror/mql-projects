@@ -120,7 +120,7 @@ CTrend::CTrend(int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrU
   if (_direction != 0)
    {
     // отображаем трендовые линии
-    //ShowTrend();
+    ShowTrend();
    }
  }
  
@@ -135,12 +135,12 @@ CTrend::~CTrend()
  
 double CTrend::GetPriceLineUp(datetime time) // возвращает цену на верхней линии 
  {
-  return (ObjectGetValueByTime(_chartID,_trendUpName,time));
+  return (ObjectGetValueByTime(_chartID,_trendUpName, time));
  } 
  
 double CTrend::GetPriceLineDown(datetime time) // возвращает цену на нижней линии
  {
-  return (ObjectGetValueByTime(_chartID,_trendDownName,time));
+  return (ObjectGetValueByTime(_chartID,_trendDownName, time));
  }
 
 void CTrend::ShowTrend(void) // отображает тренд на графике
@@ -164,11 +164,11 @@ void CTrend::SetRayTrend(void) // задает лучи
 
 void CTrend::RemoveRayTrend(void) // убирает лучи
  {
-  //HideTrend();
-  //ShowTrend(); 
+  HideTrend();
+  ShowTrend(); 
  }
 
-class CTrendChannel 
+class CTrendChannel : public CObject
  {
   private:
    int _handleDE; // хэндл индикатора DrawExtremums
@@ -179,6 +179,7 @@ class CTrendChannel
    double _percent; // процент рассчета тренда
    ENUM_TIMEFRAMES _period; // период
    bool _trendNow; // флаг того, что в данный момент есть или нет тренда
+   bool _isHistoryUploaded; // флаг того, что история была подгружена успешно
    CExtrContainer *_container; // контейнер экстремумов
    CArrayObj _bufferTrend;// буфер для хранения трендовых линий  
    // приватные методы класса
@@ -206,6 +207,7 @@ CTrendChannel::CTrendChannel(int chartID, string symbol,ENUM_TIMEFRAMES period,i
   // формируем уникальные имена событий
   _eventExtrDown = GenEventName("EXTR_DOWN_FORMED");
   _eventExtrUp = GenEventName("EXTR_UP_FORMED");
+  _isHistoryUploaded = false;
   // если удалось создать объект контейнера
   // if (_container != NULL)
   // {
@@ -230,7 +232,7 @@ CTrend * CTrendChannel::GetTrendByIndex(int index)
  }
  
 // метод обновляет экстремум и тренд
-void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
+void CTrendChannel::UploadOnEvent(string sparam, double dparam, long lparam)
  {
   CTrend *temparyTrend; 
   CTrend *currentTrend;
@@ -238,11 +240,11 @@ void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
   
   // догружаем экстремумы
   _container.UploadOnEvent(sparam,dparam,lparam);
-  previewTrend = GetTrendByIndex(0);
-  previewTrend.RemoveRayTrend();
   // если последний экстремум - нижний
   if (sparam == _eventExtrDown)
-   {
+   { 
+     previewTrend = GetTrendByIndex(0);
+     previewTrend.RemoveRayTrend();
      _trendNow = false;
      temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_percent );     
 
@@ -261,6 +263,8 @@ void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
   // если последний экстремум - верхний
   if (sparam == _eventExtrUp)
    {
+     previewTrend = GetTrendByIndex(0);
+     previewTrend.RemoveRayTrend();
      _trendNow = false;
      temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_percent );
      if (temparyTrend != NULL)
@@ -279,47 +283,51 @@ void CTrendChannel::UploadOnEvent(string sparam,double dparam,long lparam)
 // метод загружает тренды на истории
 bool CTrendChannel::UploadOnHistory(void)
  { 
-   int i;
-   int extrTotal;
-   int dirLastExtr;
-   CTrend *temparyTrend; 
+   if(!_isHistoryUploaded||_bufferTrend.Total()<=0)
+   {
+    int i;
+    int extrTotal;
+    int dirLastExtr;
+    CTrend *temparyTrend; 
     // загружаем тренды 
     _container.Upload(0);
     // если удалось прогрузить все экстремумы на истории
     if (_container.isUploaded())
-     {    
-      extrTotal = _container.GetCountFormedExtr(); // получаем количество экстремумов
-      dirLastExtr = _container.GetLastFormedExtr(EXTR_BOTH).direction; // получаем последнее значение экстремума
-      // проходим по экстремумам и заполняем буфер трендов
-      for (i=0; i < extrTotal-4; i++)
-       {
-        // если последнее направление экстремума - вверх
-        if (dirLastExtr == 1)
-         {
-           temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i),_container.GetExtrByIndex(i+2),_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i
-
+    {    
+     extrTotal = _container.GetCountFormedExtr(); // получаем количество экстремумов
+     dirLastExtr = _container.GetLastFormedExtr(EXTR_BOTH).direction; // получаем последнее значение экстремума
+     // проходим по экстремумам и заполняем буфер трендов
+     for (i=0; i < extrTotal-4; i++)
+     {
+      // если последнее направление экстремума - вверх
+      if (dirLastExtr == 1)
+      {
+       temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i),_container.GetExtrByIndex(i+2),_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i
 +3),_percent );
-           if (temparyTrend != NULL)
-            {
-             if (temparyTrend.GetDirection() != 0)
-                _bufferTrend.Add(temparyTrend);
-            }
-         }
-        // если последнее направление экстремума - вниз
-        if (dirLastExtr == -1)
-         {
-           temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i+3),_container.GetExtrByIndex(i),_container.GetExtrByIndex(i
-
-+2),_percent );         
-           if (temparyTrend != NULL)
-            {
-             if (temparyTrend.GetDirection() != 0)
-                _bufferTrend.Add(temparyTrend);
-            }
-         }
-        dirLastExtr = -dirLastExtr; 
+       if (temparyTrend != NULL)
+       {
+        if (temparyTrend.GetDirection() != 0)
+           _bufferTrend.Add(temparyTrend);
        }
-      return (true);
+      }
+      // если последнее направление экстремума - вниз
+      if (dirLastExtr == -1)
+      {
+       temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(i+1),_container.GetExtrByIndex(i+3),_container.GetExtrByIndex(i),_container.GetExtrByIndex(i
++2),_percent );         
+       if (temparyTrend != NULL)
+       {
+        if (temparyTrend.GetDirection() != 0)
+         _bufferTrend.Add(temparyTrend);
+       }
+      }
+      dirLastExtr = -dirLastExtr; 
      }
-   return (false);
- }
+     _isHistoryUploaded = true;
+     return (true);
+    }
+    _isHistoryUploaded = false;
+    return (false);
+   }
+   else return (true); //история подгружена
+  }

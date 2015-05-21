@@ -141,14 +141,14 @@ int CChickensBrain::GetSignal()
    // Сохраним верхнюю и нижнюю цены в поля
    _highBorder = _conbuf.GetHigh(_period).buffer[_index_max];
    _lowBorder  = _conbuf.GetLow(_period).buffer[_index_min];
-   _sl_min     = MathMax((int)MathCeil((_highBorder - _lowBorder)*0.10/Point()), 50);
-   _diff_high  = (_conbuf.GetHigh(_period).buffer[0] - _highBorder)/Point();
-   _diff_low   = (_lowBorder - _conbuf.GetLow(_period).buffer[0])/Point();
+   _sl_min     = MathMax((int)MathCeil((_highBorder - _lowBorder) * 0.10/Point()), 50);
+   _diff_high  = (_conbuf.GetHigh(_period).buffer[1] - _highBorder)/Point();
+   _diff_low   = (_lowBorder - _conbuf.GetLow(_period).buffer[1])/Point();
    
    log_file.Write(LOG_DEBUG, StringFormat("Время = %s ТФ = %s", TimeToString(TimeCurrent()), PeriodToString(_period)));
    log_file.Write(LOG_DEBUG, StringFormat("buffer_pbi[0] == %d  _index_max = %d _index_min = %d", MOVE_TYPE_FLAT, _index_max ,_index_min ));
-   log_file.Write(LOG_DEBUG, StringFormat("_lowBorder ( %f ) - Low[DEPTH] ( %f )  = %f",  _lowBorder, _conbuf.GetLow(_period).buffer[0], _lowBorder - _conbuf.GetLow(_period).buffer[0]));
-   log_file.Write(LOG_DEBUG, StringFormat("High[0]( %f ) - _highBorder( %f )  = %f",  _conbuf.GetHigh(_period).buffer[0], _highBorder, _conbuf.GetHigh(_period).buffer[0] - _highBorder));
+   log_file.Write(LOG_DEBUG, StringFormat("_lowBorder ( %f ) - Low[DEPTH] ( %f )  = %f",  _lowBorder, _conbuf.GetLow(_period).buffer[1], _lowBorder - _conbuf.GetLow(_period).buffer[1]));
+   log_file.Write(LOG_DEBUG, StringFormat("High[0]( %f ) - _highBorder( %f )  = %f",  _conbuf.GetHigh(_period).buffer[1], _highBorder, _conbuf.GetHigh(_period).buffer[1] - _highBorder));
    log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %d > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_highBorder,_diff_high,_sl_min,_lastTrend));
    log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
    log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %d > %d && _lastTrend = %d", _index_min, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_lowBorder,_diff_low,_sl_min,_lastTrend));

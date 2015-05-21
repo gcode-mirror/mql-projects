@@ -222,6 +222,8 @@ void OnTick()
      }
      if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp >0 && pos_info.tp <= pos_info.sl*tp_ko))
      {
+      log_file.Write(LOG_DEBUG, StringFormat("TP = %0.5f", pos_info.tp));
+      log_file.Write(LOG_DEBUG, "pos_info.tp > 0 && pos_info.tp <= pos_info.sl * tp_ko");
       ctm.ClosePendingPosition(_Symbol, magic);
      } 
     }
