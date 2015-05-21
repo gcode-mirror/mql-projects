@@ -72,16 +72,16 @@ CLog::CLog()
 {
  if(MQL5InfoInteger(MQL5_TESTING) || MQL5InfoInteger(MQL5_OPTIMIZATION) || MQL5InfoInteger(MQL5_VISUAL_MODE))
  {
-  _output_type = OUT_PRINT;
+  _output_type = CONF_OUT_TEST;
  }
  else
  {
-  _output_type = OUT_FILE;
+  _output_type = CONF_OUT_REAL_TIME;
  }
- _level = LOG_DEBUG;         
- _limit_size = 50;          
- _catalog_name = "Log";   
- _expiration_time = 365;
+ _level = CONF_LOG_LEVEL;         
+ _limit_size = CONF_LIMIT_SIZE;          
+ _catalog_name = CONF_CATALOG_NAME;   
+ _expiration_time = CONF_EXPIRATION_TIME;
  CreateLogFile(TimeCurrent());
 }
 //+------------------------------------------------------------------+

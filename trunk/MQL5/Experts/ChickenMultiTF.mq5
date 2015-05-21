@@ -72,7 +72,7 @@ int OnInit()
 {
  if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)
  {
-  PrintFormat("tradeTFM5 = %b, tradeTFM15 = %b, tradeTFH1 = %b",tradeTFM5,tradeTFM15,tradeTFH1);
+  PrintFormat("tradeTFM5 = %b, tradeTFM15 = %b, tradeTFH1 = %b", tradeTFM5, tradeTFM15, tradeTFH1);
   return(INIT_FAILED);
  }
  
@@ -94,12 +94,13 @@ int OnInit()
   if(tradeTF[i].used == true)
   {
    tradeTF[i].isNewBar = new CisNewBar(_Symbol, tradeTF[i].period);
-   /*tradeTF[i].handle_pbi = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
+   tradeTF[i].handle_pbi = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
    if(tradeTF[i].handle_pbi == INVALID_HANDLE)
    {
     Print("Ошибка при иниализации эксперта. Не удалось создать хэндл индикатора PriceBasedIndicator");
+    log_file.Write(LOG_DEBUG, StringFormat(" ТФ = %b Не удалось создать хэндл индикатора PriceBasedIndicator", tradeTF[i].period));
     return (INIT_FAILED);
-   } */
+   } 
    tradeTF[i].trailing.trailingType = trailingType;
    //tradeTF[i].trailing.handleForTrailing = tradeTF[i].handle_pbi;
 
@@ -214,14 +215,19 @@ void OnTick()
       tradeTF[i].trailing.trailingStep = 5;
       if (pos_info.tp == 0 || pos_info.tp > pos_info.sl*tp_ko)
       {
-       PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
-       Print(" TF = ", tradeTF[i].period);
+       log_file.Write(LOG_DEBUG, StringFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
+       log_file.Write(LOG_DEBUG, StringFormat(" TF = ", tradeTF[i].period));
        ctm.OpenMultiPosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
       }
      }
       
      if(index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], lowBorder) && diff_low > sl_min && tradeTF[i].lastTrend == BUY)
      {
+      log_file.Write(LOG_DEBUG, StringFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, sl_min = %d, diff_low = %d",
+            DoubleToString(lowBorder, 5),
+            TimeToString(TimeCurrent()),
+            closePrice[0],
+            sl_min, diff_low));
       PrintFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, sl_min = %d, diff_low = %d",
             DoubleToString(lowBorder, 5),
             TimeToString(TimeCurrent()),
@@ -238,6 +244,7 @@ void OnTick()
       tradeTF[i].trailing.trailingStep = 5;
       if (pos_info.tp == 0 || pos_info.tp > pos_info.sl*tp_ko)
       {
+       log_file.Write(LOG_DEBUG, StringFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
        PrintFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl);
        ctm.OpenMultiPosition(_Symbol, tradeTF[i].period, pos_info, tradeTF[i].trailing, spread);
       }
@@ -258,6 +265,8 @@ void OnTick()
       }
       if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp > 0 && pos_info.tp <= pos_info.sl * tp_ko))
       {
+       log_file.Write(LOG_DEBUG, StringFormat("TP = %0.5f", pos_info.tp));
+       log_file.Write(LOG_DEBUG, "pos_info.tp > 0 && pos_info.tp <= pos_info.sl * tp_ko");
        ctm.ClosePendingPosition(_Symbol, magic);
       } 
      }

@@ -6,7 +6,7 @@
 #property copyright "Copyright 2012, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
-//+---------------------------------////////////////////////////---------------------------------+
+//+------------------------------------------------------------------+
 //| Ёксперт FollowWhiteRabbit                                        |
 //+------------------------------------------------------------------+
 //подключение необходимых библиотек
@@ -16,12 +16,13 @@
 #include <ColoredTrend/ColoredTrendUtilities.mqh> 
 #include <CTrendChannel.mqh> // трендовый контейнер
 //константы
-#define KO 3 //коэффициент дл€ услови€ открыти€ позиции, во сколько как минимум вычисленный тейк профит должен превышать вычисленный стоп лосс
-#define SPREAD 30 // размер спреда 
+#define KO 3            //коэффициент дл€ услови€ открыти€ позиции, во сколько как минимум вычисленный тейк профит должен превышать вычисленный стоп лосс
+#define SPREAD 30       // размер спреда 
+
 //вводимые пользователем параметры
 input string base_param = ""; // Ѕј«ќ¬џ≈ ѕј–јћ≈“–џ
-input double lot = 1; // лот
-input double percent = 0.1; // процент
+input double lot = 1;         // лот
+input double percent = 0.1;   // процент
 input double M1_supremacyPercent  = 5;//процент, насколько бар M1 больше среднего значени€
 input double profitPercent = 0.5;// процент прибыли                                                          
 input int priceDifference = 50;//Price Difference
@@ -36,7 +37,8 @@ datetime history_start;
 //торговый класс
 CTradeManager ctm;          
 //массивы
-double ave_atr_buf[1],close_buf[1],open_buf[1],pbi_buf[1];
+double ave_atr_buf[1], close_buf[1], open_buf[1], pbi_buf[1];
+
 
 ENUM_TM_POSITION_TYPE opBuy,opSell;
 // объекты классов прихода новых баров
@@ -168,18 +170,18 @@ int OnInit()
 }
 
 void OnDeinit(const int reason)
- {
-  delete isNewBarM1;
-  delete isNewBarM5;
-  delete isNewBarM15;
-  delete trendM1;
-  delete trendM5;
-  delete trendM15;
- }
+{
+ delete isNewBarM1;
+ delete isNewBarM5;
+ delete isNewBarM15;
+ delete trendM1;
+ delete trendM5;
+ delete trendM15;
+}
 
 void OnTick()
 {
- int tempPosDirection=0;
+ int tempPosDirection = 0;
  ctm.OnTick();
  pos_info.type = OP_UNKNOWN;
  signalM1  = 0;
@@ -190,8 +192,9 @@ void OnTick()
   posOpenedDirection = 0;
 
  // если еще не загружены экстремумы
- if (!firstUploadedM1)
-  firstUploadedM1 = trendM1.UploadOnHistory();
+ //if (!firstUploadedM1)
+  //firstUploadedM1 = trendM1.UploadOnHistory();
+   trendM1.UploadOnHistory();
   
  // если не все тренды на всех таймфреймах прогружены, то ретЄрним
  if (!firstUploadedM1)
@@ -203,10 +206,10 @@ void OnTick()
   GetTradeSignal(PERIOD_M1, handle_aATR_M1, M1_supremacyPercent, pos_info);
   
   // если два последних тренда существуют
-  if (trendM1.GetTrendByIndex(0)!=NULL && trendM1.GetTrendByIndex(1)!=NULL)
+  if (trendM1.GetTrendByIndex(0) != NULL && trendM1.GetTrendByIndex(1) != NULL)
    { 
     // если существует тренд в текущий момент и два последних тренда в противоположную сторону
-    if (pos_info.type == opBuy  )
+    if (pos_info.type == opBuy)
      {
       tempPosDirection = 1;
       signalM1 = 1;
