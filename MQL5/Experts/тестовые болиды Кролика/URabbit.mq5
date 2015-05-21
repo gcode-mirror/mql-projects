@@ -81,7 +81,7 @@ long magic;
 ENUM_TIMEFRAMES TFs[3] = {PERIOD_M1, PERIOD_M5, PERIOD_M15};
 ENUM_TIMEFRAMES posOpenedTF;
 
-
+int indexPosOpenedTF; //удалить
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -185,6 +185,7 @@ void OnTick()
      pos_info.type = opSell;
     posOpenedDirection = signalForTrade;
     posOpenedTF = TFs[i];
+    indexPosOpenedTF = i;
     ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, SPREAD);   
    }
   }
@@ -207,7 +208,6 @@ void OnChartEvent(const int id,         // идентификатор события
                  )
 {
  int newDirection;
-
  for(int i = 0; i < ArraySize(TFs); i++)
  {
   trend = trends.At(i);
@@ -219,7 +219,7 @@ void OnChartEvent(const int id,         // идентификатор события
   {
    newDirection = trend.GetTrendByIndex(0).GetDirection();
    // если пришел противоположный направлению позиции тренд
-   if (posOpenedDirection !=0 && newDirection == -posOpenedDirection && ctm.GetPositionCount() > 0 ) // && ctf.GetPeriod() == posOpenedTF
+   if (i >= indexPosOpenedTF && posOpenedDirection !=0 && newDirection == -posOpenedDirection && ctm.GetPositionCount() > 0 ) // && ctf.GetPeriod() == posOpenedTF
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Закрыли позицию на OnChartEvent по противоположному тренду", MakeFunctionPrefix(__FUNCTION__)));
     // закрываем позицию 
