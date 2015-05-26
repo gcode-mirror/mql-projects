@@ -17,7 +17,7 @@
 #include <StringUtilities.mqh> // строковые утилиты
 
 // класс движения цены
-class CPriceMovement : public CObject
+class CMove : public CObject
  {
   private:
    CExtremum *_extrUp0,*_extrUp1; // экстремумы верхней линии
