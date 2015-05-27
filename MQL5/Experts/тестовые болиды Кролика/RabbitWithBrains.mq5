@@ -25,7 +25,7 @@
 // нужно ли в конбуф запихнуть данные индикатора АТР, а цену открытия?
 //--------------------------------------------------------------+
 
-//-------вводимые пользователем параметры-------------
+//-------вводимые пользователем параметры ВСЕ перенесены в константы, если правильно надо УДАЛИТЬ-------------
 input double percent = 0.1;   // процент
 input double M1_Ratio  = 5;   //процент, насколько бар M1 больше среднего значения
 input double M5_Ratio  = 3;   //процент, насколько бар M1 больше среднего значения
@@ -49,7 +49,6 @@ int handle19Lines;
 int handleATR;
 int handleDE;
 
-double Ks[3]; // массив коэффициентов для каждого ТФ от М1 до М15
 
 //---------параметры позиции и трейлинга------------
 SPositionInfo pos_info;
@@ -70,46 +69,15 @@ int indexPosOpenedTF;         // удалить елсли закрытие позиции по условию любог
 //+------------------------------------------------------------------+
 int OnInit()
 {
- 
- Ks[0] = M1_Ratio;
- Ks[1] = M5_Ratio;
- Ks[2] = M15_Ratio;
+
  history_start = TimeCurrent(); //запомним время запуска эксперта для получения торговой истории
- dataTFs = new CArrayObj();
- trends = new CArrayObj();
- //заполним каждый таймфрейм 
- for(int i = 0; i < ArraySize(TFs); i++)
- {
-  handleDE = iCustom(_Symbol,TFs[i],"DrawExtremums");
-  if (handleDE == INVALID_HANDLE)
-  {
-   PrintFormat("Не удалось создать хэндл индикатора DrawExtremums на %s", PeriodToString(TFs[i]));
-   return (INIT_FAILED);
-  }
-  handleATR = iMA(_Symbol, TFs[i], 100, 0, MODE_EMA, iATR(_Symbol, TFs[i], 30));
-  if (handleATR == INVALID_HANDLE)
-  {
-   PrintFormat("Не удалось создать хэндл индикатора ATR на %s", PeriodToString(TFs[i]));
-   return (INIT_FAILED);
-  }
- 
-  ctf = new CTimeframe(TFs[i],_Symbol, handleATR);           // создадим ТФ
-  ctf.SetRatio(Ks[i]);                                       // установим коэффициент
-  ctf.IsThisNewBar();                                        // добавим счетчик по новому бару
-  dataTFs.Add(ctf);                                          // добавим в буффер ТФ dataTFs
-  // создать контейнер трендов для каждого периода
-  trend = new CTrendChannel(0, _Symbol, TFs[i], handleDE, percent);
-  trend.UploadOnHistory();                                  // обновим контейнер на истории
-  trends.Add(trend);                                        // добавим контейнер трендов в буффер по таймфреймам
-  log_file.Write(LOG_DEBUG, StringFormat(" Загрузка ТФ = %s прошла успешно", PeriodToString(TFs[i])));
- }
- 
+
  //---------- Конец обработки NineTeenLines----------------
  conbuf = new CContainerBuffers(TFs);
  opBuy  = OP_BUY;  // так было. Зачем?
  opSell = OP_SELL;
  
- rabbit = new CRabbitsBrain(_Symbol, conbuf, trends, dataTFs); // поместим все созданное в класс - сигнал Кролика
+ rabbit = new CRabbitsBrain(_Symbol, conbuf, TFs); // поместим все созданное в класс - сигнал Кролика
  
  pos_info.volume = 1;
  trailing.trailingType = TRAILING_TYPE_NONE;
