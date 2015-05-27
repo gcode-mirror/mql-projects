@@ -12,7 +12,7 @@
 #include <CompareDoubles.mqh>               // сравнение вещественных чисел
 #include <StringUtilities.mqh>              // строковое преобразование
 #include <CLog.mqh>                         // для лога
-#include <Chicken/ContainerBuffers.mqh>     // класс контейнер буферов
+#include <ContainerBuffers.mqh>     // класс контейнер буферов
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 16
