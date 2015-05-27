@@ -11,35 +11,30 @@
 //+------------------------------------------------------------------------------------------------------------+
 //|                           Класс TimeFrame содержит информацию, которую можно отнести к конкретному ТФ      |
 //| Класс реализует работу с хэндлами, уникальными для ТФ (ATR, DE и др.), хранит состояние переменной isNewBar|
-//| Класс работает на М1, М5, М15. Для добавления новых периодов необходимо внести изменения в код функциий:   |
-//|                       //-GetBottom()                                                                       |
+//| Класс работает на М1, М5, М15.                                                                                |
 //+------------------------------------------------------------------------------------------------------------+
-class CTimeFrame: public CObject
+class CTimeframe: public CObject
 {
  private:
    string _symbol;
    ENUM_TIMEFRAMES _period;
    CisNewBar *_isNewBar;   //ContainerBuffer
    int   _handleATR;
-   int   _handleDE;
    bool  _isTrendNow; //не факт что понадобится. Заменено на _trend.IsTrendNow();
-   int   _signalTrade;
-   double   _supremacyPercent;
+   double _supremacyPercent;
  public: 
    //конструктор
-   CTimeFrame(ENUM_TIMEFRAMES period, string symbol, 
-                           int handleATR, int   handleDE);
-   ~CTimeFrame();
-   //функции для работы с классом CTimeFrame
+   CTimeframe(ENUM_TIMEFRAMES period, string symbol, 
+                           int handleATR);
+   ~CTimeframe();
+   //функции для работы с классом CTimeframe
    ENUM_TIMEFRAMES GetPeriod()   {return _period;}
+   string          GetSymbol()   {return _symbol;}
    bool            IsThisNewBar(){return _isNewBar.isNewBar();}
    bool            IsThisTrendNow(){return _isTrendNow;}
    int             GetHandleATR(){return _handleATR;}
-   int             GetHandleDE() {return _handleDE;}
-   int             GetSignal()   {return _signalTrade;}
    double          GetRatio()    {return _supremacyPercent;}
    void            SetRatio(double prc){_supremacyPercent = prc;} 
-   void            SetSignal(int signalTrade)     {_signalTrade = signalTrade;}
    void            SetTrendNow(bool isTrendNow) {_isTrendNow = isTrendNow;}
   // bool            isTrendNow()  {return _trend.IsTrendNow();}
 };
@@ -48,20 +43,19 @@ class CTimeFrame: public CObject
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CTimeFrame::CTimeFrame(ENUM_TIMEFRAMES period, string symbol, 
-                           int handleATR, int   handleDE)
+CTimeframe::CTimeframe(ENUM_TIMEFRAMES period, string symbol, 
+                           int handleATR)
 {
  _symbol = symbol;
  _period = period;
  _isNewBar = new CisNewBar(symbol,period);
  _handleATR = handleATR;
- _handleDE = handleDE;
  //  что с ним? _isTrendNow = fal;
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CTimeFrame::~CTimeFrame()
+CTimeframe::~CTimeframe()
   {
   }
 //+------------------------------------------------------------------+

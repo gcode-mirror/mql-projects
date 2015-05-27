@@ -28,21 +28,21 @@ class CTrend : public CObject
    string _symbol; // символ
    ENUM_TIMEFRAMES _period; // период
    string _trendUpName; // уникальное имя трендовой верхней линии
-   string _trendDownName; // уникальное имя трендовой нижней линии
-   double _percent; // процент рассчета тренда
+   string _trendDownName;  // уникальное имя трендовой нижней линии
+   double _percent;        // процент рассчета тренда
    // приватные методы класса
    void GenUniqName (); // генерирует уникальное имя трендового канала
-   int  IsItTrend (); // метод проверяет, является ли создаваемый объект трендом. 
+   int  IsItTrend ();   // метод проверяет, является ли создаваемый объект трендом. 
   public:
    CTrend(int chartID, string symbol, ENUM_TIMEFRAMES period,CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1,double percent); // конструктор класса по экстр
   ~CTrend(); // деструктор класса
    // методы класса
    int  GetDirection () { return (_direction); }; // возвращает направление тренда 
-   double GetPriceLineUp(datetime time); // возвращает цену на верхней линии по времени
-   double GetPriceLineDown(datetime time); // возвращает цену на нижней линии по времени
-   void ShowTrend (); // показывает тренд на графике
-   void HideTrend (); // скрывает отображение тренда
-   void SetRayTrend(); // задает линиям тренда луч
+   double GetPriceLineUp(datetime time);     // возвращает цену на верхней линии по времени
+   double GetPriceLineDown(datetime time);   // возвращает цену на нижней линии по времени
+   void ShowTrend ();   // показывает тренд на графике
+   void HideTrend ();   // скрывает отображение тренда
+   void SetRayTrend();  // задает линиям тренда луч
    void RemoveRayTrend(); // задает линиям тренда луч
  };
  
@@ -237,49 +237,50 @@ void CTrendChannel::UploadOnEvent(string sparam, double dparam, long lparam)
   CTrend *temparyTrend; 
   CTrend *currentTrend;
   CTrend *previewTrend;
-  
-  // догружаем экстремумы
-  _container.UploadOnEvent(sparam,dparam,lparam);
-  // если последний экстремум - нижний
-  if (sparam == _eventExtrDown)
-   { 
-     previewTrend = GetTrendByIndex(0);
-     previewTrend.RemoveRayTrend();
-     _trendNow = false;
-     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_percent );     
-
-    
-     if (temparyTrend != NULL)
-        {
-         if (temparyTrend.GetDirection() != 0)
-           {
-            _trendNow = true;
-            _bufferTrend.Add(temparyTrend);
-            currentTrend = GetTrendByIndex(0);   
-            currentTrend.SetRayTrend();
-           }
-        }     
-   }
-  // если последний экстремум - верхний
-  if (sparam == _eventExtrUp)
-   {
-     previewTrend = GetTrendByIndex(0);
-     previewTrend.RemoveRayTrend();
-     _trendNow = false;
-     temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_percent );
-     if (temparyTrend != NULL)
-        {
-         if (temparyTrend.GetDirection() != 0)
-           {
-            _trendNow = true;
-            _bufferTrend.Add(temparyTrend);
-            currentTrend = GetTrendByIndex(0);
-            currentTrend.SetRayTrend();        
-           }
-        }   
+  if(UploadOnHistory())
+  {
+   // догружаем экстремумы
+   _container.UploadOnEvent(sparam,dparam,lparam);
+   // если последний экстремум - нижний
+   if (sparam == _eventExtrDown)
+    { 
+      previewTrend = GetTrendByIndex(0);
+      previewTrend.RemoveRayTrend();
+      _trendNow = false;
+      temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_percent );       
+ 
+       
+      if (temparyTrend != NULL)
+       {
+        if (temparyTrend.GetDirection() != 0)
+         {
+          _trendNow = true;
+          _bufferTrend.Add(temparyTrend);
+          currentTrend = GetTrendByIndex(0);   
+          currentTrend.SetRayTrend();
+         }
+       }     
+     }
+    // если последний экстремум - верхний
+   if (sparam == _eventExtrUp)
+    {
+      previewTrend = GetTrendByIndex(0);
+      previewTrend.RemoveRayTrend();
+      _trendNow = false;
+      temparyTrend = new CTrend(_chartID, _symbol, _period,_container.GetExtrByIndex(1),_container.GetExtrByIndex(3),_container.GetExtrByIndex(2),_container.GetExtrByIndex(4),_percent );
+      if (temparyTrend != NULL)
+       {
+        if (temparyTrend.GetDirection() != 0)
+         {
+           _trendNow = true;
+           _bufferTrend.Add(temparyTrend);
+           currentTrend = GetTrendByIndex(0);
+           currentTrend.SetRayTrend();        
+         }
+       }   
+     }
    }
  }
- 
 // метод загружает тренды на истории
 bool CTrendChannel::UploadOnHistory(void)
  { 
@@ -323,6 +324,7 @@ bool CTrendChannel::UploadOnHistory(void)
       }
       dirLastExtr = -dirLastExtr; 
      }
+     Print("Контейнер трендов обновлен количество ", _bufferTrend.Total());
      _isHistoryUploaded = true;
      return (true);
     }
