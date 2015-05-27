@@ -32,13 +32,13 @@ class CChickensBrain
  private:
   string _symbol;
   ENUM_TIMEFRAMES _period;
-  int _handle_pbi; 
+  //int _handle_pbi; 
   int _tmpLastBar;
   int _lastTrend;            // тип последнего тренда по PBI 
-  double buffer_pbi[];
+  /*double buffer_pbi[];
   double buffer_high[];
   double buffer_low[];
-  double highPrice[], lowPrice[], closePrice[];
+  double highPrice[], lowPrice[], closePrice[];*/
  
   bool recountInterval;
   CisNewBar *isNewBar;
@@ -95,11 +95,11 @@ CChickensBrain::~CChickensBrain()
 {
  delete isNewBar;
  delete _conbuf;
- ArrayFree(closePrice);
+ /*ArrayFree(closePrice);
  ArrayFree(buffer_high);
  ArrayFree(buffer_low);
  ArrayFree(closePrice);
- IndicatorRelease(_handle_pbi);
+ IndicatorRelease(_handle_pbi);*/
 }
 //+------------------------------------------------------------------+
 //|      Метод GetSignal() возвращает сигнал торговли SELL/BUY       |                                                 
@@ -175,7 +175,7 @@ int CChickensBrain::GetSignal()
     log_file.Write(LOG_DEBUG, StringFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_low = %d",
           DoubleToString(_lowBorder, 5),
           TimeToString(TimeCurrent()),
-          closePrice[0],
+          _conbuf.GetClose(_period).buffer[0],
           _sl_min, _diff_low));
     /*PrintFormat("Цена закрытия пробила цену минимум = %s, Время = %s, цена = %.05f, _sl_min = %d, _diff_low = %d",
           DoubleToString(_lowBorder, 5),

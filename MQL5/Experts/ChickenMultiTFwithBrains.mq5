@@ -38,8 +38,8 @@ struct STradeTF  // хранение данных, соотносимых к определенному Тф
                            // и возвращающий сигнал на торговлю (SELL/BUY)
 };
 
-SPositionInfo pos_info;    
-STrailing trailing;
+SPositionInfo pos_info;    // структура позиции
+STrailing trailing;        // структура трейлинга
 STradeTF  tradeTF[3];      // массив Тф, на которых может производииться торговля
 
 STradeTF    tradeM5;

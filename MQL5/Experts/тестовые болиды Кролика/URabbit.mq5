@@ -12,7 +12,7 @@
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
 #include <ColoredTrend/ColoredTrendUtilities.mqh> 
 #include <CTrendChannel.mqh> // трендовый контейнер
-#include <Chicken/ContainerBuffers(NoPBI).mqh>
+#include <Chicken/ContainerBuffers(NoPBI).mqh> //контейнер буферов цен на всех ТФ (No PBI) - для запуска в ТС
 #include <Rabbit/TimeFrame.mqh>
 
 //константы
@@ -21,10 +21,10 @@
 
 enum ENUM_SIGNAL_FOR_TRADE
 {
- SELL = -1,   // или наоборот?
- BUY  = 1,
- NO_SIGNAL = 0,
- DISCORD = 2,
+ SELL = -1,     // открытие позиции на продажу
+ BUY  = 1,      // открытие позиции на покупку
+ NO_SIGNAL = 0, // для действий, когда сигнала на открытие позиции не было
+ DISCORD = 2,   // сигнал противоречия, "разрыв шаблона"
 };
 //---------------------Добавить---------------------------------+
 // ENUM для сигнала
@@ -32,7 +32,7 @@ enum ENUM_SIGNAL_FOR_TRADE
 // нужно ли в конбуф запихнуть данные индикатора АТР, а цену открытия?
 //--------------------------------------------------------------+
 
-//вводимые пользователем параметры
+//-------вводимые пользователем параметры-------------
 input string base_param = ""; // БАЗОВЫЕ ПАРАМЕТРЫ
 input double lot = 1;         // лот
 input double percent = 0.1;   // процент
@@ -47,41 +47,40 @@ input bool useChannel = true;    // закрытие внутри канала
 input bool useClose = true;      // закрытие позиции в противоположном тренде
 input bool use19Lines = true;    // 19 линий
 
+// ---------переменные робота------------------
+CTrendChannel *trend;      // буфер трендов
+CTimeframe *ctf;           // данные по ТФ
+CContainerBuffers *conbuf; // буфер контейнеров на различных Тф, заполняемый на OnTick()
+                           // highPrice[], lowPrice[], closePrice[] и т.д; 
+CArrayObj *dataTFs;        // массив ТФ, для торговли на нескольких ТФ одновременно
+CArrayObj *trends;         // массив буферов трендов (для каждого ТФ свой буфер)
 
-CTrendChannel *trend;
-CTimeFrame *ctf;
-CContainerBuffers *conbuf;
-CArrayObj *dataTFs;
-CArrayObj *trends;
-// переменные робота 
-datetime history_start;
-//торговый класс
-CTradeManager ctm;          
-//массивы
+CTradeManager ctm;         //торговый класс 
+     
+datetime history_start;    // время для получения торговой истории                           
 double atr_buf[1], open_buf[1];
 
-ENUM_TM_POSITION_TYPE opBuy,opSell;
+ENUM_TM_POSITION_TYPE opBuy, opSell;
 int handle19Lines; 
 int handleATR;
 int handleDE;
 
 double Ks[3]; // массив коэффициентов для каждого ТФ от М1 до М15
 
-//параметры позиции и трейлинга
+//---------параметры позиции и трейлинга------------
 SPositionInfo pos_info;
 STrailing     trailing;
 double volume = 1.0;   //объем  
 
 // направление открытия позиции
 int posOpenedDirection = 0;
-int tempPosDirection;
 int signalForTrade;
 int SL, TP;
 long magic;
 ENUM_TIMEFRAMES TFs[3] = {PERIOD_M1, PERIOD_M5, PERIOD_M15};
-ENUM_TIMEFRAMES posOpenedTF;
+ENUM_TIMEFRAMES posOpenedTF;  // период на котором была открыта позиция
 
-int indexPosOpenedTF; //удалить
+int indexPosOpenedTF;         // удалить елсли закрытие позиции по условию любого тренда или на том же тчо и была открыта
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -109,10 +108,10 @@ int OnInit()
    PrintFormat("Не удалось создать хэндл индикатора ATR на %s", PeriodToString(TFs[i]));
    return (INIT_FAILED);
   } 
-  ctf = new CTimeFrame(TFs[i],_Symbol, handleATR, handleDE);
-  ctf.SetRatio(Ks[i]); 
-  ctf.IsThisNewBar();
-  dataTFs.Add(ctf);
+  ctf = new CTimeframe(TFs[i],_Symbol, handleATR, handleDE); // создадим ТФ
+  ctf.SetRatio(Ks[i]);                                       // установим коэффициент
+  ctf.IsThisNewBar();                                        // добавим счетчик по новому бару
+  dataTFs.Add(ctf);                                          // добавим в буффер ТФ dataTFs
   // создать контейнер трендов для каждого периода
   trend = new CTrendChannel(0, _Symbol, TFs[i], handleDE, percent);
   trend.UploadOnHistory();
@@ -120,7 +119,7 @@ int OnInit()
   log_file.Write(LOG_DEBUG, StringFormat(" Загрузка ТФ = %s прошла успешно", PeriodToString(TFs[i])));
  }
  
- //----------- Обработка индикатора NineTeenLines
+ //----------- Обработка индикатора NineTeenLines----------
  handle19Lines = iCustom(_Symbol,_Period,"NineTeenLines");
  if (handle19Lines == INVALID_HANDLE)
  {
@@ -128,9 +127,9 @@ int OnInit()
   return (INIT_FAILED);
  }
  
+ //---------- Конец обработки NineTeenLines----------------
  conbuf = new CContainerBuffers(TFs);
- //---------- Конец обработки NineTeenLines
- opBuy  = OP_BUY;  //?
+ opBuy  = OP_BUY;  // так было. Зачем?
  opSell = OP_SELL;
  
  pos_info.volume = 1;
@@ -158,35 +157,35 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
- tempPosDirection = 0;
- ctm.OnTick();
- conbuf.Update();
- pos_info.type = OP_UNKNOWN;
- signalForTrade = NO_SIGNAL;
- //int positionDirection;
- if (ctm.GetPositionCount() == 0)
-  posOpenedDirection = 0;
- for(int i = ArraySize(TFs)-1; i >= 0; i--)
+ ctm.OnTick();    
+ conbuf.Update();             // потиковое обновление данных о цене
+ pos_info.type = OP_UNKNOWN;  // сброс струтуры позиции
+ signalForTrade = NO_SIGNAL;  // обнулим екущий сигнал
+
+ if (ctm.GetPositionCount() == 0) // если нет открытых позиций
+  posOpenedDirection = NO_SIGNAL; // напарвление открытой позиции NO_SIGNAL (0)
+  
+ for(int i = ArraySize(TFs)-1; i >= 0; i--) // проходя по каждому таймфрему, начиная со старшего
  { 
-  trend = trends.At(i);
-  if(!trend.UploadOnHistory())
+  trend = trends.At(i);                     
+  if(!trend.UploadOnHistory()) // обновить буфер трендов на текущем ТФ
    return;
-  ctf = dataTFs.At(i);
-  if(ctf.IsThisNewBar()>0)
+  ctf = dataTFs.At(i);         // получить текущий ТФ
+  if(ctf.IsThisNewBar() > 0)   // если на нем пришел новый бар
   {
-   signalForTrade = GetTradeSignal(ctf);
-   pos_info.sl = SL;
-   pos_info.tp = 10 * SL;
-   if( (signalForTrade == BUY || signalForTrade == SELL ) )
+   signalForTrade = GetTradeSignal(ctf); // считать сигнал на этом ТФ
+   pos_info.sl = SL;                     // установить рассчитанный SL
+   pos_info.tp = 10 * SL;                
+   if( (signalForTrade == BUY || signalForTrade == SELL ) ) //(signalForTrade != NO_POISITION)
    {
     if(signalForTrade == BUY)
      pos_info.type = opBuy;
     else 
      pos_info.type = opSell;
-    posOpenedDirection = signalForTrade;
-    posOpenedTF = TFs[i];
-    indexPosOpenedTF = i;
-    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, SPREAD);   
+    posOpenedDirection = signalForTrade;  // сохранить направление по которому была открыта сделка
+    posOpenedTF = TFs[i];                 // сохранить ТФ, на котором была открыта сделка
+    indexPosOpenedTF = i;                 // сохранить индекс ТФ в массиве dataTFs, на котором была открыта сделка
+    ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, SPREAD);   // открыть позицию
    }
   }
  }   
@@ -207,7 +206,9 @@ void OnChartEvent(const int id,         // идентификатор события
                   const string& sparam  // параметр события типа string 
                  )
 {
- int newDirection;
+ // проверка на разрыв шаблона. 
+ // Если был обнаружен тренд в противоположную сторону, закрыть позицию
+ int newDirection;  
  for(int i = 0; i < ArraySize(TFs); i++)
  {
   trend = trends.At(i);
@@ -219,18 +220,18 @@ void OnChartEvent(const int id,         // идентификатор события
   {
    newDirection = trend.GetTrendByIndex(0).GetDirection();
    // если пришел противоположный направлению позиции тренд
-   if (i >= indexPosOpenedTF && posOpenedDirection !=0 && newDirection == -posOpenedDirection && ctm.GetPositionCount() > 0 ) // && ctf.GetPeriod() == posOpenedTF
+   if (i >= indexPosOpenedTF && posOpenedDirection != NO_SIGNAL && newDirection == -posOpenedDirection && ctm.GetPositionCount() > 0 ) // && ctf.GetPeriod() == posOpenedTF
    {
     log_file.Write(LOG_DEBUG, StringFormat("%s Закрыли позицию на OnChartEvent по противоположному тренду", MakeFunctionPrefix(__FUNCTION__)));
     // закрываем позицию 
     ctm.ClosePosition(0);
-    posOpenedDirection = 0;
+    posOpenedDirection = NO_SIGNAL;
    }
   }
  } 
 }
 //функция получения торгового сигнала (возвращает заполненную структуру позиции) 
-int GetTradeSignal(CTimeFrame *TF)  
+int GetTradeSignal(CTimeframe *TF)  
 {
  int signalThis = 0;
  int signalYoungTF;
@@ -241,7 +242,7 @@ int GetTradeSignal(CTimeFrame *TF)
  }
  else 
  {
-  CTimeFrame *tf = GetBottom(TF);
+  CTimeframe *tf = GetBottom(TF);
   signalYoungTF = GetTradeSignal(GetBottom(TF));
 
   if(signalYoungTF == 2)   //было найдено противоречие на младших Тф
@@ -291,11 +292,11 @@ int GetTradeSignal(CTimeFrame *TF)
 }
 
 // возвращает следующий объект для младшего ТФ
-CTimeFrame *GetBottom(CTimeFrame *curTF)
+CTimeframe *GetBottom(CTimeframe *curTF)
 {
  if(curTF.GetPeriod()==PERIOD_M1)
   return curTF;
- CTimeFrame *ctf;
+ CTimeframe *ctf;
  for(int i = dataTFs.Total()-1; i >= 0 ;i--)
  {
   ctf = dataTFs.At(i);
@@ -311,7 +312,7 @@ CTimeFrame *GetBottom(CTimeFrame *curTF)
 
 
 // функция возвращает true, если последние два тренда в одну сторону и сонаправлены direction
-bool TrendsDirection (CTimeFrame *curTF, int direction)
+bool TrendsDirection (CTimeframe *curTF, int direction)
 {
  int index = GetIndexTF(curTF);
  CTrendChannel *trendForTF;
@@ -333,10 +334,10 @@ bool TrendsDirection (CTimeFrame *curTF, int direction)
 }
 
 // функция возвращает индекс ТФ , хранимого в массиве
-int GetIndexTF(CTimeFrame *curTF)
+int GetIndexTF(CTimeframe *curTF)
 {
  int i;
- CTimeFrame *masTF;
+ CTimeframe *masTF;
  for( i = 0; i <= dataTFs.Total(); i++)
  { 
   masTF = dataTFs.At(i);
@@ -347,7 +348,7 @@ int GetIndexTF(CTimeFrame *curTF)
 }
 
 // функция для проверки, что бар закрылся внутри канала
-bool LastBarInChannel (CTimeFrame *curTF) 
+bool LastBarInChannel (CTimeframe *curTF) 
 {
  CTrendChannel *trendTF;
  int index = GetIndexTF(curTF);

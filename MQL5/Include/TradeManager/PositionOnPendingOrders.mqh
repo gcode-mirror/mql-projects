@@ -212,7 +212,7 @@ CPosition::CPosition(string symbol, ENUM_TIMEFRAMES period, SPositionInfo &pi, S
  {
 //--- check order expiration
   int exp=(int)SymbolInfoInteger(symbol,SYMBOL_EXPIRATION_MODE);
-  if((exp&SYMBOL_EXPIRATION_GTC)==SYMBOL_EXPIRATION_GTC)
+  if((exp&SYMBOL_EXPIRATION_GTC) == SYMBOL_EXPIRATION_GTC)
   {
    _type_time = ORDER_TIME_GTC;
    _pos_info.expiration_time = 0;

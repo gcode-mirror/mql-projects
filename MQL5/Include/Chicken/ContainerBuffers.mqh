@@ -12,10 +12,10 @@
 
 
 #include <Lib CisNewBarDD.mqh>
-#include <CLog.mqh>                         // для лога
+#include <CLog.mqh>                   // для лога
 #include <StringUtilities.mqh>
 
-class CBufferTF : public CObject      //не лучше ли добавить handle сюда?
+class CBufferTF : public CObject      // не лучше ли добавить handle сюда?
 {
  private:
  ENUM_TIMEFRAMES  tf;               // таймфрейм хранимого буфера данных
@@ -50,12 +50,12 @@ class CContainerBuffers
  CArrayObj  *_bufferHigh; // массив буферов High на всех таймфреймах
  CArrayObj  *_bufferLow;  // массив буферов Low на всех таймфреймах
  CArrayObj  *_bufferPBI;  // массив буферов PBI на всех таймфреймах
-// CArrayObj  *_bufferATR;  // массив буферов ATR на всех таймфреймах
+// CArrayObj  *_bufferATR;// массив буферов ATR на всех таймфреймах
  CArrayObj  *_bufferClose;// массив буферов Close на всех таймфреймах
  CArrayObj  *_allNewBars; // массив newbars для каждого Тф
  
  int     _handlePBI[];    // массив хэндлов PBI
-// int     _handleATR[];    // массив хэндлов ATR
+// int     _handleATR[];  // массив хэндлов ATR
  int     _tfCount;        // количесвто Тф
  
  bool    _handleAvailable[];
@@ -111,7 +111,7 @@ CContainerBuffers::CContainerBuffers(ENUM_TIMEFRAMES &TFs[])
    Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
    _handleAvailable[i] = false;
   }
-/*  _handleATR[i] = iMA(_Symbol, TFs[i], 100, 0, MODE_EMA, iATR(_Symbol, TFs[i], 30));
+  /* _handleATR[i] = iMA(_Symbol, TFs[i], 100, 0, MODE_EMA, iATR(_Symbol, TFs[i], 30));
   if (_handleATR[i] == INVALID_HANDLE)
   {
    log_file.Write(LOG_DEBUG, "Не удалось создать хэндл индикатора ATR");
