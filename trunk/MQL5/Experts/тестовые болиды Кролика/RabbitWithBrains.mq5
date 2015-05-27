@@ -13,7 +13,7 @@
 #include <ColoredTrend/ColoredTrendUtilities.mqh> 
 #include <CTrendChannel.mqh> // трендовый контейнер
 #include <Rabbit/Timeframe.mqh>
-#include <D:/Projects/MT/Terminals/ActivTrades MetaTrader5/MQL5/Experts/тестовые болиды Кролика/RabbitsBrain.mqh>
+#include <Rabbit/RabbitsBrain.mqh>
 
 //константы
 #define KO 3            //коэффициент для условия открытия позиции, во сколько как минимум вычисленный тейк профит должен превышать вычисленный стоп лосс
