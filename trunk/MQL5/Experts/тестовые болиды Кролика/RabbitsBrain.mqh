@@ -29,6 +29,9 @@ class CRabbitsBrain
 {
  private:
   static double const trendPercent;
+  static double const M1_Ratio;        // осуществление торговли на  М5
+  static double const M5_Ratio;       // осуществление торговли на  M15
+  static double const M15_Ratio;        // осуществление торговли на Н1
   // поля, доступ к которым реализован через функции Get...()
   int _handle19Lines;
   int _posOpenedDirection;
@@ -36,15 +39,16 @@ class CRabbitsBrain
   CTimeframe *_posOpenedTF; // тф, на котором была совершена сделка
   string _symbol;
   CContainerBuffers *_conbuf;
-  CArrayObj *_trends;         // массив буферов трендов (для каждого ТФ свой буфер)
-  CArrayObj *_dataTFs;        // массив ТФ, для торговли на нескольких ТФ одновременно
+  CArrayObj     *_trends;     // массив буферов трендов (для каждого ТФ свой буфер)
+  CArrayObj     *_dataTFs;    // массив ТФ, для торговли на нескольких ТФ одновременно
   CTrendChannel *trend;
   CTimeframe *ctf;
+  double Ks[3];
   double atr_buf[1], open_buf[1];   // Для функции GetSignal
   int handleATR;
   int handleDE;
   int _sl;
-  ENUM_TIMEFRAMES TFs[3]; 
+  ENUM_TIMEFRAMES TFs[]; 
                     CTimeframe *GetBottom(CTimeframe *curTF);
                     bool LastBarInChannel (CTimeframe *curTF);
                     bool TrendsDirection (CTimeframe *curTF, int direction);
@@ -52,7 +56,7 @@ class CRabbitsBrain
                     
 
  public:
-                     CRabbitsBrain(string symbol, CContainerBuffers *conbuf, CArrayObj *trends, CArrayObj *dataTFs);
+                     CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIMEFRAMES &TFmass[]);
                     ~CRabbitsBrain();
                     
                     int GetSignal();
@@ -68,34 +72,56 @@ class CRabbitsBrain
                     
 
 };
-const double CRabbitsBrain::trendPercent = 0.1;
+const double  CRabbitsBrain::trendPercent = 0.1;
+const double  CRabbitsBrain::M1_Ratio = 5.0;
+const double  CRabbitsBrain::M5_Ratio = 3.0;
+const double  CRabbitsBrain::M15_Ratio = 1.0;
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf, CArrayObj *trends, CArrayObj *dataTFs)
+CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIMEFRAMES &TFmass[])
 {
  _symbol = symbol;
+ _conbuf = conbuf;
+ ArrayCopy(TFs,TFmass);
+ Ks[0] = M1_Ratio;
+ Ks[1] = M5_Ratio;
+ Ks[2] = M15_Ratio;
  //----------- Обработка индикатора NineTeenLines----------
  _handle19Lines = iCustom(_Symbol,_Period,"NineTeenLines");
  if (_handle19Lines == INVALID_HANDLE)
   Print("Не удалось создать хэндл индикатора NineTeenLines");
-/*
+ _dataTFs = new CArrayObj();
+ _trends = new CArrayObj();
+ 
+ //заполним каждый таймфрейм 
  for(int i = 0; i < ArraySize(TFs); i++)
- { 
-  handleDE = iCustom(_Symbol,TFs[i],"DrawExtremums");
+ {
+  handleDE = iCustom(_Symbol, TFs[i], "DrawExtremums");
   if (handleDE == INVALID_HANDLE)
+  {
    PrintFormat("Не удалось создать хэндл индикатора DrawExtremums на %s", PeriodToString(TFs[i]));
+   log_file.Write(LOG_DEBUG, StringFormat("Не удалось создать хэндл индикатора DrawExtremums на %s", PeriodToString(TFs[i])));
+  }
   handleATR = iMA(_Symbol, TFs[i], 100, 0, MODE_EMA, iATR(_Symbol, TFs[i], 30));
   if (handleATR == INVALID_HANDLE)
+  {
    PrintFormat("Не удалось создать хэндл индикатора ATR на %s", PeriodToString(TFs[i]));
-  ctf = new CTimeframe(TFs[i],_Symbol, handleATR);
-  trend = new CTrendChannel(0,_Symbol,TFs[i],handleDE,trendPercent);
- } */
-  
+   log_file.Write(LOG_DEBUG, StringFormat("Не удалось создать хэндл индикатора ATR на %s", PeriodToString(TFs[i])));
+  }
+ 
+  ctf = new CTimeframe(TFs[i],_Symbol, handleATR);           // создадим ТФ
+  ctf.SetRatio(Ks[i]);                                       // установим коэффициент
+  ctf.IsThisNewBar();                                        // добавим счетчик по новому бару
+  _dataTFs.Add(ctf);                                          // добавим в буффер ТФ dataTFs
+  // создать контейнер трендов для каждого периода
+  trend = new CTrendChannel(0, _Symbol, TFs[i], handleDE, trendPercent);
+  trend.UploadOnHistory();                                  // обновим контейнер на истории
+  _trends.Add(trend);                                        // добавим контейнер трендов в буффер по таймфреймам
+  log_file.Write(LOG_DEBUG, StringFormat(" Загрузка ТФ = %s прошла успешно", PeriodToString(TFs[i])));
+ }
+ 
 
- _conbuf = conbuf;
- _trends = trends;         
- _dataTFs = dataTFs;
  _posOpenedDirection = 0;
  _sl = 0;
  _indexPosOpenedTF = -1;
