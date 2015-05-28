@@ -12,7 +12,7 @@
 #include <DrawExtremums\CExtrContainer.mqh>
 #include <TradeManager\TradeManager.mqh>             // торговая библиотека
 #include <Chicken\ChickensBrain.mqh>                 // объект по вычислению сигналов для торговли
-#include <SystemLib/IndicatorManager.mqh>            // библиотека по работе с индикаторами
+#include <SystemLib\IndicatorManager.mqh>            // библиотека по работе с индикаторами
 
 //+------------------------------------------------------------------+
 //| Expert parametrs                                                 |
@@ -29,6 +29,8 @@ CTradeManager ctm;       //торговый класс
 SPositionInfo pos_info;
 STrailing trailing;
 CChickensBrain *chicken;
+CContainerBuffers *conbuf; // буфер контейнеров на различных Тф, заполняемый на OnTick()
+                           // highPrice[], lowPrice[], closePrice[] и т.д;
 
 int OnInit()
 {
@@ -50,7 +52,7 @@ int OnInit()
    return (INIT_FAILED);
   }
  }
- chicken = new CChickensBrain(_Symbol,_Period);
+ chicken = new CChickensBrain(_Symbol,_Period, conbuf);
  pos_info.volume = volume;
  pos_info.expiration = 0;
  trailing.trailingType = trailingType;

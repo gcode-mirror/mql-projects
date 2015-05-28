@@ -15,7 +15,7 @@
 #include <ContainerBuffers.mqh>     // класс контейнер буферов
 
 #define DEPTH 20
-#define ALLOW_INTERVAL 16
+#define ALLOW_INTERVAL 4
 // константы сигналов
 #define BUY   1    
 #define SELL -1 
@@ -27,7 +27,7 @@
 //|        Класс CChickensBrain  предназанчен для вычисления типа    |
 //|                              сигнала продажи согласно алгоритму  |                                                          |
 //+------------------------------------------------------------------+
-class CChickensBrain
+class CChickensBrain : public CArrayObj
 {
  private:
   string _symbol;
@@ -68,6 +68,7 @@ class CChickensBrain
                    int GetPriceDifference(){ return _priceDifference;}
                    double GetHighBorder() { return _highBorder;}
                    double GetLowBorder()  { return _lowBorder;}
+                   ENUM_TIMEFRAMES GetPeriod() { return _period;}
                   
                    
                    

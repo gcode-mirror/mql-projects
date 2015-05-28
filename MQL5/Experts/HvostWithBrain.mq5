@@ -14,15 +14,14 @@
 #include <SystemLib/IndicatorManager.mqh>   // библиотека по работе с индикаторами
 #include <CLog.mqh>                         // для лога
 #include <Hvost/HvostBrain.mqh>
-//#include <ChartObjects/ChartObjectsLines.mqh>      // для рисования линий расхождения
-#include <Chicken/ContainerBuffers.mqh>     // контейнер буферов данных
+
 
 struct STradeTF
 {
  bool used;
  ENUM_TIMEFRAMES period;
- STrailing trailing;
- CHvostBrain *hvostBrain;
+
+
 };
 STradeTF    tradeM5;
 STradeTF    tradeM15;
@@ -39,11 +38,14 @@ int countBars;
 int countTFs = 0;
 int tradeSignal = 0;
 // переменные для хранения времени движения цены
-datetime signal_time;        // время получения сигнала пробития ценой уровня на расстояние H
-datetime open_pos_time;      // время открытия позиции   
+datetime signal_time;         // время получения сигнала пробития ценой уровня на расстояние H
+datetime open_pos_time;       // время открытия позиции   
 // объекты классов
-CTradeManager *ctm;          // объект торгового класса
-CContainerBuffers *conbuf;   // контейнер буферов
+CTradeManager     *ctm;       // объект торгового класса
+CContainerBuffers *conbuf;    // контейнер буферов
+CHvostBrain       *hvostBrain;// класс вычисления сигнала торговли на каждом ТФ
+CArrayObj         *hvostiki;  // массив классов по вычислению торговых сигналов типа HvostBrain
+
 // структуры позиции и трейлинга
 SPositionInfo pos_info;      // структура информации о позиции
 STrailing     trailing;      // структура информации о трейлинге
@@ -52,21 +54,17 @@ int OnInit()
   {
    ENUM_TIMEFRAMES TFs[] = {PERIOD_M5, PERIOD_M15, PERIOD_H1, PERIOD_H4};
    conbuf = new CContainerBuffers(TFs);
+   hvostiki = new CArrayObj();
+   hvostiki.Add( new CHvostBrain(_Symbol,PERIOD_M5,conbuf));
+   hvostiki.Add( new CHvostBrain(_Symbol,PERIOD_M15,conbuf));
+   hvostiki.Add( new CHvostBrain(_Symbol,PERIOD_H1,conbuf));
    log_file.Write(LOG_DEBUG, "Эксперт был запущен");
-   if(!useTF_M5 && !useTF_M15 && !useTF_H1)
+   
+   /*if(!useTF_M5 && !useTF_M15 && !useTF_H1)  // проверка на включеннность таймфремов (не может быть ни одного включенного ТФ)
    {
     PrintFormat("useTF_M5 = %b, useTF_M15 = %b, useTF_H1 = %b", useTF_M5, useTF_M15, useTF_H1);
     return(INIT_FAILED);
-   }
-   tradeM5.used    = useTF_M5;
-   tradeM5.period  = PERIOD_M5;
-   tradeM15.used   = useTF_M15;
-   tradeM15.period = PERIOD_M15;
-   tradeH1.used    = useTF_H1;
-   tradeH1.period  = PERIOD_H1;
-   tradeTF[0] = tradeM5;  // 0 - индекс таймфрейма М5
-   tradeTF[1] = tradeM15; // 1 - индекс таймфрейма М15
-   tradeTF[2] = tradeH1;  // 2 - индекс таймфрейма H1
+   }*/
    
    // создаем объект торгового класса для открытия и закрытия позиций
    ctm = new CTradeManager();
@@ -76,27 +74,21 @@ int OnInit()
     //Print("Не удалось создать объект класса CTradeManager");
     return (INIT_FAILED);
    }  
-   
-   for(int i = 0; i < 3; i++)
+   //------- не нужная проверка. отладка. удалить----
+   for(int i = 0; i < hvostiki.Total(); i++)
    {
-    if(tradeTF[i].used == true)
-    {
-     tradeTF[i].hvostBrain = new CHvostBrain( _Symbol, tradeTF[i].period, conbuf);
-     if(tradeTF[i].hvostBrain == NULL)
+    if(hvostiki.At(i) == NULL)
      { 
       log_file.Write(LOG_DEBUG, "Не удалось создать объект класса CHvostBrain");
       //Print("Не удалось создать объект класса CHvostBrain");
       return (INIT_FAILED);
      } 
-     tradeTF[i].trailing.trailingType = TRAILING_TYPE_NONE;
-     //countTFs++;
-    }
    } 
-               
+   //--------------------------------------------------            
    // заполняем поля позиции
    pos_info.volume = lot;
    pos_info.expiration = 0;
-
+   trailing.trailingType = TRAILING_TYPE_NONE;
    return(INIT_SUCCEEDED);
   }
 
@@ -104,10 +96,8 @@ void OnDeinit(const int reason)
   {
    Print("Код ошибки = ",reason);
    // удаляем объекты
-   for(int i = 0; i < 3 && tradeTF[i].used ; i++)
-   {
-    delete tradeTF[i].hvostBrain;
-   }
+   hvostiki.Clear();
+   delete hvostiki;
    delete ctm;
   }
 
@@ -116,19 +106,20 @@ void OnTick()
    ctm.OnTick();
    if(conbuf.Update())
    {
-    for(int i = 0; i < 3 && tradeTF[i].used; i++)
+    for(int i = 0; i < hvostiki.Total(); i++)
     {
      //PrintFormat("%s Обновился прекрасно тф = %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(tradeTF[i].period));
      // если пришел новый бар на старшем ТФ
-     tradeSignal = tradeTF[i].hvostBrain.GetSignal();
+     hvostBrain = hvostiki.At(i);
+     tradeSignal = hvostBrain.GetSignal();
      if(tradeSignal == SELL)
      {
       log_file.Write(LOG_DEBUG, "Получен сигнал SELL");
       Print(__FUNCTION__,"Получен сигнал SELL");
       // вычисляем стоп лосс, тейк профит и открываем позицию на SELL
       pos_info.type = OP_SELL;
-      pos_info.sl = CountStopLoss(-1, tradeTF[i].hvostBrain, tradeTF[i].period);       
-      pos_info.tp = CountTakeProfit(-1, tradeTF[i].hvostBrain);
+      pos_info.sl = CountStopLoss(-1, hvostBrain, hvostBrain.GetPeriod());       
+      pos_info.tp = CountTakeProfit(-1, hvostBrain);
       pos_info.priceDifference = 0;     
       ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing);  
      
@@ -141,17 +132,18 @@ void OnTick()
       Print(__FUNCTION__,"Получен сигнал BUY");
       // вычисляем стоп лосс, тейк профит и открываем позицию на BUY
       pos_info.type = OP_BUY;
-      pos_info.sl = CountStopLoss(1, tradeTF[i].hvostBrain, tradeTF[i].period);       
-      pos_info.tp = CountTakeProfit(1, tradeTF[i].hvostBrain);           
+      pos_info.sl = CountStopLoss(1, hvostBrain, hvostBrain.GetPeriod());       
+      pos_info.tp = CountTakeProfit(1, hvostBrain);           
       pos_info.priceDifference = 0;       
       ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
       // сохраняем время открытия позиции
       open_pos_time = TimeCurrent();   
      }  
      // если нет открытых позиций то сбрасываем тип позиции на нуль
+     // где закрытие позиций?!
      if (ctm.GetPositionCount() == 0)
      {
-      tradeTF[i].hvostBrain.SetOpenedPosition(0);   
+      hvostBrain.SetOpenedPosition(0);   
      }
     }
    }

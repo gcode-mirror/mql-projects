@@ -10,7 +10,7 @@
 #include <CompareDoubles.mqh>               // для сравнения действительных чисел
 #include <TradeManager/TradeManager.mqh>    // торговая библиотека
 #include <CLog.mqh>                         // для лога
-#include <Chicken/ContainerBuffers.mqh>     // контейнер буферов данных там же CisNewBar
+#include <ContainerBuffers.mqh>     // контейнер буферов данных там же CisNewBar
 
 #define BUY   1    
 #define SELL -1 
@@ -20,7 +20,7 @@
 //|                                                                  |
 //+------------------------------------------------------------------+
 
-class CHvostBrain
+class CHvostBrain : public CArrayObj
 {
  private:
   // внешние параметры
@@ -56,12 +56,13 @@ class CHvostBrain
                      bool TestEldPeriod (int type);
                      int  GetLastTrend();
                      bool IsFlatNow();
-                     int  GetOpenedPosition(){return opened_position;}
+                     int  GetOpenedPosition()   {return opened_position;}
+                     double GetPriceBid()       { return price_bid;}
+                     double GetPriceAsk()       { return price_ask;}
+                     double GetMaxChannelPrice(){ return max_price;}
+                     double GetMinChannelPrice(){ return min_price;}
+                     ENUM_TIMEFRAMES GetPeriod(){ return _period;}
                      void SetOpenedPosition(int p){opened_position = p;}
-                     double GetPriceBid(){return price_bid;}
-                     double GetPriceAsk(){return price_ask;}
-                     double GetMaxChannelPrice(){return max_price;}
-                     double GetMinChannelPrice(){return min_price;}
                      bool CountChannel();
                      
 };
@@ -99,7 +100,8 @@ CHvostBrain::CHvostBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffer
 //+------------------------------------------------------------------+
 CHvostBrain::~CHvostBrain()
 {
- 
+ delete isNewBarEld;
+ IndicatorRelease(handlePBI);
 }
 //+------------------------------------------------------------------+
 
