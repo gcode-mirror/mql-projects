@@ -13,7 +13,7 @@
 //| Класс реализует работу с хэндлами, уникальными для ТФ (ATR, DE и др.), хранит состояние переменной isNewBar|
 //| Класс работает на М1, М5, М15.                                                                                |
 //+------------------------------------------------------------------------------------------------------------+
-class CTimeframe: public CObject
+class CTimeframeInfo: public CObject
 {
  private:
    string _symbol;
@@ -24,26 +24,25 @@ class CTimeframe: public CObject
    double _supremacyPercent;
  public: 
    //конструктор
-   CTimeframe(ENUM_TIMEFRAMES period, string symbol, 
+   CTimeframeInfo(ENUM_TIMEFRAMES period, string symbol, 
                            int handleATR);
-   ~CTimeframe();
-   //функции для работы с классом CTimeframe
+   ~CTimeframeInfo();
+   //функции для работы с классом CTimeframeInfo
    ENUM_TIMEFRAMES GetPeriod()   {return _period;}
-   string          GetSymbol()   {return _symbol;}
    bool            IsThisNewBar(){return _isNewBar.isNewBar();}
    bool            IsThisTrendNow(){return _isTrendNow;}
    int             GetHandleATR(){return _handleATR;}
    double          GetRatio()    {return _supremacyPercent;}
    void            SetRatio(double prc){_supremacyPercent = prc;} 
    void            SetTrendNow(bool isTrendNow) {_isTrendNow = isTrendNow;}
-  // bool            isTrendNow()  {return _trend.IsTrendNow();}
+
 };
 
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CTimeframe::CTimeframe(ENUM_TIMEFRAMES period, string symbol, 
+CTimeframeInfo::CTimeframeInfo(ENUM_TIMEFRAMES period, string symbol, 
                            int handleATR)
 {
  _symbol = symbol;
@@ -55,7 +54,7 @@ CTimeframe::CTimeframe(ENUM_TIMEFRAMES period, string symbol,
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CTimeframe::~CTimeframe()
+CTimeframeInfo::~CTimeframeInfo()
   {
   }
 //+------------------------------------------------------------------+

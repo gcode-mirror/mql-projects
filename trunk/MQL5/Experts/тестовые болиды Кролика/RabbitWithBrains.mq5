@@ -33,13 +33,13 @@ input double M15_Ratio  = 1;  //процент, насколько бар M1 больше среднего значен
 
 // ---------переменные робота------------------
 CTrendChannel *trend;      // буфер трендов
-CTimeframe *ctf;           // данные по ТФ
+CTimeframeInfo *ctf;           // данные по ТФ
 CContainerBuffers *conbuf; // буфер контейнеров на различных Тф, заполняемый на OnTick()
                            // highPrice[], lowPrice[], closePrice[] и т.д; 
 CArrayObj *dataTFs;        // массив ТФ, для торговли на нескольких ТФ одновременно
 CArrayObj *trends;         // массив буферов трендов (для каждого ТФ свой буфер)
 CRabbitsBrain *rabbit;
-CTimeframe *posOpenedTF;  // период на котором была открыта позиция
+CTimeframeInfo *posOpenedTF;  // период на котором была открыта позиция
 CTradeManager ctm;         // торговый класс 
      
 datetime history_start;    // время для получения торговой истории                           
@@ -49,7 +49,7 @@ int handle19Lines;
 int handleATR;
 int handleDE;
 
-
+double Ks[];
 //---------параметры позиции и трейлинга------------
 SPositionInfo pos_info;
 STrailing     trailing;
@@ -69,7 +69,9 @@ int indexPosOpenedTF;         // удалить елсли закрытие позиции по условию любог
 //+------------------------------------------------------------------+
 int OnInit()
 {
-
+ Ks[0] = M1_Ratio;
+ Ks[1] = M5_Ratio;
+ Ks[2] = M15_Ratio;
  history_start = TimeCurrent(); //запомним время запуска эксперта для получения торговой истории
 
  //---------- Конец обработки NineTeenLines----------------
@@ -77,7 +79,7 @@ int OnInit()
  opBuy  = OP_BUY;  // так было. Зачем?
  opSell = OP_SELL;
  
- rabbit = new CRabbitsBrain(_Symbol, conbuf, TFs); // поместим все созданное в класс - сигнал Кролика
+ rabbit = new CRabbitsBrain(_Symbol, conbuf, TFs, Ks); // поместим все созданное в класс - сигнал Кролика
  
  pos_info.volume = 1;
  trailing.trailingType = TRAILING_TYPE_NONE;

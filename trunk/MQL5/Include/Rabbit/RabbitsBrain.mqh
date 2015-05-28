@@ -14,9 +14,8 @@
 #include <CTrendChannel.mqh>                 // трендовый контейнер
 #include <Rabbit/TimeFrame.mqh>
 #include <TradeManager/TradeManager.mqh>    // 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
+#include <Lib CisNewBarDD.mqh>
+
 enum ENUM_SIGNAL_FOR_TRADE
 {
  SELL = -1,     // открытие позиции на продажу
@@ -25,46 +24,79 @@ enum ENUM_SIGNAL_FOR_TRADE
  DISCORD = 2,   // сигнал противоречия, "разрыв шаблона"
 };
 
+
+//+------------------------------------------------------------------------------------------------------------+
+//|                           Класс TimeFrame содержит информацию, которую можно отнести к конкретному ТФ      |
+//| Класс реализует работу с хэндлами, уникальными для ТФ (ATR, DE и др.), хранит состояние переменной isNewBar|
+//+------------------------------------------------------------------------------------------------------------+
+class CTimeframeInfo: public CObject
+{
+ private:
+   string _symbol;
+   ENUM_TIMEFRAMES _period;
+   CisNewBar *_isNewBar;   //ContainerBuffer
+   int   _handleATR;
+   bool  _isTrendNow; //не факт что понадобится. Заменено на _trend.IsTrendNow();
+   double _supremacyPercent;
+ public: 
+   //конструктор
+   CTimeframeInfo(ENUM_TIMEFRAMES period, string symbol, 
+                           int handleATR);
+   ~CTimeframeInfo();
+   //функции для работы с классом CTimeframeInfo
+   ENUM_TIMEFRAMES GetPeriod()   {return _period;}
+   bool            IsThisNewBar(){return _isNewBar.isNewBar();}
+   bool            IsThisTrendNow(){return _isTrendNow;}
+   int             GetHandleATR(){return _handleATR;}
+   double          GetRatio()    {return _supremacyPercent;}
+   void            SetRatio(double prc){_supremacyPercent = prc;} 
+   void            SetTrendNow(bool isTrendNow) {_isTrendNow = isTrendNow;}
+
+};
+
+//+-----------------------------------------------------------------------------+
+//|         Класс RabbitBrain формирует сигнал на открытие SELL/BUY             |
+//|    заключает в себе весь алгоритм робота Rabbit. Использует                 |
+//| дополнительный класс CTimeframeInfo для хранения информации для алгоритма   |
+//+-----------------------------------------------------------------------------+
+
 class CRabbitsBrain
 {
  private:
   static double const trendPercent;
-  static double const M1_Ratio;        // осуществление торговли на  М5
-  static double const M5_Ratio;       // осуществление торговли на  M15
-  static double const M15_Ratio;        // осуществление торговли на Н1
   // поля, доступ к которым реализован через функции Get...()
   int _handle19Lines;
   int _posOpenedDirection;
   int _indexPosOpenedTF;
-  CTimeframe *_posOpenedTF; // тф, на котором была совершена сделка
+  CTimeframeInfo *_posOpenedTF; // тф, на котором была совершена сделка
   string _symbol;
   CContainerBuffers *_conbuf;
   CArrayObj     *_trends;     // массив буферов трендов (для каждого ТФ свой буфер)
   CArrayObj     *_dataTFs;    // массив ТФ, для торговли на нескольких ТФ одновременно
   CTrendChannel *trend;
-  CTimeframe *ctf;
-  double Ks[3];
+  CTimeframeInfo *ctf;
+  double Ks[];
   double atr_buf[1], open_buf[1];   // Для функции GetSignal
   int handleATR;
   int handleDE;
   int _sl;
   ENUM_TIMEFRAMES TFs[]; 
-                    CTimeframe *GetBottom(CTimeframe *curTF);
-                    bool LastBarInChannel (CTimeframe *curTF);
-                    bool TrendsDirection (CTimeframe *curTF, int direction);
+                    CTimeframeInfo *GetBottom(CTimeframeInfo *curTF);
+                    bool LastBarInChannel (CTimeframeInfo *curTF);
+                    bool TrendsDirection (CTimeframeInfo *curTF, int direction);
                     bool FilterBy19Lines (int direction, ENUM_TIMEFRAMES period, int stopLoss);
                     
 
  public:
-                     CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIMEFRAMES &TFmass[]);
+                     CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIMEFRAMES &TFmass[], double &KsMass[]);
                     ~CRabbitsBrain();
                     
                     int GetSignal();
-                    int GetTradeSignal(CTimeframe *TF);
+                    int GetTradeSignal(CTimeframeInfo *TF);
                     bool UpdateBuffers();
                     bool UpdateTrendsOnHistory(int i);
                     bool UpdateOnEvent(long lparam, double dparam, string sparam, int countPos);
-                    int  GetIndexTF(CTimeframe *curTF);
+                    int  GetIndexTF(CTimeframeInfo *curTF);
                     void OpenedPosition(int ctmTotal);
 
                     int GetSL() {return _sl;}
@@ -73,20 +105,15 @@ class CRabbitsBrain
 
 };
 const double  CRabbitsBrain::trendPercent = 0.1;
-const double  CRabbitsBrain::M1_Ratio = 5.0;
-const double  CRabbitsBrain::M5_Ratio = 3.0;
-const double  CRabbitsBrain::M15_Ratio = 1.0;
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIMEFRAMES &TFmass[])
+CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIMEFRAMES &TFmass[], double &KsMass[])
 {
+ ArrayCopy(Ks, KsMass);
  _symbol = symbol;
  _conbuf = conbuf;
  ArrayCopy(TFs,TFmass);
- Ks[0] = M1_Ratio;
- Ks[1] = M5_Ratio;
- Ks[2] = M15_Ratio;
  //----------- Обработка индикатора NineTeenLines----------
  _handle19Lines = iCustom(_Symbol,_Period,"NineTeenLines");
  if (_handle19Lines == INVALID_HANDLE)
@@ -110,7 +137,7 @@ CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIME
    log_file.Write(LOG_DEBUG, StringFormat("Не удалось создать хэндл индикатора ATR на %s", PeriodToString(TFs[i])));
   }
  
-  ctf = new CTimeframe(TFs[i],_Symbol, handleATR);           // создадим ТФ
+  ctf = new CTimeframeInfo(TFs[i],_Symbol, handleATR);           // создадим ТФ
   ctf.SetRatio(Ks[i]);                                       // установим коэффициент
   ctf.IsThisNewBar();                                        // добавим счетчик по новому бару
   _dataTFs.Add(ctf);                                          // добавим в буффер ТФ dataTFs
@@ -161,7 +188,7 @@ int CRabbitsBrain::GetSignal()
 //+------------------------------------------------------------------+
 
 //функция получения торгового сигнала (возвращает тип сигнала на ТФ или противоречие DISCORT "разрыв шаблона") 
-int CRabbitsBrain::GetTradeSignal(CTimeframe *TF)  
+int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)  
 {
  int signalThis = 0;
  int signalYoungTF;
@@ -172,7 +199,7 @@ int CRabbitsBrain::GetTradeSignal(CTimeframe *TF)
  }
  else 
  {
-  CTimeframe *tf = GetBottom(TF);
+  CTimeframeInfo *tf = GetBottom(TF);
   signalYoungTF = GetTradeSignal(GetBottom(TF));
 
   if(signalYoungTF == 2)   //было найдено противоречие на младших Тф
@@ -214,11 +241,11 @@ int CRabbitsBrain::GetTradeSignal(CTimeframe *TF)
 }
 
 // возвращает следующий объект для младшего ТФ
-CTimeframe *CRabbitsBrain::GetBottom(CTimeframe *curTF)
+CTimeframeInfo *CRabbitsBrain::GetBottom(CTimeframeInfo *curTF)
 {
  if(curTF.GetPeriod() == PERIOD_M1)
   return curTF;
- CTimeframe *tf;
+ CTimeframeInfo *tf;
  for(int i = _dataTFs.Total()-1; i >= 0 ;i--)
  {
   tf = _dataTFs.At(i);
@@ -233,7 +260,7 @@ CTimeframe *CRabbitsBrain::GetBottom(CTimeframe *curTF)
 }
 
 // функция возвращает true, если последние два тренда в одну сторону и сонаправлены direction
-bool CRabbitsBrain::TrendsDirection (CTimeframe *curTF, int direction)
+bool CRabbitsBrain::TrendsDirection (CTimeframeInfo *curTF, int direction)
 {
  int index = GetIndexTF(curTF);
  CTrendChannel *trendForTF;
@@ -256,7 +283,7 @@ bool CRabbitsBrain::TrendsDirection (CTimeframe *curTF, int direction)
 
 
 // функция для проверки, что бар закрылся внутри канала
-bool CRabbitsBrain::LastBarInChannel (CTimeframe *curTF) 
+bool CRabbitsBrain::LastBarInChannel (CTimeframeInfo *curTF) 
 {
  CTrendChannel *trendTF;
  int index = GetIndexTF(curTF);
@@ -349,10 +376,10 @@ bool CRabbitsBrain::FilterBy19Lines (int direction, ENUM_TIMEFRAMES period, int 
 }
 
 // функция возвращает индекс ТФ , хранимого в массиве
-int CRabbitsBrain::GetIndexTF(CTimeframe *curTF)
+int CRabbitsBrain::GetIndexTF(CTimeframeInfo *curTF)
 {
  int i;
- CTimeframe *masTF;
+ CTimeframeInfo *masTF;
  for( i = 0; i <= _dataTFs.Total(); i++)
  { 
   masTF = _dataTFs.At(i);
