@@ -16,21 +16,11 @@
 #include <Hvost/HvostBrain.mqh>
 
 
-struct STradeTF
-{
- bool used;
- ENUM_TIMEFRAMES period;
-
-
-};
-STradeTF    tradeM5;
-STradeTF    tradeM15;
-STradeTF    tradeH1;
 // входные параметры робота  
 input double lot           = 1.0;    // лот   - отказаться смело, будет вычисляться   
-input bool   useTF_M5      = true;
-input bool   useTF_M15     = true;
-input bool   useTF_H1      = true;
+//input bool   useTF_M5      = true;
+//input bool   useTF_M15     = true;
+//input bool   useTF_H1      = true;
 int const    skipLastBar   = true; // пропустить последний бар при расчете канала
 // переменные
 bool is_flat_now;            // флаг, показывающий, флэт ли сейчас на графике или нет 
@@ -49,7 +39,7 @@ CArrayObj         *hvostiki;  // массив классов по вычислению торговых сигналов 
 // структуры позиции и трейлинга
 SPositionInfo pos_info;      // структура информации о позиции
 STrailing     trailing;      // структура информации о трейлинге
-STradeTF tradeTF[3];         // массив структура для торговли на разных таймфреймах
+
 int OnInit()
   {
    ENUM_TIMEFRAMES TFs[] = {PERIOD_M5, PERIOD_M15, PERIOD_H1, PERIOD_H4};

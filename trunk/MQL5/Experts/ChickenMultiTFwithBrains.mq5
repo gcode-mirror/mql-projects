@@ -20,9 +20,9 @@ input double  volume  = 0.1;        // размер лота
 input int     spread  = 30;         // максимально допустимый размер спреда в пунктах на открытие и доливку позиции
 input bool    use_tp  = false;      // использование takeProfit
 input double   tp_ko  = 2;          // 
-input bool tradeTFM5  = true;       // осуществление торговли на  М5
-input bool tradeTFM15 = true;       // осуществление торговли на  M15
-input bool tradeTFH1  = true;       // осуществление торговли на Н1
+//input bool tradeTFM5  = true;       // осуществление торговли на  М5
+//input bool tradeTFM15 = true;       // осуществление торговли на  M15
+//input bool tradeTFH1  = true;       // осуществление торговли на Н1
 input ENUM_TRAILING_TYPE trailingType = TRAILING_TYPE_PBI;
 /*
 input int minProfit = 250;
