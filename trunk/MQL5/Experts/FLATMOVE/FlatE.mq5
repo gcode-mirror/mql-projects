@@ -17,7 +17,6 @@
 
 input double percent = 0.1;
 
-
 CExtrContainer *extr_container;
 bool firstUploadedExtr = false;
 int handleDE;
