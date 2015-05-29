@@ -9,7 +9,6 @@
 
 // эксперт собирает статистику по флэтам типа А
 
-#include <MoveContainer/CMoveContainer.mqh> // контейнер движений
 #include <DrawExtremums/CExtrContainer.mqh> // контейнер экстремумов
 #include <DrawExtremums/CExtremum.mqh> // объект экстремумов
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
