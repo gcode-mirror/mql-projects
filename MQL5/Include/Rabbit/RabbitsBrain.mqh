@@ -12,7 +12,6 @@
 #include <CLog.mqh>                          // для лога
 #include <Rabbit/ContainerBuffers(NoPBI).mqh>//контейнер буферов цен на всех ТФ (No PBI) - для запуска в ТС
 #include <CTrendChannel.mqh>                 // трендовый контейнер
-#include <Rabbit/TimeFrame.mqh>
 #include <TradeManager/TradeManager.mqh>    // 
 #include <Lib CisNewBarDD.mqh>
 
@@ -166,11 +165,16 @@ int CRabbitsBrain::GetSignal()
 {  
  int signalForTrade;
  for(int i = _dataTFs.Total()-1; i >= 0; i--) // проходя по каждому таймфрему, начиная со старшего
- { 
+ {
+  ctf = _dataTFs.At(i);         // получить текущий ТФ 
   trend = _trends.At(i);                   
   if(!trend.UploadOnHistory())  // обновить буфер трендов на текущем ТФ
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("DISCORD: Не удалось обновить массив трендов на истории Тф = %s", PeriodToString(ctf.GetPeriod())));
    return DISCORD;
-  ctf = _dataTFs.At(i);         // получить текущий ТФ
+  }
+  
+  log_file.Write(LOG_DEBUG, StringFormat("Начало: Тф = %s", PeriodToString(ctf.GetPeriod())));
   if(ctf.IsThisNewBar()>0)      // если на нем пришел новый бар
   {
    signalForTrade = GetTradeSignal(ctf); // считать сигнал на этом ТФ
@@ -179,6 +183,7 @@ int CRabbitsBrain::GetSignal()
     _posOpenedTF = ctf;
     _posOpenedDirection = signalForTrade;         // сохранить направление по которому была открыта сделка
     _indexPosOpenedTF = GetIndexTF(_posOpenedTF); // сохранить индекс ТФ в массиве dataTFs, на котором была открыта сделка
+    log_file.Write(LOG_DEBUG, StringFormat("Запомнили что позиция открыта %i", GetIndexTF(_posOpenedTF)));
    }
    return signalForTrade;
   }
@@ -198,10 +203,10 @@ int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)
   signalYoungTF = 0;
  }
  else 
- {
+ { 
   CTimeframeInfo *tf = GetBottom(TF);
   signalYoungTF = GetTradeSignal(GetBottom(TF));
-
+  log_file.Write(LOG_DEBUG, StringFormat("Был найдено противоречие для ТФ = %s на ТФ = %s", PeriodToString(TF.GetPeriod()), PeriodToString(tf.GetPeriod()))); 
   if(signalYoungTF == 2)   //было найдено противоречие на младших Тф
    return DISCORD;
  }
@@ -214,6 +219,7 @@ int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)
  // тело бара больше среднего*К ?
  if(GreatDoubles(MathAbs(open_buf[0] - _conbuf.GetClose(TF.GetPeriod()).buffer[1]), atr_buf[0]*(1 + TF.GetRatio())))
  {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Тело бара (%f)  больше АТР (%f)", MakeFunctionPrefix(__FUNCTION__),MathAbs(open_buf[0] - _conbuf.GetClose(TF.GetPeriod()).buffer[1]),atr_buf[0]*(1 + TF.GetRatio())));
   if(open_buf[0] - _conbuf.GetClose(TF.GetPeriod()).buffer[1] > 0) // вычисление направления бара
    signalThis = SELL;
   else 

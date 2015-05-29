@@ -127,8 +127,8 @@ int CChickensBrain::GetSignal()
    log_file.Write(LOG_DEBUG,"Ошибка при копировании буферов");
   }*/
   // Вычислим границы движения цены на рассматриваемом отрезке
-  _index_max = ArrayMaximum(_conbuf.GetHigh(_period).buffer, 1, DEPTH);
-  _index_min = ArrayMinimum(_conbuf.GetLow(_period).buffer, 1, DEPTH);
+  _index_max = ArrayMaximum(_conbuf.GetHigh(_period).buffer, 1, DEPTH-1);
+  _index_min = ArrayMinimum(_conbuf.GetLow(_period).buffer, 1, DEPTH-1);
   recountInterval = false;
   // Вычислим тип движения на последнем баре
   _tmpLastBar = GetLastMoveType(_conbuf);
@@ -150,10 +150,10 @@ int CChickensBrain::GetSignal()
    log_file.Write(LOG_DEBUG, StringFormat("buffer_pbi[0] == %d  _index_max = %d _index_min = %d", MOVE_TYPE_FLAT, _index_max ,_index_min ));
    log_file.Write(LOG_DEBUG, StringFormat("_lowBorder ( %f ) - Low[DEPTH] ( %f )  = %f",  _lowBorder, _conbuf.GetLow(_period).buffer[1], _lowBorder - _conbuf.GetLow(_period).buffer[1]));
    log_file.Write(LOG_DEBUG, StringFormat("High[0]( %f ) - _highBorder( %f )  = %f",  _conbuf.GetHigh(_period).buffer[1], _highBorder, _conbuf.GetHigh(_period).buffer[1] - _highBorder));
-   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %d > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_highBorder,_diff_high,_sl_min,_lastTrend));
-   log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
-   log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %d > %d && _lastTrend = %d", _index_min, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_lowBorder,_diff_low,_sl_min,_lastTrend));
-   log_file.Write(LOG_DEBUG, "_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY");
+   log_file.Write(LOG_DEBUG, StringFormat("%d > %d && %f > %f && %d > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_highBorder,_diff_high,_sl_min,_lastTrend));
+   log_file.Write(LOG_DEBUG, "_index_max > ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
+   log_file.Write(LOG_DEBUG, StringFormat("%d > %d && %f < %f && %d > %d && _lastTrend = %d", _index_min, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_lowBorder,_diff_low,_sl_min,_lastTrend));
+   log_file.Write(LOG_DEBUG, "_index_min > ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY");
    
    if(_index_max < ALLOW_INTERVAL && GreatDoubles(_conbuf.GetClose(_period).buffer[1], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL)
    { 
