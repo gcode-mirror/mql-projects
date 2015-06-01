@@ -53,6 +53,20 @@ class CTimeframeInfo: public CObject
 
 };
 
+CTimeframeInfo::CTimeframeInfo(ENUM_TIMEFRAMES period, string symbol, 
+                           int handleATR)
+{
+ _symbol = symbol;
+ _period = period;
+ _isNewBar = new CisNewBar(symbol,period);
+ _handleATR = handleATR;
+}
+//+------------------------------------------------------------------+
+
+CTimeframeInfo::~CTimeframeInfo()
+  {
+  }
+
 //+-----------------------------------------------------------------------------+
 //|         Класс RabbitBrain формирует сигнал на открытие SELL/BUY             |
 //|    заключает в себе весь алгоритм робота Rabbit. Использует                 |
