@@ -188,7 +188,6 @@ int CRabbitsBrain::GetSignal()
    return DISCORD;
   }
   
-  log_file.Write(LOG_DEBUG, StringFormat("Начало: Тф = %s", PeriodToString(ctf.GetPeriod())));
   if(ctf.IsThisNewBar()>0)      // если на нем пришел новый бар
   {
    signalForTrade = GetTradeSignal(ctf); // считать сигнал на этом ТФ
@@ -233,7 +232,7 @@ int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)
  // тело бара больше среднего*К ?
  if(GreatDoubles(MathAbs(open_buf[0] - _conbuf.GetClose(TF.GetPeriod()).buffer[1]), atr_buf[0]*(1 + TF.GetRatio())))
  {
-  log_file.Write(LOG_DEBUG, StringFormat("%s Тело бара (%f)  больше АТР (%f)", MakeFunctionPrefix(__FUNCTION__),MathAbs(open_buf[0] - _conbuf.GetClose(TF.GetPeriod()).buffer[1]),atr_buf[0]*(1 + TF.GetRatio())));
+  log_file.Write(LOG_DEBUG, StringFormat("%s Тело бара (%f)  больше АТР (%f) на ТФ = %s", MakeFunctionPrefix(__FUNCTION__),MathAbs(open_buf[0] - _conbuf.GetClose(TF.GetPeriod()).buffer[1]),atr_buf[0]*(1 + TF.GetRatio()), PeriodToString(TF.GetPeriod())));
   if(open_buf[0] - _conbuf.GetClose(TF.GetPeriod()).buffer[1] > 0) // вычисление направления бара
    signalThis = SELL;
   else 
