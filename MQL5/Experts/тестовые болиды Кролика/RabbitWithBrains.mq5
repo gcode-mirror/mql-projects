@@ -31,15 +31,10 @@ input double M5_Ratio  = 3;   //процент, насколько бар M1 больше среднего значен
 input double M15_Ratio  = 1;  //процент, насколько бар M1 больше среднего значения
 
 // ---------переменные робота------------------
-CTrendChannel *trend;      // буфер трендов
-CTimeframeInfo *ctf;           // данные по ТФ
 CContainerBuffers *conbuf; // буфер контейнеров на различных Тф, заполняемый на OnTick()
                            // highPrice[], lowPrice[], closePrice[] и т.д; 
-CArrayObj *dataTFs;        // массив ТФ, для торговли на нескольких ТФ одновременно
-CArrayObj *trends;         // массив буферов трендов (для каждого ТФ свой буфер)
 CRabbitsBrain *rabbit;
-CTimeframeInfo *posOpenedTF;  // период на котором была открыта позиция
-CTradeManager ctm;         // торговый класс 
+CTradeManager *ctm;         // торговый класс 
      
 datetime history_start;    // время для получения торговой истории                           
 ENUM_TIMEFRAMES TFs[3] = {PERIOD_M1, PERIOD_M5, PERIOD_M15};// ------------------исправь объявление рэбита и все в него запихни, +структура
@@ -94,12 +89,8 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
- delete trend;
- delete conbuf;
- dataTFs.Clear();
- delete dataTFs;
- trends.Clear();
- delete trends;  
+ delete ctm;
+ delete conbuf;  
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
