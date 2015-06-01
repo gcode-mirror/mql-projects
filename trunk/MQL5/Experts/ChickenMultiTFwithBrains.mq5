@@ -126,6 +126,7 @@ void OnDeinit(const int reason)
    IndicatorRelease(tradeTF[i].trailing.handleForTrailing);
   } */
  }
+ chickens.Clear();
  delete ctm;
  FileClose(fileTrade); 
 }

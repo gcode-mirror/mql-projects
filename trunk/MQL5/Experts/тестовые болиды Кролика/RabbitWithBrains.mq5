@@ -12,7 +12,6 @@
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
 #include <ColoredTrend/ColoredTrendUtilities.mqh> 
 #include <CTrendChannel.mqh> // трендовый контейнер
-#include <Rabbit/Timeframe.mqh>
 #include <Rabbit/RabbitsBrain.mqh>
 
 //константы
@@ -69,6 +68,7 @@ int indexPosOpenedTF;         // удалить елсли закрытие позиции по условию любог
 //+------------------------------------------------------------------+
 int OnInit()
 {
+ ArrayResize(Ks,3);
  Ks[0] = M1_Ratio;
  Ks[1] = M5_Ratio;
  Ks[2] = M15_Ratio;
