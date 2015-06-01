@@ -61,7 +61,7 @@ long magic;
 
 
 
-int indexPosOpenedTF;         // удалить елсли закрытие позиции по условию любого тренда или на том же тчо и была открыта
+int indexPosOpenedTF;           // удалить елсли закрытие позиции по условию любого тренда или на том же тчо и была открыта
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -72,7 +72,7 @@ int OnInit()
  Ks[0] = M1_Ratio;
  Ks[1] = M5_Ratio;
  Ks[2] = M15_Ratio;
- history_start = TimeCurrent(); //запомним врем€ запуска эксперта дл€ получени€ торговой истории
+ history_start = TimeCurrent(); // запомним врем€ запуска эксперта дл€ получени€ торговой истории
 
  //----------  онец обработки NineTeenLines----------------
  conbuf = new CContainerBuffers(TFs);
@@ -106,7 +106,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
- ctm.OnTick();    
+ ctm.OnTick();  
  rabbit.UpdateBuffers();      // потиковое обновление данных буферов            
  pos_info.type = OP_UNKNOWN;  // сброс струтуры позиции
  signalForTrade = NO_SIGNAL;  // обнулим текущий сигнал
@@ -144,6 +144,5 @@ void OnChartEvent(const int id,
 {
  if(rabbit.UpdateOnEvent(lparam, dparam, sparam, ctm.GetPositionCount()))
   ctm.ClosePosition(0);
-   
 }
 //+------------------------------------------------------------------+
