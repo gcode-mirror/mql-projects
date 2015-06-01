@@ -175,11 +175,12 @@ bool CExtrContainer::Upload(int bars = -1)
 {
  //if(isUploaded())
  _bufferExtr.Clear();
- if(bars == -1)
+ if(bars <= 0)
  {
    bars = Bars(_symbol,_period);
   _historyDepth = bars;
  }
+ log_file.Write(LOG_DEBUG, StringFormat("Количество загружаемых экстремумов bars = %i", bars));
  int copiedHigh     = _historyDepth;
  int copiedLow      = _historyDepth;
  int copiedHighTime = _historyDepth;
