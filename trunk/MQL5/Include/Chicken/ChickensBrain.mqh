@@ -112,7 +112,7 @@ int CChickensBrain::GetSignal()
  if(isNewBar.isNewBar() || recountInterval)
  { 
   if(!_conbuf.isAvailable(_period))
-   log_file.Write(LOG_DEBUG,"%s Зашел на алгоритм при незаполненных буферах");
+   log_file.Write(LOG_DEBUG,StringFormat("%s Зашел на алгоритм при незаполненных буферах", MakeFunctionPrefix(__FUNCTION__)));
   // установить индексацию буферов как в таймсерии
   /*ArraySetAsSeries(buffer_high, false);
   ArraySetAsSeries(buffer_low, false);
@@ -127,8 +127,8 @@ int CChickensBrain::GetSignal()
    log_file.Write(LOG_DEBUG,"Ошибка при копировании буферов");
   }*/
   // Вычислим границы движения цены на рассматриваемом отрезке
-  _index_max = ArrayMaximum(_conbuf.GetHigh(_period).buffer, 1, DEPTH-1);
-  _index_min = ArrayMinimum(_conbuf.GetLow(_period).buffer, 1, DEPTH-1);
+  _index_max = ArrayMaximum(_conbuf.GetHigh(_period).buffer, 2, DEPTH-1);
+  _index_min = ArrayMinimum(_conbuf.GetLow(_period).buffer, 2, DEPTH-1);
   recountInterval = false;
   // Вычислим тип движения на последнем баре
   _tmpLastBar = GetLastMoveType(_conbuf);

@@ -180,7 +180,7 @@ void OnTick()
      //trailing.trailingStep = 5;
      if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko) //елси tp вычислен верно открываем позицию
      {
-      log_file.Write(LOG_DEBUG, StringFormat("%s, tp=%d, sl=%d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
+      log_file.Write(LOG_DEBUG, StringFormat("%s, tp = %d, sl = %d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
       FileWriteString(fileTrade, "Была открыта позиция на" + _Symbol+ "на" + PeriodToString(chicken.GetPeriod()) +" \n");
       FileWriteString(fileTrade, StringFormat("%s, date = %s ,tp = %d, sl = %d", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent()), pos_info.tp, pos_info.sl)); 
       ctm.OpenMultiPosition(_Symbol, _Period, pos_info, trailing, spread);

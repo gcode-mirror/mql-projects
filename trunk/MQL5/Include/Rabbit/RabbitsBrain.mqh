@@ -214,6 +214,7 @@ int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)
  if(TF.GetPeriod() == PERIOD_M1) // проверка на противоречия на младшем ТФ
  {
   signalYoungTF = 0;
+  log_file.Write(LOG_DEBUG, StringFormat("%s Период является младшим М1", MakeFunctionPrefix(__FUNCTION__)));
  }
  else 
  { 
@@ -255,6 +256,7 @@ int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)
    }
   }
  }
+ log_file.Write(LOG_DEBUG, StringFormat("%s Return NO_SIGNAL", MakeFunctionPrefix(__FUNCTION__)));
  signalThis = NO_SIGNAL;
  return signalThis; //возвращаем торговый сигнал
 }

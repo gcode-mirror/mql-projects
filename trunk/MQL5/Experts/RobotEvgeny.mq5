@@ -10,10 +10,10 @@
 // сбор статистики пробития линий
 
 #include <ChartObjects/ChartObjectsLines.mqh> // для рисования линий тренда
-#include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
-#include <CompareDoubles.mqh> // для сравнения вещественных чисел
-#include <TradeManager/TradeManager.mqh>    // торговая библиотека
-#include <Lib CisNewBarDD.mqh> // для проверки формирования нового бара
+#include <SystemLib/IndicatorManager.mqh>     // библиотека по работе с индикаторами
+#include <CompareDoubles.mqh>                 // для сравнения вещественных чисел
+#include <TradeManager/TradeManager.mqh>      // торговая библиотека
+#include <Lib CisNewBarDD.mqh>                // для проверки формирования нового бара
 
 input double lot = 1; // лот
 input double percent = 0.1; // процент
@@ -62,9 +62,9 @@ int OnInit()
  {
   isNewBar = new CisNewBar(_Symbol, _Period); 
   // сохраняем имена событий
-  eventExtrDownName = "EXTR_DOWN_FORMED_"+_Symbol+"_"+PeriodToString(_Period);
-  eventExtrUpName = "EXTR_UP_FORMED_"+_Symbol+"_"+PeriodToString(_Period); 
-  eventMoveChanged = "MOVE_CHANGED_"+_Symbol+"_"+PeriodToString(_Period); 
+  eventExtrDownName = "EXTR_DOWN_FORMED_" + _Symbol + "_"   + PeriodToString(_Period);
+  eventExtrUpName   = "EXTR_UP_FORMED_"   + _Symbol + "_"   + PeriodToString(_Period); 
+  eventMoveChanged  = "MOVE_CHANGED_"     + _Symbol + "_"   + PeriodToString(_Period); 
   ctm = new CTradeManager(); 
    // привязка индикатора DrawExtremums 
   handleDE = DoesIndicatorExist(_Symbol,_Period,"DrawExtremums");

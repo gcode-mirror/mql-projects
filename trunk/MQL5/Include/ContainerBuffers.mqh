@@ -188,6 +188,10 @@ bool CContainerBuffers::Update()
      PrintFormat("%s Ошибка при копировании буфера PBI на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferPBI.GetTF()));
      return false;
     }
+     bufferHigh.SetAvailable(true);
+      bufferLow.SetAvailable(true);
+       bufferClose.SetAvailable(true);
+        bufferPBI.SetAvailable(true);
     /*if(CopyBuffer(_handleATR[i], 4, 1, 1, bufferATR.buffer)      < 1)   // значение ATR
     {
      bufferATR.SetAvailable(false);
