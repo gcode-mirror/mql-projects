@@ -85,9 +85,6 @@ void OnDeinit(const int reason)
 void OnTick()
   {
     ctm.OnTick();
-    // если нет позиций, но режим mode равен 1
-    //if (ctm.GetPositionCount()>0 && mode == 1)
-    // mode = 0;
     if (!firstUploadedExtr)
     {
      firstUploadedExtr = extr_container.Upload();
@@ -103,7 +100,6 @@ void OnChartEvent(const int id,         // идентификатор события
                   const string& sparam  // параметр события типа string 
                  )
   {
-
     // обновляем контейнер экстремумов
     extr_container.UploadOnEvent(sparam,dparam,lparam);
     // если пришло событие, что сформировался верхний экстремум
