@@ -81,6 +81,7 @@ int OnInit()
  trailing.trailingStop = 0;
  trailing.trailingStep = 0;
  trailing.handleForTrailing = 0;
+ ctm = new CTradeManager();
 
  return(INIT_SUCCEEDED);
 }
