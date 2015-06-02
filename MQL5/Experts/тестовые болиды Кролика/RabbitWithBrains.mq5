@@ -103,9 +103,9 @@ void OnTick()
  signalForTrade = NO_SIGNAL;  // обнулим текущий сигнал
  rabbit.OpenedPosition(ctm.GetPositionCount());  // ToDo получить позиции для конкретного робота
  signalForTrade = rabbit.GetSignal();             
- if( (signalForTrade == BUY || signalForTrade == SELL ) ) //(signalForTrade != NO_POISITION)
+ if((signalForTrade == BUY || signalForTrade == SELL ))  //(signalForTrade != NO_POISITION)
  {
-  pos_info.sl = rabbit.GetSL();                     // установить рассчитанный SL
+  pos_info.sl = rabbit.GetSL();                          // установить рассчитанный SL
   pos_info.tp = 10 * SL; 
   if(signalForTrade == BUY)
    pos_info.type = opBuy;
