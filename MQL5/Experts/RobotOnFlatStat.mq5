@@ -47,6 +47,7 @@ int trend = 0; // тип тренда
 
 int OnInit()
   {  
+   // если 
    // создаем объект торгового класса
    ctm = new CTradeManager ();
    // сохраняем имена событий
@@ -91,6 +92,17 @@ void OnTick()
     }    
    if (!firstUploadedExtr)
     return;    
+   // если есть режим mode = 1
+   if (mode == 1)
+    {
+     // если сейчас тренд и он противоположен предыдущему
+     if ( IsItTrend(extr_container.GetFormedExtrByIndex(0,EXTR_HIGH),extr_container.GetFormedExtrByIndex(1,EXTR_HIGH),
+                    extr_container.GetFormedExtrByIndex(0,EXTR_LOW),extr_container.GetFormedExtrByIndex(1,EXTR_LOW) ) == -trend)
+                    {
+                     // то закрываем позицию
+                     ctm.ClosePosition(0);
+                    }
+    }
   }
   
 // функция обработки внешних событий
@@ -124,7 +136,10 @@ void OnChartEvent(const int id,         // идентификатор события
                                            CountFlatChannel();       
                                            // пытаемся открыть позицию     
                                            if ( PositionOpen(flat,trend,1) )
-                                            DrawChannel ();                                
+                                            {
+                                             DrawChannel ();                                
+                                             mode = 1;
+                                            }
                                          }
                          }
                     }
@@ -153,7 +168,10 @@ void OnChartEvent(const int id,         // идентификатор события
                                            CountFlatChannel();      
                                            // пытаемся открыть позицию
                                            if ( PositionOpen(flat,trend,-1) )
-                                            DrawChannel ();
+                                            {
+                                             DrawChannel ();
+                                             mode = 1;
+                                            }
                                          }
                          }
                     }
@@ -311,7 +329,6 @@ string  GenUniqEventName(string eventName)
  {
   return (eventName + "_" + _Symbol + "_" + PeriodToString(_Period));
  }
- 
  
 // функция открывает позицию
 bool PositionOpen (int flat,int trend,int extr)
