@@ -59,7 +59,7 @@ class CChickensBrain : public CArrayObj
                      CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf);
                     ~CChickensBrain();
                    int GetSignal();  //pos_info._tp = 0?
-                   int GetLastMoveType (CContainerBuffers &conbuf);
+                   int GetLastMoveType ();
                    int GetIndexMax()      { return _index_max;}
                    int GetIndexMin()      { return _index_min;}
                    int GetDiffHigh()      { return _diff_high;}
@@ -131,10 +131,11 @@ int CChickensBrain::GetSignal()
   _index_min = ArrayMinimum(_conbuf.GetLow(_period).buffer, 2, DEPTH-1);
   recountInterval = false;
   // ¬ычислим тип движени€ на последнем баре
-  _tmpLastBar = GetLastMoveType(_conbuf);
+  _tmpLastBar = GetLastMoveType();
   if (_tmpLastBar != 0)
   {
    _lastTrend = _tmpLastBar;
+   log_file.Write(LOG_DEBUG, StringFormat("—охранили последнее движение lastTrend = %d", _lastTrend));
   }
   log_file.Write(LOG_DEBUG,StringFormat("buffer_pbi[0] = %i index_max = %d, index_min = %d", _conbuf.GetPBI(_period).buffer[0],_index_max, _index_min ));
   if (_conbuf.GetPBI(_period).buffer[0] == MOVE_TYPE_FLAT && _index_max != -1 && _index_min != -1)
@@ -196,24 +197,30 @@ int CChickensBrain::GetSignal()
 //+------------------------------------------------------------------+
 //|      ћетод GetLastMoveType()тип движени€ цены на последнем баре  |                                                 
 //+------------------------------------------------------------------+
-int  CChickensBrain::GetLastMoveType (CContainerBuffers &conbuf) // получаем последнее значение PriceBasedIndicator
+int  CChickensBrain::GetLastMoveType () // получаем последнее значение PriceBasedIndicator
 {
- //int copiedPBI;
  int signTrend;
- /*copiedPBI = CopyBuffer(handle, 4, 1, 1, buffer_pbi);
+ /*
  if (copiedPBI < 1)
  {
   log_file.Write(LOG_DEBUG, StringFormat("Ќе удалось скопировать тип тренда на периоде  %s", PeriodToString(_period)));
   return (0);
  }*/
- signTrend = int(conbuf.GetPBI(_period).buffer[1]);
+ signTrend = int(_conbuf.GetPBI(_period).buffer[1]);
  log_file.Write(LOG_DEBUG, StringFormat("“ип тренда на последнем баре: %d", signTrend));
  //PrintFormat("“ип тренда на последнем баре: %d", signTrend);
   // если тренд вверх
  if (signTrend == 1 || signTrend == 2)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d и это +1", signTrend));
   return (1);
+ }
  // если тренд вниз
  if (signTrend == 3 || signTrend == 4)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d и это -1", signTrend));
   return (-1);
+ }
+ log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d ", signTrend));
  return (0);
 }
