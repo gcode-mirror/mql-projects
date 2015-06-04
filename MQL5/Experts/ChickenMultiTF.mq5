@@ -174,6 +174,7 @@ void OnTick()
     if (tmpLastBar != 0)
     {
      tradeTF[i].lastTrend = tmpLastBar;
+     log_file.Write(LOG_DEBUG, StringFormat("Сохранили последнее движение lastTrend = %d", tradeTF[i].lastTrend));
     }
     log_file.Write(LOG_DEBUG,StringFormat("buffer_pbi[0] = %i index_max = %d, index_min = %d", buffer_pbi[0],index_max, index_min ));
     if (buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
@@ -189,12 +190,12 @@ void OnTick()
      
      log_file.Write(LOG_DEBUG, StringFormat("Время = %s ТФ = %s", TimeToString(TimeCurrent()), PeriodToString(tradeTF[i].period)));
      log_file.Write(LOG_DEBUG, StringFormat("buffer_pbi[0] == %d  _index_max = %d _index_min = %d", MOVE_TYPE_FLAT, index_max ,index_min ));
-     log_file.Write(LOG_DEBUG,StringFormat("_lowBorder ( %f )  - Low[DEPTH] ( %f ) = %f",  lowBorder, buffer_low[DEPTH - 1], lowBorder - buffer_low[DEPTH - 1]));
-     log_file.Write(LOG_DEBUG,StringFormat("High[DEPTH]( %f )  - _highBorder( %f ) = %f", buffer_high[DEPTH - 1], highBorder, buffer_high[DEPTH - 1]- highBorder)); 
+     log_file.Write(LOG_DEBUG, StringFormat("_lowBorder ( %f )  - Low[DEPTH] ( %f ) = %f",  lowBorder, buffer_low[DEPTH - 1], lowBorder - buffer_low[DEPTH - 1]));
+     log_file.Write(LOG_DEBUG, StringFormat("High[DEPTH]( %f )  - _highBorder( %f ) = %f", buffer_high[DEPTH - 1], highBorder, buffer_high[DEPTH - 1]- highBorder)); 
      
-     log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %f > %d && _lastTrend = %d", index_max, ALLOW_INTERVAL,closePrice[0],highBorder,diff_high,sl_min,tradeTF[i].lastTrend));
+     log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f > %f && %d > %d && _lastTrend = %d", index_max, ALLOW_INTERVAL,closePrice[0],highBorder,diff_high,sl_min,tradeTF[i].lastTrend));
      log_file.Write(LOG_DEBUG, "_index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], _highBorder) && _diff_high > _sl_min && _lastTrend == SELL");
-     log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %f > %d && _lastTrend = %d", index_min, ALLOW_INTERVAL,closePrice[0],lowBorder,diff_low,sl_min,tradeTF[i].lastTrend));
+     log_file.Write(LOG_DEBUG, StringFormat("%d < %d && %f < %f && %d > %d && _lastTrend = %d", index_min, ALLOW_INTERVAL,closePrice[0],lowBorder,diff_low,sl_min,tradeTF[i].lastTrend));
      log_file.Write(LOG_DEBUG, "_index_min < ALLOW_INTERVAL && LessDoubles(closePrice[0], _lowBorder) && _diff_low > _sl_min && _lastTrend == BUY");
      
      if(index_max < ALLOW_INTERVAL && GreatDoubles(closePrice[0], highBorder) && diff_high > sl_min && tradeTF[i].lastTrend == SELL)
@@ -326,10 +327,17 @@ int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndic
  signTrend = int(buffer_pbi[0]);
  // если тренд вверх
  if (signTrend == 1 || signTrend == 2)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d и это + 1", signTrend));
   return (1);
+ }
  // если тренд вниз
  if (signTrend == 3 || signTrend == 4)
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d и это - 1", signTrend));
   return (-1);
+ }
+ log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d ", signTrend));
  return (0);
 }
 //+------------------------------------------------------------------+

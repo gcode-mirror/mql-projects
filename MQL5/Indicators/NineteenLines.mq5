@@ -222,7 +222,7 @@ void OnDeinit(const int reason)
  if(show_Extr_H4) DeleteExtrLines (PERIOD_H4);
  if(show_Extr_H1) DeleteExtrLines (PERIOD_H1);
  if(show_Price_D1)DeletePriceLines(PERIOD_D1);
- DeleteInfoTabel();
+
 }
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |

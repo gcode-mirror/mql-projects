@@ -30,7 +30,7 @@ input int trailingStop = 150;
 input int trailingStep = 5;
 */
 
-CChickensBrain *chicken;    // chicken - класс, производящий основные рассчеты 
+CChickensBrain *chicken;   // chicken - класс, производящий основные рассчеты 
                            // и возвращающий сигнал на торговлю (SELL/BUY)
 SPositionInfo pos_info;    // структура позиции
 STrailing trailing;        // структура трейлинга
@@ -181,7 +181,7 @@ void OnTick()
      if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko) //елси tp вычислен верно открываем позицию
      {
       log_file.Write(LOG_DEBUG, StringFormat("%s, tp = %d, sl = %d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
-      FileWriteString(fileTrade, "Была открыта позиция на" + _Symbol+ "на" + PeriodToString(chicken.GetPeriod()) +" \n");
+      FileWriteString(fileTrade, "Была открыта позиция на " + _Symbol + " на " + PeriodToString(chicken.GetPeriod()) + " \n");
       FileWriteString(fileTrade, StringFormat("%s, date = %s ,tp = %d, sl = %d", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent()), pos_info.tp, pos_info.sl)); 
       ctm.OpenMultiPosition(_Symbol, _Period, pos_info, trailing, spread);
      }
@@ -204,7 +204,7 @@ void OnTick()
       slPrice = curBid;
       ctm.ModifyPosition(_Symbol, magic, slPrice, 0); 
      }
-     if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp >0 && pos_info.tp <= pos_info.sl*tp_ko))
+     if((type == OP_BUYSTOP || type == OP_SELLSTOP) && (pos_info.tp > 0 && pos_info.tp <= pos_info.sl * tp_ko))
      {
       log_file.Write(LOG_DEBUG, StringFormat("TP = %0.5f", pos_info.tp));
       log_file.Write(LOG_DEBUG, "pos_info.tp > 0 && pos_info.tp <= pos_info.sl * tp_ko");
