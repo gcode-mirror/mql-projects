@@ -48,6 +48,7 @@ int trend = 0; // тип тренда
 int OnInit()
   {  
    // если 
+   
    // создаем объект торгового класса
    ctm = new CTradeManager ();
    // сохраняем имена событий
@@ -95,13 +96,20 @@ void OnTick()
    // если есть режим mode = 1
    if (mode == 1)
     {
+     // если позиция закрылась (очевидно по стопу или тейку)
+     if (ctm.GetPositionCount() == 0)
+      mode = 0;
+     
+     /*
      // если сейчас тренд и он противоположен предыдущему
      if ( IsItTrend(extr_container.GetFormedExtrByIndex(0,EXTR_HIGH),extr_container.GetFormedExtrByIndex(1,EXTR_HIGH),
                     extr_container.GetFormedExtrByIndex(0,EXTR_LOW),extr_container.GetFormedExtrByIndex(1,EXTR_LOW) ) == -trend)
                     {
                      // то закрываем позицию
                      ctm.ClosePosition(0);
+                     mode = 0;
                     }
+     */
     }
   }
   
@@ -238,6 +246,8 @@ int GetFlatMove (CExtremum *high0,CExtremum *high1,CExtremum *low0, CExtremum *l
       return (1); // флэт C
      }
 
+  /*
+  
   if ( GreatOrEqualDoubles (high1.price - high0.price,percent*height) &&
        GreatOrEqualDoubles (low0.price - low1.price,percent*height)
      )
@@ -257,6 +267,8 @@ int GetFlatMove (CExtremum *high0,CExtremum *high1,CExtremum *low0, CExtremum *l
      {
       return (4); // флэт F
      }
+  
+  */
   
   return (0);
  }  
@@ -346,6 +358,8 @@ bool PositionOpen (int flat,int trend,int extr)
      return (true);   
     }
     
+   /* 
+    
    // если флэт D, тренд вверх и последний экстремум - нижний
    if (flat == 2 && trend == 1 && extr == -1)
     {
@@ -357,7 +371,8 @@ bool PositionOpen (int flat,int trend,int extr)
      trailing.minProfit = 0;                                         
      ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);   
      return (true);  
-    } 
+    }
+        
    // если флэт E, тренд вверх и последний экстремум - нижний
    if (flat == 3 && trend == 1 && extr == 1)
     {
@@ -382,6 +397,8 @@ bool PositionOpen (int flat,int trend,int extr)
      ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);   
      return (true);  
     }   
+     
+   */
        
   return (false);    
  }
