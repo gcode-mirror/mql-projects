@@ -137,7 +137,7 @@ int CChickensBrain::GetSignal()
    _lastTrend = _tmpLastBar;
    log_file.Write(LOG_DEBUG, StringFormat("Сохранили последнее движение lastTrend = %d", _lastTrend));
   }
-  log_file.Write(LOG_DEBUG,StringFormat("buffer_pbi[0] = %i index_max = %d, index_min = %d", _conbuf.GetPBI(_period).buffer[0],_index_max, _index_min ));
+  log_file.Write(LOG_DEBUG,StringFormat("buffer_pbi[0] = %d index_max = %d, index_min = %d", int(_conbuf.GetPBI(_period).buffer[0]),_index_max, _index_min ));
   if (_conbuf.GetPBI(_period).buffer[0] == MOVE_TYPE_FLAT && _index_max != -1 && _index_min != -1)
   { 
    // Сохраним верхнюю и нижнюю цены в поля
@@ -148,7 +148,7 @@ int CChickensBrain::GetSignal()
    _diff_low   = (_lowBorder - _conbuf.GetLow(_period).buffer[1])/Point();
    
    log_file.Write(LOG_DEBUG, StringFormat("Время = %s ТФ = %s", TimeToString(TimeCurrent()), PeriodToString(_period)));
-   log_file.Write(LOG_DEBUG, StringFormat("buffer_pbi[0] == %d  _index_max = %d _index_min = %d", MOVE_TYPE_FLAT, _index_max ,_index_min ));
+   log_file.Write(LOG_DEBUG, StringFormat("buffer_pbi[0] == %d  _index_max = %d _index_min = %d", int(_conbuf.GetPBI(_period).buffer[0]), _index_max ,_index_min ));
    log_file.Write(LOG_DEBUG, StringFormat("_lowBorder ( %f ) - Low[DEPTH] ( %f )  = %f",  _lowBorder, _conbuf.GetLow(_period).buffer[1], _lowBorder - _conbuf.GetLow(_period).buffer[1]));
    log_file.Write(LOG_DEBUG, StringFormat("High[0]( %f ) - _highBorder( %f )  = %f",  _conbuf.GetHigh(_period).buffer[1], _highBorder, _conbuf.GetHigh(_period).buffer[1] - _highBorder));
    log_file.Write(LOG_DEBUG, StringFormat("%d > %d && %f > %f && %d > %d && _lastTrend = %d", _index_max, ALLOW_INTERVAL,_conbuf.GetClose(_period).buffer[1],_highBorder,_diff_high,_sl_min,_lastTrend));
@@ -206,21 +206,21 @@ int  CChickensBrain::GetLastMoveType () // получаем последнее значение PriceBase
   log_file.Write(LOG_DEBUG, StringFormat("Не удалось скопировать тип тренда на периоде  %s", PeriodToString(_period)));
   return (0);
  }*/
- signTrend = int(_conbuf.GetPBI(_period).buffer[1]);
- log_file.Write(LOG_DEBUG, StringFormat("Тип тренда на последнем баре: %d", signTrend));
+ signTrend = int(_conbuf.GetPBI(_period).buffer[0]);
+ log_file.Write(LOG_DEBUG, StringFormat("Тип тренда на последнем баре: %d", int(_conbuf.GetPBI(_period).buffer[0])));
  //PrintFormat("Тип тренда на последнем баре: %d", signTrend);
   // если тренд вверх
  if (signTrend == 1 || signTrend == 2)
  {
-  log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d и это +1", signTrend));
+  log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d и это +1", int(_conbuf.GetPBI(_period).buffer[0])));
   return (1);
  }
  // если тренд вниз
  if (signTrend == 3 || signTrend == 4)
  {
-  log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d и это -1", signTrend));
+  log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d и это -1", int(_conbuf.GetPBI(_period).buffer[0])));
   return (-1);
  }
- log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d ", signTrend));
+ log_file.Write(LOG_DEBUG, StringFormat("последний pbi = %d ", int(_conbuf.GetPBI(_period).buffer[0])));
  return (0);
 }

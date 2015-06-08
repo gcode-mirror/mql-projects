@@ -9,7 +9,6 @@
 
 #include <TradeManager/TradeManager.mqh>
 #include <Chicken/ChickensBrain.mqh>                 // объект по вычислению сигналов для торговли
-#include <SystemLib/IndicatorManager.mqh>            // библиотека по работе с индикаторами
 #include <CLog.mqh>                                  // для лога
 #include <ContainerBuffers.mqh>
 

@@ -8,8 +8,9 @@
 #property version   "1.00"
 
 #include <Lib CisNewBarDD.mqh>
-#include <TradeManager\TradeManager.mqh>
-#include <CLog.mqh>                                
+#include <TradeManager/TradeManager.mqh>
+#include <CLog.mqh>   
+#include <SystemLib/IndicatorManager.mqh>            // библиотека по работе с индикаторами                             
 
 
 #define DEPTH 20
@@ -94,12 +95,16 @@ int OnInit()
   if(tradeTF[i].used == true)
   {
    tradeTF[i].isNewBar = new CisNewBar(_Symbol, tradeTF[i].period);
-   tradeTF[i].handle_pbi = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
+   tradeTF[i].handle_pbi = DoesIndicatorExist(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
    if(tradeTF[i].handle_pbi == INVALID_HANDLE)
    {
-    Print("Ошибка при иниализации эксперта. Не удалось создать хэндл индикатора PriceBasedIndicator");
-    log_file.Write(LOG_DEBUG, StringFormat(" ТФ = %b Не удалось создать хэндл индикатора PriceBasedIndicator", tradeTF[i].period));
-    return (INIT_FAILED);
+    tradeTF[i].handle_pbi = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
+    if(tradeTF[i].handle_pbi == INVALID_HANDLE)
+    {
+     Print("Ошибка при иниализации эксперта. Не удалось создать хэндл индикатора PriceBasedIndicator");
+     log_file.Write(LOG_DEBUG, StringFormat(" ТФ = %b Не удалось создать хэндл индикатора PriceBasedIndicator", tradeTF[i].period));
+     return (INIT_FAILED);
+    }
    } 
    tradeTF[i].trailing.trailingType = trailingType;
    //tradeTF[i].trailing.handleForTrailing = tradeTF[i].handle_pbi;
@@ -165,6 +170,7 @@ void OnTick()
      index_max = -1;
      index_min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
      tradeTF[i].recountInterval = true;
+     log_file.Write(LOG_DEBUG, StringFormat("Не удалось скопировать буферы на ТФ = %s", PeriodToString(tradeTF[i].period)));
     }
     index_max = ArrayMaximum(buffer_high, 0, DEPTH - 1);
     index_min = ArrayMinimum(buffer_low, 0, DEPTH - 1);
@@ -176,7 +182,7 @@ void OnTick()
      tradeTF[i].lastTrend = tmpLastBar;
      log_file.Write(LOG_DEBUG, StringFormat("Сохранили последнее движение lastTrend = %d", tradeTF[i].lastTrend));
     }
-    log_file.Write(LOG_DEBUG,StringFormat("buffer_pbi[0] = %i index_max = %d, index_min = %d", buffer_pbi[0],index_max, index_min ));
+    log_file.Write(LOG_DEBUG,StringFormat("buffer_pbi[0] = %f index_max = %d, index_min = %d", buffer_pbi[0],index_max, index_min ));
     if (buffer_pbi[0] == MOVE_TYPE_FLAT && index_max != -1 && index_min != -1)
     {
      highBorder = buffer_high[index_max];
@@ -323,7 +329,13 @@ int  GetLastMoveType (int handle) // получаем последнее значение PriceBasedIndic
  int signTrend;
  copiedPBI = CopyBuffer(handle, 4, 1, 1, buffer_pbi);
  if (copiedPBI < 1)
+ {
+  log_file.Write(LOG_DEBUG, "Вообще-то ноль потому что не удоалось скопировать");
   return (0);
+ }
+ log_file.Write(LOG_DEBUG, StringFormat("последний реальный pbi = %f ", buffer_pbi[0]));
+
+ log_file.Write(LOG_DEBUG, StringFormat("последний реальный int(buffer_pbi[0]) = %d ", int(buffer_pbi[0])));
  signTrend = int(buffer_pbi[0]);
  // если тренд вверх
  if (signTrend == 1 || signTrend == 2)

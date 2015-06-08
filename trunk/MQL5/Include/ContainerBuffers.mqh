@@ -14,6 +14,7 @@
 #include <Lib CisNewBarDD.mqh>
 #include <CLog.mqh>                   // для лога
 #include <StringUtilities.mqh>
+#include <SystemLib/IndicatorManager.mqh>            // библиотека по работе с индикаторами
 
 class CBufferTF : public CObject      // не лучше ли добавить handle сюда?
 {
@@ -104,12 +105,16 @@ CContainerBuffers::CContainerBuffers(ENUM_TIMEFRAMES &TFs[])
   _allNewBars.Add(new CisNewBar(_Symbol,_TFs[i]));
    GetNewBar(TFs[i]).isNewBar();
   _handleAvailable[i] = true;
-  _handlePBI[i] = iCustom(_Symbol, TFs[i], "PriceBasedIndicator");
-  if (_handlePBI[i] == INVALID_HANDLE)
+  _handlePBI[i] = DoesIndicatorExist(_Symbol, TFs[i], "PriceBasedIndicator");
+  if(_handlePBI[i] == INVALID_HANDLE)
   {
-   log_file.Write(LOG_DEBUG, "Не удалось создать хэндл индикатора PriceBasedIndicator");
-   Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
-   _handleAvailable[i] = false;
+   _handlePBI[i] = iCustom(_Symbol, TFs[i], "PriceBasedIndicator");
+   if (_handlePBI[i] == INVALID_HANDLE)
+   {
+    log_file.Write(LOG_DEBUG, "Не удалось создать хэндл индикатора PriceBasedIndicator");
+    Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
+    _handleAvailable[i] = false;
+   }
   }
   /* _handleATR[i] = iMA(_Symbol, TFs[i], 100, 0, MODE_EMA, iATR(_Symbol, TFs[i], 30));
   if (_handleATR[i] == INVALID_HANDLE)
@@ -204,26 +209,33 @@ bool CContainerBuffers::Update()
    {
     if(CopyHigh(_Symbol, bufferHigh.GetTF(), 0, 1, tempBuffer) == 1)
      bufferHigh.buffer[0] = tempBuffer[0];
-    if(CopyLow(_Symbol, bufferLow.GetTF(), 0, 1, tempBuffer))
+    if(CopyLow(_Symbol, bufferLow.GetTF(), 0, 1, tempBuffer) == 1)
      bufferLow.buffer[0] = tempBuffer[0];
     if(CopyClose(_Symbol, bufferClose.GetTF(), 0, 1, tempBuffer))
      bufferClose.buffer[0] = tempBuffer[0];
-    if(CopyBuffer(_handlePBI[i], 4, 0, 1, tempBuffer))
-     bufferPBI.buffer[0] = tempBuffer[0];
+    if(CopyBuffer(_handlePBI[i], 4, 0, 1, tempBuffer) == 1)
+      bufferPBI.buffer[0] = tempBuffer[0];
+    else
+     log_file.Write(LOG_DEBUG, " Не удалось скопировать bufferPBI");
+     
     /*if(CopyBuffer(_handleATR[i], 4, 0, 1, tempBuffer))
      bufferATR.buffer[0] = tempBuffer[0];*/
    }
   }
   else 
   {
-   _handlePBI[i] = iCustom(_Symbol, _TFs[i], "PriceBasedIndicator");
-   if (_handlePBI[i] == INVALID_HANDLE)
+   _handlePBI[i] = DoesIndicatorExist(_Symbol, _TFs[i], "PriceBasedIndicator");
+   if(_handlePBI[i] == INVALID_HANDLE)
    {
-    log_file.Write(LOG_DEBUG, "Не удалось создать хэндл индикатора PriceBasedIndicator");
-    Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
-    recalculate = true;
-    return false;
-   }
+    _handlePBI[i] = iCustom(_Symbol, _TFs[i], "PriceBasedIndicator");
+    if (_handlePBI[i] == INVALID_HANDLE)
+    {
+     log_file.Write(LOG_DEBUG, "Не удалось создать хэндл индикатора PriceBasedIndicator");
+     Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
+     recalculate = true;
+     return false;
+    }
+   } 
    /*else if (_handleATR[i] == INVALID_HANDLE)
    {
     log_file.Write(LOG_DEBUG, "Не удалось создать хэндл индикатора ATR");
