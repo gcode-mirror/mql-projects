@@ -14,6 +14,8 @@
 #include <CTrendChannel.mqh>                 // трендовый контейнер
 #include <TradeManager/TradeManager.mqh>    // 
 #include <Lib CisNewBarDD.mqh>
+#include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
+
 
 enum ENUM_SIGNAL_FOR_TRADE
 {
@@ -137,13 +139,17 @@ CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIME
  //заполним каждый таймфрейм 
  for(int i = 0; i < ArraySize(TFs); i++)
  {
-  handleDE = iCustom(_Symbol, TFs[i], "DrawExtremums");
-  if (handleDE == INVALID_HANDLE)
+  handleDE = DoesIndicatorExist(_Symbol, TFs[i], "DrawExtremums");
+  if(handleDE == INVALID_HANDLE)
   {
-   PrintFormat("Не удалось создать хэндл индикатора DrawExtremums на %s", PeriodToString(TFs[i]));
-   log_file.Write(LOG_DEBUG, StringFormat("Не удалось создать хэндл индикатора DrawExtremums на %s", PeriodToString(TFs[i])));
+   handleDE = iCustom(_Symbol, TFs[i], "DrawExtremums");
+   if (handleDE == INVALID_HANDLE)
+   {
+    PrintFormat("Не удалось создать хэндл индикатора DrawExtremums на %s", PeriodToString(TFs[i]));
+    log_file.Write(LOG_DEBUG, StringFormat("Не удалось создать хэндл индикатора DrawExtremums на %s", PeriodToString(TFs[i])));
+   }
   }
-  handleATR = iMA(_Symbol, TFs[i], 100, 0, MODE_EMA, iATR(_Symbol, TFs[i], 30));
+  handleATR = iMA(_Symbol, TFs[i], 100, 0, MODE_EMA, iATR(_Symbol, TFs[i], 30)); // не ясно нужно ли проверять наличие этого индикатора на других графикаъ
   if (handleATR == INVALID_HANDLE)
   {
    PrintFormat("Не удалось создать хэндл индикатора ATR на %s", PeriodToString(TFs[i]));

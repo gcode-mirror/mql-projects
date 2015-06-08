@@ -208,13 +208,13 @@ bool CEventBase::Generate(long _chart_id, int _id_ind, SEventData &_data,
       ResetLastError();
       is_generated = EventChartCustom(_chart_id, event.id, this._data.lparam,
                                       this._data.dparam, this._data.sparam);
-      if(!is_generated ) //&& _LastError != 4104
+      if(!is_generated && _LastError != 4104)
          {
-          Print("is_generated = ", is_generated);
+          Print("is_generated = ", BoolToString(is_generated));
           PrintFormat("%s Error while generating a custom event: %d", __FUNCTION__,_LastError);
           Print( ChartSymbol(_chart_id)," ",PeriodToString(ChartPeriod(_chart_id)), "Ошибка! _chart_id =", _chart_id, " event.id = ", event.id, " data.dparam = " ,this._data.dparam, " data.sparam = ", this._data.sparam);
           log_file.Write(LOG_DEBUG, StringFormat("time = %s", TimeToString(TimeCurrent())));
-          log_file.Write(LOG_DEBUG, StringFormat("is_generated = %b", is_generated));
+          log_file.Write(LOG_DEBUG, StringFormat("is_generated = %s", BoolToString(is_generated)));
           log_file.Write(LOG_DEBUG, StringFormat("%s Error while generating a custom event: %d", __FUNCTION__,_LastError));
           log_file.Write(LOG_DEBUG, StringFormat("chart_id = %s , ChartPeriod = %s  Ошибка! event.id = %d data.dparam = %f data.sparam = %s", ChartSymbol(_chart_id),PeriodToString(ChartPeriod(_chart_id)), event.id, this._data.dparam,  this._data.sparam));
          }

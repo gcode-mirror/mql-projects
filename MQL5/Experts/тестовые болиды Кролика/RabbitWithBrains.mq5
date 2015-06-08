@@ -9,7 +9,6 @@
 
 //подключение необходимых библиотек
 
-#include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
 #include <ColoredTrend/ColoredTrendUtilities.mqh> 
 #include <CTrendChannel.mqh> // трендовый контейнер
 #include <Rabbit/RabbitsBrain.mqh>

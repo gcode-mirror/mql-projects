@@ -166,14 +166,14 @@ void OnTick()
      if (isNewBar.isNewBar() > 0)
       {
        // копируем котировки последних двух баров
-       if (CopyRates(_Symbol,_Period,1,2,rates) == 2)
+       if (CopyRates(_Symbol, _Period, 1, 2, rates) == 2)
         {
-         priceTrendUp = ObjectGetValueByTime(0,"trendUp",TimeCurrent());
-         priceTrendDown = ObjectGetValueByTime(0,"trendDown",TimeCurrent());   
+         priceTrendUp = ObjectGetValueByTime(0,"trendUp", TimeCurrent());
+         priceTrendDown = ObjectGetValueByTime(0,"trendDown", TimeCurrent());   
          channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала   
          // если цена закрытия на последнем баре ниже цены открытия (в нашу сторону), а на предыдущем баре - обратная ситуевина
          if ( LessDoubles(rates[1].close,rates[1].open) && GreatDoubles(rates[0].close,rates[0].open) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
-              LessOrEqualDoubles(MathAbs(curBid-priceTrendUp),channelH*0.2)                             // если текущая цена находится возле нижней границы канала тренда 
+              LessOrEqualDoubles(MathAbs(curBid-priceTrendUp),channelH * 0.2)                             // если текущая цена находится возле нижней границы канала тренда 
             )
              {
               pos_info.sl = CountStopLossForTrendLines ();
@@ -227,18 +227,18 @@ void OnChartEvent(const int id,         // идентификатор события
     }
    // пришло событие "изменилось движение на PBI"
    if (sparam == eventMoveChanged)
-     {
-      // если тренд вверх
-      if (dparam == 1.0 || dparam == 2.0)
-       {
-        
-       }
-      // если тренд вниз
-      if (dparam == 3.0 || dparam == 4.0)
-       {
-       
-       }
-     }
+   {
+    // если тренд вверх
+    if (dparam == 1.0 || dparam == 2.0)
+    {
+     
+    }
+    // если тренд вниз
+    if (dparam == 3.0 || dparam == 4.0)
+    {
+     
+    }
+   }
   } 
 
 // функция закрузки экстремумов на OnInit
@@ -248,12 +248,12 @@ bool UploadExtremums ()
   double extrLow[];
   double extrHighTime[];
   double extrLowTime[];
-  int count=0; // счетчик экстремумов
+  int count = 0;           // счетчик экстремумов
   int bars = Bars(_Symbol,_Period);
-  for (int ind=0;ind<bars;)
+  for (int ind = 0; ind < bars;)
    {
-    if (CopyBuffer(handleDE,0,ind,1,extrHigh) < 1 || CopyBuffer(handleDE,1,ind,1,extrLow) < 1 ||
-        CopyBuffer(handleDE,4,ind,1,extrHighTime) < 1 || CopyBuffer(handleDE,5,ind,1,extrLowTime) < 1 )
+    if (CopyBuffer(handleDE, 0, ind, 1, extrHigh) < 1 || CopyBuffer(handleDE, 1, ind, 1, extrLow) < 1 ||
+        CopyBuffer(handleDE, 4, ind, 1, extrHighTime) < 1 || CopyBuffer(handleDE, 5, ind, 1, extrLowTime) < 1 )
        {
         Sleep(100);
         continue;
@@ -324,7 +324,7 @@ int  IsTrendNow ()
       H1 = extr[1].price - extr[2].price;
       H2 = extr[3].price - extr[2].price;
       // если наша трендовая линия нас удовлетворяет
-      if (GreatDoubles(h1,H1*percent) && GreatDoubles(h2,H2*percent) )
+      if (GreatDoubles(h1, H1*percent) && GreatDoubles(h2, H2*percent) )
        return (1);
      }
    }
@@ -350,12 +350,12 @@ int CountStopLossForTrendLines ()
   // если тренд вверх
   if (trend == 1)
    {
-    return (int((MathAbs(curBid-extr[0].price)+H1*percent)/_Point));
+    return (int((MathAbs(curBid-extr[0].price) + H1*percent)/_Point));
    }
   // если тренд вниз
   if (trend == -1)
    {
-    return (int((MathAbs(curAsk-extr[0].price)-H1*percent)/_Point));
+    return (int((MathAbs(curAsk-extr[0].price) - H1*percent)/_Point));
    }   
   return (0);
  }
@@ -379,6 +379,7 @@ int CountStopLossForPBI ()
  // функция отрисовывает линии по экстремумам  
 void DrawLines ()
  {
+    Print ("Рисуем линию");
     // то создаем линии по точкам
     if (extr[0].direction == 1)
      {
@@ -387,31 +388,31 @@ void DrawLines ()
       trendLine.Create(0,"trendDown",0,extr[3].time,extr[3].price,extr[1].time,extr[1].price); // нижняя  линия
       ObjectSetInteger(0,"trendDown",OBJPROP_RAY_RIGHT,1);   
       if (trend == 1)
-       {
-        horLine.Create(0,"horLine",0,extr[0].price); // горизонтальная линия    
-        horPrice = extr[0].price;    
-       } 
+      {
+       horLine.Create(0,"horLine",0,extr[0].price); // горизонтальная линия    
+       horPrice = extr[0].price;    
+      } 
       if (trend == -1)
-       {
-        horLine.Create(0,"horLine",0,extr[1].price); // горизонтальная линия       
-        horPrice = extr[1].price;         
-       }        
+      {
+       horLine.Create(0,"horLine",0,extr[1].price); // горизонтальная линия       
+       horPrice = extr[1].price;         
+      }        
      }
     // то создаем линии по точкам
     if (extr[0].direction == -1)
      {
-      trendLine.Create(0,"trendDown",0,extr[2].time,extr[2].price,extr[0].time,extr[0].price); // нижняя  линия
-      ObjectSetInteger(0,"trendDown",OBJPROP_RAY_RIGHT,1);
-      trendLine.Create(0,"trendUp",0,extr[3].time,extr[3].price,extr[1].time,extr[1].price); // верхняя  линия
-      ObjectSetInteger(0,"trendUp",OBJPROP_RAY_RIGHT,1);   
+      trendLine.Create(0,"trendDown", 0, extr[2].time, extr[2].price, extr[0].time, extr[0].price); // нижняя  линия
+      ObjectSetInteger(0,"trendDown", OBJPROP_RAY_RIGHT, 1);
+      trendLine.Create(0,"trendUp", 0, extr[3].time, extr[3].price, extr[1].time, extr[1].price); // верхняя  линия
+      ObjectSetInteger(0,"trendUp", OBJPROP_RAY_RIGHT, 1);   
       if (trend == 1)
        {
-        horLine.Create(0,"horLine",0,extr[1].price); // горизонтальная линия     
+        horLine.Create(0,"horLine", 0, extr[1].price); // горизонтальная линия     
         horPrice = extr[1].price;           
        } 
       if (trend == -1)
        {
-        horLine.Create(0,"horLine",0,extr[0].price); // горизонтальная линия      
+        horLine.Create(0,"horLine", 0, extr[0].price); // горизонтальная линия      
         horPrice = extr[0].price;          
        }          
      }   
