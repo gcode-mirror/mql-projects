@@ -11,8 +11,8 @@
 #include <StringUtilities.mqh>               // строковое преобразование
 #include <CLog.mqh>                          // для лога
 #include <Rabbit/ContainerBuffers(NoPBI).mqh>// контейнер буферов цен на всех ТФ (No PBI) - для запуска в ТС
-//#include <CTrendChannel.mqh>                 // трендовый контейнер
-#include <MoveContainer/CMoveContainer.mqh>  // контейнер движений цены
+#include <CTrendChannel.mqh>                 // трендовый контейнер
+//#include <MoveContainer/CMoveContainer.mqh>  // контейнер движений цены
 #include <TradeManager/TradeManager.mqh>     // торговая библиотека 
 #include <Lib CisNewBarDD.mqh>               // для проверки формирования нового бара
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
@@ -89,8 +89,8 @@ class CRabbitsBrain
   CContainerBuffers *_conbuf;
   CArrayObj     *_trends;     // массив буферов трендов (для каждого ТФ свой буфер)
   CArrayObj     *_dataTFs;    // массив ТФ, для торговли на нескольких ТФ одновременно
-  //CTrendChannel *trend;
-  CMoveContainer *trend;
+  CTrendChannel *trend;
+  //CMoveContainer *trend;
   CTimeframeInfo *ctf;
   double Ks[];
   double atr_buf[1], open_buf[1];   // Для функции GetSignal
@@ -314,7 +314,8 @@ bool CRabbitsBrain::TrendsDirection (CTimeframeInfo *curTF, int direction)
 // функция для проверки, что бар закрылся внутри канала
 bool CRabbitsBrain::LastBarInChannel (CTimeframeInfo *curTF) 
 {
- CMoveContainer *trendTF;
+ //CMoveContainer *trendTF;
+ CTrendChannel *trendTF;
  int index = GetIndexTF(curTF);
  //Print("index = ", index, "period = ",PeriodToString(curTF.GetPeriod()));
  trendTF = _trends.At(index);

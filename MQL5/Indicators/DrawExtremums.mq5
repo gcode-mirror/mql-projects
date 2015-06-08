@@ -18,9 +18,7 @@
 //+------------------------------------------------------------------+
 // подключение необходимых библиотек
 //#include <DrawExtremums/CCalcExtremums.mqh>// вычисление экстремумов
-#include <CompareDoubles.mqh>              // для сравнения действительных чисел
-#include <CEventBase.mqh>                  // для генерации событий     
-#include <DrawExtremums\CExtremum.mqh>      // Класс эестремумов
+
 #include <StringUtilities.mqh>             
 
 #define DEFAULT_PERCENTAGE_ATR 1.0   // по умолчанию новый экстремум появляется когда разница больше среднего бара
