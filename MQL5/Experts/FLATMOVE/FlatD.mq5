@@ -108,7 +108,7 @@ void OnTick()
     int crossed;
     if (!firstUploadedExtr)
     {
-     firstUploadedExtr = extr_container.Upload();
+     firstUploadedExtr = extr_container.Upload(100);
     }    
    if (!firstUploadedExtr)
     return;    

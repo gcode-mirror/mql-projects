@@ -192,7 +192,7 @@ class CTrendChannel : public CObject
    CTrend * GetTrendByIndex (int index); // возвращает указатель на тренд по индексу
    bool IsTrendNow () { return (_trendNow); }; // возвращает true, если в текущий момент - тренд, false - если в текущий момент - нет тренд
    void UploadOnEvent (string sparam,double dparam,long lparam); // метод догружает экстремумы по событиям 
-   bool UploadOnHistory (); // метод загружает тренды в буфер на истории 
+   bool UploadOnHistory (int count = 0); // метод загружает тренды в буфер на истории 
  };
  
 // кодирование методов класса CTrendChannel
@@ -282,7 +282,7 @@ void CTrendChannel::UploadOnEvent(string sparam, double dparam, long lparam)
    }
  }
 // метод загружает тренды на истории
-bool CTrendChannel::UploadOnHistory(void)
+bool CTrendChannel::UploadOnHistory(int count = 0)
  { 
    if(!_isHistoryUploaded||_bufferTrend.Total()<=0)
    {
@@ -291,7 +291,7 @@ bool CTrendChannel::UploadOnHistory(void)
     int dirLastExtr;
     CTrend *temparyTrend; 
     // загружаем тренды 
-    _container.Upload(0);
+    _container.Upload(count);
     // если удалось прогрузить все экстремумы на истории
     if (_container.isUploaded())
     {    
