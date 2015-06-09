@@ -161,7 +161,7 @@ bool CExtrContainer::isUploaded()
   Upload(_historyDepth);
   //Print ("Произошла перезаугрцзка Upload() Количество элементов в массиве ", _bufferExtr.Total(), "_iUploaded = ", _iUploaded);
  }
- if(_iUploaded)
+ if(_iUploaded && _bufferExtr.Total()>1)
   return true;
  else 
   return false;
