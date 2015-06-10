@@ -482,7 +482,7 @@ void CountStatForSituation (int crossType)
 // сохраняет статистику в файл
 void SaveStatToFile ()
  { 
-  FileWriteString(fileHandle,"Статистика по флэту типа А: \n");
+  FileWriteString(fileHandle,"Статистика по флэту типа А: " + _Symbol + "\n");
   FileWriteString(fileHandle," {\n");
   FileWriteString(fileHandle,"  Для тренда вверх, последний экстремум - верхний: \n");
   FileWriteString(fileHandle,"   {\n");
