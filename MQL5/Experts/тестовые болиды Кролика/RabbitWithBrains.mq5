@@ -33,7 +33,7 @@ input double M15_Ratio  = 1;  //процент, насколько бар M1 больше среднего значен
 CContainerBuffers *conbuf; // буфер контейнеров на различных “ф, заполн€емый на OnTick()
                            // highPrice[], lowPrice[], closePrice[] и т.д; 
 CRabbitsBrain *rabbit;
-CTradeManager *ctm;         // торговый класс 
+CTradeManager *ctm;        // торговый класс 
      
 datetime history_start;    // врем€ дл€ получени€ торговой истории                           
 ENUM_TIMEFRAMES TFs[3] = {PERIOD_M1, PERIOD_M5, PERIOD_M15};// ------------------исправь объ€вление рэбита и все в него запихни, +структура
