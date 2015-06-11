@@ -53,6 +53,7 @@ class CContainerBuffers
  CArrayObj  *_bufferPBI;  // массив буферов PBI на всех таймфреймах
 // CArrayObj  *_bufferATR;// массив буферов ATR на всех таймфреймах
  CArrayObj  *_bufferClose;// массив буферов Close на всех таймфреймах
+ CArrayObj  *_bufferOpen;// массив буферов Open на всех таймфреймах
  CArrayObj  *_allNewBars; // массив newbars для каждого Тф
  
  int     _handlePBI[];    // массив хэндлов PBI
@@ -70,14 +71,22 @@ class CContainerBuffers
                     ~CContainerBuffers();
                
                bool Update();
-               bool isAvailable(ENUM_TIMEFRAMES period);     
+               bool isAvailable   (ENUM_TIMEFRAMES period);     
                CBufferTF *GetHigh (ENUM_TIMEFRAMES period);
                CBufferTF *GetLow  (ENUM_TIMEFRAMES period);
                CBufferTF *GetClose(ENUM_TIMEFRAMES period);
+               CBufferTF *GetOpen (ENUM_TIMEFRAMES period);
                CBufferTF *GetPBI  (ENUM_TIMEFRAMES period);
                CBufferTF *GetATR  (ENUM_TIMEFRAMES period);   // пока не используется ATR, коментарии + isAvailable
+               
+               double GetHigh (ENUM_TIMEFRAMES period, int index);
+               double GetLow  (ENUM_TIMEFRAMES period, int index);
+               double GetClose(ENUM_TIMEFRAMES period, int index);
+               double GetOpen (ENUM_TIMEFRAMES period, int index);
+               double GetPBI  (ENUM_TIMEFRAMES period, int index);
+               double GetATR  (ENUM_TIMEFRAMES period, int index);
+               
                CisNewBar *GetNewBar(ENUM_TIMEFRAMES period);
-                
 };
 //+------------------------------------------------------------------+
 //|      Класс                                                            |
@@ -91,6 +100,7 @@ CContainerBuffers::CContainerBuffers(ENUM_TIMEFRAMES &TFs[])
  _bufferPBI   = new CArrayObj();
 // _bufferATR   = new CArrayObj();
  _bufferClose = new CArrayObj();
+ _bufferOpen  = new CArrayObj();
  _allNewBars  = new CArrayObj();
  ArrayResize(_handlePBI,_tfCount);
 // ArrayResize(_handleATR,_tfCount);
@@ -102,6 +112,8 @@ CContainerBuffers::CContainerBuffers(ENUM_TIMEFRAMES &TFs[])
   _bufferPBI.Add (new CBufferTF(TFs[i]));
 //  _bufferATR.Add (new CBufferTF(TFs[i]));
   _bufferClose.Add(new CBufferTF(TFs[i]));
+  _bufferOpen.Add(new CBufferTF(TFs[i]));
+  Print("ДОБАВЛЕН НА ", i);
   _allNewBars.Add(new CisNewBar(_Symbol,_TFs[i]));
    GetNewBar(TFs[i]).isNewBar();
   _handleAvailable[i] = true;
@@ -138,6 +150,7 @@ CContainerBuffers::~CContainerBuffers()
   delete GetHigh(_TFs[i]);
   delete GetLow(_TFs[i]);
   delete GetPBI(_TFs[i]);
+  delete GetOpen(_TFs[i]);
   //delete GetATR(_TFs[i]);
   delete GetNewBar(_TFs[i]);
   IndicatorRelease(_handlePBI[i]);
@@ -158,13 +171,16 @@ bool CContainerBuffers::Update()
    CBufferTF *bufferPBI  =  _bufferPBI.At(i);
 // CBufferTF *bufferATR  =  _bufferATR.At(i);
    CBufferTF *bufferClose = _bufferClose.At(i);
+   CBufferTF *bufferOpen =  _bufferOpen.At(i);
    ArraySetAsSeries(bufferHigh.buffer, true);
    ArraySetAsSeries(bufferLow.buffer, true);
    ArraySetAsSeries(bufferPBI.buffer, true);
 // ArraySetAsSeries(bufferATR.buffer, true);
    ArraySetAsSeries(bufferClose.buffer, true); 
+   ArraySetAsSeries(bufferOpen.buffer, true); 
    if(GetNewBar(_TFs[i]).isNewBar()||recalculate)
    { 
+    Print("Происходит копирование буферов конбуфа на тф = ", PeriodToString(_TFs[i]));
     if(CopyHigh(_Symbol, bufferHigh.GetTF(), 0, DEPTH_MAX, bufferHigh.buffer)   < DEPTH_MAX) // цена закрытия последнего сформированного бара
     {
      bufferHigh.SetAvailable(false); 
@@ -185,6 +201,13 @@ bool CContainerBuffers::Update()
      log_file.Write(LOG_DEBUG,StringFormat("%s Ошибка при копировании буфера Close на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferClose.GetTF())));
      PrintFormat("%s Ошибка при копировании буфера Close на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferClose.GetTF()));
      return false;
+    }
+    if(CopyOpen(_Symbol, bufferOpen.GetTF(), 0, DEPTH_MIN, bufferOpen.buffer)   < DEPTH_MIN)     // буфер  цен открытия всех  баров на заданую глубину
+    {
+     bufferOpen.SetAvailable(false);
+     log_file.Write(LOG_DEBUG,StringFormat("%s Ошибка при копировании буфера Close на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferOpen.GetTF())));
+     PrintFormat("%s Ошибка при копировании буфера Open на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferOpen.GetTF()));
+     return false;
     }   
     if(CopyBuffer(_handlePBI[i], 4, 0, DEPTH_MIN, bufferPBI.buffer)      < DEPTH_MIN)          // последнее полученное движение
     {
@@ -196,7 +219,8 @@ bool CContainerBuffers::Update()
      bufferHigh.SetAvailable(true);
       bufferLow.SetAvailable(true);
        bufferClose.SetAvailable(true);
-        bufferPBI.SetAvailable(true);
+        bufferOpen.SetAvailable(true);
+         bufferPBI.SetAvailable(true);
     /*if(CopyBuffer(_handleATR[i], 4, 1, 1, bufferATR.buffer)      < 1)   // значение ATR
     {
      bufferATR.SetAvailable(false);
@@ -213,6 +237,8 @@ bool CContainerBuffers::Update()
      bufferLow.buffer[0] = tempBuffer[0];
     if(CopyClose(_Symbol, bufferClose.GetTF(), 0, 1, tempBuffer))
      bufferClose.buffer[0] = tempBuffer[0];
+    if(CopyOpen(_Symbol, bufferOpen.GetTF(), 0, 1, tempBuffer))
+     bufferOpen.buffer[0] = tempBuffer[0];
     if(CopyBuffer(_handlePBI[i], 4, 0, 1, tempBuffer) == 1)
       bufferPBI.buffer[0] = tempBuffer[0];
     else
@@ -274,6 +300,8 @@ bool CContainerBuffers::isAvailable(ENUM_TIMEFRAMES period)
    result = (result && btf.isAvailable());
    btf = _bufferClose.At(i);
    result = (result && btf.isAvailable());
+   btf = _bufferOpen.At(i);
+   result = (result && btf.isAvailable());
    btf = _bufferPBI.At(i);
    result = (result && btf.isAvailable());
    return result;
@@ -295,6 +323,7 @@ CBufferTF *CContainerBuffers::GetHigh (ENUM_TIMEFRAMES period)
  PrintFormat("Не удалось получить данные с GetHigh  на %s", PeriodToString(period));
  return new CBufferTF(period, false);
 }
+
 CBufferTF *CContainerBuffers::GetLow  (ENUM_TIMEFRAMES period)
 {
  for(int i = 0; i < _tfCount; i++)
@@ -321,6 +350,22 @@ CBufferTF *CContainerBuffers::GetClose(ENUM_TIMEFRAMES period)
  PrintFormat("Не удалось получить данные с GetClose  на %s", PeriodToString(period)); 
  return new CBufferTF(period, false);
 }
+
+CBufferTF *CContainerBuffers::GetOpen(ENUM_TIMEFRAMES period)
+{
+ for(int i = 0; i < _tfCount; i++)
+ {
+  if(_TFs[i] == period)
+  {
+   CBufferTF *btf = _bufferOpen.At(i);
+   Print("Попал на GetOpen period = ", PeriodToString(period),"i = ", i, "buffer [2] = ", btf.buffer[2]);
+   return btf;
+  }
+ }
+ PrintFormat("Не удалось получить данные с GetOpen  на %s", PeriodToString(period)); 
+ return new CBufferTF(period, false);
+}
+
 CBufferTF *CContainerBuffers::GetPBI (ENUM_TIMEFRAMES period)
 {
  for(int i = 0; i < _tfCount; i++)
@@ -358,4 +403,79 @@ CisNewBar *CContainerBuffers::GetNewBar(ENUM_TIMEFRAMES period)
  }
  PrintFormat("Не удалось получить данные с GetNewBar  на %s", PeriodToString(period));
  return new CisNewBar(_Symbol, period);
+}
+
+
+
+
+
+
+double CContainerBuffers::GetHigh (ENUM_TIMEFRAMES period, int index)
+{
+ for(int i = 0; i < _tfCount; i++)
+ {
+  if(_TFs[i] == period)
+  {
+   CBufferTF *btf = _bufferHigh.At(i);
+   return btf.buffer[index];
+  }
+ }
+ PrintFormat("Не удалось получить данные с GetHigh  на %s", PeriodToString(period));
+ return -1;
+}
+
+double CContainerBuffers::GetLow  (ENUM_TIMEFRAMES period, int index)
+{
+ for(int i = 0; i < _tfCount; i++)
+ {
+  if(_TFs[i] == period)
+  {
+   CBufferTF *btf = _bufferLow.At(i);
+   return btf.buffer[index];
+  }
+ }
+ PrintFormat("Не удалось получить данные с GetLow  на %s", PeriodToString(period));  
+ return -1;
+}
+
+double CContainerBuffers::GetClose(ENUM_TIMEFRAMES period, int index)
+{
+ for(int i = 0; i < _tfCount; i++)
+ {
+  if(_TFs[i] == period)
+  {
+   CBufferTF *btf = _bufferClose.At(i);
+   return btf.buffer[index];
+  }
+ }
+ PrintFormat("Не удалось получить данные с GetClose  на %s", PeriodToString(period)); 
+ return -1;
+}
+
+double CContainerBuffers::GetOpen(ENUM_TIMEFRAMES period, int index)
+{
+ for(int i = 0; i < _tfCount; i++)
+ {
+  if(_TFs[i] == period)
+  {
+   CBufferTF *btf = _bufferOpen.At(i);
+   return btf.buffer[index];
+  }
+ }
+ PrintFormat("Не удалось получить данные с GetOpen  на %s", PeriodToString(period)); 
+ return -1;
+}
+
+double CContainerBuffers::GetPBI (ENUM_TIMEFRAMES period, int index)
+{
+ for(int i = 0; i < _tfCount; i++)
+ {
+  if(_TFs[i] == period)
+  {
+   CBufferTF *btf = _bufferPBI.At(i);
+   return btf.buffer[index];
+  }
+ }
+ PrintFormat("Не удалось получить данные с GetPBI  на %s", PeriodToString(period));
+ return -1;
 }

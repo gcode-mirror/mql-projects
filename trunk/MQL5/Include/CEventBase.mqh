@@ -118,6 +118,7 @@ int CEventBase::GetEventIndByName(string eventName)
 // функция возвращает код по символу
 int CEventBase::GetSymbolCode (string symbol)
  {
+  
     if (symbol == "EURUSD")
      return (1);
     if (symbol == "GBPUSD")
@@ -130,6 +131,8 @@ int CEventBase::GetSymbolCode (string symbol)
      return (5);
     if (symbol == "AUDUSD")
      return (6);
+     if(symbol == "SIL")
+     return {
   return (0); 
  }
 
