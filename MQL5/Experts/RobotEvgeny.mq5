@@ -78,7 +78,7 @@ int OnInit()
    }
    SetIndicatorByHandle(_Symbol,_Period,handleDE);
   }    
-    
+    /*
    // привязка индикатора PriceBasedIndicator
   handlePBI = DoesIndicatorExist(_Symbol,_Period,"PriceBasedIndicator");
   if (handlePBI == INVALID_HANDLE)
@@ -90,7 +90,7 @@ int OnInit()
     return (INIT_FAILED);
    }
    SetIndicatorByHandle(_Symbol,_Period,handlePBI);
-  }     
+  }     */
   
   // если удалось прогрузить последние экстремумы
   if (UploadExtremums())
