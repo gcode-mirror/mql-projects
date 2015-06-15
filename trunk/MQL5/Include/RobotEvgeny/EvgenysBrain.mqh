@@ -123,12 +123,16 @@ int CEvgenysBrain::GetSignal()
   {
    priceTrendUp = ObjectGetValueByTime(0,"trendUp",TimeCurrent());
    priceTrendDown = ObjectGetValueByTime(0,"trendDown",TimeCurrent());   
-   channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала   
+   channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала
+    //PrintFormat("Close[1] (%f) > Open[1] (%f) && Close[2] (%f) < Open[2] (%f) && |curBid - priceTrendDown| (%f) < channelH*0.2 (%f)", 
+    //_conbuf.GetClose(_period).buffer[1],_conbuf.GetOpen(_period).buffer[1],_conbuf.GetClose(_period).buffer[2], _conbuf.GetOpen(_period).buffer[2],curBid-priceTrendDown,channelH*0.2);   
    // если цена закрытия на последнем баре выше цены открытия (в нашу сторону), а на предыдущем баре - обратная ситуевина
-   if ( GreatDoubles(_conbuf.GetClose(_period).buffer[2], _conbuf.GetOpen(_period).buffer[2]) && LessDoubles(_conbuf.GetClose(_period).buffer[1],_conbuf.GetOpen(_period).buffer[1]) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
-        LessOrEqualDoubles(MathAbs(curBid-priceTrendDown),channelH*0.2)                             // если текущая цена находится возле нижней границы канала тренда 
+   if ( GreatDoubles(_conbuf.GetClose(_period,1), _conbuf.GetOpen(_period,1)) && LessDoubles(_conbuf.GetClose(_period,2),_conbuf.GetOpen(_period,2)) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
+        LessOrEqualDoubles(MathAbs(curBid-priceTrendDown), channelH*0.2)                             // если текущая цена находится возле нижней границы канала тренда 
       )
    {
+    //PrintFormat("Close[1] (%f) > Open[1] (%f) && Close[2] (%f) < Open[2] (%f) && |curBid - priceTrendDown| (%f) < channelH*0.2 (%f)", 
+    //_conbuf.GetClose(_period).buffer[1],_conbuf.GetOpen(_period).buffer[1],_conbuf.GetClose(_period).buffer[2], _conbuf.GetOpen(_period).buffer[2],curBid-priceTrendDown,channelH*0.2);
     signalForTrade = BUY;
    }
   }
@@ -143,7 +147,7 @@ int CEvgenysBrain::GetSignal()
    priceTrendDown = ObjectGetValueByTime(0,"trendDown", TimeCurrent());   
    channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала   
    // если цена закрытия на последнем баре ниже цены открытия (в нашу сторону), а на предыдущем баре - обратная ситуевина
-   if ( LessDoubles(_conbuf.GetClose(_period).buffer[2], _conbuf.GetOpen(_period).buffer[2]) && GreatDoubles(_conbuf.GetClose(_period).buffer[1],_conbuf.GetOpen(_period).buffer[1]) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
+   if ( LessDoubles(_conbuf.GetClose(_period,1), _conbuf.GetOpen(_period,1)) && GreatDoubles(_conbuf.GetClose(_period,2),_conbuf.GetOpen(_period,2)) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
         LessOrEqualDoubles(MathAbs(curBid-priceTrendUp),channelH * 0.2)                             // если текущая цена находится возле нижней границы канала тренда 
       )
    {
@@ -248,7 +252,7 @@ void CEvgenysBrain::DrawLines()
 } 
 
 // функция удаляет линии с графика
-void CEvgenysBrain::DeleteLines ()
+void CEvgenysBrain::DeleteLines()
 {
  ObjectDelete(0,"trendUp");
  ObjectDelete(0,"trendDown");

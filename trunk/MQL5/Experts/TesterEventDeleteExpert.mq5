@@ -12,6 +12,8 @@
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int handleTest;
+int bars;
+MqlRates rates[];
 int OnInit()
 {
  handleTest = iCustom(_Symbol,_Period,"TesterEventDelete");
@@ -31,7 +33,10 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-
+ bars = Bars(_Symbol, _Period);
+ CopyRates(_Symbol, _Period, 0, bars, rates);
+ 
+ Comment("Время последнего = ", rates[0].time);
 }
 //+------------------------------------------------------------------+
 //| ChartEvent function                                              |

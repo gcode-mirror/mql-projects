@@ -25,7 +25,7 @@ CExtrContainer *extremums;
 CContainerBuffers *conbuf;
 // хэндлы индикаторов
 int  handleDE;
-int  handlePBI;
+int  handlePBI;  // Для дальнейшего использования предполагается объявление всех индикаторов на OnInit()
 int  evgenySignal;
 int  trend;
 // имена событий 
@@ -58,8 +58,30 @@ int OnInit()
   }
   SetIndicatorByHandle(_Symbol, _Period, handleDE);
  } 
-  conbuf = new CContainerBuffers(TFs);
-  //Sleep(2000);
+ /*handlePBI = DoesIndicatorExist(_Symbol, _Period, "PriceBasedIndicator");
+ if (handlePBI == INVALID_HANDLE)
+ {
+  handlePBI = iCustom(_Symbol, _Period, "PriceBasedIndicator");
+  if (handlePBI == INVALID_HANDLE)
+  {
+   Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
+   return (INIT_FAILED);
+  }
+  //SetIndicatorByHandle(_Symbol, _Period, handlePBI);
+ } */
+ conbuf = new CContainerBuffers(TFs);
+ for (int attempts = 0; attempts < 25; attempts++)
+ {
+  conbuf.Update();
+  Sleep(100);
+  if(conbuf.isFullAvailable())
+  {
+   PrintFormat("Наконец-то загрузился! attempts = %d", attempts);
+   break;
+  }
+ }
+  if(!conbuf.isFullAvailable())
+   return (INIT_FAILED);
   extremums = new CExtrContainer(handleDE, _Symbol, _Period);
   evgeny = new CEvgenysBrain(_Symbol, _Period, extremums, conbuf);   
 
@@ -83,9 +105,10 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  ctm.OnTick();
+ conbuf.Update();
  if(!extremums.isUploaded())
  PrintFormat("%s Не загрузился контейнер экстремумов, так не должно быть.");
- // если в текущий момент открыта позиция и тренд противоположный
+ //log_file.Write(LOG_DEBUG, StringFormat("%s Не загрузился контейнер экстремумов, так не должно быть.", MakeFunctionPrefix(__FUNCTION__)));
  
  if (evgeny.CheckClose() && ctm.GetPositionCount() > 0)
  { 
@@ -95,7 +118,8 @@ void OnTick()
  evgenySignal = evgeny.GetSignal();
  if(evgenySignal == BUY)
  {
-  Print("Пришел сигнал на BUY");
+  //Print("Пришел сигнал на BUY");
+  log_file.Write(LOG_DEBUG, "Пришел сигнал на BUY");
   pos_info.sl = evgeny.CountStopLossForTrendLines();
   pos_info.tp = pos_info.sl*10;
   pos_info.volume = lot;
@@ -104,7 +128,8 @@ void OnTick()
  }
  if(evgenySignal == SELL)
  {
-  Print("Пришел сигнал на SELL");
+  //Print("Пришел сигнал на SELL");
+  log_file.Write(LOG_DEBUG, "Пришел сигнал на SELL");
   pos_info.sl = evgeny.CountStopLossForTrendLines();
   pos_info.tp = pos_info.sl*10;
   pos_info.volume = lot;
