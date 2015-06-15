@@ -51,6 +51,7 @@ class CMove : public CObject
    ENUM_TIMEFRAMES _period; // период
    string _lineUpName; // уникальное имя трендовой верхней линии
    string _lineDownName; // уникальное имя трендовой нижней линии
+   string _moveName; // имя движения (для генерации уникального имени линий)
    double _percent; // процент рассчета тренда
    // переменные для хранения данных движения
    ENUM_PRICE_MOVE_TYPE _moveType; // тип движения
@@ -71,11 +72,15 @@ class CMove : public CObject
   public:
    CExtremum *_extrUp0,*_extrUp1; // экстремумы верхней линии
    CExtremum *_extrDown0,*_extrDown1; // экстремумы нижней линии  
-   CMove(int chartID, string symbol, ENUM_TIMEFRAMES period,CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1,double percent); // конструктор класса по экстр
+   CMove(string move_name,int chartID, string symbol, ENUM_TIMEFRAMES period,CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1,double percent); // конструктор класса по экстр
   ~CMove(); // деструктор класса
    // методы класса для получения свойств движения
    double GetHeight () { return(_height); }; // возвращает ширину канала
-   ENUM_PRICE_MOVE_TYPE  GetMoveType () { return(_moveType); }; // возвращает тип движения 
+   string GetLineUpName () { return (_lineUpName); }; // возвращает имя верхней линии тренда
+   string GetLineDownName () { return (_lineDownName); }; // возвращает имя нижней линии тренда
+   double GetPriceLineUp(datetime time);     // возвращает цену на верхней линии последнего тренда по времени
+   double GetPriceLineDown(datetime time);   // возвращает цену на нижней линии последнего тренда по времени    
+   ENUM_PRICE_MOVE_TYPE  GetMoveType () { return(_moveType); }; // возвращает тип движения
    int GetDirection (); // возвращает тип тренда, если движение - тренд
    CExtremum  *GetMoveExtremum (ENUM_EXTR_TYPE extr_type); // возвращает экстремум движения
  };
@@ -87,8 +92,9 @@ class CMove : public CObject
 void CMove::GenUniqName(void) // генерирует уникальное имя трендового канала
  {
   // генерит уникальные имена трендовых линий исходя из символа, периода и времени первого экстремума
-  _lineUpName = "moveLineUp."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrUp0.time)+"."+TimeToString(_extrUp1.time);
-  _lineDownName = "moveLineDown."+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrDown0.time)+"."+TimeToString(_extrDown1.time);
+  _lineUpName = _moveName+"up"+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrUp0.time)+"."+TimeToString(_extrUp1.time);
+  _lineDownName = _moveName+"down"+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrDown0.time)+"."+TimeToString(_extrDown1.time);
+   Print("имя движения = ",_moveName," верх = ",_lineUpName," низ = ",_lineDownName);
  }
  
 void CMove::CountHeight(void)
@@ -114,7 +120,7 @@ int CMove::IsItTrend(void) // проверяет, является ли данный канал трендовым
       if (GreatDoubles(h1,H1*_percent) && GreatDoubles(h2,H2*_percent) )
        return (1);
      }
-    /*
+    
     // если последний экстремум - вверх
     if (_extrDown0.time < _extrUp0.time)
      {
@@ -126,7 +132,7 @@ int CMove::IsItTrend(void) // проверяет, является ли данный канал трендовым
       if (GreatDoubles(h1,H1*_percent) && GreatDoubles(h2,H2*_percent) )
        return (1);
      }
-      */
+      
    }
   // если тренд вниз
   if ( LessDoubles(_extrUp0.price,_extrUp1.price) && LessDoubles(_extrDown0.price,_extrDown1.price))
@@ -143,7 +149,7 @@ int CMove::IsItTrend(void) // проверяет, является ли данный канал трендовым
       if (GreatDoubles(h1,H1*_percent) && GreatDoubles(h2,H2*_percent) )    
        return (-1);
      }
-    /*
+    
     // если последний экстремум - вниз
     else if (_extrUp0.time < _extrDown0.time)
      {
@@ -155,7 +161,7 @@ int CMove::IsItTrend(void) // проверяет, является ли данный канал трендовым
       if (GreatDoubles(h2,H1*_percent) && GreatDoubles(h1,H2*_percent) )    
        return (-1);
      }
-     */
+    
    }   
    
   return (0);
@@ -246,7 +252,7 @@ int CMove::IsFlatG () // флэт G
 
 ///////////// публичные методы класса
 
-CMove::CMove(int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1,double percent)
+CMove::CMove(string move_name,int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrUp0,CExtremum *extrUp1,CExtremum *extrDown0,CExtremum *extrDown1,double percent)
  {
   int tempDir; // временная переменная для сохранения текущего движения
   // сохраняем поля класса
@@ -255,6 +261,7 @@ CMove::CMove(int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrUp0
   _period = period;
   _percent = percent;
   _moveType = 0;
+  _moveName = move_name;
   // создаем объекты экстремумов для трендовых линий
   _extrUp0   = extrUp0;
   _extrUp1   = extrUp1;
@@ -267,38 +274,46 @@ CMove::CMove(int chartID,string symbol,ENUM_TIMEFRAMES period,CExtremum *extrUp0
   CountHeight();
   // обрабатываем типы движений
   tempDir = IsItTrend ();
-  if (tempDir == 1)  // если найден тренд вверх
+  if (tempDir == MOVE_TREND_UP)  // если найден тренд вверх
     _moveType = 1;
   if (tempDir == -1) // если найден тренд вниз
-    _moveType = -1;   
+    _moveType = MOVE_TREND_DOWN;   
   if (IsFlatA())     // если найден флэт А
-     _moveType = 2;
+     _moveType = MOVE_FLAT_A;
   if (IsFlatB())     // если найден флэт B
-     _moveType = 3;
+     _moveType = MOVE_FLAT_B;
   if (IsFlatC())     // если найден флэт C
-     _moveType = 4;
+     _moveType = MOVE_FLAT_C;
   if (IsFlatD())     // если найден флэт D
-     _moveType = 5;               
+     _moveType = MOVE_FLAT_D;               
   if (IsFlatE())     // если найден флэт E
-     _moveType = 6;
+     _moveType = MOVE_FLAT_E;
   if (IsFlatF())     // если найден флэт F
-     _moveType = 7;
+     _moveType = MOVE_FLAT_F;
   if (IsFlatG())     // если найден флэт G
-     _moveType = 8;            
+     _moveType = MOVE_FLAT_G;            
  
   // если мы нашли движение 
-  if (_moveType == 1 || _moveType == -1)  // если словили трендовое движение
+  if (_moveType == MOVE_TREND_UP || _moveType == MOVE_TREND_DOWN)  // если словили трендовое движение
    {
     
     _moveLine.Create(_chartID,_lineUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхняя линия
     ObjectSetInteger(_chartID,_lineUpName,OBJPROP_COLOR,clrLightBlue);
-    ObjectSetInteger(_chartID,_lineUpName,OBJPROP_WIDTH,5);
+    ObjectSetInteger(_chartID,_lineUpName,OBJPROP_WIDTH,1);
+    ObjectSetInteger(_chartID,_lineUpName,OBJPROP_RAY_LEFT,1);     
     _moveLine.Create(_chartID,_lineDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхняя линия 
     ObjectSetInteger(_chartID,_lineDownName,OBJPROP_COLOR,clrLightBlue);   
-    ObjectSetInteger(_chartID,_lineDownName,OBJPROP_WIDTH,5);      
-       
+    ObjectSetInteger(_chartID,_lineDownName,OBJPROP_WIDTH,1);      
+    ObjectSetInteger(_chartID,_lineDownName,OBJPROP_RAY_LEFT,1);        
    }
-  else if (_moveType > 1) // если словили флэтовое движение
+  else if (_moveType == MOVE_FLAT_A ||
+           _moveType == MOVE_FLAT_B ||
+           _moveType == MOVE_FLAT_C ||
+           _moveType == MOVE_FLAT_D ||
+           _moveType == MOVE_FLAT_E ||
+           _moveType == MOVE_FLAT_F ||
+           _moveType == MOVE_FLAT_G                                                       
+           ) // если словили флэтовое движение
    {
     _moveLine.Create(_chartID,_lineUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхняя линия
     ObjectSetInteger(_chartID,_lineUpName,OBJPROP_COLOR,clrYellow);      
@@ -313,6 +328,18 @@ CMove::~CMove()
   ObjectDelete(_chartID,_lineDownName);
   ObjectDelete(_chartID,_lineUpName);
  }
+
+// метод возвращает цену на верхней линии  
+double CMove::GetPriceLineUp(datetime time) 
+ {
+  return (ObjectGetValueByTime(_chartID,_lineUpName, time));
+ } 
+ 
+// метод возвращает цену на нижней линии 
+double CMove::GetPriceLineDown(datetime time) 
+ {
+  return (ObjectGetValueByTime(_chartID,_lineDownName, time));
+ }  
  
  // возвращает тип тренда, если сейчас - тренд
  int CMove::GetDirection(void)
