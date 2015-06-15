@@ -24,7 +24,7 @@ class CBufferTF : public CObject      // не лучше ли добавить handle сюда?
 
  public:
          double   buffer[];         // буфер данных (может быть стоит использовать статический)
-         CBufferTF(ENUM_TIMEFRAMES period, bool dAvailable = true){tf = period; dataAvailable = dAvailable;}
+         CBufferTF(ENUM_TIMEFRAMES period, bool dAvailable = false){tf = period; dataAvailable = dAvailable;}
          ENUM_TIMEFRAMES GetTF()  {return tf;}
          bool isAvailable()       {return dataAvailable;}   // отладка
          void SetAvailable(bool value){dataAvailable = value;}
@@ -71,7 +71,8 @@ class CContainerBuffers
                     ~CContainerBuffers();
                
                bool Update();
-               bool isAvailable   (ENUM_TIMEFRAMES period);     
+               bool isPeriodAvailable (ENUM_TIMEFRAMES period);   
+               bool isFullAvailable   ();   
                CBufferTF *GetHigh (ENUM_TIMEFRAMES period);
                CBufferTF *GetLow  (ENUM_TIMEFRAMES period);
                CBufferTF *GetClose(ENUM_TIMEFRAMES period);
@@ -113,7 +114,6 @@ CContainerBuffers::CContainerBuffers(ENUM_TIMEFRAMES &TFs[])
 //  _bufferATR.Add (new CBufferTF(TFs[i]));
   _bufferClose.Add(new CBufferTF(TFs[i]));
   _bufferOpen.Add(new CBufferTF(TFs[i]));
-  Print("ДОБАВЛЕН НА ", i);
   _allNewBars.Add(new CisNewBar(_Symbol,_TFs[i]));
    GetNewBar(TFs[i]).isNewBar();
   _handleAvailable[i] = true;
@@ -124,7 +124,7 @@ CContainerBuffers::CContainerBuffers(ENUM_TIMEFRAMES &TFs[])
    if (_handlePBI[i] == INVALID_HANDLE)
    {
     log_file.Write(LOG_DEBUG, "Не удалось создать хэндл индикатора PriceBasedIndicator");
-    Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
+    Print("Не удалось создать хэндл индикатора PriceBasedIndicator на ", PeriodToString(TFs[i]));
     _handleAvailable[i] = false;
    }
   }
@@ -137,7 +137,8 @@ CContainerBuffers::CContainerBuffers(ENUM_TIMEFRAMES &TFs[])
   }*/
  }
  recalculate = true;
- Update();
+ if(!Update())
+  recalculate = true;
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -178,9 +179,9 @@ bool CContainerBuffers::Update()
 // ArraySetAsSeries(bufferATR.buffer, true);
    ArraySetAsSeries(bufferClose.buffer, true); 
    ArraySetAsSeries(bufferOpen.buffer, true); 
-   if(GetNewBar(_TFs[i]).isNewBar()||recalculate)
+   
+   if(GetNewBar(_TFs[i]).isNewBar() > 0 || recalculate)
    { 
-    Print("Происходит копирование буферов конбуфа на тф = ", PeriodToString(_TFs[i]));
     if(CopyHigh(_Symbol, bufferHigh.GetTF(), 0, DEPTH_MAX, bufferHigh.buffer)   < DEPTH_MAX) // цена закрытия последнего сформированного бара
     {
      bufferHigh.SetAvailable(false); 
@@ -278,6 +279,7 @@ bool CContainerBuffers::Update()
   }
  }
  recalculate = false;
+ 
  return true;
 }
 
@@ -286,7 +288,7 @@ bool CContainerBuffers::Update()
 //| Удалить метод и dataAvailable, при корректной работе  |
 //|  контейнера на роботе с Update()                      |
 //+-------------------------------------------------------+
-bool CContainerBuffers::isAvailable(ENUM_TIMEFRAMES period)
+bool CContainerBuffers::isPeriodAvailable(ENUM_TIMEFRAMES period)
 {
  bool result;
  CBufferTF *btf;
@@ -307,7 +309,29 @@ bool CContainerBuffers::isAvailable(ENUM_TIMEFRAMES period)
    return result;
   }
  }
+ PrintFormat("%s Неверные данные относительно состояния буферов", MakeFunctionPrefix(__FUNCTION__));
  return false;
+}
+
+bool CContainerBuffers::isFullAvailable()
+{
+ bool result = false;
+ CBufferTF *btf;
+ for ( int i = 0; i < _tfCount; i++)
+ { 
+   btf = _bufferHigh.At(i);
+   result = btf.isAvailable();
+   btf = _bufferLow.At(i);
+   result = (result && btf.isAvailable());
+   btf = _bufferClose.At(i);
+   result = (result && btf.isAvailable());
+   btf = _bufferOpen.At(i);
+   result = (result && btf.isAvailable());
+   btf = _bufferPBI.At(i);
+   result = (result && btf.isAvailable());
+ }
+ PrintFormat("%s результат коректности данных result = %s", MakeFunctionPrefix(__FUNCTION__), BoolToString(result));
+ return result;
 }
 
 CBufferTF *CContainerBuffers::GetHigh (ENUM_TIMEFRAMES period)
@@ -321,6 +345,7 @@ CBufferTF *CContainerBuffers::GetHigh (ENUM_TIMEFRAMES period)
   }
  }
  PrintFormat("Не удалось получить данные с GetHigh  на %s", PeriodToString(period));
+ log_file.Write(LOG_DEBUG, StringFormat("Не удалось получить данные с GetHigh  на %s", PeriodToString(period)));
  return new CBufferTF(period, false);
 }
 
@@ -335,6 +360,7 @@ CBufferTF *CContainerBuffers::GetLow  (ENUM_TIMEFRAMES period)
   }
  }
  PrintFormat("Не удалось получить данные с GetLow  на %s", PeriodToString(period));  
+ log_file.Write(LOG_DEBUG, StringFormat("Не удалось получить данные с GetLow  на %s", PeriodToString(period)));
  return new CBufferTF(period, false);
 }
 CBufferTF *CContainerBuffers::GetClose(ENUM_TIMEFRAMES period)
@@ -348,6 +374,7 @@ CBufferTF *CContainerBuffers::GetClose(ENUM_TIMEFRAMES period)
   }
  }
  PrintFormat("Не удалось получить данные с GetClose  на %s", PeriodToString(period)); 
+ log_file.Write(LOG_DEBUG, StringFormat("Не удалось получить данные с GetClose  на %s", PeriodToString(period)));
  return new CBufferTF(period, false);
 }
 
@@ -358,10 +385,10 @@ CBufferTF *CContainerBuffers::GetOpen(ENUM_TIMEFRAMES period)
   if(_TFs[i] == period)
   {
    CBufferTF *btf = _bufferOpen.At(i);
-   Print("Попал на GetOpen period = ", PeriodToString(period),"i = ", i, "buffer [2] = ", btf.buffer[2]);
    return btf;
   }
  }
+ log_file.Write(LOG_DEBUG, StringFormat("Не удалось получить данные с GetOpen  на %s", PeriodToString(period))); 
  PrintFormat("Не удалось получить данные с GetOpen  на %s", PeriodToString(period)); 
  return new CBufferTF(period, false);
 }
@@ -377,6 +404,7 @@ CBufferTF *CContainerBuffers::GetPBI (ENUM_TIMEFRAMES period)
   }
  }
  PrintFormat("Не удалось получить данные с GetPBI  на %s", PeriodToString(period));
+ log_file.Write(LOG_DEBUG, StringFormat("Не удалось получить данные с GetPBI  на %s", PeriodToString(period)));
  return new CBufferTF(period, false);
 }
 

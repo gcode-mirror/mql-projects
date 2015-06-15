@@ -145,11 +145,16 @@ void OnTick()
          priceTrendUp = ObjectGetValueByTime(0,"trendUp",TimeCurrent());
          priceTrendDown = ObjectGetValueByTime(0,"trendDown",TimeCurrent());   
          channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала   
+         if(TimeCurrent() >= "02.04.2015")
+         PrintFormat("Close[2] (%f) > Open[2] (%f) && Close[1] (%f) < Open[1] (%f) && |curBid - priceTrendDown| (%f) < channelH*0.2 (%f)", 
+               rates[1].close,rates[1].open,rates[0].close, rates[0].open,curBid-priceTrendDown,channelH*0.2);
          // если цена закрытия на последнем баре выше цены открытия (в нашу сторону), а на предыдущем баре - обратная ситуевина
          if ( GreatDoubles(rates[1].close,rates[1].open) && LessDoubles(rates[0].close,rates[0].open) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
               LessOrEqualDoubles(MathAbs(curBid-priceTrendDown),channelH*0.2)                             // если текущая цена находится возле нижней границы канала тренда 
             )
              {
+               PrintFormat("Close[2] (%f) > Open[2] (%f) && Close[1] (%f) < Open[1] (%f) && |curBid - priceTrendDown| (%f) < channelH*0.2 (%f)", 
+               rates[1].close,rates[1].open,rates[0].close, rates[0].open,curBid-priceTrendDown,channelH*0.2);
               pos_info.sl = CountStopLossForTrendLines ();
               pos_info.tp = pos_info.sl*10;
               pos_info.volume = lot;
@@ -176,6 +181,7 @@ void OnTick()
               LessOrEqualDoubles(MathAbs(curBid-priceTrendUp),channelH * 0.2)                             // если текущая цена находится возле нижней границы канала тренда 
             )
              {
+              
               pos_info.sl = CountStopLossForTrendLines ();
               pos_info.tp = pos_info.sl*10;
               pos_info.volume = lot;

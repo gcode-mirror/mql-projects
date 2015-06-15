@@ -131,8 +131,8 @@ int CEventBase::GetSymbolCode (string symbol)
      return (5);
     if (symbol == "AUDUSD")
      return (6);
-     if(symbol == "SIL")
-     return {
+     //if(symbol == "SIL")
+     //return 
   return (0); 
  }
 

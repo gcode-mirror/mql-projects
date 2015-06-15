@@ -159,7 +159,7 @@ int OnCalculate(const int rates_total,
    // если это первый расчет индикатора
    if(prev_calculated == 0) 
    {   
-    Print("Пересчет: ", k++);
+    PrintFormat("%s Пересчет: %d", MakeFunctionPrefix(__FUNCTION__), k++);
     if (BarsCalculated(handleForAverBar) < 1)
     {
      return (0);
