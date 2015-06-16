@@ -76,10 +76,6 @@ class CMove : public CObject
   ~CMove(); // деструктор класса
    // методы класса для получения свойств движения
    double GetHeight () { return(_height); }; // возвращает ширину канала
-   string GetLineUpName () { return (_lineUpName); }; // возвращает имя верхней линии тренда
-   string GetLineDownName () { return (_lineDownName); }; // возвращает имя нижней линии тренда
-   double GetPriceLineUp(datetime time);     // возвращает цену на верхней линии последнего тренда по времени
-   double GetPriceLineDown(datetime time);   // возвращает цену на нижней линии последнего тренда по времени    
    ENUM_PRICE_MOVE_TYPE  GetMoveType () { return(_moveType); }; // возвращает тип движения
    int GetDirection (); // возвращает тип тренда, если движение - тренд
    CExtremum  *GetMoveExtremum (ENUM_EXTR_TYPE extr_type); // возвращает экстремум движения
@@ -94,7 +90,6 @@ void CMove::GenUniqName(void) // генерирует уникальное имя трендового канала
   // генерит уникальные имена трендовых линий исходя из символа, периода и времени первого экстремума
   _lineUpName = _moveName+"up"+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrUp0.time)+"."+TimeToString(_extrUp1.time);
   _lineDownName = _moveName+"down"+_symbol+"."+PeriodToString(_period)+"."+TimeToString(_extrDown0.time)+"."+TimeToString(_extrDown1.time);
-   Print("имя движения = ",_moveName," верх = ",_lineUpName," низ = ",_lineDownName);
  }
  
 void CMove::CountHeight(void)
@@ -298,13 +293,9 @@ CMove::CMove(string move_name,int chartID,string symbol,ENUM_TIMEFRAMES period,C
    {
     
     _moveLine.Create(_chartID,_lineUpName,0,_extrUp0.time,_extrUp0.price,_extrUp1.time,_extrUp1.price); // верхняя линия
-    ObjectSetInteger(_chartID,_lineUpName,OBJPROP_COLOR,clrLightBlue);
-    ObjectSetInteger(_chartID,_lineUpName,OBJPROP_WIDTH,1);
-    ObjectSetInteger(_chartID,_lineUpName,OBJPROP_RAY_LEFT,1);     
+    ObjectSetInteger(_chartID,_lineUpName,OBJPROP_COLOR,clrLightBlue);  
     _moveLine.Create(_chartID,_lineDownName,0,_extrDown0.time,_extrDown0.price,_extrDown1.time,_extrDown1.price); // верхняя линия 
-    ObjectSetInteger(_chartID,_lineDownName,OBJPROP_COLOR,clrLightBlue);   
-    ObjectSetInteger(_chartID,_lineDownName,OBJPROP_WIDTH,1);      
-    ObjectSetInteger(_chartID,_lineDownName,OBJPROP_RAY_LEFT,1);        
+    ObjectSetInteger(_chartID,_lineDownName,OBJPROP_COLOR,clrLightBlue);        
    }
   else if (_moveType == MOVE_FLAT_A ||
            _moveType == MOVE_FLAT_B ||
@@ -329,17 +320,6 @@ CMove::~CMove()
   ObjectDelete(_chartID,_lineUpName);
  }
 
-// метод возвращает цену на верхней линии  
-double CMove::GetPriceLineUp(datetime time) 
- {
-  return (ObjectGetValueByTime(_chartID,_lineUpName, time));
- } 
- 
-// метод возвращает цену на нижней линии 
-double CMove::GetPriceLineDown(datetime time) 
- {
-  return (ObjectGetValueByTime(_chartID,_lineDownName, time));
- }  
  
  // возвращает тип тренда, если сейчас - тренд
  int CMove::GetDirection(void)
