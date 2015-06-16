@@ -111,7 +111,7 @@ int CChickensBrain::GetSignal()
  _index_min = -1;
  if(isNewBar.isNewBar() || recountInterval)
  { 
-  if(!_conbuf.isAvailable(_period))
+  if(!_conbuf.isPeriodAvailable(_period))
    log_file.Write(LOG_DEBUG,StringFormat("%s Зашел на алгоритм при незаполненных буферах", MakeFunctionPrefix(__FUNCTION__)));
   // установить индексацию буферов как в таймсерии
   /*ArraySetAsSeries(buffer_high, false);

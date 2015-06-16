@@ -10,7 +10,6 @@
 #define DEPTH_MAX 25
 #define DEPTH_MIN 4
 
-
 #include <Lib CisNewBarDD.mqh>
 #include <CLog.mqh>                   // для лога
 #include <StringUtilities.mqh>
@@ -48,46 +47,46 @@ class CBufferTF : public CObject      // не лучше ли добавить handle сюда?
 class CContainerBuffers
 {
  private: 
- CArrayObj  *_bufferHigh; // массив буферов High на всех таймфреймах
- CArrayObj  *_bufferLow;  // массив буферов Low на всех таймфреймах
- CArrayObj  *_bufferPBI;  // массив буферов PBI на всех таймфреймах
+  CArrayObj  *_bufferHigh; // массив буферов High на всех таймфреймах
+  CArrayObj  *_bufferLow;  // массив буферов Low на всех таймфреймах
+  CArrayObj  *_bufferPBI;  // массив буферов PBI на всех таймфреймах
 // CArrayObj  *_bufferATR;// массив буферов ATR на всех таймфреймах
- CArrayObj  *_bufferClose;// массив буферов Close на всех таймфреймах
- CArrayObj  *_bufferOpen;// массив буферов Open на всех таймфреймах
- CArrayObj  *_allNewBars; // массив newbars для каждого Тф
+  CArrayObj  *_bufferClose;// массив буферов Close на всех таймфреймах
+  CArrayObj  *_bufferOpen;// массив буферов Open на всех таймфреймах
+  CArrayObj  *_allNewBars; // массив newbars для каждого Тф
  
- int     _handlePBI[];    // массив хэндлов PBI
+  int     _handlePBI[];    // массив хэндлов PBI
 // int     _handleATR[];  // массив хэндлов ATR
- int     _tfCount;        // количесвто Тф
+  int     _tfCount;        // количесвто Тф
  
- bool    _handleAvailable[];
- double  tempBuffer[];
- bool    recalculate;
+  bool    _handleAvailable[];
+  double  tempBuffer[];
+  bool    recalculate;
  
- ENUM_TIMEFRAMES _TFs[];
+  ENUM_TIMEFRAMES _TFs[];
  
  public:
-                     CContainerBuffers(ENUM_TIMEFRAMES &TFs[]);
-                    ~CContainerBuffers();
+  CContainerBuffers(ENUM_TIMEFRAMES &TFs[]);
+  ~CContainerBuffers();
                
-               bool Update();
-               bool isPeriodAvailable (ENUM_TIMEFRAMES period);   
-               bool isFullAvailable   ();   
-               CBufferTF *GetHigh (ENUM_TIMEFRAMES period);
-               CBufferTF *GetLow  (ENUM_TIMEFRAMES period);
-               CBufferTF *GetClose(ENUM_TIMEFRAMES period);
-               CBufferTF *GetOpen (ENUM_TIMEFRAMES period);
-               CBufferTF *GetPBI  (ENUM_TIMEFRAMES period);
-               CBufferTF *GetATR  (ENUM_TIMEFRAMES period);   // пока не используется ATR, коментарии + isAvailable
+  bool Update();
+  bool isPeriodAvailable (ENUM_TIMEFRAMES period);   
+  bool isFullAvailable   ();   
+  CBufferTF *GetHigh (ENUM_TIMEFRAMES period);
+  CBufferTF *GetLow  (ENUM_TIMEFRAMES period);
+  CBufferTF *GetClose(ENUM_TIMEFRAMES period);
+  CBufferTF *GetOpen (ENUM_TIMEFRAMES period);
+  CBufferTF *GetPBI  (ENUM_TIMEFRAMES period);
+  CBufferTF *GetATR  (ENUM_TIMEFRAMES period);   // пока не используется ATR, коментарии + isAvailable
                
-               double GetHigh (ENUM_TIMEFRAMES period, int index);
-               double GetLow  (ENUM_TIMEFRAMES period, int index);
-               double GetClose(ENUM_TIMEFRAMES period, int index);
-               double GetOpen (ENUM_TIMEFRAMES period, int index);
-               double GetPBI  (ENUM_TIMEFRAMES period, int index);
-               double GetATR  (ENUM_TIMEFRAMES period, int index);
+  double GetHigh (ENUM_TIMEFRAMES period, int index);
+  double GetLow  (ENUM_TIMEFRAMES period, int index);
+  double GetClose(ENUM_TIMEFRAMES period, int index);
+  double GetOpen (ENUM_TIMEFRAMES period, int index);
+  double GetPBI  (ENUM_TIMEFRAMES period, int index);
+  double GetATR  (ENUM_TIMEFRAMES period, int index);
                
-               CisNewBar *GetNewBar(ENUM_TIMEFRAMES period);
+  CisNewBar *GetNewBar(ENUM_TIMEFRAMES period);
 };
 //+------------------------------------------------------------------+
 //|      Класс                                                            |

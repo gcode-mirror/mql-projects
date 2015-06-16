@@ -10,7 +10,6 @@
 #define DEPTH_MAX 25
 #define DEPTH_MIN 4
 
-
 #include <Lib CisNewBarDD.mqh>
 #include <CLog.mqh>                         // для лога
 #include <StringUtilities.mqh>

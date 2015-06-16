@@ -68,7 +68,6 @@ class CEventBase : public CObject
 // защищенные поля класса
 protected:
    ushort            start_id;   // изначальный код 
-   ushort            _id; 
    
    ushort            _counter;        // [0-9] временно, ToDo создать уникальный номер события
    string            _symbolmass[10]; // удалить убожество вместе с _counter
@@ -82,14 +81,12 @@ protected:
 
 private:
 // приватные методы класса
-   int  GetEventIndByName(string eventName);                     // возвращает  индекс ID события в массиве по имени события
-   int  GetSymbolCode(string symbol);                            // возвращает код символа по символу
-   long GenerateEventID (string symbol,ENUM_TIMEFRAMES period);  // метод формирует код ID события 
+   int  GetEventIndByName(string event_name);                     // возвращает  индекс ID события в массиве по имени события
+   long GenerateEventID (string event_name);  // метод формирует код ID события 
 
 public:
    void CEventBase(string symbol,ENUM_TIMEFRAMES period,const ushort startid)
      {
-      this._id=0;
       this.start_id=startid;
       this._symbol = symbol;
       this._period = period;
@@ -103,91 +100,45 @@ public:
     delete aEvents;
    };
    //--
-   bool AddNewEvent(string eventName);   // метод добавляет новое событие по заданному символу и ТФ с заданным именем   
+   bool AddNewEvent(string event_name);   // метод добавляет новое событие по заданному символу и ТФ с заданным именем   
    
    bool Generate(long _chart_id, int _id_ind, SEventData &_data,
                  const bool _is_custom=true);                       // генератор событий по индексу 
-   void Generate(string id_nam, SEventData &_data, 
+   void Generate(string event_name, SEventData &_data, 
                  const bool _is_custom = true);                     // генератор событий, проходящий по всем графикам
                               
-   string GenUniqEventName (string eventName);                      // генерирует уникальное имя события 
+   string GenUniqEventName (string event_name);                      // генерирует уникальное имя события 
   };  
   
 // возвращает индекс ID события в массиве по имени события
-int CEventBase::GetEventIndByName(string eventName)
+int CEventBase::GetEventIndByName(string event_name)
  {
   for(int i = 0; i < aEvents.Total(); i++)
    {
     CEvent *event = aEvents.At(i);
-    if (event.name == eventName)
+    if (event.name == event_name)
      return (i);
    }
   return (-1); 
  }  
-  
-// функция возвращает код по символу
-int CEventBase::GetSymbolCode (string symbol)
- {
-  bool newsymbol = true;
-  int i = _counter;
-  for(; i >= 0; i--)
-  {
-   if(StringCompare(_symbolmass[i], symbol, false))
-   {
-    newsymbol = false;
-    break;
-   }
-  }
-  if(newsymbol)
-  {
-   _symbolmass[_counter] = symbol;
-   _counter++;
-   if(_counter >= 10)
-    Print("Внимание! Перепиши CEventBase используется больше 10 валют");
-   Print("id сгенерированного события  = ", _counter - 1);
-   return _counter;
-  }
-  else
-  {
-   Print("нет нового события symbol = ", symbol);
-   return i+1;
-  }
-  
-  //StringToCharArray(symbol,charArray,0,WHOLE_ARRAY,CP_SYMBOL); // для хеширования
-/*
-    if (symbol == "EURUSD")
-     return (1);
-    if (symbol == "GBPUSD")
-     return (2);
-    if (symbol == "USDCHF")
-     return (3);
-    if (symbol == "USDJPY")
-     return (4);
-    if (symbol == "USDCAD")
-     return (5);
-    if (symbol == "AUDUSD")
-     return (6);
-     //if(symbol == "SIL")
-     //return 
-  return (0); */
- }
 
 // функция, возвращающая код ID события
-long CEventBase::GenerateEventID (string symbol,ENUM_TIMEFRAMES period)
+long CEventBase::GenerateEventID (string event_name)
  {
-  int scode = GetSymbolCode(symbol);
-  Print("scode = ", scode);
-  if (scode == 0)
-   return (0);    // нет кода ID
-  return (start_id + 100*int(period)+10*scode+aEvents.Total());   // возвращаем код ID события
+  ulong ulHash = 5381;
+  for(int i = StringLen(event_name) - 1; i >= 0; i--)
+  {
+   ulHash = ((ulHash<<5) + ulHash) + StringGetCharacter(event_name,i);
+  }
+  return MathAbs((long)ulHash);
  }   
   
 // добавляет новое событие
-bool CEventBase::AddNewEvent(string eventName)
+bool CEventBase::AddNewEvent(string event_name)
  {
   long tmp_id;
   int ind;  // счетчик прохода по циклам
-  string generatedName = GenUniqEventName(eventName);
+  string generatedName = GenUniqEventName(event_name);
   // если имя не пустое, значит оно задано => нужно проверить его уникальность
   if (generatedName != "")
    {
@@ -196,15 +147,15 @@ bool CEventBase::AddNewEvent(string eventName)
       CEvent *event = aEvents.At(ind);
       if (event.name == generatedName)
        {
-        Print("Не удалось добавить новое id события, поскольку задано не уникальное имя");
+        PrintFormat("%s Не удалось добавить новое id события, поскольку задано не уникальное имя", MakeFunctionPrefix(__FUNCTION__));
         return (false);
        }
      }
    }   
-  tmp_id = GenerateEventID(_symbol, _period);
+  tmp_id = GenerateEventID(generatedName);
   if (tmp_id == 0)
    {
-    Print("Не удалось добавить новое id события, поскольку не удалось его сгенерить");
+    PrintFormat("%s Не удалось добавить новое id события, поскольку не удалось его сгенерить", MakeFunctionPrefix(__FUNCTION__));
     return (false);
    } 
   // проходим по буферу id для проверки уникальности id
@@ -214,11 +165,11 @@ bool CEventBase::AddNewEvent(string eventName)
     // если уже был подобный id
     if (event.id == tmp_id)
      {
-      Print("Не удалось добавить новое id события, поскольку такой id уже существует Symbol = ",_symbol," period = ",PeriodToString(_period)," name = ",eventName );
+      Print("Не удалось добавить новое id события, поскольку такой id уже существует Symbol = ",_symbol," period = ",PeriodToString(_period)," name = ",event_name );
       return (false);
      }
    }
-  // добавляем новое id в буфер
+  // добавляем новое событие в буфер
   CEvent *event = new CEvent(tmp_id, generatedName);
   aEvents.Add(event);
   return (true);
@@ -239,7 +190,6 @@ bool CEventBase::Generate(long _chart_id, int _id_ind, SEventData &_data,
     }
    // заполняем поля 
    CEvent *event = aEvents.At(_id_ind);
-   this._id = (ushort)(CHARTEVENT_CUSTOM+event.id);
    this._data = _data;
    this._data.sparam = event.name; // сохраняем имя события
    
@@ -265,19 +215,18 @@ bool CEventBase::Generate(long _chart_id, int _id_ind, SEventData &_data,
 //+------------------------------------------------------------------+
 //| метод генератора событий на все графики                          |
 //+------------------------------------------------------------------+
-void CEventBase::Generate(string id_nam, SEventData &_data, const bool _is_custom = true)
+void CEventBase::Generate(string event_name, SEventData &_data, const bool _is_custom = true)
 {
  // проходим по всем открытым графикам с текущим символом и ТФ и генерируем для них события
  long chart_id = ChartFirst();
- int ind;
- string eventName = GenUniqEventName(id_nam);
- _data.sparam = eventName;
+ _data.sparam = GenUniqEventName(event_name);
+ 
  // ищем это событие по имении в буфере
- for (ind=0; ind<aEvents.Total(); ind++)
+ for (int ind=0; ind < aEvents.Total(); ind++)
   {
    // если нашли событие по имени
    CEvent *event = aEvents.At(ind);
-   if (event.name == eventName)
+   if (event.name == _data.sparam)
     {     
       // проходим по всем графикам и генерим события
       while (chart_id >= 0)
@@ -295,8 +244,8 @@ void CEventBase::Generate(string id_nam, SEventData &_data, const bool _is_custo
 //+------------------------------------------------------------------+
 //| метод генерирует уникальное имя события                          |
 //+------------------------------------------------------------------+
-string CEventBase::GenUniqEventName(string eventName)
+string CEventBase::GenUniqEventName(string event_name)
  {
-  return (eventName + "_" + _symbol + "_" + PeriodToString(_period));
+  return (event_name + "_" + _symbol + "_" + PeriodToString(_period));
  } 
  
