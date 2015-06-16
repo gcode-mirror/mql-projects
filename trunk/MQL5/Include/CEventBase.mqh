@@ -14,6 +14,7 @@
 #include <Arrays\ArrayObj.mqh>
 #include <StringUtilities.mqh>
 #include <CLog.mqh>                                       // для лога
+#include <Strings\String.mqh>
 //+------------------------------------------------------------------+
 //| A custom event type enumeration                                  |
 //+------------------------------------------------------------------+
@@ -67,7 +68,11 @@ class CEventBase : public CObject
 // защищенные поля класса
 protected:
    ushort            start_id;   // изначальный код 
-   ushort            _id;
+   ushort            _id; 
+   
+   ushort            _counter;        // [0-9] временно, ToDo создать уникальный номер события
+   string            _symbolmass[10]; // удалить убожество вместе с _counter
+
    CArrayObj         *aEvents;
    //ushort            id_array[];    // массив id событий
    //string            name_array[];  // массив имен событий
@@ -88,10 +93,15 @@ public:
       this.start_id=startid;
       this._symbol = symbol;
       this._period = period;
+      this._counter = 0;
       aEvents = new CArrayObj();
       log_file.Write(LOG_DEBUG, StringFormat("Был создан объект CEventBase с параметрами start_id = %i symbol  = %s period = %s", startid, symbol, PeriodToString(period)));
      };
-   void ~CEventBase(void){};
+   void ~CEventBase(void) // Добавила 16.06.2015 до этого работало неплохо, может помочь с 4001
+   {
+    aEvents.Clear();
+    delete aEvents;
+   };
    //--
    bool AddNewEvent(string eventName);   // метод добавляет новое событие по заданному символу и ТФ с заданным именем   
    
@@ -118,7 +128,33 @@ int CEventBase::GetEventIndByName(string eventName)
 // функция возвращает код по символу
 int CEventBase::GetSymbolCode (string symbol)
  {
+  bool newsymbol = true;
+  int i = _counter;
+  for(; i >= 0; i--)
+  {
+   if(StringCompare(_symbolmass[i], symbol, false))
+   {
+    newsymbol = false;
+    break;
+   }
+  }
+  if(newsymbol)
+  {
+   _symbolmass[_counter] = symbol;
+   _counter++;
+   if(_counter >= 10)
+    Print("Внимание! Перепиши CEventBase используется больше 10 валют");
+   Print("id сгенерированного события  = ", _counter - 1);
+   return _counter;
+  }
+  else
+  {
+   Print("нет нового события symbol = ", symbol);
+   return i+1;
+  }
   
+  //StringToCharArray(symbol,charArray,0,WHOLE_ARRAY,CP_SYMBOL); // для хеширования
+/*
     if (symbol == "EURUSD")
      return (1);
     if (symbol == "GBPUSD")
@@ -133,13 +169,14 @@ int CEventBase::GetSymbolCode (string symbol)
      return (6);
      //if(symbol == "SIL")
      //return 
-  return (0); 
+  return (0); */
  }
 
 // функция, возвращающая код ID события
 long CEventBase::GenerateEventID (string symbol,ENUM_TIMEFRAMES period)
  {
   int scode = GetSymbolCode(symbol);
+  Print("scode = ", scode);
   if (scode == 0)
    return (0);    // нет кода ID
   return (start_id + 100*int(period)+10*scode+aEvents.Total());   // возвращаем код ID события
