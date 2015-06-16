@@ -56,8 +56,8 @@ int OnInit()
    Print("Не удалось создать хэндл индикатора DrawExtremums");
    return (INIT_FAILED);
   }
-  SetIndicatorByHandle(_Symbol, _Period, handleDE);
- } 
+ }   
+ //SetIndicatorByHandle(_Symbol, _Period, handleDE);
  /*handlePBI = DoesIndicatorExist(_Symbol, _Period, "PriceBasedIndicator");
  if (handlePBI == INVALID_HANDLE)
  {
@@ -98,6 +98,9 @@ int OnInit()
 void OnDeinit(const int reason)
 {
  delete ctm;
+ delete conbuf;
+ delete extremums;
+ delete evgeny;
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -107,7 +110,7 @@ void OnTick()
  ctm.OnTick();
  conbuf.Update();
  if(!extremums.isUploaded())
- PrintFormat("%s Не загрузился контейнер экстремумов, так не должно быть.");
+ log_file.Write(LOG_DEBUG, StringFormat("%s Не загрузился контейнер экстремумов, так не должно быть.", MakeFunctionPrefix(__FUNCTION__)));
  //log_file.Write(LOG_DEBUG, StringFormat("%s Не загрузился контейнер экстремумов, так не должно быть.", MakeFunctionPrefix(__FUNCTION__)));
  
  if (evgeny.CheckClose() && ctm.GetPositionCount() > 0)
@@ -162,7 +165,6 @@ void OnChartEvent(const int id,
  if (sparam == eventExtrDownName || sparam == eventExtrUpName)
  {
   evgeny.UploadOnEvent();
-
  }
  // пришло событие "изменилось движение на PBI"
  if (sparam == eventMoveChanged)

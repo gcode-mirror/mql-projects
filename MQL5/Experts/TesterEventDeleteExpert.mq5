@@ -12,12 +12,14 @@
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int handleTest;
+int handleDE;
 int bars;
 MqlRates rates[];
 int OnInit()
 {
  handleTest = iCustom(_Symbol,_Period,"TesterEventDelete");
  handleTest = iCustom(_Symbol,_Period,"TesterEventDelete");
+ //handleDE = iCustom(_Symbol,_Period,"DrawExtremums");
  return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
@@ -33,10 +35,8 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
- bars = Bars(_Symbol, _Period);
- CopyRates(_Symbol, _Period, 0, bars, rates);
  
- Comment("Время последнего = ", rates[0].time);
+ Comment("Время последнего = ", int(_Period));
 }
 //+------------------------------------------------------------------+
 //| ChartEvent function                                              |
@@ -50,6 +50,7 @@ void OnChartEvent(const int id,
  { 
   log_file.Write(LOG_DEBUG, StringFormat("%s Событие время = %s счетчик = %d", _Symbol, TimeToString(datetime(lparam)),dparam));
  } 
+
    
 }
 //+------------------------------------------------------------------+

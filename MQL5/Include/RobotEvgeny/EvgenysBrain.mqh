@@ -121,18 +121,19 @@ int CEvgenysBrain::GetSignal()
   // если сформировался новый бар
   if (_isNewBar.isNewBar() > 0)
   {
-   priceTrendUp = ObjectGetValueByTime(0,"trendUp",TimeCurrent());
-   priceTrendDown = ObjectGetValueByTime(0,"trendDown",TimeCurrent());   
+   priceTrendUp = ObjectGetValueByTime(0,"trendUp", TimeCurrent());
+   priceTrendDown = ObjectGetValueByTime(0,"trendDown", TimeCurrent());   
    channelH = priceTrendUp - priceTrendDown;   // вычисляю ширину канала
-    //PrintFormat("Close[1] (%f) > Open[1] (%f) && Close[2] (%f) < Open[2] (%f) && |curBid - priceTrendDown| (%f) < channelH*0.2 (%f)", 
-    //_conbuf.GetClose(_period).buffer[1],_conbuf.GetOpen(_period).buffer[1],_conbuf.GetClose(_period).buffer[2], _conbuf.GetOpen(_period).buffer[2],curBid-priceTrendDown,channelH*0.2);   
+   log_file.Write(LOG_DEBUG, StringFormat("channelH(%f) = priceTrendUp(%f) - priceTrendDown(%f)", channelH, priceTrendUp, priceTrendDown));  
+   //PrintFormat("Close[1] (%f) > Open[1] (%f) && Close[2] (%f) < Open[2] (%f) && |curBid - priceTrendDown| (%f) < channelH*0.2 (%f)", 
+   //_conbuf.GetClose(_period).buffer[1],_conbuf.GetOpen(_period).buffer[1],_conbuf.GetClose(_period).buffer[2], _conbuf.GetOpen(_period).buffer[2],curBid-priceTrendDown,channelH*0.2);   
    // если цена закрытия на последнем баре выше цены открытия (в нашу сторону), а на предыдущем баре - обратная ситуевина
-   if ( GreatDoubles(_conbuf.GetClose(_period,1), _conbuf.GetOpen(_period,1)) && LessDoubles(_conbuf.GetClose(_period,2),_conbuf.GetOpen(_period,2)) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
-        LessOrEqualDoubles(MathAbs(curBid-priceTrendDown), channelH*0.2)                             // если текущая цена находится возле нижней границы канала тренда 
+   if ( GreatDoubles(_conbuf.GetClose(_period, 1), _conbuf.GetOpen(_period, 1)) && LessDoubles(_conbuf.GetClose(_period, 2),_conbuf.GetOpen(_period, 2)) &&  // если последний бар закрылся в нашу сторону, а прошлый - в противоположную
+        LessOrEqualDoubles(MathAbs(curBid-priceTrendDown), channelH * 0.2)                             // если текущая цена находится возле нижней границы канала тренда 
       )
    {
-    //PrintFormat("Close[1] (%f) > Open[1] (%f) && Close[2] (%f) < Open[2] (%f) && |curBid - priceTrendDown| (%f) < channelH*0.2 (%f)", 
-    //_conbuf.GetClose(_period).buffer[1],_conbuf.GetOpen(_period).buffer[1],_conbuf.GetClose(_period).buffer[2], _conbuf.GetOpen(_period).buffer[2],curBid-priceTrendDown,channelH*0.2);
+    log_file.Write(LOG_DEBUG, StringFormat("Close[1] (%f) > Open[1] (%f) && Close[2] (%f) < Open[2] (%f) && |curBid(%f) - priceTrendDown| (%f) < channelH*0.2 (%f)", 
+    _conbuf.GetClose(_period).buffer[1],_conbuf.GetOpen(_period).buffer[1],_conbuf.GetClose(_period).buffer[2], _conbuf.GetOpen(_period).buffer[2],curBid, MathAbs(curBid-priceTrendDown),channelH*0.2));
     signalForTrade = BUY;
    }
   }
@@ -173,6 +174,7 @@ bool CEvgenysBrain::CheckClose()
 // вернет true, если тренд валиден
 int  CEvgenysBrain::IsTrendNow ()
 {
+ log_file.Write(LOG_DEBUG, " Проверочка на наличие тренда по событию");
  double h1,h2;
  extr1 = _extremums.GetFormedExtrByIndex(0, EXTR_BOTH);
  extr2 = _extremums.GetFormedExtrByIndex(1, EXTR_BOTH);
@@ -191,7 +193,10 @@ int  CEvgenysBrain::IsTrendNow ()
    H2 = extr4.price - extr1.price;
    // если наша трендовая линия нас удовлетворяет
    if (GreatDoubles(h1, H1*percent) && GreatDoubles(h2, H2*percent) )
+   {
+    log_file.Write(LOG_DEBUG, " А вот и тренд вверх сформировался");
     return (1);
+   }
   }
  }
  // если тренд вниз
@@ -234,10 +239,10 @@ void CEvgenysBrain::DrawLines()
  // то создаем линии по точкам
  if (extr1.direction == -1)
  {
-  trendLine.Create(0,"trendDown", 0, extr3.time, extr3.price, extr1.time, extr1.price); // нижняя  линия
-  ObjectSetInteger(0,"trendDown", OBJPROP_RAY_RIGHT, 1);
-  trendLine.Create(0,"trendUp", 0, extr4.time, extr4.price, extr2.time, extr2.price); // верхняя  линия
-  ObjectSetInteger(0,"trendUp", OBJPROP_RAY_RIGHT, 1);   
+  trendLine.Create(0, "trendDown", 0, extr3.time, extr3.price, extr1.time, extr1.price); // нижняя  линия
+  ObjectSetInteger(0, "trendDown", OBJPROP_RAY_RIGHT, 1);
+  trendLine.Create(0, "trendUp", 0, extr4.time, extr4.price, extr2.time, extr2.price);   // верхняя  линия
+  ObjectSetInteger(0, "trendUp", OBJPROP_RAY_RIGHT, 1);   
   if (_trend == 1)
   {
    horLine.Create(0,"horLine", 0, extr2.price); // горизонтальная линия     
@@ -260,7 +265,7 @@ void CEvgenysBrain::DeleteLines()
 }
 
 // функция вычисляет стоп лосс для трендовых линий
-int CEvgenysBrain::CountStopLossForTrendLines ()
+int CEvgenysBrain::CountStopLossForTrendLines()
  {
   // если тренд вверх
   if (_trend == 1)
