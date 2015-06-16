@@ -164,7 +164,6 @@ int OnCalculate(const int rates_total,
   
    static int buffer_index = 0;
    double buffer_top_trend[1] = {MOVE_TYPE_UNKNOWN};  // масссив для хранения типа движения на старшем таймфреме
-   int countMoveTypeEvent;
 
    // переворачиваем индексацию массивов как в таймсерии
    ArraySetAsSeries(open , true);
@@ -277,27 +276,6 @@ void OnChartEvent(const int id,         // идентификатор события
                   const string& sparam  // параметр события типа string 
                  )
   {
-   
-   /*
-   // если удалось догрузить экстремумы в контейнер
-   if (CheckPointer(container) == POINTER_INVALID)
-   {
-    //PrintFormat("%s invalid pointer", MakeFunctionPrefix(__FUNCTION__));
-    return;
-   }
-   
-   if (container.UploadOnEvent(sparam,dparam,lparam))
-    {
-     // если удалось обновить экстремумы
-     if (trend.UpdateExtremums()==1)
-        {
-         // рассчитываем тренд
-         trend.CountTrend();
-         // выставляем флаг того, что тренд был пересчитан
-         trendCalculated = true;
-        }        
-    }
-    */
    if (container.UploadOnEvent(sparam,dparam,lparam))
     {
      // если удалось обновить экстремумы

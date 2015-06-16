@@ -109,8 +109,7 @@ int OnInit()
  pos_info.expiration = 0;
 
  return(INIT_SUCCEEDED);
- return(INIT_SUCCEEDED);
-}
+
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+

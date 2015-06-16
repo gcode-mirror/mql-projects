@@ -10,7 +10,7 @@
 #include <CompareDoubles.mqh>                // сравнение вещественных чисел
 #include <StringUtilities.mqh>               // строковое преобразование
 #include <CLog.mqh>                          // для лога
-#include <Rabbit/ContainerBuffers(NoPBI).mqh>// контейнер буферов цен на всех ТФ (No PBI) - для запуска в ТС
+#include <ContainerBuffers.mqh>       // контейнер буферов цен на всех ТФ (No PBI) - для запуска в ТС
 #include <CTrendChannel.mqh>                 // трендовый контейнер
 //#include <MoveContainer/CMoveContainer.mqh>  // контейнер движений цены
 #include <TradeManager/TradeManager.mqh>     // торговая библиотека 

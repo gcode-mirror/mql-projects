@@ -288,7 +288,7 @@ bool CColoredTrend::CountMoveTypeA(int bar, datetime start_time, ENUM_MOVE_TYPE 
 
  if(FillTimeSeries(CURRENT_TF, AMOUNT_OF_PRICE, start_time, buffer_Rates) < 0) // получим размер заполненного массива
   {
-   log_file.Write(LOG_DEBUG,StringFormat("_count = %i Не получили размер заполненного массива",_count) ) ;  
+   //log_file.Write(LOG_DEBUG,StringFormat("_count = %i Не получили размер заполненного массива",_count) ) ;  
    return (false);
   } 
 

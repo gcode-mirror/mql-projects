@@ -74,8 +74,6 @@ void OnTick()
 { 
  ctm.OnTick();
  ctm.DoTrailing();
- //MqlDateTime timeCurrent;
- int tp;
  double slPrice;
  double curAsk = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
  double curBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
@@ -99,8 +97,7 @@ void OnTick()
    trailing.trailingStop = chicken.GetDiffLow();
   }
   //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
-  tp = (use_tp) ? (int)MathCeil((chicken.GetHighBorder() - chicken.GetLowBorder())*0.75/Point()) : 0; 
-  pos_info.tp = tp;
+  pos_info.tp = (use_tp) ? (int)MathCeil((chicken.GetHighBorder() - chicken.GetLowBorder())*0.75/Point()) : 0;
   pos_info.priceDifference = chicken.GetPriceDifference();
   pos_info.expiration = MathMax(DEPTH - chicken.GetIndexMax(), DEPTH - chicken.GetIndexMin());
   trailing.trailingStep = 5;

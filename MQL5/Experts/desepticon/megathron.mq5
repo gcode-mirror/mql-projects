@@ -1,9 +1,9 @@
 //+------------------------------------------------------------------+
-//|                                             RabbitWithBrains.mq5 |
-//|                        Copyright 2015, MetaQuotes Software Corp. |
+//|                                                    megathron.mq5 |
+//|                        Copyright 2014, MetaQuotes Software Corp. |
 //|                                              http://www.mql5.com |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2015, MetaQuotes Software Corp."
+#property copyright "Copyright 2014, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
@@ -12,6 +12,7 @@
 #include <ColoredTrend/ColoredTrendUtilities.mqh> 
 #include <CTrendChannel.mqh> // трендовый контейнер
 #include <Rabbit/RabbitsBrain.mqh>
+#include <Chicken/ChickensBrain.mqh>                 // объект по вычислению сигналов дл€ торговли
 
 //константы
 #define KO 3            //коэффициент дл€ услови€ открыти€ позиции, во сколько как минимум вычисленный тейк профит должен превышать вычисленный стоп лосс
@@ -21,37 +22,40 @@
 CContainerBuffers *conbuf; // буфер контейнеров на различных “ф, заполн€емый на OnTick()
                            // highPrice[], lowPrice[], closePrice[] и т.д; 
 CRabbitsBrain *rabbit;
+CChickensBrain *chicken;
+
 CTradeManager *ctm;        // торговый класс 
      
 datetime history_start;    // врем€ дл€ получени€ торговой истории                           
 
-ENUM_TIMEFRAMES TFs[3] = {PERIOD_M1, PERIOD_M5, PERIOD_M15};
+ENUM_TM_POSITION_TYPE opBuy, opSell;
+ENUM_TIMEFRAMES TFs[6] = {PERIOD_M1, PERIOD_M5, PERIOD_M15, PERIOD_H1, PERIOD_H4, PERIOD_D1};
 //---------параметры позиции и трейлинга------------
 SPositionInfo pos_info;
 STrailing     trailing;
 
 // направление открыти€ позиции
-int signalForTrade;
-long magic;
+long magic[6] = {1111, 1112, 1113, 1114, 1115, 1116};
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
 {
+ ctm = new CTradeManager();
  history_start = TimeCurrent(); // запомним врем€ запуска эксперта дл€ получени€ торговой истории
 
  //----------  онец обработки NineTeenLines----------------
  conbuf = new CContainerBuffers(TFs);
  
  rabbit = new CRabbitsBrain(_Symbol, conbuf); // поместим все созданное в класс - сигнал  ролика
- 
+ chicken = new CChickensBrain(_Symbol,_Period, conbuf);
+
  pos_info.volume = 1;
  trailing.trailingType = TRAILING_TYPE_NONE;
  trailing.trailingStop = 0;
  trailing.trailingStep = 0;
  trailing.handleForTrailing = 0;
- ctm = new CTradeManager();
 
  return(INIT_SUCCEEDED);
 }
@@ -59,43 +63,18 @@ int OnInit()
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
-{
- delete ctm;
- delete conbuf;  
-}
+  {
+//---
+   
+  }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
-{
- ctm.OnTick();  
- rabbit.UpdateBuffers();      // потиковое обновление данных буферов            
- pos_info.type = OP_UNKNOWN;  // сброс струтуры позиции
- signalForTrade = NO_SIGNAL;  // обнулим текущий сигнал
- rabbit.OpenedPosition(ctm.GetPositionCount());  // ToDo получить позиции дл€ конкретного робота
- signalForTrade = rabbit.GetSignal();             
- if((signalForTrade == BUY || signalForTrade == SELL )) 
- {
-  pos_info.sl = rabbit.GetSL();                          // установить рассчитанный SL
-  pos_info.tp = 10 * pos_info.sl; 
-  if(signalForTrade == BUY)
-   pos_info.type = OP_BUY;
-  else 
-   pos_info.type = OP_SELL;
-  ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, SPREAD);   // открыть позицию
- }    
-}
-//+------------------------------------------------------------------+
-//| Trade function                                                   |
-//+------------------------------------------------------------------+
-void OnTrade()
-{
- ctm.OnTrade();
- if(history_start != TimeCurrent())
- {
-  history_start = TimeCurrent() + 1;
- }   
-}
+  {
+//---
+   
+  }
 //+------------------------------------------------------------------+
 //| ChartEvent function                                              |
 //+------------------------------------------------------------------+
@@ -103,8 +82,8 @@ void OnChartEvent(const int id,
                   const long &lparam,
                   const double &dparam,
                   const string &sparam)
-{
- if(rabbit.UpdateOnEvent(lparam, dparam, sparam, ctm.GetPositionCount()))
-  ctm.ClosePosition(0);
-}
+  {
+//---
+   
+  }
 //+------------------------------------------------------------------+
