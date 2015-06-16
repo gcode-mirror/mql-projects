@@ -26,7 +26,9 @@ enum ENUM_SIGNAL_FOR_TRADE
  DISCORD = 2,   // сигнал противоречия, "разрыв шаблона"
 };
 
-
+#define M1 5;   //процент, насколько бар M1 больше среднего значения
+#define M5 3;   //процент, насколько бар M1 больше среднего значения
+#define M15 1;  //процент, насколько бар M1 больше среднего значения
 //+------------------------------------------------------------------------------------------------------------+
 //|                           Класс TimeFrame содержит информацию, которую можно отнести к конкретному ТФ      |
 //| Класс реализует работу с хэндлами, уникальными для ТФ (ATR, DE и др.), хранит состояние переменной isNewBar|
@@ -92,12 +94,12 @@ class CRabbitsBrain
   CTrendChannel *trend;
   //CMoveContainer *trend;
   CTimeframeInfo *ctf;
-  double Ks[];
   double atr_buf[1], open_buf[1];   // Для функции GetSignal
   int handleATR;
   int handleDE;
   int _sl;
-  ENUM_TIMEFRAMES TFs[]; 
+  double Ks[3];
+  ENUM_TIMEFRAMES TFs[3];
                     CTimeframeInfo *GetBottom(CTimeframeInfo *curTF);
                     bool LastBarInChannel (CTimeframeInfo *curTF);
                     bool TrendsDirection (CTimeframeInfo *curTF, int direction);
@@ -105,7 +107,7 @@ class CRabbitsBrain
                     
 
  public:
-                     CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIMEFRAMES &TFmass[], double &KsMass[]);
+                     CRabbitsBrain(string symbol, CContainerBuffers *conbuf);
                     ~CRabbitsBrain();
                     
                     int GetSignal();
@@ -125,12 +127,12 @@ const double  CRabbitsBrain::trendPercent = 0.1;
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf, ENUM_TIMEFRAMES &TFmass[], double &KsMass[])
+CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf)
 {
- ArrayCopy(Ks, KsMass);
  _symbol = symbol;
  _conbuf = conbuf;
- ArrayCopy(TFs,TFmass);
+ TFs[0] = PERIOD_M1; TFs[1] = PERIOD_M5; TFs[2] = PERIOD_M15;
+ Ks[0] = M1; Ks[1] = M5; Ks[2] = M15;
  //----------- Обработка индикатора NineTeenLines----------
  _handle19Lines = iCustom(_Symbol,_Period,"NineTeenLines");
  if (_handle19Lines == INVALID_HANDLE)

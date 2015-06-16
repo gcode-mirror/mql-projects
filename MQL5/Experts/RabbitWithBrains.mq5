@@ -17,18 +17,6 @@
 #define KO 3            //коэффициент для условия открытия позиции, во сколько как минимум вычисленный тейк профит должен превышать вычисленный стоп лосс
 #define SPREAD 30       // размер спреда 
 
-//---------------------Добавить---------------------------------+
-// ENUM для сигнала
-// входные параметры для процента supremacyPercent
-// нужно ли в конбуф запихнуть данные индикатора АТР, а цену открытия?
-//--------------------------------------------------------------+
-
-//-------вводимые пользователем параметры ВСЕ перенесены в константы, если правильно надо УДАЛИТЬ-------------
-input double percent = 0.1;   // процент
-input double M1_Ratio  = 5;   //процент, насколько бар M1 больше среднего значения
-input double M5_Ratio  = 3;   //процент, насколько бар M1 больше среднего значения
-input double M15_Ratio  = 1;  //процент, насколько бар M1 больше среднего значения
-
 // ---------переменные робота------------------
 CContainerBuffers *conbuf; // буфер контейнеров на различных Тф, заполняемый на OnTick()
                            // highPrice[], lowPrice[], closePrice[] и т.д; 
@@ -36,44 +24,28 @@ CRabbitsBrain *rabbit;
 CTradeManager *ctm;        // торговый класс 
      
 datetime history_start;    // время для получения торговой истории                           
-ENUM_TIMEFRAMES TFs[3] = {PERIOD_M1, PERIOD_M5, PERIOD_M15};// ------------------исправь объявление рэбита и все в него запихни, +структура
-ENUM_TM_POSITION_TYPE opBuy, opSell;
-int handle19Lines; 
-int handleATR;
-int handleDE;
 
-double Ks[];
+ENUM_TM_POSITION_TYPE opBuy, opSell;
+ENUM_TIMEFRAMES TFs[3] = {PERIOD_M1, PERIOD_M5, PERIOD_M15};
 //---------параметры позиции и трейлинга------------
 SPositionInfo pos_info;
 STrailing     trailing;
-double volume = 1.0;   // объем  
 
 // направление открытия позиции
 int signalForTrade;
-int SL, TP;
 long magic;
-
-
-
-int indexPosOpenedTF;           // удалить елсли закрытие позиции по условию любого тренда или на том же тчо и была открыта
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
 {
- ArrayResize(Ks,3);
- Ks[0] = M1_Ratio;
- Ks[1] = M5_Ratio;
- Ks[2] = M15_Ratio;
  history_start = TimeCurrent(); // запомним время запуска эксперта для получения торговой истории
 
  //---------- Конец обработки NineTeenLines----------------
  conbuf = new CContainerBuffers(TFs);
- opBuy  = OP_BUY;  // так было. Зачем?
- opSell = OP_SELL;
  
- rabbit = new CRabbitsBrain(_Symbol, conbuf, TFs, Ks); // поместим все созданное в класс - сигнал Кролика
+ rabbit = new CRabbitsBrain(_Symbol, conbuf); // поместим все созданное в класс - сигнал Кролика
  
  pos_info.volume = 1;
  trailing.trailingType = TRAILING_TYPE_NONE;
@@ -103,14 +75,14 @@ void OnTick()
  signalForTrade = NO_SIGNAL;  // обнулим текущий сигнал
  rabbit.OpenedPosition(ctm.GetPositionCount());  // ToDo получить позиции для конкретного робота
  signalForTrade = rabbit.GetSignal();             
- if((signalForTrade == BUY || signalForTrade == SELL ))  //(signalForTrade != NO_POISITION)
+ if((signalForTrade == BUY || signalForTrade == SELL )) 
  {
   pos_info.sl = rabbit.GetSL();                          // установить рассчитанный SL
-  pos_info.tp = 10 * SL; 
+  pos_info.tp = 10 * pos_info.sl; 
   if(signalForTrade == BUY)
-   pos_info.type = opBuy;
+   pos_info.type = OP_BUY;
   else 
-   pos_info.type = opSell;
+   pos_info.type = OP_SELL;
   ctm.OpenUniquePosition(_Symbol, _Period, pos_info, trailing, SPREAD);   // открыть позицию
  }    
 }
