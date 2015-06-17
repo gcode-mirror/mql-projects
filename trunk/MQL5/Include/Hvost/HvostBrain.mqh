@@ -16,6 +16,7 @@
 #define SELL -1 
 #define NO_POSITION 0
 #define K 0.5
+#define _channelDepth 3 // глубина канала
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -29,8 +30,6 @@ class CHvostBrain : public CArrayObj
   string _symbol;
   ENUM_TIMEFRAMES _period;
   CContainerBuffers *_conbuf;
-  int const _channelDepth; // глубина канала
-  int handlePBI;
   int opened_position;     // флаг открытой позиции (0 - нет позиции, 1 - buy, (-1) - sell)
   double h;                // ширина канала
   double price_bid;        // текущая цена bid
@@ -43,10 +42,9 @@ class CHvostBrain : public CArrayObj
   bool wait_for_buy;       // флаг ожидания условия открытия на BUY
   CisNewBar *isNewBarEld;  // для вычисления формирования нового бара на старшем ТФ
   // переменные для хранения времени движения цены
-  datetime signal_time;        // время получения сигнала пробития ценой уровня на расстояние H
-  datetime open_pos_time;      // время открытия позиции   
+  datetime signal_time;        // время получения сигнала пробития ценой уровня на расстояние H  
   ENUM_TIMEFRAMES periodEld;   // период старшего таймфрейма
-  double average_price;        // значение средней цены на момент получения сигнала о скачке (присваивание переменных wait_for_sell или wait_for_buy)
+  double average_price;        // (ЧЁ?) значение средней цены на момент получения сигнала о скачке (присваивание переменных wait_for_sell или wait_for_buy)
  public:
                      CHvostBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf);
                     ~CHvostBrain();
@@ -88,20 +86,13 @@ CHvostBrain::CHvostBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffer
  // сохраняем период страшего таймфрейма 
  isNewBarEld = new CisNewBar(_symbol, periodEld);
  // создаем хэндл индикатора PriceBasedIndicator
- handlePBI = iCustom(_symbol,periodEld,"PriceBasedIndicator");
- if (handlePBI == INVALID_HANDLE)
- {
-  log_file.Write(LOG_DEBUG,"Не удалось создать хэндл индикатора PriceBasedIndicator");
-  //Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
- }      
 }
-//+------------------------------------------------------------------+
+ //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 CHvostBrain::~CHvostBrain()
 {
  delete isNewBarEld;
- IndicatorRelease(handlePBI);
 }
 //+------------------------------------------------------------------+
 
@@ -122,9 +113,10 @@ int CHvostBrain::GetSignal()
   CountChannel();
   wait_for_buy = false;
   wait_for_sell = false;
- }
+ }  
+ log_file.Write(LOG_DEBUG, StringFormat("Для периода = %s", PeriodToString(_period)));
  // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
- //log_file.Write(LOG_DEBUG, StringFormat("%f >%f && %b && %d", (price_bid-max_price),K*h,wait_for_sell,opened_position));
+ log_file.Write(LOG_DEBUG, StringFormat("(pBid(%f)-pAsk(%f))(%f) > K*h(%f)=(%f) && wait_for_sell(%s) && opened_position(%s)!=-1", price_bid, max_price, (price_bid-max_price), h, K*h, BoolToString(wait_for_sell), BoolToString(opened_position)));
  if ( GreatDoubles(price_bid-max_price,K*h) && !wait_for_sell && opened_position!=-1 )
  {      
   log_file.Write(LOG_DEBUG, " Цена bid отошла вверх и расстояние от нее до уровня в 2 раза больше чем ширина канала");
@@ -193,30 +185,15 @@ bool CHvostBrain::CountChannel()
  int startIndex = 2;//(_skipLastBar)?2:1;
  int indexMax = 0;
  int indexMin = 0;
- /*double high_prices[];
- double low_prices[];
- int copiedHigh;
- int copiedLow;
- for (int attempts=0;attempts<25;attempts++)
- {
-  copiedHigh = CopyHigh(_symbol, periodEld, startIndex, _channelDepth, high_prices);
-  copiedLow  = CopyLow (_symbol, periodEld, startIndex, _channelDepth, low_prices);
-  Sleep(100);
- }
- if (copiedHigh < _channelDepth || copiedLow < _channelDepth) 
- {
-  log_file.Write(LOG_DEBUG, "Не удалось прогрузить котировки старшего таймфрейма");
-  //Print("Не удалось прогрузить котировки старшего таймфрейма");
-  return (false);
- }
- max_price = high_prices[ArrayMaximum(high_prices)];
- min_price = low_prices[ArrayMinimum(low_prices)];*/
+ // Находим ндексы максимального и минимального элементов на глубине _channelDepth
  indexMax = ArrayMaximum(_conbuf.GetHigh(periodEld).buffer, startIndex, _channelDepth);
  indexMin = ArrayMinimum(_conbuf.GetLow(periodEld).buffer, startIndex, _channelDepth);
  if(indexMax < 0 || indexMin < 0)
  return (false);
  max_price = _conbuf.GetHigh(periodEld).buffer[indexMax];
  min_price = _conbuf.GetLow(periodEld).buffer[indexMin];
+ log_file.Write(LOG_DEBUG, StringFormat("Был взят max_price = %f для периода %s на старшем периоде = %s", max_price, PeriodToString(_period), PeriodToString(periodEld)));
+
  h = max_price - min_price;
  return (true);
 }  
@@ -250,22 +227,11 @@ bool  CHvostBrain::IsBeatenBars (int type)
 // функция для закрытия позиции по экстремуму
 bool  CHvostBrain::IsBeatenExtremum (int type)
 {
- //int copied_high;
- //int copied_low;
- //double price_high[];
- //double price_low[];
- //copied_high = CopyHigh(_symbol,_period,0,3,price_high);
- //copied_low  = CopyLow(_symbol,_period,0,3,price_low);
- /*if (copied_high < 3 || copied_low < 3)
- {
-  log_file.Write(LOG_DEBUG, "Не удалось прогрузить буферы цен");
-  //Print("Не удалось прогрузить буферы цен");
-  return (false);
- }*/
+
  if (type == 1)
  {
   // условие закрытие позиции BUY
-  if(LessDoubles(price_ask, _conbuf.GetLow(_period).buffer[1]) // && LessDoubles(price_low[1],price_low[0])
+  if(LessDoubles(price_ask, _conbuf.GetLow(_period).buffer[1]) 
   && LessDoubles(price_ask,_conbuf.GetLow(_period).buffer[0])
   && GreatDoubles(_conbuf.GetHigh(_period).buffer[1], _conbuf.GetHigh(_period).buffer[0])
   && GreatDoubles(_conbuf.GetHigh(_period).buffer[1], _conbuf.GetHigh(_period).buffer[2]))
@@ -276,7 +242,7 @@ bool  CHvostBrain::IsBeatenExtremum (int type)
  if (type == -1)
  {
   // условие закрытие позиции SELL 
-  if(GreatDoubles(price_bid, _conbuf.GetHigh(_period).buffer[1]) // GreatDoubles(price_high[1],price_high[0])
+  if(GreatDoubles(price_bid, _conbuf.GetHigh(_period).buffer[1]) 
   && GreatDoubles(price_bid,_conbuf.GetHigh(_period).buffer[0])
   && LessDoubles(_conbuf.GetLow(_period).buffer[1], _conbuf.GetLow(_period).buffer[0])
   && LessDoubles(_conbuf.GetLow(_period).buffer[1], _conbuf.GetLow(_period).buffer[2]))
