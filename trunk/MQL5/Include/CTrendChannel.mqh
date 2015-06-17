@@ -203,7 +203,7 @@ CTrendChannel::CTrendChannel(int chartID, string symbol,ENUM_TIMEFRAMES period,i
   _symbol = symbol;
   _period = period;
   _percent = percent;
-  _container = new CExtrContainer(handleDE,symbol,period);
+  _container = new CExtrContainer(handleDE,symbol,period, 1000);
   // формируем уникальные имена событий
   _eventExtrDown = GenEventName("EXTR_DOWN_FORMED");
   _eventExtrUp = GenEventName("EXTR_UP_FORMED");

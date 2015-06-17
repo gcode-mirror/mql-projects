@@ -17,10 +17,13 @@
 #define DEPTH 20
 #define ALLOW_INTERVAL 4
 // константы сигналов
-#define BUY   1    
-#define SELL -1 
-#define NO_POSITION 0
-#define NO_ENTER 2 //отладка
+enum ENUM_SIGNAL_FOR_TRADE
+{
+ SELL = -1,     // открытие позиции на продажу
+ BUY  = 1,      // открытие позиции на покупку
+ NO_POSITION = 0, // для действий, когда сигнала на открытие позиции не было
+ NO_ENTER = 2,   // сигнал противоречия, "разрыв шаблона"
+};
 
 
 //+------------------------------------------------------------------+
@@ -32,16 +35,12 @@ class CChickensBrain : public CArrayObj
  private:
   string _symbol;
   ENUM_TIMEFRAMES _period;
-  //int _handle_pbi; 
   int _tmpLastBar;
-  int _lastTrend;            // тип последнего тренда по PBI 
-  /*double buffer_pbi[];
-  double buffer_high[];
-  double buffer_low[];
-  double highPrice[], lowPrice[], closePrice[];*/
+  int _lastTrend;          // тип последнего тренда по PBI 
+
  
-  bool recountInterval;
-  CisNewBar *isNewBar;
+  bool recountInterval;    // для первого обращения по GetSignal() Обсудить актуальность этого флажка)
+  CisNewBar *isNewBar;     // новый бар на ТФ
   CContainerBuffers *_conbuf;
   // поля, доступ к которым реализован через функции Get...()
   int _index_max;
@@ -49,7 +48,7 @@ class CChickensBrain : public CArrayObj
   int _diff_high; 
   int _diff_low; 
   int _priceDifference;
-  int _sl_min;
+  int _sl_min;         
   double _highBorder; 
   double _lowBorder;
 
@@ -64,7 +63,6 @@ class CChickensBrain : public CArrayObj
                    int GetIndexMin()      { return _index_min;}
                    int GetDiffHigh()      { return _diff_high;}
                    int GetDiffLow()       { return _diff_low;}
-                   int GetSLmin()         { return _sl_min;}
                    int GetPriceDifference(){ return _priceDifference;}
                    double GetHighBorder() { return _highBorder;}
                    double GetLowBorder()  { return _lowBorder;}
@@ -86,7 +84,7 @@ CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainer
  _index_min = -1;
  _lastTrend = 0; 
  isNewBar.isNewBar();
- recountInterval = false;
+ recountInterval = true;
  log_file.Write(LOG_DEBUG, StringFormat(" CChickensBrain на %s создан успешно ", PeriodToString(_period)));
 }
 //+------------------------------------------------------------------+
@@ -96,11 +94,7 @@ CChickensBrain::~CChickensBrain()
 {
  delete isNewBar;
  delete _conbuf;
- /*ArrayFree(closePrice);
- ArrayFree(buffer_high);
- ArrayFree(buffer_low);
- ArrayFree(closePrice);
- IndicatorRelease(_handle_pbi);*/
+
 }
 //+------------------------------------------------------------------+
 //|      Метод GetSignal() возвращает сигнал торговли SELL/BUY       |                                                 
@@ -113,19 +107,7 @@ int CChickensBrain::GetSignal()
  { 
   if(!_conbuf.isPeriodAvailable(_period))
    log_file.Write(LOG_DEBUG,StringFormat("%s Зашел на алгоритм при незаполненных буферах", MakeFunctionPrefix(__FUNCTION__)));
-  // установить индексацию буферов как в таймсерии
-  /*ArraySetAsSeries(buffer_high, false);
-  ArraySetAsSeries(buffer_low, false);
-  if(CopyClose(_Symbol, _period, 1, 1, closePrice)     < 1 ||      // цена закрытия последнего сформированного бара
-     CopyHigh(_Symbol, _period, 1, DEPTH, buffer_high) < DEPTH ||  // буфер максимальных цен всех сформированных баров на заданую глубину
-     CopyLow(_Symbol, _period, 1, DEPTH, buffer_low)   < DEPTH ||  // буфер минимальных цен всех сформированных баров на заданую глубину
-     CopyBuffer(_handle_pbi, 4, 0, 1, buffer_pbi)       < 1)        // последнее полученное движение
-  {
-   _index_max = -1;
-   _index_min = -1;  // если не получилось посчитать максимумы не будем открывать сделок
-   recountInterval = true;
-   log_file.Write(LOG_DEBUG,"Ошибка при копировании буферов");
-  }*/
+   
   // Вычислим границы движения цены на рассматриваемом отрезке
   _index_max = ArrayMaximum(_conbuf.GetHigh(_period).buffer, 2, DEPTH-1);
   _index_min = ArrayMinimum(_conbuf.GetLow(_period).buffer, 2, DEPTH-1);
@@ -200,15 +182,10 @@ int CChickensBrain::GetSignal()
 int  CChickensBrain::GetLastMoveType () // получаем последнее значение PriceBasedIndicator
 {
  int signTrend;
- /*
- if (copiedPBI < 1)
- {
-  log_file.Write(LOG_DEBUG, StringFormat("Не удалось скопировать тип тренда на периоде  %s", PeriodToString(_period)));
-  return (0);
- }*/
+
  signTrend = int(_conbuf.GetPBI(_period).buffer[0]);
  log_file.Write(LOG_DEBUG, StringFormat("Тип тренда на последнем баре: %d", int(_conbuf.GetPBI(_period).buffer[0])));
- //PrintFormat("Тип тренда на последнем баре: %d", signTrend);
+
   // если тренд вверх
  if (signTrend == 1 || signTrend == 2)
  {

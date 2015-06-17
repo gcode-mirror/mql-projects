@@ -57,18 +57,6 @@ int OnInit()
    return (INIT_FAILED);
   }
  }   
- //SetIndicatorByHandle(_Symbol, _Period, handleDE);
- /*handlePBI = DoesIndicatorExist(_Symbol, _Period, "PriceBasedIndicator");
- if (handlePBI == INVALID_HANDLE)
- {
-  handlePBI = iCustom(_Symbol, _Period, "PriceBasedIndicator");
-  if (handlePBI == INVALID_HANDLE)
-  {
-   Print("Не удалось создать хэндл индикатора PriceBasedIndicator");
-   return (INIT_FAILED);
-  }
-  //SetIndicatorByHandle(_Symbol, _Period, handlePBI);
- } */
  conbuf = new CContainerBuffers(TFs);
  for (int attempts = 0; attempts < 25; attempts++)
  {

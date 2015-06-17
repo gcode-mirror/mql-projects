@@ -32,16 +32,12 @@ input int trailingStep = 5;
 CChickensBrain *chicken;   // chicken - класс, производящий основные рассчеты 
                            // и возвращающий сигнал на торговлю (SELL/BUY)
 SPositionInfo pos_info;    // структура позиции
-STrailing trailing;        // структура трейлинга
+STrailing     trailing;    // структура трейлинга
 
-CArrayObj     *chickens;
+CArrayObj     *chickens;   // массив сигналов для каждого ТФ
 CTradeManager *ctm;
 CContainerBuffers *conbuf; // буфер контейнеров на различных Тф, заполняемый на OnTick()
                            // highPrice[], lowPrice[], closePrice[] и т.д;
-bool   closePosition;
-int    tmpLastBar;
-int    handle;
-int    fileTrade; // хэндл файла
             
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -51,82 +47,35 @@ int OnInit()
  log_file.Write(LOG_DEBUG,"ChickenMultiTFwithBrains запущен");
  ENUM_TIMEFRAMES TFs[] = {PERIOD_M5, PERIOD_M15, PERIOD_H1};
  conbuf = new CContainerBuffers(TFs);
- /*if(!tradeTFM5 && !tradeTFM15 && !tradeTFH1)  // проверка на включеннность таймфремов (не может быть ни одного включенного ТФ)
- {
-  PrintFormat("tradeTFM5 = %b, tradeTFM15 = %b, tradeTFH1 = %b", tradeTFM5, tradeTFM15, tradeTFH1);
-  return(INIT_FAILED);
- }*/
  chickens = new CArrayObj();
  chickens.Add(new CChickensBrain(_Symbol, PERIOD_M5, conbuf));
  chickens.Add(new CChickensBrain(_Symbol, PERIOD_M15, conbuf));
  chickens.Add(new CChickensBrain(_Symbol, PERIOD_H1, conbuf));
  ctm = new CTradeManager();
- fileTrade = FileOpen("ChickenMultiTFwithBrains/Chicken 8.05.15/Trade" + _Symbol +".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
- if (fileTrade == INVALID_HANDLE) //не удалось открыть файл
- {
-  Print("Не удалось создать файл тестирования статистики прохождения уровней");
-  return (INIT_FAILED);
- }      
-      
- for(int i = 0; i < chickens.Total(); i++)  // проходим по каждому Тф
- {
-  /* if(trailingType == TRAILING_TYPE_PBI) 
-   {
-    //handle = DoesIndicatorExist(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
-    //if (handle == INVALID_HANDLE)
-    //{
-     handle = iCustom(_Symbol, tradeTF[i].period, "PriceBasedIndicator");
-     if (handle == INVALID_HANDLE)
-     {
-      log_file.Write(LOG_DEBUG,"Не удалось создать хэндл индикатора PriceBasedIndicator");
-      Print(__FUNCTION__,"Не удалось создать хэндл индикатора PriceBasedIndicator");
-      return (INIT_FAILED);
-     }
-     //SetIndicatorByHandle(_Symbol,tradeTF[i].period,handle);
-     //}
-   }   
-   if(trailingType == TRAILING_TYPE_EXTREMUMS)
-   {
-    handle = iCustom(_Symbol, tradeTF[i].period, "DrawExtremums");
-    if (handle == INVALID_HANDLE)
-    {
-     log_file.Write(LOG_DEBUG,"Не удалось создать хэндл индикатора DrawExtremums");
-     Print(__FUNCTION__,"Не удалось создать хэндл индикатора DrawExtremums");
-     return (INIT_FAILED);
-    }
-   } 
+     
+   /*   
    tradeTF[i].trailing.trailingType = trailingType; //заполняем тип трэйлинга для i-ого Тф
    tradeTF[i].trailing.handleForTrailing = handle;
    
    trailing.minProfit    = minProfit;
    trailing.trailingStop = trailingStop;
-   trailing.trailingStep = trailingStep;
-   */
- }
+   trailing.trailingStep = trailingStep;*/
+   
  //recountInterval = false;
  trailing.trailingType = TRAILING_TYPE_NONE;
  pos_info.volume = volume;
  pos_info.expiration = 0;
 
  return(INIT_SUCCEEDED);
-
+}
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
- for(int i = 0; i < chickens.Total(); i++)
- {
-  delete chickens.At(i);
-  /*if(tradeTF[i].used == true)
-  { 
-   delete ctm;
-   IndicatorRelease(tradeTF[i].trailing.handleForTrailing);
-  } */
- }
  chickens.Clear();
+ delete chickens;
  delete ctm;
- FileClose(fileTrade); 
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -134,8 +83,6 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  int chickenSignal;
- //MqlDateTime timeCurrent;
- int tp;
  double slPrice;
  double curAsk;
  double curBid;
@@ -169,9 +116,8 @@ void OnTick()
       //trailing.minProfit = 2 * chicken.GetDiffLow();
       //trailing.trailingStop =  chicken.GetDiffLow();
      }
-     //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();
-     tp = (use_tp) ? (int)MathCeil((chicken.GetHighBorder() - chicken.GetLowBorder())*0.75/Point()) : 0; 
-     pos_info.tp = tp;
+     //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();   
+     pos_info.tp = (use_tp) ? (int)MathCeil((chicken.GetHighBorder() - chicken.GetLowBorder())*0.75/Point()) : 0; // можно спрятать в чикенБрэйн
      pos_info.magic = magic;
      pos_info.priceDifference = chicken.GetPriceDifference();
      pos_info.expiration = MathMax(DEPTH - chicken.GetIndexMax(), DEPTH - chicken.GetIndexMin());
@@ -179,8 +125,6 @@ void OnTick()
      if (pos_info.tp == 0 || pos_info.tp > pos_info.sl * tp_ko) //елси tp вычислен верно открываем позицию
      {
       log_file.Write(LOG_DEBUG, StringFormat("%s, tp = %d, sl = %d", MakeFunctionPrefix(__FUNCTION__), pos_info.tp, pos_info.sl));
-      FileWriteString(fileTrade, "Была открыта позиция на " + _Symbol + " на " + PeriodToString(chicken.GetPeriod()) + " \n");
-      FileWriteString(fileTrade, StringFormat("%s, date = %s ,tp = %d, sl = %d", MakeFunctionPrefix(__FUNCTION__), TimeToString(TimeCurrent()), pos_info.tp, pos_info.sl)); 
       ctm.OpenMultiPosition(_Symbol, _Period, pos_info, trailing, spread);
      }
     }

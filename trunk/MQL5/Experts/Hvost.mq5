@@ -109,6 +109,7 @@ void OnTick()
    // если пришел новый бар на старшем “‘
    if (isNewBarEld.isNewBar() > 0)
     {
+     
      // то перевычисл€ем параметры канала 
      CountChannel();
      wait_for_buy = false;
@@ -120,7 +121,10 @@ void OnTick()
     {
      opened_position = 0;   
     }
-        
+    log_file.Write(LOG_DEBUG, StringFormat("ƒл€ периода = %s", PeriodToString(_Period)));
+    // если цена bid отошла вверх и рассто€ние от нее до уровн€ как минимум 2 раза больше, чем ширина канала
+    log_file.Write(LOG_DEBUG, StringFormat("(pBid(%f)-pAsk(%f))(%f) > K*h(%f)=(%f) && wait_for_sell(%s) && opened_position(%s)!=-1", price_bid, max_price, (price_bid-max_price), h, K*h, BoolToString(wait_for_sell), BoolToString(opened_position)));
+    
    // если цена bid отошла вверх и рассто€ние от нее до уровн€ как минимум 2 раза больше, чем ширина канала
    if ( GreatDoubles(price_bid-max_price,K*h) && !wait_for_sell && opened_position!=-1 )
       {      
@@ -210,6 +214,7 @@ bool CountChannel ()
    }
   max_price = high_prices[ArrayMaximum(high_prices)];
   min_price = low_prices[ArrayMinimum(low_prices)];
+  log_file.Write(LOG_DEBUG, StringFormat("Ѕыл вз€т max_price = %f на старшем периоде = %s", max_price, PeriodToString(periodEld)));
   h = max_price - min_price;
   return (true);
  }  
@@ -391,3 +396,16 @@ bool IsFlatNow ()
    return (true);
   return (false);
  }
+ 
+//+------------------------------------------------------------------+
+//| ChartEvent function                                              |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id,
+                  const long &lparam,
+                  const double &dparam,
+                  const string &sparam)
+{
+//---
+   
+}
+//+------------------------------------------------------------------+
