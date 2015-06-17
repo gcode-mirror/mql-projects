@@ -26,6 +26,8 @@ string cameLowEvent;   // имя события прихода нижнего экстремума
 double h; // ширина канала флэта
 double bottom_price; // цена нижней границы канала
 double top_price; // цена верхней границы канала
+double second_bottom_price; // цена дополнительной нижней границы канала
+double second_top_price; // цена дополнительной верхней границы канала
 // экстремумы движений
 CExtremum trend_high0,trend_high1; 
 CExtremum trend_low0,trend_low1;
@@ -45,18 +47,26 @@ CChartObjectHLine bottomLevel; // нижний уровень
 int countTotal0 = 0;
 int countUp0 = 0;
 int countDown0 = 0;
+int countSecondUp0 = 0;
+int countSecondDown0 = 0;
 // тренд вверх, экстремум вниз
 int countTotal1 = 0;
 int countUp1 = 0;
 int countDown1 = 0;
+int countSecondUp1 = 0;
+int countSecondDown1 = 0;
 // тренд вниз, экстремум вверх
 int countTotal2 = 0;
 int countUp2 = 0;
 int countDown2 = 0;
+int countSecondUp2 = 0;
+int countSecondDown2 = 0;
 // тренд вниз, экстремум вниз
 int countTotal3 = 0;
 int countUp3 = 0;
 int countDown3 = 0;
+int countSecondUp3 = 0;
+int countSecondDown3 = 0;
 
 int mode = 0;  // 0 - режим поиска ситуации, 1 - режим ожидания пробития
 int type; // тип ситуации 
@@ -69,7 +79,7 @@ int fileHandle; // хэндл файла
 // структура для подсчета уровней пробития
 struct SubLineStruct
  {
-  int flat_type; // тип флэта, о которого стали рисовать уровни
+  int type; // тип флэта, о которого стали рисовать уровни
   double top_price; // верхняя цена уровня
   double bottom_price; // нижняя цена уровня
   int crossed; // флаг пробития (0 - еще не пробита, 1 - пробита сверху, -1 - пробита снизу)
@@ -79,18 +89,87 @@ struct SubLineStruct
 SubLineStruct subLines[]; // динамический массив структур уровней для пробития
 int subLineSize=0; // количество уровней 
 // функции по работе с уровнями 
-/*
+
 // сохраняет новые уровни для новое ситуации
-void SetNewSubLine ()
- {
-  sub
+void SetNewSubLine (int Type,double topPrice,double bottomPrice)
+ { 
+  subLineSize ++;
+  ArrayResize(subLines,subLineSize);
+  subLines[subLineSize-1].bottom_price = bottomPrice;
+  subLines[subLineSize-1].top_price = topPrice;
+  subLines[subLineSize-1].type = Type;
+  subLines[subLineSize-1].crossed = 0;      
  }
-*/
+
+// функция проверяет, не пробит ли уровень, и если что - меняет флаг crossed
+void CheckCrossedLevels ()
+ {
+  double curAsk = SymbolInfoDouble(_Symbol,SYMBOL_ASK); // текущий аск
+  double curBid = SymbolInfoDouble(_Symbol,SYMBOL_BID); // текущий бид
+  for (int index=0;index<subLineSize;index++)
+   {
+    // если этот уровень нуждается в проверке на пробитие
+    if (subLines[index].crossed == 0)
+     {
+      // если уровень пробит сверху
+      if (GreatOrEqualDoubles(curBid,subLines[index].top_price))
+       subLines[index].crossed = 1;
+      // если уровень пробит снизу
+      if (LessOrEqualDoubles(curAsk,subLines[index].bottom_price))
+       subLines[index].crossed = -1;       
+     }
+   }
+ }
+
+// подсчитывает статистику по дополнительным уровняем
+void CountStatToSecondLevels ()
+ {
+  // проходим по всем случаям
+  for (int index=0;index<subLineSize;index++)
+   {
+    switch (subLines[index].type)
+     {
+      case 0: // тренд вверх, экстремум вверх
+       // если уровень  пересечен сверху
+       if (subLines[index].crossed == 1)
+        countSecondUp0++;
+       // если уровень  пересечен снизу
+       if (subLines[index].crossed == -1)
+        countSecondDown0++;        
+      break; 
+      case 1: // тренд вверх, экстремум вниз
+       // если уровень  пересечен сверху
+       if (subLines[index].crossed == 1)
+        countSecondUp1++;
+       // если уровень  пересечен снизу
+       if (subLines[index].crossed == -1)
+        countSecondDown1++;        
+      break; 
+      case 2: // тренд вниз, экстремум вверх
+       // если уровень  пересечен сверху
+       if (subLines[index].crossed == 1)
+        countSecondUp2++;
+       // если уровень  пересечен снизу
+       if (subLines[index].crossed == -1)
+        countSecondDown2++;        
+      break; 
+      case 3: // тренд вниз, экстремум вниз
+       // если уровень  пересечен сверху
+       if (subLines[index].crossed == 1)
+        countSecondUp3++;
+       // если уровень  пересечен снизу
+       if (subLines[index].crossed == -1)
+        countSecondDown3++;        
+      break;                   
+     }
+   }
+ }
+
 int OnInit()
   {
    
    // создаем хэндл файла тестирования статистики прохождения уровней
-   fileHandle = FileOpen("FLAT_STAT/FLAT_A_" + _Symbol+"_" + PeriodToString(_Period) + ".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
+   fileHandle = FileOpen("FLAT_STAT_SECOND/FLAT_A_" + _Symbol+"_" + PeriodToString(_Period) + ".txt", FILE_WRITE|FILE_COMMON|FILE_ANSI|FILE_TXT, "");
    if (fileHandle == INVALID_HANDLE) //не удалось открыть файл
     {
      Print("Не удалось создать файл тестирования статистики прохождения уровней");
@@ -119,6 +198,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    delete extr_container;
+   CountStatToSecondLevels ();
    SaveStatToFile ();
    FileClose(fileHandle);
   }
@@ -132,6 +212,8 @@ void OnTick()
     }    
    if (!firstUploadedExtr)
     return;    
+   // проверяем пробитие уже открытых границ
+   CheckCrossedLevels (); 
    // если сейчас режим пробития границ канала 
    if (mode == 1)
     {
@@ -230,17 +312,21 @@ void OnChartEvent(const int id,         // идентификатор события
                                            DrawChannel ();      
                                            // переходим в режим 1 (пробитие границ канала или приход нового тренда) 
                                            mode = 1;   
-                                           
+
                                            // определяем тип ситуации
                                            if (trend == 1)
                                             {
                                              countTotal0++;
                                              type = 0;
+                                             // сохраняем новые дополнительные уровни
+                                             SetNewSubLine (0,second_top_price,second_bottom_price); 
                                             }
                                            if (trend == -1)
                                             {
                                              countTotal2++;
                                              type = 2;
+                                             // сохраняем новые дополнительные уровни
+                                             SetNewSubLine (2,second_top_price,second_bottom_price);                                              
                                             }   
                                          }
                          }
@@ -279,11 +365,15 @@ void OnChartEvent(const int id,         // идентификатор события
                                             {
                                              countTotal1++;
                                              type = 1;
+                                             // сохраняем новые дополнительные уровни
+                                             SetNewSubLine (1,second_top_price,second_bottom_price);                                              
                                             }
                                            if (trend == -1)
                                             {
                                              countTotal3++;
                                              type = 3;
+                                             // сохраняем новые дополнительные уровни
+                                             SetNewSubLine (3,second_top_price,second_bottom_price);                                              
                                             }   
                                          }
                          }
@@ -300,6 +390,8 @@ void OnChartEvent(const int id,         // идентификатор события
        MathMin(extr_container.GetFormedExtrByIndex(0,EXTR_LOW).price,extr_container.GetFormedExtrByIndex(1,EXTR_LOW).price);
    top_price = extr_container.GetFormedExtrByIndex(0,EXTR_HIGH).price + 0.75*h;
    bottom_price = extr_container.GetFormedExtrByIndex(0,EXTR_LOW).price - 0.75*h;
+   second_top_price = extr_container.GetFormedExtrByIndex(0,EXTR_HIGH).price + 3*h;
+   second_bottom_price = extr_container.GetFormedExtrByIndex(0,EXTR_LOW).price - 3*h;   
   } 
   
   
@@ -509,24 +601,32 @@ void SaveStatToFile ()
   FileWriteString(fileHandle,"     количество всего: "+IntegerToString(countTotal0)+"\n");
   FileWriteString(fileHandle,"     количество пробитий верха: "+IntegerToString(countUp0)+"\n");   
   FileWriteString(fileHandle,"     количество пробитий низа: "+IntegerToString(countDown0)+"\n");
+  FileWriteString(fileHandle,"     количество пробитий верха 3H: "+IntegerToString(countSecondUp0)+"\n");   
+  FileWriteString(fileHandle,"     количество пробитий низа 3H: "+IntegerToString(countSecondDown0)+"\n");  
   FileWriteString(fileHandle,"   }\n");
   FileWriteString(fileHandle,"  Для тренда вверх, последний экстремум - нижний: \n");
   FileWriteString(fileHandle,"   {\n");
   FileWriteString(fileHandle,"     количество всего: "+IntegerToString(countTotal1)+"\n");
   FileWriteString(fileHandle,"     количество пробитий верха: "+IntegerToString(countUp1)+"\n");   
   FileWriteString(fileHandle,"     количество пробитий низа: "+IntegerToString(countDown1)+"\n");
+  FileWriteString(fileHandle,"     количество пробитий верха 3H: "+IntegerToString(countSecondUp1)+"\n");   
+  FileWriteString(fileHandle,"     количество пробитий низа 3H: "+IntegerToString(countSecondDown1)+"\n");  
   FileWriteString(fileHandle,"   }\n");        
   FileWriteString(fileHandle,"  Для тренда вниз, последний экстремум - верхний: \n");
   FileWriteString(fileHandle,"   {\n");
   FileWriteString(fileHandle,"     количество всего: "+IntegerToString(countTotal2)+"\n");
   FileWriteString(fileHandle,"     количество пробитий верха: "+IntegerToString(countUp2)+"\n");   
   FileWriteString(fileHandle,"     количество пробитий низа: "+IntegerToString(countDown2)+"\n");
+  FileWriteString(fileHandle,"     количество пробитий верха 3H: "+IntegerToString(countSecondUp2)+"\n");   
+  FileWriteString(fileHandle,"     количество пробитий низа 3H: "+IntegerToString(countSecondDown2)+"\n");  
   FileWriteString(fileHandle,"   }\n");  
   FileWriteString(fileHandle,"  Для тренда вниз, последний экстремум - нижний: \n");
   FileWriteString(fileHandle,"   {\n");
   FileWriteString(fileHandle,"     количество всего: "+IntegerToString(countTotal3)+"\n");
   FileWriteString(fileHandle,"     количество пробитий верха: "+IntegerToString(countUp3)+"\n");   
   FileWriteString(fileHandle,"     количество пробитий низа: "+IntegerToString(countDown3)+"\n");
+  FileWriteString(fileHandle,"     количество пробитий верха 3H: "+IntegerToString(countSecondUp3)+"\n");   
+  FileWriteString(fileHandle,"     количество пробитий низа 3H: "+IntegerToString(countSecondDown3)+"\n");  
   FileWriteString(fileHandle,"   }\n");        
   FileWriteString(fileHandle," }\n");   
  } 
