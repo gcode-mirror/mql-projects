@@ -152,7 +152,10 @@ CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf)
     PrintFormat("Не удалось создать хэндл индикатора DrawExtremums на %s", PeriodToString(TFs[i]));
     log_file.Write(LOG_DEBUG, StringFormat("Не удалось создать хэндл индикатора DrawExtremums на %s", PeriodToString(TFs[i])));
    }
+   else
+   log_file.Write(LOG_DEBUG, StringFormat("handleDE = %d", handleDE));
   }
+  
   handleATR = iMA(_Symbol, TFs[i], 100, 0, MODE_EMA, iATR(_Symbol, TFs[i], 30)); // не ясно нужно ли проверять наличие этого индикатора на других графикаъ
   if (handleATR == INVALID_HANDLE)
   {
@@ -194,6 +197,7 @@ int CRabbitsBrain::GetSignal()
   trend = _trends.At(i);                   
   if(!trend.UploadOnHistory())  // обновить буфер трендов на текущем ТФ
   {
+   PrintFormat("DISCORD: Не удалось обновить массив трендов на истории Тф = %s", PeriodToString(ctf.GetPeriod()));
    log_file.Write(LOG_DEBUG, StringFormat("DISCORD: Не удалось обновить массив трендов на истории Тф = %s", PeriodToString(ctf.GetPeriod())));
    return DISCORD;
   }
@@ -230,7 +234,7 @@ int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)
  { 
   CTimeframeInfo *tf = GetBottom(TF);
   signalYoungTF = GetTradeSignal(GetBottom(TF));
-  log_file.Write(LOG_DEBUG, StringFormat("Был найдено противоречие для ТФ = %s на ТФ = %s", PeriodToString(TF.GetPeriod()), PeriodToString(tf.GetPeriod()))); 
+  log_file.Write(LOG_DEBUG, StringFormat("Было найдено противоречие для ТФ = %s на ТФ = %s", PeriodToString(TF.GetPeriod()), PeriodToString(tf.GetPeriod()))); 
   if(signalYoungTF == 2)   //было найдено противоречие на младших Тф
    return DISCORD;
  }

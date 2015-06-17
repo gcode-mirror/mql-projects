@@ -152,6 +152,8 @@ int CEvgenysBrain::GetSignal()
         LessOrEqualDoubles(MathAbs(curBid-priceTrendUp),channelH * 0.2)                             // если текущая цена находится возле нижней границы канала тренда 
       )
    {
+   log_file.Write(LOG_DEBUG, StringFormat("Close[1] (%f) < Open[1] (%f) && Close[2] (%f) > Open[2] (%f) && |curBid(%f) - priceTrendDown| (%f) < channelH*0.2 (%f)", 
+    _conbuf.GetClose(_period,1),_conbuf.GetOpen(_period,1),_conbuf.GetClose(_period,2), _conbuf.GetOpen(_period,2),curBid, MathAbs(curBid-priceTrendDown),channelH*0.2));
     signalForTrade =  SELL;
    }
   }
@@ -174,16 +176,17 @@ bool CEvgenysBrain::CheckClose()
 // вернет true, если тренд валиден
 int  CEvgenysBrain::IsTrendNow ()
 {
- log_file.Write(LOG_DEBUG, " Проверочка на наличие тренда по событию");
  double h1,h2;
  extr1 = _extremums.GetFormedExtrByIndex(0, EXTR_BOTH);
  extr2 = _extremums.GetFormedExtrByIndex(1, EXTR_BOTH);
  extr3 = _extremums.GetFormedExtrByIndex(2, EXTR_BOTH);
  extr4 = _extremums.GetFormedExtrByIndex(3, EXTR_BOTH);
+ 
  // вычисляем расстояния h1, h2
  h1 = MathAbs(extr1.price - extr3.price);
  h2 = MathAbs(extr2.price - extr4.price);
  // если тренд вверх 
+ log_file.Write(LOG_DEBUG, StringFormat("extr1 = %f extr2 = %f extr3 = %f extr4 = %f ", extr1.price,extr2.price,extr3.price,extr4.price));
  if (GreatDoubles(extr1.price,extr3.price) && GreatDoubles(extr2.price,extr4.price)) // можно переписать покороче (через ИЛИ - ретёрн -дирекшн)
  {
   // если последний экстремум - вниз
@@ -209,6 +212,7 @@ int  CEvgenysBrain::IsTrendNow ()
    H2 = extr4.price - extr1.price;
    // если наша трендования линия нас удовлетворяет
    if (GreatDoubles(h1, H1 * percent) && GreatDoubles(h2, H2 * percent))    
+   log_file.Write(LOG_DEBUG, " А вот и тренд вниз сформировался");
     return (-1);
   }
  }   
@@ -288,6 +292,7 @@ void CEvgenysBrain::UploadOnEvent(void)
 {
    // удаляем линии с графика
   DeleteLines();
+  log_file.Write(LOG_DEBUG, " Проверочка на наличие тренда по событию");
   _trend = IsTrendNow();
   if (_trend)
   {  
