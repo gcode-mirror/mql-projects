@@ -55,6 +55,5 @@ void OnChartEvent(const int id,         // идентификатор событи€
                   const string& sparam  // параметр событи€ типа string
                  )
   {
-    
     move_container.UploadOnEvent(sparam,dparam,lparam);
   }

@@ -15,7 +15,7 @@
 #include <CompareDoubles.mqh> // для сравнения вещественных чисел
 #include <Arrays\ArrayObj.mqh> // класс динамических массивов
 #include <StringUtilities.mqh> // строковые утилиты
-#include "CMove.mqh" // класс движения
+#include "CMove.mqh" // класс движения             
 
 class CMoveContainer: public CObject
  {
@@ -49,7 +49,9 @@ class CMoveContainer: public CObject
    // методы класса
    CMove *GetMoveByIndex (int index); // возвращает указатель на движение по индексу
    CMove *GetTrendByIndex (int index); // возвращает тренд по индексу
-   CMove *GetLastTrend(void); // возвращает значение последнего тренда  
+   CMove *GetLastTrend(void); // возвращает значение последнего тренда
+   double GetPriceLineUp(datetime time); // возвращает цену на верхней линии по времени
+   double GetPriceLineDown(datetime time); // возвращает цену на нижней линии по времени     
    bool IsTrendNow () { return (_trendNow); }; // возвращает true, если в текущий момент - тренд, false - если в текущий момент - нет тренд
    int  GetTotal () { return (_bufferMove.Total() ); }; // возвращает количество движений на текущий момент в буфере
    void RemoveAll (); // очищает буфер движений
@@ -81,10 +83,10 @@ void CMoveContainer::DrawCurrentTrendLines(void) // метод отображает линии текущ
     low1  = lastMove.GetMoveExtremum(EXTR_LOW_1);            
     _currentTrendLine.Create(_chartID,_trend_up_name,0,high0.time,high0.price,high1.time,high1.price); // верхняя линия
     ObjectSetInteger(_chartID,_trend_up_name,OBJPROP_COLOR,clrViolet);
-    ObjectSetInteger(_chartID,_trend_up_name,OBJPROP_RAY_RIGHT,1);  
+    ObjectSetInteger(_chartID,_trend_up_name,OBJPROP_RAY_LEFT,1);  
     _currentTrendLine.Create(_chartID,_trend_down_name,0,low0.time,low0.price,low1.time,low1.price); // верхняя линия 
     ObjectSetInteger(_chartID,_trend_down_name,OBJPROP_COLOR,clrViolet);  
-    ObjectSetInteger(_chartID,_trend_down_name,OBJPROP_RAY_RIGHT,1);    
+    ObjectSetInteger(_chartID,_trend_down_name,OBJPROP_RAY_LEFT,1);    
    
    }
  }
@@ -155,6 +157,16 @@ CMove * CMoveContainer::GetLastTrend(void)
   return (NULL);
  } 
  
+double CMoveContainer::GetPriceLineUp(datetime time) // возвращает цену на верхней линии 
+ {
+  return (ObjectGetValueByTime(_chartID,_trend_up_name, time));
+ } 
+ 
+double CMoveContainer::GetPriceLineDown(datetime time) // возвращает цену на нижней линии
+ {
+  return (ObjectGetValueByTime(_chartID,_trend_down_name, time));
+ } 
+ 
 // метод очищает буфер движений
 void CMoveContainer::RemoveAll(void)
  {
@@ -189,7 +201,6 @@ void CMoveContainer::UploadOnEvent(string sparam,double dparam,long lparam)
   ENUM_PRICE_MOVE_TYPE prev_move_type;
   // догружаем экстремумы
   _container.UploadOnEvent(sparam,dparam,lparam);
-   Print("Хуита");
   // если последний экстремум - нижний
   if (sparam == _eventExtrDown)
    {
@@ -226,21 +237,30 @@ void CMoveContainer::UploadOnEvent(string sparam,double dparam,long lparam)
                  )
           {
           
-           // если предыдущее движение не существует
-          
+           // если предыдущее движение  существует         
            if ( _bufferMove.Total() > 0 )
             {
              // получаем предыдущее движение
-             
+             temparyTrend = _bufferMove.At(0);
+             // если предыдущее движение - тренд вверх или вниз
              if (temparyTrend.GetMoveType() != MOVE_TREND_UP && temparyTrend.GetMoveType() != MOVE_TREND_DOWN)
               {
                // то добавляем его в буфер
                _bufferMove.Add(temparyMove);
-               delete temparyTrend;
+
               }
              else
               {
-               delete temparyMove;
+               // если предыдущее движение всё же тренд, то проверяем, нет ли у него общих границ с текущим трендом
+               if (temparyMove.GetMoveExtremum(EXTR_HIGH_0).time != temparyTrend.GetMoveExtremum(EXTR_HIGH_0).time &&
+                   temparyMove.GetMoveExtremum(EXTR_LOW_0).time != temparyTrend.GetMoveExtremum(EXTR_LOW_0).time 
+                  )
+                   {
+                    // до добавляем его в буфер 
+                    _bufferMove.Add(temparyMove);
+                   }
+               else
+                delete temparyMove;  // иначе удаляем 
               }
             }
            else
@@ -277,22 +297,30 @@ void CMoveContainer::UploadOnEvent(string sparam,double dparam,long lparam)
                   temparyMove.GetMoveType() == MOVE_FLAT_G 
                   )
           {
-           temparyTrend = new CMove("move"+_countMoves++,_chartID, _symbol, _period,_container.GetFormedExtrByIndex(1,EXTR_HIGH),
-                                                               _container.GetFormedExtrByIndex(2,EXTR_HIGH),
-                                                               _container.GetFormedExtrByIndex(0,EXTR_LOW),
-                                                               _container.GetFormedExtrByIndex(1,EXTR_LOW),_percent );          
-           if (temparyTrend != NULL)
-            {         
-             // если ни один экстремум тренда не совпадает с экстремумами флэта
-             if (temparyTrend.GetMoveType() != MOVE_TREND_UP && temparyTrend.GetMoveType() != MOVE_TREND_DOWN)
-              {
+           // если есть предыдущее движение
+           if (_bufferMove.Total() > 0)
+            {   
+             // получаем предыдущее движение
+             temparyTrend = _bufferMove.At(0);
+             // если предыдущее движение - не тренд    
+             if (temparyTrend.GetMoveType () != MOVE_TREND_UP && temparyTrend.GetMoveType() != MOVE_TREND_DOWN)
+              {         
                // то добавляем его в буфер
                _bufferMove.Add(temparyMove);
-               delete temparyTrend;
               }
+             // если всё же тренд
              else
               {
-               delete temparyMove;
+               // если предыдущее движение всё же тренд, то проверяем, нет ли у него общих границ с текущим трендом
+               if (temparyMove.GetMoveExtremum(EXTR_HIGH_0).time != temparyTrend.GetMoveExtremum(EXTR_HIGH_0).time &&
+                   temparyMove.GetMoveExtremum(EXTR_LOW_0).time != temparyTrend.GetMoveExtremum(EXTR_LOW_0).time 
+                  )
+                   {
+                    // до добавляем его в буфер 
+                    _bufferMove.Add(temparyMove);
+                   }
+               else
+                delete temparyMove;  // иначе удаляем 
               }
             }
            else
@@ -387,7 +415,7 @@ bool CMoveContainer::UploadOnHistory(void)
         if (move_type!= MOVE_TREND_UP && move_type != MOVE_TREND_DOWN)
         {
          // то просто добавляем его в буфер движений
-         _bufferMove.Add(temparyMove);                   
+         _bufferMove.Add(temparyMove);                
         }
        }
       }
