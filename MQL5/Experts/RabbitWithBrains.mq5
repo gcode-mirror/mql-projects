@@ -62,6 +62,7 @@ void OnDeinit(const int reason)
 {
  delete ctm;
  delete conbuf;  
+ delete rabbit;
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |

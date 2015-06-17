@@ -42,7 +42,7 @@ STrailing     trailing;      // структура информации о трейлинге
 
 int OnInit()
   {
-   ENUM_TIMEFRAMES TFs[] = {PERIOD_M5, PERIOD_M15, PERIOD_H1, PERIOD_H4};
+   ENUM_TIMEFRAMES TFs[] = {PERIOD_M5, PERIOD_M15, PERIOD_H1, PERIOD_H4, PERIOD_D1};
    conbuf = new CContainerBuffers(TFs);
    hvostiki = new CArrayObj();
    hvostiki.Add( new CHvostBrain(_Symbol,PERIOD_M5,conbuf));

@@ -42,7 +42,6 @@ private:
  ENUM_TIMEFRAMES _period;
  ENUM_SIGNAL_FOR_TRADE signalForTrade;
  string _symbol;
- int _countTotal;  // всего экстремумов
  int _trend;       // текущий тренд 1-й типа
  int _prevTrend;   // предыдущий тренд
  double curBid;   // текущая цена bid
@@ -79,7 +78,6 @@ public:
 //+------------------------------------------------------------------+
 CEvgenysBrain::CEvgenysBrain(string symbol,ENUM_TIMEFRAMES period, CExtrContainer *extremums, CContainerBuffers *conbuf) // удалть хэндл  и передать CExtrContainer
 {
- _countTotal = 0;  // всего экстремумов
  _trend = 0;       // текущий тренд 1-й типа
  _prevTrend = 0;   // предыдущий тренд
  _symbol = symbol;

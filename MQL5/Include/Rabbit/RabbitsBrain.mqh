@@ -169,7 +169,7 @@ CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf)
   _dataTFs.Add(ctf);                                        // добавим в буффер ТФ dataTFs
   // создать контейнер трендов для каждого периода
   trend = new CTrendChannel(0, _Symbol, TFs[i], handleDE, trendPercent);
-  trend.UploadOnHistory();                                  // обновим контейнер на истории
+  trend.UploadOnHistory(1000);                                  // обновим контейнер на истории
   _trends.Add(trend);                                       // добавим контейнер трендов в буффер по таймфреймам
   log_file.Write(LOG_DEBUG, StringFormat(" Загрузка ТФ = %s прошла успешно", PeriodToString(TFs[i])));
  }
@@ -184,8 +184,12 @@ CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf)
 //|                                                                  |
 //+------------------------------------------------------------------+
 CRabbitsBrain::~CRabbitsBrain()
-  {
-  }
+{
+ _trends.Clear();
+ delete _trends;
+_dataTFs.Clear();
+ delete _dataTFs;  
+}
 //+------------------------------------------------------------------+
 
 int CRabbitsBrain::GetSignal()
@@ -234,9 +238,11 @@ int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)
  { 
   CTimeframeInfo *tf = GetBottom(TF);
   signalYoungTF = GetTradeSignal(GetBottom(TF));
-  log_file.Write(LOG_DEBUG, StringFormat("Было найдено противоречие для ТФ = %s на ТФ = %s", PeriodToString(TF.GetPeriod()), PeriodToString(tf.GetPeriod()))); 
   if(signalYoungTF == 2)   //было найдено противоречие на младших Тф
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("Было найдено противоречие для ТФ = %s на ТФ = %s", PeriodToString(TF.GetPeriod()), PeriodToString(tf.GetPeriod()))); 
    return DISCORD;
+  }
  }
  if( CopyOpen(_Symbol,TF.GetPeriod(), 1, 1, open_buf) < 1 ||
      CopyBuffer(TF.GetHandleATR(), 0, 1, 1, atr_buf) <1 )
