@@ -7,6 +7,7 @@
 #property link      "ht_tp://www.mql5.com"
 #property version   "1.00"
 
+#include <Constants.mqh>                // сравнение вещественных чисел
 #include <ColoredTrend/ColoredTrendUtilities.mqh>  
 #include <Lib CisNewBarDD.mqh>              // использование нового бара
 #include <CompareDoubles.mqh>               // сравнение вещественных чисел
@@ -16,15 +17,6 @@
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 4
-// константы сигналов
-enum ENUM_SIGNAL_FOR_TRADE
-{
- SELL = -1,     // открытие позиции на продажу
- BUY  = 1,      // открытие позиции на покупку
- NO_POSITION = 0, // для действий, когда сигнала на открытие позиции не было
- NO_ENTER = 2,   // сигнал противоречия, "разрыв шаблона"
-};
-
 
 //+------------------------------------------------------------------+
 //|        Класс CChickensBrain  предназанчен для вычисления типа    |
@@ -171,9 +163,9 @@ int CChickensBrain::GetSignal()
    }
   } 
   else
-   return NO_POSITION;
+   return NO_SIGNAL;
  } 
- return NO_ENTER;
+ return DISCORD;
 }
 
 //+------------------------------------------------------------------+
