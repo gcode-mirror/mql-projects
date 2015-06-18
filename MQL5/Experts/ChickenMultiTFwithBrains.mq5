@@ -128,12 +128,12 @@ void OnTick()
       ctm.OpenMultiPosition(_Symbol, _Period, pos_info, trailing, spread);
      }
     }
-    if(chickenSignal == NO_POSITION) // если пришел сигнал NO_POSITION закрываем текущую позицию
+    if(chickenSignal == DISCORD) // если пришел сигнал DISCORD закрываем текущую позицию
     {
-     log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал NO_POSITION", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION), PeriodToString(chicken.GetPeriod())));
+     log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал DISCORD", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION), PeriodToString(chicken.GetPeriod())));
      ctm.ClosePendingPosition(_Symbol, magic);
     }
-    else if(ctm.GetPositionCount() != 0) //если сигнала NO_POSITION не было, меняем стоплосс и закрываем позицию по условию
+    else if(ctm.GetPositionCount() != 0) //если сигнала DISCORD не было, меняем стоплосс и закрываем позицию по условию
     {
      ENUM_TM_POSITION_TYPE type = ctm.GetPositionType(_Symbol, magic);
      if(type == OP_SELLSTOP && ctm.GetPositionStopLoss(_Symbol, magic) < curAsk) 
