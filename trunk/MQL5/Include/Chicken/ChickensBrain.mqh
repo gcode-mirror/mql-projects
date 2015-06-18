@@ -163,9 +163,9 @@ int CChickensBrain::GetSignal()
    }
   } 
   else
-   return NO_SIGNAL;
+   return DISCORD;
  } 
- return DISCORD;
+ return NO_SIGNAL;
 }
 
 //+------------------------------------------------------------------+
