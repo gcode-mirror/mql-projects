@@ -7,6 +7,7 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
+#include <Constants.mqh>                // сравнение вещественных чисел
 #include <CompareDoubles.mqh>                // сравнение вещественных чисел
 #include <StringUtilities.mqh>               // строковое преобразование
 #include <CLog.mqh>                          // для лога
@@ -16,15 +17,6 @@
 #include <TradeManager/TradeManager.mqh>     // торговая библиотека 
 #include <Lib CisNewBarDD.mqh>               // для проверки формирования нового бара
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
-
-
-enum ENUM_SIGNAL_FOR_TRADE
-{
- SELL = -1,     // открытие позиции на продажу
- BUY  = 1,      // открытие позиции на покупку
- NO_SIGNAL = 0, // для действий, когда сигнала на открытие позиции не было
- DISCORD = 2,   // сигнал противоречия, "разрыв шаблона"
-};
 
 #define M1 5;   //процент, насколько бар M1 больше среднего значения
 #define M5 3;   //процент, насколько бар M1 больше среднего значения
