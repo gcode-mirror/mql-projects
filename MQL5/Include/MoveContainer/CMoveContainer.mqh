@@ -87,7 +87,6 @@ void CMoveContainer::DrawCurrentTrendLines(void) // метод отображает линии текущ
     _currentTrendLine.Create(_chartID,_trend_down_name,0,low0.time,low0.price,low1.time,low1.price); // верхняя линия 
     ObjectSetInteger(_chartID,_trend_down_name,OBJPROP_COLOR,clrViolet);  
     ObjectSetInteger(_chartID,_trend_down_name,OBJPROP_RAY_LEFT,1);    
-   
    }
  }
  
