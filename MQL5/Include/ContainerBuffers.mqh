@@ -181,7 +181,7 @@ bool CContainerBuffers::Update()
    
    if(GetNewBar(_TFs[i]).isNewBar() > 0 || recalculate)
    { 
-    if(CopyHigh(_Symbol, bufferHigh.GetTF(), 0, DEPTH_MAX, bufferHigh.buffer)   < DEPTH_MAX) // цена закрытия последнего сформированного бара
+    if(CopyHigh(_Symbol, bufferHigh.GetTF(), 0, DEPTH_MAX, bufferHigh.buffer) < DEPTH_MAX) // цена закрытия последнего сформированного бара
     {
      bufferHigh.SetAvailable(false); 
      log_file.Write(LOG_DEBUG,StringFormat("%s Ошибка при копировании буфера High на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferHigh.GetTF())));
@@ -195,32 +195,32 @@ bool CContainerBuffers::Update()
      PrintFormat("%s Ошибка при копировании буфера Low на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferLow.GetTF()));
      return false;
     }   
-    if(CopyClose(_Symbol, bufferClose.GetTF(), 0, DEPTH_MIN, bufferClose.buffer)   < DEPTH_MIN)     // буфер минимальных цен всех сформированных баров на заданую глубину
+    if(CopyClose(_Symbol, bufferClose.GetTF(), 0, DEPTH_MIN, bufferClose.buffer) < DEPTH_MIN)     // буфер минимальных цен всех сформированных баров на заданую глубину
     {
      bufferClose.SetAvailable(false);
      log_file.Write(LOG_DEBUG,StringFormat("%s Ошибка при копировании буфера Close на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferClose.GetTF())));
      PrintFormat("%s Ошибка при копировании буфера Close на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferClose.GetTF()));
      return false;
     }
-    if(CopyOpen(_Symbol, bufferOpen.GetTF(), 0, DEPTH_MIN, bufferOpen.buffer)   < DEPTH_MIN)     // буфер  цен открытия всех  баров на заданую глубину
+    if(CopyOpen(_Symbol, bufferOpen.GetTF(), 0, DEPTH_MIN, bufferOpen.buffer) < DEPTH_MIN)     // буфер  цен открытия всех  баров на заданую глубину
     {
      bufferOpen.SetAvailable(false);
-     log_file.Write(LOG_DEBUG,StringFormat("%s Ошибка при копировании буфера Close на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferOpen.GetTF())));
+     log_file.Write(LOG_DEBUG,StringFormat("%s Ошибка при копировании буфера Open на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferOpen.GetTF())));
      PrintFormat("%s Ошибка при копировании буфера Open на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferOpen.GetTF()));
      return false;
     }   
-    if(CopyBuffer(_handlePBI[i], 4, 0, DEPTH_MIN, bufferPBI.buffer)      < DEPTH_MIN)          // последнее полученное движение
+    if(CopyBuffer(_handlePBI[i], 4, 0, DEPTH_MIN, bufferPBI.buffer) < DEPTH_MIN)          // последнее полученное движение
     {
      bufferPBI.SetAvailable(false);
      log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при копировании буфера PBI на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferPBI.GetTF())));
      PrintFormat("%s Ошибка при копировании буфера PBI на периоде %s", MakeFunctionPrefix(__FUNCTION__), PeriodToString(bufferPBI.GetTF()));
      return false;
     }
-     bufferHigh.SetAvailable(true);
-      bufferLow.SetAvailable(true);
-       bufferClose.SetAvailable(true);
-        bufferOpen.SetAvailable(true);
-         bufferPBI.SetAvailable(true);
+    bufferHigh.SetAvailable(true);
+    bufferLow.SetAvailable(true);
+    bufferClose.SetAvailable(true);
+    bufferOpen.SetAvailable(true);
+    bufferPBI.SetAvailable(true);
     /*if(CopyBuffer(_handleATR[i], 4, 1, 1, bufferATR.buffer)      < 1)   // значение ATR
     {
      bufferATR.SetAvailable(false);

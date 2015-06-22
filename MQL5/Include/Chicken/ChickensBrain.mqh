@@ -47,21 +47,18 @@ class CChickensBrain : public CArrayObj
   
  public:
   
-                     CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf);
-                    ~CChickensBrain();
-                   int GetSignal();  //pos_info._tp = 0?
-                   int GetLastMoveType ();
-                   int GetIndexMax()      { return _index_max;}
-                   int GetIndexMin()      { return _index_min;}
-                   int GetDiffHigh()      { return _diff_high;}
-                   int GetDiffLow()       { return _diff_low;}
-                   int GetPriceDifference(){ return _priceDifference;}
-                   double GetHighBorder() { return _highBorder;}
-                   double GetLowBorder()  { return _lowBorder;}
-                   ENUM_TIMEFRAMES GetPeriod() { return _period;}
-                  
-                   
-                   
+   CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf);
+   ~CChickensBrain();
+   int GetSignal();  //pos_info._tp = 0?
+   int GetLastMoveType ();
+   int GetIndexMax()      { return _index_max;}
+   int GetIndexMin()      { return _index_min;}
+   int GetDiffHigh()      { return _diff_high;}
+   int GetDiffLow()       { return _diff_low;}
+   int GetPriceDifference(){ return _priceDifference;}
+   double GetHighBorder() { return _highBorder;}
+   double GetLowBorder()  { return _lowBorder;}
+   ENUM_TIMEFRAMES GetPeriod() { return _period;}
 };
 //+------------------------------------------------------------------+
 //|      Конструктор                                                 |
