@@ -195,7 +195,7 @@ int CRabbitsBrain::GetSignal()
   {
    PrintFormat("DISCORD: Не удалось обновить массив трендов на истории Тф = %s", PeriodToString(ctf.GetPeriod()));
    log_file.Write(LOG_DEBUG, StringFormat("DISCORD: Не удалось обновить массив трендов на истории Тф = %s", PeriodToString(ctf.GetPeriod())));
-   return DISCORD;
+   return NO_SIGNAL;
   }
   
   if(ctf.IsThisNewBar()>0)      // если на нем пришел новый бар
@@ -211,7 +211,7 @@ int CRabbitsBrain::GetSignal()
    return signalForTrade;
   }
  } 
- return   DISCORD;
+ return NO_SIGNAL;
 }
 //+------------------------------------------------------------------+
 
