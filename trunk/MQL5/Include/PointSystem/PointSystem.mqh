@@ -259,12 +259,12 @@ bool CPointSys::isUpLoaded(void)
   {
    //Копируем данные индикаторов
    copiedSTOCEld   = CopyBuffer( _stoc_params.handleStochastic,   0, 1, 2, _bufferSTOCEld);
-   copiedEMA3Eld    = CopyBuffer( _ema_params.handleEMA3,   0, 0, 1, _bufferEMA3Eld);
-   copiedEMAfast = CopyBuffer( _ema_params.handleEMAfast,0, 1, 2, _bufferEMAfastEld);
+   copiedEMA3Eld   = CopyBuffer( _ema_params.handleEMA3,   0, 0, 1, _bufferEMA3Eld);
+   copiedEMAfast   = CopyBuffer( _ema_params.handleEMAfast,0, 1, 2, _bufferEMAfastEld);
    copiedEMAfastJr = CopyBuffer( _ema_params.handleEMAfastJr, 0, 1, 2, _bufferEMAfastJr);
    copiedEMAslowJr = CopyBuffer( _ema_params.handleEMAslowJr, 0, 1, 2, _bufferEMAslowJr);
-   copiedHigh       = CopyHigh  ( Symbol(),  _base_params.eldTF,  1, 2, _bufferHighEld);
-   copiedLow        = CopyLow   ( Symbol(),  _base_params.eldTF,  1, 2, _bufferLowEld); 
+   copiedHigh      = CopyHigh  ( Symbol(),  _base_params.eldTF,  1, 2, _bufferHighEld);
+   copiedLow       = CopyLow   ( Symbol(),  _base_params.eldTF,  1, 2, _bufferLowEld); 
   }  
   if (copiedSTOCEld    != 2 ||
       copiedEMA3Eld    != 1 ||

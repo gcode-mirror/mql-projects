@@ -102,8 +102,8 @@ class CRabbitsBrain
                      CRabbitsBrain(string symbol, CContainerBuffers *conbuf);
                     ~CRabbitsBrain();
                     
-                    int GetSignal();
-                    int GetTradeSignal(CTimeframeInfo *TF);
+                    int  GetSignal();
+                    int  GetTradeSignal(CTimeframeInfo *TF);
                     bool UpdateBuffers();
                     bool UpdateTrendsOnHistory(int i);
                     bool UpdateOnEvent(long lparam, double dparam, string sparam, int countPos);
