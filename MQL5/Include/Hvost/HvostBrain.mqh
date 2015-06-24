@@ -114,11 +114,12 @@ int CHvostBrain::GetSignal()
   wait_for_buy = false;
   wait_for_sell = false;
  }  
- log_file.Write(LOG_DEBUG, StringFormat("Для периода = %s", PeriodToString(_period)));
- // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
- log_file.Write(LOG_DEBUG, StringFormat("(pBid(%f)-pAsk(%f))(%f) > K*h(%f)=(%f) && wait_for_sell(%s) && opened_position(%s)!=-1", price_bid, max_price, (price_bid-max_price), h, K*h, BoolToString(wait_for_sell), BoolToString(opened_position)));
  if ( GreatDoubles(price_bid-max_price,K*h) && !wait_for_sell && opened_position!=-1 )
- {      
+ {   
+  log_file.Write(LOG_DEBUG, StringFormat("Для периода = %s", PeriodToString(_period)));
+  // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
+  log_file.Write(LOG_DEBUG, StringFormat("(pBid(%f)-pAsk(%f))(%f) > K*h(%f)=(%f) && wait_for_sell(%s) && opened_position(%d)!=-1", price_bid, max_price, (price_bid-max_price), h, K*h, BoolToString(wait_for_sell), opened_position));
+   
   log_file.Write(LOG_DEBUG, " Цена bid отошла вверх и расстояние от нее до уровня в 2 раза больше чем ширина канала");
   // то переходим в режим отскока для открытия на SELL 
   wait_for_sell = true;   
@@ -130,7 +131,11 @@ int CHvostBrain::GetSignal()
  }
  // если цена ask отошла вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
  if ( GreatDoubles(min_price-price_ask, K*h) && !wait_for_buy && opened_position!=1 )
- {     
+ { 
+  log_file.Write(LOG_DEBUG, StringFormat("Для периода = %s", PeriodToString(_period)));
+  // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
+  log_file.Write(LOG_DEBUG, StringFormat("(min_price(%f)-price_ask(%f))(%f) > K*h(%f)=(%f) && wait_for_buy(%s) && opened_position(%d)!=-1", min_price, price_ask, (min_price - price_ask), h, K*h, BoolToString(wait_for_buy), opened_position));
+    
   log_file.Write(LOG_DEBUG, " Цена ask отошла вверх и расстояние от нее до уровня в 2 раза больше чем ширина канала");    
   // то переходим в режим отскока для открытия на BUY
   wait_for_buy = true; 
@@ -143,7 +148,6 @@ int CHvostBrain::GetSignal()
  // если перешли в режим ожидания отбития для открытия позиции на SELL
  if (wait_for_sell)
  {  
-  
   // если удалось пробить последние два бара 
   if (IsBeatenBars(-1))
   {
