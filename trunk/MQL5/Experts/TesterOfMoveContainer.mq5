@@ -6,7 +6,7 @@
 #property copyright "Copyright 2014, MetaQuotes Software Corp."
 #property link      "http://www.mql5.com"
 #property version   "1.00"
-#include <MoveContainer/CMoveContainer.mqh>
+#include <MC/CMoveContainer.mqh>
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
 
 input double percent = 0.1;

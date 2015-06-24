@@ -29,7 +29,7 @@ double h; // ширина канала флэта
 double bottom_price; // цена нижней границы канала
 double top_price; // цена верхней границы канала
 // экстремумы движений
-CExtremum trend_high0,trend_high1; 
+CExtremum trend_high0,trend_high1;
 CExtremum trend_low0,trend_low1;
 
 CExtremum flat_high0,flat_high1;

@@ -83,14 +83,13 @@ void CMoveContainer::DrawCurrentTrendLines(void) // метод отображает линии текущ
     low1  = lastMove.GetMoveExtremum(EXTR_LOW_1);            
     _currentTrendLine.Create(_chartID,_trend_up_name,0,high0.time,high0.price,high1.time,high1.price); // верхняя линия
     ObjectSetInteger(_chartID,_trend_up_name,OBJPROP_COLOR,clrViolet);
-    ObjectSetInteger(_chartID,_trend_up_name,OBJPROP_RAY_LEFT,1);  
+    ObjectSetInteger(_chartID,_trend_up_name,OBJPROP_RAY_LEFT,1);
     _currentTrendLine.Create(_chartID,_trend_down_name,0,low0.time,low0.price,low1.time,low1.price); // верхняя линия 
     ObjectSetInteger(_chartID,_trend_down_name,OBJPROP_COLOR,clrViolet);  
     ObjectSetInteger(_chartID,_trend_down_name,OBJPROP_RAY_LEFT,1);    
    }
  }
  
-
 // кодирование методов класса CTrendChannel
 CMoveContainer::CMoveContainer(int chartID, string symbol,ENUM_TIMEFRAMES period,int handleDE,double percent)
  {
@@ -333,24 +332,28 @@ void CMoveContainer::UploadOnEvent(string sparam,double dparam,long lparam)
    }
 
  }
+  
  
 // метод загружает тренды на истории
 bool CMoveContainer::UploadOnHistory(void)
  { 
   if(!_isHistoryUploaded || _bufferMove.Total()<=0)
   {
-   int i;
-   int extrTotal;
-   int dirLastExtr;
-   int highIndex=0;
+   int i; // для прохода по циклу
+   int extrTotal; // количество экстремумов в контейнере экстремумов
+   int dirLastExtr; // для направления последнего экстремума
+   int highIndex=0; 
    int lowIndex=0;
    int countTrend=0; // счетчик трендов 
-   bool jumper=true;
-   ENUM_PRICE_MOVE_TYPE move_type;
-   CMove *temparyMove; 
+   bool jumper=true; 
+   bool current_trend = false; // флаг, обозначающий что сейчас череда трендов
+   ENUM_PRICE_MOVE_TYPE move_type; // тип текущего движения
+   ENUM_PRICE_MOVE_TYPE prevMove = MOVE_UNKNOWN; // тип предыдущего движения   
+   CMove *temparyMove;  // переменная для хранения предыдущего движения 
    CMove *moveForPrevTrend = NULL; // указатель для хранения предыдущего движения
    CMove *tempPrevTrend; // указатель на предыдущий тренд
-   // загружаем тренды 
+   
+   // загружаем экстремумы 
    for (int attempts=0;attempts<25;attempts++)
    {
     _container.Upload(0);
@@ -361,6 +364,7 @@ bool CMoveContainer::UploadOnHistory(void)
    {
     extrTotal = _container.GetCountFormedExtr(); // получаем количество экстремумов
     dirLastExtr = _container.GetLastFormedExtr(EXTR_BOTH).direction; // получаем последнее значение экстремума
+    Comment("extrTotal = ",extrTotal);
     // проходим по экстремумам и заполняем буфер движений
     for (i=0; i < extrTotal-4; i++)
     {
@@ -370,31 +374,54 @@ bool CMoveContainer::UploadOnHistory(void)
                                                       _container.GetFormedExtrByIndex(lowIndex,EXTR_LOW),
                                                       _container.GetFormedExtrByIndex(lowIndex+1,EXTR_LOW),_percent );
                                                       
+     // если удалось вычислить движение
      if (temparyMove != NULL)
      {
+      // получаем тип текущего движения
       move_type = temparyMove.GetMoveType();
-      // если обнаружили тренд
-      if (move_type == MOVE_TREND_UP || move_type == MOVE_TREND_DOWN)
+      // если обнаружили тренд вверх
+      if (move_type == MOVE_TREND_UP)
       {
-      
+       Comment("Словили тренд вверх");
        // добавляем тренд в буфер
-       _bufferMove.Add(temparyMove);
-      
-       countTrend ++;
-       // если количество трендов - 1
-       if (countTrend == 1)
+       _bufferMove.Add(temparyMove);     
+       // если предыдущее движение - не тренд вверх, то значит это начало трендовой серии
+       if (prevMove != MOVE_TREND_UP)
        {
-        _prevTrend = temparyMove;
+        // увеличиваем количество трендовых серий
+        countTrend ++;        
        }
-       // если количество трендов - 2
+       // если количество трендоых серий - 2, то выходим из подсчета движений на истории
        if (countTrend == 2)
        {
-        _curTrend = temparyMove;
         _isHistoryUploaded = true;
         return (true);
        }
+       // сохраняем тип предыдущего движения
+       prevMove = MOVE_TREND_UP;
       }
-      // если это флэт
+      // если обнаружили тренд вниз
+      else if (move_type == MOVE_TREND_DOWN)
+      {
+       Comment("Словили тренд вниз");
+       // добавляем тренд в буфер
+       _bufferMove.Add(temparyMove);     
+       // если предыдущее движение - не тренд вниз, то значит это начало трендовой серии
+       if (prevMove != MOVE_TREND_DOWN)
+       {
+        // увеличиваем количество трендовых серий
+        countTrend ++;        
+       }
+       // если количество трендоых серий - 2, то выходим из подсчета движений на истории
+       if (countTrend == 2)
+       {
+        _isHistoryUploaded = true;
+        return (true);
+       }
+       // сохраняем тип предыдущего движения
+       prevMove = MOVE_TREND_DOWN;
+      }  
+      // если обнаружили флэт    
       else if (move_type == MOVE_FLAT_A ||
                move_type == MOVE_FLAT_B ||
                move_type == MOVE_FLAT_C ||
@@ -404,23 +431,13 @@ bool CMoveContainer::UploadOnHistory(void)
                move_type == MOVE_FLAT_G 
               )
       {
-       if (moveForPrevTrend == NULL)
-       {
-        // то просто добавляем его в буфер движений
-        _bufferMove.Add(temparyMove);
-       }
-       else
-       {
-        if (move_type!= MOVE_TREND_UP && move_type != MOVE_TREND_DOWN)
-        {
          // то просто добавляем его в буфер движений
          _bufferMove.Add(temparyMove);                
-        }
-       }
-      }
-     }                                                         
-                                                         
-    // если последний экстремум верхний
+         prevMove = move_type;
+      }      
+     } // END 
+     
+      // если последний экстремум верхний
     if (dirLastExtr == 1)
     {
      // если jumper == true, то увеличивать индекс 
@@ -448,10 +465,12 @@ bool CMoveContainer::UploadOnHistory(void)
      }
      jumper = !jumper;
     }        
-    moveForPrevTrend = temparyMove; // сохраняем предыдущее движение
+     
+    } // END FOR 
+   
    }
+
   }
- }
  _isHistoryUploaded = false;
  return (false);  
 }
