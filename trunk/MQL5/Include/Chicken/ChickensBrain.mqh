@@ -7,13 +7,10 @@
 #property link      "ht_tp://www.mql5.com"
 #property version   "1.00"
 
-#include <Constants.mqh>                // сравнение вещественных чисел
+#include <Brain.mqh>
 #include <ColoredTrend/ColoredTrendUtilities.mqh>  
-#include <Lib CisNewBarDD.mqh>              // использование нового бара
-#include <CompareDoubles.mqh>               // сравнение вещественных чисел
-#include <StringUtilities.mqh>              // строковое преобразование
-#include <CLog.mqh>                         // дл€ лога
-#include <ContainerBuffers.mqh>     // класс контейнер буферов
+
+
 
 #define DEPTH 20
 #define ALLOW_INTERVAL 4
@@ -22,13 +19,15 @@
 //|         ласс CChickensBrain  предназанчен дл€ вычислени€ типа    |
 //|                              сигнала продажи согласно алгоритму  |                                                          |
 //+------------------------------------------------------------------+
-class CChickensBrain : public CArrayObj
+class CChickensBrain : public CBrain
 {
  private:
   string _symbol;
   ENUM_TIMEFRAMES _period;
   int _tmpLastBar;
   int _lastTrend;          // тип последнего тренда по PBI 
+  int _magic;              // уникальный номер дл€ этого робота
+  int _current_direction;
 
  
   bool recountInterval;    // дл€ первого обращени€ по GetSignal() ќбсудить актуальность этого флажка)
@@ -49,16 +48,19 @@ class CChickensBrain : public CArrayObj
   
    CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf);
    ~CChickensBrain();
-   int GetSignal();  //pos_info._tp = 0?
+   virtual int  GetSignal();
+   virtual int  GetMagic(){return _magic;}
+   virtual int  GetDirection(){return _current_direction;}
+   virtual void ResetDirection(){ _current_direction = 0;}
+   virtual ENUM_TIMEFRAMES GetPeriod(){return _period;}
    int GetLastMoveType ();
    int GetIndexMax()      { return _index_max;}
    int GetIndexMin()      { return _index_min;}
    int GetDiffHigh()      { return _diff_high;}
    int GetDiffLow()       { return _diff_low;}
-   int GetPriceDifference(){ return _priceDifference;}
+   int GetPriceDifference(){return _priceDifference;}
    double GetHighBorder() { return _highBorder;}
    double GetLowBorder()  { return _lowBorder;}
-   ENUM_TIMEFRAMES GetPeriod() { return _period;}
 };
 //+------------------------------------------------------------------+
 //|       онструктор                                                 |
@@ -140,6 +142,7 @@ int CChickensBrain::GetSignal()
           closePrice[0],
           _sl_min, _diff_high);*/
     _priceDifference = (_conbuf.GetClose(_period).buffer[0] - _highBorder)/Point();
+    _current_direction = SELL;
     return SELL;
    }
     
@@ -156,11 +159,15 @@ int CChickensBrain::GetSignal()
           closePrice[0],
           _sl_min, _diff_low);*/
     _priceDifference = (_lowBorder - _conbuf.GetClose(_period).buffer[0])/Point();
+    _current_direction = BUY;
     return BUY;
    }
   } 
   else
+  {
+   _current_direction = NO_SIGNAL; //(=0)
    return DISCORD;
+  }
  } 
  return NO_SIGNAL;
 }

@@ -70,7 +70,7 @@ void OnDeinit(const int reason)
 void OnTick()
 {
  ctm.OnTick();  
- rabbit.UpdateBuffers();      // потиковое обновление данных буферов            
+ conbuf.Update();         
  pos_info.type = OP_UNKNOWN;  // сброс струтуры позиции
  signalForTrade = NO_SIGNAL;  // обнулим текущий сигнал
  rabbit.OpenedPosition(ctm.GetPositionCount());  // ToDo получить позиции для конкретного робота

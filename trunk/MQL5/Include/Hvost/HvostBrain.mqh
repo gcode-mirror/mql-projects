@@ -31,6 +31,8 @@ class CHvostBrain : public CArrayObj
   ENUM_TIMEFRAMES _period;
   CContainerBuffers *_conbuf;
   int opened_position;     // флаг открытой позиции (0 - нет позиции, 1 - buy, (-1) - sell)
+  int _magic;
+  int _current_direction;
   double h;                // ширина канала
   double price_bid;        // текущая цена bid
   double price_ask;        // текущая цена ask
@@ -48,7 +50,11 @@ class CHvostBrain : public CArrayObj
  public:
                      CHvostBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf);
                     ~CHvostBrain();
-                     int  GetSignal();
+             virtual int  GetSignal();
+             virtual int  GetMagic(){return _magic;}
+             virtual int  GetDirection(){return _current_direction;}
+             virtual void ResetDirection(){ _current_direction = 0;}
+             virtual ENUM_TIMEFRAMES GetPeriod(){return _period;}
                      bool IsBeatenBars (int type);
                      bool IsBeatenExtremum (int type);
                      bool TestEldPeriod (int type);
@@ -59,7 +65,6 @@ class CHvostBrain : public CArrayObj
                      double GetPriceAsk()       { return price_ask;}
                      double GetMaxChannelPrice(){ return max_price;}
                      double GetMinChannelPrice(){ return min_price;}
-                     ENUM_TIMEFRAMES GetPeriod(){ return _period;}
                      void SetOpenedPosition(int p){opened_position = p;}
                      bool CountChannel();
                      

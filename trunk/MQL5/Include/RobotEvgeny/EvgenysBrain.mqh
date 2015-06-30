@@ -7,29 +7,17 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
-#include <Lib CisNewBarDD.mqh>                // для проверки формирования нового бара
-#include <CompareDoubles.mqh>                 // для сравнения вещественных чисел
+#include <Brain.mqh>
 #include <ChartObjects/ChartObjectsLines.mqh> // для рисования линий тренда
 #include <DrawExtremums/CExtrContainer.mqh>   // контейнер экстремумов (попробовать удалить после появления контейнера трендов)
-#include <ContainerBuffers.mqh>
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 input double percent = 0.1; // для контейнера движений (скорее всего станет константой)
 
-
-// перечисление для сигналов торговли
-enum ENUM_SIGNAL_FOR_TRADE
-{
- SELL = -1,     // открытие позиции на продажу
- BUY  = 1,      // открытие позиции на покупку
- NO_SIGNAL = 0, // для действий, когда сигнала на открытие позиции не было
- DISCORD = 2,   // сигнал противоречия, "разрыв шаблона"
-};
-
  
-class CEvgenysBrain
+class CEvgenysBrain: CBrain
 {
 private:
  CisNewBar *_isNewBar;
@@ -44,6 +32,8 @@ private:
  string _symbol;
  int _trend;       // текущий тренд 1-й типа
  int _prevTrend;   // предыдущий тренд
+ int _magic;       // уникальный номер для этого робота
+ int _current_direction; // текущее направление этого робота
  double curBid;   // текущая цена bid
  double curAsk;   // текущая цена Ask
  double prevBid;  // предыдущая цена bid
@@ -59,14 +49,17 @@ private:
  CChartObjectHLine  horLine; // объект класса горизонтальной линии
 
 public:
-                     CEvgenysBrain(string symbol,ENUM_TIMEFRAMES period, CExtrContainer *extremums, CContainerBuffers *conbuf);
+                     CEvgenysBrain(string symbol, ENUM_TIMEFRAMES period, CExtrContainer *extremums, CContainerBuffers *conbuf);
                     ~CEvgenysBrain();
-                    int GetSignal();
+            virtual int GetSignal();
+            virtual int GetMagic(){return _magic;}
+            virtual int GetDirection(){return _current_direction;}
+            virtual void ResetDirection(){ _current_direction = 0;}
+            virtual ENUM_TIMEFRAMES GetPeriod(){return _period;}
                     int CountStopLossForTrendLines();
                     int IsTrendNow();
                     void UploadOnEvent();
                     bool CheckClose();
-                    bool UploadExtremums();
                     void DrawLines();
                     void DeleteLines();
                     
@@ -80,6 +73,7 @@ CEvgenysBrain::CEvgenysBrain(string symbol,ENUM_TIMEFRAMES period, CExtrContaine
 {
  _trend = 0;       // текущий тренд 1-й типа
  _prevTrend = 0;   // предыдущий тренд
+ _current_direction = 0;
  _symbol = symbol;
  _period = period;
  _isNewBar = new CisNewBar(_symbol, _period);
