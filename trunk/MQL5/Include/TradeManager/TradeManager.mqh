@@ -60,15 +60,17 @@ public:
   long   GetHistoryDepth();                                   // возвращает глубину истории
   double GetMaxDrawdown()     {return(_max_drawdown); };      // возвращает максимальную просадку по балансу
   double GetMaxProfit()       {return(_max_balance);};        // возвращает максимальную прибыль
-  int    GetPositionCount()   {return (_openPositions.Total() + _positionsToReProcessing.Total());};  
+  int    GetPositionCount()   {return (_openPositions.Total() + _positionsToReProcessing.Total());}; 
+  int    GetPositionCount(long magic);
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
   int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
-  int    GetPositionPointsProfit(string symbol);
-  double GetPositionPrice (string symbol);                    // возвращает цену позицию по текущему символу
-  double GetPositionStopLoss(string symbol, long magic = 0);                  // возвращает текущий стоп лосс позиции по символу
-  double GetPositionTakeProfit(string symbol);                // возвращает текущий тейк профит позиции по символу
-  ENUM_TM_POSITION_TYPE GetPositionType();                    // возвращает тип выбранной позиции
+  int    GetPositionPointsProfit(string symbol, long magic = 0);
+  double GetPositionPrice (string symbol, long magic = 0);     // возвращает цену позицию по текущему символу
+  double GetPositionStopLoss(string symbol, long magic = 0);   // возвращает текущий стоп лосс позиции по символу
+  double GetPositionTakeProfit(string symbol, long magic = 0); // возвращает текущий тейк профит позиции по символу
+  ENUM_TM_POSITION_TYPE GetPositionType();                     // возвращает тип выбранной позиции
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol, long magic = 0);       // возвращает тип позиции по символу и мэджику
+  double GetPositionVolume(string symbol, long magic = 0);     // возвращает объем позиции по символу и мэджику
   
   bool ClosePendingPosition(string symbol, long magic = 0, color Color=CLR_NONE);      // Закрытие отложенной позиции по символу
   bool ClosePosition(string symbol, color Color=CLR_NONE);             // Закртыие позиции по символу
@@ -151,6 +153,25 @@ long CTradeManager::GetHistoryDepth()
 }
 
 //+----------------------------------------------------
+//| Возвращает количество позиций с заданным мэджиком
+//+----------------------------------------------------
+int CTradeManager::GetPositionCount(long magic)
+{
+ int total = _openPositions.Total();
+ int count = 0;
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getMagic() == magic)
+  {
+   count++;
+  }
+ }
+ return(count); 
+}
+
+//+----------------------------------------------------
 //  методы для работы с Replay Position
 //+----------------------------------------------------
 CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime toDate = 0)
@@ -180,7 +201,7 @@ CPositionArray* CTradeManager::GetPositionHistory(datetime fromDate, datetime to
 //+------------------------------------------------------------------+
 //|  Профит позиции на символе в пунктах                             |
 //+------------------------------------------------------------------+
-int CTradeManager::GetPositionPointsProfit(string symbol)
+int CTradeManager::GetPositionPointsProfit(string symbol, long magic = 0)
 {
  int total = _openPositions.Total();
  CPosition *pos;
@@ -196,11 +217,10 @@ int CTradeManager::GetPositionPointsProfit(string symbol)
  return(0);
 }
 
-
 //+------------------------------------------------------------------+
 //|  Средняя цена позиции на текущий момент                          |
 //+------------------------------------------------------------------+
-double CTradeManager::GetPositionPrice(string symbol)
+double CTradeManager::GetPositionPrice(string symbol, long magic = 0)
 {
  int total = _openPositions.Total();
  CPosition *pos;
@@ -209,8 +229,10 @@ double CTradeManager::GetPositionPrice(string symbol)
   pos = _openPositions.At(i);
   if (pos.getSymbol() == symbol)
   {
-  double price = pos.getPositionPrice();
-   return(price);
+   if (pos.getMagic() == magic || magic == 0)
+   {
+    return(pos.getPositionPrice());
+   }
   }
  }
  return(0);
@@ -228,7 +250,7 @@ double CTradeManager::GetPositionStopLoss(string symbol, long magic = 0 )
   pos = _openPositions.At(i);
   if (pos.getSymbol() == symbol)
   {
-   if (pos.getMagic() == magic||magic == 0)
+   if (pos.getMagic() == magic || magic == 0)
    {
     return(pos.getStopLossPrice());
    }
@@ -238,9 +260,9 @@ double CTradeManager::GetPositionStopLoss(string symbol, long magic = 0 )
 }
 
 //+------------------------------------------------------------------+
-//|  Возвращает текущий тейк профит позиции по символу                 |
+//|  Возвращает текущий тейк профит позиции по символу и мэджику     |
 //+------------------------------------------------------------------+
-double CTradeManager::GetPositionTakeProfit(string symbol)
+double CTradeManager::GetPositionTakeProfit(string symbol, long magic = 0)
 {
  int total = _openPositions.Total();
  CPosition *pos;
@@ -249,7 +271,10 @@ double CTradeManager::GetPositionTakeProfit(string symbol)
   pos = _openPositions.At(i);
   if (pos.getSymbol() == symbol)
   {
-   return(pos.getTakeProfitPrice());
+   if (pos.getMagic() == magic || magic == 0)
+   {
+    return(pos.getTakeProfitPrice());
+   }
   }
  }
  return(0);
@@ -257,8 +282,9 @@ double CTradeManager::GetPositionTakeProfit(string symbol)
 
 //+------------------------------------------------------------------+
 /// Return current position type
-/// \param [long] ticket       number of ticket to search
-/// \return                    true if successful, false if not
+/// \param [string] symbol     symbol to search
+/// \param [long] magic        magic number to search
+/// \return                    selected position type
 //+------------------------------------------------------------------+
 ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType()
 {
@@ -269,8 +295,9 @@ ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType()
 
 //+------------------------------------------------------------------+
 /// Return current position type
-/// \param [long] ticket       number of ticket to search
-/// \return                    true if successful, false if not
+/// \param [string] symbol     symbol to search
+/// \param [long] magic        magic number to search
+/// \return                    current position type
 //+------------------------------------------------------------------+
 ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol, long magic = 0)
 {
@@ -289,6 +316,31 @@ ENUM_TM_POSITION_TYPE CTradeManager::GetPositionType(string symbol, long magic =
  }
  return OP_UNKNOWN;
 }
+
+//+------------------------------------------------------------------+
+/// Return current position volume
+/// \param [string] symbol     symbol to search
+/// \param [long] magic        magic number to search
+/// \return                    current position volume
+//+------------------------------------------------------------------+
+double CTradeManager::GetPositionVolume(string symbol, long magic = 0)
+{
+ int total = _openPositions.Total();
+ CPosition *pos;
+ for (int i = 0; i < total; i++)
+ {
+  pos = _openPositions.At(i);
+  if (pos.getSymbol() == symbol)
+  {
+   if (pos.getMagic() == magic || magic == 0)
+   {
+    return(pos.getVolume());
+   }
+  }
+ }
+ return OP_UNKNOWN;
+}
+
 
 //+------------------------------------------------------------------+
 /// Close a virtual position by symbol.

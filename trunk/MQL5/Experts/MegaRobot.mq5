@@ -205,14 +205,11 @@ void MoveDown (CArrayObj *robots) // привести в соответствие направление позиции
      else
       continue;
     // Если у этого робота нет открытых позиций
-    if(true/*!ctm.PosExist(magic)*/)
+    if(ctm.GetPositionCount(robot.GetMagic()) <= 0)
     {
      // текущее направление робота изменится автоматически еще при getSignal()
      ctm.OpenMultiPosition(_Symbol,robot.GetPeriod(),pos_info,trailing);
     }
-    // Если существует открытая позиция с magicом этого робота - закрыть позицию 
-    // и открыть в новом направлении как это делается на обычных роботах.
-    
     // По-другому: смотри в алгоритм. Там мы оставляем позицию противоположного направления не смотря на противоречие в getSignal на ЭТОМ же роботе
     
     // Если существует открытая позиция с magicом этого робота 
@@ -244,7 +241,7 @@ void MoveUp (CArrayObj *robots)
  {
   robot = robots.At(i); // для каждого робота на ВИ
   // если его позиция существует и активна
-  if(true/*!ctm.PosExist(magic)*/ ) // (если позиция отвисла, меняем ее мэджик на 0)
+  if(ctm.GetPositionCount(robot.GetMagic()) <= 0) 
   {
   }
   else
@@ -260,10 +257,9 @@ void MoveUp (CArrayObj *robots)
      // ctm.ClosePosition(robot.GetMagic(), value);
      // value = ? 
      // и добавляем оставшийся объем к роботу верхнего ТФ
-     // ctm.AddPositionValue(ChoseTheBrain(OP_SELL, GetNextTI(robots, false)) value);//up
+     // ctm.AddPositionValue(ChooseTheBrain(OP_SELL, GetNextTI(robots, false)) value);//up
      // если никакой робот не принимает позиции по направлению и невозможно добавить объем
      // то позиция "отвисает" ее мэджик = 0;
-     
     }
     // если позиция коснулась SL закрываем позицию полностью
     if(curPrice >= ctm.GetPositionStopLoss(_Symbol, robot.GetMagic()))
@@ -281,7 +277,7 @@ void MoveUp (CArrayObj *robots)
      // ctm.ClosePosition(robot.GetMagic(), value);
      // value = ? 
      // и добавляем оставшийся объем к роботу верхнего ТФ
-     // ctm.AddPositionValue(ChoseTheBrain(OP_SELL, GetNextTI(robots, false)) value);//up
+     // ctm.AddPositionValue(ChooseTheBrain(OP_SELL, GetNextTI(robots, false)) value);//up
     }
     // если позиция коснулась SL закрываем позицию полностью
     if(curPrice <= ctm.GetPositionStopLoss(_Symbol, robot.GetMagic()))
@@ -294,6 +290,8 @@ void MoveUp (CArrayObj *robots)
  if(robots!=robots_OLD)
   MoveUp(GetNextTI(robots,false));
 }
+
+
 CArrayObj *GetNextTI(CArrayObj *robots, bool down)
 {
  CBrain *robot = robots.At(0); 
@@ -308,12 +306,14 @@ CArrayObj *GetNextTI(CArrayObj *robots, bool down)
   
  return robots_JUN;  
 }
+
+
 void FillTradeInfo(CArrayObj *robots)
 { 
  moveSELL = 0;
  moveBUY = 0;
- CBrain *robot;
- if(robots.At(0).GetPeriod()>PERIOD_M15)
+ CBrain *robot = robots.At(0);
+ if(robot.GetPeriod() > PERIOD_M15)
   value = 0.0;
  else
   value = 1.0;
@@ -329,30 +329,27 @@ void FillTradeInfo(CArrayObj *robots)
  return;
 }
 
-int ChoseTheBrain(int OP_SELL, CArrayObj *robots)
+int ChooseTheBrain(int pos_type, CArrayObj *robots)
 {
  double volume = 0;
- int magic = -1;    // на стм - если мэджик позиции отрицательный, удалить ее, не считать и прочее
+ int magic = 0;   // на стм - если мэджик позиции отрицательный, удалить ее, не считать и прочее
  for(int i = 0; i < robots.Total(); i++)
  {
   robot = robots.At(i);
-  if(ctm.PosExist(robot.GetMagic()))
+  magic = robot.GetMagic();
+  if(ctm.GetPositionCount(magic))
   {
-   if(ctm.GetPositionType(robot.GetMagic()) == OP_SELL)
+   if(ctm.GetPositionType(magic) == pos_type)
    {
-    if(ctm.GetPositionValue(magic) >= volume)
+    if(ctm.GetPositionVolume(magic) >= volume)
     {
      magic = robot.GetMagic();
-     volume = ctm.GetPositionValue(magic);
-    }
-    else 
-    {
-     return magic;
+     volume = ctm.GetPositionVolume(magic);
     }
    }
   }
-  return magic;
  }
+ return magic;
 }
 
 // Сравнить направление позиции с сигналом 
