@@ -7,15 +7,10 @@
 #property link      "http://www.mql5.com"
 #property version   "1.00"
 
-#include <Constants.mqh>                // сравнение вещественных чисел
-#include <CompareDoubles.mqh>                // сравнение вещественных чисел
-#include <StringUtilities.mqh>               // строковое преобразование
-#include <CLog.mqh>                          // для лога
-#include <ContainerBuffers.mqh>       // контейнер буферов цен на всех ТФ (No PBI) - для запуска в ТС
+#include <Brain.mqh>
 #include <CTrendChannel.mqh>                 // трендовый контейнер
 //#include <MoveContainer/CMoveContainer.mqh>  // контейнер движений цены
 #include <TradeManager/TradeManager.mqh>     // торговая библиотека 
-#include <Lib CisNewBarDD.mqh>               // для проверки формирования нового бара
 #include <SystemLib/IndicatorManager.mqh> // библиотека по работе с индикаторами
 
 #define M1 5;   //процент, насколько бар M1 больше среднего значения
@@ -25,7 +20,7 @@
 //|                           Класс TimeFrame содержит информацию, которую можно отнести к конкретному ТФ      |
 //| Класс реализует работу с хэндлами, уникальными для ТФ (ATR, DE и др.), хранит состояние переменной isNewBar|
 //+------------------------------------------------------------------------------------------------------------+
-class CTimeframeInfo: public CObject
+class CTimeframeInfo: public CBrain
 {
  private:
    string _symbol;
@@ -70,7 +65,7 @@ CTimeframeInfo::~CTimeframeInfo()
 //| дополнительный класс CTimeframeInfo для хранения информации для алгоритма   |
 //+-----------------------------------------------------------------------------+
 
-class CRabbitsBrain
+class CRabbitsBrain : public CBrain
 {
  private:
   static double const trendPercent;
@@ -78,6 +73,9 @@ class CRabbitsBrain
   int _handle19Lines;
   int _posOpenedDirection;
   int _indexPosOpenedTF;
+  int _magic;
+  int _current_direction;
+
   CTimeframeInfo *_posOpenedTF; // тф, на котором была совершена сделка
   string _symbol;
   CContainerBuffers *_conbuf;
@@ -99,18 +97,21 @@ class CRabbitsBrain
                     
 
  public:
-                     CRabbitsBrain(string symbol, CContainerBuffers *conbuf);
+                     CRabbitsBrain(string symbol,  CContainerBuffers *conbuf, int magic=0);//ENUM_TIMEFRAMES period,
                     ~CRabbitsBrain();
                     
-                    int  GetSignal();
+            virtual int  GetSignal();
+            virtual int  GetMagic(){return _magic;}
+            virtual int  GetDirection(){return _current_direction;}
+            virtual void  ResetDirection(){ _current_direction = 0;}
+            virtual ENUM_TIMEFRAMES GetPeriod(){return TFs[2];}
                     int  GetTradeSignal(CTimeframeInfo *TF);
-                    bool UpdateBuffers();
                     bool UpdateTrendsOnHistory(int i);
                     bool UpdateOnEvent(long lparam, double dparam, string sparam, int countPos);
                     int  GetIndexTF(CTimeframeInfo *curTF);
                     void OpenedPosition(int ctmTotal);
 
-                    int GetSL() {return _sl;}
+                    //int GetSL() {return _sl;}
 
                     
 
@@ -119,8 +120,9 @@ const double  CRabbitsBrain::trendPercent = 0.1;
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-CRabbitsBrain::CRabbitsBrain(string symbol, CContainerBuffers *conbuf)
-{
+CRabbitsBrain::CRabbitsBrain(string symbol,  CContainerBuffers *conbuf, int magic=0)//ENUM_TIMEFRAMES period,
+{                     
+ _magic = magic;
  _symbol = symbol;
  _conbuf = conbuf;
  TFs[0] = PERIOD_M1; TFs[1] = PERIOD_M5; TFs[2] = PERIOD_M15;
@@ -198,7 +200,7 @@ int CRabbitsBrain::GetSignal()
    return NO_SIGNAL;
   }
   
-  if(ctf.IsThisNewBar()>0)      // если на нем пришел новый бар
+  if(ctf.IsThisNewBar() > 0)      // если на нем пришел новый бар
   {
    signalForTrade = GetTradeSignal(ctf); // считать сигнал на этом ТФ
    if( (signalForTrade == BUY || signalForTrade == SELL ) ) //(signalForTrade != NO_POISITION)
@@ -237,10 +239,10 @@ int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)
   }
  }
  if( CopyOpen(_Symbol,TF.GetPeriod(), 1, 1, open_buf) < 1 ||
-     CopyBuffer(TF.GetHandleATR(), 0, 1, 1, atr_buf) <1 )
+     CopyBuffer(TF.GetHandleATR(), 0, 1, 1, atr_buf) < 1 )
  {
   log_file.Write(LOG_DEBUG, StringFormat("%s Ошибка при копировании цены открытия последнего бара или значения ATR", MakeFunctionPrefix(__FUNCTION__)));
-  return DISCORD;
+  return NO_SIGNAL;
  }
  // тело бара больше среднего*К ?
  if(GreatDoubles(MathAbs(open_buf[0] - _conbuf.GetClose(TF.GetPeriod()).buffer[1]), atr_buf[0]*(1 + TF.GetRatio())))
@@ -423,13 +425,6 @@ int CRabbitsBrain::GetIndexTF(CTimeframeInfo *curTF)
  return -1;
 }
 
-bool CRabbitsBrain::UpdateBuffers()
-{ 
- if(_conbuf.Update())
-  return true;
- else
-  return false;
-}
 /*
 bool CRabbitsBrain::UpdateTrendsOnHistory(int i)
 {
