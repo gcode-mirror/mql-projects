@@ -101,8 +101,8 @@ void OnTick()
  log_file.Write(LOG_DEBUG, StringFormat("%s Не загрузился контейнер экстремумов, так не должно быть.", MakeFunctionPrefix(__FUNCTION__)));
  //log_file.Write(LOG_DEBUG, StringFormat("%s Не загрузился контейнер экстремумов, так не должно быть.", MakeFunctionPrefix(__FUNCTION__)));
  
- if (evgeny.CheckClose() && ctm.GetPositionCount() > 0)
- { 
+ if(evgenySignal == DISCORD && ctm.GetPositionCount() > 0)
+ {
   // то закрываем позицию
   ctm.ClosePosition(0);
  }

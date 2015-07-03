@@ -13,9 +13,9 @@
 #include <StringUtilities.mqh>               // строковое преобразование
 #include <CLog.mqh>                          // дл€ лога
 #include <Object.mqh>
-#include <ContainerBuffers.mqh>       // контейнер буферов цен на всех “‘ (No PBI) - дл€ запуска в “—
-#include <CompareDoubles.mqh>               // сравнение вещественных чисел
-
+#include <ContainerBuffers.mqh>              // контейнер буферов цен на всех “‘ (No PBI) - дл€ запуска в “—
+#include <CompareDoubles.mqh>                // сравнение вещественных чисел
+#include <TradeManager/TradeManager.mqh>     // торгова€ библиотека
 class CBrain : public CObject
 {
 protected:
@@ -26,12 +26,13 @@ protected:
  
 public:
 
-virtual int  GetSignal()     { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 3;}
-virtual int  GetMagic()      { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 3;}
-virtual int  GetDirection()  { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 3;}
-virtual void ResetDirection(){ PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return;}
+virtual ENUM_TM_POSITION_TYPE  GetSignal()     { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
+virtual long  GetMagic()         { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
+virtual ENUM_SIGNAL_FOR_TRADE    GetDirection()  { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
+virtual int  GetTakeProfit()  { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 0;}
+virtual int  GetStopLoss()    { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 0;}
 
-virtual ENUM_TIMEFRAMES GetPeriod() { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 3;}
+virtual ENUM_TIMEFRAMES GetPeriod() { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
 
 //---------------или посылать нулевые значени€---------------
 //virtual int GetSL();

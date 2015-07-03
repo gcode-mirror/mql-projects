@@ -74,8 +74,9 @@ class CRabbitsBrain : public CBrain
   int _posOpenedDirection;
   int _indexPosOpenedTF;
   int _magic;
-  int _current_direction;
-
+  ENUM_SIGNAL_FOR_TRADE _current_direction; // фиксирование сосотояния шаблона (SEll, BUY, DISCORD(0) - торговля запрещена)
+  ENUM_SIGNAL_FOR_TRADE signalForTrade;
+  
   CTimeframeInfo *_posOpenedTF; // тф, на котором была совершена сделка
   string _symbol;
   CContainerBuffers *_conbuf;
@@ -100,11 +101,13 @@ class CRabbitsBrain : public CBrain
                      CRabbitsBrain(string symbol,  CContainerBuffers *conbuf, int magic=0);//ENUM_TIMEFRAMES period,
                     ~CRabbitsBrain();
                     
-            virtual int  GetSignal();
-            virtual int  GetMagic(){return _magic;}
-            virtual int  GetDirection(){return _current_direction;}
-            virtual void  ResetDirection(){ _current_direction = 0;}
+            virtual ENUM_TM_POSITION_TYPE  GetSignal();
+            virtual long  GetMagic(){return _magic;}
+            virtual ENUM_SIGNAL_FOR_TRADE  GetDirection(){return _current_direction;}
             virtual ENUM_TIMEFRAMES GetPeriod(){return TFs[2];}
+            virtual int  GetTakeProfit();
+            virtual int  GetStopLoss();
+
                     int  GetTradeSignal(CTimeframeInfo *TF);
                     bool UpdateTrendsOnHistory(int i);
                     bool UpdateOnEvent(long lparam, double dparam, string sparam, int countPos);
@@ -125,6 +128,7 @@ CRabbitsBrain::CRabbitsBrain(string symbol,  CContainerBuffers *conbuf, int magi
  _magic = magic;
  _symbol = symbol;
  _conbuf = conbuf;
+ _current_direction = NO_SIGNAL;
  TFs[0] = PERIOD_M1; TFs[1] = PERIOD_M5; TFs[2] = PERIOD_M15;
  Ks[0] = M1; Ks[1] = M5; Ks[2] = M15;
  //----------- Обработка индикатора NineTeenLines----------
@@ -186,9 +190,8 @@ _dataTFs.Clear();
 }
 //+------------------------------------------------------------------+
 
-int CRabbitsBrain::GetSignal()
+ENUM_TM_POSITION_TYPE CRabbitsBrain::GetSignal()
 {  
- int signalForTrade;
  for(int i = _dataTFs.Total()-1; i >= 0; i--) // проходя по каждому таймфрему, начиная со старшего
  {
   ctf = _dataTFs.At(i);         // получить текущий ТФ 
@@ -197,7 +200,7 @@ int CRabbitsBrain::GetSignal()
   {
    PrintFormat("DISCORD: Не удалось обновить массив трендов на истории Тф = %s", PeriodToString(ctf.GetPeriod()));
    log_file.Write(LOG_DEBUG, StringFormat("DISCORD: Не удалось обновить массив трендов на истории Тф = %s", PeriodToString(ctf.GetPeriod())));
-   return NO_SIGNAL;
+   return OP_UNKNOWN;
   }
   
   if(ctf.IsThisNewBar() > 0)      // если на нем пришел новый бар
@@ -208,12 +211,16 @@ int CRabbitsBrain::GetSignal()
     _posOpenedTF = ctf;
     _posOpenedDirection = signalForTrade;         // сохранить направление по которому была открыта сделка
     _indexPosOpenedTF = GetIndexTF(_posOpenedTF); // сохранить индекс ТФ в массиве dataTFs, на котором была открыта сделка
+    _current_direction = signalForTrade;
     log_file.Write(LOG_DEBUG, StringFormat("Запомнили что позиция открыта %i", GetIndexTF(_posOpenedTF)));
    }
-   return signalForTrade;
+   if(signalForTrade == BUY)
+    return OP_BUY;
+   else
+    return OP_SELL;
   }
  } 
- return NO_SIGNAL;
+ return OP_UNKNOWN;
 }
 //+------------------------------------------------------------------+
 
@@ -260,7 +267,7 @@ int CRabbitsBrain::GetTradeSignal(CTimeframeInfo *TF)
     barInChannel = LastBarInChannel(TF);// проверка : пердыдущий бар закрыля в границах канала?
    if (barInChannel)                    // вычисление сл, а также проверка на 19 линий
    {
-    _sl = (MathAbs(_conbuf.GetClose(TF.GetPeriod()).buffer[1] - open_buf[0]))/2;
+    _sl = ((MathAbs(_conbuf.GetClose(TF.GetPeriod()).buffer[1] - open_buf[0]))/2)/Point();
     if (FilterBy19Lines(signalThis, TF.GetPeriod(), _sl))
      if(signalThis != NO_SIGNAL && signalYoungTF != -signalThis)
      {
@@ -458,7 +465,8 @@ bool CRabbitsBrain::UpdateOnEvent(long lparam, double dparam, string sparam, int
     // закрываем позицию 
     _posOpenedDirection = NO_SIGNAL;
     _posOpenedTF = ctf; 
-    closePosition =  true;
+    closePosition = true; // убрать и сделать метод типа войд
+    _current_direction = NO_SIGNAL;
    }
   }
  } 
@@ -467,8 +475,27 @@ bool CRabbitsBrain::UpdateOnEvent(long lparam, double dparam, string sparam, int
 
 void CRabbitsBrain::OpenedPosition(int ctmTotal)
 {
- if(ctmTotal==0)
+ if(ctmTotal == 0)
  {
   _posOpenedDirection = NO_SIGNAL;
  }
+}
+
+
+int CRabbitsBrain::GetStopLoss(void)
+{
+ int stop_level;
+ stop_level = (int)SymbolInfoInteger(_symbol, SYMBOL_TRADE_STOPS_LEVEL);
+ if(_sl > stop_level)
+  return _sl;
+ else
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s Выставленный СтопЛосс не соответствует алгоритму sl = %d", MakeFunctionPrefix(__FUNCTION__), stop_level));
+  return stop_level;
+ }
+}
+
+int CRabbitsBrain::GetTakeProfit()
+{
+ return 10*GetStopLoss();
 }

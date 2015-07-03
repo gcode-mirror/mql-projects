@@ -28,12 +28,12 @@ private:
  CExtremum *extr3; 
  CExtremum *extr4;
  ENUM_TIMEFRAMES _period;
- ENUM_SIGNAL_FOR_TRADE signalForTrade;
+ ENUM_TM_POSITION_TYPE signalPositionType;
  string _symbol;
  int _trend;       // текущий тренд 1-й типа
  int _prevTrend;   // предыдущий тренд
  int _magic;       // уникальный номер дл€ этого робота
- int _current_direction; // текущее направление этого робота
+ ENUM_SIGNAL_FOR_TRADE _current_direction; // фиксирование сосото€ни€ шаблона (SEll, BUY, DISCORD(0) - торговл€ запрещена)
  double curBid;   // текуща€ цена bid
  double curAsk;   // текуща€ цена Ask
  double prevBid;  // предыдуща€ цена bid
@@ -51,13 +51,14 @@ private:
 public:
                      CEvgenysBrain(string symbol, ENUM_TIMEFRAMES period, CExtrContainer *extremums, CContainerBuffers *conbuf);
                     ~CEvgenysBrain();
-            virtual int GetSignal();
-            virtual int GetMagic(){return _magic;}
-            virtual int GetDirection(){return _current_direction;}
-            virtual void ResetDirection(){ _current_direction = 0;}
+            virtual ENUM_TM_POSITION_TYPE GetSignal();
+            virtual long GetMagic(){return _magic;}
+            virtual ENUM_SIGNAL_FOR_TRADE GetDirection(){return _current_direction;}
             virtual ENUM_TIMEFRAMES GetPeriod(){return _period;}
-                    int CountStopLossForTrendLines();
-                    int IsTrendNow();
+            virtual int  GetTakeProfit();
+            virtual int  GetStopLoss();
+                    int  CountStopLossForTrendLines();
+                    int  IsTrendNow();
                     void UploadOnEvent();
                     bool CheckClose();
                     void DrawLines();
@@ -73,7 +74,7 @@ CEvgenysBrain::CEvgenysBrain(string symbol,ENUM_TIMEFRAMES period, CExtrContaine
 {
  _trend = 0;       // текущий тренд 1-й типа
  _prevTrend = 0;   // предыдущий тренд
- _current_direction = 0;
+ _current_direction = NO_SIGNAL;
  _symbol = symbol;
  _period = period;
  _isNewBar = new CisNewBar(_symbol, _period);
@@ -88,8 +89,8 @@ CEvgenysBrain::CEvgenysBrain(string symbol,ENUM_TIMEFRAMES period, CExtrContaine
   }
   
  // сохран€ем цены  
- curBid = SymbolInfoDouble(_symbol,SYMBOL_BID);   // стоит ли использовать конбуф, ведь таким образом данные будут точнее
- curAsk = SymbolInfoDouble(_symbol,SYMBOL_ASK);
+ curBid = SymbolInfoDouble(_symbol, SYMBOL_BID);   // стоит ли использовать конбуф, ведь таким образом данные будут точнее
+ curAsk = SymbolInfoDouble(_symbol, SYMBOL_ASK);
  prevBid = curBid;
 }
 //+------------------------------------------------------------------+
@@ -102,11 +103,19 @@ CEvgenysBrain::~CEvgenysBrain()
 }
 //+------------------------------------------------------------------+
 
-int CEvgenysBrain::GetSignal()
+ENUM_TM_POSITION_TYPE CEvgenysBrain::GetSignal()
 {
  curBid = SymbolInfoDouble(_symbol,SYMBOL_BID); 
  curAsk = SymbolInfoDouble(_symbol,SYMBOL_ASK);
- signalForTrade =  NO_SIGNAL;
+ signalPositionType = OP_UNKNOWN;
+  
+ if (CheckClose()) // разрыв шаблона return DISCORD
+ { 
+  _current_direction = NO_SIGNAL;
+  signalPositionType = OP_UNKNOWN;
+  return signalPositionType;
+ }
+
   // если текущее движение - тренд 1-й типа вверх
  if (_trend == 1)
  {
@@ -126,7 +135,9 @@ int CEvgenysBrain::GetSignal()
    {
     log_file.Write(LOG_DEBUG, StringFormat("Close[1] (%f) > Open[1] (%f) && Close[2] (%f) < Open[2] (%f) && |curBid(%f) - priceTrendDown| (%f) < channelH*0.2 (%f)", 
     _conbuf.GetClose(_period).buffer[1],_conbuf.GetOpen(_period).buffer[1],_conbuf.GetClose(_period).buffer[2], _conbuf.GetOpen(_period).buffer[2],curBid, MathAbs(curBid-priceTrendDown),channelH*0.2));
-    signalForTrade = BUY;
+    _current_direction = BUY;
+    signalPositionType = OP_BUY;
+
    }
   }
  }
@@ -146,14 +157,17 @@ int CEvgenysBrain::GetSignal()
    {
    log_file.Write(LOG_DEBUG, StringFormat("Close[1] (%f) < Open[1] (%f) && Close[2] (%f) > Open[2] (%f) && |curBid(%f) - priceTrendDown| (%f) < channelH*0.2 (%f)", 
     _conbuf.GetClose(_period,1),_conbuf.GetOpen(_period,1),_conbuf.GetClose(_period,2), _conbuf.GetOpen(_period,2),curBid, MathAbs(curBid-priceTrendDown),channelH*0.2));
-    signalForTrade =  SELL;
+    _current_direction =  SELL;
+    signalPositionType = OP_SELL;
    }
   }
- }    
+ } 
+
  prevBid = curBid;
  if (_trend != 0)
   _prevTrend = _trend; 
- return signalForTrade;
+  
+ return signalPositionType;
 }
 
 bool CEvgenysBrain::CheckClose()
@@ -291,4 +305,24 @@ void CEvgenysBrain::UploadOnEvent(void)
    // перерисовываем линии
    DrawLines();     
   }   
+}
+
+int CEvgenysBrain::GetStopLoss(void)
+{
+ int stop_level;
+ int sl;
+ stop_level = (int)SymbolInfoInteger(_symbol, SYMBOL_TRADE_STOPS_LEVEL);
+ sl = CountStopLossForTrendLines();
+ if(sl > stop_level)
+  return sl;
+ else
+ {
+  log_file.Write(LOG_DEBUG, StringFormat("%s ¬ыставленный —топЋосс не соответствует алгоритму sl = %d", MakeFunctionPrefix(__FUNCTION__), stop_level));
+  return stop_level;
+ }
+}
+
+int CEvgenysBrain::GetTakeProfit()
+{
+ return 10 * GetStopLoss();
 }

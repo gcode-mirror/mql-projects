@@ -104,7 +104,7 @@ void OnTick()
      {// запоняем позицию на SELL
       log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу SELL", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(chicken.GetPeriod())));
       pos_info.type = OP_SELLSTOP; 
-      pos_info.sl =            chicken.GetDiffHigh();
+      pos_info.sl =            chicken.GetStopLoss();
       //trailing.minProfit = 2 * chicken.GetDiffHigh();
       //trailing.trailingStop =  chicken.GetDiffHigh();
      }
@@ -112,12 +112,12 @@ void OnTick()
      {// запоняем позицию на BUY
       log_file.Write(LOG_DEBUG, StringFormat("%s%s Получили сигнал на продажу BUY", SymbolInfoString(_Symbol,SYMBOL_DESCRIPTION),PeriodToString(chicken.GetPeriod())));
       pos_info.type = OP_BUYSTOP;
-      pos_info.sl   =          chicken.GetDiffLow();
+      pos_info.sl   =          chicken.GetStopLoss();
       //trailing.minProfit = 2 * chicken.GetDiffLow();
       //trailing.trailingStop =  chicken.GetDiffLow();
      }
      //stoplevel = MathMax(chicken.sl_min, SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL))*Point();   
-     pos_info.tp = (use_tp) ? (int)MathCeil((chicken.GetHighBorder() - chicken.GetLowBorder())*0.75/Point()) : 0; // можно спрятать в чикенБрэйн
+     pos_info.tp = chicken.GetTakeProfit();
      pos_info.magic = magic;
      pos_info.priceDifference = chicken.GetPriceDifference();
      pos_info.expiration = MathMax(DEPTH - chicken.GetIndexMax(), DEPTH - chicken.GetIndexMin());
