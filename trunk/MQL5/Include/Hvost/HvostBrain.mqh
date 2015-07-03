@@ -11,6 +11,7 @@
 #include <TradeManager/TradeManager.mqh>    // торговая библиотека
 #include <CLog.mqh>                         // для лога
 #include <ContainerBuffers.mqh>     // контейнер буферов данных там же CisNewBar
+#include <Brain.mqh>
 
 #define BUY   1    
 #define SELL -1 
@@ -32,7 +33,7 @@ class CHvostBrain : public CArrayObj
   CContainerBuffers *_conbuf;
   int opened_position;     // флаг открытой позиции (0 - нет позиции, 1 - buy, (-1) - sell)
   int _magic;
-  int _current_direction;
+  ENUM_SIGNAL_FOR_TRADE _current_direction;  // фиксирование сосотояния шаблона (SEll, BUY, DISCORD(0) - торговля запрещена)
   double h;                // ширина канала
   double price_bid;        // текущая цена bid
   double price_ask;        // текущая цена ask
@@ -50,11 +51,12 @@ class CHvostBrain : public CArrayObj
  public:
                      CHvostBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf);
                     ~CHvostBrain();
-             virtual int  GetSignal();
-             virtual int  GetMagic(){return _magic;}
-             virtual int  GetDirection(){return _current_direction;}
-             virtual void ResetDirection(){ _current_direction = 0;}
+             virtual ENUM_TM_POSITION_TYPE  GetSignal();
+             virtual long  GetMagic(){return _magic;}
+             virtual ENUM_SIGNAL_FOR_TRADE  GetDirection(){return _current_direction;}
              virtual ENUM_TIMEFRAMES GetPeriod(){return _period;}
+             virtual int  GetTakeProfit();
+             virtual int  GetStopLoss();
                      bool IsBeatenBars (int type);
                      bool IsBeatenExtremum (int type);
                      bool TestEldPeriod (int type);
@@ -63,8 +65,6 @@ class CHvostBrain : public CArrayObj
                      int  GetOpenedPosition()   {return opened_position;}
                      double GetPriceBid()       { return price_bid;}
                      double GetPriceAsk()       { return price_ask;}
-                     double GetMaxChannelPrice(){ return max_price;}
-                     double GetMinChannelPrice(){ return min_price;}
                      void SetOpenedPosition(int p){opened_position = p;}
                      bool CountChannel();
                      
@@ -78,6 +78,7 @@ CHvostBrain::CHvostBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffer
  _symbol = symbol;
  _period = period;
  _conbuf =  conbuf;
+ _current_direction = NO_SIGNAL;
  opened_position = 0;
  prev_price_bid = 0;    
  prev_price_ask = 0;     
@@ -104,7 +105,7 @@ CHvostBrain::~CHvostBrain()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-int CHvostBrain::GetSignal()
+ENUM_TM_POSITION_TYPE CHvostBrain::GetSignal()
 {
  // сохраняем предыдущие значения цен
  prev_price_ask = price_ask;
@@ -163,7 +164,8 @@ int CHvostBrain::GetSignal()
     wait_for_sell = false;     
     wait_for_buy = false;
     log_file.Write(LOG_DEBUG, "Режим ожидания сброшен");
-    return SELL;       
+    _current_direction = SELL;
+    return OP_SELL;       
    }
   }
  } 
@@ -181,11 +183,12 @@ int CHvostBrain::GetSignal()
     opened_position = 1;
     wait_for_buy = false;
     wait_for_sell = false;
-    return BUY;
+    _current_direction = BUY;
+    return OP_BUY;
    }
   }
  }  
- return NO_POSITION;
+ return OP_UNKNOWN;
 }
 //+------------------------------------------------------------------+
 // функция вычисляет параметры канала на старшем таймфрейме  
@@ -317,4 +320,40 @@ bool  CHvostBrain::IsFlatNow ()
  if (_conbuf.GetPBI(periodEld).buffer[0] == 7.0)
   return (true);
  return (false);
+}
+
+int CHvostBrain::GetStopLoss()
+{
+ int stop_level;
+ double pr_bid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
+ double pr_ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+ if (_current_direction == BUY)// ставим стоп лосс на уровне минимума
+ {
+  // ставим стоп лосс на уровне минимума
+  return ( int( (pr_bid-_conbuf.GetLow(_period,ArrayMinimum(_conbuf.GetLow(_period).buffer,1,2)+1))/_Point) + 50 );  // + 1 потому что индекс был найден из двух эл-ов начиная с 1ого а обращаемся мы к массиву. где элементыы с 0ого  
+ }
+ if (_current_direction == SELL)
+ {
+  // ставим стоп лосс на уровне максимума
+  return ( int( (_conbuf.GetHigh(_period,ArrayMaximum(_conbuf.GetHigh(_period).buffer,1,2)+1) - pr_ask)/_Point) + 50 );
+ }
+ stop_level = (int)SymbolInfoInteger(_symbol, SYMBOL_TRADE_STOPS_LEVEL);
+ log_file.Write(LOG_DEBUG, StringFormat("%s Выставленный СтопЛосс не соответствует алгоритму sl = %d", MakeFunctionPrefix(__FUNCTION__), stop_level));
+ return stop_level;
+}
+
+int CHvostBrain::GetTakeProfit()
+{
+ double pr_bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+ double pr_ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+ if (_current_direction == BUY)
+ {
+  return ( int ( MathAbs(pr_ask - max_price)/_Point ) );  
+ }
+ if (_current_direction == SELL)
+ {
+  return ( int ( MathAbs(pr_bid - min_price)/_Point ) );    
+ }
+  log_file.Write(LOG_DEBUG, StringFormat("%s Выставленный TakeProfit не соответствует алгоритму ", MakeFunctionPrefix(__FUNCTION__)));
+ return (0);
 }

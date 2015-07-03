@@ -108,8 +108,8 @@ void OnTick()
       Print(__FUNCTION__,"Получен сигнал SELL");
       // вычисляем стоп лосс, тейк профит и открываем позицию на SELL
       pos_info.type = OP_SELL;
-      pos_info.sl = CountStopLoss(-1, hvostBrain, hvostBrain.GetPeriod());       
-      pos_info.tp = CountTakeProfit(-1, hvostBrain);
+      pos_info.sl = hvostBrain.GetStopLoss();
+      pos_info.tp = hvostBrain.GetTakeProfit();
       pos_info.priceDifference = 0;     
       ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing);  
      
@@ -122,8 +122,8 @@ void OnTick()
       Print(__FUNCTION__,"Получен сигнал BUY");
       // вычисляем стоп лосс, тейк профит и открываем позицию на BUY
       pos_info.type = OP_BUY;
-      pos_info.sl = CountStopLoss(1, hvostBrain, hvostBrain.GetPeriod());       
-      pos_info.tp = CountTakeProfit(1, hvostBrain);           
+      pos_info.sl = hvostBrain.GetStopLoss();
+      pos_info.tp = hvostBrain.GetTakeProfit();        
       pos_info.priceDifference = 0;       
       ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
       // сохраняем время открытия позиции
@@ -139,55 +139,7 @@ void OnTick()
    }
   }
 
-   // вычисляет стоп лосс
-int  CountStopLoss (int type, CHvostBrain *hvostBrain, ENUM_TIMEFRAMES period)
-{
- int copied;
- double prices[];
- double price_bid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
- double price_ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
- if (type == 1)
- {
-  copied = CopyLow(_Symbol, period, 1, 2, prices);
-  if (copied < 2)
-  {
-   log_file.Write(LOG_DEBUG, "Не удалось скопировать цены");
-   Print("Не удалось скопировать цены");
-   return (0);
-  } 
-  // ставим стоп лосс на уровне минимума
-  return ( int( (price_bid-prices[ArrayMinimum(prices)])/_Point) + 50 );   
- }
- if (type == -1)
- {
-  copied = CopyHigh(_Symbol, period, 1, 2, prices);
-  if (copied < 2)
-  {
-   log_file.Write(LOG_DEBUG, "Не удалось скопировать цены");
-   Print("Не удалось скопировать цены");
-   return (0);
-  }
-  // ставим стоп лосс на уровне максимума
-  return ( int( (prices[ArrayMaximum(prices)] - price_ask)/_Point) + 50 );
- }
- return (0);
-}
-  
-// вычисляет тейк профит
-int CountTakeProfit (int type, CHvostBrain *hvostBrain)
-{
- double price_bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
- double price_ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
- if (type == 1)
- {
-  return ( int ( MathAbs(price_ask - hvostBrain.GetMaxChannelPrice())/_Point ) );  
- }
- if (type == -1)
- {
-  return ( int ( MathAbs(price_bid - hvostBrain.GetMinChannelPrice())/_Point ) );    
- }
- return (0);
-}
+
   
 //+------------------------------------------------------------------+
 //| ChartEvent function                                              |
