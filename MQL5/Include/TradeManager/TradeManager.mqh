@@ -39,6 +39,8 @@ private:
   bool   FindHistoryTicket(long ticket);
   bool   LoadArrayFromFile(string file_url,CPositionArray *array);
   bool   SaveArrayToFile(string file_url,CPositionArray *array);  
+  void   CheckOpenedPositions(string symbol, ENUM_TM_POSITION_TYPE type);
+  bool   OpenPosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing);
   bool   ValidSelectedPosition();
   
 protected:
@@ -82,7 +84,7 @@ public:
   bool ClosePosition(int i, color Color = CLR_NONE);                   // Закрытие позиции по индексу в массиве позиций
   bool ClosePosition(CPosition *pos, color Color = CLR_NONE);          // Закрытие позиции по указателю в массиве позиций
   bool CloseSelectedPosition(color Color=CLR_NONE);                    // Закрытие выбранной позиции 
-  void DoTrailing(int handleExtr = 0);                        // Вызов трейла
+  void DoTrailing(int handleExtr = 0);                                 // Вызов трейла
   bool isMinProfit();
   bool isMinProfit(string symbol);
   bool isHistoryChanged() {return (_historyChanged);};        // возвращает сигнал изменения истории 
@@ -91,6 +93,7 @@ public:
   void OnTick();
   void OnTrade(datetime history_start);
   bool OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0);
+  bool OpenPairPosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, double volume_percent, int maxSpread = 0);
   bool OpenMultiPosition (string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0);
   bool PositionChangeSize(double additionalVolume);
   bool PositionChangeSize(string strSymbol, double additionalVolume, long magic = 0);
@@ -774,169 +777,89 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
  }
 
  bool result = true;
- int i = 0;
- int total = _openPositions.Total();
- CPosition *pos;
- log_file.Write(LOG_CRITICAL, StringFormat("%s Открываем позицию %s. Открытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), total));
+ log_file.Write(LOG_CRITICAL, StringFormat("%s Открываем позицию %s. Открытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), _openPositions.Total()));
  log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
- switch(pos_info.type)
- {
-  case OP_BUY:
-  case OP_BUYLIMIT:
-  case OP_BUYSTOP:
-   if (total > 0)
-   {
-    for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на продажу
-    {
-     pos = _openPositions.At(i);
-     if (pos.getSymbol() == symbol)
-     {
-      if (pos.getType() == OP_SELL)
-      {
-       ClosePosition(i);
-       continue;
-      }
-      if (pos.getType() == OP_SELLLIMIT || pos.getType() == OP_SELLSTOP)
-      {
-       ResetLastError();
-       if (OrderSelect(pos.getOrderTicket()))
-       {
-        ClosePosition(i);
-       }
-       else
-       {
-        log_file.Write(LOG_CRITICAL ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                      , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
-                      , GetLastError(), ErrorDescription(GetLastError())));
-       // ToDo
-       // Проверить наличие ордера в истории
-       // Удалить позицию из массива позиций и перенести объект позиции в историю
-       }
-      }
-     }
-    }
-   }
-   break;
-  case OP_SELL:
-  case OP_SELLLIMIT:
-  case OP_SELLSTOP:
-   if (total > 0)
-   {
-    for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на покупку
-    {
-     pos = _openPositions.At(i);
-     if (pos.getSymbol() == symbol)
-     {
-      if (pos.getType() == OP_BUY)
-      {
-       ClosePosition(i);
-       continue;
-      }
-      if (pos.getType() == OP_BUYLIMIT || pos.getType() == OP_BUYSTOP)
-      {
-       ResetLastError();
-       if (OrderSelect(pos.getOrderTicket()))
-       {
-        ClosePosition(i);
-       }
-       else
-       {
-        log_file.Write(LOG_CRITICAL ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
-                      , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
-                      , GetLastError(), ErrorDescription(GetLastError())));
-       // ToDo
-       // Проверить наличие ордера в истории
-       // Удалить позицию из массива позиций и перенести объект позиции в историю
-       }
-      }
-     }
-    }
-   }
-   break;
-  default:
-   log_file.Write(LOG_DEBUG, StringFormat("%s Error: Invalid ENUM_VIRTUAL_ORDER_TYPE", MakeFunctionPrefix(__FUNCTION__)));
-   break;
- }
  
- total = _openPositions.OrderCount(symbol, pos_info.magic) + _positionsToReProcessing.OrderCount(symbol, pos_info.magic);
+ this.CheckOpenedPositions(symbol, pos_info.type);
+ 
+ int total = _openPositions.OrderCount(symbol, pos_info.magic) + _positionsToReProcessing.OrderCount(symbol, pos_info.magic);
  if (total <= 0)
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
   
   if(pos_info.volume <= 0)
   {
-   CalcVolume(symbol);
+   pos_info.volume = CalcVolume(symbol);  // Заглушка - надо доделать
   }
   
-  ResetLastError();
-  pos = new CPosition(symbol, timeframe, pos_info, trailing);
-  ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
-  if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
-  {
-   log_file.Write(LOG_CRITICAL, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
-                                          , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
+  this.OpenPosition(symbol, timeframe, pos_info, trailing);
+ }
+ return(result); // Если остались открытые позиции, значит не надо открываться 
+}
 
 
-   _openPositions.Add(pos);  // добавляем открытую позицию в массив открытых позиций
-   SaveArrayToFile(rescueDataFileName ,_openPositions);
-   log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-  }
-  else
+//+------------------------------------------------------------------+
+//| Открывает единственную позицию                                   |
+//| если существует такая же позиция - открытия не будет             |
+//| если существует противоположная позиция - она будет закрыта      |
+//+------------------------------------------------------------------+
+bool CTradeManager::OpenPairPosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, double volume_percent, int maxSpread = 0)
+{
+ if (maxSpread > 0 && SymbolInfoInteger(symbol, SYMBOL_SPREAD) > maxSpread)
+ {
+  log_file.Write(LOG_CRITICAL, StringFormat("%s Невозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
+  return false;  
+ }
+ if (_positionsToReProcessing.OrderCount(symbol, pos_info.magic) > 0) 
+ {
+  log_file.Write(LOG_CRITICAL, StringFormat("%s Невозможно открыть позицию так как еще есть позиции в positionsToReProcessing.", MakeFunctionPrefix(__FUNCTION__)));
+  return false;
+ }
+ 
+ bool result = true;
+ SPositionInfo pos_info_tp, pos_info_give;
+ log_file.Write(LOG_CRITICAL, StringFormat("%s Открываем позицию %s. Открытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), _openPositions.Total()));
+ log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
+
+ this.CheckOpenedPositions(symbol, pos_info.type);  
+ 
+ int total = _openPositions.OrderCount(symbol, pos_info.magic) + _positionsToReProcessing.OrderCount(symbol, pos_info.magic);
+ if (total <= 0)
+ {
+  log_file.Write(LOG_CRITICAL, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
+  
+  if(pos_info.volume <= 0)
   {
-   error = GetLastError();
-   if(pos.getType() == OP_SELL || pos.getType() == OP_BUY) _positionsToReProcessing.Add(pos);
-   log_file.Write(LOG_CRITICAL, StringFormat("%s Не удалось открыть позицию. Error{%d} = %s. Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(pos.getPositionStatus())));
-   result = false; // Если открыть позицию не удалось
+   pos_info.volume = CalcVolume(symbol); // Заглушка - надо доделать
   }
+  
+  pos_info_tp = pos_info;
+  pos_info_give = pos_info;
+  pos_info_tp.volume = volume_percent * pos_info.volume;
+  pos_info_give.volume = pos_info.volume - pos_info_tp.volume;
+  
+  result = this.OpenPosition(symbol, timeframe, pos_info_tp, trailing) && 
+           this.OpenPosition(symbol, timeframe, pos_info_give, trailing);
  }
  return(result); // Если остались открытые позиции, значит не надо открываться 
 }
 
 //+------------------------------------------------------------------+
 //| Открывает позицию                                                |
-//| если существует такая же позиция - открытия не будет             |
-//| если существует противоположная позиция - она будет закрыта      |
 //+------------------------------------------------------------------+
 bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0)
 {
- int i = 0;
- int total = _openPositions.Total();
- CPosition *pos;
- 
  if (maxSpread > 0 && SymbolInfoInteger(symbol, SYMBOL_SPREAD) > maxSpread)
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s Невозможно открыть позицию так как спред превысил максимальное значение", MakeFunctionPrefix(__FUNCTION__)));
   return false;  
  }
- //log_file.Write(LOG_CRITICAL
- //             ,StringFormat("%s, Открываем позицию %s. Открытых позиций на данный момент: %d"
- //                           , MakeFunctionPrefix(__FUNCTION__), GetNameOP(type), total));
- log_file.Write(LOG_CRITICAL, StringFormat("%s, Открываем мульти-позицию %s. Открытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), total) ); 
-// log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // Распечатка всех позиций из массива _openPositions
+ log_file.Write(LOG_CRITICAL, StringFormat("%s, Открываем мульти-позицию %s. Открытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), _openPositions.Total()) ); 
  
- pos = new CPosition(symbol, timeframe, pos_info, trailing);
- ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
- //Print("openingResult=", PositionStatusToStr(openingResult));
- if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
- {
-  log_file.Write(LOG_CRITICAL, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
-                                         , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
-  _openPositions.Add(pos);  // добавляем открутую позицию в массив открытых позиций
-
-  SaveArrayToFile(rescueDataFileName ,_openPositions);  
-  log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
-  return(true); // Если удачно открыли позицию
- }
- else
- {
-  error = GetLastError();
-  if(pos.getType() == OP_SELL || pos.getType() == OP_BUY) _positionsToReProcessing.Add(pos);
-  log_file.Write(LOG_CRITICAL, StringFormat("%s Не удалось открыть позицию. Error{%d} = %s. Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(pos.getPositionStatus())));
-  return(false); // Если открыть позицию не удалось
- }
-
- log_file.Write(LOG_CRITICAL, StringFormat("%s Осталось открытых позиций %d", MakeFunctionPrefix(__FUNCTION__), total));
- return(true); // Если остались открытые позиции, значит не надо открываться 
+ //this.CheckOpenedPositions(symbol, pos_info.type);
+ 
+ bool result = this.OpenPosition(symbol, timeframe, pos_info, trailing);
+ return(result); 
 }
 
 //+------------------------------------------------------------------+ 
@@ -1187,6 +1110,105 @@ bool CTradeManager::SaveArrayToFile(string file_url, CPositionArray *array)
  array.WriteToFile(file_handle);  //сохраняем массив в файл
  FileClose(file_handle);
  return(true);
+}
+
+//+----------------------------------------------------
+// Ищет и закрывает позиции противоположного типа
+//+----------------------------------------------------
+void CTradeManager::CheckOpenedPositions(string symbol, ENUM_TM_POSITION_TYPE type)
+{
+ CPosition *pos;
+ int i = 0;
+ int total = _openPositions.Total();
+ ENUM_TM_POSITION_TYPE usual = OP_UNKNOWN;
+ ENUM_TM_POSITION_TYPE limit = OP_UNKNOWN;
+ ENUM_TM_POSITION_TYPE stop  = OP_UNKNOWN;
+ 
+ switch(type)
+ {
+  case OP_BUY:
+  case OP_BUYLIMIT:
+  case OP_BUYSTOP:
+   usual = OP_SELL;
+   limit = OP_SELLLIMIT;
+   stop = OP_SELLSTOP;
+   break;
+  case OP_SELL:
+  case OP_SELLLIMIT:
+  case OP_SELLSTOP:
+   usual = OP_BUY;
+   limit = OP_BUYLIMIT;
+   stop = OP_BUYSTOP;
+   break;
+  default:
+   log_file.Write(LOG_DEBUG, StringFormat("%s Error: Invalid ENUM_VIRTUAL_ORDER_TYPE", MakeFunctionPrefix(__FUNCTION__)));
+   break;
+ }
+ 
+ if (total > 0)
+ {
+  for (i = total - 1; i >= 0; i--) // Закрываем все ордера или позиции на продажу
+  {
+   pos = _openPositions.At(i);
+   if (pos.getSymbol() == symbol)
+   {
+    if (pos.getType() == usual)
+    {
+     ClosePosition(i);
+     continue;
+    }
+    if (pos.getType() == limit || pos.getType() == stop)
+    {
+     ResetLastError();
+     if (OrderSelect(pos.getOrderTicket()))
+     {
+      ClosePosition(i);
+     }
+     else
+     {
+      log_file.Write(LOG_CRITICAL ,StringFormat("%s, Закрытие позиции не удалось: Не выбран ордер с тикетом %d. Ошибка %d - %s"
+                    , MakeFunctionPrefix(__FUNCTION__), pos.getOrderTicket()
+                    , GetLastError(), ErrorDescription(GetLastError())));
+     // Проверяем наличие ордера в истории
+      if (FindHistoryTicket(pos.getOrderTicket()))
+      {
+      // Переносим объект позиции в историю
+       _positionsHistory.Add(_openPositions.Detach(i));
+       _historyChanged = true; // меняем флаг, что история увеличилась  
+       SaveArrayToFile(historyDataFileName,_positionsHistory);       
+      }
+     }
+    }
+   }
+  }
+ }
+}
+
+//+----------------------------------------------------
+// Создает объект позиции, посылает запрос на открытие, добавляет позицию в массив
+//+----------------------------------------------------
+bool CTradeManager::OpenPosition(string symbol,ENUM_TIMEFRAMES timeframe,SPositionInfo &pos_info, STrailing &trailing)
+{
+ bool result = true;
+ ResetLastError();
+ CPosition *pos = new CPosition(symbol, timeframe, pos_info, trailing);
+ ENUM_POSITION_STATUS openingResult = pos.OpenPosition();
+ if (openingResult == POSITION_STATUS_OPEN || openingResult == POSITION_STATUS_PENDING) // удалось установить желаемую позицию
+ {
+  log_file.Write(LOG_CRITICAL, StringFormat("%s, magic=%d, symb=%s, type=%s, price=%.05f vol=%.02f, sl=%.05f, tp=%.05f"
+                                         , MakeFunctionPrefix(__FUNCTION__), pos.getMagic(), pos.getSymbol(), GetNameOP(pos.getType()), pos.getPositionPrice(), pos.getVolume(), pos.getStopLossPrice(), pos.getTakeProfitPrice()));
+  _openPositions.Add(pos);  // добавляем открытую позицию в массив открытых позиций
+  SaveArrayToFile(rescueDataFileName ,_openPositions);
+  log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString()));
+ }
+ else
+ {
+  error = GetLastError();
+  if(pos.getType() == OP_SELL || pos.getType() == OP_BUY) _positionsToReProcessing.Add(pos);
+  log_file.Write(LOG_CRITICAL, StringFormat("%s Не удалось открыть позицию. Error{%d} = %s. Status = %s", MakeFunctionPrefix(__FUNCTION__), error, ErrorDescription(error), PositionStatusToStr(pos.getPositionStatus())));
+  result = false; // Если открыть позицию не удалось
+ }
+ return result; 
 }
 
 //+----------------------------------------------------
