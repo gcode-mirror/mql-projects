@@ -66,11 +66,11 @@ public:
   //int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
   long   GetPositionMagic()   {return _SelectedPosition.getMagic();}; // возвращает цену выбранной позиции 
   int    GetPositionPointsProfit(string symbol, long magic = 0);
-  double GetPositionPrice() {return 0.0;};                                   // возвращает цену выбранной позиции
+  double GetPositionPrice() {return _SelectedPosition.getPositionPrice();};                                   // возвращает цену выбранной позиции
   double GetPositionPrice(string symbol, long magic = 0);      // возвращает цену позиции по текущему символу
-  double GetPositionStopLoss() {return 0.0;};                                // возвращает стоп лосс выюранной позиции
+  double GetPositionStopLoss() {return _SelectedPosition.getStopLossPrice();};                                // возвращает стоп лосс выюранной позиции
   double GetPositionStopLoss(string symbol, long magic = 0);   // возвращает текущий стоп лосс позиции по символу
-  double GetPositionTakeProfit() {return 0.0;}; // возвращает тейк профит выбранной позиции
+  double GetPositionTakeProfit() {return _SelectedPosition.getTakeProfitPrice();}; // возвращает тейк профит выбранной позиции
   double GetPositionTakeProfit(string symbol, long magic = 0); // возвращает текущий тейк профит позиции по символу
   ENUM_TM_POSITION_TYPE GetPositionType();                     // возвращает тип выбранной позиции
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol, long magic = 0);       // возвращает тип позиции по символу и мэджику
