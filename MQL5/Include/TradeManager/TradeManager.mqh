@@ -55,7 +55,7 @@ public:
   void ~CTradeManager(void);
     
   // GET
-  double GetCurrentDrawdown() {return(_current_drawdown); };  // возвращает текущую просадку по балансу  
+  double GetCurrentDrawdown() {return(_current_drawdown);};   // возвращает текущую просадку по балансу  
   double GetCurrentProfit()   {return(_current_balance);};    // возвращает текущую прибыль
   long   GetHistoryDepth();                                   // возвращает глубину истории
   double GetMaxDrawdown()     {return(_max_drawdown); };      // возвращает максимальную просадку по балансу
@@ -63,10 +63,14 @@ public:
   int    GetPositionCount()   {return (_openPositions.Total() + _positionsToReProcessing.Total());}; 
   int    GetPositionCount(long magic);
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
-  int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
+  //int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
+  long   GetPositionMagic()   {return _SelectedPosition.getMagic();}; // возвращает цену выбранной позиции 
   int    GetPositionPointsProfit(string symbol, long magic = 0);
-  double GetPositionPrice (string symbol, long magic = 0);     // возвращает цену позицию по текущему символу
+  double GetPositionPrice() {return 0.0;};                                   // возвращает цену выбранной позиции
+  double GetPositionPrice(string symbol, long magic = 0);      // возвращает цену позиции по текущему символу
+  double GetPositionStopLoss() {return 0.0;};                                // возвращает стоп лосс выюранной позиции
   double GetPositionStopLoss(string symbol, long magic = 0);   // возвращает текущий стоп лосс позиции по символу
+  double GetPositionTakeProfit() {return 0.0;}; // возвращает тейк профит выбранной позиции
   double GetPositionTakeProfit(string symbol, long magic = 0); // возвращает текущий тейк профит позиции по символу
   ENUM_TM_POSITION_TYPE GetPositionType();                     // возвращает тип выбранной позиции
   ENUM_TM_POSITION_TYPE GetPositionType(string symbol, long magic = 0);       // возвращает тип позиции по символу и мэджику
@@ -77,7 +81,7 @@ public:
   bool ClosePosition(long ticket, color Color = CLR_NONE);             // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);                   // Закрытие позиции по индексу в массиве позиций
   bool ClosePosition(CPosition *pos, color Color = CLR_NONE);          // Закрытие позиции по указателю в массиве позиций
-  bool CloseSelectedPosition(color Color=CLR_NONE);                                         // Закрытие выбранной позиции 
+  bool CloseSelectedPosition(color Color=CLR_NONE);                    // Закрытие выбранной позиции 
   void DoTrailing(int handleExtr = 0);                        // Вызов трейла
   bool isMinProfit();
   bool isMinProfit(string symbol);
@@ -88,7 +92,8 @@ public:
   void OnTrade(datetime history_start);
   bool OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0);
   bool OpenMultiPosition (string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing, int maxSpread = 0);
-  bool PositionChangeSize(string strSymbol, double additionalVolume);
+  bool PositionChangeSize(double additionalVolume);
+  bool PositionChangeSize(string strSymbol, double additionalVolume, long magic = 0);
   bool PositionSelect(long index, ENUM_SELECT_TYPE type, ENUM_SELECT_MODE pool = MODE_TRADES);
   void UpdateData(CPositionArray *positionsHistory = NULL);
 };
@@ -445,7 +450,8 @@ bool CTradeManager::ClosePosition(CPosition *pos,color Color=CLR_NONE)
 {
  int i = _openPositions.TicketToIndex(pos.getTMTicket());
  if (pos.ClosePosition())
- { PrintFormat("%s удаляем позицию %d",MakeFunctionPrefix(__FUNCTION__),i);
+ {
+  PrintFormat("%s удаляем позицию %d",MakeFunctionPrefix(__FUNCTION__),i);
   _positionsHistory.Add(_openPositions.Detach(i)); //добавляем позицию в историю и удаляем из массива открытых позиций
   _historyChanged = true;                          // меняем флаг, что история увеличилась 
   SaveArrayToFile(historyDataFileName,_positionsHistory); 
@@ -887,7 +893,7 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
 }
 
 //+------------------------------------------------------------------+
-//| Открывает позицию                                   |
+//| Открывает позицию                                                |
 //| если существует такая же позиция - открытия не будет             |
 //| если существует противоположная позиция - она будет закрыта      |
 //+------------------------------------------------------------------+
@@ -934,9 +940,39 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe, 
 }
 
 //+------------------------------------------------------------------+ 
+// Функция изменения объема выбранной позиции
+//+------------------------------------------------------------------+
+bool CTradeManager::PositionChangeSize(double additionalVolume)
+{
+ if (_SelectedPosition.getVolume() + additionalVolume != 0)
+ {
+  log_file.Write(LOG_CRITICAL, StringFormat("%s Изменим объем текущей позиции", MakeFunctionPrefix(__FUNCTION__)) );
+  if (_SelectedPosition.ChangeSize(additionalVolume))
+  {
+   log_file.Write(LOG_CRITICAL, StringFormat("%s Объем позиции успешно изменен", MakeFunctionPrefix(__FUNCTION__)) );
+   return (true);
+  }
+  else
+  {
+   if (_SelectedPosition.getPositionStatus() == POSITION_STATUS_NOT_CHANGED)
+   {
+    log_file.Write(LOG_CRITICAL, StringFormat("%s Не удалось изменить стоп-лосс при изменении объема позиции", MakeFunctionPrefix(__FUNCTION__)) );
+    _positionsToReProcessing.Add(_openPositions.Detach(_openPositions.TicketToIndex(_SelectedPosition.getTMTicket())));
+   }
+  }
+ }
+ else
+ {
+  log_file.Write(LOG_CRITICAL, StringFormat("%s Изменение позиции. Итоговый объем равен 0, закрываем позицию", MakeFunctionPrefix(__FUNCTION__)) );
+  if (ClosePosition(_SelectedPosition)) return (true);
+ }
+ return (false);
+}
+
+//+------------------------------------------------------------------+ 
 // Функция изменения объема позиции
 //+------------------------------------------------------------------+
-bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
+bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume, long magic = 0)
 {
  int i = 0;
  int total = _openPositions.Total();
@@ -949,20 +985,23 @@ bool CTradeManager::PositionChangeSize(string symbol, double additionalVolume)
    pos = _openPositions.At(i);
    if (pos.getSymbol() == symbol)
    {
-    if (pos.getVolume() + additionalVolume != 0)
+    if (pos.getMagic() == magic || magic == 0)
     {
-     log_file.Write(LOG_CRITICAL, StringFormat("%s Изменим объем текущей позиции", MakeFunctionPrefix(__FUNCTION__)) );
-     if (pos.ChangeSize(additionalVolume))
+     if (pos.getVolume() + additionalVolume != 0)
      {
-      log_file.Write(LOG_CRITICAL, StringFormat("%s Объем позиции успешно изменен", MakeFunctionPrefix(__FUNCTION__)) );
-      return (true);
-     }
-     else
-     {
-      if (pos.getPositionStatus() == POSITION_STATUS_NOT_CHANGED)
+      log_file.Write(LOG_CRITICAL, StringFormat("%s Изменим объем текущей позиции", MakeFunctionPrefix(__FUNCTION__)) );
+      if (pos.ChangeSize(additionalVolume))
       {
-       log_file.Write(LOG_CRITICAL, StringFormat("%s Не удалось изменить стоп-лосс при изменении объема позиции", MakeFunctionPrefix(__FUNCTION__)) );
-       _positionsToReProcessing.Add(_openPositions.Detach(i));
+       log_file.Write(LOG_CRITICAL, StringFormat("%s Объем позиции успешно изменен", MakeFunctionPrefix(__FUNCTION__)) );
+       return (true);
+      }
+      else
+      {
+       if (pos.getPositionStatus() == POSITION_STATUS_NOT_CHANGED)
+       {
+        log_file.Write(LOG_CRITICAL, StringFormat("%s Не удалось изменить стоп-лосс при изменении объема позиции", MakeFunctionPrefix(__FUNCTION__)) );
+        _positionsToReProcessing.Add(_openPositions.Detach(i));
+       }
       }
      }
     }

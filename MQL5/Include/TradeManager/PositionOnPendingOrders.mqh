@@ -27,7 +27,7 @@ private:
    CConfig config;
    SPositionInfo _pos_info;
    STrailing _trailing;
-   ulong _magic;
+   long _magic;
    string _symbol;
    ENUM_TIMEFRAMES _period;
    ulong _tmTicket;
@@ -77,7 +77,7 @@ public:
    datetime getClosePosDT()      {return(_posCloseTime);};    //получает дату закрытия позиции
    datetime getExpiration()      {return(_pos_info.expiration_time);};      
    int      getHandlePBI()       {return(_trailing.handleForTrailing);}; 
-   ulong    getMagic()           {return(_magic);};
+   long    getMagic()           {return(_magic);};
    int      getMinProfit()       {return(_trailing.minProfit);};
    datetime getOpenPosDT()       {return(_posOpenTime);};     //получает дату открытия позиции
    ENUM_TM_POSITION_TYPE getOppositeType(ENUM_TM_POSITION_TYPE type);
@@ -108,7 +108,7 @@ public:
    double   getVolume()            {return(_pos_info.volume);};
    
 // SET
-   void setMagic(ulong magic) {_magic = magic;};
+   void setMagic(long magic) {_magic = magic;};
    void setPositionStatus(ENUM_POSITION_STATUS status) {_pos_status = status;};
    void setStopLossStatus(ENUM_STOPLEVEL_STATUS status) {_sl_status = status;};
    ENUM_STOPLEVEL_STATUS setStopLoss();
