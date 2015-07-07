@@ -835,7 +835,9 @@ bool CTradeManager::OpenPairPosition(string symbol, ENUM_TIMEFRAMES timeframe, S
   
   pos_info_tp = pos_info;
   pos_info_give = pos_info;
+  pos_info_tp.tp = pos_info.tp;
   pos_info_tp.volume = volume_percent * pos_info.volume;
+  pos_info_give.tp = 0;
   pos_info_give.volume = pos_info.volume - pos_info_tp.volume;
   
   result = this.OpenPosition(symbol, timeframe, pos_info_tp, trailing) && 
