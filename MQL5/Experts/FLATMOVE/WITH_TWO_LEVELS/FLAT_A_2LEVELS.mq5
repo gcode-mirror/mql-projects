@@ -390,8 +390,8 @@ void OnChartEvent(const int id,         // идентификатор события
        MathMin(extr_container.GetFormedExtrByIndex(0,EXTR_LOW).price,extr_container.GetFormedExtrByIndex(1,EXTR_LOW).price);
    top_price = extr_container.GetFormedExtrByIndex(0,EXTR_HIGH).price + 0.75*h;
    bottom_price = extr_container.GetFormedExtrByIndex(0,EXTR_LOW).price - 0.75*h;
-   second_top_price = extr_container.GetFormedExtrByIndex(0,EXTR_HIGH).price + 3*h;
-   second_bottom_price = extr_container.GetFormedExtrByIndex(0,EXTR_LOW).price - 3*h;   
+   second_top_price = extr_container.GetFormedExtrByIndex(0,EXTR_HIGH).price + 6*h;
+   second_bottom_price = extr_container.GetFormedExtrByIndex(0,EXTR_LOW).price - 6*h;   
   } 
   
   
