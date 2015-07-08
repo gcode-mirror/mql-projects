@@ -17,16 +17,20 @@
 #include <Hvost/HvostBrain.mqh>
 #include <Chicken/ChickensBrain.mqh>
 #include <RobotEvgeny/EvgenysBrain.mqh>
+#include <CLog.mqh>  
 //#include <CExtrContainer.mgh>
 
 //константы
 #define SPREAD 30       // размер спреда 
+#define rat_pos_tp 0.9;
+#define rat_pos_give 0.1;
 
-class CTI 
+
+class CTI  // класс - обёртка для ВИ
 {
- CArrayObj *robots;                        // массив роботов на этм ВИ
- ENUM_SIGNAL_FOR_TRADE _moveBUY;            // разрешение торговли на BUY на этом ВИ
- ENUM_SIGNAL_FOR_TRADE _moveSELL;           // разрешение торговли на SeLL на этом ВИ
+ CArrayObj *robots;                         // массив роботов на этм ВИ
+ ENUM_SIGNAL_FOR_TRADE _moveBUY;            // разрешение торговли на BUY для этого ВИ
+ ENUM_SIGNAL_FOR_TRADE _moveSELL;           // разрешение торговли на SeLL для этого ВИ
   public:
   CTI(){_moveBUY = 0; _moveSELL = 0; robots = new CArrayObj();};
   
@@ -34,14 +38,14 @@ class CTI
   int  Total(){return robots.Total();}
   void Add(CBrain *brain);
   void SetMoves(ENUM_SIGNAL_FOR_TRADE moveSELL, ENUM_SIGNAL_FOR_TRADE moveBUY);
-  ENUM_SIGNAL_FOR_TRADE GetMoveSell(){return _moveSELL;}
+  ENUM_SIGNAL_FOR_TRADE GetMoveSell(){ return _moveSELL;}
   ENUM_SIGNAL_FOR_TRADE GetMoveBuy(){return _moveBUY;}
 };
 CTI::Add(CBrain *brain)
 {
  robots.Add(brain);
 }
-CTI::SetMoves(ENUM_SIGNAL_FOR_TRADE _moveSELL, ENUM_SIGNAL_FOR_TRADE moveBUY)
+CTI::SetMoves(ENUM_SIGNAL_FOR_TRADE moveSELL, ENUM_SIGNAL_FOR_TRADE moveBUY)
 {
  _moveSELL = moveSELL;
  _moveBUY = moveBUY;
@@ -58,18 +62,18 @@ CRabbitsBrain  *rabbit;
 CTradeManager *ctm;        // торговый класс 
      
 datetime history_start;    // время для получения торговой истории
-ENUM_SIGNAL_FOR_TRADE robot_position;
+ENUM_TM_POSITION_TYPE position_type_signal;
 int handleDE; 
 ENUM_SIGNAL_FOR_TRADE moveSELL;
 ENUM_SIGNAL_FOR_TRADE moveBUY;  
-double vol;  // объем позиции                        
-
+double volume_ratio;                       
+bool log_flag = false;
 ENUM_TM_POSITION_TYPE opBuy, opSell; // заполнить
-ENUM_TIMEFRAMES TFs[7]    = {PERIOD_M1, PERIOD_M5, PERIOD_M15, PERIOD_H1};//, PERIOD_H4, PERIOD_D1, PERIOD_W1};/
+ENUM_TIMEFRAMES TFs[4]    = {PERIOD_M1, PERIOD_M5, PERIOD_M15, PERIOD_H1};//, PERIOD_H4, PERIOD_D1, PERIOD_W1};/
 
 //---------параметры позиции и трейлинга------------
-SPositionInfo pos_tp;
-SPositionInfo pos_give;
+SPositionInfo pos_info;
+
 /*//---------Массивы информации о торговых движениях на каждом роботе конкретного ВИ------
 SPositionInfo mass_pos_info_Old[];
 SPositionInfo mass_pos_info_Mid[];
@@ -136,10 +140,10 @@ int OnInit()
  robots_JUN = new CTI();
               robots_JUN.Add(new CChickensBrain(_Symbol,PERIOD_M5, conbuf));
               robots_JUN.Add(new CChickensBrain(_Symbol,PERIOD_M15, conbuf));
-              robots_JUN.Add(new  CRabbitsBrain(_Symbol, conbuf));
+              robots_JUN.Add(new CRabbitsBrain(_Symbol, conbuf));
               
- pos_tp.volume = 0;
- pos_give.volume = 0;
+ pos_info.volume = 0;
+
  trailing.trailingType = TRAILING_TYPE_NONE;
  trailing.trailingStop = 0;
  trailing.trailingStep = 0;
@@ -168,8 +172,9 @@ void OnTick()
 {
  conbuf.Update();
  ctm.OnTick();   
-       
+ log_file.Write(LOG_DEBUG, "\n-------------------------MoveDown------------------------------------");
  MoveDown(robots_OLD);
+ log_file.Write(LOG_DEBUG, "--------------------------MoveUp------------------------------------");
  MoveUp(robots_JUN);
    //PrintFormat("moveSELL = %d moveBUY %d", moveSELL, moveBUY);
 
@@ -200,46 +205,58 @@ void OnChartEvent(const int id,
 
 void MoveDown (CTI *robots) // привести в соответствие направление позиции и торговые сигналы SELL и OP_SELL
 {
- ENUM_SIGNAL_FOR_TRADE moveSELL, moveBUY; 
+ //-----------
+ robot = robots.At(0);
+ log_file.Write(LOG_DEBUG, StringFormat("MoveDown: --- прогон на ВИ = %s", PeriodToString(robot.GetPeriod())));
+ //-----------
  double vol_tp, vol_give;                       
- FillMoves(robots, moveSELL, moveBUY);    // заполнение разрешающих сигналов верхнего временного интервала
- FillVolumes(robots, vol_tp, vol_give);   // заполнение объема позиций в соответствиии с временным интервалом (старшие 0-0, младший 0,9-0,1
+ FillMoves(robots);    // заполнение разрешающих сигналов верхнего временного интервала
  // если на верхнем ВИ есть торговые сигналы
- if(moveBUY != 0||moveSELL != 0)
+ if(robots.GetMoveBuy() != 0||robots.GetMoveSell() != 0)
  {
-  pos_tp.volume = vol_tp;               
-  pos_give.volume = vol_give;
+  log_file.Write(LOG_DEBUG, StringFormat("Был вычислен сигнал moveBUY = %d moveSELL = %d",robots.GetMoveBuy(),robots.GetMoveSell()));
+  volume_ratio = CountTradeRate(robots);   // посчитать коэфициент для позиции на ВИ (для старших = 0)         
+
   // для каждого робота на этом ВИ
   for(int i = 0; i < robots.Total(); i++)
   {
    robot = robots.At(i);
    // Вычислим торговый сигнал по алгоритму робота и записать тип позиции если она есть
-   robot_position = robot.GetSignal();
+   position_type_signal = robot.GetSignal();
    // Если пришел сигнал на открытие позиции 
-   if(robot_position != OP_UNKNOWN )
+   if(position_type_signal != OP_UNKNOWN)
    {
+    log_file.Write(LOG_DEBUG, StringFormat("Был вычислен сигнал %d на роботе(%s)",position_type_signal, robot.GetName()));
     // открыть позицию, с мэджиком этого робота по направлению SELL/BUY
-    if(robot_position == SELL && moveSELL == SELL) // если есть разрешение с верхнего ВИ на торговлю в этом направлении
+    // добавить функцию
+    if((position_type_signal == OP_SELL || position_type_signal == OP_SELLSTOP) && robots.GetMoveSell() == SELL) // если есть разрешение с верхнего ВИ на торговлю в этом направлении
     {
-     pos_tp.type = robot_position;  // тип ордера установить согласно роботу
-     pos_give.type = robot_position;
+     log_file.Write(LOG_DEBUG,StringFormat("Сигнал на SELL position_type_signal  = %d",position_type_signal));
+     pos_info.type = position_type_signal;  // тип ордера установить согласно роботу
+     pos_info.tp   = robot.CountTakeProfit();
+     pos_info.sl   = robot.CountStopLoss();
+     pos_info.volume = 1 * volume_ratio;
     }
-    else if(robot_position == BUY && moveBUY == BUY)
+    else if((position_type_signal == OP_BUY || position_type_signal == OP_BUYSTOP) && robots.GetMoveBuy() == BUY)
     {
-     pos_tp.type = robot_position;
-     pos_give.type = robot_position;
+     log_file.Write(LOG_DEBUG,StringFormat("Сигнал на BUY position_type_signal  = %d", position_type_signal));
+     pos_info.type = position_type_signal;  // тип ордера установить согласно роботу
+     pos_info.tp   = robot.CountTakeProfit();
+     pos_info.sl   = robot.CountStopLoss();
+     pos_info.volume = 1 * volume_ratio;
+     
     }
     else
      continue;
     // ? <открытие позиции>
-    ctm.OpenUniquePosition(_Symbol, robot.GetPeriod(), pos_tp, trailing);
+    log_flag = true;
+    ctm.OpenPairPosition(_Symbol, robot.GetPeriod(), pos_info, trailing, volume_ratio);
     // должен работать таким образом, что бы робот мог открыть только эти две позиции в одном направлении, 
     // то есть как юникПозишн только для двух позиций того же направления
-    // ctm.OpenMultiPosition(_Symbol,robot.GetPeriod(),pod_info1,trailing);magic!!
-    // ctm.OpenMultiPosition(_Symbol,robot.GetPeriod(),pod_info1,trailing);magic!!
    }
-   else if (robot_position == OP_UNKNOWN && robot.GetDirection() == NO_SIGNAL)
+   else if (position_type_signal == OP_UNKNOWN && robot.GetDirection() == NO_SIGNAL)// разрыв шаблона
    {
+    log_file.Write(LOG_DEBUG, "Разрыв шаблона, закрытие позиции: position_type_signal == OP_UNKNOWN && robot.GetDirection() == NO_SIGNAL");
     // закрыть позицию с мэджиком этого робота
     ctm.ClosePosition(robot.GetMagic()); // полностью, обе
    }
@@ -251,25 +268,42 @@ void MoveDown (CTI *robots) // привести в соответствие направление позиции и тор
 
 void MoveUp (CTI *robots)
 {
+ //-----------
+ robot = robots.At(0);
+ log_file.Write(LOG_DEBUG, StringFormat("MoveUp: --- прогон на ВИ = %s", PeriodToString(robot.GetPeriod())));
+ //-----------
  for(int i = 0; i < robots.Total(); i++) 
  {
   robot = robots.At(i); // для каждого робота на ВИ
   // если его позиция существует и активна
-  if(ctm.GetPositionCount(robot.GetMagic()) <= 0) // если в стм по тп закрылась позиция, то pos_give должна перекинуться на др. робот
+  int positionCount = ctm.GetPositionCount(robot.GetMagic());
+  if(positionCount <= 0 && log_flag) // если в стм по тп закрылась позиция, то pos_give должна перекинуться на др. робот
   {
+   log_file.Write(LOG_DEBUG, StringFormat("У этого робота(%s) нет открытых позиций", robot.GetName()));
   }
-  else
+  else if(positionCount == 1) // это значит что осталась только pos_give
+  { 
+   double vol = ctm.GetPositionVolume(_Symbol, robot.GetMagic());
+   log_file.Write(LOG_DEBUG, StringFormat("У этого робота(%s) одна открытая позиция(значит give) vol = ", robot.GetName(), vol));
+   long magicEld = ChooseTheBrain(ctm.GetPositionType(),GetNextTI(robots,false));
+   log_file.Write(LOG_DEBUG, StringFormat("Присвоили позицию новому роботу с magic =  и открыли позицию на старшем", magicEld));
+   OpenPosition(magicEld, vol); // открытие позиции по мэджику выбранного робота
+  }
+  else if (positionCount == 2 && log_flag)  // удалить - условие для лога
   {
-   // если позиция одна, значит нужно передать другому роботу
-    //if(ctm.GetPositionCount(robot.GetMagic()) == 1)
-    //{
-    // long newmagic = ChoseTheBrain(ctm.GetPositionCount(robot.GetMagic()),GetNextTI(robots,false));
-    // 
-    // ctm.PositionChangeSize(_Symbol, ctm.GetPositionVolume(_Symbol, robot.GetMagic()));
-    //}
-   ctm.Positi
-   double curPrice;
-   
+   long magicEld = ChooseTheBrain(ctm.GetPositionType(),GetNextTI(robots,false));
+   for(int i = 0; i < ctm.GetPositionCount() && magicEld != 0; i++)
+   {
+    ctm.PositionSelect(i, SELECT_BY_POS);
+    if(ctm.GetPositionMagic() == robot.GetMagic())
+    {
+     if(ctm.GetPositionTakeProfit() != 0)
+        log_file.Write(LOG_DEBUG, StringFormat("У робота (%d)  существует 2 позиции одна:  размером (profit) %f", robot.GetMagic(), ctm.GetPositionTakeProfit()));
+     else
+        log_file.Write(LOG_DEBUG, StringFormat("У робота (%d)  существует 2 позиции вторая:  размером (profit) %f", robot.GetMagic(), ctm.GetPositionTakeProfit()));
+    }
+   }
+  }
    /*ENUM_POSITION_TYPE pos_type = ctm.GetPositionType(_Symbol, robot.GetMagic());
    switch(pos_type)
    {
@@ -304,10 +338,9 @@ void MoveUp (CTI *robots)
       }     
      }
     }*/
-   }  
-   if(robots != robots_OLD)
-   MoveUp(GetNextTI(robots,false));
-  }
+  }  
+  if(robots != robots_OLD)
+  MoveUp(GetNextTI(robots,false));
 }
 
 CTI *GetNextTI(CTI *robots, bool down)
@@ -325,12 +358,14 @@ CTI *GetNextTI(CTI *robots, bool down)
  return robots_JUN;  
 }
 
-void FillMoves(CTI *robots, ENUM_SIGNAL_FOR_TRADE moveSELL, ENUM_SIGNAL_FOR_TRADE moveBUY)
+void FillMoves(CTI *robots)
 {
- moveSELL = 0;
- moveBUY = 0;
+ ENUM_SIGNAL_FOR_TRADE newMoveSELL = NO_SIGNAL;
+ ENUM_SIGNAL_FOR_TRADE newMoveBUY = NO_SIGNAL;
+ ENUM_SIGNAL_FOR_TRADE moveSELL = SELL;
+ ENUM_SIGNAL_FOR_TRADE moveBUY = BUY;
  // если это старший ВИ ему разрешено открывать шаблоны по своим сигналам
- if(robots == robots_OLD)// достаточно ли безопасно так сравнивать?
+ if(robots != robots_JUN)// исправить по-скольку средни ДОЛЖЕН ориентироваться на старший сигнал
  {
   moveSELL = SELL; // разрешающий сигнал для старшего ВИ (всегда 1)
   moveBUY = BUY;
@@ -341,54 +376,51 @@ void FillMoves(CTI *robots, ENUM_SIGNAL_FOR_TRADE moveSELL, ENUM_SIGNAL_FOR_TRAD
   ElderTI = GetNextTI(robots, false);
   moveSELL = ElderTI.GetMoveSell();
   moveBUY = ElderTI.GetMoveBuy();
+  log_file.Write(LOG_DEBUG, StringFormat("Нижний ВИ со старшего считал: moveSEL = %d, MoveBUY = %d", moveSELL, moveBUY));
  } 
 
  for(int i = 0; i < robots.Total(); i++)      
  { 
-  robot = robots.At(i);                         
+  robot = robots.At(i); 
+  //log_file.Write(LOG_DEBUG, StringFormat("Для этого ВИ(%s) robot.GetDirection() = %d",robot.GetName(), robot.GetDirection()));                      
   if(robot.GetDirection() == SELL && moveSELL == SELL)            
-   moveSELL = SELL;
+   newMoveSELL = SELL;
   else if(robot.GetDirection() == BUY && moveBUY == BUY)
-   moveBUY = BUY;
+   newMoveBUY = BUY;
  }  
- robots.SetMoves(moveSELL, moveBUY);
+ robots.SetMoves(newMoveSELL, newMoveBUY);
  return;
 }
 
-
-void FillVolumes(CTI *robots, double vol_tp, double vol_give)
+double CountTradeRate(CTI *robots)
 {
   CBrain *robot = robots.At(0);
  if(robot.GetPeriod() > PERIOD_M15)
- {
-  vol_tp = 0.0;
-  vol_give = 0.0;
- }
+  return 0.0;
  else
- {
-  vol_tp = 0.9;
-  vol_give = 0.1;
- }
+  return 0.9;
 }
 
 
 
-long ChooseTheBrain(ENUM_TM_POSITION_TYPE pos_type, CArrayObj *robots) 
+long ChooseTheBrain(ENUM_TM_POSITION_TYPE pos_type, CTI *robots) 
 {
  double volume = 0;
  robot = robots.At(0);
+ int type = pos_type % 2;
  int magic =  robot.GetMagic();  
  for(int i = 0; i < robots.Total(); i++)
  {
   robot = robots.At(i);
-  if(ctm.GetPositionCount(magic))
+  if(ctm.GetPositionCount(magic) == 2)// если не 2, робот не может участвовать в принятии позиции снизу
   {
-   if(ctm.GetPositionType(magic) == pos_type)
+   if(ctm.GetPositionType(magic) % 2 == type && ctm.GetPositionType(magic) != OP_UNKNOWN) 
    {
     if(ctm.GetPositionVolume(magic) >= volume)
     {
      magic = robot.GetMagic();
      volume = ctm.GetPositionVolume(magic);
+     log_file.Write(LOG_DEBUG, StringFormat("%s изменен маджик, текущий робот - %s, magic = ", robot.GetName(), magic));
     }
     else
      return magic;
@@ -398,6 +430,28 @@ long ChooseTheBrain(ENUM_TM_POSITION_TYPE pos_type, CArrayObj *robots)
  return magic;
 }
 
+void OpenPosition(long magicEld, double vol)
+{ 
+ double temp;
+ for(int i = 0; i < ctm.GetPositionCount() && magicEld != 0; i++)
+ {
+  ctm.PositionSelect(i, SELECT_BY_POS);
+  if(ctm.GetPositionMagic() == magicEld)
+  {
+   if(ctm.GetPositionTakeProfit() != 0)
+   {
+    temp = vol * volume_ratio;
+    ctm.PositionChangeSize(temp);
+   }
+   else
+   {
+    temp = vol * (1-volume_ratio);
+    ctm.PositionChangeSize(temp);
+   }
+  }
+ }
+ return;
+}
 // Сравнить направление позиции с сигналом 
 //bool 
 

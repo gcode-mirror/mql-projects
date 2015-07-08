@@ -36,7 +36,8 @@ class CChickensBrain : public CBrain
   int _diff_high; 
   int _diff_low; 
   int _priceDifference;
-  int _sl_min;         
+  int _sl_min;   
+  int _expiration;      
   double _highBorder; 
   double _lowBorder;
 
@@ -46,15 +47,17 @@ class CChickensBrain : public CBrain
    CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf);
    ~CChickensBrain();
    virtual ENUM_TM_POSITION_TYPE  GetSignal();
-   virtual long  GetMagic(){return _magic;}
+   virtual long   GetMagic(){return _magic;}
+   virtual string  GetName(){return StringFormat("CChickensBrain_%s",PeriodToString(_period));};
    virtual ENUM_SIGNAL_FOR_TRADE  GetDirection(){return _current_direction;}
    virtual ENUM_TIMEFRAMES GetPeriod(){return _period;}
-   virtual int  GetTakeProfit();
-   virtual int  GetStopLoss();
+   virtual int  CountTakeProfit();
+   virtual int  CountStopLoss();
+   virtual int  GetPriceDifference(){return _priceDifference;}
+   virtual int  GetExpiration()     {return _expiration;};
    int GetLastMoveType ();
    int GetIndexMax()      { return _index_max;}
    int GetIndexMin()      { return _index_min;}
-   int GetPriceDifference(){return _priceDifference;}
 };
 //+------------------------------------------------------------------+
 //|       онструктор                                                 |
@@ -64,7 +67,9 @@ CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainer
  _conbuf = conbuf;
  _symbol = symbol;
  _period = period;
- _current_direction = NO_SIGNAL;
+ _current_direction = SELL;
+ _expiration = 0;
+ _priceDifference = 0;
  isNewBar = new CisNewBar(_symbol, _period);
  _index_max = -1;
  _index_min = -1;
@@ -194,7 +199,7 @@ int  CChickensBrain::GetLastMoveType () // получаем последнее значение PriceBase
  return (0);
 }
 
-int CChickensBrain::GetStopLoss(void)
+int CChickensBrain::CountStopLoss(void)
 {
  int stop_level;
  int sl = 0;
@@ -213,7 +218,7 @@ int CChickensBrain::GetStopLoss(void)
  }
 }
 
-int CChickensBrain::GetTakeProfit()
+int CChickensBrain::CountTakeProfit()
 {
  
  return (int)MathCeil((_highBorder - _lowBorder)*0.75/Point());
