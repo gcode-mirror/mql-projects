@@ -103,10 +103,13 @@ class CRabbitsBrain : public CBrain
                     
             virtual ENUM_TM_POSITION_TYPE  GetSignal();
             virtual long  GetMagic(){return _magic;}
+            virtual string  GetName(){return "CRabbitsBrain";}
             virtual ENUM_SIGNAL_FOR_TRADE  GetDirection(){return _current_direction;}
             virtual ENUM_TIMEFRAMES GetPeriod(){return TFs[2];}
-            virtual int  GetTakeProfit();
-            virtual int  GetStopLoss();
+            virtual int  CountTakeProfit();
+            virtual int  CountStopLoss();
+            virtual int  GetPriceDifference();
+            virtual int  GetExpiration();
 
                     int  GetTradeSignal(CTimeframeInfo *TF);
                     bool UpdateTrendsOnHistory(int i);
@@ -482,7 +485,7 @@ void CRabbitsBrain::OpenedPosition(int ctmTotal)
 }
 
 
-int CRabbitsBrain::GetStopLoss(void)
+int CRabbitsBrain::CountStopLoss(void)
 {
  int stop_level;
  stop_level = (int)SymbolInfoInteger(_symbol, SYMBOL_TRADE_STOPS_LEVEL);
@@ -495,7 +498,7 @@ int CRabbitsBrain::GetStopLoss(void)
  }
 }
 
-int CRabbitsBrain::GetTakeProfit()
+int CRabbitsBrain::CountTakeProfit()
 {
- return 10*GetStopLoss();
+ return 10*CountStopLoss();
 }

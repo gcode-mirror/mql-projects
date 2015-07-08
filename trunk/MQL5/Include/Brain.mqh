@@ -27,13 +27,14 @@ protected:
 public:
 
 virtual ENUM_TM_POSITION_TYPE  GetSignal()     { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
-virtual long  GetMagic()         { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
-virtual ENUM_SIGNAL_FOR_TRADE    GetDirection()  { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
-virtual int  GetTakeProfit()  { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 0;}
-virtual int  GetStopLoss()    { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 0;}
-
+virtual long  GetMagic()                       { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
+virtual ENUM_SIGNAL_FOR_TRADE    GetDirection(){ PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
+virtual int  CountTakeProfit()        { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 0;}
+virtual int  CountStopLoss()          { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 0;}
+virtual int  GetPriceDifference()   { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 0;}
+virtual int  GetExpiration()        { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 0;}
 virtual ENUM_TIMEFRAMES GetPeriod() { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return 2;}
-
+virtual string GetName()            { PrintFormat("%s попал на CBrain, а не должен был", MakeFunctionPrefix(__FUNCTION__));return "Brain";}
 //---------------или посылать нулевые значения---------------
 //virtual int GetSL();
 

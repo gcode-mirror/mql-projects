@@ -57,12 +57,12 @@ public:
   void ~CTradeManager(void);
     
   // GET
-  double GetCurrentDrawdown() {return(_current_drawdown);};   // возвращает текущую просадку по балансу  
-  double GetCurrentProfit()   {return(_current_balance);};    // возвращает текущую прибыль
+  double GetCurrentDrawdown() { return(_current_drawdown);};   // возвращает текущую просадку по балансу  
+  double GetCurrentProfit()   { return(_current_balance);};    // возвращает текущую прибыль
   long   GetHistoryDepth();                                   // возвращает глубину истории
-  double GetMaxDrawdown()     {return(_max_drawdown); };      // возвращает максимальную просадку по балансу
-  double GetMaxProfit()       {return(_max_balance);};        // возвращает максимальную прибыль
-  int    GetPositionCount()   {return (_openPositions.Total() + _positionsToReProcessing.Total());}; 
+  double GetMaxDrawdown()     { return(_max_drawdown); };      // возвращает максимальную просадку по балансу
+  double GetMaxProfit()       { return(_max_balance);};        // возвращает максимальную прибыль
+  int    GetPositionCount()   { return (_openPositions.Total() + _positionsToReProcessing.Total());}; 
   int    GetPositionCount(long magic);
   CPositionArray* GetPositionHistory(datetime fromDate, datetime toDate = 0); //возвращает массив позиций из истории 
   //int    GetPositionPointsProfit(int i, ENUM_SELECT_TYPE type);
@@ -79,7 +79,7 @@ public:
   double GetPositionVolume(string symbol, long magic = 0);     // возвращает объем позиции по символу и мэджику
   
   bool ClosePendingPosition(string symbol, long magic = 0, color Color=CLR_NONE);      // Закрытие отложенной позиции по символу
-  bool ClosePosition(string symbol, color Color=CLR_NONE);             // Закртыие позиции по символу
+  bool ClosePosition(string symbol, color Color = CLR_NONE);             // Закртыие позиции по символу
   bool ClosePosition(long ticket, color Color = CLR_NONE);             // Закртыие позиции по тикету
   bool ClosePosition(int i, color Color = CLR_NONE);                   // Закрытие позиции по индексу в массиве позиций
   bool ClosePosition(CPosition *pos, color Color = CLR_NONE);          // Закрытие позиции по указателю в массиве позиций

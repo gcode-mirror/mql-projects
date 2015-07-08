@@ -13,8 +13,6 @@
 #include <ContainerBuffers.mqh>     // контейнер буферов данных там же CisNewBar
 #include <Brain.mqh>
 
-#define BUY   1    
-#define SELL -1 
 #define NO_POSITION 0
 #define K 0.5
 #define _channelDepth 3 // глубина канала
@@ -33,6 +31,8 @@ class CHvostBrain : public CArrayObj
   CContainerBuffers *_conbuf;
   int opened_position;     // флаг открытой позиции (0 - нет позиции, 1 - buy, (-1) - sell)
   int _magic;
+  int _expiration;
+  int _price_difference;
   ENUM_SIGNAL_FOR_TRADE _current_direction;  // фиксирование сосотояния шаблона (SEll, BUY, DISCORD(0) - торговля запрещена)
   double h;                // ширина канала
   double price_bid;        // текущая цена bid
@@ -53,10 +53,13 @@ class CHvostBrain : public CArrayObj
                     ~CHvostBrain();
              virtual ENUM_TM_POSITION_TYPE  GetSignal();
              virtual long  GetMagic(){return _magic;}
+             virtual string  GetName(){return StringFormat("CHvostBrain_%s",PeriodToString(_period));};
              virtual ENUM_SIGNAL_FOR_TRADE  GetDirection(){return _current_direction;}
              virtual ENUM_TIMEFRAMES GetPeriod(){return _period;}
-             virtual int  GetTakeProfit();
-             virtual int  GetStopLoss();
+             virtual int  CountTakeProfit();
+             virtual int  CountStopLoss();
+             virtual int  GetPriceDifference(){return _price_difference;}
+             virtual int  GetExpiration(){return _expiration;};
                      bool IsBeatenBars (int type);
                      bool IsBeatenExtremum (int type);
                      bool TestEldPeriod (int type);
@@ -79,6 +82,8 @@ CHvostBrain::CHvostBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffer
  _period = period;
  _conbuf =  conbuf;
  _current_direction = NO_SIGNAL;
+ _expiration = 0;
+ _price_difference = 0;
  opened_position = 0;
  prev_price_bid = 0;    
  prev_price_ask = 0;     
@@ -322,7 +327,7 @@ bool  CHvostBrain::IsFlatNow ()
  return (false);
 }
 
-int CHvostBrain::GetStopLoss()
+int CHvostBrain::CountStopLoss()
 {
  int stop_level;
  double pr_bid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
@@ -342,7 +347,7 @@ int CHvostBrain::GetStopLoss()
  return stop_level;
 }
 
-int CHvostBrain::GetTakeProfit()
+int CHvostBrain::CountTakeProfit()
 {
  double pr_bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
  double pr_ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);

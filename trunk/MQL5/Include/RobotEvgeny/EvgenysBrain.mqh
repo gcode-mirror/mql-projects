@@ -55,8 +55,11 @@ public:
             virtual long GetMagic(){return _magic;}
             virtual ENUM_SIGNAL_FOR_TRADE GetDirection(){return _current_direction;}
             virtual ENUM_TIMEFRAMES GetPeriod(){return _period;}
-            virtual int  GetTakeProfit();
-            virtual int  GetStopLoss();
+            virtual string  GetName(){return StringFormat("CEvgenysBrain_%s",PeriodToString(_period));};
+            virtual int  CountTakeProfit();
+            virtual int  CountStopLoss();
+            virtual int  GetPriceDifference();
+            virtual int  GetExpiration();
                     int  CountStopLossForTrendLines();
                     int  IsTrendNow();
                     void UploadOnEvent();
@@ -74,7 +77,7 @@ CEvgenysBrain::CEvgenysBrain(string symbol,ENUM_TIMEFRAMES period, CExtrContaine
 {
  _trend = 0;       // текущий тренд 1-й типа
  _prevTrend = 0;   // предыдущий тренд
- _current_direction = NO_SIGNAL;
+ _current_direction = SELL;
  _symbol = symbol;
  _period = period;
  _isNewBar = new CisNewBar(_symbol, _period);
@@ -307,7 +310,7 @@ void CEvgenysBrain::UploadOnEvent(void)
   }   
 }
 
-int CEvgenysBrain::GetStopLoss(void)
+int CEvgenysBrain::CountStopLoss(void)
 {
  int stop_level;
  int sl;
@@ -322,7 +325,7 @@ int CEvgenysBrain::GetStopLoss(void)
  }
 }
 
-int CEvgenysBrain::GetTakeProfit()
+int CEvgenysBrain::CountTakeProfit()
 {
- return 10 * GetStopLoss();
+ return 10 * CountStopLoss();
 }
