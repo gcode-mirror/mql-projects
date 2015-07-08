@@ -638,57 +638,66 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
  TimeToStruct(_posOpenTime, mdt);
  string orderComment = StringFormat("%s_%s", StringSubstr(MQL5InfoString(MQL5_PROGRAM_NAME), 0, 27), log_file.PeriodString());
  
- switch(_pos_info.type)
+ if (_pos_info.volume > 0)
  {
-  case OP_BUY:
-   log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Бай, объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _pos_info.volume));
-   if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _pos_info.volume, _posOpenPrice, 0, 0, orderComment))
-   {
-    _orderTicket = 0;
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__)));
-    if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+  switch(_pos_info.type)
+  {
+   case OP_BUY:
+    log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Бай, объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _pos_info.volume));
+    if(trade.PositionOpen(_symbol, POSITION_TYPE_BUY, _pos_info.volume, _posOpenPrice, 0, 0, orderComment))
     {
-     _pos_status = POSITION_STATUS_OPEN;
+     _orderTicket = 0;
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция", MakeFunctionPrefix(__FUNCTION__)));
+     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+     {
+      _pos_status = POSITION_STATUS_OPEN;
+     }
+     else
+     {
+      _pos_status = POSITION_STATUS_NOT_COMPLETE;
+     }
     }
-    else
+    break;
+   case OP_SELL:
+    log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Селл, объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _pos_info.volume));
+    if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _pos_info.volume, _posOpenPrice, 0, 0, orderComment))
     {
-     _pos_status = POSITION_STATUS_NOT_COMPLETE;
+     _orderTicket = 0;
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция ", MakeFunctionPrefix(__FUNCTION__)));
+     if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+     {
+      _pos_status = POSITION_STATUS_OPEN;   
+     }
+     else
+     {
+      _pos_status = POSITION_STATUS_NOT_COMPLETE;
+     }
     }
-   }
-   break;
-  case OP_SELL:
-   log_file.Write(LOG_DEBUG, StringFormat("%s, Открываем позицию Селл, объем = %.02f", MakeFunctionPrefix(__FUNCTION__), _pos_info.volume));
-   if(trade.PositionOpen(_symbol, POSITION_TYPE_SELL, _pos_info.volume, _posOpenPrice, 0, 0, orderComment))
-   {
-    _orderTicket = 0;
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыта позиция ", MakeFunctionPrefix(__FUNCTION__)));
-    if (setStopLoss() != STOPLEVEL_STATUS_NOT_PLACED && setTakeProfit() != STOPLEVEL_STATUS_NOT_PLACED)
+    break;
+   case OP_BUYLIMIT:
+   case OP_SELLLIMIT:
+   case OP_BUYSTOP:
+   case OP_SELLSTOP:
+    if (trade.OrderOpen(_symbol, oType, _pos_info.volume, _posOpenPrice, _type_time, _pos_info.expiration_time, orderComment))
     {
-     _pos_status = POSITION_STATUS_OPEN;   
+     _orderTicket = trade.ResultOrder();
+     _pos_status = POSITION_STATUS_PENDING;
+     if (_pos_info.sl > 0) _slPrice = SLPriceByType(_pos_info.type);
+     log_file.Write(LOG_DEBUG, StringFormat("%s Открыт отложенный ордер #%d; тип истечения %s, время истечения %s", MakeFunctionPrefix(__FUNCTION__), _orderTicket,  EnumToString(_type_time), TimeToString(_pos_info.expiration_time)));
     }
-    else
-    {
-     _pos_status = POSITION_STATUS_NOT_COMPLETE;
-    }
-   }
-   break;
-  case OP_BUYLIMIT:
-  case OP_SELLLIMIT:
-  case OP_BUYSTOP:
-  case OP_SELLSTOP:
-   if (trade.OrderOpen(_symbol, oType, _pos_info.volume, _posOpenPrice, _type_time, _pos_info.expiration_time, orderComment))
-   {
-    _orderTicket = trade.ResultOrder();
-    _pos_status = POSITION_STATUS_PENDING;
-    if (_pos_info.sl > 0) _slPrice = SLPriceByType(_pos_info.type);
-    log_file.Write(LOG_DEBUG, StringFormat("%s Открыт отложенный ордер #%d; тип истечения %s, время истечения %s", MakeFunctionPrefix(__FUNCTION__), _orderTicket,  EnumToString(_type_time), TimeToString(_pos_info.expiration_time)));
-   }
-   break;
-  default:
-   log_file.Write(LOG_DEBUG, StringFormat("%s Задан неверный тип позиции",MakeFunctionPrefix(__FUNCTION__)) );
-   break;
+    break;
+   default:
+    log_file.Write(LOG_DEBUG, StringFormat("%s Задан неверный тип позиции",MakeFunctionPrefix(__FUNCTION__)) );
+    break;
+  } 
  }
-
+ 
+ if (_pos_info.volume == 0)
+ {
+  _pos_status = POSITION_STATUS_OPEN;   
+  _sl_status == STOPLEVEL_STATUS_PLACED;
+ }
+ 
  NewTicket();
  return(_pos_status);
 }

@@ -39,7 +39,7 @@ private:
   bool   FindHistoryTicket(long ticket);
   bool   LoadArrayFromFile(string file_url,CPositionArray *array);
   bool   SaveArrayToFile(string file_url,CPositionArray *array);  
-  void   CheckOpenedPositions(string symbol, ENUM_TM_POSITION_TYPE type);
+  void   CheckOpenedPositions(string symbol, ENUM_TM_POSITION_TYPE type, long magic = 0);
   bool   OpenPosition(string symbol, ENUM_TIMEFRAMES timeframe, SPositionInfo& pos_info, STrailing& trailing);
   bool   ValidSelectedPosition();
   
@@ -585,7 +585,7 @@ void CTradeManager::OnTick()
  int total = _positionsToReProcessing.Total();
  for(int i = total - 1; i>=0; i--) // по массиву позиций на доработку
  {
-  CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее тикету
+  CPosition *pos = _positionsToReProcessing.Position(i);  // получаем из массива указатель на позицию по ее индексу
   if (pos.getPositionStatus() == POSITION_STATUS_NOT_DELETED)
   {
    if (pos.RemovePendingPosition() == POSITION_STATUS_DELETED)
@@ -780,14 +780,14 @@ bool CTradeManager::OpenUniquePosition(string symbol, ENUM_TIMEFRAMES timeframe,
  log_file.Write(LOG_CRITICAL, StringFormat("%s ќткрываем позицию %s. ќткрытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), _openPositions.Total()));
  log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // –аспечатка всех позиций из массива _openPositions
  
- this.CheckOpenedPositions(symbol, pos_info.type);
+ CheckOpenedPositions(symbol, pos_info.type);
  
  int total = _openPositions.OrderCount(symbol, pos_info.magic) + _positionsToReProcessing.OrderCount(symbol, pos_info.magic);
  if (total <= 0)
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
   
-  if(pos_info.volume <= 0)
+  if(pos_info.volume < 0)
   {
    pos_info.volume = CalcVolume(symbol);  // «аглушка - надо доделать
   }
@@ -821,14 +821,14 @@ bool CTradeManager::OpenPairPosition(string symbol, ENUM_TIMEFRAMES timeframe, S
  log_file.Write(LOG_CRITICAL, StringFormat("%s ќткрываем позицию %s. ќткрытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), _openPositions.Total()));
  log_file.Write(LOG_CRITICAL, StringFormat("%s %s", MakeFunctionPrefix(__FUNCTION__), _openPositions.PrintToString())); // –аспечатка всех позиций из массива _openPositions
 
- this.CheckOpenedPositions(symbol, pos_info.type);  
+ CheckOpenedPositions(symbol, pos_info.type);  
  
  int total = _openPositions.OrderCount(symbol, pos_info.magic) + _positionsToReProcessing.OrderCount(symbol, pos_info.magic);
  if (total <= 0)
  {
   log_file.Write(LOG_CRITICAL, StringFormat("%s openPositions и positionsToReProcessing пусты - открываем новую позицию", MakeFunctionPrefix(__FUNCTION__)));
   
-  if(pos_info.volume <= 0)
+  if(pos_info.volume < 0)
   {
    pos_info.volume = CalcVolume(symbol); // «аглушка - надо доделать
   }
@@ -840,8 +840,8 @@ bool CTradeManager::OpenPairPosition(string symbol, ENUM_TIMEFRAMES timeframe, S
   pos_info_give.tp = 0;
   pos_info_give.volume = pos_info.volume - pos_info_tp.volume;
   
-  result = this.OpenPosition(symbol, timeframe, pos_info_tp, trailing) && 
-           this.OpenPosition(symbol, timeframe, pos_info_give, trailing);
+  result = OpenPosition(symbol, timeframe, pos_info_tp, trailing) && 
+           OpenPosition(symbol, timeframe, pos_info_give, trailing);
  }
  return(result); // ≈сли остались открытые позиции, значит не надо открыватьс€ 
 }
@@ -859,8 +859,12 @@ bool CTradeManager::OpenMultiPosition(string symbol, ENUM_TIMEFRAMES timeframe, 
  log_file.Write(LOG_CRITICAL, StringFormat("%s, ќткрываем мульти-позицию %s. ќткрытых позиций на данный момент: %d", MakeFunctionPrefix(__FUNCTION__), GetNameOP(pos_info.type), _openPositions.Total()) ); 
  
  //this.CheckOpenedPositions(symbol, pos_info.type);
- 
- bool result = this.OpenPosition(symbol, timeframe, pos_info, trailing);
+ if(pos_info.volume < 0)
+ {
+  pos_info.volume = CalcVolume(symbol); // «аглушка - надо доделать
+ }
+
+ bool result = OpenPosition(symbol, timeframe, pos_info, trailing);
  return(result); 
 }
 
@@ -1117,7 +1121,7 @@ bool CTradeManager::SaveArrayToFile(string file_url, CPositionArray *array)
 //+----------------------------------------------------
 // »щет и закрывает позиции противоположного типа
 //+----------------------------------------------------
-void CTradeManager::CheckOpenedPositions(string symbol, ENUM_TM_POSITION_TYPE type)
+void CTradeManager::CheckOpenedPositions(string symbol, ENUM_TM_POSITION_TYPE type, long magic = 0)
 {
  CPosition *pos;
  int i = 0;
@@ -1152,7 +1156,7 @@ void CTradeManager::CheckOpenedPositions(string symbol, ENUM_TM_POSITION_TYPE ty
   for (i = total - 1; i >= 0; i--) // «акрываем все ордера или позиции на продажу
   {
    pos = _openPositions.At(i);
-   if (pos.getSymbol() == symbol)
+   if (pos.getSymbol() == symbol && (pos.getMagic() == magic || magic == 0))
    {
     if (pos.getType() == usual)
     {
