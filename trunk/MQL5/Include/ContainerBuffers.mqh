@@ -50,9 +50,9 @@ class CContainerBuffers
   CArrayObj  *_bufferHigh; // массив буферов High на всех таймфреймах
   CArrayObj  *_bufferLow;  // массив буферов Low на всех таймфреймах
   CArrayObj  *_bufferPBI;  // массив буферов PBI на всех таймфреймах
-// CArrayObj  *_bufferATR;// массив буферов ATR на всех таймфреймах
+// CArrayObj  *_bufferATR; // массив буферов ATR на всех таймфреймах
   CArrayObj  *_bufferClose;// массив буферов Close на всех таймфреймах
-  CArrayObj  *_bufferOpen;// массив буферов Open на всех таймфреймах
+  CArrayObj  *_bufferOpen; // массив буферов Open на всех таймфреймах
   CArrayObj  *_allNewBars; // массив newbars для каждого Тф
  
   int     _handlePBI[];    // массив хэндлов PBI
@@ -85,6 +85,7 @@ class CContainerBuffers
   double GetOpen (ENUM_TIMEFRAMES period, int index);
   double GetPBI  (ENUM_TIMEFRAMES period, int index);
   double GetATR  (ENUM_TIMEFRAMES period, int index);
+  datetime GetTime (ENUM_TIMEFRAMES period, int index);
                
   CisNewBar *GetNewBar(ENUM_TIMEFRAMES period);
 };
@@ -505,4 +506,17 @@ double CContainerBuffers::GetPBI (ENUM_TIMEFRAMES period, int index)
  }
  PrintFormat("Не удалось получить данные с GetPBI  на %s", PeriodToString(period));
  return -1;
+}
+
+datetime CContainerBuffers::GetTime (ENUM_TIMEFRAMES period, int index)
+{
+ datetime time_buf[];
+ int copied = 0;
+ for(int attempt = 0; attempt < 25; attempt++)
+ {
+  copied = CopyTime(_Symbol, period, index, 1, time_buf); 
+  if(copied == 1)
+   return time_buf[0];
+ }
+ return __DATETIME__;
 }

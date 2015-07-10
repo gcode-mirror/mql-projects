@@ -45,16 +45,10 @@ int OnInit()
    ENUM_TIMEFRAMES TFs[] = {PERIOD_M5, PERIOD_M15, PERIOD_H1, PERIOD_H4, PERIOD_D1};
    conbuf = new CContainerBuffers(TFs);
    hvostiki = new CArrayObj();
-   hvostiki.Add( new CHvostBrain(_Symbol,PERIOD_M5,conbuf));
+   hvostiki.Add( new CHvostBrain(_Symbol,PERIOD_M5, conbuf));
    hvostiki.Add( new CHvostBrain(_Symbol,PERIOD_M15,conbuf));
-   hvostiki.Add( new CHvostBrain(_Symbol,PERIOD_H1,conbuf));
+   hvostiki.Add( new CHvostBrain(_Symbol,PERIOD_H1, conbuf));
    log_file.Write(LOG_DEBUG, "Эксперт был запущен");
-   
-   /*if(!useTF_M5 && !useTF_M15 && !useTF_H1)  // проверка на включеннность таймфремов (не может быть ни одного включенного ТФ)
-   {
-    PrintFormat("useTF_M5 = %b, useTF_M15 = %b, useTF_H1 = %b", useTF_M5, useTF_M15, useTF_H1);
-    return(INIT_FAILED);
-   }*/
    
    // создаем объект торгового класса для открытия и закрытия позиций
    ctm = new CTradeManager();
@@ -102,28 +96,28 @@ void OnTick()
      // если пришел новый бар на старшем ТФ
      hvostBrain = hvostiki.At(i);
      tradeSignal = hvostBrain.GetSignal();
-     if(tradeSignal == SELL)
+     if(tradeSignal == OP_SELL)
      {
       log_file.Write(LOG_DEBUG, "Получен сигнал SELL");
       Print(__FUNCTION__,"Получен сигнал SELL");
       // вычисляем стоп лосс, тейк профит и открываем позицию на SELL
       pos_info.type = OP_SELL;
-      pos_info.sl = hvostBrain.GetStopLoss();
-      pos_info.tp = hvostBrain.GetTakeProfit();
+      pos_info.sl = hvostBrain.CountStopLoss();
+      pos_info.tp = hvostBrain.CountTakeProfit();
       pos_info.priceDifference = 0;     
       ctm.OpenUniquePosition(_Symbol,_Period, pos_info, trailing);  
      
       // сохраняем время открытия позиции
       open_pos_time = TimeCurrent();  
      }
-     if(tradeSignal == BUY)
+     if(tradeSignal == OP_BUY)
      { 
       log_file.Write(LOG_DEBUG, "Получен сигнал BUY");
       Print(__FUNCTION__,"Получен сигнал BUY");
       // вычисляем стоп лосс, тейк профит и открываем позицию на BUY
       pos_info.type = OP_BUY;
-      pos_info.sl = hvostBrain.GetStopLoss();
-      pos_info.tp = hvostBrain.GetTakeProfit();        
+      pos_info.sl = hvostBrain.CountStopLoss();
+      pos_info.tp = hvostBrain.CountTakeProfit();        
       pos_info.priceDifference = 0;       
       ctm.OpenUniquePosition(_Symbol,_Period,pos_info,trailing);
       // сохраняем время открытия позиции
@@ -135,6 +129,8 @@ void OnTick()
      {
       hvostBrain.SetOpenedPosition(0);   
      }
+     else if(tradeSignal == OP_UNKNOWN && hvostBrain.GetDirection() == DISCORD)
+      ctm.ClosePosition(_Symbol);
     }
    }
   }

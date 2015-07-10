@@ -33,6 +33,7 @@ class CHvostBrain : public CArrayObj
   int _magic;
   int _expiration;
   int _price_difference;
+  
   ENUM_SIGNAL_FOR_TRADE _current_direction;  // фиксирование сосотояния шаблона (SEll, BUY, DISCORD(0) - торговля запрещена)
   double h;                // ширина канала
   double price_bid;        // текущая цена bid
@@ -45,7 +46,10 @@ class CHvostBrain : public CArrayObj
   bool wait_for_buy;       // флаг ожидания условия открытия на BUY
   CisNewBar *isNewBarEld;  // для вычисления формирования нового бара на старшем ТФ
   // переменные для хранения времени движения цены
-  datetime signal_time;        // время получения сигнала пробития ценой уровня на расстояние H  
+  datetime _trand_time;
+  datetime time_max;        // время получения сигнала пробития ценой уровня на расстояние H  
+  datetime time_min;        // время получения сигнала пробития ценой уровня на расстояние H 
+  datetime open_time; 
   ENUM_TIMEFRAMES periodEld;   // период старшего таймфрейма
   double average_price;        // (ЧЁ?) значение средней цены на момент получения сигнала о скачке (присваивание переменных wait_for_sell или wait_for_buy)
  public:
@@ -77,6 +81,7 @@ class CHvostBrain : public CArrayObj
 //+------------------------------------------------------------------+
 CHvostBrain::CHvostBrain(string symbol, ENUM_TIMEFRAMES period, CContainerBuffers *conbuf)
 {
+ _trand_time = 0;
  _tailDepth = 20;
  _symbol = symbol;
  _period = period;
@@ -125,12 +130,23 @@ ENUM_TM_POSITION_TYPE CHvostBrain::GetSignal()
   wait_for_buy = false;
   wait_for_sell = false;
  }  
- if ( GreatDoubles(price_bid-max_price,K*h) && !wait_for_sell && opened_position!=-1 )
+ if(opened_position != 0)
+ { 
+  if((TimeCurrent() - open_time) > _trand_time)
+  {
+   log_file.Write(LOG_DEBUG, StringFormat("DISCORD Время существования позиции(%s) больше предыдущего движения(%s)", TimeToString(TimeCurrent() - open_time),TimeToString(_trand_time)));
+   opened_position = 0;
+   _current_direction = DISCORD;
+   return OP_UNKNOWN;
+  }
+ }
+ if ( GreatDoubles(price_bid - max_price, K*h) && !wait_for_sell && opened_position != -1 )
  {   
   log_file.Write(LOG_DEBUG, StringFormat("Для периода = %s", PeriodToString(_period)));
   // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
   log_file.Write(LOG_DEBUG, StringFormat("(pBid(%f)-pAsk(%f))(%f) > K*h(%f)=(%f) && wait_for_sell(%s) && opened_position(%d)!=-1", price_bid, max_price, (price_bid-max_price), h, K*h, BoolToString(wait_for_sell), opened_position));
-   
+  _trand_time = TimeCurrent() - time_min;
+  log_file.Write(LOG_DEBUG, StringFormat("Время последнего движения посчитано как: %s", TimeToString(_trand_time)));
   log_file.Write(LOG_DEBUG, " Цена bid отошла вверх и расстояние от нее до уровня в 2 раза больше чем ширина канала");
   // то переходим в режим отскока для открытия на SELL 
   wait_for_sell = true;   
@@ -138,7 +154,6 @@ ENUM_TM_POSITION_TYPE CHvostBrain::GetSignal()
   wait_for_buy = false;
   //countBars = 0;
   // сохраняем время получения сигнала пробития уровня движения цены
-  signal_time = TimeCurrent(); 
  }
  // если цена ask отошла вниз и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
  if ( GreatDoubles(min_price-price_ask, K*h) && !wait_for_buy && opened_position!=1 )
@@ -146,15 +161,15 @@ ENUM_TM_POSITION_TYPE CHvostBrain::GetSignal()
   log_file.Write(LOG_DEBUG, StringFormat("Для периода = %s", PeriodToString(_period)));
   // если цена bid отошла вверх и расстояние от нее до уровня как минимум 2 раза больше, чем ширина канала
   log_file.Write(LOG_DEBUG, StringFormat("(min_price(%f)-price_ask(%f))(%f) > K*h(%f)=(%f) && wait_for_buy(%s) && opened_position(%d)!=-1", min_price, price_ask, (min_price - price_ask), h, K*h, BoolToString(wait_for_buy), opened_position));
-    
+  _trand_time = TimeCurrent() - time_max; 
+  log_file.Write(LOG_DEBUG, StringFormat("Время последнего движения посчитано как: %s", TimeToString(_trand_time)));
   log_file.Write(LOG_DEBUG, " Цена ask отошла вверх и расстояние от нее до уровня в 2 раза больше чем ширина канала");    
   // то переходим в режим отскока для открытия на BUY
   wait_for_buy = true; 
   wait_for_sell = false;
   log_file.Write(LOG_DEBUG, "Режим ожидания отбития для открытия позиции на BUY");
   //countBars = 0;    
-  // сохраняем время получения сигнала пробития уровня движения цены
-  signal_time = TimeCurrent();           
+  // сохраняем время получения сигнала пробития уровня движения цены           
  }   
  // если перешли в режим ожидания отбития для открытия позиции на SELL
  if (wait_for_sell)
@@ -170,6 +185,7 @@ ENUM_TM_POSITION_TYPE CHvostBrain::GetSignal()
     wait_for_buy = false;
     log_file.Write(LOG_DEBUG, "Режим ожидания сброшен");
     _current_direction = SELL;
+    _trand_time = TimeCurrent() - _trand_time;
     return OP_SELL;       
    }
   }
@@ -186,6 +202,7 @@ ENUM_TM_POSITION_TYPE CHvostBrain::GetSignal()
    {
     log_file.Write(LOG_DEBUG, " Открываемся! от текущей цены на старших ТФ нет тел свечей TestEldPeriod(1)");
     opened_position = 1;
+    open_time = TimeCurrent();
     wait_for_buy = false;
     wait_for_sell = false;
     _current_direction = BUY;
@@ -210,7 +227,10 @@ bool CHvostBrain::CountChannel()
  max_price = _conbuf.GetHigh(periodEld).buffer[indexMax];
  min_price = _conbuf.GetLow(periodEld).buffer[indexMin];
  log_file.Write(LOG_DEBUG, StringFormat("Был взят max_price = %f для периода %s на старшем периоде = %s", max_price, PeriodToString(_period), PeriodToString(periodEld)));
-
+ time_max = _conbuf.GetTime(periodEld, indexMax);
+ time_min = _conbuf.GetTime(periodEld, indexMin);
+ if(time_max == __DATETIME__ || time_min == __DATETIME__)
+ log_file.Write(LOG_DEBUG, StringFormat("%s Неверное значение пришло с конбуфа....! time_min = %s time_max = %s", MakeFunctionPrefix(__FUNCTION__), TimeToString(time_min), TimeToString(time_max)));
  h = max_price - min_price;
  return (true);
 }  

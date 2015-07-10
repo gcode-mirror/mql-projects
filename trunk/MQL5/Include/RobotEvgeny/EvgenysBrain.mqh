@@ -77,7 +77,7 @@ CEvgenysBrain::CEvgenysBrain(string symbol,ENUM_TIMEFRAMES period, CExtrContaine
 {
  _trend = 0;       // текущий тренд 1-й типа
  _prevTrend = 0;   // предыдущий тренд
- _current_direction = SELL;
+ _current_direction = NO_SIGNAL;
  _symbol = symbol;
  _period = period;
  _isNewBar = new CisNewBar(_symbol, _period);

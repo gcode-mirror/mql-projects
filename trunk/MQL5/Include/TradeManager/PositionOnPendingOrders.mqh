@@ -695,7 +695,7 @@ ENUM_POSITION_STATUS CPosition::OpenPosition()
  if (_pos_info.volume == 0)
  {
   _pos_status = POSITION_STATUS_OPEN;   
-  _sl_status == STOPLEVEL_STATUS_PLACED;
+  _sl_status = STOPLEVEL_STATUS_PLACED;
  }
  
  NewTicket();

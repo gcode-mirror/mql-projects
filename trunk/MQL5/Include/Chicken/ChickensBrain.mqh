@@ -67,7 +67,7 @@ CChickensBrain::CChickensBrain(string symbol, ENUM_TIMEFRAMES period, CContainer
  _conbuf = conbuf;
  _symbol = symbol;
  _period = period;
- _current_direction = SELL;
+ _current_direction = NO_SIGNAL;
  _expiration = 0;
  _priceDifference = 0;
  isNewBar = new CisNewBar(_symbol, _period);

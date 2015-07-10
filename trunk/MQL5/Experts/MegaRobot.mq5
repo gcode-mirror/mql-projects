@@ -32,7 +32,8 @@ class CTI  // класс - обёртка для ВИ
  ENUM_SIGNAL_FOR_TRADE _moveBUY;            // разрешение торговли на BUY для этого ВИ
  ENUM_SIGNAL_FOR_TRADE _moveSELL;           // разрешение торговли на SeLL для этого ВИ
   public:
-  CTI(){_moveBUY = 0; _moveSELL = 0; robots = new CArrayObj();};
+  CTI(){_moveBUY = 0; _moveSELL = 0; robots = new CArrayObj();}
+  ~CTI(){delete robots;}
   
   CObject *At(int i){return robots.At(i);}
   int  Total(){return robots.Total();}
@@ -53,13 +54,12 @@ CTI::SetMoves(ENUM_SIGNAL_FOR_TRADE moveSELL, ENUM_SIGNAL_FOR_TRADE moveBUY)
 
 
 // ---------переменные робота------------------
-CExtrContainer *extr_container;
+CExtrContainer    *extr_container;
 CContainerBuffers *conbuf; // буфер контейнеров на различных Тф, заполняемый на OnTick()
-                           // highPrice[], lowPrice[], closePrice[] и т.д; 
-                           
-CRabbitsBrain  *rabbit;
+                           // highPrice[], lowPrice[], closePrice[] и т.д;            
+CRabbitsBrain     *rabbit;
 
-CTradeManager *ctm;        // торговый класс 
+CTradeManager     *ctm;        // торговый класс 
      
 datetime history_start;    // время для получения торговой истории
 ENUM_TM_POSITION_TYPE position_type_signal;
@@ -69,7 +69,7 @@ ENUM_SIGNAL_FOR_TRADE moveBUY;
 double volume_ratio;                       
 bool log_flag = false;
 ENUM_TM_POSITION_TYPE opBuy, opSell; // заполнить
-ENUM_TIMEFRAMES TFs[4]    = {PERIOD_M1, PERIOD_M5, PERIOD_M15, PERIOD_H1};//, PERIOD_H4, PERIOD_D1, PERIOD_W1};/
+ENUM_TIMEFRAMES TFs[5]    = {PERIOD_M1, PERIOD_M5, PERIOD_M15, PERIOD_M20, PERIOD_M30};//, PERIOD_H4, PERIOD_D1, PERIOD_W1};/
 
 //---------параметры позиции и трейлинга------------
 SPositionInfo pos_info;
@@ -115,31 +115,31 @@ int OnInit()
  if(!conbuf.isFullAvailable())
   return (INIT_FAILED);
  //---------- Загружаем контейнер экстремумов для Евгения на Н4----------------
- handleDE = DoesIndicatorExist(_Symbol, PERIOD_H4, "DrawExtremums");
+ handleDE = DoesIndicatorExist(_Symbol, PERIOD_M30, "DrawExtremums");
  if (handleDE == INVALID_HANDLE)
  {
-  handleDE = iCustom(_Symbol, PERIOD_H4, "DrawExtremums");
+  handleDE = iCustom(_Symbol, PERIOD_M30, "DrawExtremums");
   if (handleDE == INVALID_HANDLE)
   {
    Print("Не удалось создать хэндл индикатора DrawExtremums");
    return (INIT_FAILED);
   }
  }   
- extr_container = new CExtrContainer(handleDE,_Symbol,PERIOD_H4,1000);
+ extr_container = new CExtrContainer(handleDE,_Symbol,PERIOD_M30,1000);
  if(!extr_container.Upload()) // Если не загрузился прервем работу
   return (INIT_FAILED);
  
 
  //-----------Заполним массив роботов на старшем ВИ----------------
  robots_OLD = new CTI();
-              robots_OLD.Add(new  CEvgenysBrain(_Symbol,PERIOD_H4, extr_container, conbuf));
+              robots_OLD.Add(new  CEvgenysBrain(_Symbol,PERIOD_M30, extr_container, conbuf));
  //-----------Заполним массив роботов на среднем ВИ----------------
  robots_MID = new CTI();
-              robots_MID.Add(new CChickensBrain(_Symbol,PERIOD_H1, conbuf));
+              robots_MID.Add(new CChickensBrain(_Symbol,PERIOD_M20, conbuf));
  //-----------Заполним массив роботов на младшем ВИ----------------
  robots_JUN = new CTI();
               robots_JUN.Add(new CChickensBrain(_Symbol,PERIOD_M5, conbuf));
-              robots_JUN.Add(new CChickensBrain(_Symbol,PERIOD_M15, conbuf));
+              robots_JUN.Add(new CChickensBrain(_Symbol,PERIOD_M1, conbuf));
               robots_JUN.Add(new CRabbitsBrain(_Symbol, conbuf));
               
  pos_info.volume = 0;
@@ -160,7 +160,9 @@ int OnInit()
 void OnDeinit(const int reason)
 {
  delete rabbit;
- 
+ delete robots_OLD;
+ delete robots_MID;
+ delete robots_JUN;
  delete conbuf;
  delete ctm;
  delete extr_container;
@@ -254,11 +256,12 @@ void MoveDown (CTI *robots) // привести в соответствие направление позиции и тор
     // должен работать таким образом, что бы робот мог открыть только эти две позиции в одном направлении, 
     // то есть как юникПозишн только для двух позиций того же направления
    }
-   else if (position_type_signal == OP_UNKNOWN && robot.GetDirection() == NO_SIGNAL)// разрыв шаблона
+   else if (position_type_signal == OP_UNKNOWN && robot.GetDirection() == NO_SIGNAL&&log_flag)// разрыв шаблона
    {
     log_file.Write(LOG_DEBUG, "Разрыв шаблона, закрытие позиции: position_type_signal == OP_UNKNOWN && robot.GetDirection() == NO_SIGNAL");
     // закрыть позицию с мэджиком этого робота
-    ctm.ClosePosition(robot.GetMagic()); // полностью, обе
+    //if(ctm.
+    //ctm.ClosePosition(robot.GetMagic()); // полностью, обе
    }
   }
  }
@@ -348,9 +351,9 @@ CTI *GetNextTI(CTI *robots, bool down)
  CBrain *robot = robots.At(0); 
  ENUM_TIMEFRAMES period = robot.GetPeriod();
 
- if(period >= PERIOD_H4)
+ if(period >= PERIOD_M30)
   return down ? robots_MID  :  robots_OLD;
- if(period > PERIOD_M15 && period < PERIOD_H4)
+ if(period > PERIOD_M15 && period < PERIOD_M30)
   return down ? robots_JUN  :  robots_OLD;
  if(period <= PERIOD_M15)
   return down ? robots_JUN  :  robots_MID;
@@ -365,10 +368,13 @@ void FillMoves(CTI *robots)
  ENUM_SIGNAL_FOR_TRADE moveSELL = SELL;
  ENUM_SIGNAL_FOR_TRADE moveBUY = BUY;
  // если это старший ВИ ему разрешено открывать шаблоны по своим сигналам
- if(robots != robots_JUN)// исправить по-скольку средни ДОЛЖЕН ориентироваться на старший сигнал
+ if(robots == robots_OLD)// исправить по-скольку средни ДОЛЖЕН ориентироваться на старший сигнал
  {
   moveSELL = SELL; // разрешающий сигнал для старшего ВИ (всегда 1)
   moveBUY = BUY;
+  //------
+  newMoveSELL = SELL;
+  newMoveBUY = BUY;
  } 
  else
  {
